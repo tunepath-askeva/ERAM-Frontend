@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation } from "react-router-dom";
-import Register from "./Pages/Register";
-import Login from "./Pages/Login";
+import Register from "./Auth/Register";
+import Login from "./Auth/Login";
 import Home from "./Pages/Home";
 
 const AppRoutes = () => {
