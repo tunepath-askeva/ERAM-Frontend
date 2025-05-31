@@ -28,6 +28,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useRegisterUserMutation } from "../Slices/Users/UserApis";
 import OtpModal from "../Modal/OtpModal";
+import Header from "../Global/HEader";
+import HomeFooter from "../Global/Footer";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -39,7 +41,6 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // OTP Modal state
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
@@ -73,7 +74,6 @@ const Register = () => {
       setRegisteredEmail(values.email);
       message.success("Registration successful! Please verify your email.");
 
-      // Show OTP modal
       setShowOtpModal(true);
     } catch (error) {
       console.error("Registration failed:", error);
@@ -85,22 +85,13 @@ const Register = () => {
     }
   };
 
-  // Handle successful OTP verification
   const handleOtpVerifySuccess = (otpResponse) => {
-    // Close OTP modal
     setShowOtpModal(false);
-
-    // Reset email state
     setRegisteredEmail("");
-
-    // Show success message and navigate to login
     message.success("Email verified successfully! Please login to continue.");
-
-    // Navigate to login page
     navigate("/login");
   };
 
-  // Handle OTP modal cancel
   const handleOtpModalCancel = () => {
     setShowOtpModal(false);
     setRegisteredEmail("");
@@ -111,18 +102,18 @@ const Register = () => {
   };
 
   const handleGoogleSignUp = () => {
-    // Add your Google Sign-Up logic here
     message.info("Google Sign-Up functionality to be implemented");
   };
 
   return (
     <>
+      <Header />
       <div
         style={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "#f0f0f0",
           padding: "20px",
         }}
       >
@@ -146,11 +137,7 @@ const Register = () => {
           >
             <div
               style={{
-                width: "80px",
-                height: "80px",
                 margin: "0 auto 20px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -161,14 +148,8 @@ const Register = () => {
             >
               {/* Replace this with your company logo */}
               <img
-                src="/api/placeholder/80/80"
+                src="/logo-2.png"
                 alt="Company Logo"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
@@ -323,7 +304,7 @@ const Register = () => {
                 style={{
                   borderRadius: "12px",
                   border: "1px solid #e1e5e9",
-                
+
                   fontSize: "16px",
                 }}
               />
@@ -463,7 +444,7 @@ const Register = () => {
                   height: "48px",
                   borderRadius: "12px",
                   background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    "linear-gradient(135deg,rgb(231, 82, 82) 0%,rgb(185, 48, 48) 100%)",
                   border: "none",
                   fontSize: "16px",
                   fontWeight: "600",
@@ -491,7 +472,7 @@ const Register = () => {
               <Link
                 to="/login"
                 style={{
-                  color: "#667eea",
+                  color: "#f5222d",
                   fontWeight: "600",
                   textDecoration: "none",
                 }}
@@ -510,6 +491,8 @@ const Register = () => {
         email={registeredEmail}
         onVerifySuccess={handleOtpVerifySuccess}
       />
+
+      <HomeFooter />
     </>
   );
 };
