@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
+import { userLogout } from "../../Slices/Users/UserSlice";
 
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
@@ -76,8 +78,6 @@ const NavButton = styled(Button)`
 `;
 
 const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
-
-
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
     isMobile: window.innerWidth < BREAKPOINTS.mobile,
@@ -90,6 +90,7 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
   });
 
+  const [logout] = useLogoutSuperAdminMutation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -167,7 +168,15 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-
+  const handleLogout = async () => {
+    try {
+      await logout().unwrap();
+      dispatch(userLogout({ role: "admin" }));
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const userMenuItems = [
     {
@@ -183,6 +192,7 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       key: "logout",
       icon: <LogoutOutlined style={{ color: "#ff4d4f" }} />,
       label: <span style={{ color: "#ff4d4f" }}>Logout</span>,
+      onClick: () => handleLogout(),
     },
   ];
 

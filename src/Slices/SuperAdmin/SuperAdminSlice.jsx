@@ -37,7 +37,6 @@ const superAdminSlice = createSlice({
     SuperAdminlogout: (state) => {
       state.superAdminInfo = null;
       localStorage.removeItem("superAdminInfo");
-      localStorage.removeItem("SuperAdmintoken"); 
      
     },
     

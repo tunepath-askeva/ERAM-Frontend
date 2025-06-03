@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Layout, Menu, Button, Drawer } from "antd";
 import {
   DashboardOutlined,
-  UserOutlined,
+  UnorderedListOutlined,
   AppstoreOutlined,
-  SettingOutlined,
+  ApartmentOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
+import { userLogout } from "../../Slices/Users/UserSlice";
 
 const { Sider } = Layout;
 
@@ -33,7 +35,7 @@ const AdminSidebar = ({
     isDesktop: window.innerWidth >= BREAKPOINTS.desktop,
   });
 
-
+  const [logout] = useLogoutSuperAdminMutation();
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -41,17 +43,25 @@ const AdminSidebar = ({
   const selectedKey = location.pathname;
 
   const menuItems = [
-    { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
     {
-      key: "/admin",
+      key: "/admin/dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    {
+      key: "/admin/branches",
       icon: <AppstoreOutlined />,
       label: "Branches",
     },
-    { key: "/admin", icon: <UserOutlined />, label: "Admins" },
     {
-      key: "/admin",
-      icon: <SettingOutlined />,
-      label: "Settings",
+      key: "/admin/workorder",
+      icon: <UnorderedListOutlined />,
+      label: "Work Order",
+    },
+    {
+      key: "/admin/pipeline",
+      icon: <ApartmentOutlined />,
+      label: "pipeline",
     },
   ];
 
@@ -104,7 +114,15 @@ const AdminSidebar = ({
     return "20px";
   };
 
-
+  const handleLogout = async () => {
+    try {
+      await logout().unwrap();
+      dispatch(userLogout({ role: "admin" }));
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const SidebarContent = (
     <div
@@ -281,6 +299,7 @@ const AdminSidebar = ({
           }}
           onMouseEnter={() => setHoveredKey("logout")}
           onMouseLeave={() => setHoveredKey(null)}
+          onClick={handleLogout}
         >
           {(!collapsed || screenSize.isMobile) && "Logout"}
         </Button>

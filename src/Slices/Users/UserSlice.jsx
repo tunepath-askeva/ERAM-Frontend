@@ -5,7 +5,7 @@ const getRoleBasedKey = (role) => {
 };
 
 const initializeUserState = () => {
-  const roles = ["admin", "candidate", "employee", "recruiter", "super_admin"];
+  const roles = ["admin", "candidate", "employee", "recruiter"];
   const state = {};
 
   roles.forEach((role) => {
@@ -33,6 +33,7 @@ const userSlice = createSlice({
 
     userLogout: (state, action) => {
       const { role } = action.payload;
+      console.log(role, "role", action.payload, "Payload");
       const roleKey = getRoleBasedKey(role);
 
       state[roleKey] = null;
@@ -41,13 +42,7 @@ const userSlice = createSlice({
     },
 
     clearAllUserData: (state) => {
-      const roles = [
-        "admin",
-        "candidate",
-        "employee",
-        "recruiter",
-        "super_admin",
-      ];
+      const roles = ["admin", "candidate", "employee", "recruiter"];
 
       roles.forEach((role) => {
         const roleKey = getRoleBasedKey(role);

@@ -2,7 +2,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import userAuthReducer from "./Slices/Users/UserSlice";
 import superAdminAuthReducer from "./Slices/SuperAdmin/SuperAdminSlice";
 import { userApi } from "./Slices/Users/UserApis";
-import { superAdminApi } from "./Slices/SuperAdmin/SuperADminAPis";
+import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminAPIs";
+import { adminApi } from "./Slices/Admin/AdminApis";
 
 const store = configureStore({
   reducer: {
@@ -10,11 +11,13 @@ const store = configureStore({
     userAuth: userAuthReducer,
     [userApi.reducerPath]: userApi.reducer,
     [superAdminApi.reducerPath]: superAdminApi.reducer,
+    [adminApi.reducerPath]: adminApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(userApi.middleware)
-      .concat(superAdminApi.middleware),
+      .concat(superAdminApi.middleware)
+      .concat(adminApi.middleware),
   devTools: true,
 });
 

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
-
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
   UserOutlined,
@@ -78,7 +77,6 @@ const NavButton = styled(Button)`
 `;
 
 const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
-
   const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
 
   const [screenSize, setScreenSize] = useState({
@@ -170,15 +168,15 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-   const handleLogout = async () => {
-     try {
-       await logoutSuperAdmin().unwrap();
-       dispatch(SuperAdminlogout());
-       navigate("/superadmin/login");
-     } catch (error) {
-       console.error("Logout failed:", error);
-     }
-   };
+  const handleLogout = async () => {
+    try {
+      await logoutSuperAdmin().unwrap();
+      dispatch(SuperAdminlogout());
+      navigate("/superadmin/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const userMenuItems = [
     {

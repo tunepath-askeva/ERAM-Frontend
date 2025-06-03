@@ -17,6 +17,10 @@ import ProtectedSuperAdmin from "./SuperAdmin/Auth/ProtectedSuperAdmin";
 import SuperAdminSettings from "./SuperAdmin/Pages/SuperAdminSetting";
 import AdminLayout from "./Admin/Global/AdminLayout";
 import AdminDashboard from "./Admin/Pages/AdminDashboard";
+import ProtectedAdmin from "./Admin/Auth/ProtectedAdmin";
+import AdminBranch from "./Admin/Pages/AdminBranch";
+import WorkOrder from "./Admin/Pages/WorkOrder";
+import Pipeline from "./Admin/Pages/Pipeline";
 
 const AppRoutes = () => {
   return (
@@ -64,7 +68,22 @@ const AppRoutes = () => {
       {/* Admin */}
 
       <Route element={<AdminLayout />}>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route
+          path="/admin/dashboard"
+          element={<ProtectedAdmin element={<AdminDashboard />} />}
+        />
+        <Route
+          path="/admin/branches"
+          element={<ProtectedAdmin element={<AdminBranch />} />}
+        />
+        <Route
+          path="/admin/workorder"
+          element={<ProtectedAdmin element={<WorkOrder />} />}
+        />
+        <Route
+          path="/admin/pipeline"
+          element={<ProtectedAdmin element={<Pipeline />} />}
+        />
       </Route>
     </Routes>
   );
