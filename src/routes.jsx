@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-import Register from "./Pages/Register";
-import Login from "./Pages/Login";
+import Login from "./Auth/Login";
+import Register from "./Auth/Register";
 import Home from "./Pages/Home";
 import About from "./Pages/About";
 import Services from "./Pages/Services";
@@ -52,7 +52,7 @@ const AppRoutes = () => {
           path="/superadmin/admins"
           element={<ProtectedSuperAdmin element={<AdminManagement />} />}
         />
-         <Route
+        <Route
           path="/superadmin/settings"
           element={<ProtectedSuperAdmin element={<SuperAdminSettings />} />}
         />
