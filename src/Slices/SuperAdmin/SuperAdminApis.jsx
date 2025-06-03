@@ -8,10 +8,6 @@ export const superAdminApi = createApi({
     baseUrl,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("SuperAdmintoken");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
       return headers;
     },
   }),
@@ -31,6 +27,14 @@ export const superAdminApi = createApi({
         body: otpData,
       }),
     }),
+
+    logoutSuperAdmin: builder.mutation({
+      query: () => ({
+        url: "/Logout",
+        method: "POST",
+      }),
+    }),
+
     createBranch: builder.mutation({
       query: (branchData) => ({
         url: "/branch",
@@ -126,6 +130,7 @@ export const {
   //login
   useLoginSuperAdminMutation,
   useVerifyAdminLoginOtpMutation,
+  useLogoutSuperAdminMutation,
 
   //super admin profile
   useRequestUpdateProfileMutation,

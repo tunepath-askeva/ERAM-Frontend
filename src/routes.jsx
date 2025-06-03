@@ -15,6 +15,8 @@ import AdminManagement from "./SuperAdmin/Pages/AdminManagement";
 import SuperAdminLogin from "./SuperAdmin/Auth/SuperAdminLogin";
 import ProtectedSuperAdmin from "./SuperAdmin/Auth/ProtectedSuperAdmin";
 import SuperAdminSettings from "./SuperAdmin/Pages/SuperAdminSetting";
+import AdminLayout from "./Admin/Global/AdminLayout";
+import AdminDashboard from "./Admin/Pages/AdminDashboard";
 
 const AppRoutes = () => {
   return (
@@ -26,6 +28,7 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
 
+      {/* Super Admin */}
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />
       <Route element={<SuperMainLayout />}>
         <Route
@@ -56,6 +59,12 @@ const AppRoutes = () => {
           path="/superadmin/settings"
           element={<ProtectedSuperAdmin element={<SuperAdminSettings />} />}
         />
+      </Route>
+
+      {/* Admin */}
+
+      <Route element={<AdminLayout />}>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Route>
     </Routes>
   );

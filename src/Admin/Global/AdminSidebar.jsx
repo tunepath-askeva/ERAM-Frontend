@@ -9,8 +9,6 @@ import {
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 
 const { Sider } = Layout;
 
@@ -20,7 +18,7 @@ const BREAKPOINTS = {
   desktop: 1200,
 };
 
-const SuperSidebar = ({
+const AdminSidebar = ({
   collapsed,
   setCollapsed,
   setDrawerVisible,
@@ -35,7 +33,6 @@ const SuperSidebar = ({
     isDesktop: window.innerWidth >= BREAKPOINTS.desktop,
   });
 
-  const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
 
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
@@ -44,15 +41,15 @@ const SuperSidebar = ({
   const selectedKey = location.pathname;
 
   const menuItems = [
-    { key: "/superadmin", icon: <DashboardOutlined />, label: "Dashboard" },
+    { key: "/admin/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
     {
-      key: "/superadmin/branches",
+      key: "/admin",
       icon: <AppstoreOutlined />,
       label: "Branches",
     },
-    { key: "/superadmin/admins", icon: <UserOutlined />, label: "Admins" },
+    { key: "/admin", icon: <UserOutlined />, label: "Admins" },
     {
-      key: "/superadmin/settings",
+      key: "/admin",
       icon: <SettingOutlined />,
       label: "Settings",
     },
@@ -107,15 +104,7 @@ const SuperSidebar = ({
     return "20px";
   };
 
-  const handleLogout = async () => {
-    try {
-      await logoutSuperAdmin().unwrap();
-      dispatch(SuperAdminlogout());
-      navigate("/superadmin/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+
 
   const SidebarContent = (
     <div
@@ -156,7 +145,7 @@ const SuperSidebar = ({
                 fontSize: "16px",
               }}
             >
-              S
+              A
             </div>
             <h1
               style={{
@@ -166,7 +155,7 @@ const SuperSidebar = ({
                 margin: 0,
               }}
             >
-              Super Admin
+              Admin
             </h1>
           </div>
         )}
@@ -185,7 +174,7 @@ const SuperSidebar = ({
               fontSize: "16px",
             }}
           >
-            S
+            A
           </div>
         )}
       </div>
@@ -292,7 +281,6 @@ const SuperSidebar = ({
           }}
           onMouseEnter={() => setHoveredKey("logout")}
           onMouseLeave={() => setHoveredKey(null)}
-          onClick={handleLogout}
         >
           {(!collapsed || screenSize.isMobile) && "Logout"}
         </Button>
@@ -345,4 +333,4 @@ const SuperSidebar = ({
   );
 };
 
-export default SuperSidebar;
+export default AdminSidebar;

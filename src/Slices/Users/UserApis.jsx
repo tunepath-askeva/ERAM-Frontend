@@ -7,6 +7,10 @@ export const userApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl,
     credentials: "include",
+    prepareHeaders: (headers, { getState }) => {
+      headers.set("Content-Type", "application/json");
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     registerUser: builder.mutation({
@@ -14,7 +18,6 @@ export const userApi = createApi({
         url: "/Register",
         method: "POST",
         body: userData,
-        headers: { "Content-Type": "application/json" },
       }),
     }),
     loginUser: builder.mutation({
@@ -22,7 +25,6 @@ export const userApi = createApi({
         url: "/login",
         method: "POST",
         body: userData,
-        headers: { "Content-Type": "application/json" },
       }),
     }),
     verifyOtp: builder.mutation({
@@ -43,7 +45,7 @@ export const userApi = createApi({
       query: (data) => ({
         url: "/resend-otp",
         method: "POST",
-        body: data, 
+        body: data,
       }),
     }),
   }),
@@ -53,5 +55,5 @@ export const {
   useRegisterUserMutation,
   useLoginUserMutation,
   useVerifyOtpMutation,
-  useResendOtpMutation
+  useResendOtpMutation,
 } = userApi;

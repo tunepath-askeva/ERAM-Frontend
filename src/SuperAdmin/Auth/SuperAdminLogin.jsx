@@ -35,13 +35,12 @@ const SuperAdminLogin = () => {
       } else {
         message.success("Login successful!");
 
-        localStorage.setItem("SuperAdmintoken", response.token);
-
+        // Don't store token in localStorage - it's now in cookies
+        // Only store user information
         const superAdminInfo = {
           email: response.user.email,
           name: response.user.name,
           roles: response.user.roles,
-          token: response.token,
         };
 
         dispatch(setSuperAdminCredentials(superAdminInfo));
@@ -69,13 +68,12 @@ const SuperAdminLogin = () => {
   const handleOtpVerificationSuccess = (response) => {
     message.success("Super Admin login successful!");
 
-    localStorage.setItem("SuperAdmintoken", response.token);
-
+    // Don't store token in localStorage - it's now in cookies
+    // Only store user information
     const superAdminInfo = {
       email: response.user.email,
       name: response.user.name,
       roles: response.user.roles,
-      token: response.token,
     };
 
     dispatch(setSuperAdminCredentials(superAdminInfo));

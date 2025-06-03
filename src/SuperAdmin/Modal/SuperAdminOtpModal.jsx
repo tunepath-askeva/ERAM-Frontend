@@ -23,7 +23,6 @@ const SuperAdminOtpModal = ({
   const timerRef = useRef(null);
 
   const [verifyAdminLoginOtp, { isLoading }] = useVerifyAdminLoginOtpMutation();
-
   const [verifyUpdateOtp] = useVerifyUpdateProfileMutation();
 
   useEffect(() => {
@@ -113,11 +112,11 @@ const SuperAdminOtpModal = ({
 
       if (mode === "login") {
         response = await verifyAdminLoginOtp(otpData).unwrap();
-        console.log(response, "token");
+        console.log(response, "OTP verification response");
         message.success("Login OTP verified successfully!");
       } else if (mode === "updateProfile") {
         response = await verifyUpdateOtp(otpData).unwrap();
-        localStorage.setItem("SuperAdmintoken", response.token);
+        // Don't store token in localStorage - it's now handled by cookies
         message.success("Profile update OTP verified successfully!");
       } else {
         throw new Error("Invalid OTP verification mode");

@@ -4,10 +4,6 @@ const getRoleBasedKey = (role) => {
   return `${role}Info`;
 };
 
-const getRoleBasedTokenKey = (role) => {
-  return `${role}token`;
-};
-
 const initializeUserState = () => {
   const roles = ['admin', 'candidate', 'employee', 'recruiter'];
   const state = {};
@@ -32,17 +28,26 @@ const superAdminSlice = createSlice({
   initialState,
   reducers: {
     setSuperAdminCredentials: (state, action) => {
-      state.superAdminInfo = action.payload;
-      localStorage.setItem("superAdminInfo", JSON.stringify(action.payload));
+     
+      const { token, ...userInfo } = action.payload;
+      state.superAdminInfo = userInfo;
+      localStorage.setItem("superAdminInfo", JSON.stringify(userInfo));
+      
     },
     SuperAdminlogout: (state) => {
       state.superAdminInfo = null;
       localStorage.removeItem("superAdminInfo");
-      localStorage.removeItem("SuperAdmintoken");
+      localStorage.removeItem("SuperAdmintoken"); 
+     
     },
+    
   },
 });
 
-export const { setSuperAdminCredentials, SuperAdminlogout } =
-  superAdminSlice.actions;
+export const { 
+  setSuperAdminCredentials, 
+  SuperAdminlogout, 
+ 
+} = superAdminSlice.actions;
+
 export default superAdminSlice.reducer;

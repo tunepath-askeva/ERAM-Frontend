@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
@@ -77,9 +75,8 @@ const NavButton = styled(Button)`
   }
 `;
 
-const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
+const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
-  const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
 
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -170,15 +167,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-   const handleLogout = async () => {
-     try {
-       await logoutSuperAdmin().unwrap();
-       dispatch(SuperAdminlogout());
-       navigate("/superadmin/login");
-     } catch (error) {
-       console.error("Logout failed:", error);
-     }
-   };
+
 
   const userMenuItems = [
     {
@@ -194,7 +183,6 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       key: "logout",
       icon: <LogoutOutlined style={{ color: "#ff4d4f" }} />,
       label: <span style={{ color: "#ff4d4f" }}>Logout</span>,
-      onClick: handleLogout,
     },
   ];
 
@@ -282,4 +270,4 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   );
 };
 
-export default SuperNavbar;
+export default AdminNavbar;

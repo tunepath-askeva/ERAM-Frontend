@@ -21,17 +21,26 @@ const Login = () => {
         password: values.password,
       }).unwrap();
 
+      // Check if OTP is required (for super_admin)
+      if (response.requireOtp) {
+        message.info("OTP sent to your email. Please verify to complete login.");
+        navigate("/verify-otp", { 
+          state: { 
+            email: response.email,
+            message: response.message 
+          } 
+        });
+        return;
+      }
+
       message.success("Login successful!");
 
-
-      const userRole = response.user.roles
+      const userRole = response.user.roles;
 
       const userInfo = {
         email: response.user.email,
-        token: response.token,
         name: response.user.name,
         roles: response.user.roles,
-       
       };
 
       dispatch(setUserCredentials({
@@ -39,6 +48,7 @@ const Login = () => {
         role: userRole
       }));
 
+      // Navigate based on user role
       switch (userRole) {
         case "admin":
           navigate("/admin/dashboard");
@@ -51,6 +61,9 @@ const Login = () => {
           break;
         case "recruiter":
           navigate("/recruiter/dashboard");
+          break;
+        case "super_admin":
+          navigate("/super-admin/dashboard");
           break;
         default:
           message.warning("No dashboard defined for your role.");
