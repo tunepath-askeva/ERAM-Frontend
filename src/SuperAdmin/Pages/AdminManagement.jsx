@@ -1,4 +1,3 @@
-// AdminManagement.jsx
 import React, { useState, useMemo } from "react";
 import {
   Card,
@@ -15,6 +14,7 @@ import {
   Flex,
   message,
   Popconfirm,
+  Modal,
 } from "antd";
 import {
   UserAddOutlined,
@@ -31,6 +31,10 @@ import {
   BankOutlined,
   CheckCircleOutlined,
   PlusOutlined,
+  ExclamationCircleOutlined,
+  UserDeleteOutlined,
+  CheckOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
 
 import AdminFormModal from "../Modal/AdminFormModal";
@@ -40,7 +44,10 @@ import {
   useCreateAdminMutation,
   useGetAdminsQuery,
   useGetSingleAdminQuery,
-} from "../../Slices/SuperAdmin/SuperADminAPis";
+  useUpdateAdminMutation,
+  useDisableAdminMutation,
+} from "../../Slices/SuperAdmin/SuperAdminAPIs";
+
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
@@ -54,6 +61,10 @@ const AdminManagement = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [viewingAdminId, setViewingAdminId] = useState(null);
+  const [statusChangeModalVisible, setStatusChangeModalVisible] =
+    useState(false);
+  const [adminToToggle, setAdminToToggle] = useState(null);
+
   const {
     data: branchesData,
     isLoading: branchesLoading,
@@ -75,6 +86,12 @@ const AdminManagement = () => {
   const [createAdmin, { isLoading: createAdminLoading }] =
     useCreateAdminMutation();
 
+  const [updateAdmin, { isLoading: updateAdminLoading }] =
+    useUpdateAdminMutation();
+
+  const [disableAdmin, { isLoading: disableAdminLoading }] =
+    useDisableAdminMutation();
+
   const branches = branchesData?.branch || [];
   const admins = adminData?.allAdmins || [];
   const skeletonRows = 5;
@@ -93,7 +110,7 @@ const AdminManagement = () => {
         name: admin.fullName,
         email: admin.email,
         phone: admin.phone,
-        role: admin.role.charAt(0).toUpperCase() + admin.role.slice(1), // Capitalize role
+        role: admin.role.charAt(0).toUpperCase() + admin.role.slice(1),
         status: admin.accountStatus === "active" ? "active" : "inactive",
         branchId: admin.branch,
         assignedBranches: assignedBranch
@@ -111,9 +128,6 @@ const AdminManagement = () => {
         createdDate: admin.createdAt
           ? new Date(admin.createdAt).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
-        // lastLogin: admin.lastLogin
-        //   ? new Date(admin.lastLogin).toISOString().split("T")[0]
-        //   : "Never",
         region: assignedBranch?.location?.state || "N/A",
         isActive: admin.isActive,
         skills: admin.skills || [],
@@ -122,7 +136,6 @@ const AdminManagement = () => {
     });
   }, [admins, branches]);
 
-  // Filter admins based on search and status
   const filteredAdmins = transformedAdmins.filter((admin) => {
     const matchesSearch =
       admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,14 +146,11 @@ const AdminManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Handle Add Admin
   const handleAddAdmin = async (payload) => {
     try {
       const result = await createAdmin(payload).unwrap();
       message.success("Admin created successfully!");
       setIsAddModalOpen(false);
-
-      // Refetch the admins data to get the updated list
       refetchAdmins();
     } catch (error) {
       console.error("Failed to create admin:", error);
@@ -150,17 +160,51 @@ const AdminManagement = () => {
     }
   };
 
-  const handleEditAdmin = (values) => {
-    // Your existing edit logic
-    // You might want to create an updateAdmin mutation for this
-    console.log("Edit admin:", values);
+  const handleEditAdmin = async (payload) => {
+    try {
+      const { adminId, ...updateData } = payload;
+      const result = await updateAdmin({ adminId, ...updateData }).unwrap();
+      message.success("Admin updated successfully!");
+      setIsEditModalOpen(false);
+      setSelectedAdmin(null);
+      refetchAdmins();
+    } catch (error) {
+      console.error("Failed to update admin:", error);
+      message.error(
+        error?.data?.message || "Failed to update admin. Please try again."
+      );
+    }
   };
 
-  const handleDeleteAdmin = (adminId) => {
-    // Your existing delete logic
-    // You might want to create a deleteAdmin mutation for this
-    console.log("Delete admin:", adminId);
-    message.success("Admin deleted successfully!");
+  const showStatusChangeModal = (admin) => {
+    setAdminToToggle(admin);
+    setStatusChangeModalVisible(true);
+  };
+
+  const handleToggleAdminStatus = async () => {
+    if (!adminToToggle) return;
+
+    try {
+      await disableAdmin({ adminId: adminToToggle.id }).unwrap();
+      const action = adminToToggle.status === "active" ? "disabled" : "enabled";
+      message.success(
+        `${adminToToggle.name}'s account has been ${action} successfully!`
+      );
+      setStatusChangeModalVisible(false);
+      setAdminToToggle(null);
+      refetchAdmins();
+    } catch (error) {
+      console.error("Failed to toggle admin status:", error);
+      message.error(
+        error?.data?.message ||
+          "Failed to update admin status. Please try again."
+      );
+    }
+  };
+
+  const handleCancelStatusChange = () => {
+    setStatusChangeModalVisible(false);
+    setAdminToToggle(null);
   };
 
   const handleViewAdmin = (admin) => {
@@ -173,7 +217,6 @@ const AdminManagement = () => {
     setIsEditModalOpen(true);
   };
 
-  // Show error messages
   React.useEffect(() => {
     if (branchesError) {
       message.error("Failed to load branches. Please refresh the page.");
@@ -183,7 +226,6 @@ const AdminManagement = () => {
     }
   }, [branchesError, adminError]);
 
-  // Table columns
   const columns = [
     {
       title: "Admin",
@@ -215,7 +257,7 @@ const AdminManagement = () => {
           <Tag color="purple" icon={<CheckCircleOutlined />}>
             {record.role}
           </Tag>
-          <Tag color={record.status === "active" ? "green" : "default"}>
+          <Tag color={record.status === "active" ? "green" : "red"}>
             {record.status.toUpperCase()}
           </Tag>
         </Space>
@@ -266,19 +308,6 @@ const AdminManagement = () => {
         </Space>
       ),
     },
-    // {
-    //   title: "Last Login",
-    //   key: "lastLogin",
-    //   render: (_, record) => (
-    //     <Text style={{ fontSize: "13px" }}>
-    //       <CalendarOutlined style={{ marginRight: 4 }} />
-    //       {record.lastLogin === "Never"
-    //         ? "Never"
-    //         : new Date(record.lastLogin).toLocaleDateString("en-IN")
-    //       }
-    //     </Text>
-    //   ),
-    // },
     {
       title: "Actions",
       key: "actions",
@@ -296,20 +325,43 @@ const AdminManagement = () => {
             onClick={() => openEditModal(record)}
             title="Edit Admin"
           />
-          <Popconfirm
-            title="Delete Admin"
-            description="Are you sure you want to delete this admin?"
-            onConfirm={() => handleDeleteAdmin(record.id)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" icon={<StopOutlined />} title="Delete Admin" />
-          </Popconfirm>
+          {record.status === "active" ? (
+            <Button
+              type="text"
+              icon={<StopOutlined />}
+              onClick={() => showStatusChangeModal(record)}
+              title="Disable Admin"
+              danger
+            />
+          ) : (
+            <Button
+              type="text"
+              icon={<CheckOutlined /> }
+              onClick={() => showStatusChangeModal(record)}
+              title="Enable Admin"
+              style={{ color: "#52c41a" }}
+            />
+          )}
         </Space>
       ),
     },
   ];
+
+  // Get the action details for the modal
+  const getStatusChangeDetails = () => {
+    if (!adminToToggle) return { action: "", color: "", icon: null };
+
+    const isActive = adminToToggle.status === "active";
+    return {
+      action: isActive ? "disable" : "enable",
+      color: isActive ? "#ff4d4f" : "#52c41a",
+      icon: isActive ? <UserDeleteOutlined /> : <CheckOutlined />,
+      actionText: isActive ? "Disable" : "Enable",
+      actionPastTense: isActive ? "disabled" : "enabled",
+    };
+  };
+
+  const statusDetails = getStatusChangeDetails();
 
   return (
     <div>
@@ -405,7 +457,96 @@ const AdminManagement = () => {
         />
       </Card>
 
-      {/* Modals */}
+      {/* Status Change Confirmation Modal */}
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: statusDetails.color }} />
+            <span>{statusDetails.actionText} Administrator Account</span>
+          </Space>
+        }
+        open={statusChangeModalVisible}
+        onOk={handleToggleAdminStatus}
+        onCancel={handleCancelStatusChange}
+        confirmLoading={disableAdminLoading}
+        okText={`Yes, ${statusDetails.actionText} Account`}
+        cancelText="Cancel"
+        okButtonProps={{
+          danger: adminToToggle?.status === "active",
+          style:
+            adminToToggle?.status === "inactive"
+              ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
+              : {},
+          icon: statusDetails.icon,
+        }}
+        width={500}
+        centered
+      >
+        <div style={{ padding: "20px 0" }}>
+          <Text style={{ fontSize: "16px" }}>
+            Are you sure you want to {statusDetails.action}{" "}
+            <Text strong style={{ color: statusDetails.color }}>
+              {adminToToggle?.name}
+            </Text>
+            's administrator account?
+          </Text>
+
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor:
+                adminToToggle?.status === "active" ? "#fff2f0" : "#f6ffed",
+              borderRadius: "6px",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: "14px" }}>
+              <strong>This action will:</strong>
+              <br />
+              {adminToToggle?.status === "active" ? (
+                <>
+                  • Revoke the administrator's access to the system
+                  <br />
+                  • Change their account status to "Inactive"
+                  <br />
+                  • Prevent them from logging into their account
+                  <br />• Maintain their data for potential future reactivation
+                </>
+              ) : (
+                <>
+                  • Restore the administrator's access to the system
+                  <br />
+                  • Change their account status to "Active"
+                  <br />
+                  • Allow them to log into their account
+                  <br />• Reactivate all their permissions and access rights
+                </>
+              )}
+            </Text>
+          </div>
+
+          {adminToToggle && (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px",
+                backgroundColor: "#f6f6f6",
+                borderRadius: "6px",
+              }}
+            >
+              <Text strong>Admin Details:</Text>
+              <br />
+              <Text>Email: {adminToToggle.email}</Text>
+              <br />
+              <Text>Role: {adminToToggle.role}</Text>
+              <br />
+              <Text>Current Status: {adminToToggle.status}</Text>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Other Modals */}
       <AdminFormModal
         open={isAddModalOpen}
         onCancel={() => setIsAddModalOpen(false)}
@@ -424,7 +565,7 @@ const AdminManagement = () => {
         }}
         onSubmit={handleEditAdmin}
         branches={branches}
-        loading={false}
+        loading={updateAdminLoading}
         mode="edit"
         title="Edit Administrator"
         initialValues={selectedAdmin}
@@ -434,7 +575,7 @@ const AdminManagement = () => {
         open={isViewModalOpen}
         onCancel={() => {
           setIsViewModalOpen(false);
-          setViewingAdminId(null); // Reset ID on close
+          setViewingAdminId(null);
         }}
         admin={singleAdminData?.admin}
         loading={singleAdminLoading}

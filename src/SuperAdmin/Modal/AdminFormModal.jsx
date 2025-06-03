@@ -1,4 +1,3 @@
-// AdminFormModal.jsx
 import React, { useEffect } from "react";
 import {
   Modal,
@@ -56,19 +55,42 @@ const AdminFormModal = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const payload = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        fullName: `${values.firstName} ${values.lastName}`,
-        role: "admin",
-        email: values.email,
-        branchId: values.branchId,
-        phone: values.phone,
-        cPassword: values.password,
-      };
+
+      let payload;
+
+      if (mode === "edit") {
+        // For edit mode, don't include password fields if they're empty
+        payload = {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          fullName: `${values.firstName} ${values.lastName}`,
+          email: values.email,
+          branchId: values.branchId,
+          phone: values.phone,
+        };
+
+        // Only include password if it's provided
+        if (values.password && values.password.trim() !== "") {
+          payload.cPassword = values.password;
+        }
+
+        // Include admin ID for edit
+        payload.adminId = initialValues.id;
+      } else {
+        // For add mode, include all fields including required password
+        payload = {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          fullName: `${values.firstName} ${values.lastName}`,
+          role: "admin",
+          email: values.email,
+          branchId: values.branchId,
+          phone: values.phone,
+          cPassword: values.password,
+        };
+      }
 
       await onSubmit(payload);
-
       form.resetFields();
     } catch (error) {
       console.error("Validation failed:", error);
@@ -82,7 +104,14 @@ const AdminFormModal = ({
 
   const validateConfirmPassword = ({ getFieldValue }) => ({
     validator(_, value) {
-      if (!value || getFieldValue("password") === value) {
+      const password = getFieldValue("password");
+
+      // If in edit mode and no password is entered, skip validation
+      if (mode === "edit" && !password && !value) {
+        return Promise.resolve();
+      }
+
+      if (!value || password === value) {
         return Promise.resolve();
       }
       return Promise.reject(new Error("Passwords do not match!"));
@@ -256,6 +285,17 @@ const AdminFormModal = ({
             <Space>
               <LockOutlined />
               <span>Security</span>
+              {mode === "edit" && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    fontWeight: "normal",
+                  }}
+                >
+                  (Leave blank to keep current password)
+                </span>
+              )}
             </Space>
           }
         >
@@ -265,8 +305,14 @@ const AdminFormModal = ({
                 label="Password"
                 name="password"
                 rules={[
-                  { required: true, message: "Please enter password" },
-                  { min: 6, message: "Password must be at least 6 characters" },
+                  {
+                    required: mode === "add",
+                    message: "Please enter password",
+                  },
+                  {
+                    min: 6,
+                    message: "Password must be at least 6 characters",
+                  },
                   {
                     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
                     message:
@@ -276,7 +322,11 @@ const AdminFormModal = ({
                 hasFeedback
               >
                 <Input.Password
-                  placeholder="Enter password"
+                  placeholder={
+                    mode === "edit"
+                      ? "Enter new password (optional)"
+                      : "Enter password"
+                  }
                   prefix={<LockOutlined />}
                   size="large"
                 />
@@ -288,13 +338,20 @@ const AdminFormModal = ({
                 name="confirmPassword"
                 dependencies={["password"]}
                 rules={[
-                  { required: true, message: "Please confirm password" },
+                  {
+                    required: mode === "add",
+                    message: "Please confirm password",
+                  },
                   validateConfirmPassword,
                 ]}
                 hasFeedback
               >
                 <Input.Password
-                  placeholder="Confirm password"
+                  placeholder={
+                    mode === "edit"
+                      ? "Confirm new password"
+                      : "Confirm password"
+                  }
                   prefix={<LockOutlined />}
                   size="large"
                 />

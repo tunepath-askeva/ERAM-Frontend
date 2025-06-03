@@ -17,9 +17,11 @@ const superAdminSlice = createSlice({
     SuperAdminlogout: (state) => {
       state.superAdminInfo = null;
       localStorage.removeItem("superAdminInfo");
+      localStorage.removeItem("token");
     },
   },
 });
 
-export const { setSuperAdminCredentials, SuperAdminlogout } = superAdminSlice.actions;
+export const { setSuperAdminCredentials, SuperAdminlogout } =
+  superAdminSlice.actions;
 export default superAdminSlice.reducer;

@@ -35,7 +35,10 @@ import {
   GlobalOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useGetBranchesQuery } from "../../Slices/SuperAdmin/SuperADminAPis";
+import {
+  useGetBranchesQuery,
+  useDeleteBranchMutation,
+} from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
@@ -58,7 +61,8 @@ const BranchManagement = () => {
     refetch,
   } = useGetBranchesQuery();
 
-  // Transform API data to match component structure
+  const [deleteBranch, { isLoading: isDeleting }] = useDeleteBranchMutation();
+
   const transformedBranches =
     apiData?.branch?.map((branch) => ({
       id: branch._id,
@@ -105,19 +109,17 @@ const BranchManagement = () => {
 
     setDeleteLoading(true);
     try {
-      // Here you would implement your delete API call
-      // await deleteBranchApi(branchToDelete.id);
-
-      // For now, just show success message and refetch data
+      await deleteBranch(branchToDelete.id).unwrap();
       message.success("Branch deleted successfully!");
-      refetch(); // Refetch the data after deletion
+      refetch(); // Refresh the branch list
       setDeleteModalOpen(false);
       setBranchToDelete(null);
     } catch (error) {
       message.error("Failed to delete branch");
       console.error("Delete error:", error);
+    } finally {
+      setDeleteLoading(false);
     }
-    setDeleteLoading(false);
   };
 
   const handleDeleteCancel = () => {
@@ -135,9 +137,7 @@ const BranchManagement = () => {
 
   // Handle loading state
   if (isLoading) {
-    return (
-      <SkeletonLoader />
-    );
+    return <SkeletonLoader />;
   }
 
   // Handle error state

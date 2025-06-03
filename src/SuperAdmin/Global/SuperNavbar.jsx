@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
+
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
   UserOutlined,
@@ -7,7 +10,7 @@ import {
   MenuOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
-  BellOutlined
+  BellOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 
@@ -18,14 +21,14 @@ const BREAKPOINTS = {
   mobile: 768,
   tablet: 1024,
   desktop: 1200,
-  largeDesktop: 1600
+  largeDesktop: 1600,
 };
 
 const AppBar = styled(Header)`
   background: #ffffff !important;
-  padding: 0 ${props => props.padding}px;
-  height: ${props => props.height}px;
-  line-height: ${props => props.height}px;
+  padding: 0 ${(props) => props.padding}px;
+  height: ${(props) => props.height}px;
+  line-height: ${(props) => props.height}px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
@@ -34,19 +37,19 @@ const AppBar = styled(Header)`
   align-items: center;
   border-bottom: 1px solid #e8e8e8;
   transition: all 0.3s ease;
-  
+
   @media (max-width: ${BREAKPOINTS.mobile}px) {
     padding: 0 12px;
     height: 56px;
     line-height: 56px;
   }
-  
+
   @media (min-width: ${BREAKPOINTS.mobile}px) and (max-width: ${BREAKPOINTS.tablet}px) {
     padding: 0 16px;
     height: 60px;
     line-height: 60px;
   }
-  
+
   @media (min-width: ${BREAKPOINTS.largeDesktop}px) {
     padding: 0 32px;
     height: 68px;
@@ -61,12 +64,12 @@ const NavButton = styled(Button)`
   border: none;
   background: transparent;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #f7fafc !important;
     border-color: transparent !important;
   }
-  
+
   &:focus {
     background-color: #f7fafc !important;
     border-color: transparent !important;
@@ -77,12 +80,17 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
     isMobile: window.innerWidth < BREAKPOINTS.mobile,
-    isTablet: window.innerWidth >= BREAKPOINTS.mobile && window.innerWidth < BREAKPOINTS.tablet,
-    isDesktop: window.innerWidth >= BREAKPOINTS.tablet && window.innerWidth < BREAKPOINTS.largeDesktop,
-    isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop
+    isTablet:
+      window.innerWidth >= BREAKPOINTS.mobile &&
+      window.innerWidth < BREAKPOINTS.tablet,
+    isDesktop:
+      window.innerWidth >= BREAKPOINTS.tablet &&
+      window.innerWidth < BREAKPOINTS.largeDesktop,
+    isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
   });
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const handleResize = () => {
@@ -91,11 +99,12 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         width,
         isMobile: width < BREAKPOINTS.mobile,
         isTablet: width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet,
-        isDesktop: width >= BREAKPOINTS.tablet && width < BREAKPOINTS.largeDesktop,
-        isLargeDesktop: width >= BREAKPOINTS.largeDesktop
+        isDesktop:
+          width >= BREAKPOINTS.tablet && width < BREAKPOINTS.largeDesktop,
+        isLargeDesktop: width >= BREAKPOINTS.largeDesktop,
       });
     };
-    
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -134,15 +143,15 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   };
 
   const getToggleIcon = () => {
-    const iconStyle = { 
-      fontSize: getIconSize(), 
-      color: "#2a4365" 
+    const iconStyle = {
+      fontSize: getIconSize(),
+      color: "#2a4365",
     };
-    
+
     if (screenSize.isMobile) {
       return <MenuOutlined style={iconStyle} />;
     }
-    
+
     return collapsed ? (
       <DoubleRightOutlined style={iconStyle} />
     ) : (
@@ -159,8 +168,8 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   };
 
   const handleLogout = () => {
-    // Add logout logic here
-    console.log("Logging out...");
+    dispatch(SuperAdminlogout());
+    navigate("/superadmin/login");
   };
 
   const userMenuItems = [
@@ -168,76 +177,79 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       key: "profile",
       icon: <UserOutlined style={{ color: "#2a4365" }} />,
       label: "Profile",
-      onClick: () => navigate("/superadmin/profile")
+      onClick: () => navigate("/superadmin/settings"),
     },
     {
-      type: "divider"
+      type: "divider",
     },
     {
       key: "logout",
-      icon: <LogoutOutlined style={{ color: "#2a4365" }} />,
-      label: "Log Out",
-      onClick: handleLogout
-    }
+      icon: <LogoutOutlined style={{ color: "#ff4d4f" }} />,
+      label: <span style={{ color: "#ff4d4f"}}>Logout</span>,
+      onClick: handleLogout,
+    },
   ];
 
   return (
-    <AppBar 
-      height={getNavbarHeight()} 
-      padding={getPadding()}
-    >
-      {/* Left side - Toggle button */}
+    <AppBar height={getNavbarHeight()} padding={getPadding()}>
       <NavButton
         type="text"
         icon={getToggleIcon()}
         onClick={toggleSidebar}
-        style={{ 
+        style={{
           marginRight: screenSize.isMobile ? "8px" : "16px",
           width: getButtonSize(),
           height: getButtonSize(),
         }}
       />
-      
+
       {/* Center - Title (optional, hidden on mobile) */}
       {!screenSize.isMobile && (
-        <div style={{ 
-          fontSize: screenSize.isTablet ? "16px" : "18px",
-          fontWeight: 600,
-          color: "#2a4365",
-          marginRight: "auto"
-        }}>
+        <div
+          style={{
+            fontSize: screenSize.isTablet ? "16px" : "18px",
+            fontWeight: 600,
+            color: "#2a4365",
+            marginRight: "auto",
+          }}
+        >
           {/* You can add a dynamic title here based on current route */}
         </div>
       )}
-      
+
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-      
+
       {/* Right side - Actions */}
-      <div style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        gap: screenSize.isMobile ? "8px" : "12px" 
-      }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: screenSize.isMobile ? "8px" : "12px",
+        }}
+      >
         {/* Notifications */}
         <Badge count={5} size="small">
           <NavButton
             type="text"
-            icon={<BellOutlined style={{ 
-              color: "#2a4365", 
-              fontSize: getIconSize() 
-            }} />}
-            style={{ 
-              width: getButtonSize(), 
-              height: getButtonSize() 
+            icon={
+              <BellOutlined
+                style={{
+                  color: "#2a4365",
+                  fontSize: getIconSize(),
+                }}
+              />
+            }
+            style={{
+              width: getButtonSize(),
+              height: getButtonSize(),
             }}
           />
         </Badge>
-        
-        {/* User Avatar with Dropdown */}
+
         <Dropdown
           menu={{
-            items: userMenuItems
+            items: userMenuItems,
           }}
           placement="bottomRight"
           trigger={["click"]}

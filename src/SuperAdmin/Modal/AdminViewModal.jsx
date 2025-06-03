@@ -59,18 +59,20 @@ const AdminViewModal = ({ open, onCancel, admin, loading }) => {
     return "blue";
   };
 
-  // Extract status from accountStatus or status
-  const adminStatus = admin.accountStatus || admin.status || "inactive";
+    const getRegionColor = (region) => {
+    return "blue";
+  };
   
-  // Format role name
   const formattedRole = admin.role ? 
     admin.role.charAt(0).toUpperCase() + admin.role.slice(1) : 
     "Admin";
 
-  // Format full name
   const adminName = admin.fullName || 
     `${admin.firstName || ""} ${admin.lastName || ""}`.trim() || 
     "Unknown Admin";
+
+    const adminPlace = admin.branch.location
+    const adminRegion = adminPlace.state
 
   return (
     <Modal
@@ -113,19 +115,18 @@ const AdminViewModal = ({ open, onCancel, admin, loading }) => {
                 {formattedRole}
               </Tag>
               <Tag
-                color={getStatusColor(adminStatus)}
+  color={getStatusColor(admin.accountStatus)}
+  style={{ fontSize: "13px", padding: "4px 12px" }}
+>
+  {admin.accountStatus?.toUpperCase() || "UNKNOWN"}
+</Tag>
+              <Tag
+                color={getRegionColor(adminRegion)}
                 style={{ fontSize: "13px", padding: "4px 12px" }}
               >
-                {adminStatus.toUpperCase()}
+                {adminRegion.toUpperCase()}
               </Tag>
-              {admin.isActive !== undefined && (
-                <Tag
-                  color={admin.isActive ? "green" : "red"}
-                  style={{ fontSize: "13px", padding: "4px 12px" }}
-                >
-                  {admin.isActive ? "ACTIVE" : "INACTIVE"}
-                </Tag>
-              )}
+              
             </Space>
           </div>
         </Space>
@@ -217,50 +218,6 @@ const AdminViewModal = ({ open, onCancel, admin, loading }) => {
         </Col>
       </Row>
 
-      {/* Skills and Qualifications */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={12}>
-          <Card
-            title="Skills"
-            size="small"
-          >
-            {admin.skills && admin.skills.length > 0 ? (
-              <Space wrap>
-                {admin.skills.map((skill, index) => (
-                  <Tag key={index} color="cyan">
-                    {skill}
-                  </Tag>
-                ))}
-              </Space>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No skills listed"
-              />
-            )}
-          </Card>
-        </Col>
-        
-        <Col span={12}>
-          <Card
-            title="Qualifications"
-            size="small"
-          >
-            {admin.qualifications && admin.qualifications.length > 0 ? (
-              <Space direction="vertical" style={{ width: "100%" }}>
-                {admin.qualifications.map((qualification, index) => (
-                  <Text key={index}>{qualification}</Text>
-                ))}
-              </Space>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No qualifications listed"
-              />
-            )}
-          </Card>
-        </Col>
-      </Row>
 
       {/* Branch Assignment */}
       <Card
@@ -275,11 +232,12 @@ const AdminViewModal = ({ open, onCancel, admin, loading }) => {
         {admin.branch ? (
           <Space direction="vertical" style={{ width: "100%" }}>
             <Text strong style={{ fontSize: "14px" }}>
-              Branch ID: {admin.branch}
+              Branch ID: {admin.branch?.branchCode}
             </Text>
-            <Text type="secondary" style={{ fontSize: "12px" }}>
-              Branch details will be loaded when branch information is available
+            <Text strong style={{ fontSize: "14px" }}>
+              Branch Name: {admin.branch?.name}
             </Text>
+            
           </Space>
         ) : (
           <Empty

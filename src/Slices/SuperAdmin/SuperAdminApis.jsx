@@ -7,8 +7,30 @@ export const superAdminApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
+    loginSuperAdmin: builder.mutation({
+      query: (credentials) => ({
+        url: "/Login",
+        method: "POST",
+        body: credentials,
+      }),
+    }),
+
+    verifyAdminLoginOtp: builder.mutation({
+      query: (otpData) => ({
+        url: "/adminLoginverify",
+        method: "POST",
+        body: otpData,
+      }),
+    }),
     createBranch: builder.mutation({
       query: (branchData) => ({
         url: "/branch",
@@ -16,6 +38,22 @@ export const superAdminApi = createApi({
         body: branchData,
       }),
       invalidatesTags: ["Branch"],
+    }),
+    updateBranch: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/branch/${id}`,
+        method: "PUT",
+        body: formData,
+      }),
+    }),
+    deleteBranch: builder.mutation({
+      query: (branchId) => ({
+        url: `/branch/${branchId}`,
+        method: "DELETE",
+      }),
+    }),
+    getBranchById: builder.query({
+      query: (branchId) => `/branch/${branchId}`,
     }),
     getBranches: builder.query({
       query: () => "/branch",
@@ -36,13 +74,60 @@ export const superAdminApi = createApi({
     getSingleAdmin: builder.query({
       query: (adminId) => `/adminId/${adminId}`,
     }),
+    UpdateAdmin: builder.mutation({
+      query: ({ adminId, ...adminData }) => ({
+        url: `/admin/${adminId}`,
+        method: "PUT",
+        body: adminData,
+      }),
+      invalidatesTags: ["Admin"],
+    }),
+    disableAdmin: builder.mutation({
+      query: ({ adminId }) => ({
+        url: "/admin",
+        method: "PATCH",
+        body: { adminId },
+      }),
+    }),
+    requestUpdateProfile: builder.mutation({
+      query: (profileData) => ({
+        url: "/editProfile",
+        method: "POST",
+        body: profileData,
+      }),
+    }),
+
+    verifyUpdateProfile: builder.mutation({
+      query: (otpData) => ({
+        url: "/verifyEditProfile",
+        method: "POST",
+        body: otpData,
+      }),
+      invalidatesTags: ["SuperAdmin"],
+    }),
   }),
 });
 
 export const {
+  //branch
   useCreateBranchMutation,
+  useUpdateBranchMutation,
   useGetBranchesQuery,
+  useDeleteBranchMutation,
+  useGetBranchByIdQuery,
+
+  //admins
   useCreateAdminMutation,
   useGetAdminsQuery,
-  useGetSingleAdminQuery
+  useGetSingleAdminQuery,
+  useUpdateAdminMutation,
+  useDisableAdminMutation,
+
+  //login
+  useLoginSuperAdminMutation,
+  useVerifyAdminLoginOtpMutation,
+
+  //super admin profile
+  useRequestUpdateProfileMutation,
+  useVerifyUpdateProfileMutation,
 } = superAdminApi;

@@ -12,6 +12,9 @@ import AddBranch from "./SuperAdmin/Components/AddBranch";
 import ViewBranch from "./SuperAdmin/Components/ViewBranch";
 import EditBranch from "./SuperAdmin/Components/EditBranch";
 import AdminManagement from "./SuperAdmin/Pages/AdminManagement";
+import SuperAdminLogin from "./SuperAdmin/Auth/SuperAdminLogin";
+import ProtectedSuperAdmin from "./SuperAdmin/Auth/ProtectedSuperAdmin";
+import SuperAdminSettings from "./SuperAdmin/Pages/SuperAdminSetting";
 
 const AppRoutes = () => {
   return (
@@ -23,13 +26,36 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
 
+      <Route path="/superadmin/login" element={<SuperAdminLogin />} />
       <Route element={<SuperMainLayout />}>
-        <Route path="/superadmin" element={<SuperDashboard />} />
-        <Route path="/superadmin/branches" element={<BranchManagement />} />
-        <Route path="/superadmin/add" element={<AddBranch />} />
-        <Route path="/superadmin/view/:id" element={<ViewBranch />} />
-        <Route path="/superadmin/edit/:id" element={<EditBranch />} />
-        <Route path="/superadmin/admins" element={<AdminManagement />} />
+        <Route
+          path="/superadmin"
+          element={<ProtectedSuperAdmin element={<SuperDashboard />} />}
+        />
+        <Route
+          path="/superadmin/branches"
+          element={<ProtectedSuperAdmin element={<BranchManagement />} />}
+        />
+        <Route
+          path="/superadmin/add"
+          element={<ProtectedSuperAdmin element={<AddBranch />} />}
+        />
+        <Route
+          path="/superadmin/view/:id"
+          element={<ProtectedSuperAdmin element={<ViewBranch />} />}
+        />
+        <Route
+          path="/superadmin/edit/:id"
+          element={<ProtectedSuperAdmin element={<EditBranch />} />}
+        />
+        <Route
+          path="/superadmin/admins"
+          element={<ProtectedSuperAdmin element={<AdminManagement />} />}
+        />
+         <Route
+          path="/superadmin/settings"
+          element={<ProtectedSuperAdmin element={<SuperAdminSettings />} />}
+        />
       </Route>
     </Routes>
   );
