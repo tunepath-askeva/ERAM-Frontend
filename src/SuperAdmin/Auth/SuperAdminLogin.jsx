@@ -35,7 +35,7 @@ const SuperAdminLogin = () => {
       } else {
         message.success("Login successful!");
 
-        localStorage.setItem("token", response.token);
+        localStorage.setItem("SuperAdmintoken", response.token);
 
         const superAdminInfo = {
           email: response.user.email,
@@ -69,7 +69,7 @@ const SuperAdminLogin = () => {
   const handleOtpVerificationSuccess = (response) => {
     message.success("Super Admin login successful!");
 
-    localStorage.setItem("token", response.token);
+    localStorage.setItem("SuperAdmintoken", response.token);
 
     const superAdminInfo = {
       email: response.user.email,

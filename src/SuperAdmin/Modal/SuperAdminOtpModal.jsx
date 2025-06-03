@@ -117,7 +117,7 @@ const SuperAdminOtpModal = ({
         message.success("Login OTP verified successfully!");
       } else if (mode === "updateProfile") {
         response = await verifyUpdateOtp(otpData).unwrap();
-        localStorage.setItem("token", response.token);
+        localStorage.setItem("SuperAdmintoken", response.token);
         message.success("Profile update OTP verified successfully!");
       } else {
         throw new Error("Invalid OTP verification mode");

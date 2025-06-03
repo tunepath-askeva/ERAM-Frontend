@@ -1,25 +1,68 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {
-  userInfo: localStorage.getItem("userInfo")
-    ? JSON.parse(localStorage.getItem("userInfo"))
-    : null,
+const getRoleBasedKey = (role) => {
+  return `${role}Info`;
 };
+
+const getRoleBasedTokenKey = (role) => {
+  return `${role}token`;
+};
+
+const initializeUserState = () => {
+  const roles = ['admin', 'candidate', 'employee', 'recruiter'];
+  const state = {};
+  
+  roles.forEach(role => {
+    const key = getRoleBasedKey(role);
+    const storedInfo = localStorage.getItem(key);
+    state[key] = storedInfo ? JSON.parse(storedInfo) : null;
+  });
+  
+  return state;
+};
+
+const initialState = initializeUserState();
 
 const userSlice = createSlice({
   name: "userAuth",
   initialState,
   reducers: {
     setUserCredentials: (state, action) => {
-      state.userInfo = action.payload;
-      localStorage.setItem("userInfo", JSON.stringify(action.payload));
+      const { userInfo, role } = action.payload;
+      const roleKey = getRoleBasedKey(role);
+      const tokenKey = getRoleBasedTokenKey(role);
+      
+      state[roleKey] = userInfo;
+      
+      localStorage.setItem(roleKey, JSON.stringify(userInfo));
+      localStorage.setItem(tokenKey, userInfo.token);
     },
-    Userlogout: (state) => {
-      state.userInfo = null;
-      localStorage.removeItem("userInfo");
+    
+    userLogout: (state, action) => {
+      const { role } = action.payload;
+      const roleKey = getRoleBasedKey(role);
+      const tokenKey = getRoleBasedTokenKey(role);
+      
+      state[roleKey] = null;
+      
+      localStorage.removeItem(roleKey);
+      localStorage.removeItem(tokenKey);
     },
+    
+    clearAllUserData: (state) => {
+      const roles = ['admin', 'candidate', 'employee', 'recruiter'];
+      
+      roles.forEach(role => {
+        const roleKey = getRoleBasedKey(role);
+        const tokenKey = getRoleBasedTokenKey(role);
+        
+        state[roleKey] = null;
+        localStorage.removeItem(roleKey);
+        localStorage.removeItem(tokenKey);
+      });
+    }
   },
 });
 
-export const { setUserCredentials, Userlogout } = userSlice.actions;
+export const { setUserCredentials, userLogout, clearAllUserData } = userSlice.actions;
 export default userSlice.reducer;

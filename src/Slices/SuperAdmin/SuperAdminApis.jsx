@@ -8,7 +8,7 @@ export const superAdminApi = createApi({
     baseUrl,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("SuperAdmintoken");
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }

@@ -23,18 +23,39 @@ const Login = () => {
 
       message.success("Login successful!");
 
-      localStorage.setItem("token", response.token);
+
+      const userRole = response.user.roles
 
       const userInfo = {
         email: response.user.email,
         token: response.token,
         name: response.user.name,
         roles: response.user.roles,
+       
       };
 
-      dispatch(setUserCredentials(userInfo));
+      dispatch(setUserCredentials({
+        userInfo: userInfo,
+        role: userRole
+      }));
 
-      navigate("/dashboard");
+      switch (userRole) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "candidate":
+          navigate("/dashboard");
+          break;
+        case "employee":
+          navigate("/employee/dashboard");
+          break;
+        case "recruiter":
+          navigate("/recruiter/dashboard");
+          break;
+        default:
+          message.warning("No dashboard defined for your role.");
+          navigate("/"); 
+      }
     } catch (error) {
       console.error("Login error:", error);
       message.error(error?.data?.message || "Login failed. Please try again.");
