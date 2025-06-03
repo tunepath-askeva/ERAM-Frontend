@@ -1,6 +1,6 @@
-import { Routes, Route, useLocation } from "react-router-dom";
-import Register from "./Auth/Register";
-import Login from "./Auth/Login";
+import { Routes, Route } from "react-router-dom";
+import Register from "./Pages/Register";
+import Login from "./Pages/Login";
 import Home from "./Pages/Home";
 import About from "./Pages/About";
 import Services from "./Pages/Services";
