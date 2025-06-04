@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useSnackbar } from "notistack"; // Add this import
 import { useLoginSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { setSuperAdminCredentials } from "../../Slices/SuperAdmin/SuperAdminSlice";
 import SuperAdminOtpModal from "../Modal/SuperAdminOtpModal";
@@ -16,6 +17,7 @@ const SuperAdminLogin = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
   const [loginSuperAdmin, { isLoading }] = useLoginSuperAdminMutation();
 
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -23,17 +25,56 @@ const SuperAdminLogin = () => {
 
   const onFinish = async (values) => {
     try {
+      // Validate required fields
+      if (!values.email || !values.password) {
+        enqueueSnackbar("Please enter all required fields.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(values.email)) {
+        enqueueSnackbar("Please enter a valid email address.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      // Validate password length
+      if (values.password.length < 6) {
+        enqueueSnackbar("Password must be at least 6 characters long.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
       const response = await loginSuperAdmin({
         email: values.email,
         password: values.password,
       }).unwrap();
 
       if (response.requireOtp) {
-        message.success("OTP sent to your email!");
+        enqueueSnackbar("OTP sent to superadmin. Please verify OTP to complete login.", {
+          variant: "success",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
         setUserEmail(response.email);
         setShowOtpModal(true);
       } else {
-        message.success("Login successful!");
+        enqueueSnackbar("Admin OTP verification successful!, Login successful!", {
+          variant: "success",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
 
         const superAdminInfo = {
           email: response.user.email,
@@ -46,17 +87,40 @@ const SuperAdminLogin = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      message.error(error?.message || "Login failed. Please try again.");
+      enqueueSnackbar(error?.data?.message || error?.message || "Login failed. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
-    message.error("Please check your input fields");
+
+    // Get the first error message
+    const firstError = errorInfo.errorFields[0];
+    if (firstError && firstError.errors.length > 0) {
+      enqueueSnackbar(firstError.errors[0], {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+    } else {
+      enqueueSnackbar("Please check your input fields.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+    }
   };
 
   const handleGoogleSignIn = () => {
-    message.info("Google Sign-In functionality to be implemented");
+    enqueueSnackbar("Google Sign-In functionality to be implemented.", {
+      variant: "info",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
   };
 
   const handleForgotPassword = () => {
@@ -64,7 +128,11 @@ const SuperAdminLogin = () => {
   };
 
   const handleOtpVerificationSuccess = (response) => {
-    message.success("Super Admin login successful!");
+    enqueueSnackbar("OTP verified successfully! Super Admin login successful!", {
+      variant: "success",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
 
     // Don't store token in localStorage - it's now in cookies
     // Only store user information
@@ -78,6 +146,15 @@ const SuperAdminLogin = () => {
 
     setShowOtpModal(false);
     navigate("/superadmin");
+  };
+
+  const handleOtpVerificationError = (error) => {
+    console.log(error, "error otp")
+    enqueueSnackbar(error?.data?.message || error?.message || "Invalid OTP. Please try again.", {
+      variant: "danger",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
   };
 
   const handleOtpModalCancel = () => {
@@ -172,16 +249,6 @@ const SuperAdminLogin = () => {
                 </span>
               }
               name="email"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your email!",
-                },
-                {
-                  type: "email",
-                  message: "Please enter a valid email address!",
-                },
-              ]}
             >
               <Input
                 prefix={<UserOutlined style={{ color: "#bdc3c7" }} />}
@@ -209,16 +276,6 @@ const SuperAdminLogin = () => {
                 </span>
               }
               name="password"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your password!",
-                },
-                {
-                  min: 6,
-                  message: "Password must be at least 6 characters!",
-                },
-              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#bdc3c7" }} />}
@@ -286,6 +343,7 @@ const SuperAdminLogin = () => {
         onCancel={handleOtpModalCancel}
         email={userEmail}
         onVerifySuccess={handleOtpVerificationSuccess}
+        onVerifyError={handleOtpVerificationError}
         mode="login"
       />
     </>
