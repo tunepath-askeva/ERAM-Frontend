@@ -53,15 +53,28 @@ export const adminApi = createApi({
         method: "DELETE",
       }),
     }),
+
+    createWorkOrder: builder.mutation({
+      query: (workOrderData) => ({
+        url: "/WorkOrder",
+        method: "POST",
+        body: workOrderData,
+      }),
+    }),
   }),
 });
 
 export const {
+  //pipeline
   useAddPipelineMutation,
   useGetPipelinesQuery,
   useDeletePipelineMutation,
   useEditPipelineMutation,
   useGetPipelineByIdQuery,
+  //pipeline stages
   useEditStageMutation,
   useDeleteStageMutation,
+
+  //Workorder
+  useCreateWorkOrderMutation,
 } = adminApi;

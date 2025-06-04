@@ -110,13 +110,6 @@ const WorkOrder = () => {
               className="work-order-title"
               style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
             >
-              <RocketOutlined
-                style={{
-                  marginRight: "8px",
-                  color: "#1890ff",
-                  fontSize: "20px",
-                }}
-              />
               Work Order Management
             </Title>
           </div>
