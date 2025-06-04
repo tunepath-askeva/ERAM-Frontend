@@ -24,6 +24,9 @@ export const adminApi = createApi({
       query: () => "/Pipeline",
       providesTags: ["Pipeline"],
     }),
+    getPipelineById: builder.query({
+      query: (pipelineId) => `/Pipeline/${pipelineId}`,
+    }),
     deletePipeline: builder.mutation({
       query: (pipelineId) => ({
         url: `/deletePipeline/${pipelineId}`,
@@ -37,6 +40,19 @@ export const adminApi = createApi({
         body: pipelineData,
       }),
     }),
+    editStage: builder.mutation({
+      query: ({ stageId, stageData }) => ({
+        url: `/stagesEdit/${stageId}`,
+        method: "PUT",
+        body: stageData,
+      }),
+    }),
+    deleteStage: builder.mutation({
+      query: (stageId) => ({
+        url: `/deleteStage/${stageId}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -45,4 +61,7 @@ export const {
   useGetPipelinesQuery,
   useDeletePipelineMutation,
   useEditPipelineMutation,
+  useGetPipelineByIdQuery,
+  useEditStageMutation,
+  useDeleteStageMutation,
 } = adminApi;

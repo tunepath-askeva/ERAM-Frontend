@@ -88,11 +88,11 @@ const AppRoutes = () => {
           element={<ProtectedAdmin element={<AddWorkOrder />} />}
         />
         <Route
-          path="/admin/view-workorder"
+          path="/admin/view-workorder/:id"
           element={<ProtectedAdmin element={<ViewWorkOrder />} />}
         />
         <Route
-          path="/admin/edit-workorder"
+          path="/admin/edit-workorder/:id"
           element={<ProtectedAdmin element={<EditWorkOrder />} />}
         />
         <Route
