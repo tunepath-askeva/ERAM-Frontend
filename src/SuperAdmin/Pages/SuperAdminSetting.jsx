@@ -138,7 +138,7 @@ const SuperAdminSettings = () => {
           size={80}
           icon={<SettingOutlined />}
           style={{
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
             marginBottom: "16px",
           }}
         />
@@ -362,7 +362,8 @@ const SuperAdminSettings = () => {
                   onClick={handleEdit}
                   style={{
                     background:
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+
                     border: "none",
                     borderRadius: "8px",
                     height: "40px",

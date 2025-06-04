@@ -35,8 +35,6 @@ const SuperAdminLogin = () => {
       } else {
         message.success("Login successful!");
 
-        // Don't store token in localStorage - it's now in cookies
-        // Only store user information
         const superAdminInfo = {
           email: response.user.email,
           name: response.user.name,

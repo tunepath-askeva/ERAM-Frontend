@@ -20,7 +20,11 @@ export const adminApi = createApi({
         body: pipelineData,
       }),
     }),
+    getPipelines: builder.query({
+      query: () => "/pipeline",
+      providesTags: ["Pipeline"],
+    }),
   }),
 });
 
-export const { useAddPipelineMutation } = adminApi;
+export const { useAddPipelineMutation, useGetPipelinesQuery } = adminApi;

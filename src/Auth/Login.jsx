@@ -1,8 +1,9 @@
 import React from "react";
-import { Form, Input, Button, Card, message, Divider, Space } from "antd";
-import { UserOutlined, LockOutlined, GoogleOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Card, Divider } from "antd";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useSnackbar } from "notistack";
 import { useLoginUserMutation } from "../Slices/Users/UserApis";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import Header from "../Global/HEader";
@@ -12,6 +13,7 @@ const Login = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
 
   const onFinish = async (values) => {
@@ -23,7 +25,11 @@ const Login = () => {
 
       // Check if OTP is required (for super_admin)
       if (response.requireOtp) {
-        message.info("OTP sent to your email. Please verify to complete login.");
+        enqueueSnackbar("OTP sent to your email. Please verify to complete login.", {
+          variant: "info",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
         navigate("/verify-otp", { 
           state: { 
             email: response.email,
@@ -33,7 +39,11 @@ const Login = () => {
         return;
       }
 
-      message.success("Login successful!");
+      enqueueSnackbar("Login successful!", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
 
       const userRole = response.user.roles;
 
@@ -66,22 +76,38 @@ const Login = () => {
           navigate("/super-admin/dashboard");
           break;
         default:
-          message.warning("No dashboard defined for your role.");
+          enqueueSnackbar("No dashboard defined for your role.", {
+            variant: "warning",
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            autoHideDuration: 3000,
+          });
           navigate("/"); 
       }
     } catch (error) {
       console.error("Login error:", error);
-      message.error(error?.data?.message || "Login failed. Please try again.");
+      enqueueSnackbar(error?.data?.message || "Login failed. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
-    message.error("Please check your input fields");
+    enqueueSnackbar("Please check your input fields", {
+      variant: "error",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
   };
 
   const handleGoogleSignIn = () => {
-    message.info("Google Sign-In functionality to be implemented");
+    enqueueSnackbar("Google Sign-In functionality to be implemented", {
+      variant: "info",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
   };
 
   const handleForgotPassword = () => {
@@ -111,7 +137,6 @@ const Login = () => {
           }}
           bodyStyle={{ padding: "40px" }}
         >
-          {/* Company Logo Section */}
           <div
             style={{
               textAlign: "center",
@@ -161,7 +186,6 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Login Form */}
           <Form
             form={form}
             name="login"
@@ -244,7 +268,6 @@ const Login = () => {
               />
             </Form.Item>
 
-            {/* Forgot Password Link */}
             <div
               style={{
                 textAlign: "right",
@@ -321,7 +344,6 @@ const Login = () => {
             Continue with Google
           </Button>
 
-          {/* Sign Up Link */}
           <div
             style={{
               textAlign: "center",

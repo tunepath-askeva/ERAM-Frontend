@@ -1,45 +1,28 @@
 import React, { useState } from "react";
-import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Select,
-  Typography,
-  Space,
-  Divider,
-  Alert,
-  message,
-  Row,
-  Col,
-} from "antd";
+import { Card, Form, Input, Button, Select, Typography, Row, Col } from "antd";
 import {
   EyeInvisibleOutlined,
   EyeTwoTone,
-  ArrowLeftOutlined,
-  UserAddOutlined,
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
   LockOutlined,
-  GoogleOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
 import { useRegisterUserMutation } from "../Slices/Users/UserApis";
 import OtpModal from "../Modal/OtpModal";
 import Header from "../Global/HEader";
 import HomeFooter from "../Global/Footer";
 
-const { Title, Text } = Typography;
 const { Option } = Select;
 
 const Register = () => {
   const [form] = Form.useForm();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
@@ -72,13 +55,22 @@ const Register = () => {
       console.log("Registration successful:", response);
 
       setRegisteredEmail(values.email);
-      message.success("Registration successful! Please verify your email.");
+      enqueueSnackbar("Registration successful! Please verify your email.", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
 
       setShowOtpModal(true);
     } catch (error) {
       console.error("Registration failed:", error);
-      message.error(
-        error?.data?.message || "Registration failed. Please try again."
+      enqueueSnackbar(
+        error?.data?.message || "Registration failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
       );
     } finally {
       setLoading(false);
@@ -88,7 +80,11 @@ const Register = () => {
   const handleOtpVerifySuccess = (otpResponse) => {
     setShowOtpModal(false);
     setRegisteredEmail("");
-    message.success("Email verified successfully! Please login to continue.");
+    enqueueSnackbar("Email verified successfully! Please login to continue.", {
+      variant: "success",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
     navigate("/login");
   };
 
@@ -96,13 +92,22 @@ const Register = () => {
     setShowOtpModal(false);
     setRegisteredEmail("");
 
-    message.info(
-      "Email verification cancelled. Please register again if needed."
+    enqueueSnackbar(
+      "Email verification cancelled. Please register again if needed.",
+      {
+        variant: "info",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      }
     );
   };
 
   const handleGoogleSignUp = () => {
-    message.info("Google Sign-Up functionality to be implemented");
+    enqueueSnackbar("Google Sign-Up functionality to be implemented", {
+      variant: "info",
+      anchorOrigin: { vertical: "top", horizontal: "right" },
+      autoHideDuration: 3000,
+    });
   };
 
   return (
@@ -128,7 +133,6 @@ const Register = () => {
           }}
           bodyStyle={{ padding: "40px" }}
         >
-          {/* Header Section */}
           <div
             style={{
               textAlign: "center",
@@ -146,7 +150,6 @@ const Register = () => {
                 fontWeight: "bold",
               }}
             >
-              {/* Replace this with your company logo */}
               <img
                 src="/logo-2.png"
                 alt="Company Logo"
@@ -168,7 +171,6 @@ const Register = () => {
             </p>
           </div>
 
-          {/* Registration Form */}
           <Form
             form={form}
             name="register"
@@ -176,7 +178,6 @@ const Register = () => {
             layout="vertical"
             scrollToFirstError
           >
-            {/* Name Fields */}
             <Row gutter={12}>
               <Col span={12}>
                 <Form.Item
@@ -246,7 +247,6 @@ const Register = () => {
               </Col>
             </Row>
 
-            {/* Role Selection */}
             <Form.Item
               name="role"
               label={
@@ -278,7 +278,6 @@ const Register = () => {
               </Select>
             </Form.Item>
 
-            {/* Email Field */}
             <Form.Item
               name="email"
               label={
@@ -304,13 +303,11 @@ const Register = () => {
                 style={{
                   borderRadius: "12px",
                   border: "1px solid #e1e5e9",
-
                   fontSize: "16px",
                 }}
               />
             </Form.Item>
 
-            {/* Phone Field */}
             <Form.Item
               name="phone"
               label={
@@ -343,7 +340,6 @@ const Register = () => {
               />
             </Form.Item>
 
-            {/* Password Field */}
             <Form.Item
               name="password"
               label={
@@ -384,7 +380,6 @@ const Register = () => {
               />
             </Form.Item>
 
-            {/* Confirm Password Field */}
             <Form.Item
               name="cPassword"
               label={
@@ -432,7 +427,6 @@ const Register = () => {
               />
             </Form.Item>
 
-            {/* Submit Button */}
             <Form.Item style={{ marginTop: "24px", marginBottom: 0 }}>
               <Button
                 type="primary"
@@ -458,7 +452,6 @@ const Register = () => {
             </Form.Item>
           </Form>
 
-          {/* Sign In Link */}
           <div
             style={{
               textAlign: "center",
@@ -484,7 +477,6 @@ const Register = () => {
         </Card>
       </div>
 
-      {/* OTP Modal */}
       <OtpModal
         visible={showOtpModal}
         onCancel={handleOtpModalCancel}

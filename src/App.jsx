@@ -1,9 +1,20 @@
 import AppRoutes from "./routes";
+import { SnackbarProvider } from "notistack";
 
 function App() {
   return (
     <>
-      <AppRoutes />
+      <SnackbarProvider
+        maxSnack={3}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        autoHideDuration={3000}
+        preventDuplicate
+      >
+        <AppRoutes />
+      </SnackbarProvider>
     </>
   );
 }
