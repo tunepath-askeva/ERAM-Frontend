@@ -15,6 +15,7 @@ import {
   Tooltip,
   Avatar,
   Badge,
+  Popconfirm,
 } from "antd";
 import {
   PlusOutlined,
@@ -27,10 +28,13 @@ import {
   FolderOpenOutlined,
   SettingOutlined,
   SaveOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { 
   useAddPipelineMutation, 
-  useEditPipelineMutation 
+  useEditPipelineMutation,
+  useEditStageMutation,
+  useDeleteStageMutation
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -53,6 +57,8 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
   const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
   const [editPipeline, { isLoading: isUpdating }] = useEditPipelineMutation();
+  const [editStage, { isLoading: isEditingStageAPI }] = useEditStageMutation();
+  const [deleteStage, { isLoading: isDeletingStage }] = useDeleteStageMutation();
 
   const commonDocuments = [
     "Resume/CV",
@@ -135,7 +141,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     }
   };
 
-  const addStage = () => {
+  const addStage = async () => {
     if (!currentStage.name.trim()) {
       message.error("Stage name is required");
       return;
@@ -147,12 +153,41 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     };
 
     if (isEditingStage) {
-      const updatedStages = [...stages];
-      updatedStages[editingIndex] = newStage;
-      setStages(updatedStages);
+      // If in edit mode and editing an existing stage with ID, call API
+      if (isEditMode && stages[editingIndex]._id) {
+        try {
+          const stageData = {
+            name: newStage.name,
+            order: newStage.order,
+            description: newStage.description,
+            requiredDocuments: newStage.requiredDocuments,
+          };
+
+          await editStage({
+            stageId: stages[editingIndex]._id,
+            stageData
+          }).unwrap();
+
+          const updatedStages = [...stages];
+          updatedStages[editingIndex] = { ...stages[editingIndex], ...newStage };
+          setStages(updatedStages);
+          message.success("Stage updated successfully");
+        } catch (error) {
+          const errorMessage = error?.data?.message || error?.message || "Failed to update stage";
+          message.error(errorMessage);
+          console.error("Stage update error:", error);
+          return;
+        }
+      } else {
+        // Local update for new stages or create mode
+        const updatedStages = [...stages];
+        updatedStages[editingIndex] = newStage;
+        setStages(updatedStages);
+        message.success("Stage updated successfully");
+      }
+      
       setIsEditingStage(false);
       setEditingIndex(-1);
-      message.success("Stage updated successfully");
     } else {
       setStages([...stages, newStage]);
       message.success("Stage added successfully");
@@ -166,13 +201,29 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     });
   };
 
-  const editStage = (index) => {
+  const editStageHandler = (index) => {
     setCurrentStage(stages[index]);
     setIsEditingStage(true);
     setEditingIndex(index);
   };
 
-  const deleteStage = (index) => {
+  const deleteStageHandler = async (index) => {
+    const stageToDelete = stages[index];
+    
+    // If in edit mode and stage has an ID, call delete API
+    if (isEditMode && stageToDelete._id) {
+      try {
+        await deleteStage(stageToDelete._id).unwrap();
+        message.success("Stage deleted successfully from database");
+      } catch (error) {
+        const errorMessage = error?.data?.message || error?.message || "Failed to delete stage";
+        message.error(errorMessage);
+        console.error("Stage delete error:", error);
+        return;
+      }
+    }
+
+    // Remove from local state
     const updatedStages = stages.filter((_, i) => i !== index);
     const reorderedStages = updatedStages.map((stage, i) => ({
       ...stage,
@@ -188,7 +239,9 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       }));
     }
     
-    message.success("Stage deleted successfully");
+    if (!isEditMode || !stageToDelete._id) {
+      message.success("Stage removed successfully");
+    }
   };
 
   const handleSubmit = async () => {
@@ -234,7 +287,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     }
   };
 
-  const isLoading = isCreating || isUpdating;
+  const isLoading = isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
 
   return (
     <Modal
@@ -389,6 +442,11 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                         <Text strong style={{ fontSize: "14px" }}>
                           {stage.name}
                         </Text>
+                        {isEditMode && stage._id && (
+                          <Tag color="green" style={{ fontSize: "10px" }}>
+                            Saved
+                          </Tag>
+                        )}
                       </div>
                     }
                     extra={
@@ -398,21 +456,39 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                             type="text"
                             size="small"
                             icon={<EditOutlined />}
-                            onClick={() => editStage(index)}
+                            onClick={() => editStageHandler(index)}
                             style={{
                               borderRadius: "6px",
                             }}
+                            loading={isEditingStageAPI && editingIndex === index}
                           />
                         </Tooltip>
                         <Tooltip title="Delete Stage">
-                          <Button
-                            type="text"
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => deleteStage(index)}
-                            style={{ borderRadius: "6px" }}
-                          />
+                          <Popconfirm
+                            title="Delete Stage"
+                            description={
+                              isEditMode && stage._id 
+                                ? "This will permanently delete the stage from the database. Are you sure?"
+                                : "Are you sure you want to remove this stage?"
+                            }
+                            icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+                            onConfirm={() => deleteStageHandler(index)}
+                            okText="Yes"
+                            cancelText="No"
+                            okButtonProps={{ 
+                              danger: true,
+                              loading: isDeletingStage 
+                            }}
+                          >
+                            <Button
+                              type="text"
+                              size="small"
+                              danger
+                              icon={<DeleteOutlined />}
+                              style={{ borderRadius: "6px" }}
+                              loading={isDeletingStage}
+                            />
+                          </Popconfirm>
                         </Tooltip>
                       </Space>
                     }
@@ -646,6 +722,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                 fontSize: "14px",
                 backgroundColor: "#1890ff",
               }}
+              loading={isEditingStageAPI}
             >
               {isEditingStage ? "Update Stage" : "Add Stage"}
             </Button>
@@ -667,6 +744,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                     requiredDocuments: [],
                   });
                 }}
+                disabled={isEditingStageAPI}
               >
                 Cancel
               </Button>
@@ -692,6 +770,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               minWidth: "100px",
               height: "44px",
             }}
+            disabled={isLoading}
           >
             Cancel
           </Button>
@@ -699,8 +778,8 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             type="primary"
             size="large"
             onClick={handleSubmit}
-            loading={isLoading}
-            disabled={!pipelineName || stages.length === 0}
+            loading={isCreating || isUpdating}
+            disabled={!pipelineName || stages.length === 0 || isLoading}
             style={{
               borderRadius: "8px",
               minWidth: "140px",
@@ -710,7 +789,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             }}
             icon={<SaveOutlined />}
           >
-            {isLoading
+            {(isCreating || isUpdating)
               ? (isEditMode ? "Updating..." : "Creating...")
               : (isEditMode ? "Update Pipeline" : "Create Pipeline")
             }

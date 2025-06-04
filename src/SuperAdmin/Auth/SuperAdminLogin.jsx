@@ -4,7 +4,7 @@ import {
   UserOutlined,
   LockOutlined,
   GoogleOutlined,
-  VerifiedOutlined,
+SafetyCertificateOutlined 
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -203,7 +203,7 @@ const SuperAdminLogin = () => {
                 fontWeight: "bold",
               }}
             >
-              <VerifiedOutlined />
+              <SafetyCertificateOutlined />
             </div>
             <h1
               style={{

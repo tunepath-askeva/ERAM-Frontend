@@ -1,7 +1,7 @@
 const EditWorkOrder = () => {
   return (
     <>
-      <h1>Add work order</h1>
+      <h1>Edit work order</h1>
     </>
   );
 };

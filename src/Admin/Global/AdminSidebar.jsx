@@ -6,6 +6,7 @@ import {
   AppstoreOutlined,
   ApartmentOutlined,
   LogoutOutlined,
+  UserOutlined
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -54,6 +55,11 @@ const AdminSidebar = ({
       label: "Branches",
     },
     {
+      key: "/admin/recruiters",
+      icon: <UserOutlined />,
+      label: "Recruiters",
+    },
+    {
       key: "/admin/workorder",
       icon: <UnorderedListOutlined />,
       label: "Work Order",
@@ -63,6 +69,8 @@ const AdminSidebar = ({
       icon: <ApartmentOutlined />,
       label: "pipeline",
     },
+
+    
   ];
 
   useEffect(() => {

@@ -4,9 +4,9 @@ import {
   useVerifyAdminLoginOtpMutation,
   useVerifyUpdateProfileMutation,
 } from "../../Slices/SuperAdmin/SuperAdminAPIs";
-import { useSnackbar } from "notistack"; // Add this import
+import { useSnackbar } from "notistack"; 
 
-import { CloseOutlined, VerifiedOutlined } from "@ant-design/icons";
+import { CloseOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -23,8 +23,7 @@ const SuperAdminOtpModal = ({
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const inputRefs = useRef([]);
   const timerRef = useRef(null);
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
-
+  const { enqueueSnackbar } = useSnackbar(); 
 
   const [verifyAdminLoginOtp, { isLoading }] = useVerifyAdminLoginOtpMutation();
   const [verifyUpdateOtp] = useVerifyUpdateProfileMutation();
@@ -135,11 +134,16 @@ const SuperAdminOtpModal = ({
       }, 100);
     } catch (error) {
       console.error("OTP verification failed:", error);
-      enqueueSnackbar(error?.data?.message || error?.message || "Invalid OTP. Please try again.", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Invalid OTP. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
@@ -215,7 +219,7 @@ const SuperAdminOtpModal = ({
               color: "white",
             }}
           >
-            <VerifiedOutlined />
+            <SafetyCertificateOutlined />
           </div>
         </div>
 

@@ -24,6 +24,7 @@ import Pipeline from "./Admin/Pages/Pipeline";
 import AddWorkOrder from "./Admin/Components/AddWorkOrder";
 import ViewWorkOrder from "./Admin/Components/ViewWorkOrder";
 import EditWorkOrder from "./Admin/Components/EditWorkOrder";
+import AdminRecuiter from "./Admin/Pages/AdminRecruiters";
 
 const AppRoutes = () => {
   return (
@@ -80,6 +81,10 @@ const AppRoutes = () => {
           element={<ProtectedAdmin element={<AdminBranch />} />}
         />
         <Route
+          path="/admin/recruiters"
+          element={<ProtectedAdmin element={<AdminRecuiter />} />}
+        />
+        <Route
           path="/admin/workorder"
           element={<ProtectedAdmin element={<WorkOrder />} />}
         />
@@ -88,11 +93,11 @@ const AppRoutes = () => {
           element={<ProtectedAdmin element={<AddWorkOrder />} />}
         />
         <Route
-          path="/admin/view-workorder"
+          path="/admin/view-workorder/:id"
           element={<ProtectedAdmin element={<ViewWorkOrder />} />}
         />
         <Route
-          path="/admin/edit-workorder"
+          path="/admin/edit-workorder/:id"
           element={<ProtectedAdmin element={<EditWorkOrder />} />}
         />
         <Route

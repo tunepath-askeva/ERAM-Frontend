@@ -13,6 +13,9 @@ import {
   Modal,
   message,
   Divider,
+  Descriptions,
+  List,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
@@ -24,13 +27,17 @@ import {
   FolderOpenOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  CloseOutlined,
+  InfoCircleOutlined,
+  OrderedListOutlined,
 } from "@ant-design/icons";
 import {
   useGetPipelinesQuery,
   useDeletePipelineMutation,
+  useGetPipelineByIdQuery,
 } from "../../Slices/Admin/AdminApis";
 import CreatePipelineModal from "../Components/CreatePipelineModal";
-import '../../index.css'
+import "../../index.css";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -39,12 +46,23 @@ const Pipeline = () => {
   const [editingPipeline, setEditingPipeline] = useState(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [selectedPipelineId, setSelectedPipelineId] = useState(null);
 
   const {
     data: pipelinesResponse,
     isLoading,
     refetch,
   } = useGetPipelinesQuery();
+
+  // Get pipeline details for viewing
+  const {
+    data: pipelineDetails,
+    isLoading: isLoadingDetails,
+    error: detailsError,
+  } = useGetPipelineByIdQuery(selectedPipelineId, {
+    skip: !selectedPipelineId,
+  });
 
   const [deletePipeline, { isLoading: isDeleting }] =
     useDeletePipelineMutation();
@@ -97,7 +115,13 @@ const Pipeline = () => {
   };
 
   const handleViewPipeline = (pipelineId) => {
-    console.log("View pipeline:", pipelineId);
+    setSelectedPipelineId(pipelineId);
+    setViewModalVisible(true);
+  };
+
+  const handleViewModalClose = () => {
+    setViewModalVisible(false);
+    setSelectedPipelineId(null);
   };
 
   return (
@@ -121,13 +145,6 @@ const Pipeline = () => {
               className="pipeline-title"
               style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
             >
-              <RocketOutlined
-                style={{
-                  marginRight: "8px",
-                  color: "#1890ff",
-                  fontSize: "20px",
-                }}
-              />
               Pipeline Management
             </Title>
           </div>
@@ -160,11 +177,9 @@ const Pipeline = () => {
               { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
             ]}
             style={{
-              // Equal height for all cards using CSS Grid approach
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
               gap: "16px",
-              // Responsive grid columns
               "@media (min-width: 576px)": {
                 gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 gap: "20px",
@@ -190,7 +205,6 @@ const Pipeline = () => {
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    // Enhanced responsive styles
                     "@media (min-width: 768px)": {
                       borderRadius: "16px",
                       boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
@@ -210,7 +224,7 @@ const Pipeline = () => {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          minWidth: 0, // Allow text to shrink
+                          minWidth: 0,
                           flex: 1,
                         }}
                       >
@@ -286,7 +300,6 @@ const Pipeline = () => {
                     },
                   }}
                 >
-                  {/* Card content with flex-grow to push footer to bottom */}
                   <div
                     style={{
                       flex: 1,
@@ -294,7 +307,6 @@ const Pipeline = () => {
                       flexDirection: "column",
                     }}
                   >
-                    {/* Pipeline Stages Section */}
                     <div style={{ marginBottom: 16 }}>
                       <Text
                         strong
@@ -341,7 +353,6 @@ const Pipeline = () => {
                       </div>
                     </div>
 
-                    {/* Documents Required Section */}
                     <div style={{ marginBottom: 16 }}>
                       <Text
                         strong
@@ -369,7 +380,6 @@ const Pipeline = () => {
                     </div>
                   </div>
 
-                  {/* Footer - Always at bottom */}
                   <div
                     style={{
                       borderTop: "1px solid #f0f0f0",
@@ -468,6 +478,209 @@ const Pipeline = () => {
           </Card>
         )}
       </div>
+
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <InfoCircleOutlined style={{ marginRight: 8, color: "#1890ff" }} />
+            Pipeline Details
+          </div>
+        }
+        open={viewModalVisible}
+        onCancel={handleViewModalClose}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            style={{
+              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            }}
+            onClick={handleViewModalClose}
+          >
+            Close
+          </Button>,
+        ]}
+        width="90%"
+        style={{ maxWidth: 800 }}
+        centered
+        destroyOnClose
+      >
+        {isLoadingDetails ? (
+          <div style={{ textAlign: "center", padding: "50px 0" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text>Loading pipeline details...</Text>
+            </div>
+          </div>
+        ) : detailsError ? (
+          <div style={{ textAlign: "center", padding: "50px 0" }}>
+            <Text type="danger">
+              Failed to load pipeline details. Please try again.
+            </Text>
+          </div>
+        ) : pipelineDetails?.getPipelineByIds ? (
+          <div>
+            {/* Pipeline Basic Info */}
+            <Card
+              title="Pipeline Information"
+              style={{ marginBottom: 16 }}
+              size="small"
+            >
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="Name">
+                  <Text strong>{pipelineDetails.getPipelineByIds.name}</Text>
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Total Stages">
+                  <Badge
+                    count={pipelineDetails.getPipelineByIds.stages?.length || 0}
+                    showZero
+                    style={{ backgroundColor: "#52c41a" }}
+                  />
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Pipeline Stages */}
+            <Card
+              title={
+                <div>
+                  <OrderedListOutlined style={{ marginRight: 8 }} />
+                  Pipeline Stages (
+                  {pipelineDetails.getPipelineByIds.stages?.length || 0})
+                </div>
+              }
+              size="small"
+            >
+              {pipelineDetails.getPipelineByIds.stages?.length > 0 ? (
+                <List
+                  dataSource={[...pipelineDetails.getPipelineByIds.stages].sort(
+                    (a, b) => a.order - b.order
+                  )}
+                  renderItem={(stage, index) => (
+                    <List.Item
+                      style={{
+                        background: index % 2 === 0 ? "#fafafa" : "white",
+                        borderRadius: 8,
+                        marginBottom: 12,
+                        padding: "16px",
+                        border: "1px solid #f0f0f0",
+                      }}
+                    >
+                      <div style={{ width: "100%" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: 12,
+                          }}
+                        >
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <Tag
+                              color="blue"
+                              style={{
+                                margin: 0,
+                                fontSize: "12px",
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                              }}
+                            >
+                              Stage #{stage.order}
+                            </Tag>
+                            <Text
+                              strong
+                              style={{ marginLeft: 12, fontSize: 16 }}
+                            >
+                              {stage.name}
+                            </Text>
+                          </div>
+                        </div>
+
+                        {stage.description && (
+                          <div style={{ marginBottom: 12 }}>
+                            <Text
+                              strong
+                              style={{ fontSize: 13, color: "#666" }}
+                            >
+                              Description:
+                            </Text>
+                            <Paragraph
+                              style={{
+                                margin: "4px 0 0 0",
+                                color: "#333",
+                                fontSize: 14,
+                                lineHeight: 1.5,
+                                paddingLeft: 12,
+                                borderLeft: "3px solid #e6f7ff",
+                                backgroundColor: "#f9f9f9",
+                                padding: "8px 12px",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              {stage.description}
+                            </Paragraph>
+                          </div>
+                        )}
+
+                        {stage.requiredDocuments?.length > 0 && (
+                          <div>
+                            <Text
+                              strong
+                              style={{
+                                fontSize: 13,
+                                color: "#666",
+                                display: "block",
+                                marginBottom: 8,
+                              }}
+                            >
+                              <FileTextOutlined style={{ marginRight: 6 }} />
+                              Required Documents (
+                              {stage.requiredDocuments.length}):
+                            </Text>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "6px",
+                              }}
+                            >
+                              {stage.requiredDocuments.map((doc, docIndex) => (
+                                <Tag
+                                  key={docIndex}
+                                  style={{
+                                    fontSize: 12,
+                                    padding: "4px 8px",
+                                    backgroundColor: "#e6f7ff",
+                                    borderColor: "#91d5ff",
+                                    borderRadius: "6px",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {doc}
+                                </Tag>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="No stages configured for this pipeline"
+                />
+              )}
+            </Card>
+          </div>
+        ) : (
+          <Empty description="Pipeline not found" />
+        )}
+      </Modal>
 
       {/* Create/Edit Pipeline Modal */}
       <CreatePipelineModal
