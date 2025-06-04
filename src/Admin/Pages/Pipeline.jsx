@@ -1,267 +1,151 @@
 import React, { useState } from "react";
 import {
-  Modal,
-  Form,
-  Input,
   Button,
   Card,
-  InputNumber,
-  Select,
-  Space,
-  Divider,
-  message,
   Row,
   Col,
   Typography,
   Tag,
   Tooltip,
   Empty,
-  Avatar,
+  Space,
   Badge,
-  Popconfirm,
+  Modal,
+  message,
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
   DeleteOutlined,
   EditOutlined,
   FileTextOutlined,
-  OrderedListOutlined,
-  InfoCircleOutlined,
   RocketOutlined,
-  CheckCircleOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  FolderOpenOutlined,
-  SettingOutlined,
   EyeOutlined,
+  FolderOpenOutlined,
+  ExclamationCircleOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import {
   useGetPipelinesQuery,
-  useAddPipelineMutation,
+  useDeletePipelineMutation,
 } from "../../Slices/Admin/AdminApis";
+import CreatePipelineModal from "../Components/CreatePipelineModal";
+import '../../index.css'
 
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
 
 const Pipeline = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [stages, setStages] = useState([]);
-  const [currentStage, setCurrentStage] = useState({
-    name: "",
-    order: 1,
-    description: "",
-    requiredDocuments: [],
-  });
-  const [isEditingStage, setIsEditingStage] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(-1);
-  const [newDocument, setNewDocument] = useState("");
-  const [pipelineName, setPipelineName] = useState("");
+  const [editingPipeline, setEditingPipeline] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [pipelineToDelete, setPipelineToDelete] = useState(null);
 
-  const { data: pipelines, isLoading, refetch } = useGetPipelinesQuery();
-  const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
+  const {
+    data: pipelinesResponse,
+    isLoading,
+    refetch,
+  } = useGetPipelinesQuery();
 
-  const commonDocuments = [
-    "Resume/CV",
-    "Cover Letter",
-    "Portfolio",
-    "References",
-    "Transcripts",
-    "Certificates",
-    "Identity Proof",
-    "Previous Employment Letter",
-    "Salary Slips",
-    "No Objection Certificate",
-  ];
+  const [deletePipeline, { isLoading: isDeleting }] =
+    useDeletePipelineMutation();
 
-  const handleDeletePipeline = async (id) => {
+  const pipelines = pipelinesResponse?.allPipelines || [];
+
+  const showDeleteModal = (pipeline) => {
+    setPipelineToDelete(pipeline);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalVisible(false);
+    setPipelineToDelete(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!pipelineToDelete) return;
+
     try {
-      
-      message.success("Pipeline deleted successfully");
+      await deletePipeline(pipelineToDelete._id).unwrap();
+      message.success(
+        `Pipeline "${pipelineToDelete.name}" deleted successfully`
+      );
+      setDeleteModalVisible(false);
+      setPipelineToDelete(null);
       refetch();
     } catch (error) {
-      message.error("Failed to delete pipeline");
+      const errorMessage =
+        error?.data?.message || error?.message || "Failed to delete pipeline";
+      message.error(errorMessage);
       console.error("Delete error:", error);
     }
   };
 
-  const showModal = () => {
+  const showCreateModal = () => {
+    setEditingPipeline(null);
     setIsModalVisible(true);
-    form.resetFields();
-    setStages([]);
-    setPipelineName("");
-    setCurrentStage({
-      name: "",
-      order: 1,
-      description: "",
-      requiredDocuments: [],
-    });
   };
 
-  const handleCancel = () => {
+  const showEditModal = (pipeline) => {
+    setEditingPipeline(pipeline);
+    setIsModalVisible(true);
+  };
+
+  const handleModalClose = () => {
     setIsModalVisible(false);
-    setIsEditingStage(false);
-    setEditingIndex(-1);
-    setPipelineName("");
+    setEditingPipeline(null);
+    refetch(); // Refresh the list when modal closes
   };
 
-  const addDocument = () => {
-    if (newDocument.trim()) {
-      setCurrentStage((prev) => ({
-        ...prev,
-        requiredDocuments: [...prev.requiredDocuments, newDocument.trim()],
-      }));
-      setNewDocument("");
-    }
-  };
-
-  const removeDocument = (index) => {
-    setCurrentStage((prev) => ({
-      ...prev,
-      requiredDocuments: prev.requiredDocuments.filter((_, i) => i !== index),
-    }));
-  };
-
-  const selectCommonDocument = (doc) => {
-    if (!currentStage.requiredDocuments.includes(doc)) {
-      setCurrentStage((prev) => ({
-        ...prev,
-        requiredDocuments: [...prev.requiredDocuments, doc],
-      }));
-    }
-  };
-
-  const addStage = () => {
-    if (!currentStage.name.trim()) {
-      message.error("Stage name is required");
-      return;
-    }
-
-    const newStage = {
-      ...currentStage,
-      order: isEditingStage ? currentStage.order : stages.length + 1,
-    };
-
-    if (isEditingStage) {
-      const updatedStages = [...stages];
-      updatedStages[editingIndex] = newStage;
-      setStages(updatedStages);
-      setIsEditingStage(false);
-      setEditingIndex(-1);
-      message.success("Stage updated successfully");
-    } else {
-      setStages([...stages, newStage]);
-      message.success("Stage added successfully");
-    }
-
-    setCurrentStage({
-      name: "",
-      order: stages.length + 2,
-      description: "",
-      requiredDocuments: [],
-    });
-  };
-
-  const editStage = (index) => {
-    setCurrentStage(stages[index]);
-    setIsEditingStage(true);
-    setEditingIndex(index);
-  };
-
-  const deleteStage = (index) => {
-    const updatedStages = stages.filter((_, i) => i !== index);
-    const reorderedStages = updatedStages.map((stage, i) => ({
-      ...stage,
-      order: i + 1,
-    }));
-    setStages(reorderedStages);
-    message.success("Stage deleted successfully");
-  };
-
-  const handleSubmit = async () => {
-    if (!pipelineName || !pipelineName.trim()) {
-      message.error("Pipeline name is required");
-      return;
-    }
-
-    if (stages.length === 0) {
-      message.error("At least one stage is required");
-      return;
-    }
-
-    const pipelineData = {
-      name: pipelineName.trim(),
-      stages: stages,
-    };
-
-    try {
-      const result = await addPipeline(pipelineData).unwrap();
-
-      message.success("Pipeline created successfully!");
-      console.log("Created pipeline:", result);
-
-      setIsModalVisible(false);
-      form.resetFields();
-      setPipelineName("");
-      setStages([]);
-      setCurrentStage({
-        name: "",
-        order: 1,
-        description: "",
-        requiredDocuments: [],
-      });
-    } catch (error) {
-      const errorMessage =
-        error?.data?.message || error?.message || "Failed to create pipeline";
-      message.error(errorMessage);
-      console.error("Pipeline creation error:", error);
-    }
+  const handleViewPipeline = (pipelineId) => {
+    console.log("View pipeline:", pipelineId);
   };
 
   return (
     <>
       <div
         style={{
-          padding: "32px",
+          padding: "16px",
           minHeight: "100vh",
+          "@media (min-width: 576px)": {
+            padding: "24px",
+          },
+          "@media (min-width: 768px)": {
+            padding: "32px",
+          },
         }}
       >
-        <div
-          style={{
-            marginBottom: "32px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: "rgba(255, 255, 255, 0.95)",
-            padding: "24px",
-            borderRadius: "16px",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-          }}
-        >
-          <div>
-            <Title level={2} style={{ margin: 0, color: "#2c3e50" }}>
+        <div className="pipeline-header">
+          <div style={{ textAlign: "center" }}>
+            <Title
+              level={2}
+              className="pipeline-title"
+              style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
+            >
               <RocketOutlined
-                style={{ marginRight: "12px", color: " #1890ff" }}
+                style={{
+                  marginRight: "8px",
+                  color: "#1890ff",
+                  fontSize: "20px",
+                }}
               />
               Pipeline Management
             </Title>
-            <Paragraph style={{ margin: "8px 0 0 0", color: "#7f8c8d" }}>
-              Create and manage your hiring pipelines with custom stages
-            </Paragraph>
           </div>
           <Button
             type="primary"
             size="large"
             icon={<PlusOutlined />}
-            onClick={showModal}
+            onClick={showCreateModal}
+            className="pipeline-button"
             style={{
               background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
               border: "none",
-              borderRadius: "12px",
-              fontSize: "16px",
+              borderRadius: "8px",
+              fontSize: "14px",
+              width: "100%",
+              height: "44px",
             }}
+            block
           >
             Create New Pipeline
           </Button>
@@ -270,101 +154,311 @@ const Pipeline = () => {
         {isLoading ? (
           <Card loading style={{ borderRadius: "16px" }} />
         ) : pipelines?.length > 0 ? (
-          <Row gutter={[16, 16]}>
+          <Row
+            gutter={[
+              { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+              { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+            ]}
+            style={{
+              // Equal height for all cards using CSS Grid approach
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: "16px",
+              // Responsive grid columns
+              "@media (min-width: 576px)": {
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "20px",
+              },
+              "@media (min-width: 768px)": {
+                gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+                gap: "24px",
+              },
+              "@media (min-width: 1200px)": {
+                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+              },
+            }}
+          >
             {pipelines.map((pipeline) => (
-              <Col xs={24} sm={12} lg={8} key={pipeline._id}>
+              <div key={pipeline._id}>
                 <Card
                   style={{
-                    borderRadius: "16px",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
                     background: "rgba(255, 255, 255, 0.95)",
                     backdropFilter: "blur(10px)",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    // Enhanced responsive styles
+                    "@media (min-width: 768px)": {
+                      borderRadius: "16px",
+                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                    },
                   }}
                   title={
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <FolderOpenOutlined
-                        style={{ color: "#1890ff", marginRight: 8 }}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          minWidth: 0, // Allow text to shrink
+                          flex: 1,
+                        }}
+                      >
+                        <FolderOpenOutlined
+                          style={{
+                            color: "#1890ff",
+                            marginRight: 8,
+                            fontSize: "16px",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Text
+                          strong
+                          style={{
+                            fontSize: "14px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            "@media (min-width: 576px)": {
+                              fontSize: "16px",
+                            },
+                          }}
+                          title={pipeline.name}
+                        >
+                          {pipeline.name}
+                        </Text>
+                      </div>
+                      <Badge
+                        count={pipeline.stages.length}
+                        style={{
+                          backgroundColor: "#52c41a",
+                          flexShrink: 0,
+                        }}
                       />
-                      <Text strong>{pipeline.name}</Text>
                     </div>
                   }
                   extra={
-                    <Space>
-                      <Tooltip title="View">
+                    <Space size="small">
+                      <Tooltip title="View Details">
                         <Button
                           type="text"
+                          size="small"
                           icon={<EyeOutlined />}
-                          onClick={() => console.log("View", pipeline._id)}
+                          onClick={() => handleViewPipeline(pipeline._id)}
                         />
                       </Tooltip>
-                      <Tooltip title="Edit">
+                      <Tooltip title="Edit Pipeline">
                         <Button
                           type="text"
+                          size="small"
                           icon={<EditOutlined />}
-                          onClick={() => console.log("Edit", pipeline._id)}
+                          onClick={() => showEditModal(pipeline)}
                         />
                       </Tooltip>
-                      <Popconfirm
-                        title="Are you sure to delete this pipeline?"
-                        onConfirm={() => handleDeletePipeline(pipeline._id)}
-                        okText="Yes"
-                        cancelText="No"
-                      >
-                        <Tooltip title="Delete">
-                          <Button
-                            type="text"
-                            danger
-                            icon={<DeleteOutlined />}
-                          />
-                        </Tooltip>
-                      </Popconfirm>
+                      <Tooltip title="Delete Pipeline">
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => showDeleteModal(pipeline)}
+                        />
+                      </Tooltip>
                     </Space>
                   }
+                  bodyStyle={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "16px",
+                    "@media (min-width: 576px)": {
+                      padding: "20px",
+                    },
+                  }}
                 >
-                  <div style={{ marginBottom: 16 }}>
-                    <Text strong>Stages:</Text>
-                    <div style={{ marginTop: 8 }}>
-                      {pipeline.stages.map((stage, index) => (
-                        <Tag
-                          key={index}
-                          color="blue"
-                          style={{ marginBottom: 4, borderRadius: 8 }}
-                        >
-                          {stage.order}. {stage.name}
-                        </Tag>
-                      ))}
+                  {/* Card content with flex-grow to push footer to bottom */}
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    {/* Pipeline Stages Section */}
+                    <div style={{ marginBottom: 16 }}>
+                      <Text
+                        strong
+                        style={{ color: "#2c3e50", fontSize: "13px" }}
+                      >
+                        Pipeline Stages:
+                      </Text>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          maxHeight: "120px",
+                          overflowY: "auto",
+                          overflowX: "hidden",
+                        }}
+                      >
+                        {[...pipeline.stages]
+                          .sort((a, b) => a.order - b.order)
+                          .map((stage, index) => (
+                            <Tag
+                              key={stage._id}
+                              color="blue"
+                              style={{
+                                marginBottom: 6,
+                                marginRight: 6,
+                                borderRadius: 6,
+                                fontSize: "11px",
+                                padding: "2px 6px",
+                                display: "inline-block",
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                "@media (min-width: 576px)": {
+                                  fontSize: "12px",
+                                  padding: "4px 8px",
+                                  borderRadius: 8,
+                                },
+                              }}
+                              title={`${stage.order}. ${stage.name}`}
+                            >
+                              {stage.order}. {stage.name}
+                            </Tag>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Documents Required Section */}
+                    <div style={{ marginBottom: 16 }}>
+                      <Text
+                        strong
+                        style={{ color: "#2c3e50", fontSize: "12px" }}
+                      >
+                        <FileTextOutlined style={{ marginRight: 4 }} />
+                        Documents Required:
+                      </Text>
+                      <div style={{ marginTop: 6 }}>
+                        {pipeline.stages.reduce((totalDocs, stage) => {
+                          return totalDocs + stage.requiredDocuments.length;
+                        }, 0) > 0 ? (
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            {pipeline.stages.reduce((totalDocs, stage) => {
+                              return totalDocs + stage.requiredDocuments.length;
+                            }, 0)}{" "}
+                            documents across all stages
+                          </Text>
+                        ) : (
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            No documents required
+                          </Text>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <Text type="secondary">
-                      Created:{" "}
-                      {new Date(pipeline.createdAt).toLocaleDateString()}
-                    </Text>
+
+                  {/* Footer - Always at bottom */}
+                  <div
+                    style={{
+                      borderTop: "1px solid #f0f0f0",
+                      paddingTop: 12,
+                      marginTop: "auto",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "10px",
+                          "@media (min-width: 576px)": {
+                            fontSize: "12px",
+                          },
+                        }}
+                      >
+                        Created:{" "}
+                        {new Date(
+                          pipeline.createdAt || Date.now()
+                        ).toLocaleDateString(undefined, {
+                          year: "2-digit",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "10px",
+                          "@media (min-width: 576px)": {
+                            fontSize: "12px",
+                          },
+                        }}
+                      >
+                        ID: {pipeline._id.slice(-6)}
+                      </Text>
+                    </div>
                   </div>
                 </Card>
-              </Col>
+              </div>
             ))}
           </Row>
         ) : (
           <Card
             style={{
-              borderRadius: "16px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              borderRadius: "12px",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
               border: "1px solid rgba(255, 255, 255, 0.2)",
               background: "rgba(255, 255, 255, 0.95)",
               backdropFilter: "blur(10px)",
+              "@media (min-width: 768px)": {
+                borderRadius: "16px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              },
             }}
           >
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <div>
-                  <Text style={{ fontSize: "16px", color: "#7f8c8d" }}>
+                <div style={{ textAlign: "center" }}>
+                  <Text
+                    style={{
+                      fontSize: "14px",
+                      color: "#7f8c8d",
+                      "@media (min-width: 576px)": {
+                        fontSize: "16px",
+                      },
+                    }}
+                  >
                     No pipelines created yet
                   </Text>
                   <br />
-                  <Text type="secondary">
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: "12px",
+                      "@media (min-width: 576px)": {
+                        fontSize: "14px",
+                      },
+                    }}
+                  >
                     Create your first pipeline to get started with structured
                     hiring
                   </Text>
@@ -375,470 +469,179 @@ const Pipeline = () => {
         )}
       </div>
 
+      {/* Create/Edit Pipeline Modal */}
+      <CreatePipelineModal
+        visible={isModalVisible}
+        onClose={handleModalClose}
+        editingPipeline={editingPipeline}
+      />
+
+      {/* Delete Confirmation Modal - Responsive */}
       <Modal
         title={
           <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              fontSize: "18px",
-              color: "#2c3e50",
-            }}
+            style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}
           >
-            <Avatar
-              style={{
-                backgroundColor: "#1890ff",
-                marginRight: "12px",
-              }}
-              icon={<SettingOutlined />}
+            <ExclamationCircleOutlined
+              style={{ marginRight: 8, fontSize: 18 }}
             />
-            Create New Pipeline
+            <span style={{ fontSize: "16px" }}>Delete Pipeline</span>
           </div>
         }
-        open={isModalVisible}
-        onCancel={handleCancel}
-        width={1000}
-        footer={null}
+        open={deleteModalVisible}
+        onCancel={handleDeleteCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button
+            key="cancel"
+            onClick={handleDeleteCancel}
+            size="large"
+            style={{
+              marginRight: 8,
+              "@media (max-width: 576px)": {
+                marginRight: 0,
+                marginBottom: 8,
+              },
+            }}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={isDeleting}
+            onClick={handleDeleteConfirm}
+            size="large"
+            icon={<DeleteOutlined />}
+            style={{
+              "@media (max-width: 576px)": {
+                width: "100%",
+              },
+            }}
+          >
+            Delete Pipeline
+          </Button>,
+        ]}
+        maskClosable={false}
         destroyOnClose
-        style={{ top: "20px" }}
-        bodyStyle={{
-          padding: "24px",
-        }}
       >
-        <div style={{ marginTop: "8px" }}>
-          {/* Pipeline Name Section */}
-          <Card
-            style={{
-              marginBottom: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-              border: "1px solid #e8f4fd",
-            }}
-          >
-            <div style={{ marginBottom: "16px" }}>
-              <Text strong style={{ fontSize: "16px", color: "#2c3e50" }}>
-                <FolderOpenOutlined
-                  style={{ marginRight: "8px", color: "#1890ff" }}
-                />
-                Pipeline Information
-              </Text>
-            </div>
-            <Input
-              placeholder="e.g., Software Developer Hiring Process"
-              size="large"
-              value={pipelineName}
-              onChange={(e) => setPipelineName(e.target.value)}
-              style={{
-                borderRadius: "8px",
-                border: "2px solid #e8f4fd",
-                fontSize: "16px",
-              }}
-              prefix={<EditOutlined style={{ color: "#1890ff" }} />}
-            />
-          </Card>
-
-          {/* Stages Header */}
-          <Card
-            style={{
-              marginBottom: "20px",
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-              border: "none",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                color: "white",
-              }}
-            >
-              <div>
-                <Text strong style={{ color: "white", fontSize: "18px" }}>
-                  <OrderedListOutlined style={{ marginRight: "8px" }} />
-                  Pipeline Stages
-                </Text>
-                <br />
-                <Text
-                  style={{
-                    color: "rgba(255, 255, 255, 0.8)",
-                    fontSize: "14px",
-                  }}
-                >
-                  Build your hiring process step by step
-                </Text>
-              </div>
-              <Badge
-                count={stages.length}
-                style={{ backgroundColor: "#52c41a" }}
-                showZero
-              />
-            </div>
-          </Card>
-
-          {/* Existing Stages */}
-          {stages.length > 0 && (
-            <div style={{ marginBottom: "24px" }}>
-              <Row gutter={[16, 16]}>
-                {stages.map((stage, index) => (
-                  <Col xs={24} sm={12} lg={8} key={index}>
-                    <Card
-                      size="small"
-                      style={{
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                        border: "2px solid #e8f4fd",
-                        transition: "all 0.3s ease",
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow =
-                          "0 8px 24px rgba(0, 0, 0, 0.12)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow =
-                          "0 4px 16px rgba(0, 0, 0, 0.08)";
-                      }}
-                      title={
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <Tag
-                            color="blue"
-                            style={{ borderRadius: "8px", fontSize: "12px" }}
-                          >
-                            #{stage.order}
-                          </Tag>
-                          <Text strong style={{ fontSize: "14px" }}>
-                            {stage.name}
-                          </Text>
-                        </div>
-                      }
-                      extra={
-                        <Space>
-                          <Tooltip title="Edit Stage">
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<EditOutlined />}
-                              onClick={() => editStage(index)}
-                              style={{
-                                borderRadius: "6px",
-                              }}
-                            />
-                          </Tooltip>
-                          <Tooltip title="Delete Stage">
-                            <Button
-                              type="text"
-                              size="small"
-                              danger
-                              icon={<DeleteOutlined />}
-                              onClick={() => deleteStage(index)}
-                              style={{ borderRadius: "6px" }}
-                            />
-                          </Tooltip>
-                        </Space>
-                      }
-                    >
-                      {stage.description && (
-                        <Paragraph
-                          type="secondary"
-                          style={{
-                            fontSize: "13px",
-                            marginBottom: "8px",
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          {stage.description}
-                        </Paragraph>
-                      )}
-                      {stage.requiredDocuments.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            padding: "8px",
-                            background: "#f8f9fa",
-                            borderRadius: "6px",
-                          }}
-                        >
-                          <Text style={{ fontSize: "12px" }}>
-                            <FileTextOutlined style={{ marginRight: "4px" }} />
-                            {stage.requiredDocuments.length} documents required
-                          </Text>
-                        </div>
-                      )}
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </div>
-          )}
-
-          {/* Add/Edit Stage Form */}
-          <Card
-            title={
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: "16px",
-                  color: "#2c3e50",
-                }}
-              >
-                {isEditingStage ? "Edit Stage" : "Add New Stage"}
-              </div>
-            }
-            style={{
-              marginBottom: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-              border: "2px solid #e8f4fd",
-            }}
-          >
-            <Row gutter={16}>
-              <Col xs={24} sm={16}>
-                <div style={{ marginBottom: "16px" }}>
-                  <Text strong style={{ color: "#2c3e50" }}>
-                    Stage Name
-                  </Text>
-                  <Input
-                    placeholder="e.g., Technical Interview, HR Round"
-                    value={currentStage.name}
-                    onChange={(e) =>
-                      setCurrentStage((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    style={{
-                      marginTop: "8px",
-                      borderRadius: "8px",
-                      border: "2px solid #e8f4fd",
-                    }}
-                  />
-                </div>
-              </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: "16px" }}>
-                  <Text strong style={{ color: "#2c3e50" }}>
-                    Order
-                  </Text>
-                  <InputNumber
-                    min={1}
-                    value={currentStage.order}
-                    onChange={(value) =>
-                      setCurrentStage((prev) => ({ ...prev, order: value }))
-                    }
-                    style={{
-                      width: "100%",
-                      marginTop: "8px",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </div>
-              </Col>
-            </Row>
-
-            <div style={{ marginBottom: "16px" }}>
-              <Text strong style={{ color: "#2c3e50" }}>
-                Description (Optional)
-              </Text>
-              <TextArea
-                rows={3}
-                placeholder="Brief description of this stage..."
-                value={currentStage.description}
-                onChange={(e) =>
-                  setCurrentStage((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                style={{
-                  marginTop: "8px",
-                  borderRadius: "8px",
-                  border: "2px solid #e8f4fd",
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <Text strong style={{ color: "#2c3e50" }}>
-                Required Documents
-              </Text>
-              <Space
-                direction="vertical"
-                style={{ width: "100%", marginTop: "8px" }}
-              >
-                <Space.Compact style={{ width: "100%" }}>
-                  <Input
-                    placeholder="Enter document name"
-                    value={newDocument}
-                    onChange={(e) => setNewDocument(e.target.value)}
-                    onPressEnter={addDocument}
-                    style={{ borderRadius: "8px 0 0 8px" }}
-                  />
-                  <Button
-                    type="primary"
-                    onClick={addDocument}
-                    icon={<PlusOutlined />}
-                    style={{
-                      borderRadius: "0 8px 8px 0",
-                      background:
-                        "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-                    }}
-                  >
-                    Add
-                  </Button>
-                </Space.Compact>
-
-                <div
-                  style={{
-                    background: "#f8f9fa",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px dashed #d9d9d9",
-                  }}
-                >
-                  <Text type="secondary" style={{ fontSize: "13px" }}>
-                    <InfoCircleOutlined style={{ marginRight: "4px" }} />
-                    Quick add common documents:
-                  </Text>
-                  <div style={{ marginTop: "8px" }}>
-                    {commonDocuments.map((doc) => (
-                      <Tag
-                        key={doc}
-                        style={{
-                          cursor: "pointer",
-                          margin: "3px",
-                          borderRadius: "6px",
-                          transition: "all 0.2s ease",
-                        }}
-                        onClick={() => selectCommonDocument(doc)}
-                        color={
-                          currentStage.requiredDocuments.includes(doc)
-                            ? "green"
-                            : "default"
-                        }
-                      >
-                        {doc}
-                      </Tag>
-                    ))}
-                  </div>
-                </div>
-
-                {currentStage.requiredDocuments.length > 0 && (
-                  <div
-                    style={{
-                      background: "#e6f7ff",
-                      padding: "12px",
-                      borderRadius: "8px",
-                      border: "1px solid #91d5ff",
-                    }}
-                  >
-                    <Text strong style={{ fontSize: "13px", color: "#1890ff" }}>
-                      <CheckCircleOutlined style={{ marginRight: "4px" }} />
-                      Selected Documents (
-                      {currentStage.requiredDocuments.length}):
-                    </Text>
-                    <div style={{ marginTop: "8px" }}>
-                      {currentStage.requiredDocuments.map((doc, index) => (
-                        <Tag
-                          key={index}
-                          closable
-                          onClose={() => removeDocument(index)}
-                          color="blue"
-                          style={{
-                            margin: "3px",
-                            borderRadius: "6px",
-                          }}
-                        >
-                          {doc}
-                        </Tag>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </Space>
-            </div>
-
-            <Button
-              type="primary"
-              onClick={addStage}
-              icon={isEditingStage ? <EditOutlined /> : <PlusOutlined />}
-              block
-              size="large"
-              style={{
-                borderRadius: "8px",
-                height: "48px",
-                fontSize: "16px",
-                background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-
-                border: "none",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              {isEditingStage ? "Update Stage" : "Add Stage"}
-            </Button>
-          </Card>
-
-          {/* Footer Actions */}
+        <div style={{ padding: "16px 0" }}>
+          {/* Warning Alert */}
           <div
             style={{
+              background: "#fff2f0",
+              border: "1px solid #ffccc7",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px",
-              background: "rgba(255, 255, 255, 0.8)",
-              borderRadius: "12px",
-              backdropFilter: "blur(10px)",
+              alignItems: "flex-start",
+              gap: "12px",
+              "@media (min-width: 576px)": {
+                padding: "16px",
+                marginBottom: "20px",
+              },
             }}
           >
+            <WarningOutlined
+              style={{
+                color: "#ff4d4f",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+                "@media (min-width: 576px)": {
+                  fontSize: "18px",
+                },
+              }}
+            />
             <div>
-              <Text type="secondary">
-                {stages.length > 0
-                  ? `${stages.length} stage${
-                      stages.length > 1 ? "s" : ""
-                    } configured`
-                  : "Add at least one stage to create pipeline"}
+              <Text strong style={{ color: "#ff4d4f", fontSize: "13px" }}>
+                This action cannot be undone!
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                All pipeline data including stages, configurations, and
+                associated records will be permanently removed.
               </Text>
             </div>
-            <Space>
-              <Button
-                onClick={handleCancel}
-                disabled={isCreating}
-                style={{ borderRadius: "8px" }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                size="large"
-                disabled={stages.length === 0 || !pipelineName.trim()}
-                onClick={handleSubmit}
-                loading={isCreating}
-                style={{
-                  borderRadius: "8px",
-                  color: "white",
-                  background:
-                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+          </div>
 
-                  border: "none",
-                  height: "40px",
-                  paddingLeft: "24px",
-                  paddingRight: "24px",
+          {/* Pipeline Details */}
+          {pipelineToDelete && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                  "@media (min-width: 576px)": {
+                    fontSize: "16px",
+                  },
                 }}
               >
-                {isCreating ? "Creating..." : "Create Pipeline"}
-              </Button>
-            </Space>
-          </div>
+                Are you sure you want to delete the following pipeline?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                  "@media (min-width: 576px)": {
+                    padding: "16px",
+                  },
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                      "@media (min-width: 576px)": {
+                        fontSize: "16px",
+                      },
+                    }}
+                  >
+                    {pipelineToDelete.name}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Stages:</strong>{" "}
+                    {pipelineToDelete.stages?.length || 0}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Total Documents:</strong>{" "}
+                    {pipelineToDelete.stages?.reduce(
+                      (total, stage) =>
+                        total + (stage.requiredDocuments?.length || 0),
+                      0
+                    ) || 0}
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Created:</strong>{" "}
+                    {new Date(
+                      pipelineToDelete.createdAt || Date.now()
+                    ).toLocaleDateString()}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </>

@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Modal, Input, Button, Typography, Space, message } from "antd";
-import { useVerifyOtpMutation, useResendOtpMutation } from "../Slices/Users/UserApis";
+import {
+  useVerifyOtpMutation,
+  useResendOtpMutation,
+} from "../Slices/Users/UserApis";
 import { useNavigate } from "react-router-dom";
 import { CloseOutlined } from "@ant-design/icons";
 
@@ -37,7 +40,7 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
   const startResendTimer = () => {
     setResendTimer(60);
     setIsResendDisabled(true);
-    
+
     timerRef.current = setInterval(() => {
       setResendTimer((prevTimer) => {
         if (prevTimer <= 1) {
@@ -122,14 +125,16 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
 
       await resendOtp(resendData).unwrap();
       message.success("OTP resent successfully!");
-      
+
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-      
+
       startResendTimer();
     } catch (error) {
       console.error("Resend OTP failed:", error);
-      message.error(error?.data?.message || "Failed to resend OTP. Please try again.");
+      message.error(
+        error?.data?.message || "Failed to resend OTP. Please try again."
+      );
     }
   };
 
@@ -155,27 +160,32 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
       footer={null}
       centered
       width="90%"
-      style={{ maxWidth: 480 }}
+      style={{
+        maxWidth: 480,
+        padding: "clamp(20px, 5vw, 40px) clamp(16px, 4vw, 24px)",
+        borderRadius: "16px",
+      }}
       closable={true}
       closeIcon={
         <CloseOutlined className="text-gray-400 hover:text-gray-600" />
       }
       maskClosable={false}
       className="ant-modal-custom"
-      bodyStyle={{
-        padding: "clamp(20px, 5vw, 40px) clamp(16px, 4vw, 24px)",
-        borderRadius: "16px",
-      }}
+      
     >
       <div className="text-center">
-        <Title level={3} className="text-gray-900 mb-2 font-semibold" style={{ fontSize: 'clamp(18px, 4vw, 24px)' }}>
+        <Title
+          level={3}
+          className="text-gray-900 mb-2 font-semibold"
+          style={{ fontSize: "clamp(18px, 4vw, 24px)" }}
+        >
           Email Verification
         </Title>
 
         <Text
           type="secondary"
-          className="block mb-8 font-medium text-gray-400" 
-          style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
+          className="block mb-8 font-medium text-gray-400"
+          style={{ fontSize: "clamp(12px, 3vw, 14px)" }}
         >
           We have sent a 6-digit code to your email {maskedEmail}
         </Text>
@@ -214,8 +224,8 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
             loading={loading || isLoading}
             className="w-full"
             style={{
-              height: 'clamp(24px, 8vw, 36px)',
-              fontSize: 'clamp(13px, 3vw, 14px)',
+              height: "clamp(24px, 8vw, 36px)",
+              fontSize: "clamp(13px, 3vw, 14px)",
               boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
             }}
           >
@@ -226,13 +236,13 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
             <Text
               type="secondary"
               className="font-medium text-gray-500"
-              style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
+              style={{ fontSize: "clamp(12px, 3vw, 14px)" }}
             >
               Didn't receive code?{" "}
               {isResendDisabled ? (
-                <Text 
+                <Text
                   className="font-medium text-gray-400"
-                  style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
+                  style={{ fontSize: "clamp(12px, 3vw, 14px)" }}
                 >
                   Resend in {resendTimer}s
                 </Text>
@@ -240,7 +250,7 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
                 <Button
                   type="link"
                   className="p-0 text-blue-600 hover:text-blue-700 font-medium"
-                  style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
+                  style={{ fontSize: "clamp(12px, 3vw, 14px)" }}
                   onClick={handleResendOtp}
                   loading={isResendLoading}
                   disabled={isResendDisabled}

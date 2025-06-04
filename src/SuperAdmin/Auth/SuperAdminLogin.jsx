@@ -122,7 +122,7 @@ const SuperAdminLogin = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "48px",
-                color: "#667eea",
+                color: "#1890ff",
                 fontWeight: "bold",
               }}
             >
@@ -265,7 +265,8 @@ const SuperAdminLogin = () => {
                   height: "48px",
                   borderRadius: "12px",
                   background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+
                   border: "none",
                   fontSize: "16px",
                   fontWeight: "600",

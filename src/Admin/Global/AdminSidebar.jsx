@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
 const { Sider } = Layout;
@@ -314,7 +314,6 @@ const AdminSidebar = ({
         closable={false}
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
-        bodyStyle={{ padding: 0 }}
         width={getSidebarWidth()}
         style={{ zIndex: 1001 }}
         styles={{
