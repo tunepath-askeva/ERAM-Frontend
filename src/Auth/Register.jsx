@@ -34,27 +34,183 @@ const Register = () => {
     { value: "employee", label: "Employee" },
   ];
 
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Basic phone validation - adjust regex as needed for your requirements
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+  };
+
+  const validateStrongPassword = (password) => {
+    // Strong password: at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return strongPasswordRegex.test(password);
+  };
+
+  const validateName = (name) => {
+    // Name should contain only letters and spaces, at least 2 characters
+    const nameRegex = /^[a-zA-Z\s]{1,}$/;
+    return nameRegex.test(name.trim());
+  };
+
   const onFinish = async (values) => {
     setLoading(true);
-    const fullName = `${values.firstName} ${values.lastName}`;
-
-    const userData = {
-      firstName: values.firstName,
-      lastName: values.lastName,
-      fullName: fullName,
-      role: values.role,
-      email: values.email,
-      phone: values.phone,
-      cPassword: values.cPassword,
-    };
 
     try {
+      // Comprehensive validation
+      if (!values.firstName || !values.firstName.trim()) {
+        enqueueSnackbar("Please enter your first name.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!validateName(values.firstName)) {
+        enqueueSnackbar("First name should contain only letters.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.lastName || !values.lastName.trim()) {
+        enqueueSnackbar("Please enter your last name.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!validateName(values.lastName)) {
+        enqueueSnackbar("Last name should contain only letters.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.role) {
+        enqueueSnackbar("Please select your role.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.email || !values.email.trim()) {
+        enqueueSnackbar("Please enter your email address.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!validateEmail(values.email)) {
+        enqueueSnackbar("Please enter a valid email address.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.phone || !values.phone.trim()) {
+        enqueueSnackbar("Please enter your phone number.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!validatePhone(values.phone)) {
+        enqueueSnackbar("Please enter a valid phone number.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.password) {
+        enqueueSnackbar("Please enter a password.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!validateStrongPassword(values.password)) {
+        enqueueSnackbar("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 4000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!values.cPassword) {
+        enqueueSnackbar("Please confirm your password.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (values.password !== values.cPassword) {
+        enqueueSnackbar("Password and confirm password do not match.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const fullName = `${values.firstName.trim()} ${values.lastName.trim()}`;
+
+      const userData = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        fullName: fullName,
+        role: values.role,
+        email: values.email.trim().toLowerCase(),
+        phone: values.phone.trim(),
+        cPassword: values.cPassword,
+      };
+
       console.log("Registration data:", userData);
 
       const response = await registerUser(userData).unwrap();
       console.log("Registration successful:", response);
 
-      setRegisteredEmail(values.email);
+      setRegisteredEmail(values.email.trim().toLowerCase());
       enqueueSnackbar("Registration successful! Please verify your email.", {
         variant: "success",
         anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -65,7 +221,7 @@ const Register = () => {
     } catch (error) {
       console.error("Registration failed:", error);
       enqueueSnackbar(
-        error?.data?.message || "Registration failed. Please try again.",
+        error?.data?.message || error?.message || "Registration failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -74,6 +230,26 @@ const Register = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onFinishFailed = (errorInfo) => {
+    console.log("Failed:", errorInfo);
+
+    // Get the first error message
+    const firstError = errorInfo.errorFields[0];
+    if (firstError && firstError.errors.length > 0) {
+      enqueueSnackbar(firstError.errors[0], {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+    } else {
+      enqueueSnackbar("Please check your input fields.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -175,6 +351,7 @@ const Register = () => {
             form={form}
             name="register"
             onFinish={onFinish}
+            onFinishFailed={onFinishFailed}
             layout="vertical"
             scrollToFirstError
           >
@@ -193,12 +370,6 @@ const Register = () => {
                       First Name
                     </span>
                   }
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please input your first name!",
-                    },
-                  ]}
                 >
                   <Input
                     prefix={<UserOutlined style={{ color: "#bdc3c7" }} />}
@@ -226,12 +397,6 @@ const Register = () => {
                       Last Name
                     </span>
                   }
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please input your last name!",
-                    },
-                  ]}
                 >
                   <Input
                     prefix={<UserOutlined style={{ color: "#bdc3c7" }} />}
@@ -260,7 +425,6 @@ const Register = () => {
                   Register As
                 </span>
               }
-              rules={[{ required: true, message: "Please select your role!" }]}
             >
               <Select
                 placeholder="Select your role"
@@ -291,10 +455,6 @@ const Register = () => {
                   Email Address
                 </span>
               }
-              rules={[
-                { required: true, message: "Please input your email!" },
-                { type: "email", message: "Please enter a valid email!" },
-              ]}
             >
               <Input
                 prefix={<MailOutlined style={{ color: "#bdc3c7" }} />}
@@ -321,12 +481,6 @@ const Register = () => {
                   Phone Number
                 </span>
               }
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your phone number!",
-                },
-              ]}
             >
               <Input
                 prefix={<PhoneOutlined style={{ color: "#bdc3c7" }} />}
@@ -353,17 +507,6 @@ const Register = () => {
                   Password
                 </span>
               }
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your password!",
-                },
-                {
-                  min: 6,
-                  message: "Password must be at least 6 characters!",
-                },
-              ]}
-              hasFeedback
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#bdc3c7" }} />}
@@ -393,24 +536,6 @@ const Register = () => {
                   Confirm Password
                 </span>
               }
-              dependencies={["password"]}
-              hasFeedback
-              rules={[
-                {
-                  required: true,
-                  message: "Please confirm your password!",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("password") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("The two passwords do not match!")
-                    );
-                  },
-                }),
-              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#bdc3c7" }} />}

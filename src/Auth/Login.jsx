@@ -18,6 +18,37 @@ const Login = () => {
 
   const onFinish = async (values) => {
     try {
+      // Validate required fields
+      if (!values.email || !values.password) {
+        enqueueSnackbar("Please enter all required fields.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(values.email)) {
+        enqueueSnackbar("Please enter a valid email address.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      // Validate password length
+      if (values.password.length < 6) {
+        enqueueSnackbar("Password must be at least 6 characters long.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
       const response = await loginUser({
         email: values.email,
         password: values.password,
@@ -85,7 +116,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      enqueueSnackbar(error?.data?.message || "Login failed. Please try again.", {
+      enqueueSnackbar(error?.data?.message || error?.message || "Login failed. Please try again.", {
         variant: "error",
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
@@ -95,11 +126,22 @@ const Login = () => {
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
-    enqueueSnackbar("Please check your input fields", {
-      variant: "error",
-      anchorOrigin: { vertical: "top", horizontal: "right" },
-      autoHideDuration: 3000,
-    });
+
+    // Get the first error message
+    const firstError = errorInfo.errorFields[0];
+    if (firstError && firstError.errors.length > 0) {
+      enqueueSnackbar(firstError.errors[0], {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+    } else {
+      enqueueSnackbar("Please check your input fields.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -207,16 +249,6 @@ const Login = () => {
                 </span>
               }
               name="email"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your email!",
-                },
-                {
-                  type: "email",
-                  message: "Please enter a valid email address!",
-                },
-              ]}
             >
               <Input
                 prefix={<UserOutlined style={{ color: "#bdc3c7" }} />}
@@ -244,16 +276,6 @@ const Login = () => {
                 </span>
               }
               name="password"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input your password!",
-                },
-                {
-                  min: 6,
-                  message: "Password must be at least 6 characters!",
-                },
-              ]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#bdc3c7" }} />}

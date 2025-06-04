@@ -5,6 +5,7 @@ import {
   useResendOtpMutation,
 } from "../Slices/Users/UserApis";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack"; // Add this import
 import { CloseOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -17,6 +18,7 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
   const inputRefs = useRef([]);
   const timerRef = useRef(null);
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
 
   const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
   const [resendOtp, { isLoading: isResendLoading }] = useResendOtpMutation();
@@ -108,7 +110,11 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
       navigate("/login");
     } catch (error) {
       console.error("OTP verification failed:", error);
-      message.error(error?.data?.message || "Invalid OTP. Please try again.");
+      enqueueSnackbar(error?.data?.message || error?.message || "Invalid OTP. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
 
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
@@ -132,9 +138,11 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
       startResendTimer();
     } catch (error) {
       console.error("Resend OTP failed:", error);
-      message.error(
-        error?.data?.message || "Failed to resend OTP. Please try again."
-      );
+      enqueueSnackbar(error?.data?.message || error?.message || "Failed to resend OTP. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
