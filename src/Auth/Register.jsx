@@ -271,7 +271,7 @@ const Register = () => {
     enqueueSnackbar(
       "Email verification cancelled. Please register again if needed.",
       {
-        variant: "info",
+        variant: "error",
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
       }

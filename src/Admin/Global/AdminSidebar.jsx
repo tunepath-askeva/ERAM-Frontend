@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSnackbar } from "notistack"; // Add this import
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
@@ -37,6 +38,7 @@ const AdminSidebar = ({
   });
 
   const [logout] = useLogoutSuperAdminMutation();
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -126,9 +128,23 @@ const AdminSidebar = ({
     try {
       await logout().unwrap();
       dispatch(userLogout({ role: "admin" }));
+      
+      enqueueSnackbar("Logged out successfully", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+      
       navigate("/login");
+      
     } catch (error) {
       console.error("Logout failed:", error);
+      
+      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 

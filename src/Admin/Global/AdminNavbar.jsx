@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useSnackbar } from "notistack"; // Add this import
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
@@ -91,6 +92,7 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   });
 
   const [logout] = useLogoutSuperAdminMutation();
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -172,9 +174,23 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     try {
       await logout().unwrap();
       dispatch(userLogout({ role: "admin" }));
+
+      enqueueSnackbar("Logged out successfully", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+
       navigate("/login");
+
     } catch (error) {
       console.error("Logout failed:", error);
+
+      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
