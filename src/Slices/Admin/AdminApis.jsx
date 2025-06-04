@@ -21,10 +21,28 @@ export const adminApi = createApi({
       }),
     }),
     getPipelines: builder.query({
-      query: () => "/pipeline",
+      query: () => "/Pipeline",
       providesTags: ["Pipeline"],
+    }),
+    deletePipeline: builder.mutation({
+      query: (pipelineId) => ({
+        url: `/deletePipeline/${pipelineId}`,
+        method: "DELETE",
+      }),
+    }),
+    editPipeline: builder.mutation({
+      query: ({ pipelineId, pipelineData }) => ({
+        url: `/editPipeline/${pipelineId}`,
+        method: "PUT",
+        body: pipelineData,
+      }),
     }),
   }),
 });
 
-export const { useAddPipelineMutation, useGetPipelinesQuery } = adminApi;
+export const {
+  useAddPipelineMutation,
+  useGetPipelinesQuery,
+  useDeletePipelineMutation,
+  useEditPipelineMutation,
+} = adminApi;

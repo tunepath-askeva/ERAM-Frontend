@@ -134,8 +134,8 @@ const Login = () => {
             borderRadius: "20px",
             border: "none",
             overflow: "hidden",
+            padding: "40px"
           }}
-          bodyStyle={{ padding: "40px" }}
         >
           <div
             style={{
