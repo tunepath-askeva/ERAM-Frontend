@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useSnackbar } from "notistack"; // Add this import
 import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
   UserOutlined,
@@ -78,6 +79,7 @@ const NavButton = styled(Button)`
 
 const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
 
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -172,9 +174,23 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     try {
       await logoutSuperAdmin().unwrap();
       dispatch(SuperAdminlogout());
+      
+      enqueueSnackbar("Logged out successfully", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+      
       navigate("/superadmin/login");
+      
     } catch (error) {
       console.error("Logout failed:", error);
+      
+      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -219,7 +235,6 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             marginRight: "auto",
           }}
         >
-          {/* You can add a dynamic title here based on current route */}
         </div>
       )}
 

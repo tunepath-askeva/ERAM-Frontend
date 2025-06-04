@@ -4,6 +4,8 @@ import {
   useVerifyAdminLoginOtpMutation,
   useVerifyUpdateProfileMutation,
 } from "../../Slices/SuperAdmin/SuperAdminAPIs";
+import { useSnackbar } from "notistack"; // Add this import
+
 import { CloseOutlined, VerifiedOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -21,6 +23,8 @@ const SuperAdminOtpModal = ({
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const inputRefs = useRef([]);
   const timerRef = useRef(null);
+  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+
 
   const [verifyAdminLoginOtp, { isLoading }] = useVerifyAdminLoginOtpMutation();
   const [verifyUpdateOtp] = useVerifyUpdateProfileMutation();
@@ -42,7 +46,7 @@ const SuperAdminOtpModal = ({
   }, [visible]);
 
   const startResendTimer = () => {
-    setResendTimer(180); // 3 minutes for admin OTP
+    setResendTimer(180);
     setIsResendDisabled(true);
 
     timerRef.current = setInterval(() => {
@@ -116,7 +120,6 @@ const SuperAdminOtpModal = ({
         message.success("Login OTP verified successfully!");
       } else if (mode === "updateProfile") {
         response = await verifyUpdateOtp(otpData).unwrap();
-        // Don't store token in localStorage - it's now handled by cookies
         message.success("Profile update OTP verified successfully!");
       } else {
         throw new Error("Invalid OTP verification mode");
@@ -132,11 +135,11 @@ const SuperAdminOtpModal = ({
       }, 100);
     } catch (error) {
       console.error("OTP verification failed:", error);
-      message.error(
-        error?.data?.message ||
-          error?.message ||
-          "Invalid OTP. Please try again."
-      );
+      enqueueSnackbar(error?.data?.message || error?.message || "Invalid OTP. Please try again.", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
