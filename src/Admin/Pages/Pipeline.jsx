@@ -32,6 +32,7 @@ import {
   OrderedListOutlined,
   ApartmentOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from 'notistack';
 import {
   useGetPipelinesQuery,
   useDeletePipelineMutation,
@@ -50,13 +51,14 @@ const Pipeline = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
 
+  const { enqueueSnackbar } = useSnackbar();
+
   const {
     data: pipelinesResponse,
     isLoading,
     refetch,
   } = useGetPipelinesQuery();
 
-  // Get pipeline details for viewing
   const {
     data: pipelineDetails,
     isLoading: isLoadingDetails,
@@ -85,16 +87,28 @@ const Pipeline = () => {
 
     try {
       await deletePipeline(pipelineToDelete._id).unwrap();
-      message.success(
-        `Pipeline "${pipelineToDelete.name}" deleted successfully`
+      
+      enqueueSnackbar(
+        `Pipeline "${pipelineToDelete.name}" deleted successfully`, 
+        { 
+          variant: 'success',
+        }
       );
+      
       setDeleteModalVisible(false);
       setPipelineToDelete(null);
       refetch();
     } catch (error) {
       const errorMessage =
         error?.data?.message || error?.message || "Failed to delete pipeline";
-      message.error(errorMessage);
+      
+      enqueueSnackbar(
+        errorMessage, 
+        { 
+          variant: 'error',
+        }
+      );
+      
       console.error("Delete error:", error);
     }
   };
@@ -112,7 +126,7 @@ const Pipeline = () => {
   const handleModalClose = () => {
     setIsModalVisible(false);
     setEditingPipeline(null);
-    refetch(); // Refresh the list when modal closes
+    refetch(); 
   };
 
   const handleViewPipeline = (pipelineId) => {
@@ -692,14 +706,12 @@ const Pipeline = () => {
         )}
       </Modal>
 
-      {/* Create/Edit Pipeline Modal */}
       <CreatePipelineModal
         visible={isModalVisible}
         onClose={handleModalClose}
         editingPipeline={editingPipeline}
       />
 
-      {/* Delete Confirmation Modal - Responsive */}
       <Modal
         title={
           <div
@@ -752,7 +764,6 @@ const Pipeline = () => {
         destroyOnClose
       >
         <div style={{ padding: "16px 0" }}>
-          {/* Warning Alert */}
           <div
             style={{
               background: "#fff2f0",
@@ -792,7 +803,6 @@ const Pipeline = () => {
             </div>
           </div>
 
-          {/* Pipeline Details */}
           {pipelineToDelete && (
             <div>
               <Text
