@@ -4,12 +4,12 @@ import {
   UserOutlined,
   LockOutlined,
   GoogleOutlined,
-SafetyCertificateOutlined 
+  SafetyCertificateOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack"; // Add this import
-import { useLoginSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { setSuperAdminCredentials } from "../../Slices/SuperAdmin/SuperAdminSlice";
 import SuperAdminOtpModal from "../Modal/SuperAdminOtpModal";
 
