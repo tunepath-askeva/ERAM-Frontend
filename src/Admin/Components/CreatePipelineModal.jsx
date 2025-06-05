@@ -7,7 +7,6 @@ import {
   Card,
   InputNumber,
   Space,
-  message,
   Row,
   Col,
   Typography,
@@ -30,6 +29,7 @@ import {
   SaveOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from 'notistack';
 import {
   useAddPipelineMutation,
   useEditPipelineMutation,
@@ -55,6 +55,8 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const [pipelineName, setPipelineName] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const { enqueueSnackbar } = useSnackbar();
+
   const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
   const [editPipeline, { isLoading: isUpdating }] = useEditPipelineMutation();
   const [editStage, { isLoading: isEditingStageAPI }] = useEditStageMutation();
@@ -77,7 +79,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     "Passport",
   ];
 
-  // Initialize form with editing data
   useEffect(() => {
     if (editingPipeline && visible) {
       setIsEditMode(true);
@@ -144,7 +145,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
   const addStage = async () => {
     if (!currentStage.name.trim()) {
-      message.error("Stage name is required");
+      enqueueSnackbar("Stage name is required", { variant: 'error' });
       return;
     }
 
@@ -154,7 +155,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     };
 
     if (isEditingStage) {
-      // If in edit mode and editing an existing stage with ID, call API
       if (isEditMode && stages[editingIndex]._id) {
         try {
           const stageData = {
@@ -164,7 +164,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             requiredDocuments: newStage.requiredDocuments,
           };
 
-          await editStage({
+          const response = await editStage({
             stageId: stages[editingIndex]._id,
             stageData,
           }).unwrap();
@@ -175,27 +175,28 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             ...newStage,
           };
           setStages(updatedStages);
-          message.success("Stage updated successfully");
+          
+          const successMessage = response?.message || "Stage updated successfully";
+          enqueueSnackbar(successMessage, { variant: 'success' });
         } catch (error) {
           const errorMessage =
             error?.data?.message || error?.message || "Failed to update stage";
-          message.error(errorMessage);
+          enqueueSnackbar(errorMessage, { variant: 'error' });
           console.error("Stage update error:", error);
           return;
         }
       } else {
-        // Local update for new stages or create mode
         const updatedStages = [...stages];
         updatedStages[editingIndex] = newStage;
         setStages(updatedStages);
-        message.success("Stage updated successfully");
+        enqueueSnackbar("Stage updated successfully", { variant: 'success' });
       }
 
       setIsEditingStage(false);
       setEditingIndex(-1);
     } else {
       setStages([...stages, newStage]);
-      message.success("Stage added successfully");
+      enqueueSnackbar("Stage added successfully", { variant: 'success' });
     }
 
     setCurrentStage({
@@ -215,21 +216,20 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const deleteStageHandler = async (index) => {
     const stageToDelete = stages[index];
 
-    // If in edit mode and stage has an ID, call delete API
     if (isEditMode && stageToDelete._id) {
       try {
-        await deleteStage(stageToDelete._id).unwrap();
-        message.success("Stage deleted successfully from database");
+        const response = await deleteStage(stageToDelete._id).unwrap();
+        const successMessage = response?.message || "Stage deleted successfully from database";
+        enqueueSnackbar(successMessage, { variant: 'success' });
       } catch (error) {
         const errorMessage =
           error?.data?.message || error?.message || "Failed to delete stage";
-        message.error(errorMessage);
+        enqueueSnackbar(errorMessage, { variant: 'error' });
         console.error("Stage delete error:", error);
         return;
       }
     }
 
-    // Remove from local state
     const updatedStages = stages.filter((_, i) => i !== index);
     const reorderedStages = updatedStages.map((stage, i) => ({
       ...stage,
@@ -237,7 +237,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     }));
     setStages(reorderedStages);
 
-    // Update current stage order if adding new stage
     if (!isEditingStage) {
       setCurrentStage((prev) => ({
         ...prev,
@@ -246,18 +245,18 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     }
 
     if (!isEditMode || !stageToDelete._id) {
-      message.success("Stage removed successfully");
+      enqueueSnackbar("Stage removed successfully", { variant: 'success' });
     }
   };
 
   const handleSubmit = async () => {
     if (!pipelineName || !pipelineName.trim()) {
-      message.error("Pipeline name is required");
+      enqueueSnackbar("Pipeline name is required", { variant: 'error' });
       return;
     }
 
     if (stages.length === 0) {
-      message.error("At least one stage is required");
+      enqueueSnackbar("At least one stage is required", { variant: 'error' });
       return;
     }
 
@@ -274,10 +273,14 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           pipelineId: editingPipeline._id,
           pipelineData,
         }).unwrap();
-        message.success("Pipeline updated successfully!");
+        
+        const successMessage = result?.message || "Pipeline updated successfully!";
+        enqueueSnackbar(successMessage, { variant: 'success' });
       } else {
         result = await addPipeline(pipelineData).unwrap();
-        message.success("Pipeline created successfully!");
+        
+        const successMessage = result?.message || "Pipeline created successfully!";
+        enqueueSnackbar(successMessage, { variant: 'success' });
       }
 
       console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
@@ -288,7 +291,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
         error?.data?.message ||
         error?.message ||
         `Failed to ${isEditMode ? "update" : "create"} pipeline`;
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: 'error' });
       console.error(
         `Pipeline ${isEditMode ? "update" : "creation"} error:`,
         error
@@ -328,7 +331,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       style={{ top: "20px", padding: "24px" }}
     >
       <div style={{ marginTop: "8px" }}>
-        {/* Pipeline Name Section */}
         <Card
           style={{
             marginBottom: "24px",
@@ -362,7 +364,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           />
         </Card>
 
-        {/* Stages Header */}
         <Card
           style={{
             marginBottom: "20px",
@@ -404,7 +405,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         </Card>
 
-        {/* Existing Stages */}
         {stages.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
             <Row gutter={[16, 16]}>
@@ -537,7 +537,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         )}
 
-        {/* Add/Edit Stage Form */}
         <Card
           title={
             <div
@@ -633,34 +632,32 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               style={{ width: "100%", marginTop: "8px" }}
             >
               <Space.Compact style={{ width: "100%" }}>
-  <Input
-    placeholder="Enter document name"
-    value={newDocument}
-    onChange={(e) => setNewDocument(e.target.value)}
-    onPressEnter={addDocument}
-    style={{
-      borderRadius: "8px",
-      border: "2px solid #e8f4fd",
-      flex: 1,
-    }}
-  />
-  <div style={{ marginLeft: "8px" }}>
-    <Button
-      type="primary"
-      icon={<PlusOutlined />}
-      onClick={addDocument}
-      style={{
-        borderRadius: "8px",
-        background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-      }}
-    >
-      Add
-    </Button>
-  </div>
-</Space.Compact>
+                <Input
+                  placeholder="Enter document name"
+                  value={newDocument}
+                  onChange={(e) => setNewDocument(e.target.value)}
+                  onPressEnter={addDocument}
+                  style={{
+                    borderRadius: "8px",
+                    border: "2px solid #e8f4fd",
+                    flex: 1,
+                  }}
+                />
+                <div style={{ marginLeft: "8px" }}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={addDocument}
+                    style={{
+                      borderRadius: "8px",
+                      background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </Space.Compact>
 
-
-              {/* Common Documents */}
               <div style={{ marginTop: "12px" }}>
                 <Text style={{ fontSize: "12px", color: "#666" }}>
                   <InfoCircleOutlined style={{ marginRight: "4px" }} />
@@ -704,7 +701,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                 </div>
               </div>
 
-              {/* Selected Documents */}
               {currentStage.requiredDocuments.length > 0 && (
                 <div style={{ marginTop: "12px" }}>
                   <Text style={{ fontSize: "12px", color: "#666" }}>
@@ -787,7 +783,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         </Card>
 
-        {/* Footer Actions */}
         <div
           style={{
             display: "flex",

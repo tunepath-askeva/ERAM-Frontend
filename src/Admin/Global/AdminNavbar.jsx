@@ -18,7 +18,6 @@ import styled from "styled-components";
 
 const { Header } = Layout;
 
-// Responsive breakpoints
 const BREAKPOINTS = {
   mobile: 768,
   tablet: 1024,
@@ -32,9 +31,11 @@ const AppBar = styled(Header)`
   height: ${(props) => props.height}px;
   line-height: ${(props) => props.height}px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
+  position: fixed !important;
   top: 0;
-  z-index: 99;
+  left: ${(props) => props.leftMargin}px !important;
+  right: 0 !important;
+  z-index: 99 !important;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #e8e8e8;
@@ -44,6 +45,7 @@ const AppBar = styled(Header)`
     padding: 0 12px;
     height: 56px;
     line-height: 56px;
+    left: 0 !important;
   }
 
   @media (min-width: ${BREAKPOINTS.mobile}px) and (max-width: ${BREAKPOINTS.tablet}px) {
@@ -92,7 +94,7 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   });
 
   const [logout] = useLogoutSuperAdminMutation();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -143,6 +145,15 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     if (screenSize.isMobile) return 32;
     if (screenSize.isTablet) return 36;
     return 40;
+  };
+
+  const getNavbarLeftMargin = () => {
+    if (screenSize.isMobile) return 0; 
+    
+    const sidebarWidth = screenSize.isTablet ? 220 : 250;
+    const collapsedWidth = screenSize.isTablet ? 70 : 80;
+    
+    return collapsed ? collapsedWidth : sidebarWidth;
   };
 
   const getToggleIcon = () => {
@@ -213,7 +224,11 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   ];
 
   return (
-    <AppBar height={getNavbarHeight()} padding={getPadding()}>
+    <AppBar 
+      height={getNavbarHeight()} 
+      padding={getPadding()}
+      leftMargin={getNavbarLeftMargin()}
+    >
       <NavButton
         type="text"
         icon={getToggleIcon()}
@@ -225,7 +240,6 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }}
       />
 
-      {/* Center - Title (optional, hidden on mobile) */}
       {!screenSize.isMobile && (
         <div
           style={{
@@ -234,15 +248,11 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             color: "#2a4365",
             marginRight: "auto",
           }}
-        >
-          {/* You can add a dynamic title here based on current route */}
-        </div>
+        >        </div>
       )}
 
-      {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Right side - Actions */}
       <div
         style={{
           display: "flex",
@@ -250,7 +260,6 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           gap: screenSize.isMobile ? "8px" : "12px",
         }}
       >
-        {/* Notifications */}
         <Badge count={5} size="small">
           <NavButton
             type="text"

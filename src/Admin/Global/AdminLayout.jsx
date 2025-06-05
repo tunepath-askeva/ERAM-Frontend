@@ -6,7 +6,6 @@ import { Outlet } from "react-router-dom";
 
 const { Content } = Layout;
 
-// Responsive breakpoints
 const BREAKPOINTS = {
   mobile: 768,
   tablet: 1024,
@@ -42,7 +41,6 @@ const AdminLayout = () => {
       
       setScreenSize(newScreenSize);
       
-      // Auto-collapse sidebar on mobile and small tablets
       if (newScreenSize.isMobile) {
         setCollapsed(true);
         setDrawerVisible(false);
@@ -52,12 +50,11 @@ const AdminLayout = () => {
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize(); // Initial call
+    handleResize(); 
     
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Calculate dynamic margins and paddings based on screen size
   const getLayoutMargin = () => {
     if (screenSize.isMobile) return 0;
     
@@ -82,14 +79,16 @@ const AdminLayout = () => {
     if (screenSize.isMobile) return 12;
     if (screenSize.isTablet) return 16;
     if (screenSize.isDesktop) return 24;
-    return 32; // Large desktop
+    return 32; 
   };
 
-  const getContentMargin = () => {
-    if (screenSize.isMobile) return "16px 8px";
-    if (screenSize.isTablet) return "20px 12px";
-    if (screenSize.isDesktop) return "24px 16px";
-    return "32px 24px"; // Large desktop
+
+
+  const getNavbarHeight = () => {
+    if (screenSize.isMobile) return 56;
+    if (screenSize.isTablet) return 60;
+    if (screenSize.isLargeDesktop) return 68;
+    return 64;
   };
 
   return (
@@ -113,6 +112,7 @@ const AdminLayout = () => {
           transition: "margin-left 0.3s ease",
           minHeight: "100vh",
           position: "relative",
+          paddingTop: getNavbarHeight(), 
         }}
       >
         <AdminNavbar
@@ -123,13 +123,8 @@ const AdminLayout = () => {
         
         <Content
           style={{
-            margin: getContentMargin(),
             padding: getContentPadding(),
-            minHeight: screenSize.isMobile ? 
-              `calc(100vh - 120px)` : 
-              screenSize.isTablet ? 
-                `calc(100vh - 140px)` : 
-                `calc(100vh - 160px)`,
+            minHeight: `calc(100vh - ${getNavbarHeight() + 40}px)`, 
             background: "#fff",
             borderRadius: screenSize.isMobile ? 6 : 8,
             boxShadow: screenSize.isMobile ? 
@@ -151,7 +146,6 @@ const AdminLayout = () => {
         </Content>
       </Layout>
       
-      {/* Mobile overlay when drawer is open */}
       {screenSize.isMobile && drawerVisible && (
         <div
           style={{
