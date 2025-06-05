@@ -30,7 +30,7 @@ import {
   CloseOutlined,
   InfoCircleOutlined,
   OrderedListOutlined,
-  ApartmentOutlined
+  ApartmentOutlined,
 } from "@ant-design/icons";
 import {
   useGetPipelinesQuery,
@@ -167,7 +167,7 @@ const Pipeline = () => {
             onClick={showCreateModal}
             className="pipeline-button"
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               border: "none",
               borderRadius: "8px",
               fontSize: "14px",
@@ -242,7 +242,7 @@ const Pipeline = () => {
                       >
                         <FolderOpenOutlined
                           style={{
-                            color: "#1890ff",
+                            color: "#ff4d4f",
                             marginRight: 8,
                             fontSize: "16px",
                             flexShrink: 0,
@@ -532,7 +532,6 @@ const Pipeline = () => {
           </div>
         ) : pipelineDetails?.getPipelineByIds ? (
           <div>
-            {/* Pipeline Basic Info */}
             <Card
               title="Pipeline Information"
               style={{ marginBottom: 16 }}
@@ -553,7 +552,6 @@ const Pipeline = () => {
               </Descriptions>
             </Card>
 
-            {/* Pipeline Stages */}
             <Card
               title={
                 <div>

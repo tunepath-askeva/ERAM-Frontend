@@ -67,6 +67,19 @@ export const adminApi = createApi({
         methid: "GET",
       }),
     }),
+    createRecruiter: builder.mutation({
+      query: (recruiterData) => ({
+        url: "/recruiters",
+        method: "POST",
+        body: recruiterData,
+      }),
+    }),
+    getRecruiters: builder.query({
+      query: () => ({
+        url: "/recruiters",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -86,4 +99,8 @@ export const {
 
   //admin branch
   useGetAdminBranchQuery,
+
+  //recruiter
+  useCreateRecruiterMutation,
+  useGetRecruitersQuery,
 } = adminApi;

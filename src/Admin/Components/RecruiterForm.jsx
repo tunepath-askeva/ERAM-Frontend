@@ -3,13 +3,14 @@ import {
   Modal,
   Form,
   Input,
-  Select,
   Row,
   Col,
   Card,
   Typography,
   Space,
   message,
+  InputNumber,
+  Select,
 } from "antd";
 import {
   UserOutlined,
@@ -19,32 +20,35 @@ import {
   LockOutlined,
   SaveOutlined,
   PlusOutlined,
+  EnvironmentOutlined,
+  StarOutlined,
+  ToolOutlined,
 } from "@ant-design/icons";
+import { useCreateRecruiterMutation } from "../../Slices/Admin/AdminApis";
 
-const { Option } = Select;
 const { Title } = Typography;
+const { Option } = Select;
 
-const AdminFormModal = ({
+const RecruiterForm = ({
   open,
   onCancel,
-  onSubmit,
-  branches = [],
-  loading,
+  onSuccess,
   mode = "add",
-  title,
+  title = "Add New Recruiter",
   initialValues = null,
 }) => {
   const [form] = Form.useForm();
+  const [createRecruiter, { isLoading }] = useCreateRecruiterMutation();
 
   useEffect(() => {
     if (open) {
       if (mode === "edit" && initialValues) {
         form.setFieldsValue({
-          firstName: initialValues.firstName,
-          lastName: initialValues.lastName,
+          fullName: initialValues.fullName,
           email: initialValues.email,
-          phone: initialValues.phone,
-          branchId: initialValues.branchId,
+          phoneno: initialValues.phoneno,
+          specialization: initialValues.specialization,
+          experience: initialValues.experienceYears,
         });
       } else {
         form.resetFields();
@@ -56,40 +60,29 @@ const AdminFormModal = ({
     try {
       const values = await form.validateFields();
 
-      let payload;
+      const payload = {
+        fullName: values.fullName,
+        email: values.email,
+        phoneno: values.phoneno,
+        specialization: values.specialization,
+        experience: values.experience,
+        password: values.password,
+        role: "recruiter",
+      };
 
-      if (mode === "edit") {
-        payload = {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          fullName: `${values.firstName} ${values.lastName}`,
-          email: values.email,
-          branchId: values.branchId,
-          phone: values.phone,
-        };
+      const result = await createRecruiter(payload).unwrap();
 
-        if (values.password && values.password.trim() !== "") {
-          payload.cPassword = values.password;
-        }
+      message.success("Recruiter created successfully!");
+      form.resetFields();
 
-        payload.adminId = initialValues.id;
-      } else {
-        payload = {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          fullName: `${values.firstName} ${values.lastName}`,
-          role: "admin",
-          email: values.email,
-          branchId: values.branchId,
-          phone: values.phone,
-          cPassword: values.password,
-        };
+      if (onSuccess) {
+        onSuccess(result);
       }
 
-      await onSubmit(payload);
-      form.resetFields();
+      onCancel();
     } catch (error) {
-      console.error("Validation failed:", error);
+      console.error("Failed to create recruiter:", error);
+      message.error(error?.data?.message || "Failed to create recruiter");
     }
   };
 
@@ -102,10 +95,6 @@ const AdminFormModal = ({
     validator(_, value) {
       const password = getFieldValue("password");
 
-      if (mode === "edit" && !password && !value) {
-        return Promise.resolve();
-      }
-
       if (!value || password === value) {
         return Promise.resolve();
       }
@@ -117,7 +106,7 @@ const AdminFormModal = ({
     <Modal
       title={
         <Space>
-          {mode === "add" ? <PlusOutlined /> : <SaveOutlined />}
+          <PlusOutlined />
           {title}
         </Space>
       }
@@ -126,79 +115,61 @@ const AdminFormModal = ({
       onOk={handleSubmit}
       okButtonProps={{
         style: {
-          background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-
+          background: "linear-gradient(135deg, #ff4d4f 0%, #d9363e 100%)",
         },
       }}
-      confirmLoading={loading}
+      confirmLoading={isLoading}
       width={700}
-      okText={mode === "add" ? "Create Admin" : "Save Changes"}
+      okText={mode === "add" ? "Create Recruiter" : "Update Recruiter"}
       cancelText="Cancel"
       destroyOnClose={true}
-      styles={{
-        body: { maxHeight: "70vh", overflowY: "auto" },
-      }}
     >
       <Form form={form} layout="vertical" autoComplete="off">
+        {/* Personal Information Section */}
         <Card
           size="small"
           title={
             <Space>
               <UserOutlined />
-              <span>Basic Information</span>
+              <span>Personal Information</span>
             </Space>
           }
           style={{ marginBottom: 16 }}
         >
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item
-                label="First Name"
-                name="firstName"
+                label="Full Name"
+                name="fullName"
                 rules={[
-                  { required: true, message: "Please enter first name" },
+                  { required: true, message: "Please enter full name" },
                   {
                     min: 2,
-                    message: "First name must be at least 2 characters",
-                  },
-                  {
-                    pattern: /^[a-zA-Z\s]+$/,
-                    message: "First name should only contain letters",
+                    message: "Full name must be at least 2 characters",
                   },
                 ]}
               >
                 <Input
-                  placeholder="Enter first name"
-                  prefix={<UserOutlined />}
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Last Name"
-                name="lastName"
-                rules={[
-                  { required: true, message: "Please enter last name" },
-                  {
-                    min: 2,
-                    message: "Last name must be at least 2 characters",
-                  },
-                  {
-                    pattern: /^[a-zA-Z\s]+$/,
-                    message: "Last name should only contain letters",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="Enter last name"
+                  placeholder="Enter recruiter's full name"
                   prefix={<UserOutlined />}
                   size="large"
                 />
               </Form.Item>
             </Col>
           </Row>
+        </Card>
 
+        {/* Contact Information Section */}
+        <Card
+          size="small"
+          title={
+            <Space>
+              <UserOutlined />
+              <span>Contact Information</span>
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -210,7 +181,7 @@ const AdminFormModal = ({
                 ]}
               >
                 <Input
-                  placeholder="admin@company.com"
+                  placeholder="recruiter@company.com"
                   prefix={<MailOutlined />}
                   size="large"
                 />
@@ -219,7 +190,7 @@ const AdminFormModal = ({
             <Col span={12}>
               <Form.Item
                 label="Phone Number"
-                name="phone"
+                name="phoneno"
                 rules={[
                   { required: true, message: "Please enter phone number" },
                   {
@@ -238,43 +209,57 @@ const AdminFormModal = ({
           </Row>
         </Card>
 
+        {/* Professional Information Section */}
         <Card
           size="small"
           title={
             <Space>
-              <BankOutlined />
-              <span>Branch Assignment</span>
+              <ToolOutlined />
+              <span>Professional Information</span>
             </Space>
           }
           style={{ marginBottom: 16 }}
         >
-          <Form.Item
-            label="Assign Branch"
-            name="branchId"
-            rules={[{ required: true, message: "Please select a branch" }]}
-          >
-            <Select
-              placeholder="Select branch"
-              size="large"
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                option?.children?.toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {branches.map((branch) => (
-                <Option key={branch._id} value={branch._id}>
-                  <Space>
-                    <BankOutlined />
-                    <span>{branch.name}</span>
-                    <span style={{ color: "#666", fontSize: "12px" }}>
-                      ({branch.branchCode})
-                    </span>
-                  </Space>
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Specialization"
+                name="specialization"
+                rules={[
+                  { required: true, message: "Please enter specialization" },
+                ]}
+              >
+                <Input
+                  placeholder="e.g., IT, Healthcare, Finance"
+                  prefix={<BankOutlined />}
+                  size="large"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Experience (Years)"
+                name="experience"
+                rules={[
+                  { required: true, message: "Please enter experience" },
+                  {
+                    type: "number",
+                    min: 0,
+                    max: 50,
+                    message: "Experience must be between 0 and 50 years",
+                  },
+                ]}
+              >
+                <InputNumber
+                  placeholder="Years of experience"
+                  style={{ width: "100%" }}
+                  size="large"
+                  min={0}
+                  max={50}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </Card>
 
         {/* Security Section */}
@@ -284,17 +269,6 @@ const AdminFormModal = ({
             <Space>
               <LockOutlined />
               <span>Security</span>
-              {mode === "edit" && (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    fontWeight: "normal",
-                  }}
-                >
-                  (Leave blank to keep current password)
-                </span>
-              )}
             </Space>
           }
         >
@@ -321,11 +295,7 @@ const AdminFormModal = ({
                 hasFeedback
               >
                 <Input.Password
-                  placeholder={
-                    mode === "edit"
-                      ? "Enter new password (optional)"
-                      : "Enter password"
-                  }
+                  placeholder="Enter password"
                   prefix={<LockOutlined />}
                   size="large"
                 />
@@ -346,11 +316,7 @@ const AdminFormModal = ({
                 hasFeedback
               >
                 <Input.Password
-                  placeholder={
-                    mode === "edit"
-                      ? "Confirm new password"
-                      : "Confirm password"
-                  }
+                  placeholder="Confirm password"
                   prefix={<LockOutlined />}
                   size="large"
                 />
@@ -363,4 +329,4 @@ const AdminFormModal = ({
   );
 };
 
-export default AdminFormModal;
+export default RecruiterForm;
