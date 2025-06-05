@@ -24,6 +24,7 @@ import {
   FolderOpenOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -68,7 +69,9 @@ const WorkOrder = () => {
 
     try {
       // Add your delete API call here
-      message.success(`Work Order "${workOrderToDelete.name}" deleted successfully`);
+      message.success(
+        `Work Order "${workOrderToDelete.name}" deleted successfully`
+      );
       setDeleteModalVisible(false);
       setWorkOrderToDelete(null);
     } catch (error) {
@@ -104,7 +107,17 @@ const WorkOrder = () => {
         }}
       >
         <div className="workorder-header">
-          <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <UnorderedListOutlined
+              size={24}
+              style={{ marginRight: "8px", color: "#2c3e50" }}
+            />
             <Title
               level={2}
               className="work-order-title"
@@ -215,7 +228,11 @@ const WorkOrder = () => {
                           {workOrder.name}
                         </Text>
                       </div>
-                      <Tag color={workOrder.status === "Completed" ? "green" : "blue"}>
+                      <Tag
+                        color={
+                          workOrder.status === "Completed" ? "green" : "blue"
+                        }
+                      >
                         {workOrder.status}
                       </Tag>
                     </div>
@@ -348,11 +365,14 @@ const WorkOrder = () => {
                         }}
                       >
                         Created:{" "}
-                        {new Date(workOrder.createdAt).toLocaleDateString(undefined, {
-                          year: "2-digit",
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {new Date(workOrder.createdAt).toLocaleDateString(
+                          undefined,
+                          {
+                            year: "2-digit",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
                       </Text>
                     </div>
                     <div style={{ flexShrink: 0 }}>
@@ -439,11 +459,7 @@ const WorkOrder = () => {
         style={{ maxWidth: 500 }}
         centered
         footer={[
-          <Button
-            key="cancel"
-            onClick={handleDeleteCancel}
-            size="large"
-          >
+          <Button key="cancel" onClick={handleDeleteCancel} size="large">
             Cancel
           </Button>,
           <Button
@@ -487,14 +503,21 @@ const WorkOrder = () => {
               </Text>
               <br />
               <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                All work order data including stages and associated records will be permanently removed.
+                All work order data including stages and associated records will
+                be permanently removed.
               </Text>
             </div>
           </div>
 
           {workOrderToDelete && (
             <div>
-              <Text style={{ fontSize: "14px", marginBottom: "12px", display: "block" }}>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
                 Are you sure you want to delete the following work order?
               </Text>
 
@@ -508,7 +531,14 @@ const WorkOrder = () => {
                 }}
               >
                 <div style={{ marginBottom: "10px" }}>
-                  <Text strong style={{ fontSize: "14px", color: "#2c3e50", wordBreak: "break-word" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                    }}
+                  >
                     {workOrderToDelete.name}
                   </Text>
                 </div>
@@ -521,7 +551,8 @@ const WorkOrder = () => {
 
                 <div style={{ marginBottom: "6px" }}>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Stages:</strong> {workOrderToDelete.stages?.length || 0}
+                    <strong>Stages:</strong>{" "}
+                    {workOrderToDelete.stages?.length || 0}
                   </Text>
                 </div>
 

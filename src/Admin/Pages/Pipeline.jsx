@@ -30,6 +30,7 @@ import {
   CloseOutlined,
   InfoCircleOutlined,
   OrderedListOutlined,
+  ApartmentOutlined
 } from "@ant-design/icons";
 import {
   useGetPipelinesQuery,
@@ -139,7 +140,17 @@ const Pipeline = () => {
         }}
       >
         <div className="pipeline-header">
-          <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ApartmentOutlined
+              size={24}
+              style={{ marginRight: "8px", color: "#2c3e50" }}
+            />
             <Title
               level={2}
               className="pipeline-title"
@@ -148,6 +159,7 @@ const Pipeline = () => {
               Pipeline Management
             </Title>
           </div>
+
           <Button
             type="primary"
             size="large"
