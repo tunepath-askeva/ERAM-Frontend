@@ -22,7 +22,7 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  DeleteOutlined,
+  StopOutlined,
   EditOutlined,
   UserOutlined,
   MailOutlined,
@@ -33,9 +33,14 @@ import {
   WarningOutlined,
   CloseOutlined,
   InfoCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
-import { useGetRecruitersQuery } from "../../Slices/Admin/AdminApis";
+
+import {
+  useGetRecruitersQuery,
+  useDisableRecruiterStatusMutation,
+} from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -43,11 +48,10 @@ const { Option } = Select;
 const AdminRecruiter = () => {
   const [recruiterModalVisible, setRecruiterModalVisible] = useState(false);
   const [editingRecruiter, setEditingRecruiter] = useState(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [recruiterToDelete, setRecruiterToDelete] = useState(null);
+  const [disableModalVisible, setDisableModalVisible] = useState(false);
+  const [recruiterToToggle, setRecruiterToToggle] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedRecruiterId, setSelectedRecruiterId] = useState(null);
-  const [form] = Form.useForm();
 
   // API integration
   const {
@@ -58,11 +62,15 @@ const AdminRecruiter = () => {
     refetch,
   } = useGetRecruitersQuery();
 
-  // Get current admin ID - replace with your actual admin ID from auth context/state
-  const currentAdminId = "your-admin-id-here"; // Replace with actual admin ID
+  const [toggleRecruiterStatus, { isLoading: isToggling }] =
+    useDisableRecruiterStatusMutation();
 
-  // Transform API data to match your component's expected format
   const recruiters = recruitersResponse?.recruiters || recruitersResponse || [];
+
+  // Get selected recruiter data from the existing list
+  const selectedRecruiterData = recruiters.find(
+    (recruiter) => recruiter._id === selectedRecruiterId
+  );
 
   // Handle API errors
   useEffect(() => {
@@ -75,44 +83,56 @@ const AdminRecruiter = () => {
     }
   }, [isError, error]);
 
-  const showDeleteModal = (recruiter) => {
-    setRecruiterToDelete(recruiter);
-    setDeleteModalVisible(true);
+  const showDisableModal = (recruiter) => {
+    setRecruiterToToggle(recruiter);
+    setDisableModalVisible(true);
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteModalVisible(false);
-    setRecruiterToDelete(null);
+  const handleDisableCancel = () => {
+    setDisableModalVisible(false);
+    setRecruiterToToggle(null);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!recruiterToDelete) return;
+  const handleToggleStatus = async () => {
+    if (!recruiterToToggle) return;
 
     try {
-      // TODO: Replace with actual delete API call
-      // await deleteRecruiterMutation(recruiterToDelete._id);
+      const newStatus =
+        recruiterToToggle.accountStatus === "active" ? "inActive" : "active";
 
-      // Simulate API call for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await toggleRecruiterStatus({
+        recruiterId: recruiterToToggle._id,
+        accountStatus: newStatus,
+      }).unwrap();
 
+      const action = newStatus === "active" ? "enabled" : "disabled";
       message.success(
-        `Recruiter "${
-          recruiterToDelete.fullName || recruiterToDelete.companyName
-        }" deleted successfully`
+        `Recruiter "${getRecruiterDisplayName(
+          recruiterToToggle
+        )}" ${action} successfully`
       );
-      setDeleteModalVisible(false);
-      setRecruiterToDelete(null);
 
-      // Refetch data after successful deletion
+      setDisableModalVisible(false);
+      setRecruiterToToggle(null);
       refetch();
     } catch (error) {
-      message.error("Failed to delete recruiter");
-      console.error("Delete error:", error);
+      message.error(
+        error?.data?.message ||
+          `Failed to ${
+            recruiterToToggle.accountStatus === "active" ? "disable" : "enable"
+          } recruiter`
+      );
+      console.error("Toggle status error:", error);
     }
   };
 
   const showCreateModal = () => {
     setEditingRecruiter(null);
+    setRecruiterModalVisible(true);
+  };
+
+  const showEditModal = (recruiter) => {
+    setEditingRecruiter(recruiter);
     setRecruiterModalVisible(true);
   };
 
@@ -122,9 +142,9 @@ const AdminRecruiter = () => {
   };
 
   const handleRecruiterSuccess = (newRecruiter) => {
-    // Refetch data after successful creation
     refetch();
-    message.success("Recruiter created successfully!");
+    const action = editingRecruiter ? "updated" : "created";
+    message.success(`Recruiter ${action} successfully!`);
   };
 
   const handleViewRecruiter = (recruiterId) => {
@@ -137,49 +157,13 @@ const AdminRecruiter = () => {
     setSelectedRecruiterId(null);
   };
 
-  const showEditModal = (recruiter) => {
-    // Map API response fields to form fields
-    const formValues = {
-      fullName: recruiter.fullName,
-      email: recruiter.email,
-      phone: recruiter.phone,
-      specialization: recruiter.specialization,
-      experienceYears: recruiter.experienceYears,
-      accountStatus: recruiter.accountStatus,
-    };
-
-    form.setFieldsValue(formValues);
-    setEditingRecruiter(recruiter);
-  };
-
-  const onFinish = async (values) => {
-    try {
-      // TODO: Replace with actual update API call
-      // await updateRecruiterMutation({ id: editingRecruiter._id, ...values });
-
-      // Simulate API call for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      message.success(`Recruiter "${values.fullName}" updated successfully`);
-      setEditingRecruiter(null);
-      form.resetFields();
-
-      // Refetch data after successful update
-      refetch();
-    } catch (error) {
-      message.error("Failed to update recruiter");
-      console.error("Update error:", error);
-    }
-  };
-
   // Helper function to get recruiter display name
   const getRecruiterDisplayName = (recruiter) => {
-    return recruiter.fullName || recruiter.companyName || "Unknown Recruiter";
+    return recruiter?.fullName || recruiter?.companyName || "Unknown Recruiter";
   };
 
-  // Helper function to get recruiter location
   const getRecruiterLocation = (recruiter) => {
-    return recruiter.location || recruiter.specialization || "Not specified";
+    return recruiter?.specialization || recruiter?.location || "Not specified";
   };
 
   return (
@@ -217,7 +201,7 @@ const AdminRecruiter = () => {
             onClick={showCreateModal}
             className="recruiter-button"
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               border: "none",
               borderRadius: "8px",
               fontSize: "14px",
@@ -276,7 +260,7 @@ const AdminRecruiter = () => {
                       >
                         <UserOutlined
                           style={{
-                            color: "#1890ff",
+                            color: "#da2c46",
                             marginRight: 8,
                             fontSize: "16px",
                             flexShrink: 0,
@@ -322,13 +306,30 @@ const AdminRecruiter = () => {
                           onClick={() => showEditModal(recruiter)}
                         />
                       </Tooltip>
-                      <Tooltip title="Delete Recruiter">
+                      <Tooltip
+                        title={
+                          recruiter.accountStatus === "active"
+                            ? "Disable Recruiter"
+                            : "Enable Recruiter"
+                        }
+                      >
                         <Button
                           type="text"
                           size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(recruiter)}
+                          icon={
+                            recruiter.accountStatus === "active" ? (
+                              <StopOutlined />
+                            ) : (
+                              <CheckCircleOutlined />
+                            )
+                          }
+                          onClick={() => showDisableModal(recruiter)}
+                          style={{
+                            color:
+                              recruiter.accountStatus === "active"
+                                ? "#ff4d4f"
+                                : "#52c41a",
+                          }}
                         />
                       </Tooltip>
                     </Space>
@@ -394,47 +395,6 @@ const AdminRecruiter = () => {
                       )}
                     </div>
                   </div>
-
-                  <div
-                    style={{
-                      borderTop: "1px solid #f0f0f0",
-                      paddingTop: 12,
-                      marginTop: "auto",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                        }}
-                      >
-                        Created:{" "}
-                        {new Date(
-                          recruiter.createdAt || Date.now()
-                        ).toLocaleDateString(undefined, {
-                          year: "2-digit",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </Text>
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                        }}
-                      >
-                        ID: {recruiter._id.slice(-6)}
-                      </Text>
-                    </div>
-                  </div>
                 </Card>
               </div>
             ))}
@@ -489,373 +449,95 @@ const AdminRecruiter = () => {
         )}
       </div>
 
-      {/* Recruiter Form Modal */}
+      {/* Recruiter Form Modal - Used for both Create and Edit */}
       <RecruiterForm
         open={recruiterModalVisible}
         onCancel={handleRecruiterModalClose}
         onSuccess={handleRecruiterSuccess}
-        adminId={currentAdminId}
-        title="Add New Recruiter"
+        mode={editingRecruiter ? "edit" : "add"}
+        title={editingRecruiter ? "Edit Recruiter" : "Add New Recruiter"}
+        initialValues={editingRecruiter}
+        recruiterId={editingRecruiter?._id}
       />
 
-      {/* View Recruiter Modal */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <InfoCircleOutlined style={{ marginRight: 8, color: "#1890ff" }} />
-            Recruiter Details
-          </div>
-        }
+      {/* View Recruiter Modal - Using separate component */}
+      {/* <RecruiterView
         open={viewModalVisible}
-        onCancel={handleViewModalClose}
-        footer={[
-          <Button
-            key="close"
-            type="primary"
-            style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-            }}
-            onClick={handleViewModalClose}
-          >
-            Close
-          </Button>,
-        ]}
-        width="90%"
-        style={{ maxWidth: 600 }}
-        centered
-        destroyOnClose
-      >
-        {selectedRecruiterId && (
-          <>
-            <Card
-              title="Recruiter Information"
-              style={{ marginBottom: 16 }}
-              size="small"
-            >
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Full Name">
-                  <Text strong>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.fullName
-                    }
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Email">
-                  <Text>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.email
-                    }
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Phone">
-                  <Text>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.phone
-                    }
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Specialization">
-                  <Text>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.specialization
-                    }
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Experience">
-                  <Text>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.experienceYears
-                    }{" "}
-                    years
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag
-                    color={
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.accountStatus === "active"
-                        ? "green"
-                        : "red"
-                    }
-                  >
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.accountStatus
-                    }
-                  </Tag>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
+        onClose={handleViewModalClose}
+        recruiterData={selectedRecruiterData}
+      /> */}
 
-            <Card title="Additional Information" size="small">
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Created At">
-                  <Text>
-                    {new Date(
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.createdAt || Date.now()
-                    ).toLocaleString()}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Recruiter ID">
-                  <Text>{selectedRecruiterId}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Role">
-                  <Text>
-                    {
-                      recruiters.find((r) => r._id === selectedRecruiterId)
-                        ?.role
-                    }
-                  </Text>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </>
-        )}
-      </Modal>
-
-      {/* Edit Modal */}
-      {editingRecruiter && (
-        <Modal
-          title={
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <UserOutlined style={{ marginRight: 8, color: "#1890ff" }} />
-              Edit Recruiter
-            </div>
-          }
-          open={!!editingRecruiter}
-          onCancel={() => setEditingRecruiter(null)}
-          footer={[
-            <Button key="cancel" onClick={() => setEditingRecruiter(null)}>
-              Cancel
-            </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={isLoading}
-              onClick={() => form.submit()}
-            >
-              Update Recruiter
-            </Button>,
-          ]}
-          width="90%"
-          style={{ maxWidth: 600 }}
-          centered
-          destroyOnClose
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            initialValues={{
-              accountStatus: "active",
-            }}
-          >
-            <Form.Item
-              name="fullName"
-              label="Full Name"
-              rules={[
-                { required: true, message: "Please enter the full name" },
-              ]}
-            >
-              <Input placeholder="Enter full name" />
-            </Form.Item>
-
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: "Please enter the email" },
-                { type: "email", message: "Please enter a valid email" },
-              ]}
-            >
-              <Input placeholder="Enter email" prefix={<MailOutlined />} />
-            </Form.Item>
-
-            <Form.Item
-              name="phone"
-              label="Phone Number"
-              rules={[
-                {
-                  required: true,
-                  message: "Please enter the phone number",
-                },
-              ]}
-            >
-              <Input
-                placeholder="Enter phone number"
-                prefix={<PhoneOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="specialization"
-              label="Specialization"
-              rules={[
-                {
-                  required: true,
-                  message: "Please enter the specialization",
-                },
-              ]}
-            >
-              <Input placeholder="Enter specialization" />
-            </Form.Item>
-
-            <Form.Item
-              name="experienceYears"
-              label="Experience (Years)"
-              rules={[
-                {
-                  required: true,
-                  message: "Please enter experience years",
-                },
-              ]}
-            >
-              <Input type="number" placeholder="Enter experience years" />
-            </Form.Item>
-
-            <Form.Item
-              name="accountStatus"
-              label="Status"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select the status",
-                },
-              ]}
-            >
-              <Select placeholder="Select status">
-                <Option value="active">Active</Option>
-                <Option value="inactive">Inactive</Option>
-              </Select>
-            </Form.Item>
-          </Form>
-        </Modal>
-      )}
-
-      {/* Delete Confirmation Modal */}
+      {/* Disable/Enable Confirmation Modal */}
       <Modal
         title={
           <div
-            style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color:
+                recruiterToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+            }}
           >
             <ExclamationCircleOutlined
               style={{ marginRight: 8, fontSize: 18 }}
             />
-            <span style={{ fontSize: "16px" }}>Delete Recruiter</span>
+            <span style={{ fontSize: "16px" }}>
+              {recruiterToToggle?.accountStatus === "active"
+                ? "Disable"
+                : "Enable"}{" "}
+              Recruiter
+            </span>
           </div>
         }
-        open={deleteModalVisible}
-        onCancel={handleDeleteCancel}
+        open={disableModalVisible}
+        onCancel={handleDisableCancel}
         width="90%"
         style={{ maxWidth: 500 }}
         centered
         footer={[
-          <Button key="cancel" onClick={handleDeleteCancel} size="large">
+          <Button key="cancel" onClick={handleDisableCancel} size="large">
             Cancel
           </Button>,
           <Button
-            key="delete"
+            key="confirm"
             type="primary"
-            danger
-            loading={isLoading}
-            onClick={handleDeleteConfirm}
+            danger={recruiterToToggle?.accountStatus === "active"}
+            onClick={handleToggleStatus}
+            loading={isToggling}
             size="large"
-            icon={<DeleteOutlined />}
-          >
-            Delete Recruiter
-          </Button>,
-        ]}
-        maskClosable={false}
-        destroyOnClose
-      >
-        <div style={{ padding: "16px 0" }}>
-          <div
             style={{
-              background: "#fff2f0",
-              border: "1px solid #ffccc7",
-              borderRadius: "8px",
-              padding: "12px",
-              marginBottom: "16px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
+              background:
+                recruiterToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+              borderColor:
+                recruiterToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
             }}
           >
-            <WarningOutlined
-              style={{ color: "#ff4d4f", fontSize: "16px", marginTop: "2px" }}
-            />
-            <div>
-              <Text strong style={{ color: "#ff4d4f", fontSize: "13px" }}>
-                This action cannot be undone!
+            {recruiterToToggle?.accountStatus === "active"
+              ? "Disable"
+              : "Enable"}
+          </Button>,
+        ]}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text>
+            Are you sure you want to{" "}
+            {recruiterToToggle?.accountStatus === "active"
+              ? "disable"
+              : "enable"}{" "}
+            the recruiter{" "}
+            <Text strong>{getRecruiterDisplayName(recruiterToToggle)}</Text>?
+          </Text>
+          {recruiterToToggle?.accountStatus === "active" && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                Disabling will prevent this recruiter from accessing the system.
               </Text>
-              <br />
-              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                All recruiter data including associated candidates and
-                interviews will be removed.
-              </Text>
-            </div>
-          </div>
-
-          {recruiterToDelete && (
-            <div>
-              <Text
-                style={{
-                  fontSize: "14px",
-                  marginBottom: "12px",
-                  display: "block",
-                }}
-              >
-                Are you sure you want to delete the following recruiter?
-              </Text>
-
-              <div
-                style={{
-                  background: "#fafafa",
-                  border: "1px solid #e8e8e8",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div style={{ marginBottom: "10px" }}>
-                  <Text strong style={{ fontSize: "14px", color: "#2c3e50" }}>
-                    {getRecruiterDisplayName(recruiterToDelete)}
-                  </Text>
-                </div>
-
-                <div style={{ marginBottom: "6px" }}>
-                  <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Email:</strong> {recruiterToDelete.email}
-                  </Text>
-                </div>
-
-                <div style={{ marginBottom: "6px" }}>
-                  <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Phone:</strong> {recruiterToDelete.phone}
-                  </Text>
-                </div>
-
-                <div>
-                  <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Status:</strong>{" "}
-                    <Tag
-                      color={
-                        recruiterToDelete.accountStatus === "active"
-                          ? "green"
-                          : "red"
-                      }
-                    >
-                      {recruiterToDelete.accountStatus}
-                    </Tag>
-                  </Text>
-                </div>
-              </div>
             </div>
           )}
         </div>

@@ -80,6 +80,20 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    editRecruiter: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/recruiters/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
+    disableRecruiterStatus: builder.mutation({
+      query: ({ recruiterId, accountStatus }) => ({
+        url: `/recruiters/${recruiterId}`,
+        method: "PATCH",
+        body: { accountStatus },
+      }),
+    }),
   }),
 });
 
@@ -103,4 +117,6 @@ export const {
   //recruiter
   useCreateRecruiterMutation,
   useGetRecruitersQuery,
+  useEditRecruiterMutation,
+  useDisableRecruiterStatusMutation,
 } = adminApi;

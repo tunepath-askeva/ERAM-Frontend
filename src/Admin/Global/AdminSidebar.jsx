@@ -7,10 +7,11 @@ import {
   ApartmentOutlined,
   LogoutOutlined,
   UserOutlined,
+  DeploymentUnitOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSnackbar } from "notistack"; // Add this import
+import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
@@ -70,6 +71,11 @@ const AdminSidebar = ({
       key: "/admin/pipeline",
       icon: <ApartmentOutlined />,
       label: "pipeline",
+    },
+    {
+      key: "/admin/masters",
+      icon: <DeploymentUnitOutlined />,
+      label: "masters",
     },
   ];
 
@@ -179,7 +185,8 @@ const AdminSidebar = ({
               style={{
                 width: "32px",
                 height: "32px",
-                background: "linear-gradient(135deg, #2563eb 0%, #9333ea 100%)",
+                background:
+                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -209,7 +216,7 @@ const AdminSidebar = ({
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              background: "linear-gradient(135deg, #2563eb 0%, #9333ea 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -246,13 +253,13 @@ const AdminSidebar = ({
               transition: "all 0.2s ease",
               backgroundColor:
                 selectedKey === item.key
-                  ? "#dbeafe"
+                  ? "#fde2e4"
                   : hoveredKey === item.key
                   ? "#f1f5f9"
                   : "transparent",
               color:
                 selectedKey === item.key
-                  ? "#1d4ed8"
+                  ? "#e11d48"
                   : hoveredKey === item.key
                   ? "#1e293b"
                   : "#475569",
@@ -262,7 +269,7 @@ const AdminSidebar = ({
               fontSize: screenSize.isMobile ? "16px" : "14px",
               textAlign: "left",
               borderRight:
-                selectedKey === item.key ? "2px solid #2563eb" : "none",
+                selectedKey === item.key ? "2px solid #e11d48" : "none",
               height: getMenuItemHeight(),
               justifyContent:
                 collapsed && !screenSize.isMobile ? "center" : "flex-start",
@@ -274,9 +281,9 @@ const AdminSidebar = ({
               style: {
                 color:
                   selectedKey === item.key
-                    ? "#2563eb"
+                    ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#2563eb"
+                    ? "#e11d48"
                     : "#64748b",
                 fontSize: getIconSize(),
                 minWidth: getIconSize(),

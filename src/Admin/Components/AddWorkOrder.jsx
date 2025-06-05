@@ -449,7 +449,7 @@ const AddWorkOrder = () => {
   return (
     <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
-        <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
+        <Title level={2} style={{ margin: 0, color: "#da2c46" }}>
           Add New Work Order
         </Title>
         <Text type="secondary" style={{ fontSize: "16px" }}>
@@ -479,9 +479,9 @@ const AddWorkOrder = () => {
             onChange={setActiveTab}
             items={tabItems}
             size="large"
-            tabBarStyle={{ 
+            tabBarStyle={{
               marginBottom: 24,
-              borderBottom: "1px solid #f0f0f0"
+              borderBottom: "1px solid #f0f0f0",
             }}
           />
         </Card>
@@ -503,12 +503,13 @@ const AddWorkOrder = () => {
               loading={isLoading}
               disabled={isLoading}
               style={{
-                 background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              width: "100%",
-              height: "44px",
+                background:
+                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                width: "100%",
+                height: "44px",
               }}
               icon={<SaveOutlined />}
             >

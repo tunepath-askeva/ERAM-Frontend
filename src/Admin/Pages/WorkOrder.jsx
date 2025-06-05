@@ -133,7 +133,7 @@ const WorkOrder = () => {
             onClick={handleCreateWorkOrder}
             className="workorder-button"
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               border: "none",
               borderRadius: "8px",
               fontSize: "14px",
@@ -206,7 +206,7 @@ const WorkOrder = () => {
                       >
                         <FolderOpenOutlined
                           style={{
-                            color: "#1890ff",
+                            color: "#da2c46",
                             marginRight: 8,
                             fontSize: "16px",
                             flexShrink: 0,

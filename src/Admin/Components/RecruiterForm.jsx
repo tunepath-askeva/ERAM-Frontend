@@ -20,11 +20,15 @@ import {
   LockOutlined,
   SaveOutlined,
   PlusOutlined,
+  EditOutlined,
   EnvironmentOutlined,
   StarOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
-import { useCreateRecruiterMutation } from "../../Slices/Admin/AdminApis";
+import {
+  useCreateRecruiterMutation,
+  useEditRecruiterMutation,
+} from "../../Slices/Admin/AdminApis";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -34,21 +38,29 @@ const RecruiterForm = ({
   onCancel,
   onSuccess,
   mode = "add",
-  title = "Add New Recruiter",
+  title,
   initialValues = null,
+  recruiterId = null,
 }) => {
   const [form] = Form.useForm();
-  const [createRecruiter, { isLoading }] = useCreateRecruiterMutation();
+  const [createRecruiter, { isLoading: isCreating }] =
+    useCreateRecruiterMutation();
+  const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
+
+  const isLoading = isCreating || isEditing;
+
+  const modalTitle =
+    title || (mode === "edit" ? "Edit Recruiter" : "Add New Recruiter");
 
   useEffect(() => {
     if (open) {
       if (mode === "edit" && initialValues) {
         form.setFieldsValue({
-          fullName: initialValues.fullName,
-          email: initialValues.email,
-          phoneno: initialValues.phoneno,
-          specialization: initialValues.specialization,
-          experience: initialValues.experienceYears,
+          fullName: initialValues.fullName || "",
+          email: initialValues.email || "",
+          phoneno: initialValues.phone || "",
+          specialization: initialValues.specialization || "",
+          experience: initialValues.experienceYears || 0,
         });
       } else {
         form.resetFields();
@@ -66,13 +78,27 @@ const RecruiterForm = ({
         phoneno: values.phoneno,
         specialization: values.specialization,
         experience: values.experience,
-        password: values.password,
         role: "recruiter",
       };
 
-      const result = await createRecruiter(payload).unwrap();
+      if (mode === "add") {
+        payload.password = values.password;
+      } else if (mode === "edit" && values.password) {
+        payload.password = values.password;
+      }
 
-      message.success("Recruiter created successfully!");
+      let result;
+      if (mode === "edit") {
+        result = await editRecruiter({
+          id: recruiterId,
+          ...payload,
+        }).unwrap();
+        message.success("Recruiter updated successfully!");
+      } else {
+        result = await createRecruiter(payload).unwrap();
+        message.success("Recruiter created successfully!");
+      }
+
       form.resetFields();
 
       if (onSuccess) {
@@ -81,8 +107,13 @@ const RecruiterForm = ({
 
       onCancel();
     } catch (error) {
-      console.error("Failed to create recruiter:", error);
-      message.error(error?.data?.message || "Failed to create recruiter");
+      console.error("Failed to save recruiter:", error);
+      const errorMessage =
+        error?.data?.message ||
+        (mode === "edit"
+          ? "Failed to update recruiter"
+          : "Failed to create recruiter");
+      message.error(errorMessage);
     }
   };
 
@@ -95,6 +126,10 @@ const RecruiterForm = ({
     validator(_, value) {
       const password = getFieldValue("password");
 
+      if (mode === "edit" && !password && !value) {
+        return Promise.resolve();
+      }
+
       if (!value || password === value) {
         return Promise.resolve();
       }
@@ -106,8 +141,8 @@ const RecruiterForm = ({
     <Modal
       title={
         <Space>
-          <PlusOutlined />
-          {title}
+          {mode === "edit" ? <EditOutlined /> : <PlusOutlined />}
+          {modalTitle}
         </Space>
       }
       open={open}
@@ -115,7 +150,7 @@ const RecruiterForm = ({
       onOk={handleSubmit}
       okButtonProps={{
         style: {
-          background: "linear-gradient(135deg, #ff4d4f 0%, #d9363e 100%)",
+          background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
         },
       }}
       confirmLoading={isLoading}
@@ -125,7 +160,6 @@ const RecruiterForm = ({
       destroyOnClose={true}
     >
       <Form form={form} layout="vertical" autoComplete="off">
-        {/* Personal Information Section */}
         <Card
           size="small"
           title={
@@ -159,7 +193,6 @@ const RecruiterForm = ({
           </Row>
         </Card>
 
-        {/* Contact Information Section */}
         <Card
           size="small"
           title={
@@ -209,7 +242,6 @@ const RecruiterForm = ({
           </Row>
         </Card>
 
-        {/* Professional Information Section */}
         <Card
           size="small"
           title={
@@ -218,7 +250,7 @@ const RecruiterForm = ({
               <span>Professional Information</span>
             </Space>
           }
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: mode === "add" ? 16 : 0 }}
         >
           <Row gutter={16}>
             <Col span={12}>
@@ -262,13 +294,23 @@ const RecruiterForm = ({
           </Row>
         </Card>
 
-        {/* Security Section */}
         <Card
           size="small"
           title={
             <Space>
               <LockOutlined />
               <span>Security</span>
+              {mode === "edit" && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    fontWeight: "normal",
+                  }}
+                >
+                  (Leave empty to keep current password)
+                </span>
+              )}
             </Space>
           }
         >
@@ -295,7 +337,11 @@ const RecruiterForm = ({
                 hasFeedback
               >
                 <Input.Password
-                  placeholder="Enter password"
+                  placeholder={
+                    mode === "edit"
+                      ? "Enter new password (optional)"
+                      : "Enter password"
+                  }
                   prefix={<LockOutlined />}
                   size="large"
                 />
@@ -316,7 +362,11 @@ const RecruiterForm = ({
                 hasFeedback
               >
                 <Input.Password
-                  placeholder="Confirm password"
+                  placeholder={
+                    mode === "edit"
+                      ? "Confirm new password"
+                      : "Confirm password"
+                  }
                   prefix={<LockOutlined />}
                   size="large"
                 />

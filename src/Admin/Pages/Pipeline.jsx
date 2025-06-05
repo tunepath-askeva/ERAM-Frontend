@@ -494,7 +494,7 @@ const Pipeline = () => {
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center" }}>
-            <InfoCircleOutlined style={{ marginRight: 8, color: "#1890ff" }} />
+            <InfoCircleOutlined style={{ marginRight: 8, color: "#da2c46" }} />
             Pipeline Details
           </div>
         }
@@ -505,7 +505,7 @@ const Pipeline = () => {
             key="close"
             type="primary"
             style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
             }}
             onClick={handleViewModalClose}
           >
