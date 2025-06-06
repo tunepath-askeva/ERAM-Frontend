@@ -8,8 +8,8 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useSnackbar } from "notistack"; // Add this import
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
+import { useSnackbar } from "notistack"; 
+import { useLoginSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { setSuperAdminCredentials } from "../../Slices/SuperAdmin/SuperAdminSlice";
 import SuperAdminOtpModal from "../Modal/SuperAdminOtpModal";
 
@@ -17,7 +17,7 @@ const SuperAdminLogin = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+  const { enqueueSnackbar } = useSnackbar();
   const [loginSuperAdmin, { isLoading }] = useLoginSuperAdminMutation();
 
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -25,7 +25,6 @@ const SuperAdminLogin = () => {
 
   const onFinish = async (values) => {
     try {
-      // Validate required fields
       if (!values.email || !values.password) {
         enqueueSnackbar("Please enter all required fields.", {
           variant: "error",

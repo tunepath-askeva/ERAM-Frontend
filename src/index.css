@@ -1,3 +1,12 @@
+*{
+
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* pipeline styles */
+
 .pipeline-header {
   margin-bottom: 24px;
   display: flex;
@@ -33,6 +42,8 @@
     font-size: 16px !important;
   }
 }
+
+/* workorder styles */
 
 .workorder-header {
   margin-bottom: 24px;
@@ -70,6 +81,8 @@
   }
 }
 
+
+/* recruiter styles */
 .recruiter-header {
   margin-bottom: 24px;
   display: flex;
@@ -100,6 +113,43 @@
   }
 
   .recruiter-button {
+    width: auto !important;
+    height: 48px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* project styles */
+.project-header {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (min-width: 768px) {
+  .project-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .project-title {
+    font-size: 20px !important;
+    text-align: left;
+  }
+
+  .project-button {
     width: auto !important;
     height: 48px !important;
     font-size: 16px !important;

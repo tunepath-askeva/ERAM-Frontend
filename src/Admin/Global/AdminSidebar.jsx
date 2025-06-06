@@ -12,7 +12,7 @@ import {
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
 const { Sider } = Layout;
@@ -70,12 +70,12 @@ const AdminSidebar = ({
     {
       key: "/admin/pipeline",
       icon: <ApartmentOutlined />,
-      label: "pipeline",
+      label: "Pipeline",
     },
     {
       key: "/admin/masters",
       icon: <DeploymentUnitOutlined />,
-      label: "masters",
+      label: "Masters",
     },
   ];
 

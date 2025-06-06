@@ -94,6 +94,41 @@ export const adminApi = createApi({
         body: { accountStatus },
       }),
     }),
+    getRecruiterById: builder.query({
+      query: (recruiterId) => ({
+        url: `/recruiters/${recruiterId}`,
+        method: "GET",
+      }),
+    }),
+    addProject: builder.mutation({
+      query: (projectData) => ({
+        url: "/projects",
+        method: "POST",
+        body: projectData,
+      }),
+    }),
+    editProject: builder.mutation({
+      query: ({ id, ...projectData }) => ({
+        url: `projects/${id}`,
+        method: "PUT",
+        body: projectData,
+      }),
+    }),
+    getProjects: builder.query({
+      query: () => ({
+        url: "/projects",
+        method: "GET",
+      }),
+    }),
+    deleteProject: builder.mutation({
+      query: (id) => ({
+        url: `/project/${id}`,
+        method: "DELETE",
+      }),
+    }),
+    getProjectById: builder.query({
+      query: (id) => `/project/${id}`,
+    }),
   }),
 });
 
@@ -119,4 +154,12 @@ export const {
   useGetRecruitersQuery,
   useEditRecruiterMutation,
   useDisableRecruiterStatusMutation,
+  useGetRecruiterByIdQuery,
+
+  //projects
+  useAddProjectMutation,
+  useEditProjectMutation,
+  useGetProjectsQuery,
+  useDeleteProjectMutation,
+  useGetProjectByIdQuery,
 } = adminApi;

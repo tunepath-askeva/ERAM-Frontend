@@ -34,12 +34,16 @@ import {
   CloseOutlined,
   InfoCircleOutlined,
   CheckCircleOutlined,
+  CalendarOutlined,
+  BankOutlined,
+  GlobalOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
 
 import {
   useGetRecruitersQuery,
   useDisableRecruiterStatusMutation,
+  useGetRecruiterByIdQuery, // Add this import
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -65,14 +69,19 @@ const AdminRecruiter = () => {
   const [toggleRecruiterStatus, { isLoading: isToggling }] =
     useDisableRecruiterStatusMutation();
 
+  const {
+    data: selectedRecruiterResponse,
+    isLoading: isLoadingRecruiterDetails,
+    isError: isRecruiterDetailsError,
+    error: recruiterDetailsError,
+  } = useGetRecruiterByIdQuery(selectedRecruiterId, {
+    skip: !selectedRecruiterId || !viewModalVisible,
+  });
+
   const recruiters = recruitersResponse?.recruiters || recruitersResponse || [];
+  const selectedRecruiterData =
+    selectedRecruiterResponse?.recruiter || selectedRecruiterResponse;
 
-  // Get selected recruiter data from the existing list
-  const selectedRecruiterData = recruiters.find(
-    (recruiter) => recruiter._id === selectedRecruiterId
-  );
-
-  // Handle API errors
   useEffect(() => {
     if (isError) {
       message.error(
@@ -82,6 +91,19 @@ const AdminRecruiter = () => {
       );
     }
   }, [isError, error]);
+
+  // Handle recruiter details error
+  useEffect(() => {
+    if (isRecruiterDetailsError && viewModalVisible) {
+      message.error(
+        `Failed to load recruiter details: ${
+          recruiterDetailsError?.data?.message ||
+          recruiterDetailsError?.message ||
+          "Unknown error"
+        }`
+      );
+    }
+  }, [isRecruiterDetailsError, recruiterDetailsError, viewModalVisible]);
 
   const showDisableModal = (recruiter) => {
     setRecruiterToToggle(recruiter);
@@ -164,6 +186,16 @@ const AdminRecruiter = () => {
 
   const getRecruiterLocation = (recruiter) => {
     return recruiter?.specialization || recruiter?.location || "Not specified";
+  };
+
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not specified";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return (
@@ -460,12 +492,237 @@ const AdminRecruiter = () => {
         recruiterId={editingRecruiter?._id}
       />
 
-      {/* View Recruiter Modal - Using separate component */}
-      {/* <RecruiterView
+      {/* View Recruiter Modal */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <InfoCircleOutlined
+              style={{ marginRight: 8, color: "#da2c46", fontSize: 18 }}
+            />
+            <span style={{ fontSize: "16px", fontWeight: 600 }}>
+              Recruiter Details
+            </span>
+          </div>
+        }
         open={viewModalVisible}
-        onClose={handleViewModalClose}
-        recruiterData={selectedRecruiterData}
-      /> */}
+        onCancel={handleViewModalClose}
+        width="90%"
+        style={{ maxWidth: 800 }}
+        centered
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            onClick={handleViewModalClose}
+            size="large"
+          >
+            Close
+          </Button>,
+        ]}
+      >
+        <div style={{ padding: "16px 0" }}>
+          {isLoadingRecruiterDetails ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>
+                <Text>Loading recruiter details...</Text>
+              </div>
+            </div>
+          ) : isRecruiterDetailsError ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <Text type="danger" style={{ fontSize: "16px" }}>
+                Failed to load recruiter details
+              </Text>
+              <div style={{ marginTop: 16 }}>
+                <Button type="link" onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          ) : selectedRecruiterData ? (
+            <div>
+              <Descriptions
+                title={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>
+                      {getRecruiterDisplayName(selectedRecruiterData)}
+                    </span>
+                    <Tag
+                      color={
+                        selectedRecruiterData.accountStatus === "active"
+                          ? "green"
+                          : "red"
+                      }
+                      icon={
+                        selectedRecruiterData.accountStatus === "active" ? (
+                          <CheckCircleOutlined />
+                        ) : (
+                          <StopOutlined />
+                        )
+                      }
+                    >
+                      {selectedRecruiterData.accountStatus?.toUpperCase()}
+                    </Tag>
+                  </div>
+                }
+                bordered
+                column={1}
+                size="middle"
+                style={{ marginBottom: 24 }}
+              >
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <UserOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Full Name
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.fullName || "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <MailOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Email
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.email}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <PhoneOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Phone
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.phone}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <BankOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Company
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.companyName || "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <TeamOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Specialization
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.specialization || "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <GlobalOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Location
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.location || "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <CalendarOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Experience
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.experienceYears
+                    ? `${selectedRecruiterData.experienceYears} years`
+                    : "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <CalendarOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Registration Date
+                    </span>
+                  }
+                >
+                  {formatDate(selectedRecruiterData.createdAt)}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <CalendarOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Last Updated
+                    </span>
+                  }
+                >
+                  {formatDate(selectedRecruiterData.updatedAt)}
+                </Descriptions.Item>
+              </Descriptions>
+
+              {selectedRecruiterData.bio && (
+                <div>
+                  <Divider orientation="left">
+                    <Text strong style={{ color: "#da2c46" }}>
+                      Biography
+                    </Text>
+                  </Divider>
+                  <Paragraph
+                    style={{
+                      background: "#f9f9f9",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      marginBottom: 0,
+                    }}
+                  >
+                    {selectedRecruiterData.bio}
+                  </Paragraph>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <Text>No recruiter data available</Text>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Disable/Enable Confirmation Modal */}
       <Modal
