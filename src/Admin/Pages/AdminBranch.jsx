@@ -21,6 +21,7 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   EditOutlined,
+  FileTextOutlined,
   SettingOutlined
 } from '@ant-design/icons';
 import { useGetAdminBranchQuery } from "../../Slices/Admin/AdminApis";
@@ -32,7 +33,16 @@ const AdminBranch = () => {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '16px', textAlign: 'center' }}>
+      <div style={{ 
+        padding: '16px', 
+        textAlign: 'center',
+        "@media (min-width: 576px)": {
+          padding: "24px",
+        },
+        "@media (min-width: 768px)": {
+          padding: "32px",
+        },
+      }}>
         <Card loading style={{ borderRadius: '16px' }} />
       </div>
     );
@@ -42,8 +52,24 @@ const AdminBranch = () => {
 
   if (!branch) {
     return (
-      <div style={{ padding: '16px', textAlign: 'center' }}>
-        <Card style={{ borderRadius: '12px', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)' }}>
+      <div style={{ 
+        padding: '16px', 
+        textAlign: 'center',
+        "@media (min-width: 576px)": {
+          padding: "24px",
+        },
+        "@media (min-width: 768px)": {
+          padding: "32px",
+        },
+      }}>
+        <Card style={{ 
+          borderRadius: '12px', 
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          "@media (min-width: 768px)": {
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+          },
+        }}>
           <Text type="secondary">No branch data available</Text>
         </Card>
       </div>
@@ -61,11 +87,16 @@ const AdminBranch = () => {
   return (
     <div style={{
       padding: '16px',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      "@media (min-width: 576px)": {
+        padding: "24px",
+      },
+      "@media (min-width: 768px)": {
+        padding: "32px",
+      },
     }}>
       {/* Header Section */}
       <div className="branch-header" style={{ marginBottom: '16px' }}>
-
         <Card
           style={{
             borderRadius: '12px',
@@ -73,6 +104,10 @@ const AdminBranch = () => {
             border: '1px solid rgba(255, 255, 255, 0.2)',
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
+            "@media (min-width: 768px)": {
+              borderRadius: "16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+            },
           }}
         >
           <div style={{
@@ -104,26 +139,45 @@ const AdminBranch = () => {
                 <Title level={3} style={{
                   margin: 0,
                   color: '#2c3e50',
-                  fontSize: '18px',
+                  fontSize: '16px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  "@media (min-width: 576px)": {
+                    fontSize: "18px",
+                  },
+                  "@media (min-width: 768px)": {
+                    fontSize: "20px",
+                  },
                 }}>
                   Admin Assigned To -
-                  <span style={{ color: "#1890ff" }}>
-                    {/* " " */} {branch.name}
+                  <span style={{ color: "rgb(218, 44, 70)" }}>
+                    {" "} {branch.name}
                   </span>
                 </Title>
               </div>
               <div style={{ flexShrink: 0 }}>
                 <Space wrap style={{ marginTop: '4px' }}>
-                  <Tag color="blue" style={{ fontSize: '12px', padding: '2px 8px' }}>
+                  <Tag color="blue" style={{ 
+                    fontSize: '11px', 
+                    padding: '2px 6px',
+                    "@media (min-width: 576px)": {
+                      fontSize: "12px",
+                      padding: "2px 8px",
+                    },
+                  }}>
                     {branch.branchCode}
                   </Tag>
                   <Badge
                     status={branch.isActive ? "success" : "error"}
                     text={branch.isActive ? "Active" : "Inactive"}
-                    style={{ fontSize: '12px', fontWeight: 500 }}
+                    style={{ 
+                      fontSize: '11px', 
+                      fontWeight: 500,
+                      "@media (min-width: 576px)": {
+                        fontSize: "12px",
+                      },
+                    }}
                   />
                 </Space>
               </div>
@@ -133,14 +187,27 @@ const AdminBranch = () => {
       </div>
 
       {/* Content Section */}
-      <Row gutter={[16, 16]}>
-        {/* Branch Information */}
+      <Row 
+        gutter={[
+          { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+          { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+        ]}
+      >
+        {/* Branch Information - Stack Format */}
         <Col xs={24} lg={16}>
           <Card
             title={
               <Space>
-                <BankOutlined style={{ color: '#1890ff' }} />
-                <span style={{ fontSize: '16px', fontWeight: 600 }}>Branch Information</span>
+                <BankOutlined style={{ color: 'rgb(218, 44, 70)' }} />
+                <span style={{ 
+                  fontSize: '14px', 
+                  fontWeight: 600,
+                  "@media (min-width: 576px)": {
+                    fontSize: "16px",
+                  },
+                }}>
+                  Branch Information
+                </span>
               </Space>
             }
             style={{
@@ -150,104 +217,304 @@ const AdminBranch = () => {
               border: '1px solid rgba(255, 255, 255, 0.2)',
               background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(10px)',
+              "@media (min-width: 768px)": {
+                borderRadius: "16px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              },
             }}
             headStyle={{
               borderBottom: '1px solid #f0f0f0',
-              fontSize: '16px',
-              fontWeight: 600
+              fontSize: '14px',
+              fontWeight: 600,
+              "@media (min-width: 576px)": {
+                fontSize: "16px",
+              },
+            }}
+            bodyStyle={{
+              padding: "16px",
+              "@media (min-width: 576px)": {
+                padding: "20px",
+              },
+              "@media (min-width: 768px)": {
+                padding: "24px",
+              },
             }}
           >
-            <Descriptions
-              column={{ xs: 1, sm: 1, md: 2 }}
-              labelStyle={{ fontWeight: 600, color: '#595959', fontSize: '14px' }}
-              contentStyle={{ color: '#262626', fontSize: '14px' }}
-              size="middle"
-            >
-              <Descriptions.Item
-                label={
-                  <Space>
-                    <BankOutlined style={{ color: '#1890ff', fontSize: '14px' }} />
+            {/* Stack Format - Clean Layout */}
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              
+              {/* Branch Name */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <BankOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
                     Branch Name
-                  </Space>
-                }
-              >
-                <Text strong style={{ fontSize: '14px' }}>{branch.name}</Text>
-              </Descriptions.Item>
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <Text strong style={{ 
+                  fontSize: '14px', 
+                  color: '#262626',
+                  "@media (min-width: 576px)": {
+                    fontSize: "16px",
+                  },
+                }}>
+                  {branch.name}
+                </Text>
+              </div>
 
-              <Descriptions.Item
-                label={
-                  <Space>
-                    <CheckCircleOutlined style={{ color: '#1890ff', fontSize: '14px' }} />
+              {/* Branch Code */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <CheckCircleOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
                     Code
-                  </Space>
-                }
-              >
-                <Tag color="geekblue" style={{ fontSize: '12px', padding: '2px 8px' }}>
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <Tag color="geekblue" style={{ 
+                  fontSize: '12px', 
+                  padding: '2px 8px',
+                  margin: 0,
+                  "@media (min-width: 576px)": {
+                    fontSize: "14px",
+                    padding: "4px 12px",
+                  },
+                }}>
                   {branch.branchCode}
                 </Tag>
-              </Descriptions.Item>
+              </div>
 
-              <Descriptions.Item
-                label={
-                  <Space>
-                    <EnvironmentOutlined style={{ color: '#52c41a', fontSize: '14px' }} />
+              {/* Address */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <EnvironmentOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
                     Address
-                  </Space>
-                }
-                span={2}
-              >
-                <div style={{ lineHeight: '1.5', fontSize: '14px' }}>
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <div style={{ 
+                  lineHeight: '1.6', 
+                  fontSize: '12px',
+                  color: '#262626',
+                  flex: 1,
+                  minWidth: '200px',
+                  "@media (min-width: 576px)": {
+                    fontSize: "14px",
+                  },
+                }}>
                   <div>{branch.location.street}</div>
                   <div>{branch.location.city}, {branch.location.state}</div>
                   <div>{branch.location.country} - {branch.location.postalCode}</div>
                 </div>
-              </Descriptions.Item>
+              </div>
 
-              <Descriptions.Item
-                label={
-                  <Space>
-                    <PhoneOutlined style={{ color: '#fa8c16', fontSize: '14px' }} />
+              {/* Phone */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <PhoneOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
                     Phone
-                  </Space>
-                }
-              >
-                <a href={`tel:${branch.location.branch_phoneno}`} style={{ color: '#1890ff', fontSize: '14px' }}>
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <a 
+                  href={`tel:${branch.location.branch_phoneno}`} 
+                  style={{ 
+                    color: 'rgb(218, 44, 70)', 
+                    fontSize: '12px',
+                    textDecoration: 'none',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}
+                >
                   {branch.location.branch_phoneno}
                 </a>
-              </Descriptions.Item>
+              </div>
 
-              <Descriptions.Item
-                label={
-                  <Space>
-                    <MailOutlined style={{ color: '#eb2f96', fontSize: '14px' }} />
+              {/* Email */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <MailOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
                     Email
-                  </Space>
-                }
-              >
-                <a href={`mailto:${branch.location.branch_email}`} style={{ color: '#1890ff', fontSize: '14px' }}>
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <a 
+                  href={`mailto:${branch.location.branch_email}`} 
+                  style={{ 
+                    color: 'rgb(218, 44, 70)', 
+                    fontSize: '12px',
+                    wordBreak: 'break-all',
+                    textDecoration: 'none',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}
+                >
                   {branch.location.branch_email}
                 </a>
-              </Descriptions.Item>
+              </div>
 
-              <Descriptions.Item
-                label="Description"
-                span={2}
-              >
-                <Text style={{ fontSize: '14px' }}>{branch.description}</Text>
-              </Descriptions.Item>
-            </Descriptions>
+              {/* Description */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                marginBottom: '12px',
+                flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 'fit-content',
+                }}>
+                  <FileTextOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '14px' }} />
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
+                    Description
+                  </Text>
+                </div>
+                <span style={{ color: '#d9d9d9', fontSize: '14px' }}>-</span>
+                <Text style={{ 
+                  fontSize: '12px',
+                  color: '#262626',
+                  lineHeight: '1.6',
+                  flex: 1,
+                  minWidth: '200px',
+                  "@media (min-width: 576px)": {
+                    fontSize: "14px",
+                  },
+                }}>
+                  {branch.description}
+                </Text>
+              </div>
+
+            </Space>
           </Card>
         </Col>
 
         {/* Status & Timeline */}
         <Col xs={24} lg={8}>
-          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Space 
+            direction="vertical" 
+            size="middle" 
+            style={{ width: '100%' }}
+          >
             {/* Status Card */}
             <Card
               title={
                 <Space>
-                  <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '16px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 600 }}>Status</span>
+                  <CheckCircleOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '16px' }} />
+                  <span style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 600,
+                    "@media (min-width: 576px)": {
+                      fontSize: "16px",
+                    },
+                  }}>
+                    Status
+                  </span>
                 </Space>
               }
               style={{
@@ -256,27 +523,50 @@ const AdminBranch = () => {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
+                "@media (min-width: 768px)": {
+                  borderRadius: "16px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                },
               }}
               headStyle={{
                 borderBottom: '1px solid #f0f0f0',
-                fontSize: '16px',
-                fontWeight: 600
+                fontSize: '14px',
+                fontWeight: 600,
+                "@media (min-width: 576px)": {
+                  fontSize: "16px",
+                },
+              }}
+              bodyStyle={{
+                padding: "12px",
+                "@media (min-width: 576px)": {
+                  padding: "16px",
+                },
               }}
               size="small"
             >
-              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <Badge
                   status={branch.isActive ? "success" : "error"}
-                  style={{ fontSize: '16px' }}
+                  style={{ fontSize: '14px' }}
                 />
                 <Title level={4} style={{
                   margin: '8px 0 0 0',
                   color: branch.isActive ? '#52c41a' : '#ff4d4f',
-                  fontSize: '16px'
+                  fontSize: '14px',
+                  "@media (min-width: 576px)": {
+                    fontSize: "16px",
+                  },
                 }}>
                   {branch.isActive ? 'Active' : 'Inactive'}
                 </Title>
-                <Text type="secondary" style={{ fontSize: '12px' }}>Branch Status</Text>
+                <Text type="secondary" style={{ 
+                  fontSize: '11px',
+                  "@media (min-width: 576px)": {
+                    fontSize: "12px",
+                  },
+                }}>
+                  Branch Status
+                </Text>
               </div>
             </Card>
 
@@ -284,8 +574,16 @@ const AdminBranch = () => {
             <Card
               title={
                 <Space>
-                  <CalendarOutlined style={{ color: '#722ed1', fontSize: '16px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 600 }}>Timeline</span>
+                  <CalendarOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '16px' }} />
+                  <span style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 600,
+                    "@media (min-width: 576px)": {
+                      fontSize: "16px",
+                    },
+                  }}>
+                    Timeline
+                  </span>
                 </Space>
               }
               style={{
@@ -294,25 +592,68 @@ const AdminBranch = () => {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
+                "@media (min-width: 768px)": {
+                  borderRadius: "16px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                },
               }}
               headStyle={{
                 borderBottom: '1px solid #f0f0f0',
-                fontSize: '16px',
-                fontWeight: 600
+                fontSize: '14px',
+                fontWeight: 600,
+                "@media (min-width: 576px)": {
+                  fontSize: "16px",
+                },
+              }}
+              bodyStyle={{
+                padding: "12px",
+                "@media (min-width: 576px)": {
+                  padding: "16px",
+                },
               }}
               size="small"
             >
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div>
-                  <Text strong style={{ color: '#595959', fontSize: '12px' }}>Created:</Text>
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '11px',
+                    "@media (min-width: 576px)": {
+                      fontSize: "12px",
+                    },
+                  }}>
+                    Created:
+                  </Text>
                   <br />
-                  <Text style={{ fontSize: '14px' }}>{formatDate(branch.createdAt)}</Text>
+                  <Text style={{ 
+                    fontSize: '12px',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
+                    {formatDate(branch.createdAt)}
+                  </Text>
                 </div>
                 <Divider style={{ margin: '8px 0' }} />
                 <div>
-                  <Text strong style={{ color: '#595959', fontSize: '12px' }}>Last Updated:</Text>
+                  <Text strong style={{ 
+                    color: '#595959', 
+                    fontSize: '11px',
+                    "@media (min-width: 576px)": {
+                      fontSize: "12px",
+                    },
+                  }}>
+                    Last Updated:
+                  </Text>
                   <br />
-                  <Text style={{ fontSize: '14px' }}>{formatDate(branch.updatedAt)}</Text>
+                  <Text style={{ 
+                    fontSize: '12px',
+                    "@media (min-width: 576px)": {
+                      fontSize: "14px",
+                    },
+                  }}>
+                    {formatDate(branch.updatedAt)}
+                  </Text>
                 </div>
               </Space>
             </Card>
@@ -321,8 +662,16 @@ const AdminBranch = () => {
             <Card
               title={
                 <Space>
-                  <SettingOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 600 }}>Services</span>
+                  <SettingOutlined style={{ color: 'rgb(218, 44, 70)', fontSize: '16px' }} />
+                  <span style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 600,
+                    "@media (min-width: 576px)": {
+                      fontSize: "16px",
+                    },
+                  }}>
+                    Services
+                  </span>
                 </Space>
               }
               style={{
@@ -331,24 +680,68 @@ const AdminBranch = () => {
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
+                "@media (min-width: 768px)": {
+                  borderRadius: "16px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                },
               }}
               headStyle={{
                 borderBottom: '1px solid #f0f0f0',
-                fontSize: '16px',
-                fontWeight: 600
+                fontSize: '14px',
+                fontWeight: 600,
+                "@media (min-width: 576px)": {
+                  fontSize: "16px",
+                },
+              }}
+              bodyStyle={{
+                padding: "12px",
+                "@media (min-width: 576px)": {
+                  padding: "16px",
+                },
               }}
               size="small"
             >
               {branch.services && branch.services.length > 0 ? (
-                <Space wrap>
-                  {branch.services.map((service, index) => (
-                    <Tag key={index} color="purple" style={{ padding: '2px 8px', fontSize: '12px' }}>
-                      {service}
-                    </Tag>
-                  ))}
-                </Space>
+                <div style={{
+                  maxHeight: "120px",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}>
+                  <Space wrap>
+                    {branch.services.map((service, index) => (
+                      <Tag 
+                        key={index} 
+                        color="purple" 
+                        style={{ 
+                          padding: '2px 6px', 
+                          fontSize: '11px',
+                          marginBottom: 4,
+                          borderRadius: 6,
+                          display: "inline-block",
+                          maxWidth: "100%",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          "@media (min-width: 576px)": {
+                            fontSize: "12px",
+                            padding: "2px 8px",
+                            borderRadius: 8,
+                          },
+                        }}
+                      >
+                        {service}
+                      </Tag>
+                    ))}
+                  </Space>
+                </div>
               ) : (
-                <Text type="secondary" style={{ fontStyle: 'italic', fontSize: '12px' }}>
+                <Text type="secondary" style={{ 
+                  fontStyle: 'italic', 
+                  fontSize: '11px',
+                  "@media (min-width: 576px)": {
+                    fontSize: "12px",
+                  },
+                }}>
                   No services configured
                 </Text>
               )}
