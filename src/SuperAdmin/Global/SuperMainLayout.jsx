@@ -85,11 +85,11 @@ const SuperMainLayout = () => {
     return 32; // Large desktop
   };
 
-  const getContentMargin = () => {
-    if (screenSize.isMobile) return "16px 8px";
-    if (screenSize.isTablet) return "20px 12px";
-    if (screenSize.isDesktop) return "24px 16px";
-    return "32px 24px"; // Large desktop
+  const getNavbarHeight = () => {
+    if (screenSize.isMobile) return 56;
+    if (screenSize.isTablet) return 60;
+    if (screenSize.isLargeDesktop) return 68;
+    return 64;
   };
 
   return (
@@ -113,6 +113,7 @@ const SuperMainLayout = () => {
           transition: "margin-left 0.3s ease",
           minHeight: "100vh",
           position: "relative",
+          paddingTop: getNavbarHeight(), // Add padding for fixed navbar
         }}
       >
         <SuperNavbar
@@ -123,13 +124,8 @@ const SuperMainLayout = () => {
         
         <Content
           style={{
-            margin: getContentMargin(),
             padding: getContentPadding(),
-            minHeight: screenSize.isMobile ? 
-              `calc(100vh - 120px)` : 
-              screenSize.isTablet ? 
-                `calc(100vh - 140px)` : 
-                `calc(100vh - 160px)`,
+            minHeight: `calc(100vh - ${getNavbarHeight() + 40}px)`, // Account for navbar height
             background: "#fff",
             borderRadius: screenSize.isMobile ? 6 : 8,
             boxShadow: screenSize.isMobile ? 

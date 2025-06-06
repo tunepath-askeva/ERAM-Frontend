@@ -31,9 +31,11 @@ const AppBar = styled(Header)`
   height: ${(props) => props.height}px;
   line-height: ${(props) => props.height}px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
+  position: fixed !important;
   top: 0;
-  z-index: 99;
+  left: ${(props) => props.leftMargin}px !important;
+  right: 0 !important;
+  z-index: 99 !important;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #e8e8e8;
@@ -43,6 +45,7 @@ const AppBar = styled(Header)`
     padding: 0 12px;
     height: 56px;
     line-height: 56px;
+    left: 0 !important;
   }
 
   @media (min-width: ${BREAKPOINTS.mobile}px) and (max-width: ${BREAKPOINTS.tablet}px) {
@@ -145,6 +148,15 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     return 40;
   };
 
+  const getNavbarLeftMargin = () => {
+    if (screenSize.isMobile) return 0; 
+    
+    const sidebarWidth = screenSize.isTablet ? 220 : 250;
+    const collapsedWidth = screenSize.isTablet ? 70 : 80;
+    
+    return collapsed ? collapsedWidth : sidebarWidth;
+  };
+
   const getToggleIcon = () => {
     const iconStyle = {
       fontSize: getIconSize(),
@@ -213,7 +225,11 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   ];
 
   return (
-    <AppBar height={getNavbarHeight()} padding={getPadding()}>
+    <AppBar 
+      height={getNavbarHeight()} 
+      padding={getPadding()}
+      leftMargin={getNavbarLeftMargin()}
+    >
       <NavButton
         type="text"
         icon={getToggleIcon()}
