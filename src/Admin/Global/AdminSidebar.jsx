@@ -38,8 +38,14 @@ const AdminSidebar = ({
     isDesktop: window.innerWidth >= BREAKPOINTS.desktop,
   });
 
+  const [adminInfo, setAdminInfo] = useState({
+    name: "Admin",
+    email: "",
+    roles: "", // Added roles to the state
+  });
+
   const [logout] = useLogoutSuperAdminMutation();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+  const { enqueueSnackbar } = useSnackbar();
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -53,19 +59,14 @@ const AdminSidebar = ({
       label: "Dashboard",
     },
     {
-      key: "/admin/branches",
-      icon: <AppstoreOutlined />,
-      label: "Branches",
+      key: "/admin/workorder",
+      icon: <UnorderedListOutlined />,
+      label: "Work Order",
     },
     {
       key: "/admin/recruiters",
       icon: <UserOutlined />,
       label: "Recruiters",
-    },
-    {
-      key: "/admin/workorder",
-      icon: <UnorderedListOutlined />,
-      label: "Work Order",
     },
     {
       key: "/admin/pipeline",
@@ -77,7 +78,60 @@ const AdminSidebar = ({
       icon: <DeploymentUnitOutlined />,
       label: "Masters",
     },
+    {
+      key: "/admin/branches",
+      icon: <AppstoreOutlined />,
+      label: "Branch",
+    }
   ];
+
+  // Fetch admin info from localStorage
+  useEffect(() => {
+    const fetchAdminInfo = () => {
+      try {
+        // Try to get admin info from different possible localStorage keys
+        const adminData = 
+          localStorage.getItem('adminInfo') || 
+          localStorage.getItem('superAdminInfo') || 
+          localStorage.getItem('userInfo') ||
+          localStorage.getItem('user');
+
+        if (adminData) {
+          const parsedData = JSON.parse(adminData);
+          
+          // Handle different data structures for name
+          const name = parsedData.name || 
+                      parsedData.fullName || 
+                      parsedData.firstName || 
+                      parsedData.username || 
+                      "Admin";
+          
+          const email = parsedData.email || "";
+
+          // Handle different data structures for roles
+          const roles = parsedData.roles || 
+                       parsedData.role || 
+                       parsedData.userRole || 
+                       parsedData.position || 
+                       parsedData.designation ||
+                       (Array.isArray(parsedData.roles) ? 
+                         parsedData.roles.join(", ") : "") ||
+                       "";
+
+          setAdminInfo({
+            name: name,
+            email: email,
+            roles: roles,
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing admin info from localStorage:", error);
+        // Keep default values if parsing fails
+      }
+    };
+
+    fetchAdminInfo();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -126,6 +180,11 @@ const AdminSidebar = ({
     if (screenSize.isMobile) return "20px";
     if (screenSize.isTablet) return "18px";
     return "20px";
+  };
+
+  // Get first letter of admin name for logo
+  const getFirstLetter = () => {
+    return adminInfo.name.charAt(0).toUpperCase();
   };
 
   const handleLogout = async () => {
@@ -196,18 +255,31 @@ const AdminSidebar = ({
                 fontSize: "16px",
               }}
             >
-              A
+              {getFirstLetter()}
             </div>
-            <h1
-              style={{
-                fontSize: "20px",
-                fontWeight: "bold",
-                color: "#1e293b",
-                margin: 0,
-              }}
-            >
-              Admin
-            </h1>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <h1
+                style={{
+                  fontSize: "20px",
+                  color: "#1e293b",
+                  margin: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {adminInfo.name}
+              </h1>
+              {adminInfo.roles && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748b",
+                    marginTop: "2px",
+                  }}
+                >
+                  {adminInfo.roles}
+                </span>
+              )}
+            </div>
           </div>
         )}
         {collapsed && !screenSize.isMobile && (
@@ -225,7 +297,7 @@ const AdminSidebar = ({
               fontSize: "16px",
             }}
           >
-            A
+            {getFirstLetter()}
           </div>
         )}
       </div>
