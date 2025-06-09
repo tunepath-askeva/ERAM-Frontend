@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack"; // Add this import
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
 import { userLogout } from "../../Slices/Users/UserSlice";
 
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
@@ -13,6 +13,7 @@ import {
   DoubleLeftOutlined,
   DoubleRightOutlined,
   BellOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 
@@ -80,6 +81,28 @@ const NavButton = styled(Button)`
   }
 `;
 
+const UserInfoContainer = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f8f9fa;
+  margin: -8px -12px 8px -12px;
+`;
+
+const UserName = styled.div`
+  font-weight: 600;
+  color: #2a4365;
+  font-size: 14px;
+  margin-bottom: 2px;
+`;
+
+const UserEmail = styled.div`
+  color: #64748b;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
 const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -93,10 +116,64 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
   });
 
+  const [adminInfo, setAdminInfo] = useState({
+    name: "Admin",
+    email: "",
+    roles: "",
+  });
+
   const [logout] = useLogoutSuperAdminMutation();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Fetch admin info from localStorage
+  useEffect(() => {
+    const fetchAdminInfo = () => {
+      try {
+        // Try to get admin info from different possible localStorage keys
+        const adminData =
+          localStorage.getItem('adminInfo') ||
+          localStorage.getItem('superAdminInfo') ||
+          localStorage.getItem('userInfo') ||
+          localStorage.getItem('user');
+
+        if (adminData) {
+          const parsedData = JSON.parse(adminData);
+
+          // Handle different data structures for name
+          const name = parsedData.name ||
+            parsedData.fullName ||
+            parsedData.firstName ||
+            parsedData.username ||
+            "Admin";
+
+          const email = parsedData.email || "";
+
+          // Handle different data structures for roles
+          const roles = parsedData.roles ||
+            parsedData.role ||
+            parsedData.userRole ||
+            parsedData.position ||
+            parsedData.designation ||
+            (Array.isArray(parsedData.roles) ?
+              parsedData.roles.join(", ") : "") ||
+            "";
+
+          setAdminInfo({
+            name: name,
+            email: email,
+            roles: roles,
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing admin info from localStorage:", error);
+        // Keep default values if parsing fails
+      }
+    };
+
+    fetchAdminInfo();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -148,11 +225,11 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   };
 
   const getNavbarLeftMargin = () => {
-    if (screenSize.isMobile) return 0; 
-    
+    if (screenSize.isMobile) return 0;
+
     const sidebarWidth = screenSize.isTablet ? 220 : 250;
     const collapsedWidth = screenSize.isTablet ? 70 : 80;
-    
+
     return collapsed ? collapsedWidth : sidebarWidth;
   };
 
@@ -205,7 +282,37 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
+  const getFirstLetter = () => {
+    return adminInfo.name.charAt(0).toUpperCase();
+  };
+
   const userMenuItems = [
+    {
+      key: "user-info",
+      label: (
+        <UserInfoContainer>
+          <UserName>{adminInfo.name}</UserName>
+          {adminInfo.roles && (
+            <div style={{
+              color: "#64748b",
+              fontSize: "11px",
+              marginTop: "4px",
+              fontWeight: "500"
+            }}>
+              {adminInfo.roles}
+            </div>
+          )}
+          {adminInfo.email && (
+            <UserEmail>
+              <MailOutlined style={{ fontSize: "12px" }} />
+              {adminInfo.email}
+            </UserEmail>
+          )}
+
+        </UserInfoContainer>
+      ),
+      disabled: true,
+    },
     {
       key: "profile",
       icon: <UserOutlined style={{ color: "#2a4365" }} />,
@@ -224,8 +331,8 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   ];
 
   return (
-    <AppBar 
-      height={getNavbarHeight()} 
+    <AppBar
+      height={getNavbarHeight()}
       padding={getPadding()}
       leftMargin={getNavbarLeftMargin()}
     >
@@ -296,9 +403,11 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.2s ease",
+              fontWeight: "600",
             }}
-            icon={<UserOutlined />}
-          />
+          >
+            {adminInfo.name ? getFirstLetter() : <UserOutlined />}
+          </Avatar>
         </Dropdown>
       </div>
     </AppBar>
