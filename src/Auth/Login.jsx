@@ -8,7 +8,7 @@ import { useLoginUserMutation } from "../Slices/Users/UserApis";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import Header from "../Global/HEader";
 import HomeFooter from "../Global/Footer";
-import { useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const Login = () => {
   const [form] = Form.useForm();
@@ -16,8 +16,9 @@ const Login = () => {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
-  const { id } = useParams();
-  console.log(id,'id')
+   const [searchParams] = useSearchParams();
+  const branchId = searchParams.get("branchId");
+  console.log(branchId,'id-branch')
 
   const onFinish = async (values) => {
     try {
@@ -55,7 +56,7 @@ const Login = () => {
       const response = await loginUser({
         email: values.email,
         password: values.password,
-        branchId:id
+        branchId
       }).unwrap();
 
       if (response.requireOtp) {

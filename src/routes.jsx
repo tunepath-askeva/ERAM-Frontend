@@ -40,7 +40,7 @@ const AppRoutes = () => {
       <Route path="/services" element={<Services />} />
       <Route path="/contacts" element={<Contacts />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/login/:id" element={<Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path='/branches' element={<Branches/>} />
 
       {/* Super Admin */}

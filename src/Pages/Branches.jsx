@@ -37,7 +37,7 @@ const Branches = () => {
     };
 
     const handleView = (id) => {
-        navigate(`/login/${id}`);
+        navigate(`/login?branchId=${id}`);
     }
 
     return (
@@ -159,7 +159,7 @@ const Branches = () => {
                                                         icon={branch.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
                                                         style={{
                                                             borderRadius: '12px',
-                                                            padding: '4px 12px',
+                                                            padding: 'px 12px',
                                                             fontSize: '12px',
                                                             fontWeight: '500'
                                                         }}
