@@ -98,7 +98,7 @@ const Login = () => {
           navigate("/admin/dashboard");
           break;
         case "candidate":
-          navigate("/dashboard");
+          navigate("/candidate-jobs");
           break;
         case "employee":
           navigate("/employee/dashboard");

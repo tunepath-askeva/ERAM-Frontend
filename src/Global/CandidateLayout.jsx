@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "antd";
-import AdminNavbar from "./AdminNavbar";
-import AdminSidebar from "./AdminSidebar";
+import CandidateNavbar from "./CandidateNavbar";
+import CandidateSidebar from "./CandidateSidebar";
 import { Outlet } from "react-router-dom";
 
 const { Content } = Layout;
@@ -13,7 +13,7 @@ const BREAKPOINTS = {
   largeDesktop: 1600
 };
 
-const AdminLayout = () => {
+const CandidateLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [screenSize, setScreenSize] = useState({
@@ -99,12 +99,12 @@ const AdminLayout = () => {
         overflow: screenSize.isMobile ? "hidden" : "auto"
       }}
     >
-      {/* <AdminSidebar
+      <CandidateSidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         drawerVisible={drawerVisible}
         setDrawerVisible={setDrawerVisible}
-      /> */}
+      />
       
       <Layout
         style={{
@@ -115,11 +115,11 @@ const AdminLayout = () => {
           paddingTop: getNavbarHeight(), 
         }}
       >
-        {/* <AdminNavbar
+        <CandidateNavbar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
           setDrawerVisible={setDrawerVisible}
-        /> */}
+        />
         
         <Content
           style={{
@@ -165,4 +165,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default CandidateLayout;

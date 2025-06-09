@@ -27,6 +27,10 @@ import ViewWorkOrder from "./Admin/Components/ViewWorkOrder";
 import EditWorkOrder from "./Admin/Components/EditWorkOrder";
 import AdminRecuiter from "./Admin/Pages/AdminRecruiters";
 import Master from "./Admin/Pages/Master";
+import CandidateLayout from "./Global/CandidateLayout";
+import CandidateJobs from "./Pages/CandidateJobs";
+import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
+import CandidateSettings from "./Pages/CandidateSettings";
 
 const AppRoutes = () => {
   return (
@@ -107,11 +111,24 @@ const AppRoutes = () => {
           path="/admin/pipeline"
           element={<ProtectedAdmin element={<Pipeline />} />}
         />
-         <Route
+        <Route
           path="/admin/masters"
           element={<ProtectedAdmin element={<Master />} />}
         />
       </Route>
+
+
+      {/* Candidate */}
+
+      <Route element={<CandidateLayout />}>
+
+        <Route path="/candidate-jobs" element={<CandidateJobs />} />
+        <Route path="/candidate-applied-jobs" element={<CandidateAppliedJobs />} />
+        <Route path="/candidate-settings" element={<CandidateSettings />} />
+-
+      </Route>
+
+
     </Routes>
   );
 };
