@@ -7,6 +7,7 @@ import {
   Card,
   InputNumber,
   Space,
+  message,
   Row,
   Col,
   Typography,
@@ -29,12 +30,11 @@ import {
   SaveOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useSnackbar } from 'notistack';
-import {
-  useAddPipelineMutation,
+import { 
+  useAddPipelineMutation, 
   useEditPipelineMutation,
   useEditStageMutation,
-  useDeleteStageMutation,
+  useDeleteStageMutation
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -55,13 +55,10 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const [pipelineName, setPipelineName] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { enqueueSnackbar } = useSnackbar();
-
   const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
   const [editPipeline, { isLoading: isUpdating }] = useEditPipelineMutation();
   const [editStage, { isLoading: isEditingStageAPI }] = useEditStageMutation();
-  const [deleteStage, { isLoading: isDeletingStage }] =
-    useDeleteStageMutation();
+  const [deleteStage, { isLoading: isDeletingStage }] = useDeleteStageMutation();
 
   const commonDocuments = [
     "Resume/CV",
@@ -79,6 +76,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     "Passport",
   ];
 
+  // Initialize form with editing data
   useEffect(() => {
     if (editingPipeline && visible) {
       setIsEditMode(true);
@@ -145,7 +143,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
   const addStage = async () => {
     if (!currentStage.name.trim()) {
-      enqueueSnackbar("Stage name is required", { variant: 'error' });
+      message.error("Stage name is required");
       return;
     }
 
@@ -155,6 +153,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     };
 
     if (isEditingStage) {
+      // If in edit mode and editing an existing stage with ID, call API
       if (isEditMode && stages[editingIndex]._id) {
         try {
           const stageData = {
@@ -164,39 +163,34 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             requiredDocuments: newStage.requiredDocuments,
           };
 
-          const response = await editStage({
+          await editStage({
             stageId: stages[editingIndex]._id,
-            stageData,
+            stageData
           }).unwrap();
 
           const updatedStages = [...stages];
-          updatedStages[editingIndex] = {
-            ...stages[editingIndex],
-            ...newStage,
-          };
+          updatedStages[editingIndex] = { ...stages[editingIndex], ...newStage };
           setStages(updatedStages);
-          
-          const successMessage = response?.message || "Stage updated successfully";
-          enqueueSnackbar(successMessage, { variant: 'success' });
+          message.success("Stage updated successfully");
         } catch (error) {
-          const errorMessage =
-            error?.data?.message || error?.message || "Failed to update stage";
-          enqueueSnackbar(errorMessage, { variant: 'error' });
+          const errorMessage = error?.data?.message || error?.message || "Failed to update stage";
+          message.error(errorMessage);
           console.error("Stage update error:", error);
           return;
         }
       } else {
+        // Local update for new stages or create mode
         const updatedStages = [...stages];
         updatedStages[editingIndex] = newStage;
         setStages(updatedStages);
-        enqueueSnackbar("Stage updated successfully", { variant: 'success' });
+        message.success("Stage updated successfully");
       }
-
+      
       setIsEditingStage(false);
       setEditingIndex(-1);
     } else {
       setStages([...stages, newStage]);
-      enqueueSnackbar("Stage added successfully", { variant: 'success' });
+      message.success("Stage added successfully");
     }
 
     setCurrentStage({
@@ -215,48 +209,49 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
   const deleteStageHandler = async (index) => {
     const stageToDelete = stages[index];
-
+    
+    // If in edit mode and stage has an ID, call delete API
     if (isEditMode && stageToDelete._id) {
       try {
-        const response = await deleteStage(stageToDelete._id).unwrap();
-        const successMessage = response?.message || "Stage deleted successfully from database";
-        enqueueSnackbar(successMessage, { variant: 'success' });
+        await deleteStage(stageToDelete._id).unwrap();
+        message.success("Stage deleted successfully from database");
       } catch (error) {
-        const errorMessage =
-          error?.data?.message || error?.message || "Failed to delete stage";
-        enqueueSnackbar(errorMessage, { variant: 'error' });
+        const errorMessage = error?.data?.message || error?.message || "Failed to delete stage";
+        message.error(errorMessage);
         console.error("Stage delete error:", error);
         return;
       }
     }
 
+    // Remove from local state
     const updatedStages = stages.filter((_, i) => i !== index);
     const reorderedStages = updatedStages.map((stage, i) => ({
       ...stage,
       order: i + 1,
     }));
     setStages(reorderedStages);
-
+    
+    // Update current stage order if adding new stage
     if (!isEditingStage) {
-      setCurrentStage((prev) => ({
+      setCurrentStage(prev => ({
         ...prev,
-        order: reorderedStages.length + 1,
+        order: reorderedStages.length + 1
       }));
     }
-
+    
     if (!isEditMode || !stageToDelete._id) {
-      enqueueSnackbar("Stage removed successfully", { variant: 'success' });
+      message.success("Stage removed successfully");
     }
   };
 
   const handleSubmit = async () => {
     if (!pipelineName || !pipelineName.trim()) {
-      enqueueSnackbar("Pipeline name is required", { variant: 'error' });
+      message.error("Pipeline name is required");
       return;
     }
 
     if (stages.length === 0) {
-      enqueueSnackbar("At least one stage is required", { variant: 'error' });
+      message.error("At least one stage is required");
       return;
     }
 
@@ -267,40 +262,32 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
     try {
       let result;
-
+      
       if (isEditMode) {
         result = await editPipeline({
           pipelineId: editingPipeline._id,
-          pipelineData,
+          pipelineData
         }).unwrap();
-        
-        const successMessage = result?.message || "Pipeline updated successfully!";
-        enqueueSnackbar(successMessage, { variant: 'success' });
+        message.success("Pipeline updated successfully!");
       } else {
         result = await addPipeline(pipelineData).unwrap();
-        
-        const successMessage = result?.message || "Pipeline created successfully!";
-        enqueueSnackbar(successMessage, { variant: 'success' });
+        message.success("Pipeline created successfully!");
       }
 
-      console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
+      console.log(`${isEditMode ? 'Updated' : 'Created'} pipeline:`, result);
       resetForm();
       onClose();
     } catch (error) {
       const errorMessage =
-        error?.data?.message ||
-        error?.message ||
-        `Failed to ${isEditMode ? "update" : "create"} pipeline`;
-      enqueueSnackbar(errorMessage, { variant: 'error' });
-      console.error(
-        `Pipeline ${isEditMode ? "update" : "creation"} error:`,
-        error
-      );
+        error?.data?.message || 
+        error?.message || 
+        `Failed to ${isEditMode ? 'update' : 'create'} pipeline`;
+      message.error(errorMessage);
+      console.error(`Pipeline ${isEditMode ? 'update' : 'creation'} error:`, error);
     }
   };
 
-  const isLoading =
-    isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
+  const isLoading = isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
 
   return (
     <Modal
@@ -315,7 +302,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
         >
           <Avatar
             style={{
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+              backgroundColor: "#1890ff",
               marginRight: "12px",
             }}
             icon={isEditMode ? <EditOutlined /> : <SettingOutlined />}
@@ -328,9 +315,11 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       width={1000}
       footer={null}
       destroyOnClose
-      style={{ top: "20px", padding: "24px" }}
+      style={{ top: "20px",  padding: "24px", }}
+      
     >
       <div style={{ marginTop: "8px" }}>
+        {/* Pipeline Name Section */}
         <Card
           style={{
             marginBottom: "24px",
@@ -342,9 +331,9 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ fontSize: "16px", color: "#2c3e50" }}>
               <FolderOpenOutlined
-                style={{
-                  marginRight: "8px",
-                  color: "  #da2c46 ",
+                style={{ 
+                  marginRight: "8px", 
+                  color: "#1890ff" 
                 }}
               />
               Pipeline Information
@@ -360,15 +349,20 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               border: "2px solid #e8f4fd",
               fontSize: "16px",
             }}
-            prefix={<EditOutlined style={{ color: " #da2c46 " }} />}
+            prefix={
+              <EditOutlined 
+                style={{ color: "#1890ff" }} 
+              />
+            }
           />
         </Card>
 
+        {/* Stages Header */}
         <Card
           style={{
             marginBottom: "20px",
             borderRadius: "12px",
-            background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
             border: "none",
           }}
         >
@@ -392,9 +386,10 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                   fontSize: "14px",
                 }}
               >
-                {isEditMode
-                  ? "Modify your hiring process steps"
-                  : "Build your hiring process step by step"}
+                {isEditMode 
+                  ? "Modify your hiring process steps" 
+                  : "Build your hiring process step by step"
+                }
               </Text>
             </div>
             <Badge
@@ -405,6 +400,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         </Card>
 
+        {/* Existing Stages */}
         {stages.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
             <Row gutter={[16, 16]}>
@@ -464,30 +460,24 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                             style={{
                               borderRadius: "6px",
                             }}
-                            loading={
-                              isEditingStageAPI && editingIndex === index
-                            }
+                            loading={isEditingStageAPI && editingIndex === index}
                           />
                         </Tooltip>
                         <Tooltip title="Delete Stage">
                           <Popconfirm
                             title="Delete Stage"
                             description={
-                              isEditMode && stage._id
+                              isEditMode && stage._id 
                                 ? "This will permanently delete the stage from the database. Are you sure?"
                                 : "Are you sure you want to remove this stage?"
                             }
-                            icon={
-                              <ExclamationCircleOutlined
-                                style={{ color: "red" }}
-                              />
-                            }
+                            icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                             onConfirm={() => deleteStageHandler(index)}
                             okText="Yes"
                             cancelText="No"
-                            okButtonProps={{
+                            okButtonProps={{ 
                               danger: true,
-                              loading: isDeletingStage,
+                              loading: isDeletingStage 
                             }}
                           >
                             <Button
@@ -537,6 +527,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         )}
 
+        {/* Add/Edit Stage Form */}
         <Card
           title={
             <div
@@ -640,55 +631,41 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                   style={{
                     borderRadius: "8px",
                     border: "2px solid #e8f4fd",
-                    flex: 1,
                   }}
                 />
-                <div style={{ marginLeft: "8px" }}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={addDocument}
-                    style={{
-                      borderRadius: "8px",
-                      background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                    }}
-                  >
-                    Add
-                  </Button>
-                </div>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={addDocument}
+                  style={{
+                    borderRadius: "8px",
+                    backgroundColor: "#1890ff",
+                  }}
+                >
+                  Add
+                </Button>
               </Space.Compact>
 
+              {/* Common Documents */}
               <div style={{ marginTop: "12px" }}>
                 <Text style={{ fontSize: "12px", color: "#666" }}>
                   <InfoCircleOutlined style={{ marginRight: "4px" }} />
                   Quick add common documents:
                 </Text>
-                <div
-                  style={{
-                    marginTop: "8px",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "6px",
-                  }}
-                >
+                <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {commonDocuments.map((doc) => (
                     <Button
                       key={doc}
                       size="small"
-                      type={
-                        currentStage.requiredDocuments.includes(doc)
-                          ? "primary"
-                          : "default"
-                      }
+                      type={currentStage.requiredDocuments.includes(doc) ? "primary" : "default"}
                       onClick={() => selectCommonDocument(doc)}
                       style={{
                         borderRadius: "16px",
                         fontSize: "12px",
                         height: "28px",
-                        backgroundColor:
-                          currentStage.requiredDocuments.includes(doc)
-                            ? " #da2c46 "
-                            : undefined,
+                        backgroundColor: currentStage.requiredDocuments.includes(doc) 
+                          ? "#1890ff"
+                          : undefined,
                       }}
                       disabled={currentStage.requiredDocuments.includes(doc)}
                     >
@@ -701,20 +678,13 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                 </div>
               </div>
 
+              {/* Selected Documents */}
               {currentStage.requiredDocuments.length > 0 && (
                 <div style={{ marginTop: "12px" }}>
                   <Text style={{ fontSize: "12px", color: "#666" }}>
-                    Selected documents ({currentStage.requiredDocuments.length}
-                    ):
+                    Selected documents ({currentStage.requiredDocuments.length}):
                   </Text>
-                  <div
-                    style={{
-                      marginTop: "8px",
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "6px",
-                    }}
-                  >
+                  <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {currentStage.requiredDocuments.map((doc, index) => (
                       <Tag
                         key={index}
@@ -746,12 +716,11 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               onClick={addStage}
               size="large"
               style={{
-                borderRadius: "5px",
+                borderRadius: "8px",
                 minWidth: "140px",
                 height: "40px",
                 fontSize: "14px",
-                background:
-                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                backgroundColor: "#1890ff",
               }}
               loading={isEditingStageAPI}
             >
@@ -783,6 +752,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         </Card>
 
+        {/* Footer Actions */}
         <div
           style={{
             display: "flex",
@@ -815,17 +785,14 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               minWidth: "140px",
               height: "44px",
               fontSize: "14px",
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+              backgroundColor: "#1890ff",
             }}
             icon={<SaveOutlined />}
           >
-            {isCreating || isUpdating
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-              ? "Update Pipeline"
-              : "Create Pipeline"}
+            {(isCreating || isUpdating)
+              ? (isEditMode ? "Updating..." : "Creating...")
+              : (isEditMode ? "Update Pipeline" : "Create Pipeline")
+            }
           </Button>
         </div>
       </div>
