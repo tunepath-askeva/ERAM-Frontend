@@ -8,6 +8,7 @@ import { useLoginUserMutation } from "../Slices/Users/UserApis";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import Header from "../Global/HEader";
 import HomeFooter from "../Global/Footer";
+import { useParams } from "react-router-dom";
 
 const Login = () => {
   const [form] = Form.useForm();
@@ -15,6 +16,8 @@ const Login = () => {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
+  const { id } = useParams();
+  console.log(id,'id')
 
   const onFinish = async (values) => {
     try {
@@ -52,9 +55,9 @@ const Login = () => {
       const response = await loginUser({
         email: values.email,
         password: values.password,
+        branchId:id
       }).unwrap();
 
-      // Check if OTP is required (for super_admin)
       if (response.requireOtp) {
         enqueueSnackbar("OTP sent to your email. Please verify to complete login.", {
           variant: "info",

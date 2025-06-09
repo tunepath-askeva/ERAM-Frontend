@@ -3,6 +3,7 @@ import Login from "./Auth/Login";
 import Register from "./Auth/Register";
 import Home from "./Pages/Home";
 import About from "./Pages/About";
+import Branches from "./Pages/Branches";
 import Services from "./Pages/Services";
 import Contacts from "./Pages/Contacts";
 import SuperDashboard from "./SuperAdmin/Pages/SuperDashboard";
@@ -35,7 +36,8 @@ const AppRoutes = () => {
       <Route path="/services" element={<Services />} />
       <Route path="/contacts" element={<Contacts />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/login/:id" element={<Login />} />
+      <Route path='/branches' element={<Branches/>} />
 
       {/* Super Admin */}
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />

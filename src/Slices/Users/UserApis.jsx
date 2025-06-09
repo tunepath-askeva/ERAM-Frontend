@@ -48,6 +48,10 @@ export const userApi = createApi({
         body: data,
       }),
     }),
+    getBranches: builder.query({
+      query: () => "/branch",
+      providesTags: ["Branch"],
+    }),
   }),
 });
 
@@ -56,4 +60,5 @@ export const {
   useLoginUserMutation,
   useVerifyOtpMutation,
   useResendOtpMutation,
+  useGetBranchesQuery
 } = userApi;
