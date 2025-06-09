@@ -25,23 +25,28 @@ import {
   EyeOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  StopOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
 import {
   useGetProjectsQuery,
   useGetProjectByIdQuery,
   useDeleteProjectMutation,
+  useDisableProjectStatusMutation, // Add this new mutation
 } from "../../Slices/Admin/AdminApis";
 import ProjectFormModal from "../Components/ProjectFormModal";
 const { Title, Text, Paragraph } = Typography;
 
 const Master = () => {
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); 
+  const [modalMode, setModalMode] = useState("create");
   const [editingProject, setEditingProject] = useState(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [projectToToggle, setProjectToToggle] = useState(null);
 
   const {
     data: projectsData,
@@ -54,11 +59,14 @@ const Master = () => {
     data: selectedProject,
     isLoading: isLoadingProjectDetails,
     error: projectDetailsError,
+    refetch: refetchSingle,
   } = useGetProjectByIdQuery(selectedProjectId, {
     skip: !selectedProjectId,
   });
 
   const [deleteProject, { isLoading: isDeleting }] = useDeleteProjectMutation();
+  const [toggleProjectStatus, { isLoading: isToggling }] =
+    useDisableProjectStatusMutation();
 
   const projects = projectsData?.allProjects || [];
 
@@ -108,6 +116,45 @@ const Master = () => {
       console.error("Delete error:", error);
       message.error(
         error?.data?.message || error?.message || "Failed to delete project"
+      );
+    }
+  };
+
+  const showStatusModal = (project) => {
+    setProjectToToggle(project);
+    setStatusModalVisible(true);
+  };
+
+  const handleStatusCancel = () => {
+    setStatusModalVisible(false);
+    setProjectToToggle(null);
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!projectToToggle) return;
+
+    try {
+      const newStatus =
+        projectToToggle.status === "active" ? "inActive" : "active";
+      await toggleProjectStatus({
+        projectId: projectToToggle._id,
+        accountStatus: newStatus,
+      }).unwrap();
+
+      message.success(
+        `Project "${projectToToggle.name}" has been ${
+          newStatus === "active" ? "activated" : "deactivated"
+        } successfully`
+      );
+      setStatusModalVisible(false);
+      setProjectToToggle(null);
+      refetchProjects();
+    } catch (error) {
+      console.error("Status toggle error:", error);
+      message.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to update project status"
       );
     }
   };
@@ -285,6 +332,32 @@ const Master = () => {
                           onClick={() => showEditModal(project)}
                         />
                       </Tooltip>
+                      <Tooltip
+                        title={
+                          project.status === "active"
+                            ? "Deactivate Project"
+                            : "Activate Project"
+                        }
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={
+                            project.status === "active" ? (
+                              <StopOutlined />
+                            ) : (
+                              <PlayCircleOutlined />
+                            )
+                          }
+                          onClick={() => showStatusModal(project)}
+                          style={{
+                            color:
+                              project.status === "active"
+                                ? "#ff4d4f"
+                                : "#52c41a",
+                          }}
+                        />
+                      </Tooltip>
                       <Tooltip title="Delete Project">
                         <Button
                           type="text"
@@ -381,38 +454,6 @@ const Master = () => {
                       </div>
                     </div>
                   </div>
-
-                  <div
-                    style={{
-                      borderTop: "1px solid #f0f0f0",
-                      paddingTop: 12,
-                      marginTop: "auto",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        Created:{" "}
-                        {new Date(project.createdAt).toLocaleDateString(
-                          undefined,
-                          {
-                            year: "2-digit",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
-                      </Text>
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        ID: {project._id.slice(-6)}
-                      </Text>
-                    </div>
-                  </div>
                 </Card>
               </div>
             ))}
@@ -462,6 +503,7 @@ const Master = () => {
           </div>
         }
         open={viewModalVisible}
+        refetch={refetchSingle}
         onCancel={handleViewModalClose}
         footer={[
           <Button
@@ -476,7 +518,7 @@ const Master = () => {
           </Button>,
         ]}
         width="90%"
-        style={{ maxWidth: 600 }}
+        style={{ maxWidth: 700 }}
         centered
         destroyOnClose
       >
@@ -496,83 +538,171 @@ const Master = () => {
                 projectDetailsError?.message}
             </Text>
           </div>
-        ) : selectedProject ? (
-          <div style={{ padding: "16px 0" }}>
-            <div style={{ marginBottom: 20 }}>
-              <Text
-                strong
+        ) : selectedProject?.findProject ? (
+          <div style={{ padding: "8px 0" }}>
+            {/* Project Header */}
+            <div
+              style={{
+                marginBottom: 24,
+                padding: "20px",
+                background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                borderRadius: "12px",
+                border: "1px solid #dee2e6",
+              }}
+            >
+              <div
                 style={{
-                  color: "#2c3e50",
-                  fontSize: "16px",
-                  display: "block",
-                  marginBottom: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
                 }}
               >
-                {selectedProject.name}
-              </Text>
-              <Space>
+                <FolderOpenOutlined
+                  style={{
+                    fontSize: "24px",
+                    color: "#da2c46",
+                    marginRight: 12,
+                  }}
+                />
+                <Title
+                  level={3}
+                  style={{
+                    margin: 0,
+                    color: "#2c3e50",
+                    fontSize: "22px",
+                  }}
+                >
+                  {selectedProject.findProject.name}
+                </Title>
+              </div>
+
+              <Space size="middle" wrap>
                 <Badge
-                  count={selectedProject.prefix}
-                  style={{ backgroundColor: "#52c41a" }}
+                  count={selectedProject.findProject.prefix}
+                  style={{
+                    backgroundColor: "#52c41a",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                  }}
                 />
                 <Tag
-                  color={selectedProject.status === "active" ? "green" : "red"}
-                  style={{ textTransform: "capitalize" }}
+                  color={
+                    selectedProject.findProject.status === "active"
+                      ? "green"
+                      : "red"
+                  }
+                  style={{
+                    textTransform: "capitalize",
+                    fontSize: "12px",
+                    padding: "4px 12px",
+                    borderRadius: "6px",
+                  }}
                 >
-                  {selectedProject.status}
+                  {selectedProject.findProject.status}
                 </Tag>
               </Space>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <Text
-                strong
+            {/* Project Details Grid */}
+            <div style={{ display: "grid", gap: "20px" }}>
+              {/* Description Section */}
+              <div
                 style={{
-                  color: "#666",
-                  fontSize: "14px",
-                  display: "block",
-                  marginBottom: 8,
+                  background: "#fff",
+                  border: "1px solid #f0f0f0",
+                  borderRadius: "8px",
+                  padding: "16px",
                 }}
               >
-                Description:
-              </Text>
-              <Paragraph
-                style={{
-                  color: "#333",
-                  lineHeight: 1.6,
-                  background: "#f9f9f9",
-                  padding: "12px",
-                  borderRadius: "6px",
-                }}
-              >
-                {selectedProject.description}
-              </Paragraph>
-            </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <FileTextOutlined
+                    style={{
+                      color: "#666",
+                      marginRight: 8,
+                      fontSize: "16px",
+                    }}
+                  />
+                  <Text
+                    strong
+                    style={{
+                      color: "#2c3e50",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Description
+                  </Text>
+                </div>
+                <Paragraph
+                  style={{
+                    color: "#555",
+                    lineHeight: 1.6,
+                    margin: 0,
+                    fontSize: "14px",
+                    background: "#f9f9f9",
+                    padding: "12px",
+                    borderRadius: "6px",
+                    border: "1px solid #f0f0f0",
+                  }}
+                >
+                  {selectedProject.findProject.description ||
+                    "No description provided"}
+                </Paragraph>
+              </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "12px",
-                color: "#8c8c8c",
-                flexWrap: "wrap",
-                gap: "8px",
-              }}
-            >
-              <span>
-                Created:{" "}
-                {new Date(selectedProject.createdAt).toLocaleDateString()}
-              </span>
-              <span>
-                Updated:{" "}
-                {new Date(selectedProject.updatedAt).toLocaleDateString()}
-              </span>
-              <span>ID: {selectedProject._id}</span>
+              {/* Project Information Grid */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #f0f0f0",
+                    borderRadius: "8px",
+                    padding: "16px",
+                  }}
+                >
+                  <Text
+                    strong
+                    style={{
+                      color: "#666",
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      display: "block",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Project Prefix
+                  </Text>
+                  <Tag
+                    color="blue"
+                    style={{
+                      fontSize: "14px",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {selectedProject.findProject.prefix}
+                  </Tag>
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
       </Modal>
 
+      {/* Delete Modal */}
       <Modal
         title={
           <div
@@ -691,6 +821,208 @@ const Master = () => {
                   <Text style={{ color: "#666", fontSize: "12px" }}>
                     <strong>Created:</strong>{" "}
                     {new Date(projectToDelete.createdAt).toLocaleDateString()}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Status Toggle Modal */}
+      <Modal
+        title={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color:
+                projectToToggle?.status === "active" ? "#ff4d4f" : "#52c41a",
+            }}
+          >
+            {projectToToggle?.status === "active" ? (
+              <StopOutlined style={{ marginRight: 8, fontSize: 18 }} />
+            ) : (
+              <PlayCircleOutlined style={{ marginRight: 8, fontSize: 18 }} />
+            )}
+            <span style={{ fontSize: "16px" }}>
+              {projectToToggle?.status === "active" ? "Deactivate" : "Activate"}{" "}
+              Project
+            </span>
+          </div>
+        }
+        open={statusModalVisible}
+        onCancel={handleStatusCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleStatusCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="confirm"
+            type="primary"
+            loading={isToggling}
+            onClick={handleStatusConfirm}
+            size="large"
+            style={{
+              backgroundColor:
+                projectToToggle?.status === "active" ? "#ff4d4f" : "#52c41a",
+              borderColor:
+                projectToToggle?.status === "active" ? "#ff4d4f" : "#52c41a",
+            }}
+            icon={
+              projectToToggle?.status === "active" ? (
+                <StopOutlined />
+              ) : (
+                <PlayCircleOutlined />
+              )
+            }
+          >
+            {projectToToggle?.status === "active" ? "Deactivate" : "Activate"}{" "}
+            Project
+          </Button>,
+        ]}
+        maskClosable={false}
+        destroyOnClose
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background:
+                projectToToggle?.status === "active" ? "#fff2f0" : "#f6ffed",
+              border: `1px solid ${
+                projectToToggle?.status === "active" ? "#ffccc7" : "#b7eb8f"
+              }`,
+              borderRadius: "8px",
+              padding: "16px",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            {projectToToggle?.status === "active" ? (
+              <WarningOutlined
+                style={{
+                  color: "#ff4d4f",
+                  fontSize: "18px",
+                  marginTop: "2px",
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <InfoCircleOutlined
+                style={{
+                  color: "#52c41a",
+                  fontSize: "18px",
+                  marginTop: "2px",
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <div>
+              <Text
+                strong
+                style={{
+                  color:
+                    projectToToggle?.status === "active"
+                      ? "#ff4d4f"
+                      : "#52c41a",
+                  fontSize: "13px",
+                }}
+              >
+                {projectToToggle?.status === "active"
+                  ? "This will deactivate the project!"
+                  : "This will activate the project!"}
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                {projectToToggle?.status === "active"
+                  ? "The project will be marked as inactive and may affect related operations."
+                  : "The project will be marked as active and ready for operations."}
+              </Text>
+            </div>
+          </div>
+
+          {projectToToggle && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "16px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
+                Are you sure you want to{" "}
+                {projectToToggle.status === "active"
+                  ? "deactivate"
+                  : "activate"}{" "}
+                the following project?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "16px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {projectToToggle.name}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Prefix:</strong> {projectToToggle.prefix}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Current Status:</strong>
+                    <Tag
+                      color={
+                        projectToToggle.status === "active" ? "green" : "red"
+                      }
+                      style={{
+                        marginLeft: "8px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {projectToToggle.status}
+                    </Tag>
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>New Status:</strong>
+                    <Tag
+                      color={
+                        projectToToggle.status === "active" ? "red" : "green"
+                      }
+                      style={{
+                        marginLeft: "8px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {projectToToggle.status === "active"
+                        ? "inActive"
+                        : "active"}
+                    </Tag>
                   </Text>
                 </div>
               </div>

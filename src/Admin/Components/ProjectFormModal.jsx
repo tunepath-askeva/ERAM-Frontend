@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Input,
-  Button,
-  Typography,
-  message,
-} from "antd";
+import { Modal, Input, Button, Typography, message } from "antd";
 import {
   PlusOutlined,
   ProjectOutlined,
@@ -13,17 +7,21 @@ import {
   TagOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { useAddProjectMutation, useEditProjectMutation } from "../../Slices/Admin/AdminApis";
+import {
+  useAddProjectMutation,
+  useEditProjectMutation,
+  useGetAdminBranchQuery,
+} from "../../Slices/Admin/AdminApis";
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
-const ProjectFormModal = ({ 
-  visible, 
-  onCancel, 
-  onSuccess, 
-  editProject = null, 
-  mode = 'create' 
+const ProjectFormModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  editProject = null,
+  mode = "create",
 }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,13 +34,20 @@ const ProjectFormModal = ({
   const [addProject] = useAddProjectMutation();
   const [updateProject] = useEditProjectMutation();
 
-  // Reset form when modal opens/closes or mode changes
+  const { data: branchData, isLoading: isBranchLoading } =
+    useGetAdminBranchQuery();
+  const branchOrder = branchData?.branch?.branchOrder || "";
+
   useEffect(() => {
     if (visible) {
-      if (mode === 'edit' && editProject) {
+      if (mode === "edit" && editProject) {
+        // For edit mode, split the prefix to show only the part before the branch order
+        const prefixParts = editProject.prefix?.split("-") || [];
+        const prefixWithoutOrder = prefixParts.slice(0, -1).join("-");
+
         setFormData({
           name: editProject.name || "",
-          prefix: editProject.prefix || "",
+          prefix: prefixWithoutOrder,
           description: editProject.description || "",
         });
       } else {
@@ -89,21 +94,28 @@ const ProjectFormModal = ({
 
     setLoading(true);
     try {
-      if (mode === 'edit' && editProject) {
-        await updateProject({ 
-          id: editProject._id, 
-          ...formData 
+      const finalFormData = {
+        ...formData,
+        prefix: formData.prefix
+          ? `${formData.prefix}-${branchOrder}`
+          : branchOrder,
+      };
+
+      if (mode === "edit" && editProject) {
+        await updateProject({
+          id: editProject._id,
+          ...finalFormData,
         }).unwrap();
         message.success("Project updated successfully!");
       } else {
-        await addProject(formData).unwrap();
+        await addProject(finalFormData).unwrap();
         message.success("Project created successfully!");
       }
 
       handleReset();
-      onSuccess?.(); // Call success callback
+      onSuccess?.();
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
       message.error(error?.data?.message || `Failed to ${mode} project`);
     } finally {
       setLoading(false);
@@ -112,6 +124,9 @@ const ProjectFormModal = ({
 
   const handleInputChange = (field, value) => {
     if (field === "prefix") {
+      if (mode === "edit" && editProject) {
+        return;
+      }
       value = value.toUpperCase();
     }
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -130,9 +145,9 @@ const ProjectFormModal = ({
     onCancel?.();
   };
 
-  const isEdit = mode === 'edit';
-  const modalTitle = isEdit ? 'Edit Project' : 'Create New Project';
-  const submitButtonText = isEdit ? 'Update Project' : 'Create Project';
+  const isEdit = mode === "edit";
+  const modalTitle = isEdit ? "Edit Project" : "Create New Project";
+  const submitButtonText = isEdit ? "Update Project" : "Create Project";
   const submitIcon = isEdit ? <EditOutlined /> : <PlusOutlined />;
 
   return (
@@ -206,13 +221,30 @@ const ProjectFormModal = ({
             <TagOutlined style={{ marginRight: 6 }} />
             Project Prefix *
           </label>
-          <Input
-            size="large"
-            placeholder="e.g., PROJ-001, WEB-APP"
-            value={formData.prefix}
-            onChange={(e) => handleInputChange("prefix", e.target.value)}
-            status={errors.prefix ? "error" : ""}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Input
+              size="large"
+              placeholder="e.g., PROJ"
+              value={formData.prefix}
+              onChange={(e) => handleInputChange("prefix", e.target.value)}
+              status={errors.prefix ? "error" : ""}
+              style={{ flex: 1 }}
+            />
+            <div
+              style={{
+                padding: "0 12px",
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#f0f0f0",
+                borderRadius: 6,
+                minWidth: 40,
+              }}
+            >
+              {branchOrder || "-"}
+            </div>
+          </div>
           <Text
             style={{
               color: "#8c8c8c",
@@ -222,7 +254,13 @@ const ProjectFormModal = ({
             }}
           >
             A unique identifier (2-10 characters, letters, numbers, - and _
-            only)
+            only).
+            {branchOrder &&
+              ` Your prefix will be saved as ${
+                formData.prefix
+                  ? formData.prefix + "-" + branchOrder
+                  : branchOrder
+              }`}
           </Text>
           {errors.prefix && (
             <Text
