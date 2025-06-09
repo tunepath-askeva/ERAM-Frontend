@@ -36,6 +36,7 @@ import {
   useGetPipelinesQuery,
   useGetProjectsQuery,
   useCreateWorkOrderMutation,
+  useGetAdminBranchQuery,
 } from "../../Slices/Admin/AdminApis";
 
 const { TextArea } = Input;
@@ -65,12 +66,14 @@ const AddWorkOrder = () => {
   const [applicationFields, setApplicationFields] = useState([]);
   const [previewTab, setPreviewTab] = useState("overview");
 
+  const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
   const { data: pipeline } = useGetPipelinesQuery();
   const [createWorkOrder] = useCreateWorkOrderMutation();
 
-  // Handle project selection and update job code prefix
+  const branchId = Branch?.branch?._id;
+
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
     const project = projects?.allProjects?.find((p) => p._id === projectId);
@@ -93,6 +96,7 @@ const AddWorkOrder = () => {
           endDate: values.endDate?.format("YYYY-MM-DD"),
           deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
           alertDate: values.alertDate?.format("YYYY-MM-DD"),
+          branchId: branchId,
         };
         setJobData(formattedData);
         setCurrentStep(1);
@@ -490,12 +494,17 @@ const AddWorkOrder = () => {
   );
 
   if (currentStep === 0) {
-    // Step 1: Job Details Form
     return (
       <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
         <Steps current={currentStep} style={{ marginBottom: "24px" }}>
-          <Steps.Step title="Job Details" icon={<FormOutlined />} />
-          <Steps.Step title="Application Form" icon={<MobileOutlined />} />
+          <Steps.Step
+            title="Job Details"
+            icon={<FormOutlined style={{ color: "#ff4d4f" }} />}
+          />
+          <Steps.Step
+            title="Application Form"
+            icon={<MobileOutlined style={{ color: "#ff4d4f" }} />}
+          />
         </Steps>
 
         <Card
@@ -859,6 +868,10 @@ const AddWorkOrder = () => {
                   size="large"
                   onClick={handleNextStep}
                   icon={<ArrowRightOutlined />}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  }}
                 >
                   Next: Application Form
                 </Button>
@@ -976,6 +989,9 @@ const AddWorkOrder = () => {
             size="large"
             loading={loading}
             onClick={() => handleSubmit("published")}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            }}
           >
             Publish Job
           </Button>

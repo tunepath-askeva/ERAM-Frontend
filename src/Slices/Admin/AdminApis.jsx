@@ -61,6 +61,12 @@ export const adminApi = createApi({
         body: workOrderData,
       }),
     }),
+    getWorkOrders: builder.query({
+      query: () => ({
+        url: "/workOrder",
+        methid: "GET",
+      }),
+    }),
     getAdminBranch: builder.query({
       query: () => ({
         url: "/branches",
@@ -152,6 +158,7 @@ export const {
 
   //Workorder
   useCreateWorkOrderMutation,
+  useGetWorkOrdersQuery,
 
   //admin branch
   useGetAdminBranchQuery,

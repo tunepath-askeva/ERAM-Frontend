@@ -27,6 +27,7 @@ import {
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useGetWorkOrdersQuery } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,6 +35,10 @@ const WorkOrder = () => {
   const navigate = useNavigate();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [workOrderToDelete, setWorkOrderToDelete] = useState(null);
+
+  const { data } = useGetWorkOrdersQuery();
+
+console.log(data, "Work ORder Data")
 
   const workOrders = [
     {
