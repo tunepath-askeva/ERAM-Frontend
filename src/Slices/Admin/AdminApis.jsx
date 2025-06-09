@@ -129,6 +129,13 @@ export const adminApi = createApi({
     getProjectById: builder.query({
       query: (id) => `/project/${id}`,
     }),
+    disableProjectStatus: builder.mutation({
+      query: ({ projectId, accountStatus }) => ({
+        url: `/project/${projectId}`,
+        method: "PATCH",
+        body: { accountStatus },
+      }),
+    }),
   }),
 });
 
@@ -162,4 +169,5 @@ export const {
   useGetProjectsQuery,
   useDeleteProjectMutation,
   useGetProjectByIdQuery,
+  useDisableProjectStatusMutation,
 } = adminApi;
