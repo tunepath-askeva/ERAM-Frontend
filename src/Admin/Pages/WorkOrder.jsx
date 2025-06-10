@@ -30,9 +30,16 @@ import {
   ClockCircleOutlined,
   BookOutlined,
   DollarOutlined,
+  StopOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useGetWorkOrdersQuery } from "../../Slices/Admin/AdminApis";
+import {
+  useGetWorkOrdersQuery,
+  useDeleteWorkOrderMutation,
+  usePublishWorkOrderMutation,
+  useToggleWorkOrderStatusMutation,
+} from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -42,9 +49,18 @@ const WorkOrder = () => {
   const [workOrderToDelete, setWorkOrderToDelete] = useState(null);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
   const [workOrderToPublish, setWorkOrderToPublish] = useState(null);
+  const [deactivateModalVisible, setDeactivateModalVisible] = useState(false);
+  const [workOrderToDeactivate, setWorkOrderToDeactivate] = useState(null);
+  const [activateModalVisible, setActivateModalVisible] = useState(false);
+  const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
 
-  const { data: workOrdersData } = useGetWorkOrdersQuery();
+  const { data: workOrdersData, refetch } = useGetWorkOrdersQuery();
   const workOrders = workOrdersData?.workorders || [];
+
+  // RTK Mutations
+  const [deleteWorkOrder] = useDeleteWorkOrderMutation();
+  const [publishWorkOrder] = usePublishWorkOrderMutation();
+  const [toggleWorkOrderStatus] = useToggleWorkOrderStatusMutation();
 
   const showDeleteModal = (workOrder) => {
     setWorkOrderToDelete(workOrder);
@@ -54,6 +70,16 @@ const WorkOrder = () => {
   const showPublishModal = (workOrder) => {
     setWorkOrderToPublish(workOrder);
     setPublishModalVisible(true);
+  };
+
+  const showDeactivateModal = (workOrder) => {
+    setWorkOrderToDeactivate(workOrder);
+    setDeactivateModalVisible(true);
+  };
+
+  const showActivateModal = (workOrder) => {
+    setWorkOrderToActivate(workOrder);
+    setActivateModalVisible(true);
   };
 
   const handleDeleteCancel = () => {
@@ -66,18 +92,29 @@ const WorkOrder = () => {
     setWorkOrderToPublish(null);
   };
 
+  const handleDeactivateCancel = () => {
+    setDeactivateModalVisible(false);
+    setWorkOrderToDeactivate(null);
+  };
+
+  const handleActivateCancel = () => {
+    setActivateModalVisible(false);
+    setWorkOrderToActivate(null);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!workOrderToDelete) return;
 
     try {
-      // Add your delete API call here
+      await deleteWorkOrder(workOrderToDelete._id).unwrap();
       message.success(
         `Work Order "${workOrderToDelete.title}" deleted successfully`
       );
+      refetch();
       setDeleteModalVisible(false);
       setWorkOrderToDelete(null);
     } catch (error) {
-      message.error(error?.message || "Failed to delete work order");
+      message.error(error?.data?.message || "Failed to delete work order");
       console.error("Delete error:", error);
     }
   };
@@ -86,15 +123,60 @@ const WorkOrder = () => {
     if (!workOrderToPublish) return;
 
     try {
-      // Add your publish API call here
+      await publishWorkOrder(workOrderToPublish._id).unwrap();
       message.success(
         `Work Order "${workOrderToPublish.title}" published successfully`
       );
+      refetch();
       setPublishModalVisible(false);
       setWorkOrderToPublish(null);
     } catch (error) {
-      message.error(error?.message || "Failed to publish work order");
+      message.error(error?.data?.message || "Failed to publish work order");
       console.error("Publish error:", error);
+    }
+  };
+
+  const handleDeactivateConfirm = async () => {
+    if (!workOrderToDeactivate) return;
+
+    try {
+      await toggleWorkOrderStatus(workOrderToDeactivate._id).unwrap();
+      message.success(
+        `Work Order "${workOrderToDeactivate.title}" deactivated successfully`
+      );
+      refetch();
+      setDeactivateModalVisible(false);
+      setWorkOrderToDeactivate(null);
+    } catch (error) {
+      message.error(error?.data?.message || "Failed to deactivate work order");
+      console.error("Deactivate error:", error);
+    }
+  };
+
+  const handleActivateConfirm = async () => {
+    if (!workOrderToActivate) return;
+
+    try {
+      await toggleWorkOrderStatus(workOrderToActivate._id).unwrap();
+      message.success(
+        `Work Order "${workOrderToActivate.title}" activated successfully`
+      );
+      refetch();
+      setActivateModalVisible(false);
+      setWorkOrderToActivate(null);
+    } catch (error) {
+      message.error(error?.data?.message || "Failed to activate work order");
+      console.error("Activate error:", error);
+    }
+  };
+
+  const handleStatusToggle = (workOrder) => {
+    if (workOrder.isActive === "active") {
+      // Show confirmation modal for deactivation
+      showDeactivateModal(workOrder);
+    } else {
+      // Show confirmation modal for activation
+      showActivateModal(workOrder);
     }
   };
 
@@ -153,6 +235,81 @@ const WorkOrder = () => {
       default:
         return type;
     }
+  };
+
+  const renderActionButtons = (workOrder) => {
+    const isDraft = workOrder.workOrderStatus === "draft";
+    const isPublished = workOrder.workOrderStatus === "published";
+    const isActive = workOrder.isActive === "active";
+
+    return (
+      <Space size="small">
+        <Tooltip title="View Details">
+          <Button
+            type="text"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewWorkOrder(workOrder._id)}
+          />
+        </Tooltip>
+
+        {isDraft && (
+          <>
+            <Tooltip title="Edit Work Order">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditWorkOrder(workOrder._id)}
+              />
+            </Tooltip>
+            <Tooltip title="Publish Work Order">
+              <Button
+                type="text"
+                size="small"
+                icon={<RocketOutlined />}
+                onClick={() => showPublishModal(workOrder)}
+              />
+            </Tooltip>
+            <Tooltip title="Delete Work Order">
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => showDeleteModal(workOrder)}
+              />
+            </Tooltip>
+          </>
+        )}
+
+        {isPublished && (
+          <>
+            <Tooltip title="Edit Work Order">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditWorkOrder(workOrder._id)}
+              />
+            </Tooltip>
+            <Tooltip
+              title={isActive ? "Deactivate Work Order" : "Activate Work Order"}
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={isActive ? <StopOutlined /> : <PlayCircleOutlined />}
+                onClick={() => handleStatusToggle(workOrder)}
+                style={{
+                  color: isActive ? "#ff4d4f" : "#52c41a",
+                }}
+              />
+            </Tooltip>
+          </>
+        )}
+      </Space>
+    );
   };
 
   return (
@@ -294,71 +451,7 @@ const WorkOrder = () => {
                       {getStatusTag(workOrder.workOrderStatus)}
                     </div>
                   }
-                  extra={
-                    <Space size="small">
-                      <Tooltip title="View Details">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewWorkOrder(workOrder._id)}
-                        />
-                      </Tooltip>
-                      {workOrder.workOrderStatus === "draft" && (
-                        <>
-                          <Tooltip title="Edit Work Order">
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<EditOutlined />}
-                              onClick={() => handleEditWorkOrder(workOrder._id)}
-                            />
-                          </Tooltip>
-                          <Tooltip title="Publish Work Order">
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<RocketOutlined />}
-                              onClick={() => showPublishModal(workOrder)}
-                            />
-                          </Tooltip>
-                        </>
-                      )}
-                      <Tooltip title="Delete Work Order">
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(workOrder)}
-                        />
-                      </Tooltip>
-                      {workOrder.workOrderStatus === "published" && (
-                        <Tooltip
-                          title={
-                            workOrder.status === "active"
-                              ? "Deactivate"
-                              : "Activate"
-                          }
-                        >
-                          <Switch
-                            size="small"
-                            checked={workOrder.status === "active"}
-                            onChange={() => {
-                              // Add your toggle active/inactive API call here
-                              message.success(
-                                `Work Order ${
-                                  workOrder.status === "active"
-                                    ? "deactivated"
-                                    : "activated"
-                                }`
-                              );
-                            }}
-                          />
-                        </Tooltip>
-                      )}
-                    </Space>
-                  }
+                  extra={renderActionButtons(workOrder)}
                   bodyStyle={{
                     flex: 1,
                     display: "flex",
@@ -463,13 +556,13 @@ const WorkOrder = () => {
                       </Text>
                       <div style={{ marginTop: 6 }}>
                         <Text type="secondary" style={{ fontSize: "11px" }}>
-                          {new Date(workOrder.deadlineDate).toLocaleDateString()}
+                          {new Date(
+                            workOrder.deadlineDate
+                          ).toLocaleDateString()}
                         </Text>
                       </div>
                     </div>
                   </div>
-
-               
                 </Card>
               </div>
             ))}
@@ -651,7 +744,9 @@ const WorkOrder = () => {
       {/* Publish Confirmation Modal */}
       <Modal
         title={
-          <div style={{ display: "flex", alignItems: "center", color: "#1890ff" }}>
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#1890ff" }}
+          >
             <ExclamationCircleOutlined
               style={{ marginRight: 8, fontSize: 18, color: "#1890ff" }}
             />
@@ -707,7 +802,8 @@ const WorkOrder = () => {
               </Text>
               <br />
               <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                Once published, the work order cannot be edited without unpublishing it first.
+                Once published, the work order cannot be edited without
+                unpublishing it first.
               </Text>
             </div>
           </div>
@@ -761,7 +857,263 @@ const WorkOrder = () => {
                 <div>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
                     <strong>Created:</strong>{" "}
-                    {new Date(workOrderToPublish.createdAt).toLocaleDateString()}
+                    {new Date(
+                      workOrderToPublish.createdAt
+                    ).toLocaleDateString()}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Deactivate Confirmation Modal */}
+      <Modal
+        title={
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}
+          >
+            <StopOutlined
+              style={{ marginRight: 8, fontSize: 18, color: "#ff4d4f" }}
+            />
+            <span style={{ fontSize: "16px" }}>Deactivate Work Order</span>
+          </div>
+        }
+        open={deactivateModalVisible}
+        onCancel={handleDeactivateCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleDeactivateCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="deactivate"
+            type="primary"
+            danger
+            onClick={handleDeactivateConfirm}
+            size="large"
+            icon={<StopOutlined />}
+          >
+            Deactivate Work Order
+          </Button>,
+        ]}
+        maskClosable={false}
+        destroyOnClose
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background: "#fff2f0",
+              border: "1px solid #ffccc7",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <WarningOutlined
+              style={{
+                color: "#ff4d4f",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <Text strong style={{ color: "#ff4d4f", fontSize: "13px" }}>
+                This will make the work order invisible to candidates!
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                Candidates will no longer be able to apply for this position.
+              </Text>
+            </div>
+          </div>
+
+          {workOrderToDeactivate && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
+                Are you sure you want to deactivate the following work order?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {workOrderToDeactivate.title}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Current Status:</strong> Active
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Job Code:</strong> {workOrderToDeactivate.jobCode}
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Created:</strong>{" "}
+                    {new Date(
+                      workOrderToDeactivate.createdAt
+                    ).toLocaleDateString()}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Activate Confirmation Modal */}
+      <Modal
+        title={
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#52c41a" }}
+          >
+            <PlayCircleOutlined
+              style={{ marginRight: 8, fontSize: 18, color: "#52c41a" }}
+            />
+            <span style={{ fontSize: "16px" }}>Activate Work Order</span>
+          </div>
+        }
+        open={activateModalVisible}
+        onCancel={handleActivateCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleActivateCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="activate"
+            type="primary"
+            onClick={handleActivateConfirm}
+            size="large"
+            icon={<PlayCircleOutlined />}
+            style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+          >
+            Activate Work Order
+          </Button>,
+        ]}
+        maskClosable={false}
+        destroyOnClose
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background: "#f6ffed",
+              border: "1px solid #b7eb8f",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <WarningOutlined
+              style={{
+                color: "#52c41a",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <Text strong style={{ color: "#52c41a", fontSize: "13px" }}>
+                This will make the work order visible to candidates!
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                Candidates will be able to apply for this position.
+              </Text>
+            </div>
+          </div>
+
+          {workOrderToActivate && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
+                Are you sure you want to activate the following work order?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {workOrderToActivate.title}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Current Status:</strong> Inactive
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Job Code:</strong> {workOrderToActivate.jobCode}
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Created:</strong>{" "}
+                    {new Date(
+                      workOrderToActivate.createdAt
+                    ).toLocaleDateString()}
                   </Text>
                 </div>
               </div>

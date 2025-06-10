@@ -97,7 +97,6 @@ const SuperAdminLogin = () => {
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
 
-    // Get the first error message
     const firstError = errorInfo.errorFields[0];
     if (firstError && firstError.errors.length > 0) {
       enqueueSnackbar(firstError.errors[0], {
@@ -133,8 +132,6 @@ const SuperAdminLogin = () => {
       autoHideDuration: 3000,
     });
 
-    // Don't store token in localStorage - it's now in cookies
-    // Only store user information
     const superAdminInfo = {
       email: response.user.email,
       name: response.user.name,

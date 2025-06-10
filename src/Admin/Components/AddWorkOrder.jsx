@@ -184,6 +184,7 @@ const AddWorkOrder = () => {
       setJobData(null);
       setApplicationFields([]);
       setCurrentStep(0);
+      navigate("/admin/workorder")
     } catch (error) {
       console.error("Error creating work order:", error);
       message.error("Failed to create work order. Please try again.");
@@ -462,7 +463,7 @@ const AddWorkOrder = () => {
             label={
               <span style={{ fontSize: "12px", fontWeight: "500" }}>
                 {field.label}
-                {field.required && <span style={{ color: "red" }}> *</span>}
+                {field.required && <span style={{ color: "red" }}> </span>}
               </span>
             }
             required={field.required}
@@ -1036,8 +1037,16 @@ const AddWorkOrder = () => {
                       <Option value="monthly">Monthly</Option>
                       <Option value="weekly">Weekly</Option>
                       <Option value="hourly">Hourly</Option>
-         
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="isCommon"
+                    label="Common Work Order"
+                    valuePropName="checked"
+                  >
+                    <Switch/>
                   </Form.Item>
                 </Col>
               </Row>

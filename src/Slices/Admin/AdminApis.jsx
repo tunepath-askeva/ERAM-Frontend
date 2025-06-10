@@ -70,6 +70,31 @@ export const adminApi = createApi({
     getWorkOrderById: builder.query({
       query: (id) => `/workOrder/${id}`,
     }),
+    editWorkOrder: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/editWorkOrder/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
+    deleteWorkOrder: builder.mutation({
+      query: (id) => ({
+        url: `workOrder/${id}`,
+        method: "DELETE",
+      }),
+    }),
+    publishWorkOrder: builder.mutation({
+      query: (id) => ({
+        url: `publish/${id}`,
+        method: "PATCH",
+      }),
+    }),
+    toggleWorkOrderStatus: builder.mutation({
+      query: (id) => ({
+        url: `workOrder/${id}`,
+        method: "PATCH",
+      }),
+    }),
     getAdminBranch: builder.query({
       query: () => ({
         url: "/branches",
@@ -89,6 +114,7 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+
     editRecruiter: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/recruiters/${id}`,
@@ -163,6 +189,10 @@ export const {
   useCreateWorkOrderMutation,
   useGetWorkOrdersQuery,
   useGetWorkOrderByIdQuery,
+  useDeleteWorkOrderMutation,
+  usePublishWorkOrderMutation,
+  useToggleWorkOrderStatusMutation,
+  useEditWorkOrderMutation,
 
   //admin branch
   useGetAdminBranchQuery,

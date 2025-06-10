@@ -36,7 +36,6 @@ const SuperAdminSettings = () => {
   const [currentEmail, setCurrentEmail] = useState("");
   const [profileData, setProfileData] = useState(null);
 
-  // RTK Query hooks
   const [requestUpdateProfile, { isLoading: isUpdating }] =
     useRequestUpdateProfileMutation();
 
@@ -62,22 +61,18 @@ const SuperAdminSettings = () => {
     getProfileFromStorage();
   }, []);
 
-  // Handle edit button click
   const handleEdit = () => {
     setIsEditing(true);
-    // Pre-fill form with current data
     form.setFieldsValue({
       newEmail: profileData?.email || "",
     });
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     setIsEditing(false);
     form.resetFields();
   };
 
-  // Handle form submission (request profile update)
   const handleSubmitProfileUpdate = async (values) => {
     try {
       const { newEmail, password } = values;
@@ -105,27 +100,27 @@ const SuperAdminSettings = () => {
       setIsEditing(false);
       form.resetFields();
 
-      if (response.token) {
-        const updatedInfo = {
-          ...JSON.parse(localStorage.getItem("superAdminInfo")),
-          email: currentEmail || profileData?.email,
-          token: response.token,
-        };
-        localStorage.setItem("superAdminInfo", JSON.stringify(updatedInfo));
+      const currentStoredInfo = JSON.parse(
+        localStorage.getItem("superAdminInfo") || "{}"
+      );
 
-        setProfileData((prev) => ({
-          ...prev,
-          email: currentEmail || prev.email,
-          token: response.token,
-        }));
-      }
+      const updatedInfo = {
+        ...currentStoredInfo,
+        email: currentEmail || profileData?.email,
+        name: response.updatedUser?.fullName || currentStoredInfo.name,
+        role: response.updatedUser?.role || currentStoredInfo.role,
+        ...(response.token && { token: response.token }),
+      };
+
+      localStorage.setItem("superAdminInfo", JSON.stringify(updatedInfo));
+
+      loadProfileFromStorage();
     } catch (error) {
       console.error("Profile update completion failed:", error);
       message.error("Something went wrong. Please try again.");
     }
   };
 
-  // Handle OTP modal cancel
   const handleOtpModalCancel = () => {
     setShowOtpModal(false);
   };
