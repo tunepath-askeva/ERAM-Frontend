@@ -211,7 +211,7 @@ const SuperAdminOtpModal = ({
               width: "60px",
               height: "60px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -262,11 +262,10 @@ const SuperAdminOtpModal = ({
                   fontSize: "18px",
                   padding: 0,
                   fontWeight: "bold",
-                  borderColor: "#1890ff",
+                  borderColor: "#da2c46",
                   backgroundColor: "#fff",
                   textAlign: "center",
                   marginRight: index < 5 ? "4px" : "0",
-                  boxShadow: "0 2px 8px rgba(102, 126, 234, 0.1)",
                 }}
               />
             ))}
@@ -280,10 +279,9 @@ const SuperAdminOtpModal = ({
             style={{
               height: "clamp(24px, 8vw, 36px)",
               fontSize: "clamp(13px, 3vw, 14px)",
-              background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               border: "none",
               fontWeight: "600",
-              boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
             }}
           >
             Verify Super Admin Access

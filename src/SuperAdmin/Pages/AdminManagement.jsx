@@ -375,7 +375,7 @@ const AdminManagement = () => {
                 icon={<UserAddOutlined />}
                 style={{
                   background:
-                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 }}
               />
               <div>
@@ -396,9 +396,8 @@ const AdminManagement = () => {
               icon={<PlusOutlined />}
               onClick={() => setIsAddModalOpen(true)}
               style={{
-                background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 border: "none",
-                boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
               }}
             >
               Add New Admin

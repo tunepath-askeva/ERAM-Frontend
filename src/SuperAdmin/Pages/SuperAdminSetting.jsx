@@ -138,7 +138,7 @@ const SuperAdminSettings = () => {
           size={80}
           icon={<SettingOutlined />}
           style={{
-            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
             marginBottom: "16px",
           }}
         />
@@ -160,7 +160,7 @@ const SuperAdminSettings = () => {
       >
         <div style={{ marginBottom: "24px" }}>
           <Title level={4} style={{ marginBottom: "8px", color: "#374151" }}>
-            <UserOutlined style={{ marginRight: "8px", color: "#667eea" }} />
+            <UserOutlined style={{ marginRight: "8px", color: '#da2c46' }} />
             Account Information
           </Title>
           <Text type="secondary">
@@ -181,7 +181,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <UserOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     Admin Name
                   </span>
@@ -204,7 +204,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <SettingOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     Role
                   </span>
@@ -232,7 +232,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <MailOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     Current Email
                   </span>
@@ -255,7 +255,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <MailOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     New Email Address
                   </span>
@@ -289,7 +289,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <LockOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     New Password
                   </span>
@@ -315,7 +315,7 @@ const SuperAdminSettings = () => {
                 label={
                   <span style={{ fontWeight: "600", color: "#374151" }}>
                     <LockOutlined
-                      style={{ marginRight: "8px", color: "#667eea" }}
+                      style={{ marginRight: "8px", color: '#da2c46' }}
                     />
                     Confirm New Password
                   </span>
@@ -362,7 +362,7 @@ const SuperAdminSettings = () => {
                   onClick={handleEdit}
                   style={{
                     background:
-                      "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                      "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
 
                     border: "none",
                     borderRadius: "8px",

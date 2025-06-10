@@ -198,7 +198,7 @@ const SuperAdminLogin = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "48px",
-                color: "#1890ff",
+                color: "#da2c46",
                 fontWeight: "bold",
               }}
             >
@@ -321,12 +321,11 @@ const SuperAdminLogin = () => {
                   height: "48px",
                   borderRadius: "12px",
                   background:
-                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
 
                   border: "none",
                   fontSize: "16px",
                   fontWeight: "600",
-                  boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
                 }}
               >
                 {isLoading ? "Signing in..." : "Sign In as Super Admin"}

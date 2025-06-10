@@ -29,7 +29,7 @@ import {
   CustomerServiceOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
-import { useCreateBranchMutation } from "../../Slices/SuperAdmin/SuperADminAPis";
+import { useCreateBranchMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -293,9 +293,9 @@ const AddBranch = () => {
     <div>
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
         <BankOutlined
-          style={{ fontSize: "48px", color: "#1890ff", marginBottom: "16px" }}
+          style={{ fontSize: "48px", color: '#da2c46', marginBottom: "16px" }}
         />
-        <Title level={1} style={{ margin: 0, color: "#1890ff" }}>
+        <Title level={1} style={{ margin: 0, color: '#da2c46' }}>
           Add New Branch
         </Title>
         <Text type="secondary" style={{ fontSize: "16px" }}>
@@ -541,9 +541,8 @@ const AddBranch = () => {
                 style={{
                   minWidth: "150px",
                   background:
-                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                   border: "none",
-                  boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
                 }}
               >
                 {isLoading ? "Creating..." : "Create Branch"}
