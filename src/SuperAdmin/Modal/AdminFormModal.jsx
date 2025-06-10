@@ -126,7 +126,7 @@ const AdminFormModal = ({
       onOk={handleSubmit}
       okButtonProps={{
         style: {
-          background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+          background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
 
         },
       }}

@@ -113,17 +113,17 @@ const SuperSidebar = ({
     try {
       await logoutSuperAdmin().unwrap();
       dispatch(SuperAdminlogout());
-      
+
       enqueueSnackbar("Logged out successfully", {
         variant: "success",
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
       });
-      
+
       navigate("/superadmin/login");
     } catch (error) {
       console.error("Logout failed:", error);
-      
+
       enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
         variant: "error",
         anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -161,7 +161,7 @@ const SuperSidebar = ({
               style={{
                 width: "32px",
                 height: "32px",
-                background: "linear-gradient(135deg, #2563eb 0%, #9333ea 100%)",
+                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 borderRadius: "8px",
                 display: "flex",
                 alignItems: "center",
@@ -191,7 +191,7 @@ const SuperSidebar = ({
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              background: "linear-gradient(135deg, #2563eb 0%, #9333ea 100%)",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -228,13 +228,13 @@ const SuperSidebar = ({
               transition: "all 0.2s ease",
               backgroundColor:
                 selectedKey === item.key
-                  ? "#dbeafe"
+                  ? "#fde2e4"
                   : hoveredKey === item.key
                   ? "#f1f5f9"
                   : "transparent",
               color:
                 selectedKey === item.key
-                  ? "#1d4ed8"
+                  ? "#e11d48"
                   : hoveredKey === item.key
                   ? "#1e293b"
                   : "#475569",
@@ -244,7 +244,7 @@ const SuperSidebar = ({
               fontSize: screenSize.isMobile ? "16px" : "14px",
               textAlign: "left",
               borderRight:
-                selectedKey === item.key ? "2px solid #2563eb" : "none",
+                selectedKey === item.key ? "2px solid #e11d48" : "none",
               height: getMenuItemHeight(),
               justifyContent:
                 collapsed && !screenSize.isMobile ? "center" : "flex-start",
@@ -256,10 +256,10 @@ const SuperSidebar = ({
               style: {
                 color:
                   selectedKey === item.key
-                    ? "#2563eb"
+                    ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#2563eb"
-                    : "#64748b",
+                      ? "#e11d48"
+                      : "#64748b",
                 fontSize: getIconSize(),
                 minWidth: getIconSize(),
               },

@@ -444,9 +444,9 @@ const EditBranch = () => {
     <div>
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
         <EditOutlined
-          style={{ fontSize: "48px", color: "#1890ff", marginBottom: "16px" }}
+          style={{ fontSize: "48px", color: "#da2c46", marginBottom: "16px" }}
         />
-        <Title level={1} style={{ margin: 0, color: "#1890ff" }}>
+        <Title level={1} style={{ margin: 0, color: "#da2c46" }}>
           Edit Branch
         </Title>
         <Text type="secondary" style={{ fontSize: "16px" }}>
@@ -454,7 +454,7 @@ const EditBranch = () => {
         </Text>
         {initialData && (
           <div style={{ marginTop: "8px" }}>
-            <Text strong style={{ color: "#1890ff" }}>
+            <Text strong style={{ color: "#da2c46" }}>
               {initialData.name} ({initialData.branchCode})
             </Text>
           </div>
@@ -676,9 +676,8 @@ const EditBranch = () => {
                 style={{
                   minWidth: "150px",
                   background:
-                    "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                   border: "none",
-                  boxShadow: "0 4px 12px rgba(24, 144, 255, 0.3)",
                 }}
               >
                 {isUpdating ? "Updating..." : "Update Branch"}
