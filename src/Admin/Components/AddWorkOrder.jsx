@@ -184,7 +184,7 @@ const AddWorkOrder = () => {
       setJobData(null);
       setApplicationFields([]);
       setCurrentStep(0);
-      navigate("/admin/workorder")
+      navigate("/admin/workorder");
     } catch (error) {
       console.error("Error creating work order:", error);
       message.error("Failed to create work order. Please try again.");
@@ -823,7 +823,7 @@ const AddWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={12} lg={8}>
                   <Form.Item
-                    name="assignedRecruiters"
+                    name="assignedId"
                     label="Assigned Recruiters"
                     rules={[
                       {
@@ -1040,13 +1040,28 @@ const AddWorkOrder = () => {
                     </Select>
                   </Form.Item>
                 </Col>
+
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="numberOfCandidates"
+                    label="Candidates Required"
+                  >
+                    <InputNumber
+                      min={0}
+                      max={50}
+                      placeholder="No of Candidates Required"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="isCommon"
                     label="Common Work Order"
                     valuePropName="checked"
                   >
-                    <Switch/>
+                    <Switch />
                   </Form.Item>
                 </Col>
               </Row>

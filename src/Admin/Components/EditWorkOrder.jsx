@@ -40,7 +40,7 @@ import {
   useGetProjectsQuery,
   useEditWorkOrderMutation,
   useGetAdminBranchQuery,
-  useGetWorkOrderByIdQuery, // You'll need to add this query
+  useGetWorkOrderByIdQuery,
 } from "../../Slices/Admin/AdminApis";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -81,42 +81,83 @@ const EditWorkOrder = () => {
     data: workOrderData,
     isLoading: isLoadingWorkOrder,
     error,
-  } = useGetWorkOrderByIdQuery(id);
+    refetch,
+  } = useGetWorkOrderByIdQuery(id, {
+    skip: !id,
+  });
   const [editWorkOrder] = useEditWorkOrderMutation();
 
   const branchId = Branch?.branch?._id;
 
-  // Initialize form with existing data
   useEffect(() => {
-    if (workOrderData?.data) {
-      const workOrder = workOrderData.data;
+    console.log("Work Order ID:", id);
+    console.log("Work Order Data:", workOrderData);
+    console.log("Loading:", isLoadingWorkOrder);
+    console.log("Error:", error);
+  }, [id, workOrderData, isLoadingWorkOrder, error]);
 
-      // Format dates for form
-      const formData = {
-        ...workOrder,
-        startDate: workOrder.startDate ? dayjs(workOrder.startDate) : null,
-        endDate: workOrder.endDate ? dayjs(workOrder.endDate) : null,
-        deadlineDate: workOrder.deadlineDate
-          ? dayjs(workOrder.deadlineDate)
-          : null,
-        alertDate: workOrder.alertDate ? dayjs(workOrder.alertDate) : null,
-      };
+  useEffect(() => {
+    if (workOrderData?.workOrder) {
+      const workOrder = workOrderData?.workOrder;
+      try {
+        const formatDate = (dateString) => {
+          if (!dateString) return null;
+          try {
+            return dayjs(dateString);
+          } catch (error) {
+            console.error("Error formatting date:", dateString, error);
+            return null;
+          }
+        };
 
-      jobForm.setFieldsValue(formData);
-      setSelectedProject(workOrder.project);
-      setJobData(formData);
+        const formData = {
+          ...workOrder,
+           numberOfCandidates: workOrder.numberOfCandidate, 
+          startDate: formatDate(workOrder.startDate),
+          endDate: formatDate(workOrder.endDate),
+          deadlineDate: formatDate(workOrder.deadlineDate),
+          alertDate: formatDate(workOrder.alertDate),
+          assignedId: Array.isArray(workOrder.assignedRecruiters)
+            ? workOrder.assignedRecruiters.map((recruiter) =>
+                typeof recruiter === "object" ? recruiter._id : recruiter
+              )
+            : [workOrder.assignedRecruiters],
+          pipeline: Array.isArray(workOrder.pipeline)
+            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
+            : [workOrder.pipeline],
+          project:
+            typeof workOrder.project === "object"
+              ? workOrder.project._id
+              : workOrder.project,
+          requiredSkills: Array.isArray(workOrder.requiredSkills)
+            ? workOrder.requiredSkills
+            : [],
+          isCommon: workOrder.isCommon || false,
+        };
 
-      // Set application fields if they exist
-      if (workOrder.customFields && workOrder.customFields.length > 0) {
+        jobForm.setFieldsValue(formData);
+        setSelectedProject(formData.project);
+        setJobData(formData);
         setApplicationFields(
-          workOrder.customFields.map((field) => ({
+          workOrder.customFields?.map((field) => ({
             ...field,
-            id: field.id || Date.now() + Math.random(), // Ensure each field has an ID
-          }))
+            id:
+              field.id ||
+              `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          })) || []
         );
+      } catch (error) {
+        console.error("Error initializing form:", error);
+        message.error("Error loading work order data");
       }
     }
   }, [workOrderData, jobForm]);
+
+  useEffect(() => {
+    if (id && refetch) {
+      refetch();
+    }
+  }, [id, refetch]);
 
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
@@ -157,7 +198,7 @@ const EditWorkOrder = () => {
 
   const addApplicationField = () => {
     const newField = {
-      id: Date.now(),
+      id: `field_${Date.now()}`,
       label: "",
       type: "text",
       required: false,
@@ -205,26 +246,31 @@ const EditWorkOrder = () => {
   const handleSubmit = async (status = "draft") => {
     setLoading(true);
     try {
-      const workOrderData = {
+      const values = jobForm.getFieldsValue();
+      const workOrderPayload = {
         ...jobData,
+        ...values,
         customFields: applicationFields,
         WorkorderStatus: status,
+        isActive: values.isActive ? "active" : "inactive",
+        startDate: values.startDate?.format("YYYY-MM-DD"),
+        endDate: values.endDate?.format("YYYY-MM-DD"),
+        deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
+        alertDate: values.alertDate?.format("YYYY-MM-DD"),
       };
 
-      console.log("Updating work order:", workOrderData);
-
-      const result = await editWorkOrder({ id, ...workOrderData }).unwrap();
-
+      const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
       message.success(
         `Work order updated and ${
           status === "published" ? "published" : "saved as draft"
         } successfully!`
       );
-
       navigate("/admin/workorder");
     } catch (error) {
       console.error("Error updating work order:", error);
-      message.error("Failed to update work order. Please try again.");
+      message.error(
+        error?.data?.message || "Failed to update work order. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -234,118 +280,53 @@ const EditWorkOrder = () => {
     navigate("/admin/workorder");
   };
 
-  const renderJobPreview = () => (
-    <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
-      <div
-        style={{
-          padding: "12px",
-          backgroundColor: "#f8f9fa",
-          borderRadius: "6px",
-          marginBottom: "12px",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 8px 0",
-            color: "#1890ff",
-            fontSize: "16px",
-            fontWeight: "600",
-            wordBreak: "break-word",
-            lineHeight: "1.3",
-          }}
-        >
-          {jobData?.title || "Job Title"}
-        </h3>
+  const renderJobPreview = () => {
+    const displayData = jobData || jobForm.getFieldsValue();
 
+    return (
+      <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
         <div
           style={{
-            marginBottom: "8px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px",
+            padding: "12px",
+            backgroundColor: "#f8f9fa",
+            borderRadius: "6px",
+            marginBottom: "12px",
           }}
         >
-          <Tag color="blue" style={{ fontSize: "11px", margin: "0" }}>
-            {jobData?.EmploymentType || "Full-time"}
-          </Tag>
-          <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
-            {jobData?.workplace || "Remote"}
-          </Tag>
-          {jobData?.officeLocation && (
-            <Tag style={{ fontSize: "11px", margin: "0" }}>
-              {jobData.officeLocation}
-            </Tag>
-          )}
-        </div>
-
-        <div style={{ marginBottom: "12px" }}>
-          <h4
-            style={{ margin: "0 0 4px 0", fontSize: "13px", fontWeight: "600" }}
-          >
-            Job Description
-          </h4>
-          <p
+          <h3
             style={{
-              whiteSpace: "pre-wrap",
-              margin: "0",
-              fontSize: "12px",
+              margin: "0 0 8px 0",
+              color: "#1890ff",
+              fontSize: "16px",
+              fontWeight: "600",
               wordBreak: "break-word",
-              lineHeight: "1.4",
+              lineHeight: "1.3",
             }}
           >
-            {jobData?.description || "Job description will appear here..."}
-          </p>
-        </div>
+            {displayData?.title || "Job Title"}
+          </h3>
 
-        <Row gutter={8} style={{ marginBottom: "12px" }}>
-          <Col span={12}>
-            <h4
-              style={{
-                margin: "0 0 2px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Experience
-            </h4>
-            <p style={{ margin: "0", fontSize: "12px" }}>
-              {jobData?.Experience || "0"} years
-            </p>
-          </Col>
-          <Col span={12}>
-            <h4
-              style={{
-                margin: "0 0 2px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Education
-            </h4>
-            <p style={{ margin: "0", fontSize: "12px" }}>
-              {jobData?.Education || "Not specified"}
-            </p>
-          </Col>
-        </Row>
-
-        {jobData?.annualSalary && (
-          <div style={{ marginBottom: "12px" }}>
-            <h4
-              style={{
-                margin: "0 0 2px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Annual Salary
-            </h4>
-            <p style={{ margin: "0", fontSize: "12px" }}>
-              ${jobData.annualSalary.toLocaleString()}
-            </p>
+          <div
+            style={{
+              marginBottom: "8px",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "4px",
+            }}
+          >
+            <Tag color="blue" style={{ fontSize: "11px", margin: "0" }}>
+              {displayData?.EmploymentType || "Full-time"}
+            </Tag>
+            <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
+              {displayData?.workplace || "Remote"}
+            </Tag>
+            {displayData?.officeLocation && (
+              <Tag style={{ fontSize: "11px", margin: "0" }}>
+                {displayData.officeLocation}
+              </Tag>
+            )}
           </div>
-        )}
 
-        {jobData?.requiredSkills?.length > 0 && (
           <div style={{ marginBottom: "12px" }}>
             <h4
               style={{
@@ -354,72 +335,150 @@ const EditWorkOrder = () => {
                 fontWeight: "600",
               }}
             >
-              Required Skills
+              Job Description
             </h4>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
-              {jobData.requiredSkills.map((skill, index) => (
-                <Tag
-                  key={index}
-                  color="purple"
-                  style={{ fontSize: "10px", margin: "0", padding: "2px 6px" }}
-                >
-                  {skill}
-                </Tag>
-              ))}
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "12px",
+                wordBreak: "break-word",
+                lineHeight: "1.4",
+              }}
+            >
+              {displayData?.description ||
+                "Job description will appear here..."}
+            </p>
+          </div>
+
+          <Row gutter={8} style={{ marginBottom: "12px" }}>
+            <Col span={12}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Experience
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                {displayData?.Experience || "0"} years
+              </p>
+            </Col>
+            <Col span={12}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Education
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                {displayData?.Education || "Not specified"}
+              </p>
+            </Col>
+          </Row>
+
+          {displayData?.annualSalary && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Annual Salary
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                ${displayData.annualSalary.toLocaleString()}
+              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {jobData?.jobRequirements && (
-          <div style={{ marginBottom: "12px" }}>
-            <h4
-              style={{
-                margin: "0 0 4px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Requirements
-            </h4>
-            <p
-              style={{
-                whiteSpace: "pre-wrap",
-                margin: "0",
-                fontSize: "12px",
-                wordBreak: "break-word",
-              }}
-            >
-              {jobData.jobRequirements}
-            </p>
-          </div>
-        )}
+          {displayData?.requiredSkills?.length > 0 && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Required Skills
+              </h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+                {displayData.requiredSkills.map((skill, index) => (
+                  <Tag
+                    key={index}
+                    color="purple"
+                    style={{
+                      fontSize: "10px",
+                      margin: "0",
+                      padding: "2px 6px",
+                    }}
+                  >
+                    {skill}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {jobData?.benefits && (
-          <div style={{ marginBottom: "0" }}>
-            <h4
-              style={{
-                margin: "0 0 4px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Benefits
-            </h4>
-            <p
-              style={{
-                whiteSpace: "pre-wrap",
-                margin: "0",
-                fontSize: "12px",
-                wordBreak: "break-word",
-              }}
-            >
-              {jobData.benefits}
-            </p>
-          </div>
-        )}
+          {displayData?.jobRequirements && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Requirements
+              </h4>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {displayData.jobRequirements}
+              </p>
+            </div>
+          )}
+
+          {displayData?.benefits && (
+            <div style={{ marginBottom: "0" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Benefits
+              </h4>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {displayData.benefits}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderApplicationField = (field) => {
     const commonProps = {
@@ -550,7 +609,6 @@ const EditWorkOrder = () => {
           "0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1)",
       }}
     >
-      {/* Phone Frame */}
       <div
         style={{
           width: "100%",
@@ -770,12 +828,14 @@ const EditWorkOrder = () => {
         }}
       >
         <Spin size="large" indicator={<LoadingOutlined spin />} />
+        <div style={{ marginLeft: "16px" }}>Loading work order data...</div>
       </div>
     );
   }
 
   // Error state
   if (error) {
+    console.error("Work order fetch error:", error);
     return (
       <div
         style={{
@@ -788,7 +848,37 @@ const EditWorkOrder = () => {
       >
         <div style={{ textAlign: "center" }}>
           <h3>Error Loading Work Order</h3>
-          <p>{error?.data?.message || "Failed to load work order data"}</p>
+          <p>
+            {error?.data?.message ||
+              error?.message ||
+              "Failed to load work order data"}
+          </p>
+          <Space>
+            <Button onClick={() => refetch()}>Retry</Button>
+            <Button onClick={() => navigate("/admin/workorder")}>
+              Back to Work Orders
+            </Button>
+          </Space>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!isLoadingWorkOrder && !workOrderData?.workOrder) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "400px",
+          flexDirection: "column",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h3>Work Order Not Found</h3>
+          <p>The work order with ID {id} could not be found.</p>
           <Button onClick={() => navigate("/admin/workorder")}>
             Back to Work Orders
           </Button>
@@ -894,7 +984,7 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={12} lg={8}>
                   <Form.Item
-                    name="assignedRecruiters"
+                    name="assignedId"
                     label="Assigned Recruiters"
                     rules={[
                       {
@@ -955,7 +1045,6 @@ const EditWorkOrder = () => {
                     <DatePicker style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
-
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="alertDate" label="Alert Date">
                     <DatePicker style={{ width: "100%" }} />
@@ -973,6 +1062,68 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={12}>
                   <Form.Item
+                    name="workplace"
+                    label="Workplace"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select workplace type",
+                      },
+                    ]}
+                  >
+                    <Select placeholder="Select workplace type">
+                      <Option value="remote">Remote</Option>
+                      <Option value="on-site">On-site</Option>
+                      <Option value="hybrid">Hybrid</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="officeLocation" label="Office Location">
+                    <Input placeholder="Enter office location" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item
+                name="description"
+                label="Job Description"
+                rules={[
+                  { required: true, message: "Please enter job description" },
+                ]}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="Enter detailed job description"
+                />
+              </Form.Item>
+            </Card>
+
+            {/* Job Details */}
+            <Card
+              type="inner"
+              title="Job Details"
+              style={{ marginBottom: "16px" }}
+            >
+              <Row gutter={[16, 8]}>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="jobFunction"
+                    label="Job Function"
+                    rules={[
+                      { required: true, message: "Please enter job function" },
+                    ]}
+                  >
+                    <Input placeholder="e.g., Software Development" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="companyIndustry" label="Company Industry">
+                    <Input placeholder="e.g., Technology" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
                     name="EmploymentType"
                     label="Employment Type"
                     rules={[
@@ -983,179 +1134,166 @@ const EditWorkOrder = () => {
                     ]}
                   >
                     <Select placeholder="Select employment type">
-                      <Option value="Full-time">Full-time</Option>
-                      <Option value="Part-time">Part-time</Option>
-                      <Option value="Contract">Contract</Option>
-                      <Option value="Temporary">Temporary</Option>
-                      <Option value="Internship">Internship</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="workplace"
-                    label="Workplace Type"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select workplace type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select workplace type">
-                      <Option value="Remote">Remote</Option>
-                      <Option value="Hybrid">Hybrid</Option>
-                      <Option value="On-site">On-site</Option>
+                      <Option value="full-time">Full-time</Option>
+                      <Option value="part-time">Part-time</Option>
+                      <Option value="contract">Contract</Option>
+                      <Option value="internship">Internship</Option>
                     </Select>
                   </Form.Item>
                 </Col>
               </Row>
 
               <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item name="officeLocation" label="Office Location">
-                    <Input placeholder="Enter office location" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
+                <Col xs={24} md={8}>
                   <Form.Item
                     name="Experience"
-                    label="Experience Required (years)"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter required experience",
-                      },
-                    ]}
+                    label="Required Experience (years)"
                   >
                     <InputNumber
                       min={0}
                       max={50}
+                      placeholder="Years of experience"
                       style={{ width: "100%" }}
-                      placeholder="Enter years of experience"
                     />
                   </Form.Item>
                 </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="Education"
-                    label="Education Required"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select education level",
-                      },
-                    ]}
-                  >
+                <Col xs={24} md={8}>
+                  <Form.Item name="Education" label="Education Requirement">
                     <Select placeholder="Select education level">
-                      <Option value="High School">High School</Option>
-                      <Option value="Associate Degree">Associate Degree</Option>
-                      <Option value="Bachelor's Degree">
-                        Bachelor's Degree
-                      </Option>
-                      <Option value="Master's Degree">Master's Degree</Option>
-                      <Option value="Doctorate">Doctorate</Option>
-                      <Option value="None">None</Option>
+                      <Option value="high-school">High School</Option>
+                      <Option value="associate">Associate Degree</Option>
+                      <Option value="bachelor">Bachelor's Degree</Option>
+                      <Option value="master">Master's Degree</Option>
+                      <Option value="phd">PhD</Option>
+                      <Option value="none">None</Option>
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item name="annualSalary" label="Annual Salary (USD)">
+                <Col xs={24} md={8}>
+                  <Form.Item name="annualSalary" label="Salary ($)">
                     <InputNumber
                       min={0}
-                      style={{ width: "100%" }}
                       formatter={(value) =>
                         `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                      placeholder="Enter annual salary"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="salaryType"
+                    label="Salary Type"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select salary type",
+                      },
+                    ]}
+                  >
+                    <Select placeholder="Select salary type">
+                      <Option value="annual">Annual</Option>
+                      <Option value="monthly">Monthly</Option>
+                      <Option value="weekly">Weekly</Option>
+                      <Option value="hourly">Hourly</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="numberOfCandidates"
+                    label="Candidates Required"
+                  >
+                    <InputNumber
+                      min={0}
+                      max={50}
+                      placeholder="No of Candidates Required"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="isActive"
+                    label="Common Work Order"
+                    valuePropName="checked"
+                  >
+                    <Switch
+                      checked={workOrderData?.workOrder?.isActive === "active"}
                     />
                   </Form.Item>
                 </Col>
               </Row>
             </Card>
 
-            {/* Job Description */}
+            {/* Skills & Requirements */}
             <Card
               type="inner"
-              title="Job Description"
+              title="Skills & Requirements"
               style={{ marginBottom: "16px" }}
             >
               <Form.Item
-                name="description"
-                label="Job Description"
-                rules={[
-                  { required: true, message: "Please enter job description" },
-                ]}
+                name="requiredSkills"
+                label="Required Skills (comma separated)"
               >
-                <TextArea rows={4} placeholder="Enter job description" />
+                <Select
+                  mode="tags"
+                  tokenSeparators={[","]}
+                  placeholder="e.g., JavaScript, React, Node.js"
+                />
               </Form.Item>
-            </Card>
 
-            {/* Job Requirements */}
-            <Card
-              type="inner"
-              title="Job Requirements"
-              style={{ marginBottom: "16px" }}
-            >
               <Form.Item
                 name="jobRequirements"
-                label="Requirements"
+                label="Job Requirements"
                 rules={[
                   { required: true, message: "Please enter job requirements" },
                 ]}
               >
-                <TextArea rows={4} placeholder="Enter job requirements" />
+                <TextArea
+                  rows={4}
+                  placeholder="Enter detailed job requirements"
+                />
               </Form.Item>
-            </Card>
-
-            {/* Skills & Benefits */}
-            <Card
-              type="inner"
-              title="Skills & Benefits"
-              style={{ marginBottom: "16px" }}
-            >
-              <Row gutter={[16, 8]}>
-                <Col xs={24}>
-                  <Form.Item
-                    name="requiredSkills"
-                    label="Required Skills (comma separated)"
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      placeholder="Enter required skills"
-                      tokenSeparators={[","]}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
 
               <Form.Item name="benefits" label="Benefits">
-                <TextArea rows={4} placeholder="Enter benefits" />
+                <TextArea rows={4} placeholder="Enter job benefits" />
               </Form.Item>
             </Card>
+
+            <div
+              style={{
+                textAlign: "right",
+                paddingTop: "16px",
+                borderTop: "1px solid #f0f0f0",
+              }}
+            >
+              <Space>
+                <Button onClick={handleCancel}>Cancel</Button>
+                <Button
+                  type="primary"
+                  onClick={handleNextStep}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
+                  }}
+                >
+                  Next Step <ArrowRightOutlined />
+                </Button>
+              </Space>
+            </div>
           </Form>
         </Card>
-
-        <div style={{ textAlign: "right" }}>
-          <Space>
-            <Button onClick={handleCancel}>Cancel</Button>
-            <Button type="primary" onClick={handleNextStep}>
-              Next: Application Form
-              <ArrowRightOutlined />
-            </Button>
-          </Space>
-        </div>
       </div>
     );
   }
 
+  // Step 2: Application Form Builder
   return (
-    <div style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ padding: "16px 8px", maxWidth: "1400px", margin: "0 auto" }}>
       <Steps
         current={currentStep}
         style={{ marginBottom: "24px" }}
@@ -1164,7 +1302,7 @@ const EditWorkOrder = () => {
       >
         <Steps.Step
           title={<span style={{ fontSize: "12px" }}>Job Details</span>}
-          icon={<FormOutlined style={{ color: "#ff4d4f" }} />}
+          icon={<FormOutlined style={{ color: "#52c41a" }} />}
         />
         <Steps.Step
           title={<span style={{ fontSize: "12px" }}>Application Form</span>}
@@ -1172,103 +1310,98 @@ const EditWorkOrder = () => {
         />
       </Steps>
 
-      <Card
-        title="Edit Work Order - Application Form Builder"
-        style={{ marginBottom: "24px" }}
-      >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Card
-              title="Form Builder"
-              extra={
+      <Row gutter={[16, 16]}>
+        {/* Form Builder */}
+        <Col xs={24} lg={14}>
+          <Card
+            title="Application Form Builder"
+            extra={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={addApplicationField}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  border: "none",
+                }}
+              >
+                Add Field
+              </Button>
+            }
+          >
+            {applicationFields.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ color: "#999", marginBottom: "16px" }}>
+                  No application fields added yet
+                </div>
                 <Button
-                  type="primary"
-                  size="small"
+                  type="dashed"
                   icon={<PlusOutlined />}
                   onClick={addApplicationField}
                 >
-                  Add Field
+                  Add Your First Field
                 </Button>
-              }
-            >
-              {applicationFields.length > 0 ? (
-                applicationFields.map((field, index) =>
-                  renderFieldBuilder(field, index)
-                )
-              ) : (
-                <div
-                  style={{
-                    textAlign: "center",
-                    color: "#999",
-                    padding: "20px 0",
-                  }}
-                >
-                  <p>No fields added yet</p>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={addApplicationField}
-                  >
-                    Add First Field
-                  </Button>
-                </div>
-              )}
-            </Card>
-          </Col>
+              </div>
+            ) : (
+              applicationFields.map((field, index) =>
+                renderFieldBuilder(field, index)
+              )
+            )}
+          </Card>
+        </Col>
 
-          <Col xs={24} md={12}>
-            <Card
-              title="Preview"
-              extra={
-                <Radio.Group
-                  value={previewTab}
-                  onChange={(e) => setPreviewTab(e.target.value)}
-                  size="small"
-                >
-                  <Radio.Button value="desktop">
-                    <EyeOutlined />
-                  </Radio.Button>
-                  <Radio.Button value="mobile">
-                    <MobileOutlined />
-                  </Radio.Button>
-                </Radio.Group>
-              }
-            >
-              {previewTab === "desktop" ? (
-                <Tabs defaultActiveKey="overview" size="small">
-                  <TabPane tab="Job Overview" key="overview">
-                    {renderJobPreview()}
-                  </TabPane>
-                  <TabPane tab="Application Form" key="application">
-                    {renderApplicationForm()}
-                  </TabPane>
-                </Tabs>
-              ) : (
-                renderMobilePreview()
-              )}
-            </Card>
-          </Col>
-        </Row>
-      </Card>
-
-      <div style={{ textAlign: "right" }}>
-        <Space>
-          <Button onClick={handlePreviousStep}>
-            <ArrowLeftOutlined />
-            Previous
-          </Button>
-          <Button onClick={() => handleSubmit("draft")} loading={loading}>
-            Save as Draft
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => handleSubmit("published")}
-            loading={loading}
+        {/* Mobile Preview */}
+        <Col xs={24} lg={10}>
+          <Card
+            title={
+              <span>
+                <EyeOutlined style={{ marginRight: "8px" }} />
+                Mobile Preview
+              </span>
+            }
+            style={{ position: "sticky", top: "20px" }}
           >
-            Publish Work Order
+            {renderMobilePreview()}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Action Buttons */}
+      <Card style={{ marginTop: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <Button icon={<ArrowLeftOutlined />} onClick={handlePreviousStep}>
+            Previous Step
           </Button>
-        </Space>
-      </div>
+
+          <Space wrap>
+            <Button onClick={handleCancel}>Cancel</Button>
+            <Button onClick={() => handleSubmit("draft")} loading={loading}>
+              Save as Draft
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => handleSubmit("published")}
+              loading={loading}
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                border: "none",
+              }}
+            >
+              Update & Publish
+            </Button>
+          </Space>
+        </div>
+      </Card>
     </div>
   );
 };
