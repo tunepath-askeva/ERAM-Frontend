@@ -13,6 +13,7 @@ import {
   Modal,
   message,
   Divider,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +26,10 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
   UnorderedListOutlined,
+  GlobalOutlined,
+  ClockCircleOutlined,
+  BookOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useGetWorkOrdersQuery } from "../../Slices/Admin/AdminApis";
@@ -35,38 +40,30 @@ const WorkOrder = () => {
   const navigate = useNavigate();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [workOrderToDelete, setWorkOrderToDelete] = useState(null);
+  const [publishModalVisible, setPublishModalVisible] = useState(false);
+  const [workOrderToPublish, setWorkOrderToPublish] = useState(null);
 
-  const { data } = useGetWorkOrdersQuery();
-
-console.log(data, "Work ORder Data")
-
-  const workOrders = [
-    {
-      _id: "wo123456",
-      name: "Website Redesign",
-      status: "In Progress",
-      stages: ["Planning", "Design", "Development"],
-      documents: 5,
-      createdAt: "2023-05-15",
-    },
-    {
-      _id: "wo789012",
-      name: "Mobile App Development",
-      status: "Completed",
-      stages: ["Planning", "Development", "Testing", "Deployment"],
-      documents: 8,
-      createdAt: "2023-03-10",
-    },
-  ];
+  const { data: workOrdersData } = useGetWorkOrdersQuery();
+  const workOrders = workOrdersData?.workorders || [];
 
   const showDeleteModal = (workOrder) => {
     setWorkOrderToDelete(workOrder);
     setDeleteModalVisible(true);
   };
 
+  const showPublishModal = (workOrder) => {
+    setWorkOrderToPublish(workOrder);
+    setPublishModalVisible(true);
+  };
+
   const handleDeleteCancel = () => {
     setDeleteModalVisible(false);
     setWorkOrderToDelete(null);
+  };
+
+  const handlePublishCancel = () => {
+    setPublishModalVisible(false);
+    setWorkOrderToPublish(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -75,13 +72,29 @@ console.log(data, "Work ORder Data")
     try {
       // Add your delete API call here
       message.success(
-        `Work Order "${workOrderToDelete.name}" deleted successfully`
+        `Work Order "${workOrderToDelete.title}" deleted successfully`
       );
       setDeleteModalVisible(false);
       setWorkOrderToDelete(null);
     } catch (error) {
       message.error(error?.message || "Failed to delete work order");
       console.error("Delete error:", error);
+    }
+  };
+
+  const handlePublishConfirm = async () => {
+    if (!workOrderToPublish) return;
+
+    try {
+      // Add your publish API call here
+      message.success(
+        `Work Order "${workOrderToPublish.title}" published successfully`
+      );
+      setPublishModalVisible(false);
+      setWorkOrderToPublish(null);
+    } catch (error) {
+      message.error(error?.message || "Failed to publish work order");
+      console.error("Publish error:", error);
     }
   };
 
@@ -95,6 +108,51 @@ console.log(data, "Work ORder Data")
 
   const handleCreateWorkOrder = () => {
     navigate("/admin/add-workorder");
+  };
+
+  const getStatusTag = (status) => {
+    switch (status) {
+      case "draft":
+        return <Tag color="orange">Draft</Tag>;
+      case "published":
+        return <Tag color="green">Published</Tag>;
+      case "active":
+        return <Tag color="blue">Active</Tag>;
+      case "inactive":
+        return <Tag color="red">Inactive</Tag>;
+      default:
+        return <Tag color="default">{status}</Tag>;
+    }
+  };
+
+  const getEmploymentType = (type) => {
+    switch (type) {
+      case "full-time":
+        return "Full Time";
+      case "part-time":
+        return "Part Time";
+      case "contract":
+        return "Contract";
+      case "temporary":
+        return "Temporary";
+      case "internship":
+        return "Internship";
+      default:
+        return type;
+    }
+  };
+
+  const getWorkplaceType = (type) => {
+    switch (type) {
+      case "on-site":
+        return "On Site";
+      case "remote":
+        return "Remote";
+      case "hybrid":
+        return "Hybrid";
+      default:
+        return type;
+    }
   };
 
   return (
@@ -228,18 +286,12 @@ console.log(data, "Work ORder Data")
                               fontSize: "16px",
                             },
                           }}
-                          title={workOrder.name}
+                          title={workOrder.title}
                         >
-                          {workOrder.name}
+                          {workOrder.title}
                         </Text>
                       </div>
-                      <Tag
-                        color={
-                          workOrder.status === "Completed" ? "green" : "blue"
-                        }
-                      >
-                        {workOrder.status}
-                      </Tag>
+                      {getStatusTag(workOrder.workOrderStatus)}
                     </div>
                   }
                   extra={
@@ -252,14 +304,26 @@ console.log(data, "Work ORder Data")
                           onClick={() => handleViewWorkOrder(workOrder._id)}
                         />
                       </Tooltip>
-                      <Tooltip title="Edit Work Order">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => handleEditWorkOrder(workOrder._id)}
-                        />
-                      </Tooltip>
+                      {workOrder.workOrderStatus === "draft" && (
+                        <>
+                          <Tooltip title="Edit Work Order">
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEditWorkOrder(workOrder._id)}
+                            />
+                          </Tooltip>
+                          <Tooltip title="Publish Work Order">
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<RocketOutlined />}
+                              onClick={() => showPublishModal(workOrder)}
+                            />
+                          </Tooltip>
+                        </>
+                      )}
                       <Tooltip title="Delete Work Order">
                         <Button
                           type="text"
@@ -269,6 +333,30 @@ console.log(data, "Work ORder Data")
                           onClick={() => showDeleteModal(workOrder)}
                         />
                       </Tooltip>
+                      {workOrder.workOrderStatus === "published" && (
+                        <Tooltip
+                          title={
+                            workOrder.status === "active"
+                              ? "Deactivate"
+                              : "Activate"
+                          }
+                        >
+                          <Switch
+                            size="small"
+                            checked={workOrder.status === "active"}
+                            onChange={() => {
+                              // Add your toggle active/inactive API call here
+                              message.success(
+                                `Work Order ${
+                                  workOrder.status === "active"
+                                    ? "deactivated"
+                                    : "activated"
+                                }`
+                              );
+                            }}
+                          />
+                        </Tooltip>
+                      )}
                     </Space>
                   }
                   bodyStyle={{
@@ -289,11 +377,30 @@ console.log(data, "Work ORder Data")
                     }}
                   >
                     <div style={{ marginBottom: 16 }}>
+                      <Space size={[8, 16]} wrap>
+                        <Tag icon={<BookOutlined />}>
+                          {workOrder.jobFunction}
+                        </Tag>
+                        <Tag icon={<GlobalOutlined />}>
+                          {getWorkplaceType(workOrder.workplace)}
+                        </Tag>
+                        <Tag icon={<ClockCircleOutlined />}>
+                          {getEmploymentType(workOrder.EmploymentType)}
+                        </Tag>
+                        {workOrder.annualSalary && (
+                          <Tag icon={<DollarOutlined />}>
+                            ${workOrder.annualSalary}
+                          </Tag>
+                        )}
+                      </Space>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
                       <Text
                         strong
                         style={{ color: "#2c3e50", fontSize: "13px" }}
                       >
-                        Work Order Stages:
+                        Pipeline Stages:
                       </Text>
                       <div
                         style={{
@@ -303,7 +410,7 @@ console.log(data, "Work ORder Data")
                           overflowX: "hidden",
                         }}
                       >
-                        {workOrder.stages.map((stage, index) => (
+                        {workOrder.pipeline?.stages?.map((stage, index) => (
                           <Tag
                             key={index}
                             color="blue"
@@ -325,7 +432,7 @@ console.log(data, "Work ORder Data")
                               },
                             }}
                           >
-                            {stage}
+                            {stage.name}
                           </Tag>
                         ))}
                       </div>
@@ -337,63 +444,32 @@ console.log(data, "Work ORder Data")
                         style={{ color: "#2c3e50", fontSize: "12px" }}
                       >
                         <FileTextOutlined style={{ marginRight: 4 }} />
-                        Documents Required:
+                        Job Code:
                       </Text>
                       <div style={{ marginTop: 6 }}>
                         <Text type="secondary" style={{ fontSize: "11px" }}>
-                          {workOrder.documents} documents
+                          {workOrder.jobCode}
+                        </Text>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <Text
+                        strong
+                        style={{ color: "#2c3e50", fontSize: "12px" }}
+                      >
+                        <ClockCircleOutlined style={{ marginRight: 4 }} />
+                        Deadline:
+                      </Text>
+                      <div style={{ marginTop: 6 }}>
+                        <Text type="secondary" style={{ fontSize: "11px" }}>
+                          {new Date(workOrder.deadlineDate).toLocaleDateString()}
                         </Text>
                       </div>
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      borderTop: "1px solid #f0f0f0",
-                      paddingTop: 12,
-                      marginTop: "auto",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                          "@media (min-width: 576px)": {
-                            fontSize: "12px",
-                          },
-                        }}
-                      >
-                        Created:{" "}
-                        {new Date(workOrder.createdAt).toLocaleDateString(
-                          undefined,
-                          {
-                            year: "2-digit",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
-                      </Text>
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                          "@media (min-width: 576px)": {
-                            fontSize: "12px",
-                          },
-                        }}
-                      >
-                        ID: {workOrder._id.slice(-6)}
-                      </Text>
-                    </div>
-                  </div>
+               
                 </Card>
               </div>
             ))}
@@ -544,20 +620,19 @@ console.log(data, "Work ORder Data")
                       wordBreak: "break-word",
                     }}
                   >
-                    {workOrderToDelete.name}
+                    {workOrderToDelete.title}
                   </Text>
                 </div>
 
                 <div style={{ marginBottom: "6px" }}>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Status:</strong> {workOrderToDelete.status}
+                    <strong>Status:</strong> {workOrderToDelete.workOrderStatus}
                   </Text>
                 </div>
 
                 <div style={{ marginBottom: "6px" }}>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Stages:</strong>{" "}
-                    {workOrderToDelete.stages?.length || 0}
+                    <strong>Job Code:</strong> {workOrderToDelete.jobCode}
                   </Text>
                 </div>
 
@@ -565,6 +640,128 @@ console.log(data, "Work ORder Data")
                   <Text style={{ color: "#666", fontSize: "12px" }}>
                     <strong>Created:</strong>{" "}
                     {new Date(workOrderToDelete.createdAt).toLocaleDateString()}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Publish Confirmation Modal */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", color: "#1890ff" }}>
+            <ExclamationCircleOutlined
+              style={{ marginRight: 8, fontSize: 18, color: "#1890ff" }}
+            />
+            <span style={{ fontSize: "16px" }}>Publish Work Order</span>
+          </div>
+        }
+        open={publishModalVisible}
+        onCancel={handlePublishCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handlePublishCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="publish"
+            type="primary"
+            onClick={handlePublishConfirm}
+            size="large"
+            icon={<RocketOutlined />}
+          >
+            Publish Work Order
+          </Button>,
+        ]}
+        maskClosable={false}
+        destroyOnClose
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background: "#e6f7ff",
+              border: "1px solid #91d5ff",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <WarningOutlined
+              style={{
+                color: "#1890ff",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <Text strong style={{ color: "#1890ff", fontSize: "13px" }}>
+                This will make the work order visible to candidates!
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                Once published, the work order cannot be edited without unpublishing it first.
+              </Text>
+            </div>
+          </div>
+
+          {workOrderToPublish && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
+                Are you sure you want to publish the following work order?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ marginBottom: "10px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#2c3e50",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {workOrderToPublish.title}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Current Status:</strong> Draft
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Job Code:</strong> {workOrderToPublish.jobCode}
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Created:</strong>{" "}
+                    {new Date(workOrderToPublish.createdAt).toLocaleDateString()}
                   </Text>
                 </div>
               </div>
