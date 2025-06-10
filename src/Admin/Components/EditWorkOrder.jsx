@@ -181,7 +181,7 @@ const EditWorkOrder = () => {
           endDate: values.endDate?.format("YYYY-MM-DD"),
           deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
           alertDate: values.alertDate?.format("YYYY-MM-DD"),
-          branchId: branchId,
+          branch: branchId,
         };
         setJobData(formattedData);
         setCurrentStep(1);
@@ -251,7 +251,7 @@ const EditWorkOrder = () => {
         ...jobData,
         ...values,
         customFields: applicationFields,
-        WorkorderStatus: status,
+        workOrderStatus: status,
         isActive: values.isActive ? "active" : "inactive",
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
@@ -984,7 +984,7 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={12} lg={8}>
                   <Form.Item
-                    name="assignedId"
+                    name="assignedRecruiters"
                     label="Assigned Recruiters"
                     rules={[
                       {
