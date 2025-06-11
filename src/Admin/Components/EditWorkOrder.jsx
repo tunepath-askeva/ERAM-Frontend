@@ -72,11 +72,6 @@ const EditWorkOrder = () => {
   const [jobData, setJobData] = useState(null);
   const [applicationFields, setApplicationFields] = useState([]);
   const [previewTab, setPreviewTab] = useState("overview");
-  const [selectedPipelines, setSelectedPipelines] = useState([]);
-  const [pipelineDatesModalVisible, setPipelineDatesModalVisible] =
-    useState(false);
-  const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
-  const [pipelineStageDates, setPipelineStageDates] = useState({});
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
@@ -92,20 +87,6 @@ const EditWorkOrder = () => {
     skip: !id,
   });
   const [editWorkOrder] = useEditWorkOrderMutation();
-
-  const activeRecruiters =
-    recruiters?.recruiters?.filter(
-      (recruiter) => recruiter.accountStatus === "active"
-    ) || [];
-
-  const activePipelines =
-    pipeline?.allPipelines?.filter(
-      (pipeline) => pipeline.pipelineStatus === "active"
-    ) || [];
-
-  const activeProjects =
-    projects?.allProjects?.filter((project) => project.status === "active") ||
-    [];
 
   const branchId = Branch?.branch?._id;
 
@@ -132,69 +113,28 @@ const EditWorkOrder = () => {
 
         const formData = {
           ...workOrder,
-          numberOfCandidate: workOrder.numberOfCandidate,
+           numberOfCandidates: workOrder.numberOfCandidate, 
           startDate: formatDate(workOrder.startDate),
           endDate: formatDate(workOrder.endDate),
           deadlineDate: formatDate(workOrder.deadlineDate),
           alertDate: formatDate(workOrder.alertDate),
-          // Ensure assigned recruiters are still active
-          assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
-            ? workOrder.assignedRecruiters
-                .map((recruiter) =>
-                  typeof recruiter === "object" ? recruiter._id : recruiter
-                )
-                .filter((id) => activeRecruiters.some((r) => r._id === id))
-            : activeRecruiters.some(
-                (r) => r._id === workOrder.assignedRecruiters
+          assignedId: Array.isArray(workOrder.assignedRecruiters)
+            ? workOrder.assignedRecruiters.map((recruiter) =>
+                typeof recruiter === "object" ? recruiter._id : recruiter
               )
-            ? [workOrder.assignedRecruiters]
-            : [],
-          // Ensure pipelines are still active
+            : [workOrder.assignedRecruiters],
           pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline
-                .map((p) => (typeof p === "object" ? p._id : p))
-                .filter((id) => activePipelines.some((p) => p._id === id))
-            : activePipelines.some((p) => p._id === workOrder.pipeline)
-            ? [workOrder.pipeline]
-            : [],
-          // Ensure project is still active
-          project: activeProjects.some(
-            (p) =>
-              p._id ===
-              (typeof workOrder.project === "object"
-                ? workOrder.project._id
-                : workOrder.project)
-          )
-            ? typeof workOrder.project === "object"
+            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
+            : [workOrder.pipeline],
+          project:
+            typeof workOrder.project === "object"
               ? workOrder.project._id
-              : workOrder.project
-            : null,
+              : workOrder.project,
           requiredSkills: Array.isArray(workOrder.requiredSkills)
             ? workOrder.requiredSkills
             : [],
           isCommon: workOrder.isCommon || false,
         };
-
-        if (workOrder.pipelineStageTimeline) {
-          const initialDates = {};
-          workOrder.pipelineStageTimeline.forEach((timeline) => {
-            if (!initialDates[timeline.pipelineId]) {
-              initialDates[timeline.pipelineId] = [];
-            }
-            initialDates[timeline.pipelineId].push({
-              stageId: timeline.stageId,
-              startDate: timeline.startDate,
-              endDate: timeline.endDate,
-            });
-          });
-          setPipelineStageDates(initialDates);
-        }
-
-        // Initialize selected pipelines
-        const pipelineIds = Array.isArray(workOrder.pipeline)
-          ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-          : [workOrder.pipeline];
-        setSelectedPipelines(pipelineIds);
 
         jobForm.setFieldsValue(formData);
         setSelectedProject(formData.project);
@@ -222,7 +162,7 @@ const EditWorkOrder = () => {
 
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
-    const project = activeProjects.find((p) => p._id === projectId);
+    const project = projects?.allProjects?.find((p) => p._id === projectId);
     if (project && project.prefix) {
       const currentJobCode = jobForm.getFieldValue("jobCode") || "";
       const codeWithoutPrefix = currentJobCode.replace(/^[A-Z]+-/, "");
@@ -369,29 +309,16 @@ const EditWorkOrder = () => {
     setLoading(true);
     try {
       const values = jobForm.getFieldsValue();
-
-      const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
-        return (
-          pipelineStageDates[pipeId]?.map((stage) => ({
-            pipelineId: pipeId,
-            stageId: stage.stageId,
-            startDate: stage.startDate,
-            endDate: stage.endDate,
-          })) || []
-        );
-      });
-
       const workOrderPayload = {
         ...jobData,
         ...values,
         customFields: applicationFields,
         workOrderStatus: status,
-        isActive: values.isActive ? "active" : "inactive",
+        // isActive: values.isActive ? "active" : "inactive",
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
         alertDate: values.alertDate?.format("YYYY-MM-DD"),
-        pipelineStageTimeline,
       };
 
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
@@ -1211,7 +1138,7 @@ const EditWorkOrder = () => {
                       placeholder="Select project"
                       onChange={handleProjectChange}
                     >
-                      {activeProjects.map((project) => (
+                      {projects?.allProjects?.map((project) => (
                         <Option key={project._id} value={project._id}>
                           {project.name}{" "}
                           {project.prefix && `(${project.prefix})`}
@@ -1306,7 +1233,7 @@ const EditWorkOrder = () => {
                       placeholder="Select recruiters"
                       optionLabelProp="label"
                     >
-                      {activeRecruiters.map((recruiter) => (
+                      {recruiters?.recruiters?.map((recruiter) => (
                         <Option
                           key={recruiter._id}
                           value={recruiter._id}
@@ -1471,7 +1398,7 @@ const EditWorkOrder = () => {
 
                 <Col xs={24} md={8}>
                   <Form.Item
-                    name="numberOfCandidate"
+                    name="numberOfCandidates"
                     label="Candidates Required"
                   >
                     <InputNumber
@@ -1555,7 +1482,6 @@ const EditWorkOrder = () => {
             </div>
           </Form>
         </Card>
-        {renderPipelineDatesModal()}
       </div>
     );
   }
@@ -1671,7 +1597,6 @@ const EditWorkOrder = () => {
           </Space>
         </div>
       </Card>
-      {renderPipelineDatesModal()}
     </div>
   );
 };
