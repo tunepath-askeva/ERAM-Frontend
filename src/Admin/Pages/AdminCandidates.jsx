@@ -357,7 +357,20 @@ const AdminCandidates = () => {
             </Title>
           </div>
 
-          <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+          {/* Search Bar */}
+          <Input.Search
+            placeholder="Search candidates"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
+
+          {/* Action Buttons */}
+          <div style={{ display: "flex", gap: "8px" }}>
             <Button
               type="default"
               size="large"

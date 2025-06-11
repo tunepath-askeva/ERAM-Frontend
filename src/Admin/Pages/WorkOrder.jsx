@@ -15,6 +15,7 @@ import {
   Divider,
   Switch,
   Skeleton,
+  Input 
 } from "antd";
 import {
   PlusOutlined,
@@ -43,6 +44,7 @@ import {
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const WorkOrder = () => {
   const navigate = useNavigate();
@@ -346,6 +348,19 @@ const WorkOrder = () => {
               Work Order Management
             </Title>
           </div>
+
+          {/* Search Bar */}
+          <Input.Search
+            placeholder="Search Work orders"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
+
           <Button
             type="primary"
             size="large"

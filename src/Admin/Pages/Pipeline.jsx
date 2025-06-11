@@ -17,6 +17,7 @@ import {
   List,
   Spin,
   Switch,
+  Input,
 } from "antd";
 import {
   PlusOutlined,
@@ -46,6 +47,7 @@ import CreatePipelineModal from "../Components/CreatePipelineModal";
 import "../../index.css";
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const Pipeline = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -205,6 +207,17 @@ const Pipeline = () => {
               Pipeline Management
             </Title>
           </div>
+
+          <Input.Search
+            placeholder="Search Pipelines"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
 
           <Button
             type="primary"

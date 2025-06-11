@@ -19,6 +19,7 @@ import {
   Input,
   Form,
   Select,
+ 
 } from "antd";
 import {
   PlusOutlined,
@@ -50,6 +51,7 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
+const { TextArea } = Input;
 
 const AdminRecruiter = () => {
   const [recruiterModalVisible, setRecruiterModalVisible] = useState(false);
@@ -171,18 +173,18 @@ const AdminRecruiter = () => {
 
     try {
       await deleteRecruiter(recruiterToDelete._id).unwrap();
-      
+
       message.success(
-        `Recruiter "${getRecruiterDisplayName(recruiterToDelete)}" deleted successfully`
+        `Recruiter "${getRecruiterDisplayName(
+          recruiterToDelete
+        )}" deleted successfully`
       );
 
       setDeleteModalVisible(false);
       setRecruiterToDelete(null);
       refetch();
     } catch (error) {
-      message.error(
-        error?.data?.message || "Failed to delete recruiter"
-      );
+      message.error(error?.data?.message || "Failed to delete recruiter");
       console.error("Delete recruiter error:", error);
     }
   };
@@ -265,6 +267,18 @@ const AdminRecruiter = () => {
               Recruiter Management
             </Title>
           </div>
+
+          <Input.Search
+            placeholder="Search Recruiters"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
+
           <Button
             type="primary"
             size="large"
@@ -668,8 +682,6 @@ const AdminRecruiter = () => {
                   {selectedRecruiterData.phone}
                 </Descriptions.Item>
 
-                
-
                 <Descriptions.Item
                   label={
                     <span>
@@ -682,8 +694,6 @@ const AdminRecruiter = () => {
                 >
                   {selectedRecruiterData.specialization || "Not specified"}
                 </Descriptions.Item>
-
-                
 
                 <Descriptions.Item
                   label={
@@ -699,8 +709,6 @@ const AdminRecruiter = () => {
                     ? `${selectedRecruiterData.experience} years`
                     : "Not specified"}
                 </Descriptions.Item>
-
-               
               </Descriptions>
 
               {selectedRecruiterData.bio && (
@@ -817,12 +825,8 @@ const AdminRecruiter = () => {
               color: "#ff4d4f",
             }}
           >
-            <DeleteOutlined
-              style={{ marginRight: 8, fontSize: 18 }}
-            />
-            <span style={{ fontSize: "16px" }}>
-              Delete Recruiter
-            </span>
+            <DeleteOutlined style={{ marginRight: 8, fontSize: 18 }} />
+            <span style={{ fontSize: "16px" }}>Delete Recruiter</span>
           </div>
         }
         open={deleteModalVisible}
@@ -851,14 +855,20 @@ const AdminRecruiter = () => {
         ]}
       >
         <div style={{ padding: "16px 0" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 16 }}>
-            <WarningOutlined 
-              style={{ 
-                color: "#ff4d4f", 
-                fontSize: 20, 
-                marginRight: 12, 
-                marginTop: 2 
-              }} 
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              marginBottom: 16,
+            }}
+          >
+            <WarningOutlined
+              style={{
+                color: "#ff4d4f",
+                fontSize: 20,
+                marginRight: 12,
+                marginTop: 2,
+              }}
             />
             <div>
               <Text strong style={{ fontSize: "16px", color: "#ff4d4f" }}>
@@ -867,24 +877,28 @@ const AdminRecruiter = () => {
               <div style={{ marginTop: 8 }}>
                 <Text>
                   Are you sure you want to permanently delete the recruiter{" "}
-                  <Text strong>{getRecruiterDisplayName(recruiterToDelete)}</Text>?
+                  <Text strong>
+                    {getRecruiterDisplayName(recruiterToDelete)}
+                  </Text>
+                  ?
                 </Text>
               </div>
             </div>
           </div>
-          <div style={{ 
-            background: "#fff2f0", 
-            border: "1px solid #ffccc7", 
-            borderRadius: "6px", 
-            padding: "12px",
-            marginTop: 16 
-          }}>
+          <div
+            style={{
+              background: "#fff2f0",
+              border: "1px solid #ffccc7",
+              borderRadius: "6px",
+              padding: "12px",
+              marginTop: 16,
+            }}
+          >
             <Text type="secondary" style={{ fontSize: "13px" }}>
               • All recruiter data will be permanently removed
               <br />
               • Associated job postings may be affected
-              <br />
-              • This recruiter will no longer be able to access the system
+              <br />• This recruiter will no longer be able to access the system
             </Text>
           </div>
         </div>
