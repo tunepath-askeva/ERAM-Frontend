@@ -76,9 +76,23 @@ const AddWorkOrder = () => {
 
   const branchId = Branch?.branch?._id;
 
+  const activeRecruiters =
+    recruiters?.recruiters?.filter(
+      (recruiter) => recruiter.accountStatus === "active"
+    ) || [];
+
+  const activePipelines =
+    pipeline?.allPipelines?.filter(
+      (pipeline) => pipeline.pipelineStatus === "active"
+    ) || [];
+
+  const activeProjects =
+    projects?.allProjects?.filter((project) => project.status === "active") ||
+    [];
+
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
-    const project = projects?.allProjects?.find((p) => p._id === projectId);
+    const project = activeProjects.find((p) => p._id === projectId);
     if (project && project.prefix) {
       const currentJobCode = jobForm.getFieldValue("jobCode") || "";
       const codeWithoutPrefix = currentJobCode.replace(/^[A-Z]+-/, "");
@@ -788,7 +802,7 @@ const AddWorkOrder = () => {
                       placeholder="Select project"
                       onChange={handleProjectChange}
                     >
-                      {projects?.allProjects?.map((project) => (
+                      {activeProjects.map((project) => (
                         <Option key={project._id} value={project._id}>
                           {project.name}{" "}
                           {project.prefix && `(${project.prefix})`}
@@ -837,7 +851,7 @@ const AddWorkOrder = () => {
                       placeholder="Select recruiters"
                       optionLabelProp="label"
                     >
-                      {recruiters?.recruiters?.map((recruiter) => (
+                      {activeRecruiters.map((recruiter) => (
                         <Option
                           key={recruiter._id}
                           value={recruiter._id}
@@ -858,7 +872,7 @@ const AddWorkOrder = () => {
                     ]}
                   >
                     <Select mode="multiple" placeholder="Select pipeline">
-                      {pipeline?.allPipelines?.map((pipeline) => (
+                      {activePipelines.map((pipeline) => (
                         <Option key={pipeline._id} value={pipeline._id}>
                           {pipeline.name}
                         </Option>

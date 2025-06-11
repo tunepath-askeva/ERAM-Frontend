@@ -87,6 +87,20 @@ const EditWorkOrder = () => {
   });
   const [editWorkOrder] = useEditWorkOrderMutation();
 
+  const activeRecruiters =
+    recruiters?.recruiters?.filter(
+      (recruiter) => recruiter.accountStatus === "active"
+    ) || [];
+
+  const activePipelines =
+    pipeline?.allPipelines?.filter(
+      (pipeline) => pipeline.pipelineStatus === "active"
+    ) || [];
+
+  const activeProjects =
+    projects?.allProjects?.filter((project) => project.status === "active") ||
+    [];
+
   const branchId = Branch?.branch?._id;
 
   useEffect(() => {
@@ -111,29 +125,39 @@ const EditWorkOrder = () => {
         };
 
         const formData = {
-          ...workOrder,
-           numberOfCandidates: workOrder.numberOfCandidate, 
-          startDate: formatDate(workOrder.startDate),
-          endDate: formatDate(workOrder.endDate),
-          deadlineDate: formatDate(workOrder.deadlineDate),
-          alertDate: formatDate(workOrder.alertDate),
-          assignedId: Array.isArray(workOrder.assignedRecruiters)
-            ? workOrder.assignedRecruiters.map((recruiter) =>
+        ...workOrder,
+        numberOfCandidates: workOrder.numberOfCandidate,
+        startDate: formatDate(workOrder.startDate),
+        endDate: formatDate(workOrder.endDate),
+        deadlineDate: formatDate(workOrder.deadlineDate),
+        alertDate: formatDate(workOrder.alertDate),
+        // Ensure assigned recruiters are still active
+        assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
+          ? workOrder.assignedRecruiters
+              .map((recruiter) => 
                 typeof recruiter === "object" ? recruiter._id : recruiter
               )
-            : [workOrder.assignedRecruiters],
-          pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline],
-          project:
-            typeof workOrder.project === "object"
-              ? workOrder.project._id
-              : workOrder.project,
-          requiredSkills: Array.isArray(workOrder.requiredSkills)
-            ? workOrder.requiredSkills
+              .filter(id => activeRecruiters.some(r => r._id === id))
+          : activeRecruiters.some(r => r._id === workOrder.assignedRecruiters) 
+            ? [workOrder.assignedRecruiters] 
             : [],
-          isCommon: workOrder.isCommon || false,
-        };
+        // Ensure pipelines are still active
+        pipeline: Array.isArray(workOrder.pipeline)
+          ? workOrder.pipeline
+              .map((p) => (typeof p === "object" ? p._id : p))
+              .filter(id => activePipelines.some(p => p._id === id))
+          : activePipelines.some(p => p._id === workOrder.pipeline) 
+            ? [workOrder.pipeline] 
+            : [],
+        // Ensure project is still active
+        project: activeProjects.some(p => p._id === (typeof workOrder.project === "object" ? workOrder.project._id : workOrder.project))
+          ? (typeof workOrder.project === "object" ? workOrder.project._id : workOrder.project)
+          : null,
+        requiredSkills: Array.isArray(workOrder.requiredSkills)
+          ? workOrder.requiredSkills
+          : [],
+        isCommon: workOrder.isCommon || false,
+      };
 
         jobForm.setFieldsValue(formData);
         setSelectedProject(formData.project);
@@ -161,7 +185,7 @@ const EditWorkOrder = () => {
 
   const handleProjectChange = (projectId) => {
     setSelectedProject(projectId);
-    const project = projects?.allProjects?.find((p) => p._id === projectId);
+    const project = activeProjects.find((p) => p._id === projectId);
     if (project && project.prefix) {
       const currentJobCode = jobForm.getFieldValue("jobCode") || "";
       const codeWithoutPrefix = currentJobCode.replace(/^[A-Z]+-/, "");
@@ -949,7 +973,7 @@ const EditWorkOrder = () => {
                       placeholder="Select project"
                       onChange={handleProjectChange}
                     >
-                      {projects?.allProjects?.map((project) => (
+                      {activeProjects.map((project) => (
                         <Option key={project._id} value={project._id}>
                           {project.name}{" "}
                           {project.prefix && `(${project.prefix})`}
@@ -998,7 +1022,7 @@ const EditWorkOrder = () => {
                       placeholder="Select recruiters"
                       optionLabelProp="label"
                     >
-                      {recruiters?.recruiters?.map((recruiter) => (
+                      {activeRecruiters.map((recruiter) => (
                         <Option
                           key={recruiter._id}
                           value={recruiter._id}
@@ -1019,7 +1043,7 @@ const EditWorkOrder = () => {
                     ]}
                   >
                     <Select mode="multiple" placeholder="Select pipeline">
-                      {pipeline?.allPipelines?.map((pipeline) => (
+                      {activePipelines.map((pipeline) => (
                         <Option key={pipeline._id} value={pipeline._id}>
                           {pipeline.name}
                         </Option>
