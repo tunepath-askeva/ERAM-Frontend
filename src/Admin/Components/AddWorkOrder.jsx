@@ -18,6 +18,7 @@ import {
   Tabs,
   Checkbox,
   Radio,
+  Modal,
 } from "antd";
 import {
   PlusOutlined,
@@ -30,7 +31,7 @@ import {
   DeleteOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-
+import dayjs from "dayjs";
 import {
   useGetRecruitersQuery,
   useGetPipelinesQuery,
@@ -66,6 +67,11 @@ const AddWorkOrder = () => {
   const [jobData, setJobData] = useState(null);
   const [applicationFields, setApplicationFields] = useState([]);
   const [previewTab, setPreviewTab] = useState("overview");
+  const [selectedPipelines, setSelectedPipelines] = useState([]);
+  const [pipelineDatesModalVisible, setPipelineDatesModalVisible] =
+    useState(false);
+  const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
+  const [pipelineStageDates, setPipelineStageDates] = useState({});
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
@@ -100,6 +106,56 @@ const AddWorkOrder = () => {
         jobCode: `${project.prefix}-${codeWithoutPrefix}`,
       });
     }
+  };
+
+  const handlePipelineChange = (selectedPipelineIds) => {
+    setSelectedPipelines(selectedPipelineIds);
+
+    const newStageDates = { ...pipelineStageDates };
+    selectedPipelineIds.forEach((pipeId) => {
+      if (!newStageDates[pipeId]) {
+        const pipeline = activePipelines.find((p) => p._id === pipeId);
+        if (pipeline) {
+          newStageDates[pipeId] = pipeline.stages.map((stage) => ({
+            stageId: stage._id,
+            startDate: null,
+            endDate: null,
+          }));
+        }
+      }
+    });
+
+    Object.keys(newStageDates).forEach((pipeId) => {
+      if (!selectedPipelineIds.includes(pipeId)) {
+        delete newStageDates[pipeId];
+      }
+    });
+
+    setPipelineStageDates(newStageDates);
+  };
+
+  const showPipelineDatesModal = (pipelineId) => {
+    const pipeline = activePipelines.find((p) => p._id === pipelineId);
+    if (pipeline) {
+      setCurrentPipelineForDates(pipeline);
+      setPipelineDatesModalVisible(true);
+    }
+  };
+
+  const handleStageDateChange = (pipelineId, stageId, field, value) => {
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+      const stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+      if (stageIndex >= 0) {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: value ? value.format("YYYY-MM-DD") : null,
+        };
+      }
+      return newDates;
+    });
   };
 
   const handleNextStep = () => {
@@ -177,10 +233,21 @@ const AddWorkOrder = () => {
   const handleSubmit = async (status = "draft") => {
     setLoading(true);
     try {
+      const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        return (
+          pipelineStageDates[pipeId]?.map((stage) => ({
+            pipelineId: pipeId,
+            stageId: stage.stageId,
+            startDate: stage.startDate,
+            endDate: stage.endDate,
+          })) || []
+        );
+      });
       const workOrderData = {
         ...jobData,
         customFields: applicationFields,
         WorkorderStatus: status,
+        pipelineStageTimeline,
       };
 
       console.log("Submitting work order:", workOrderData);
@@ -740,6 +807,88 @@ const AddWorkOrder = () => {
     </Card>
   );
 
+  const renderPipelineDatesModal = () => (
+    <Modal
+      title={`Set Stage Dates for ${
+        currentPipelineForDates?.name || "Pipeline"
+      }`}
+      visible={pipelineDatesModalVisible}
+      onCancel={() => setPipelineDatesModalVisible(false)}
+      footer={[
+        <Button key="back" onClick={() => setPipelineDatesModalVisible(false)}>
+          Close
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          onClick={() => setPipelineDatesModalVisible(false)}
+        >
+          Save Dates
+        </Button>,
+      ]}
+      width={800}
+    >
+      {currentPipelineForDates?.stages?.map((stage, index) => (
+        <Card
+          key={stage._id}
+          title={`Stage ${index + 1}: ${stage.name}`}
+          style={{ marginBottom: 16 }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="Start Date">
+                <DatePicker
+                  style={{ width: "100%" }}
+                  value={
+                    pipelineStageDates[currentPipelineForDates._id]?.[index]
+                      ?.startDate
+                      ? dayjs(
+                          pipelineStageDates[currentPipelineForDates._id][index]
+                            .startDate
+                        )
+                      : null
+                  }
+                  onChange={(date) =>
+                    handleStageDateChange(
+                      currentPipelineForDates._id,
+                      stage._id,
+                      "startDate",
+                      date
+                    )
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="End Date">
+                <DatePicker
+                  style={{ width: "100%" }}
+                  value={
+                    pipelineStageDates[currentPipelineForDates._id]?.[index]
+                      ?.endDate
+                      ? dayjs(
+                          pipelineStageDates[currentPipelineForDates._id][index]
+                            .endDate
+                        )
+                      : null
+                  }
+                  onChange={(date) =>
+                    handleStageDateChange(
+                      currentPipelineForDates._id,
+                      stage._id,
+                      "endDate",
+                      date
+                    )
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+      ))}
+    </Modal>
+  );
+
   if (currentStep === 0) {
     return (
       <div
@@ -871,7 +1020,12 @@ const AddWorkOrder = () => {
                       { required: true, message: "Please select a pipeline" },
                     ]}
                   >
-                    <Select mode="multiple" placeholder="Select pipeline">
+                    <Select
+                      mode="multiple"
+                      placeholder="Select pipeline"
+                      onChange={handlePipelineChange}
+                      onSelect={(value) => showPipelineDatesModal(value)}
+                    >
                       {activePipelines.map((pipeline) => (
                         <Option key={pipeline._id} value={pipeline._id}>
                           {pipeline.name}
@@ -1057,7 +1211,7 @@ const AddWorkOrder = () => {
 
                 <Col xs={24} md={8}>
                   <Form.Item
-                    name="numberOfCandidates"
+                    name="numberOfCandidate"
                     label="Candidates Required"
                   >
                     <InputNumber
@@ -1135,6 +1289,8 @@ const AddWorkOrder = () => {
             </Row>
           </Form>
         </Card>
+
+        {renderPipelineDatesModal()}
       </div>
     );
   }
@@ -1260,6 +1416,7 @@ const AddWorkOrder = () => {
           </Space>
         </Col>
       </Row>
+      {renderPipelineDatesModal()}
     </div>
   );
 };
