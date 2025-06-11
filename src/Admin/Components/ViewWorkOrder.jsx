@@ -486,6 +486,84 @@ const ViewWorkOrder = () => {
     </div>
   );
 
+  const renderPipelineStages = () => (
+    <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
+      <h3
+        style={{
+          margin: "0 0 12px 0",
+          color: "#1890ff",
+          fontSize: "18px",
+          fontWeight: "600",
+          wordBreak: "break-word",
+          lineHeight: "1.3",
+        }}
+      >
+        Pipeline Stages Timeline
+      </h3>
+
+      {workOrder.pipelineStageTimeline?.length > 0 ? (
+        <div style={{ marginTop: "16px" }}>
+          {workOrder.pipelineStageTimeline.map((stage, index) => (
+            <Card
+              key={stage._id}
+              size="small"
+              style={{
+                marginBottom: "12px",
+                borderLeft: "4px solid #1890ff",
+                borderRadius: "6px",
+              }}
+            >
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={8}>
+                  <div>
+                    <Text strong style={{ fontSize: "12px", display: "block" }}>
+                      Stage {index + 1}
+                    </Text>
+                    <Text style={{ fontSize: "12px" }}>{stage.stageId}</Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={8}>
+                  <div>
+                    <Text strong style={{ fontSize: "12px", display: "block" }}>
+                      Start Date
+                    </Text>
+                    <Text style={{ fontSize: "12px" }}>
+                      {new Date(stage.startDate).toLocaleDateString()}
+                    </Text>
+                  </div>
+                </Col>
+                <Col xs={12} sm={8}>
+                  <div>
+                    <Text strong style={{ fontSize: "12px", display: "block" }}>
+                      End Date
+                    </Text>
+                    <Text style={{ fontSize: "12px" }}>
+                      {new Date(stage.endDate).toLocaleDateString()}
+                    </Text>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            textAlign: "center",
+            color: "#999",
+            padding: "40px 16px",
+            fontSize: "13px",
+            backgroundColor: "#fafafa",
+            borderRadius: "6px",
+            border: "1px dashed #d9d9d9",
+          }}
+        >
+          No pipeline stages timeline configured for this work order.
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div>
       {/* Mobile-like Container */}
@@ -535,6 +613,12 @@ const ViewWorkOrder = () => {
               key="application"
             >
               {renderApplicationForm()}
+            </TabPane>
+            <TabPane
+              tab={<span style={{ fontSize: "13px" }}>Pipeline Stages</span>}
+              key="pipeline"
+            >
+              {renderPipelineStages()}
             </TabPane>
           </Tabs>
         </div>

@@ -822,6 +822,9 @@ const AddWorkOrder = () => {
           key="submit"
           type="primary"
           onClick={() => setPipelineDatesModalVisible(false)}
+          style={{
+            background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+          }}
         >
           Save Dates
         </Button>,
@@ -887,6 +890,32 @@ const AddWorkOrder = () => {
         </Card>
       ))}
     </Modal>
+  );
+
+  const renderSelectedPipelines = () => (
+    <div style={{ marginBottom: "16px" }}>
+      <h4 style={{ marginBottom: "8px" }}>Selected Pipelines</h4>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {selectedPipelines.map((pipelineId) => {
+          const pipeline = activePipelines.find((p) => p._id === pipelineId);
+          if (!pipeline) return null;
+
+          return (
+            <Tag
+              key={pipelineId}
+              color="blue"
+              style={{ cursor: "pointer", padding: "4px 8px" }}
+              onClick={() => showPipelineDatesModal(pipelineId)}
+            >
+              {pipeline.name}
+              {pipelineStageDates[pipelineId]?.some(
+                (stage) => stage.startDate || stage.endDate
+              ) && <span style={{ marginLeft: "4px" }}>(Dates set)</span>}
+            </Tag>
+          );
+        })}
+      </div>
+    </div>
   );
 
   if (currentStep === 0) {
@@ -984,6 +1013,53 @@ const AddWorkOrder = () => {
               style={{ marginBottom: "16px" }}
             >
               <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="deadlineDate" label="Deadline Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="startDate" label="Start Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="endDate" label="End Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="alertDate" label="Alert Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 8]}>
+                <Col xs={24} md={12} lg={8}>
+                  <Form.Item
+                    name="pipeline"
+                    label="Pipeline"
+                    rules={[
+                      { required: true, message: "Please select a pipeline" },
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Select pipeline"
+                      onChange={handlePipelineChange}
+                    >
+                      {activePipelines.map((pipeline) => (
+                        <Option key={pipeline._id} value={pipeline._id}>
+                          {pipeline.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+
+                  {selectedPipelines.length > 0 && renderSelectedPipelines()}
+                </Col>
                 <Col xs={24} md={12} lg={8}>
                   <Form.Item
                     name="assignedId"
@@ -1010,52 +1086,6 @@ const AddWorkOrder = () => {
                         </Option>
                       ))}
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12} lg={8}>
-                  <Form.Item
-                    name="pipeline"
-                    label="Pipeline"
-                    rules={[
-                      { required: true, message: "Please select a pipeline" },
-                    ]}
-                  >
-                    <Select
-                      mode="multiple"
-                      placeholder="Select pipeline"
-                      onChange={handlePipelineChange}
-                      onSelect={(value) => showPipelineDatesModal(value)}
-                    >
-                      {activePipelines.map((pipeline) => (
-                        <Option key={pipeline._id} value={pipeline._id}>
-                          {pipeline.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }} />
                   </Form.Item>
                 </Col>
               </Row>
