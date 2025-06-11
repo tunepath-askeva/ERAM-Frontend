@@ -154,11 +154,6 @@ const AdminCandidates = () => {
 
   const showEditModal = (candidate) => {
     setEditingCandidate(candidate);
-    form.setFieldsValue({
-      ...candidate,
-      firstName: candidate.fullName.split(" ")[0],
-      lastName: candidate.fullName.split(" ").slice(1).join(" "),
-    });
     setCandidateModalVisible(true);
   };
 
@@ -667,14 +662,13 @@ const AdminCandidates = () => {
         form={form}
         editingCandidate={editingCandidate}
       />
-
       {/* Candidate View Modal */}
       <CandidateViewModal
         visible={viewModalVisible}
         onCancel={handleViewModalClose}
-        candidateId={selectedCandidateId} 
+        candidateId={selectedCandidateId}
       />
-      
+
       {/* Disable/Enable Confirmation Modal */}
       <Modal
         title={

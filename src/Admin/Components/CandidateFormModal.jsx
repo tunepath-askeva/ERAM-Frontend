@@ -11,19 +11,44 @@ import {
   BookOutlined,
   StarOutlined,
 } from "@ant-design/icons";
-import { useAddCandidateMutation } from "../../Slices/Admin/AdminApis";
+import { 
+  useAddCandidateMutation, 
+  useEditCandidateMutation 
+} from "../../Slices/Admin/AdminApis";
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
+const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidate }) => {
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
+  const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
+
+  const isEditMode = !!editingCandidate;
+  const isLoading = isAdding || isEditing;
 
   useEffect(() => {
     if (visible) {
-      form.resetFields();
+      if (isEditMode && editingCandidate) {
+        // Pre-populate form with existing candidate data
+        const [firstName, ...lastNameParts] = editingCandidate.fullName.split(" ");
+        const lastName = lastNameParts.join(" ");
+        
+        form.setFieldsValue({
+          firstName: firstName || "",
+          lastName: lastName || "",
+          email: editingCandidate.email || "",
+          phone: editingCandidate.phone || "",
+          companyName: editingCandidate.companyName || "",
+          specialization: editingCandidate.specialization || "",
+          experience: editingCandidate.experience || "",
+          qualifications: editingCandidate.qualifications || "",
+          // Don't pre-populate password fields for security
+        });
+      } else {
+        form.resetFields();
+      }
     }
-  }, [visible, form]);
+  }, [visible, form, isEditMode, editingCandidate]);
 
   const handleSubmit = async (values) => {
     try {
@@ -33,16 +58,35 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
       // Combine first name and last name into fullName
       const fullName = `${firstName} ${lastName}`.trim();
 
-      // Add the combined fullName and static role to payload
-      const finalPayload = {
-        ...payload,
-        fullName,
-        role: "candidate",
-      };
+      if (isEditMode) {
+        // Edit existing candidate
+        const editPayload = {
+          ...payload,
+          fullName,
+        };
 
-      // Create new candidate
-      await addCandidate(finalPayload).unwrap();
-      message.success("Candidate created successfully!");
+        // Remove password fields if they're empty (optional update)
+        if (!payload.password) {
+          delete editPayload.password;
+        }
+
+        await editCandidate({
+          id: editingCandidate._id,
+          candidateData: editPayload
+        }).unwrap();
+        
+        message.success("Candidate updated successfully!");
+      } else {
+        // Create new candidate
+        const createPayload = {
+          ...payload,
+          fullName,
+          role: "candidate",
+        };
+
+        await addCandidate(createPayload).unwrap();
+        message.success("Candidate created successfully!");
+      }
 
       // Call parent onSubmit if provided (for any additional logic)
       if (onSubmit) {
@@ -53,15 +97,23 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
       onCancel();
       form.resetFields();
     } catch (error) {
-      console.error("Error creating candidate:", error);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} candidate:`, error);
       message.error(
-        error?.data?.message || "Failed to create candidate. Please try again."
+        error?.data?.message || 
+        `Failed to ${isEditMode ? 'update' : 'create'} candidate. Please try again.`
       );
     }
   };
 
   const validateConfirmPassword = (_, value) => {
-    if (!value || form.getFieldValue("password") === value) {
+    const password = form.getFieldValue("password");
+    
+    // If editing and no password is provided, skip validation
+    if (isEditMode && !password && !value) {
+      return Promise.resolve();
+    }
+    
+    if (!value || password === value) {
       return Promise.resolve();
     }
     return Promise.reject(new Error("Passwords do not match!"));
@@ -75,7 +127,7 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
             style={{ marginRight: 8, color: "#da2c46", fontSize: 18 }}
           />
           <span style={{ fontSize: "16px", fontWeight: 600 }}>
-            Add New Candidate
+            {isEditMode ? "Edit Candidate" : "Add New Candidate"}
           </span>
         </div>
       }
@@ -93,13 +145,13 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
           type="primary"
           onClick={() => form.submit()}
           size="large"
-          loading={isAdding}
+          loading={isLoading}
           style={{
             background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
             border: "none",
           }}
         >
-          Create Candidate
+          {isEditMode ? "Update Candidate" : "Create Candidate"}
         </Button>,
       ]}
     >
@@ -222,26 +274,35 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form }) => {
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="Password"
+              label={isEditMode ? "New Password (Optional)" : "Password"}
               name="password"
               rules={[
-                { required: true, message: "Please enter password" },
-                { min: 6, message: "Password must be at least 6 characters" },
+                { 
+                  required: !isEditMode, 
+                  message: "Please enter password" 
+                },
+                { 
+                  min: 6, 
+                  message: "Password must be at least 6 characters" 
+                },
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="Enter password"
+                placeholder={isEditMode ? "Leave blank to keep current password" : "Enter password"}
               />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="Confirm Password"
+              label={isEditMode ? "Confirm New Password" : "Confirm Password"}
               name="confirmPassword"
               dependencies={["password"]}
               rules={[
-                { required: true, message: "Please confirm password" },
+                { 
+                  required: !isEditMode && form.getFieldValue("password"), 
+                  message: "Please confirm password" 
+                },
                 { validator: validateConfirmPassword },
               ]}
             >
