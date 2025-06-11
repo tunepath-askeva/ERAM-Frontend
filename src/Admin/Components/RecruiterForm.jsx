@@ -60,7 +60,7 @@ const RecruiterForm = ({
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
-          experience: initialValues.experienceYears || 0,
+          experienceYears: initialValues.experienceYears || 0,
         });
       } else {
         form.resetFields();
@@ -77,7 +77,7 @@ const RecruiterForm = ({
         email: values.email,
         phoneno: values.phoneno,
         specialization: values.specialization,
-        experience: values.experience,
+        experienceYears: values.experienceYears,
         role: "recruiter",
       };
 
@@ -271,7 +271,7 @@ const RecruiterForm = ({
             <Col span={12}>
               <Form.Item
                 label="Experience (Years)"
-                name="experience"
+                name="experienceYears"
                 rules={[
                   { required: true, message: "Please enter experience" },
                   {

@@ -302,7 +302,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
         >
           <Avatar
             style={{
-              backgroundColor: "#1890ff",
+              backgroundColor: "#da2c46",
               marginRight: "12px",
             }}
             icon={isEditMode ? <EditOutlined /> : <SettingOutlined />}
@@ -333,7 +333,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               <FolderOpenOutlined
                 style={{ 
                   marginRight: "8px", 
-                  color: "#1890ff" 
+                  color: "#da2c46" 
                 }}
               />
               Pipeline Information
@@ -351,7 +351,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             }}
             prefix={
               <EditOutlined 
-                style={{ color: "#1890ff" }} 
+                style={{ color: "#da2c46" }} 
               />
             }
           />
@@ -362,7 +362,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           style={{
             marginBottom: "20px",
             borderRadius: "12px",
-            background: "linear-gradient(135deg, #1890ff 0%, #096dd9 100%)",
+            background:"linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             border: "none",
           }}
         >
@@ -639,7 +639,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                   onClick={addDocument}
                   style={{
                     borderRadius: "8px",
-                    backgroundColor: "#1890ff",
+                    backgroundColor: "#da2c46",
                   }}
                 >
                   Add
@@ -664,7 +664,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                         fontSize: "12px",
                         height: "28px",
                         backgroundColor: currentStage.requiredDocuments.includes(doc) 
-                          ? "#1890ff"
+                          ? "#da2c46"
                           : undefined,
                       }}
                       disabled={currentStage.requiredDocuments.includes(doc)}
@@ -720,7 +720,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                 minWidth: "140px",
                 height: "40px",
                 fontSize: "14px",
-                backgroundColor: "#1890ff",
+                backgroundColor: "#da2c46",
               }}
               loading={isEditingStageAPI}
             >
@@ -779,13 +779,13 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             size="large"
             onClick={handleSubmit}
             loading={isCreating || isUpdating}
-            disabled={!pipelineName || stages.length === 0 || isLoading}
+            
             style={{
               borderRadius: "8px",
               minWidth: "140px",
               height: "44px",
               fontSize: "14px",
-              backgroundColor: "#1890ff",
+              backgroundColor: "#da2c46",
             }}
             icon={<SaveOutlined />}
           >

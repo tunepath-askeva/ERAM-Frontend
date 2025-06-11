@@ -37,13 +37,15 @@ import {
   CalendarOutlined,
   BankOutlined,
   GlobalOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
 
 import {
   useGetRecruitersQuery,
   useDisableRecruiterStatusMutation,
-  useGetRecruiterByIdQuery, // Add this import
+  useGetRecruiterByIdQuery,
+  useDeleteRecruiterMutation, // Add this import
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -56,6 +58,8 @@ const AdminRecruiter = () => {
   const [recruiterToToggle, setRecruiterToToggle] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedRecruiterId, setSelectedRecruiterId] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [recruiterToDelete, setRecruiterToDelete] = useState(null);
 
   // API integration
   const {
@@ -68,6 +72,9 @@ const AdminRecruiter = () => {
 
   const [toggleRecruiterStatus, { isLoading: isToggling }] =
     useDisableRecruiterStatusMutation();
+
+  const [deleteRecruiter, { isLoading: isDeleting }] =
+    useDeleteRecruiterMutation();
 
   const {
     data: selectedRecruiterResponse,
@@ -145,6 +152,38 @@ const AdminRecruiter = () => {
           } recruiter`
       );
       console.error("Toggle status error:", error);
+    }
+  };
+
+  // Delete functionality
+  const showDeleteModal = (recruiter) => {
+    setRecruiterToDelete(recruiter);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalVisible(false);
+    setRecruiterToDelete(null);
+  };
+
+  const handleDeleteRecruiter = async () => {
+    if (!recruiterToDelete) return;
+
+    try {
+      await deleteRecruiter(recruiterToDelete._id).unwrap();
+      
+      message.success(
+        `Recruiter "${getRecruiterDisplayName(recruiterToDelete)}" deleted successfully`
+      );
+
+      setDeleteModalVisible(false);
+      setRecruiterToDelete(null);
+      refetch();
+    } catch (error) {
+      message.error(
+        error?.data?.message || "Failed to delete recruiter"
+      );
+      console.error("Delete recruiter error:", error);
     }
   };
 
@@ -364,6 +403,17 @@ const AdminRecruiter = () => {
                           }}
                         />
                       </Tooltip>
+                      <Tooltip title="Delete Recruiter">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={() => showDeleteModal(recruiter)}
+                          style={{
+                            color: "#ff4d4f",
+                          }}
+                        />
+                      </Tooltip>
                     </Space>
                   }
                   bodyStyle={{
@@ -514,7 +564,10 @@ const AdminRecruiter = () => {
             key="close"
             type="primary"
             onClick={handleViewModalClose}
-            size="large"
+            size="medium"
+            style={{
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+            }}
           >
             Close
           </Button>,
@@ -615,18 +668,7 @@ const AdminRecruiter = () => {
                   {selectedRecruiterData.phone}
                 </Descriptions.Item>
 
-                <Descriptions.Item
-                  label={
-                    <span>
-                      <BankOutlined
-                        style={{ marginRight: 8, color: "#da2c46" }}
-                      />
-                      Company
-                    </span>
-                  }
-                >
-                  {selectedRecruiterData.companyName || "Not specified"}
-                </Descriptions.Item>
+                
 
                 <Descriptions.Item
                   label={
@@ -641,18 +683,7 @@ const AdminRecruiter = () => {
                   {selectedRecruiterData.specialization || "Not specified"}
                 </Descriptions.Item>
 
-                <Descriptions.Item
-                  label={
-                    <span>
-                      <GlobalOutlined
-                        style={{ marginRight: 8, color: "#da2c46" }}
-                      />
-                      Location
-                    </span>
-                  }
-                >
-                  {selectedRecruiterData.location || "Not specified"}
-                </Descriptions.Item>
+                
 
                 <Descriptions.Item
                   label={
@@ -669,31 +700,7 @@ const AdminRecruiter = () => {
                     : "Not specified"}
                 </Descriptions.Item>
 
-                <Descriptions.Item
-                  label={
-                    <span>
-                      <CalendarOutlined
-                        style={{ marginRight: 8, color: "#da2c46" }}
-                      />
-                      Registration Date
-                    </span>
-                  }
-                >
-                  {formatDate(selectedRecruiterData.createdAt)}
-                </Descriptions.Item>
-
-                <Descriptions.Item
-                  label={
-                    <span>
-                      <CalendarOutlined
-                        style={{ marginRight: 8, color: "#da2c46" }}
-                      />
-                      Last Updated
-                    </span>
-                  }
-                >
-                  {formatDate(selectedRecruiterData.updatedAt)}
-                </Descriptions.Item>
+               
               </Descriptions>
 
               {selectedRecruiterData.bio && (
@@ -797,6 +804,89 @@ const AdminRecruiter = () => {
               </Text>
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color: "#ff4d4f",
+            }}
+          >
+            <DeleteOutlined
+              style={{ marginRight: 8, fontSize: 18 }}
+            />
+            <span style={{ fontSize: "16px" }}>
+              Delete Recruiter
+            </span>
+          </div>
+        }
+        open={deleteModalVisible}
+        onCancel={handleDeleteCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleDeleteCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            onClick={handleDeleteRecruiter}
+            loading={isDeleting}
+            size="large"
+            style={{
+              background: "#ff4d4f",
+              borderColor: "#ff4d4f",
+            }}
+          >
+            Delete
+          </Button>,
+        ]}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 16 }}>
+            <WarningOutlined 
+              style={{ 
+                color: "#ff4d4f", 
+                fontSize: 20, 
+                marginRight: 12, 
+                marginTop: 2 
+              }} 
+            />
+            <div>
+              <Text strong style={{ fontSize: "16px", color: "#ff4d4f" }}>
+                This action cannot be undone!
+              </Text>
+              <div style={{ marginTop: 8 }}>
+                <Text>
+                  Are you sure you want to permanently delete the recruiter{" "}
+                  <Text strong>{getRecruiterDisplayName(recruiterToDelete)}</Text>?
+                </Text>
+              </div>
+            </div>
+          </div>
+          <div style={{ 
+            background: "#fff2f0", 
+            border: "1px solid #ffccc7", 
+            borderRadius: "6px", 
+            padding: "12px",
+            marginTop: 16 
+          }}>
+            <Text type="secondary" style={{ fontSize: "13px" }}>
+              • All recruiter data will be permanently removed
+              <br />
+              • Associated job postings may be affected
+              <br />
+              • This recruiter will no longer be able to access the system
+            </Text>
+          </div>
         </div>
       </Modal>
     </>

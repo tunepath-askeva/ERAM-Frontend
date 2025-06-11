@@ -31,6 +31,7 @@ import CandidateLayout from "./Global/CandidateLayout";
 import CandidateJobs from "./Pages/CandidateJobs";
 import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
+import AdminCandidates from "./Admin/Pages/AdminCandidates";
 
 const AppRoutes = () => {
   return (
@@ -90,6 +91,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/recruiters"
           element={<ProtectedAdmin element={<AdminRecuiter />} />}
+        />
+         <Route
+          path="/admin/candidates"
+          element={<ProtectedAdmin element={<AdminCandidates />} />}
         />
         <Route
           path="/admin/workorder"

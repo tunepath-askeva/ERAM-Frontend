@@ -14,6 +14,7 @@ import {
   message,
   Divider,
   Switch,
+  Skeleton,
 } from "antd";
 import {
   PlusOutlined,
@@ -54,10 +55,9 @@ const WorkOrder = () => {
   const [activateModalVisible, setActivateModalVisible] = useState(false);
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
 
-  const { data: workOrdersData, refetch } = useGetWorkOrdersQuery();
+  const { data: workOrdersData, isLoading, refetch } = useGetWorkOrdersQuery();
   const workOrders = workOrdersData?.workorders || [];
 
-  // RTK Mutations
   const [deleteWorkOrder] = useDeleteWorkOrderMutation();
   const [publishWorkOrder] = usePublishWorkOrderMutation();
   const [toggleWorkOrderStatus] = useToggleWorkOrderStatusMutation();
@@ -366,7 +366,17 @@ const WorkOrder = () => {
           </Button>
         </div>
 
-        {workOrders?.length > 0 ? (
+        {isLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "20px",
+            }}
+          >
+            <Skeleton />
+          </div>
+        ) : workOrders?.length > 0 ? (
           <Row
             gutter={[
               { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
@@ -615,7 +625,6 @@ const WorkOrder = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
       <Modal
         title={
           <div
