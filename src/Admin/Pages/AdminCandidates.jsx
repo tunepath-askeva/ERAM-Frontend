@@ -55,6 +55,7 @@ import {
   useBulkImportCandidatesMutation,
   useDeleteCandidateMutation,
   useGetCandidateByIdQuery,
+  useDisableCandidateStatusMutation,
 } from "../../Slices/Admin/AdminApis";
 import CandidateFormModal from "../Components/CandidateFormModal";
 import CandidateViewModal from "../Components/CandidateViewModal";
@@ -83,6 +84,8 @@ const AdminCandidates = () => {
   const [deleteCandidate, { isLoading: isDeleting }] =
     useDeleteCandidateMutation();
 
+  const [toggleCandidateStatus] = useDisableCandidateStatusMutation();
+
   const [form] = Form.useForm();
 
   const candidates = candidatesData?.getCandidates || [];
@@ -97,12 +100,13 @@ const AdminCandidates = () => {
     setCandidateToToggle(null);
   };
 
-  const handleToggleStatus = () => {
+  const handleToggleStatus = async () => {
     if (!candidateToToggle) return;
 
     setIsToggling(true);
 
-    setTimeout(() => {
+    try {
+      await toggleCandidateStatus(candidateToToggle._id).unwrap();
       const newStatus =
         candidateToToggle.accountStatus === "active" ? "inactive" : "active";
 
@@ -112,9 +116,16 @@ const AdminCandidates = () => {
 
       setDisableModalVisible(false);
       setCandidateToToggle(null);
+      refetch(); // Refresh the list
+    } catch (error) {
+      console.error("Toggle status error:", error);
+      message.error(
+        error?.data?.message ||
+          "Failed to update candidate status. Please try again."
+      );
+    } finally {
       setIsToggling(false);
-      refetch();
-    }, 1000);
+    }
   };
 
   const showDeleteModal = (candidate) => {
@@ -669,41 +680,78 @@ const AdminCandidates = () => {
         candidateId={selectedCandidateId}
       />
 
-      {/* Disable/Enable Confirmation Modal */}
       <Modal
         title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color:
+                candidateToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+            }}
+          >
             <ExclamationCircleOutlined
-              style={{
-                color:
-                  candidateToToggle?.accountStatus === "active"
-                    ? "#ff4d4f"
-                    : "#52c41a",
-              }}
+              style={{ marginRight: 8, fontSize: 18 }}
             />
-            <span>
+            <span style={{ fontSize: "16px" }}>
               {candidateToToggle?.accountStatus === "active"
-                ? "Disable Candidate"
-                : "Enable Candidate"}
+                ? "Disable"
+                : "Enable"}{" "}
+              Candidate
             </span>
           </div>
         }
-        visible={disableModalVisible}
-        onOk={handleToggleStatus}
+        open={disableModalVisible}
         onCancel={handleDisableCancel}
-        confirmLoading={isToggling}
-        okText={
-          candidateToToggle?.accountStatus === "active" ? "Disable" : "Enable"
-        }
-        okButtonProps={{
-          danger: candidateToToggle?.accountStatus === "active",
-        }}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleDisableCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="confirm"
+            type="primary"
+            danger={candidateToToggle?.accountStatus === "active"}
+            onClick={handleToggleStatus}
+            loading={isToggling}
+            size="large"
+            style={{
+              background:
+                candidateToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+              borderColor:
+                candidateToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+            }}
+          >
+            {candidateToToggle?.accountStatus === "active"
+              ? "Disable"
+              : "Enable"}
+          </Button>,
+        ]}
       >
-        <Paragraph>
-          {candidateToToggle?.accountStatus === "active"
-            ? `Are you sure you want to disable ${candidateToToggle?.fullName}? This candidate will no longer be available for new job matches.`
-            : `Are you sure you want to enable ${candidateToToggle?.fullName}? This candidate will be available for new job matches.`}
-        </Paragraph>
+        <div style={{ padding: "16px 0" }}>
+          <Text>
+            Are you sure you want to{" "}
+            {candidateToToggle?.accountStatus === "active"
+              ? "disable"
+              : "enable"}{" "}
+            the candidate <Text strong>{candidateToToggle?.fullName}</Text>?
+          </Text>
+          {candidateToToggle?.accountStatus === "active" && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                Disabling will prevent this candidate from accessing the system.
+              </Text>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* Delete Confirmation Modal */}

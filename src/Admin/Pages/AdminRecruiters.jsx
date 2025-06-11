@@ -695,8 +695,8 @@ const AdminRecruiter = () => {
                     </span>
                   }
                 >
-                  {selectedRecruiterData.experienceYears
-                    ? `${selectedRecruiterData.experienceYears} years`
+                  {selectedRecruiterData.experience
+                    ? `${selectedRecruiterData.experience} years`
                     : "Not specified"}
                 </Descriptions.Item>
 

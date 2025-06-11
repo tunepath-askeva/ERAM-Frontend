@@ -193,6 +193,19 @@ const CandidateViewModal = ({ visible, onCancel, candidateId }) => {
           <Descriptions.Item
             label={
               <span>
+                <BankOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+                Experience
+              </span>
+            }
+          >
+            <Text strong>
+              {candidate.experience + " Years" || "Not specified"}
+            </Text>
+          </Descriptions.Item>
+
+          <Descriptions.Item
+            label={
+              <span>
                 <TrophyOutlined style={{ marginRight: 8, color: "#da2c46" }} />
                 Specialization
               </span>

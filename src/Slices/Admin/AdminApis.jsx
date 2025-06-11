@@ -226,6 +226,12 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    disableCandidateStatus: builder.mutation({
+      query: (candidateId) => ({
+        url: `/candidate/${candidateId}`,
+        method: "PATCH",
+      }),
+    }),
   }),
 });
 
@@ -276,4 +282,5 @@ export const {
   useDeleteCandidateMutation,
   useGetCandidateByIdQuery,
   useEditCandidateMutation,
+  useDisableCandidateStatusMutation
 } = adminApi;

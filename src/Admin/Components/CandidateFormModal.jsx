@@ -42,7 +42,6 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
           specialization: editingCandidate.specialization || "",
           experience: editingCandidate.experience || "",
           qualifications: editingCandidate.qualifications || "",
-          // Don't pre-populate password fields for security
         });
       } else {
         form.resetFields();
@@ -52,20 +51,16 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
 
   const handleSubmit = async (values) => {
     try {
-      // Remove confirmPassword from payload as it's not needed for API
       const { confirmPassword, firstName, lastName, ...payload } = values;
 
-      // Combine first name and last name into fullName
       const fullName = `${firstName} ${lastName}`.trim();
 
       if (isEditMode) {
-        // Edit existing candidate
         const editPayload = {
           ...payload,
           fullName,
         };
 
-        // Remove password fields if they're empty (optional update)
         if (!payload.password) {
           delete editPayload.password;
         }
@@ -77,7 +72,6 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
         
         message.success("Candidate updated successfully!");
       } else {
-        // Create new candidate
         const createPayload = {
           ...payload,
           fullName,
@@ -88,12 +82,10 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
         message.success("Candidate created successfully!");
       }
 
-      // Call parent onSubmit if provided (for any additional logic)
       if (onSubmit) {
         onSubmit(values);
       }
 
-      // Close modal and reset form
       onCancel();
       form.resetFields();
     } catch (error) {
@@ -108,7 +100,6 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
   const validateConfirmPassword = (_, value) => {
     const password = form.getFieldValue("password");
     
-    // If editing and no password is provided, skip validation
     if (isEditMode && !password && !value) {
       return Promise.resolve();
     }
@@ -161,7 +152,6 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
         onFinish={handleSubmit}
         style={{ padding: "16px 0" }}
       >
-        {/* First Name and Last Name */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -270,7 +260,6 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
           </Col>
         </Row>
 
-        {/* Password fields */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
