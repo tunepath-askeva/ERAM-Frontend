@@ -154,7 +154,7 @@ const EditWorkOrder = () => {
           endDate: formatDate(workOrder.endDate),
           deadlineDate: formatDate(workOrder.deadlineDate),
           alertDate: formatDate(workOrder.alertDate),
-          assignedId: Array.isArray(workOrder.assignedRecruiters)
+          assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
             ? workOrder.assignedRecruiters.map((recruiter) =>
                 typeof recruiter === "object" ? recruiter._id : recruiter
               )
@@ -395,9 +395,7 @@ const EditWorkOrder = () => {
       };
 
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
-      message.success(
-        `Work order updated and published successfully!`
-      );
+      message.success(`Work order updated and published successfully!`);
       navigate("/admin/workorder");
     } catch (error) {
       console.error("Error updating work order:", error);
@@ -1651,7 +1649,7 @@ const EditWorkOrder = () => {
             <Button onClick={handleCancel}>Cancel</Button>
             <Button
               type="primary"
-              onClick={() => handleSubmit}
+              onClick={handleSubmit}
               loading={loading}
               style={{
                 background:
