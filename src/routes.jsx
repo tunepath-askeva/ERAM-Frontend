@@ -32,6 +32,13 @@ import CandidateJobs from "./Pages/CandidateJobs";
 import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
 import AdminCandidates from "./Admin/Pages/AdminCandidates";
+import ProtectedRecruiter from "./Recruiters/Auth/ProtectedRecruiter";
+import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
+import RecruiterCandidates from "./Recruiters/Pages/RecruiterCandidates";
+import RecruiterJobs from "./Recruiters/Pages/RecruiterJobs";
+import RecruiterEmployee from "./Recruiters/Pages/RecruiterEmployee";
+import RecruiterPayroll from "./Recruiters/Pages/RecruiterPayroll";
+import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
 
 const AppRoutes = () => {
   return (
@@ -42,7 +49,7 @@ const AppRoutes = () => {
       <Route path="/contacts" element={<Contacts />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path='/branches' element={<Branches/>} />
+      <Route path="/branches" element={<Branches />} />
 
       {/* Super Admin */}
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />
@@ -92,7 +99,7 @@ const AppRoutes = () => {
           path="/admin/recruiters"
           element={<ProtectedAdmin element={<AdminRecuiter />} />}
         />
-         <Route
+        <Route
           path="/admin/candidates"
           element={<ProtectedAdmin element={<AdminCandidates />} />}
         />
@@ -122,18 +129,39 @@ const AppRoutes = () => {
         />
       </Route>
 
-
       {/* Candidate */}
 
       <Route element={<CandidateLayout />}>
-
         <Route path="/candidate-jobs" element={<CandidateJobs />} />
-        <Route path="/candidate-applied-jobs" element={<CandidateAppliedJobs />} />
-        <Route path="/candidate-settings" element={<CandidateSettings />} />
--
+        <Route
+          path="/candidate-applied-jobs"
+          element={<CandidateAppliedJobs />}
+        />
+        <Route path="/candidate-settings" element={<CandidateSettings />} />-
       </Route>
 
-
+      <Route element={<RecruiterLayout />}>
+        <Route
+          path="/recruiter/dashboard"
+          element={<ProtectedRecruiter element={<RecruiterDashboard />} />}
+        />
+        <Route
+          path="/recruiter/jobs"
+          element={<ProtectedRecruiter element={<RecruiterJobs />} />}
+        />
+        <Route
+          path="/recruiter/employees"
+          element={<ProtectedRecruiter element={<RecruiterEmployee />} />}
+        />
+        <Route
+          path="/recruiter/payroll"
+          element={<ProtectedRecruiter element={<RecruiterPayroll />} />}
+        />
+        <Route
+          path="/recruiter/candidates"
+          element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
+        />
+      </Route>
     </Routes>
   );
 };

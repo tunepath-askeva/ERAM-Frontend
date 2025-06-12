@@ -72,6 +72,11 @@ const EditWorkOrder = () => {
   const [jobData, setJobData] = useState(null);
   const [applicationFields, setApplicationFields] = useState([]);
   const [previewTab, setPreviewTab] = useState("overview");
+  const [selectedPipelines, setSelectedPipelines] = useState([]);
+  const [pipelineDatesModalVisible, setPipelineDatesModalVisible] =
+    useState(false);
+  const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
+  const [pipelineStageDates, setPipelineStageDates] = useState({});
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
@@ -89,6 +94,20 @@ const EditWorkOrder = () => {
   const [editWorkOrder] = useEditWorkOrderMutation();
 
   const branchId = Branch?.branch?._id;
+
+  const activeRecruiters =
+    recruiters?.recruiters?.filter(
+      (recruiter) => recruiter.accountStatus === "active"
+    ) || [];
+
+  const activePipelines =
+    pipeline?.allPipelines?.filter(
+      (pipeline) => pipeline.pipelineStatus === "active"
+    ) || [];
+
+  const activeProjects =
+    projects?.allProjects?.filter((project) => project.status === "active") ||
+    [];
 
   useEffect(() => {
     console.log("Work Order ID:", id);
@@ -111,9 +130,26 @@ const EditWorkOrder = () => {
           }
         };
 
+        const initialStageDates = {};
+        if (workOrder.pipelineStageTimeline) {
+          workOrder.pipelineStageTimeline.forEach((timeline) => {
+            if (!initialStageDates[timeline.pipelineId]) {
+              initialStageDates[timeline.pipelineId] = [];
+            }
+            initialStageDates[timeline.pipelineId].push({
+              stageId: timeline.stageId,
+              startDate: timeline.startDate,
+              endDate: timeline.endDate,
+            });
+          });
+        }
+
+        setPipelineStageDates(initialStageDates);
+        setSelectedPipelines(workOrder.pipeline.map((p) => p._id));
+
         const formData = {
           ...workOrder,
-           numberOfCandidates: workOrder.numberOfCandidate, 
+          numberOfCandidates: workOrder.numberOfCandidate,
           startDate: formatDate(workOrder.startDate),
           endDate: formatDate(workOrder.endDate),
           deadlineDate: formatDate(workOrder.deadlineDate),
@@ -229,13 +265,23 @@ const EditWorkOrder = () => {
       setCurrentPipelineForDates(pipeline);
 
       if (!pipelineStageDates[pipelineId]) {
-        const newDates = { ...pipelineStageDates };
-        newDates[pipelineId] = pipeline.stages.map((stage) => ({
-          stageId: stage._id,
-          startDate: null,
-          endDate: null,
+        const initialDates = pipeline.stages.map((stage) => {
+          const timelineEntry =
+            workOrderData?.workOrder?.pipelineStageTimeline?.find(
+              (timeline) => timeline.stageId === stage._id
+            );
+
+          return {
+            stageId: stage._id,
+            startDate: timelineEntry?.startDate || null,
+            endDate: timelineEntry?.endDate || null,
+          };
+        });
+
+        setPipelineStageDates((prev) => ({
+          ...prev,
+          [pipelineId]: initialDates,
         }));
-        setPipelineStageDates(newDates);
       }
 
       setPipelineDatesModalVisible(true);
@@ -245,15 +291,29 @@ const EditWorkOrder = () => {
   const handleStageDateChange = (pipelineId, stageId, field, value) => {
     setPipelineStageDates((prev) => {
       const newDates = { ...prev };
-      const stageIndex = newDates[pipelineId].findIndex(
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      let stageIndex = newDates[pipelineId].findIndex(
         (s) => s.stageId === stageId
       );
-      if (stageIndex >= 0) {
-        newDates[pipelineId][stageIndex] = {
-          ...newDates[pipelineId][stageIndex],
-          [field]: value ? value.format("YYYY-MM-DD") : null,
-        };
+
+      if (stageIndex === -1) {
+        stageIndex = newDates[pipelineId].length;
+        newDates[pipelineId].push({
+          stageId,
+          startDate: null,
+          endDate: null,
+        });
       }
+
+      newDates[pipelineId][stageIndex] = {
+        ...newDates[pipelineId][stageIndex],
+        [field]: value ? value.format("YYYY-MM-DD") : null,
+      };
+
       return newDates;
     });
   };
@@ -305,15 +365,28 @@ const EditWorkOrder = () => {
     updateApplicationField(fieldId, { options: newOptions });
   };
 
-  const handleSubmit = async (status = "draft") => {
+  const handleSubmit = async () => {
     setLoading(true);
     try {
       const values = jobForm.getFieldsValue();
+
+      const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        return (
+          pipelineStageDates[pipeId]?.map((stage) => ({
+            pipelineId: pipeId,
+            stageId: stage.stageId,
+            startDate: stage.startDate,
+            endDate: stage.endDate,
+          })) || []
+        );
+      });
+
       const workOrderPayload = {
         ...jobData,
         ...values,
         customFields: applicationFields,
-        workOrderStatus: status,
+        workOrderStatus: "published",
+        pipelineStageTimeline,
         // isActive: values.isActive ? "active" : "inactive",
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
@@ -323,9 +396,7 @@ const EditWorkOrder = () => {
 
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
       message.success(
-        `Work order updated and ${
-          status === "published" ? "published" : "saved as draft"
-        } successfully!`
+        `Work order updated and published successfully!`
       );
       navigate("/admin/workorder");
     } catch (error) {
@@ -903,11 +974,13 @@ const EditWorkOrder = () => {
       width={800}
     >
       {currentPipelineForDates?.stages?.map((stage, index) => {
-        // Find the timeline entry for this stage
         const timelineEntry =
           workOrderData?.workOrder?.pipelineStageTimeline?.find(
             (timeline) => timeline.stageId === stage._id
           );
+
+        const stageDates =
+          pipelineStageDates[currentPipelineForDates._id]?.[index];
 
         return (
           <Card
@@ -921,16 +994,10 @@ const EditWorkOrder = () => {
                   <DatePicker
                     style={{ width: "100%" }}
                     value={
-                      timelineEntry?.startDate
+                      stageDates?.startDate
+                        ? dayjs(stageDates.startDate)
+                        : timelineEntry?.startDate
                         ? dayjs(timelineEntry.startDate)
-                        : pipelineStageDates[currentPipelineForDates._id]?.[
-                            index
-                          ]?.startDate
-                        ? dayjs(
-                            pipelineStageDates[currentPipelineForDates._id][
-                              index
-                            ].startDate
-                          )
                         : null
                     }
                     onChange={(date) =>
@@ -949,16 +1016,10 @@ const EditWorkOrder = () => {
                   <DatePicker
                     style={{ width: "100%" }}
                     value={
-                      timelineEntry?.endDate
+                      stageDates?.endDate
+                        ? dayjs(stageDates.endDate)
+                        : timelineEntry?.endDate
                         ? dayjs(timelineEntry.endDate)
-                        : pipelineStageDates[currentPipelineForDates._id]?.[
-                            index
-                          ]?.endDate
-                        ? dayjs(
-                            pipelineStageDates[currentPipelineForDates._id][
-                              index
-                            ].endDate
-                          )
                         : null
                     }
                     onChange={(date) =>
@@ -987,6 +1048,14 @@ const EditWorkOrder = () => {
           const pipeline = activePipelines.find((p) => p._id === pipelineId);
           if (!pipeline) return null;
 
+          const hasDates =
+            pipelineStageDates[pipelineId]?.some(
+              (stage) => stage.startDate || stage.endDate
+            ) ||
+            workOrderData?.workOrder?.pipelineStageTimeline?.some(
+              (timeline) => timeline.pipelineId === pipelineId
+            );
+
           return (
             <Tag
               key={pipelineId}
@@ -997,7 +1066,7 @@ const EditWorkOrder = () => {
               {pipeline.name}
               {pipelineStageDates[pipelineId]?.some(
                 (stage) => stage.startDate || stage.endDate
-              ) && <span style={{ marginLeft: "4px" }}>(Dates set)</span>}
+              )}
             </Tag>
           );
         })}
@@ -1482,6 +1551,7 @@ const EditWorkOrder = () => {
             </div>
           </Form>
         </Card>
+        {renderPipelineDatesModal()}
       </div>
     );
   }
@@ -1579,12 +1649,9 @@ const EditWorkOrder = () => {
 
           <Space wrap>
             <Button onClick={handleCancel}>Cancel</Button>
-            <Button onClick={() => handleSubmit("draft")} loading={loading}>
-              Save as Draft
-            </Button>
             <Button
               type="primary"
-              onClick={() => handleSubmit("published")}
+              onClick={() => handleSubmit}
               loading={loading}
               style={{
                 background:
