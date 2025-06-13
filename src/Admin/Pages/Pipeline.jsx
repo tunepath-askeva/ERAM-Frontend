@@ -488,8 +488,6 @@ const Pipeline = () => {
                       </div>
                     </div>
                   </div>
-
-                  
                 </Card>
               </div>
             ))}
