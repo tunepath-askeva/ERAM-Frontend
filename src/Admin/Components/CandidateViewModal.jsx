@@ -26,7 +26,7 @@ import {
   SafetyOutlined,
   IdcardOutlined,
 } from "@ant-design/icons";
-import { useGetCandidateByIdQuery } from "../../Slices/Admin/AdminApis";
+import { useGetCandidateByIdQuery } from "../../Slices/Admin/AdminApis.js";
 
 const { Paragraph, Text } = Typography;
 const { useBreakpoint } = Grid;

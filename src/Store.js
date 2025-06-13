@@ -3,7 +3,7 @@ import userAuthReducer from "./Slices/Users/UserSlice";
 import superAdminAuthReducer from "./Slices/SuperAdmin/SuperAdminSlice";
 import { userApi } from "./Slices/Users/UserApis";
 import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminApis";
-import { adminApi } from "./Slices/Admin/AdminApis";
+import { adminApi } from "./Slices/Admin/AdminApis.js";
 
 const store = configureStore({
   reducer: {

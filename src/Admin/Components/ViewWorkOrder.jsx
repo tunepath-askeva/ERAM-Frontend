@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useGetWorkOrderByIdQuery } from "../../Slices/Admin/AdminApis";
+import { useGetWorkOrderByIdQuery } from "../../Slices/Admin/AdminApis.js";
 import {
   Card,
   Spin,

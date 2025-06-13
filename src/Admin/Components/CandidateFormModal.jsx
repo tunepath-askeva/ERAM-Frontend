@@ -14,7 +14,7 @@ import {
 import { 
   useAddCandidateMutation, 
   useEditCandidateMutation 
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 
 const { Option } = Select;
 

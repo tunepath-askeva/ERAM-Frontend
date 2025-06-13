@@ -11,7 +11,7 @@ import {
   useAddProjectMutation,
   useEditProjectMutation,
   useGetAdminBranchQuery,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 
 const { Text } = Typography;
 const { TextArea } = Input;

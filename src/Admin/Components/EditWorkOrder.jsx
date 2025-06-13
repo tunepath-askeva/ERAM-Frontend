@@ -42,7 +42,7 @@ import {
   useEditWorkOrderMutation,
   useGetAdminBranchQuery,
   useGetWorkOrderByIdQuery,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
 
 const { TextArea } = Input;

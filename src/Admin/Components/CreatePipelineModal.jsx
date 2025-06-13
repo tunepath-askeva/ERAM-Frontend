@@ -35,7 +35,7 @@ import {
   useEditPipelineMutation,
   useEditStageMutation,
   useDeleteStageMutation
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;

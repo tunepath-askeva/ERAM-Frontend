@@ -56,7 +56,7 @@ import {
   useDeleteCandidateMutation,
   useGetCandidateByIdQuery,
   useDisableCandidateStatusMutation,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 import CandidateFormModal from "../Components/CandidateFormModal";
 import CandidateViewModal from "../Components/CandidateViewModal";
 

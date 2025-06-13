@@ -42,7 +42,7 @@ import {
   useDeletePipelineMutation,
   useGetPipelineByIdQuery,
   useDisablePipelineMutation,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal";
 import "../../index.css";
 
