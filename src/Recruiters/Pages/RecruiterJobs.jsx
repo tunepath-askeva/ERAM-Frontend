@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
-  Table,
   Button,
   Tag,
   Space,
@@ -9,7 +8,6 @@ import {
   Form,
   Input,
   Select,
-  Switch,
   Tooltip,
   Drawer,
   Divider,
@@ -18,9 +16,13 @@ import {
   Typography,
   Badge,
   Avatar,
-  Dropdown,
   message,
   Popconfirm,
+  Spin,
+  Empty,
+  Progress,
+  Skeleton,
+  Result
 } from "antd";
 import {
   EyeOutlined,
@@ -36,122 +38,99 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
+  SearchOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import { useGetRecruiterJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+const { Search } = Input;
 
 const RecruiterJobs = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [deactivateModalVisible, setDeactivateModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [form] = Form.useForm();
 
-  const { data } = useGetRecruiterJobsQuery();
-
-  // Mock data for jobs
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      title: "Senior Frontend Developer",
-      company: "TechCorp Inc.",
-      location: "San Francisco, CA",
-      type: "Full-time",
-      salary: "$120k - $150k",
-      status: "active",
-      applications: 24,
-      pipeline: "Standard Tech Pipeline",
-      stages: [
-        "Application Review",
-        "Phone Screen",
-        "Technical Interview",
-        "Final Interview",
-        "Offer",
-      ],
-      postedDate: "2024-06-10",
-      deadline: "2024-07-10",
-      description:
-        "We are looking for a Senior Frontend Developer to join our dynamic team...",
-      requirements: [
-        "5+ years React experience",
-        "TypeScript proficiency",
-        "GraphQL knowledge",
-      ],
-      assignedBy: "John Smith",
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      company: "StartupXYZ",
-      location: "Remote",
-      type: "Full-time",
-      salary: "$100k - $130k",
-      status: "active",
-      applications: 18,
-      pipeline: "Product Management Pipeline",
-      stages: [
-        "Resume Review",
-        "Product Case Study",
-        "Stakeholder Interview",
-        "Final Decision",
-      ],
-      postedDate: "2024-06-08",
-      deadline: "2024-07-15",
-      description:
-        "Join our product team to drive innovation and user experience...",
-      requirements: [
-        "3+ years PM experience",
-        "Data-driven mindset",
-        "Agile methodologies",
-      ],
-      assignedBy: "Sarah Johnson",
-    },
-    {
-      id: 3,
-      title: "DevOps Engineer",
-      company: "CloudSolutions",
-      location: "New York, NY",
-      type: "Contract",
-      salary: "$90k - $110k",
-      status: "inactive",
-      applications: 12,
-      pipeline: "DevOps Pipeline",
-      stages: [
-        "Technical Screening",
-        "System Design",
-        "Culture Fit",
-        "Reference Check",
-      ],
-      postedDate: "2024-06-05",
-      deadline: "2024-06-30",
-      description:
-        "Looking for a DevOps Engineer to optimize our cloud infrastructure...",
-      requirements: [
-        "AWS expertise",
-        "Kubernetes experience",
-        "CI/CD pipelines",
-      ],
-      assignedBy: "Mike Davis",
-    },
-  ]);
-
-  const [availablePipelines] = useState([
-    "Standard Tech Pipeline",
-    "Product Management Pipeline",
-    "DevOps Pipeline",
-    "Sales Pipeline",
-    "Marketing Pipeline",
-    "Executive Pipeline",
-  ]);
+  const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
 
   const primaryColor = "#da2c46";
   const gradientButton = "linear-gradient(135deg, #da2c46 70%, #a51632 100%)";
 
+  // Transform API data to match component structure
+  const jobs = useMemo(() => {
+    if (!apiData?.jobs) return [];
+
+    return apiData.jobs.map((job) => ({
+      id: job._id,
+      title: job.title,
+      company: job.project?.name || "Company Name",
+      location: job.officeLocation || job.workplace,
+      type: job.EmploymentType,
+      salary:
+        job.salaryType === "annual"
+          ? `$${parseInt(job.annualSalary).toLocaleString()}/year`
+          : job.annualSalary,
+      status: job.isActive,
+      applications: job.numberOfCandidate || 0,
+      pipeline: job.pipeline?.[0]?.name || "No Pipeline",
+      stages: job.pipeline?.[0]?.stages?.map((stage) => stage.name) || [],
+      postedDate: new Date(job.createdAt).toLocaleDateString(),
+      deadline: new Date(job.deadlineDate).toLocaleDateString(),
+      startDate: new Date(job.startDate).toLocaleDateString(),
+      endDate: new Date(job.endDate).toLocaleDateString(),
+      description: job.description,
+      requirements:
+        job.jobRequirements?.split("\n").filter((req) => req.trim()) || [],
+      requiredSkills: job.requiredSkills || [],
+      benefits: job.benefits || [],
+      jobCode: job.jobCode,
+      workplace: job.workplace,
+      experience: job.Experience,
+      education: job.Education,
+      jobFunction: job.jobFunction,
+      industry: job.companyIndustry,
+      assignedBy: job.createdBy,
+      customFields: job.customFields || [],
+      pipelineData: job.pipeline || [],
+    }));
+  }, [apiData]);
+
+  // Filter jobs based on search and status
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      const matchesSearch =
+        job.title.toLowerCase().includes(searchText.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchText.toLowerCase()) ||
+        job.location.toLowerCase().includes(searchText.toLowerCase());
+
+      const matchesStatus =
+        filterStatus === "all" || job.status === filterStatus;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [jobs, searchText, filterStatus]);
+
   const getStatusColor = (status) => {
     return status === "active" ? "#52c41a" : "#ff4d4f";
+  };
+
+  const getWorkplaceIcon = (workplace) => {
+    switch (workplace) {
+      case "remote":
+        return "🏠";
+      case "on-site":
+        return "🏢";
+      case "hybrid":
+        return "🔄";
+      default:
+        return "📍";
+    }
   };
 
   const handleViewJob = (job) => {
@@ -174,10 +153,8 @@ const RecruiterJobs = () => {
   };
 
   const handleActivateJob = (jobId) => {
-    setJobs(
-      jobs.map((job) => (job.id === jobId ? { ...job, status: "active" } : job))
-    );
-    message.success("Job activated successfully");
+    // Here you would call your API to activate the job
+    message.success("Job activation request sent");
   };
 
   const handleSaveEdit = () => {
@@ -185,152 +162,58 @@ const RecruiterJobs = () => {
       message.error("Please select a pipeline and add stages");
       return;
     }
-
-    setJobs(
-      jobs.map((job) =>
-        job.id === selectedJob.id
-          ? {
-              ...job,
-              pipeline: selectedJob.pipeline,
-              stages: selectedJob.stages,
-            }
-          : job
-      )
-    );
+    // Here you would call your API to update the job
     setEditModalVisible(false);
     message.success("Job updated successfully");
   };
 
   const handleConfirmDeactivation = () => {
-    // Simulate sending confirmation to admin
-    message.info(
-      `Deactivation request sent to ${selectedJob.assignedBy} for approval`
-    );
+    // Here you would call your API to deactivate the job
+    message.info(`Deactivation request sent for approval`);
     setDeactivateModalVisible(false);
   };
 
-  const columns = [
-    {
-      title: "Job Title",
-      dataIndex: "title",
-      key: "title",
-      render: (text, record) => (
-        <div>
-          <Text strong style={{ color: primaryColor, fontSize: "16px" }}>
-            {text}
-          </Text>
-          <br />
-          <Text type="secondary">{record.company}</Text>
-        </div>
-      ),
-    },
-    {
-      title: "Details",
-      key: "details",
-      render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <Text>
-            <EnvironmentOutlined /> {record.location}
-          </Text>
-          <Text>
-            <DollarOutlined /> {record.salary}
-          </Text>
-          <Text>
-            <CalendarOutlined /> {record.type}
-          </Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Applications",
-      dataIndex: "applications",
-      key: "applications",
-      render: (count) => (
-        <Badge count={count} style={{ backgroundColor: primaryColor }}>
-          <Avatar icon={<TeamOutlined />} />
-        </Badge>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <Tag
-          color={getStatusColor(status)}
-          icon={
-            status === "active" ? (
-              <CheckCircleOutlined />
-            ) : (
-              <ClockCircleOutlined />
-            )
-          }
-        >
-          {status.toUpperCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: "Pipeline",
-      dataIndex: "pipeline",
-      key: "pipeline",
-      render: (pipeline) => (
-        <Text style={{ color: primaryColor }}>{pipeline}</Text>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View Details">
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Skeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "16px", minHeight: "100vh" }}>
+        <Result
+          status="404"
+          title="Failed to Load Jobs"
+          subTitle={"Something went wrong while fetching jobs."}
+          extra={[
             <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewJob(record)}
-              style={{ color: primaryColor }}
-            />
-          </Tooltip>
-          <Tooltip title="Edit Pipeline">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => handleEditJob(record)}
-              style={{ color: primaryColor }}
-            />
-          </Tooltip>
-          {record.status === "active" ? (
-            <Tooltip title="Deactivate Job">
-              <Button
-                type="text"
-                icon={<PoweroffOutlined />}
-                onClick={() => handleDeactivateJob(record)}
-                style={{ color: "#ff4d4f" }}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip title="Activate Job">
-              <Popconfirm
-                title="Activate this job?"
-                onConfirm={() => handleActivateJob(record.id)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button
-                  type="text"
-                  icon={<CheckCircleOutlined />}
-                  style={{ color: "#52c41a" }}
-                />
-              </Popconfirm>
-            </Tooltip>
-          )}
-        </Space>
-      ),
-    },
-  ];
+              type="primary"
+              onClick={() => window.location.reload()}
+              key="retry"
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              }}
+            >
+              Retry
+            </Button>,
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: "24px", background: "#f5f5f5", minHeight: "100vh" }}>
+    <div style={{ padding: "24px", minHeight: "100vh" }}>
       {/* Header */}
       <Row
         justify="space-between"
@@ -355,28 +238,235 @@ const RecruiterJobs = () => {
         </Col>
       </Row>
 
-      {/* Jobs Table */}
+      {/* Search and Filter Bar */}
       <Card
-        bordered={false}
         style={{
+          marginBottom: "24px",
           borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <Table
-          columns={columns}
-          dataSource={jobs}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} jobs`,
-          }}
-          style={{ marginTop: "16px" }}
-        />
+        <Row gutter={16} align="middle">
+          <Col flex="auto">
+            <Search
+              placeholder="Search jobs by title, company, or location..."
+              allowClear
+              size="large"
+              prefix={<SearchOutlined style={{ color: primaryColor }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: "100%" }}
+            />
+          </Col>
+          <Col>
+            <Select
+              placeholder="Filter by status"
+              size="large"
+              style={{ width: 150 }}
+              value={filterStatus}
+              onChange={setFilterStatus}
+              suffixIcon={<FilterOutlined style={{ color: primaryColor }} />}
+            >
+              <Option value="all">All Status</Option>
+              <Option value="active">Active</Option>
+              <Option value="inactive">Inactive</Option>
+            </Select>
+          </Col>
+        </Row>
       </Card>
+
+      {/* Jobs List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {filteredJobs.length === 0 ? (
+          <Card style={{ borderRadius: "12px" }}>
+            <Empty description="No jobs found matching your criteria" />
+          </Card>
+        ) : (
+          filteredJobs.map((job) => (
+            <Card
+              key={job.id}
+              hoverable
+              style={{
+                borderRadius: "12px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                border: `1px solid ${
+                  job.status === "active" ? "#e6f7ff" : "#fff2f0"
+                }`,
+                transition: "all 0.3s ease",
+              }}
+              bodyStyle={{ padding: "20px" }}
+            >
+              <Row align="middle" justify="space-between">
+                <Col flex="auto">
+                  <Row gutter={[24, 16]}>
+                    {/* Job Title and Company */}
+                    <Col xs={24} sm={12} md={8}>
+                      <div>
+                        <Title
+                          level={4}
+                          style={{
+                            margin: 0,
+                            color: primaryColor,
+                            fontSize: "18px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {job.title}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: "14px" }}>
+                          {job.company}
+                        </Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          Job Code: {job.jobCode}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    {/* Job Details */}
+                    <Col xs={24} sm={12} md={8}>
+                      <Space direction="vertical" size="small">
+                        <Text style={{ fontSize: "13px" }}>
+                          <span style={{ marginRight: "8px" }}>
+                            {getWorkplaceIcon(job.workplace)}
+                          </span>
+                          {job.location} • {job.workplace}
+                        </Text>
+                        <Text style={{ fontSize: "13px" }}>
+                          <DollarOutlined
+                            style={{ color: primaryColor, marginRight: "6px" }}
+                          />
+                          {job.salary}
+                        </Text>
+                        <Text style={{ fontSize: "13px" }}>
+                          <CalendarOutlined
+                            style={{ color: primaryColor, marginRight: "6px" }}
+                          />
+                          {job.type} • {job.experience} years exp
+                        </Text>
+                      </Space>
+                    </Col>
+
+                    {/* Pipeline and Applications */}
+                    <Col xs={24} sm={12} md={8}>
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: "100%" }}
+                      >
+                        <div>
+                          <Text
+                            strong
+                            style={{ color: primaryColor, fontSize: "13px" }}
+                          >
+                            {job.pipeline}
+                          </Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {job.stages.length} stages
+                          </Text>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Badge
+                            count={job.applications}
+                            style={{ backgroundColor: primaryColor }}
+                            size="small"
+                          >
+                            <Avatar size="small" icon={<TeamOutlined />} />
+                          </Badge>
+                          <Text style={{ fontSize: "12px" }}>
+                            {job.applications} applications
+                          </Text>
+                        </div>
+                      </Space>
+                    </Col>
+                  </Row>
+
+                  {/* Job Meta Info */}
+                  <Row style={{ marginTop: "12px" }} align="middle">
+                    <Col flex="auto">
+                      <Space size="small">
+                        <Tag
+                          color={getStatusColor(job.status)}
+                          icon={
+                            job.status === "active" ? (
+                              <CheckCircleOutlined />
+                            ) : (
+                              <ClockCircleOutlined />
+                            )
+                          }
+                          style={{ fontSize: "11px" }}
+                        >
+                          {job.status.toUpperCase()}
+                        </Tag>
+                        <Text type="secondary" style={{ fontSize: "11px" }}>
+                          Posted: {job.postedDate}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: "11px" }}>
+                          Deadline: {job.deadline}
+                        </Text>
+                      </Space>
+                    </Col>
+                  </Row>
+                </Col>
+
+                {/* Action Buttons */}
+                <Col>
+                  <Space>
+                    <Tooltip title="View Details">
+                      <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewJob(job)}
+                        style={{ color: primaryColor }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="Edit Pipeline">
+                      <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditJob(job)}
+                        style={{ color: primaryColor }}
+                      />
+                    </Tooltip>
+                    {job.status === "active" ? (
+                      <Tooltip title="Request Deactivation">
+                        <Button
+                          type="text"
+                          icon={<PoweroffOutlined />}
+                          onClick={() => handleDeactivateJob(job)}
+                          style={{ color: "#ff4d4f" }}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Request Activation">
+                        <Popconfirm
+                          title="Request activation for this job?"
+                          onConfirm={() => handleActivateJob(job.id)}
+                          okText="Yes"
+                          cancelText="No"
+                        >
+                          <Button
+                            type="text"
+                            icon={<CheckCircleOutlined />}
+                            style={{ color: "#52c41a" }}
+                          />
+                        </Popconfirm>
+                      </Tooltip>
+                    )}
+                  </Space>
+                </Col>
+              </Row>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Job Details Drawer */}
       <Drawer
@@ -389,7 +479,7 @@ const RecruiterJobs = () => {
             <Text type="secondary">{selectedJob?.company}</Text>
           </div>
         }
-        width={600}
+        width={700}
         onClose={() => setViewDrawerVisible(false)}
         open={viewDrawerVisible}
         extra={
@@ -402,12 +492,66 @@ const RecruiterJobs = () => {
       >
         {selectedJob && (
           <div>
-            <Row gutter={[16, 16]}>
+            {/* Job Overview Cards */}
+            <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+              <Col span={8}>
+                <Card
+                  size="small"
+                  style={{ background: "#fafafa", textAlign: "center" }}
+                >
+                  <Text type="secondary">Applications</Text>
+                  <br />
+                  <Text
+                    strong
+                    style={{ fontSize: "20px", color: primaryColor }}
+                  >
+                    {selectedJob.applications}
+                  </Text>
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card
+                  size="small"
+                  style={{ background: "#fafafa", textAlign: "center" }}
+                >
+                  <Text type="secondary">Experience Required</Text>
+                  <br />
+                  <Text
+                    strong
+                    style={{ fontSize: "20px", color: primaryColor }}
+                  >
+                    {selectedJob.experience} yrs
+                  </Text>
+                </Card>
+              </Col>
+              <Col span={8}>
+                <Card
+                  size="small"
+                  style={{ background: "#fafafa", textAlign: "center" }}
+                >
+                  <Text type="secondary">Education</Text>
+                  <br />
+                  <Text
+                    strong
+                    style={{ fontSize: "16px", color: primaryColor }}
+                  >
+                    {selectedJob.education}
+                  </Text>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Job Details Grid */}
+            <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
               <Col span={12}>
                 <Card size="small" style={{ background: "#fafafa" }}>
-                  <Text type="secondary">Location</Text>
+                  <Text type="secondary">Location & Type</Text>
                   <br />
                   <Text strong>{selectedJob.location}</Text>
+                  <br />
+                  <Text>
+                    {selectedJob.workplace} • {selectedJob.type}
+                  </Text>
                 </Card>
               </Col>
               <Col span={12}>
@@ -419,14 +563,16 @@ const RecruiterJobs = () => {
               </Col>
               <Col span={12}>
                 <Card size="small" style={{ background: "#fafafa" }}>
-                  <Text type="secondary">Applications</Text>
+                  <Text type="secondary">Duration</Text>
                   <br />
-                  <Text strong>{selectedJob.applications}</Text>
+                  <Text strong>
+                    {selectedJob.startDate} - {selectedJob.endDate}
+                  </Text>
                 </Card>
               </Col>
               <Col span={12}>
                 <Card size="small" style={{ background: "#fafafa" }}>
-                  <Text type="secondary">Deadline</Text>
+                  <Text type="secondary">Application Deadline</Text>
                   <br />
                   <Text strong>{selectedJob.deadline}</Text>
                 </Card>
@@ -435,6 +581,7 @@ const RecruiterJobs = () => {
 
             <Divider />
 
+            {/* Job Description */}
             <div style={{ marginBottom: "20px" }}>
               <Title level={4} style={{ color: primaryColor }}>
                 Job Description
@@ -442,17 +589,51 @@ const RecruiterJobs = () => {
               <Paragraph>{selectedJob.description}</Paragraph>
             </div>
 
-            <div style={{ marginBottom: "20px" }}>
-              <Title level={4} style={{ color: primaryColor }}>
-                Requirements
-              </Title>
-              <ul>
-                {selectedJob.requirements?.map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
-            </div>
+            {/* Requirements */}
+            {selectedJob.requirements.length > 0 && (
+              <div style={{ marginBottom: "20px" }}>
+                <Title level={4} style={{ color: primaryColor }}>
+                  Requirements
+                </Title>
+                <ul>
+                  {selectedJob.requirements.map((req, index) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
+            {/* Required Skills */}
+            {selectedJob.requiredSkills.length > 0 && (
+              <div style={{ marginBottom: "20px" }}>
+                <Title level={4} style={{ color: primaryColor }}>
+                  Required Skills
+                </Title>
+                <Space wrap>
+                  {selectedJob.requiredSkills.map((skill, index) => (
+                    <Tag key={index} style={{ padding: "4px 8px" }}>
+                      {skill}
+                    </Tag>
+                  ))}
+                </Space>
+              </div>
+            )}
+
+            {/* Benefits */}
+            {selectedJob.benefits.length > 0 && (
+              <div style={{ marginBottom: "20px" }}>
+                <Title level={4} style={{ color: primaryColor }}>
+                  Benefits
+                </Title>
+                <ul>
+                  {selectedJob.benefits.map((benefit, index) => (
+                    <li key={index}>{benefit}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Pipeline Information */}
             <div style={{ marginBottom: "20px" }}>
               <Title level={4} style={{ color: primaryColor }}>
                 Recruitment Pipeline
@@ -462,7 +643,11 @@ const RecruiterJobs = () => {
                 {selectedJob.stages?.map((stage, index) => (
                   <Tag
                     key={index}
-                    style={{ margin: "4px", padding: "4px 8px" }}
+                    style={{
+                      margin: "4px",
+                      padding: "6px 12px",
+                      borderRadius: "16px",
+                    }}
                   >
                     {index + 1}. {stage}
                   </Tag>
@@ -470,9 +655,27 @@ const RecruiterJobs = () => {
               </div>
             </div>
 
-            <div>
-              <Text type="secondary">Assigned by: </Text>
-              <Text strong>{selectedJob.assignedBy}</Text>
+            {/* Job Meta Information */}
+            <div
+              style={{
+                background: "#f6f6f6",
+                padding: "16px",
+                borderRadius: "8px",
+                marginTop: "20px",
+              }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Text type="secondary">Job Function:</Text>
+                  <br />
+                  <Text strong>{selectedJob.jobFunction}</Text>
+                </Col>
+                <Col span={12}>
+                  <Text type="secondary">Industry:</Text>
+                  <br />
+                  <Text strong>{selectedJob.industry}</Text>
+                </Col>
+              </Row>
             </div>
           </div>
         )}
@@ -498,7 +701,7 @@ const RecruiterJobs = () => {
               border: "none",
               color: "white",
             }}
-            onClick={() => form.submit()}
+            onClick={handleSaveEdit}
           >
             Save Changes
           </Button>,
@@ -508,46 +711,22 @@ const RecruiterJobs = () => {
         <div style={{ padding: "20px 0" }}>
           <div style={{ marginBottom: "20px" }}>
             <Text strong style={{ display: "block", marginBottom: "8px" }}>
-              Select Pipeline
+              Current Pipeline
             </Text>
-            <Select
-              placeholder="Choose a pipeline"
-              style={{ width: "100%" }}
-              value={selectedJob?.pipeline}
-              onChange={(value) => {
-                setSelectedJob((prev) => ({ ...prev, pipeline: value }));
-              }}
-            >
-              {availablePipelines.map((pipeline) => (
-                <Option key={pipeline} value={pipeline}>
-                  {pipeline}
-                </Option>
-              ))}
-            </Select>
+            <Text>{selectedJob?.pipeline}</Text>
           </div>
 
           <div style={{ marginBottom: "20px" }}>
             <Text strong style={{ display: "block", marginBottom: "8px" }}>
-              Pipeline Stages
+              Current Stages
             </Text>
-            <Select
-              mode="tags"
-              placeholder="Add or modify stages"
-              tokenSeparators={[","]}
-              style={{ width: "100%" }}
-              value={selectedJob?.stages}
-              onChange={(value) => {
-                setSelectedJob((prev) => ({ ...prev, stages: value }));
-              }}
-            >
-              <Option value="Application Review">Application Review</Option>
-              <Option value="Phone Screen">Phone Screen</Option>
-              <Option value="Technical Interview">Technical Interview</Option>
-              <Option value="Final Interview">Final Interview</Option>
-              <Option value="Offer">Offer</Option>
-              <Option value="Reference Check">Reference Check</Option>
-              <Option value="Culture Fit">Culture Fit</Option>
-            </Select>
+            <Space wrap>
+              {selectedJob?.stages?.map((stage, index) => (
+                <Tag key={index}>
+                  {index + 1}. {stage}
+                </Tag>
+              ))}
+            </Space>
           </div>
 
           <div
@@ -558,8 +737,8 @@ const RecruiterJobs = () => {
             }}
           >
             <Text type="secondary" style={{ fontSize: "12px" }}>
-              💡 Tip: You can add custom stages by typing and pressing Enter, or
-              select from existing templates
+              💡 Pipeline editing functionality will be implemented based on
+              your backend API endpoints
             </Text>
           </div>
         </div>
@@ -597,9 +776,7 @@ const RecruiterJobs = () => {
           <br />
           <br />
           <Text type="secondary">
-            A confirmation request will be sent to{" "}
-            <Text strong>{selectedJob?.assignedBy}</Text> who assigned this job
-            to you.
+            A confirmation request will be sent to the admin for approval.
           </Text>
 
           <div

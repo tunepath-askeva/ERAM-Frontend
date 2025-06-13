@@ -13,7 +13,6 @@ export const recruiterApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    //Recruiter Jobs
     getRecruiterJobs: builder.query({
       query: () => ({
         url: "/recruiter",
