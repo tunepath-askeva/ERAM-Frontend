@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import userAuthReducer from "./Slices/Users/UserSlice";
 import superAdminAuthReducer from "./Slices/SuperAdmin/SuperAdminSlice";
 import { userApi } from "./Slices/Users/UserApis";
-import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminAPIs";
+import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminApis";
 import { adminApi } from "./Slices/Admin/AdminApis";
 
 const store = configureStore({
