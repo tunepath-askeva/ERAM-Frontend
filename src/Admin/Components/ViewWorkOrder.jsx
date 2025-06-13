@@ -65,7 +65,7 @@ const ViewWorkOrder = () => {
         <h3
           style={{
             margin: "0 0 12px 0",
-            color: "#1890ff",
+            color: " #da2c46",
             fontSize: "18px",
             fontWeight: "600",
             wordBreak: "break-word",
@@ -491,7 +491,7 @@ const ViewWorkOrder = () => {
       <h3
         style={{
           margin: "0 0 12px 0",
-          color: "#1890ff",
+          color: " #da2c46",
           fontSize: "18px",
           fontWeight: "600",
           wordBreak: "break-word",
@@ -585,7 +585,7 @@ const ViewWorkOrder = () => {
         >
           <Title
             level={4}
-            style={{ margin: "0", fontSize: "16px", color: "#1890ff" }}
+            style={{ margin: "0", fontSize: "16px", color: " #da2c46" }}
           >
             Work Order Details
           </Title>
@@ -599,23 +599,24 @@ const ViewWorkOrder = () => {
             style={{
               "& .ant-tabs-content-holder": {
                 padding: "8px 0",
+                
               },
             }}
           >
             <TabPane
-              tab={<span style={{ fontSize: "13px" }}>Overview</span>}
+              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Overview</span>}
               key="overview"
             >
               {renderJobOverview()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px" }}>Application Form</span>}
+              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Application Form</span>}
               key="application"
             >
               {renderApplicationForm()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px" }}>Pipeline Stages</span>}
+              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Pipeline Stages</span>}
               key="pipeline"
             >
               {renderPipelineStages()}

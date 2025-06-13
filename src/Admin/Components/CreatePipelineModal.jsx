@@ -29,16 +29,199 @@ import {
   SettingOutlined,
   SaveOutlined,
   ExclamationCircleOutlined,
+  DragOutlined,
 } from "@ant-design/icons";
-import { 
-  useAddPipelineMutation, 
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  useAddPipelineMutation,
   useEditPipelineMutation,
   useEditStageMutation,
-  useDeleteStageMutation
+  useDeleteStageMutation,
 } from "../../Slices/Admin/AdminApis.js";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+// Sortable Stage Item Component
+function SortableStageItem({
+  stage,
+  index,
+  onEdit,
+  onDelete,
+  isEditMode,
+  isEditingStageAPI,
+  isDeletingStage,
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: stage.id || `stage-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <Col xs={24} sm={12} lg={8}>
+      <div ref={setNodeRef} style={style}>
+        <Card
+          size="small"
+          style={{
+            borderRadius: "12px",
+            boxShadow: isDragging
+              ? "0 8px 24px rgba(0, 0, 0, 0.15)"
+              : "0 4px 16px rgba(0, 0, 0, 0.08)",
+            border: isDragging ? "2px solid #da2c46" : "2px solid #e8f4fd",
+            transition: "all 0.3s ease",
+            cursor: isDragging ? "grabbing" : "pointer",
+            transform: isDragging ? "rotate(2deg)" : "none",
+          }}
+          onMouseEnter={(e) => {
+            if (!isDragging) {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow =
+                "0 8px 24px rgba(0, 0, 0, 0.12)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isDragging) {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow =
+                "0 4px 16px rgba(0, 0, 0, 0.08)";
+            }
+          }}
+          title={
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <div
+                {...attributes}
+                {...listeners}
+                style={{
+                  cursor: isDragging ? "grabbing" : "grab",
+                  padding: "4px 8px",
+                  background: "#fff5f5",
+                  borderRadius: "4px",
+                  border: "1px solid #da2c47",
+                  color: "#da2c47",
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: "12px",
+                }}
+              >
+                <DragOutlined style={{ marginRight: "4px" }} />
+                Drag
+              </div>
+              <Tag
+                color="blue"
+                style={{
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+              >
+                #{stage.order}
+              </Tag>
+              <Text strong style={{ fontSize: "14px" }}>
+                {stage.name}
+              </Text>
+              {isEditMode && stage._id && (
+                <Tag color="green" style={{ fontSize: "10px" }}>
+                  Saved
+                </Tag>
+              )}
+            </div>
+          }
+          extra={
+            <Space>
+              <Tooltip title="Edit Stage">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(index)}
+                  style={{ borderRadius: "6px" }}
+                  loading={isEditingStageAPI}
+                />
+              </Tooltip>
+              <Tooltip title="Delete Stage">
+                <Popconfirm
+                  title="Delete Stage"
+                  description={
+                    isEditMode && stage._id
+                      ? "This will permanently delete the stage from the database. Are you sure?"
+                      : "Are you sure you want to remove this stage?"
+                  }
+                  icon={<ExclamationCircleOutlined style={{ color: "red" }} />}
+                  onConfirm={() => onDelete(index)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{
+                    danger: true,
+                    loading: isDeletingStage,
+                  }}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    style={{ borderRadius: "6px" }}
+                    loading={isDeletingStage}
+                  />
+                </Popconfirm>
+              </Tooltip>
+            </Space>
+          }
+        >
+          {stage.description && (
+            <Paragraph
+              type="secondary"
+              style={{
+                fontSize: "13px",
+                marginBottom: "8px",
+                lineHeight: "1.4",
+              }}
+            >
+              {stage.description}
+            </Paragraph>
+          )}
+          {stage.requiredDocuments && stage.requiredDocuments.length > 0 && (
+            <div
+              style={{
+                marginTop: "8px",
+                padding: "8px",
+                background: "#f8f9fa",
+                borderRadius: "6px",
+              }}
+            >
+              <Text style={{ fontSize: "12px" }}>
+                <FileTextOutlined style={{ marginRight: "4px" }} />
+                {stage.requiredDocuments.length} documents required
+              </Text>
+            </div>
+          )}
+        </Card>
+      </div>
+    </Col>
+  );
+}
 
 const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const [form] = Form.useForm();
@@ -58,7 +241,8 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
   const [editPipeline, { isLoading: isUpdating }] = useEditPipelineMutation();
   const [editStage, { isLoading: isEditingStageAPI }] = useEditStageMutation();
-  const [deleteStage, { isLoading: isDeletingStage }] = useDeleteStageMutation();
+  const [deleteStage, { isLoading: isDeletingStage }] =
+    useDeleteStageMutation();
 
   const commonDocuments = [
     "Resume/CV",
@@ -76,12 +260,18 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     "Passport",
   ];
 
-  // Initialize form with editing data
   useEffect(() => {
     if (editingPipeline && visible) {
       setIsEditMode(true);
       setPipelineName(editingPipeline.name);
-      setStages(editingPipeline.stages || []);
+      // Ensure each stage has a unique id for drag and drop
+      const stagesWithIds = (editingPipeline.stages || []).map(
+        (stage, index) => ({
+          ...stage,
+          id: stage._id || `temp-${index}`,
+        })
+      );
+      setStages(stagesWithIds);
       setCurrentStage({
         name: "",
         order: (editingPipeline.stages?.length || 0) + 1,
@@ -113,6 +303,82 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
   const handleCancel = () => {
     resetForm();
     onClose();
+  };
+
+  // Handle drag end event
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = stages.findIndex(
+      (stage) => (stage.id || `stage-${stages.indexOf(stage)}`) === active.id
+    );
+    const newIndex = stages.findIndex(
+      (stage) => (stage.id || `stage-${stages.indexOf(stage)}`) === over.id
+    );
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Reorder stages array
+    const reorderedStages = arrayMove(stages, oldIndex, newIndex);
+
+    // Update order numbers
+    const updatedStages = reorderedStages.map((stage, index) => ({
+      ...stage,
+      order: index + 1,
+    }));
+
+    setStages(updatedStages);
+
+    // If in edit mode, update stages in backend
+    if (isEditMode) {
+      try {
+        const updatePromises = updatedStages
+          .filter(
+            (stage) =>
+              stage._id &&
+              stage.order !== stages.find((s) => s._id === stage._id)?.order
+          )
+          .map((stage) => {
+            return editStage({
+              stageId: stage._id,
+              stageData: {
+                name: stage.name,
+                order: stage.order,
+                description: stage.description,
+                requiredDocuments: stage.requiredDocuments,
+              },
+            }).unwrap();
+          });
+
+        if (updatePromises.length > 0) {
+          await Promise.all(updatePromises);
+          message.success("Stages reordered successfully");
+        }
+      } catch (error) {
+        const errorMessage =
+          error?.data?.message || error?.message || "Failed to reorder stages";
+        message.error(errorMessage);
+        console.error("Reorder error:", error);
+        // Revert to original order on error
+        setStages(stages);
+      }
+    } else {
+      message.success("Stages reordered successfully");
+    }
+
+    // Update current stage order if not editing
+    if (!isEditingStage) {
+      setCurrentStage((prev) => ({
+        ...prev,
+        order: updatedStages.length + 1,
+      }));
+    }
   };
 
   const addDocument = () => {
@@ -150,10 +416,13 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
     const newStage = {
       ...currentStage,
       order: isEditingStage ? currentStage.order : stages.length + 1,
+      id:
+        isEditingStage && stages[editingIndex]?.id
+          ? stages[editingIndex].id
+          : `temp-${Date.now()}`,
     };
 
     if (isEditingStage) {
-      // If in edit mode and editing an existing stage with ID, call API
       if (isEditMode && stages[editingIndex]._id) {
         try {
           const stageData = {
@@ -165,27 +434,30 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
           await editStage({
             stageId: stages[editingIndex]._id,
-            stageData
+            stageData,
           }).unwrap();
 
           const updatedStages = [...stages];
-          updatedStages[editingIndex] = { ...stages[editingIndex], ...newStage };
+          updatedStages[editingIndex] = {
+            ...stages[editingIndex],
+            ...newStage,
+          };
           setStages(updatedStages);
           message.success("Stage updated successfully");
         } catch (error) {
-          const errorMessage = error?.data?.message || error?.message || "Failed to update stage";
+          const errorMessage =
+            error?.data?.message || error?.message || "Failed to update stage";
           message.error(errorMessage);
           console.error("Stage update error:", error);
           return;
         }
       } else {
-        // Local update for new stages or create mode
         const updatedStages = [...stages];
         updatedStages[editingIndex] = newStage;
         setStages(updatedStages);
         message.success("Stage updated successfully");
       }
-      
+
       setIsEditingStage(false);
       setEditingIndex(-1);
     } else {
@@ -209,36 +481,34 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
 
   const deleteStageHandler = async (index) => {
     const stageToDelete = stages[index];
-    
-    // If in edit mode and stage has an ID, call delete API
+
     if (isEditMode && stageToDelete._id) {
       try {
         await deleteStage(stageToDelete._id).unwrap();
         message.success("Stage deleted successfully from database");
       } catch (error) {
-        const errorMessage = error?.data?.message || error?.message || "Failed to delete stage";
+        const errorMessage =
+          error?.data?.message || error?.message || "Failed to delete stage";
         message.error(errorMessage);
         console.error("Stage delete error:", error);
         return;
       }
     }
 
-    // Remove from local state
     const updatedStages = stages.filter((_, i) => i !== index);
     const reorderedStages = updatedStages.map((stage, i) => ({
       ...stage,
       order: i + 1,
     }));
     setStages(reorderedStages);
-    
-    // Update current stage order if adding new stage
+
     if (!isEditingStage) {
-      setCurrentStage(prev => ({
+      setCurrentStage((prev) => ({
         ...prev,
-        order: reorderedStages.length + 1
+        order: reorderedStages.length + 1,
       }));
     }
-    
+
     if (!isEditMode || !stageToDelete._id) {
       message.success("Stage removed successfully");
     }
@@ -255,18 +525,21 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       return;
     }
 
+    // Remove temporary ids before sending to backend
+    const cleanedStages = stages.map(({ id, ...stage }) => stage);
+
     const pipelineData = {
       name: pipelineName.trim(),
-      stages: stages,
+      stages: cleanedStages,
     };
 
     try {
       let result;
-      
+
       if (isEditMode) {
         result = await editPipeline({
           pipelineId: editingPipeline._id,
-          pipelineData
+          pipelineData,
         }).unwrap();
         message.success("Pipeline updated successfully!");
       } else {
@@ -274,20 +547,29 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
         message.success("Pipeline created successfully!");
       }
 
-      console.log(`${isEditMode ? 'Updated' : 'Created'} pipeline:`, result);
+      console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
       resetForm();
       onClose();
     } catch (error) {
       const errorMessage =
-        error?.data?.message || 
-        error?.message || 
-        `Failed to ${isEditMode ? 'update' : 'create'} pipeline`;
+        error?.data?.message ||
+        error?.message ||
+        `Failed to ${isEditMode ? "update" : "create"} pipeline`;
       message.error(errorMessage);
-      console.error(`Pipeline ${isEditMode ? 'update' : 'creation'} error:`, error);
+      console.error(
+        `Pipeline ${isEditMode ? "update" : "creation"} error:`,
+        error
+      );
     }
   };
 
-  const isLoading = isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
+  const isLoading =
+    isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
+
+  // Create items array for SortableContext
+  const sortableItems = stages.map(
+    (stage, index) => stage.id || `stage-${index}`
+  );
 
   return (
     <Modal
@@ -315,8 +597,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       width={1000}
       footer={null}
       destroyOnClose
-      style={{ top: "20px",  padding: "24px", }}
-      
+      style={{ top: "20px", padding: "24px" }}
     >
       <div style={{ marginTop: "8px" }}>
         {/* Pipeline Name Section */}
@@ -331,9 +612,9 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ fontSize: "16px", color: "#2c3e50" }}>
               <FolderOpenOutlined
-                style={{ 
-                  marginRight: "8px", 
-                  color: "#da2c46" 
+                style={{
+                  marginRight: "8px",
+                  color: "#da2c46",
                 }}
               />
               Pipeline Information
@@ -349,11 +630,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               border: "2px solid #e8f4fd",
               fontSize: "16px",
             }}
-            prefix={
-              <EditOutlined 
-                style={{ color: "#da2c46" }} 
-              />
-            }
+            prefix={<EditOutlined style={{ color: "#da2c46" }} />}
           />
         </Card>
 
@@ -362,7 +639,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           style={{
             marginBottom: "20px",
             borderRadius: "12px",
-            background:"linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             border: "none",
           }}
         >
@@ -386,10 +663,9 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                   fontSize: "14px",
                 }}
               >
-                {isEditMode 
-                  ? "Modify your hiring process steps" 
-                  : "Build your hiring process step by step"
-                }
+                {isEditMode
+                  ? "Modify your hiring process steps - drag to reorder"
+                  : "Build your hiring process step by step - drag to reorder"}
               </Text>
             </div>
             <Badge
@@ -400,130 +676,33 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
           </div>
         </Card>
 
-        {/* Existing Stages */}
+        {/* Existing Stages with Drag & Drop */}
         {stages.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
-            <Row gutter={[16, 16]}>
-              {stages.map((stage, index) => (
-                <Col xs={24} sm={12} lg={8} key={index}>
-                  <Card
-                    size="small"
-                    style={{
-                      borderRadius: "12px",
-                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                      border: "2px solid #e8f4fd",
-                      transition: "all 0.3s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 8px 24px rgba(0, 0, 0, 0.12)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 16px rgba(0, 0, 0, 0.08)";
-                    }}
-                    title={
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        <Tag
-                          color="blue"
-                          style={{ borderRadius: "8px", fontSize: "12px" }}
-                        >
-                          #{stage.order}
-                        </Tag>
-                        <Text strong style={{ fontSize: "14px" }}>
-                          {stage.name}
-                        </Text>
-                        {isEditMode && stage._id && (
-                          <Tag color="green" style={{ fontSize: "10px" }}>
-                            Saved
-                          </Tag>
-                        )}
-                      </div>
-                    }
-                    extra={
-                      <Space>
-                        <Tooltip title="Edit Stage">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<EditOutlined />}
-                            onClick={() => editStageHandler(index)}
-                            style={{
-                              borderRadius: "6px",
-                            }}
-                            loading={isEditingStageAPI && editingIndex === index}
-                          />
-                        </Tooltip>
-                        <Tooltip title="Delete Stage">
-                          <Popconfirm
-                            title="Delete Stage"
-                            description={
-                              isEditMode && stage._id 
-                                ? "This will permanently delete the stage from the database. Are you sure?"
-                                : "Are you sure you want to remove this stage?"
-                            }
-                            icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
-                            onConfirm={() => deleteStageHandler(index)}
-                            okText="Yes"
-                            cancelText="No"
-                            okButtonProps={{ 
-                              danger: true,
-                              loading: isDeletingStage 
-                            }}
-                          >
-                            <Button
-                              type="text"
-                              size="small"
-                              danger
-                              icon={<DeleteOutlined />}
-                              style={{ borderRadius: "6px" }}
-                              loading={isDeletingStage}
-                            />
-                          </Popconfirm>
-                        </Tooltip>
-                      </Space>
-                    }
-                  >
-                    {stage.description && (
-                      <Paragraph
-                        type="secondary"
-                        style={{
-                          fontSize: "13px",
-                          marginBottom: "8px",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        {stage.description}
-                      </Paragraph>
-                    )}
-                    {stage.requiredDocuments.length > 0 && (
-                      <div
-                        style={{
-                          marginTop: "8px",
-                          padding: "8px",
-                          background: "#f8f9fa",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        <Text style={{ fontSize: "12px" }}>
-                          <FileTextOutlined style={{ marginRight: "4px" }} />
-                          {stage.requiredDocuments.length} documents required
-                        </Text>
-                      </div>
-                    )}
-                  </Card>
-                </Col>
-              ))}
-            </Row>
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortableItems}
+                strategy={verticalListSortingStrategy}
+              >
+                <Row gutter={[16, 16]}>
+                  {stages.map((stage, index) => (
+                    <SortableStageItem
+                      key={stage.id || `stage-${index}`}
+                      stage={stage}
+                      index={index}
+                      onEdit={editStageHandler}
+                      onDelete={deleteStageHandler}
+                      isEditMode={isEditMode}
+                      isEditingStageAPI={isEditingStageAPI}
+                      isDeletingStage={isDeletingStage}
+                    />
+                  ))}
+                </Row>
+              </SortableContext>
+            </DndContext>
           </div>
         )}
 
@@ -652,20 +831,32 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
                   <InfoCircleOutlined style={{ marginRight: "4px" }} />
                   Quick add common documents:
                 </Text>
-                <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                <div
+                  style={{
+                    marginTop: "8px",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "6px",
+                  }}
+                >
                   {commonDocuments.map((doc) => (
                     <Button
                       key={doc}
                       size="small"
-                      type={currentStage.requiredDocuments.includes(doc) ? "primary" : "default"}
+                      type={
+                        currentStage.requiredDocuments.includes(doc)
+                          ? "primary"
+                          : "default"
+                      }
                       onClick={() => selectCommonDocument(doc)}
                       style={{
                         borderRadius: "16px",
                         fontSize: "12px",
                         height: "28px",
-                        backgroundColor: currentStage.requiredDocuments.includes(doc) 
-                          ? "#da2c46"
-                          : undefined,
+                        backgroundColor:
+                          currentStage.requiredDocuments.includes(doc)
+                            ? "#da2c46"
+                            : undefined,
                       }}
                       disabled={currentStage.requiredDocuments.includes(doc)}
                     >
@@ -682,9 +873,17 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
               {currentStage.requiredDocuments.length > 0 && (
                 <div style={{ marginTop: "12px" }}>
                   <Text style={{ fontSize: "12px", color: "#666" }}>
-                    Selected documents ({currentStage.requiredDocuments.length}):
+                    Selected documents ({currentStage.requiredDocuments.length}
+                    ):
                   </Text>
-                  <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
                     {currentStage.requiredDocuments.map((doc, index) => (
                       <Tag
                         key={index}
@@ -779,7 +978,6 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             size="large"
             onClick={handleSubmit}
             loading={isCreating || isUpdating}
-            
             style={{
               borderRadius: "8px",
               minWidth: "140px",
@@ -789,10 +987,13 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
             }}
             icon={<SaveOutlined />}
           >
-            {(isCreating || isUpdating)
-              ? (isEditMode ? "Updating..." : "Creating...")
-              : (isEditMode ? "Update Pipeline" : "Create Pipeline")
-            }
+            {isCreating || isUpdating
+              ? isEditMode
+                ? "Updating..."
+                : "Creating..."
+              : isEditMode
+              ? "Update Pipeline"
+              : "Create Pipeline"}
           </Button>
         </div>
       </div>

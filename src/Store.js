@@ -4,6 +4,7 @@ import superAdminAuthReducer from "./Slices/SuperAdmin/SuperAdminSlice.js";
 import { userApi } from "./Slices/Users/UserApis.js";
 import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminApis.js";
 import { adminApi } from "./Slices/Admin/AdminApis.js";
+import { recruiterApi } from "./Slices/Recruiter/RecruiterApis.js";
 
 const store = configureStore({
   reducer: {
@@ -12,12 +13,14 @@ const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [superAdminApi.reducerPath]: superAdminApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [recruiterApi.reducerPath]: recruiterApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(userApi.middleware)
       .concat(superAdminApi.middleware)
-      .concat(adminApi.middleware),
+      .concat(adminApi.middleware)
+      .concat(recruiterApi.middleware),
   devTools: true,
 });
 

@@ -6,8 +6,8 @@ import {
   AppstoreOutlined,
   ApartmentOutlined,
   LogoutOutlined,
-  UserOutlined,
-  DeploymentUnitOutlined,
+  TranslationOutlined,
+  UsergroupDeleteOutlined,
   UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
@@ -42,7 +42,7 @@ const RecruiterSidebar = ({
   const [recruiterInfo, setRecruiterInfo] = useState({
     name: "Recruiter",
     email: "",
-    roles: "", // Added roles to the state
+    roles: "", 
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -62,22 +62,22 @@ const RecruiterSidebar = ({
     {
       key: "/recruiter/jobs",
       icon: <UnorderedListOutlined />,
-      label: "Work Order",
+      label: "Jobs",
     },
     {
       key: "/recruiter/candidates",
-      icon: <UserOutlined />,
-      label: "Recruiters",
-    },
-    {
-      key: "/recruiter/employees",
       icon: <UsergroupAddOutlined />,
       label: "Candidates",
     },
     {
+      key: "/recruiter/employees",
+      icon: <UsergroupDeleteOutlined />,
+      label: "Employees",
+    },
+    {
       key: "/recruiter/payroll",
-      icon: <ApartmentOutlined />,
-      label: "Pipeline",
+      icon: <TranslationOutlined />,
+      label: "Payroll",
     },
     
   ];
