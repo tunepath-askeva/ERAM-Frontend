@@ -17,6 +17,7 @@ import {
 } from "../../Slices/Admin/AdminApis";
 
 const { Option } = Select;
+
 const { TextArea } = Input;
 
 const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidate }) => {
