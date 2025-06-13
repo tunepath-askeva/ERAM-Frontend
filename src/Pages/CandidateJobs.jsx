@@ -47,6 +47,7 @@ import {
   DownOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useGetJobsByBranchQuery } from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -57,7 +58,7 @@ const mockJobs = [
   {
     _id: "1",
     title: "Backend Developer",
-    company: "Seekho",  
+    company: "Seekho",
     companyLogo: "https://via.placeholder.com/40",
     location: "Bengaluru, Karnataka, India",
     workType: "On-site",
@@ -66,8 +67,13 @@ const mockJobs = [
     salary: "₹8-15 LPA",
     postedDate: "2025-06-10",
     skills: ["Node.js", "MongoDB", "Express.js", "JavaScript"],
-    description: "We are looking for a skilled Backend Developer to join our growing team. You will be responsible for developing server-side logic, maintaining the central database, and ensuring high performance and responsiveness to requests from the front-end.",
-    requirements: ["2+ years of experience in backend development", "Strong knowledge of Node.js", "Experience with databases"],
+    description:
+      "We are looking for a skilled Backend Developer to join our growing team. You will be responsible for developing server-side logic, maintaining the central database, and ensuring high performance and responsiveness to requests from the front-end.",
+    requirements: [
+      "2+ years of experience in backend development",
+      "Strong knowledge of Node.js",
+      "Experience with databases",
+    ],
     category: "Technology",
     isRemote: false,
     isSaved: false,
@@ -84,8 +90,13 @@ const mockJobs = [
     salary: "₹15-25 LPA",
     postedDate: "2025-06-10",
     skills: ["Python", "SQL", "AWS", "Data Engineering"],
-    description: "Join our data team to build scalable data pipelines and analytics solutions. You will work with cutting-edge technologies to process and analyze large datasets.",
-    requirements: ["5+ years in data engineering", "Strong Python skills", "Cloud experience preferred"],
+    description:
+      "Join our data team to build scalable data pipelines and analytics solutions. You will work with cutting-edge technologies to process and analyze large datasets.",
+    requirements: [
+      "5+ years in data engineering",
+      "Strong Python skills",
+      "Cloud experience preferred",
+    ],
     category: "Engineering",
     isRemote: false,
     isSaved: true,
@@ -102,8 +113,13 @@ const mockJobs = [
     salary: "₹6-12 LPA",
     postedDate: "2025-06-10",
     skills: ["Adobe Creative Suite", "UI/UX", "Figma", "Branding"],
-    description: "Astrome Technologies is seeking a talented and creative Graphic Designer with 2+ years of experience to join our design team and create compelling visual content.",
-    requirements: ["2+ years of graphic design experience", "Proficiency in Adobe Creative Suite", "Strong portfolio"],
+    description:
+      "Astrome Technologies is seeking a talented and creative Graphic Designer with 2+ years of experience to join our design team and create compelling visual content.",
+    requirements: [
+      "2+ years of graphic design experience",
+      "Proficiency in Adobe Creative Suite",
+      "Strong portfolio",
+    ],
     category: "Design",
     isRemote: false,
     isSaved: false,
@@ -120,8 +136,13 @@ const mockJobs = [
     salary: "₹10-18 LPA",
     postedDate: "2025-03-10",
     skills: ["Sales", "Engineering", "B2B", "Technical Sales"],
-    description: "We are looking for a Sales Engineer to drive business growth in the Indian market. You will combine technical expertise with sales skills to help customers understand our solutions.",
-    requirements: ["3+ years in technical sales", "Engineering background", "Strong communication skills"],
+    description:
+      "We are looking for a Sales Engineer to drive business growth in the Indian market. You will combine technical expertise with sales skills to help customers understand our solutions.",
+    requirements: [
+      "3+ years in technical sales",
+      "Engineering background",
+      "Strong communication skills",
+    ],
     category: "Sales",
     isRemote: false,
     isSaved: false,
@@ -139,6 +160,8 @@ const CandidateJobs = () => {
   const [pageSize] = useState(6);
   const navigate = useNavigate();
 
+  const { data } = useGetJobsByBranchQuery();
+
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
@@ -149,22 +172,45 @@ const CandidateJobs = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchKeyword, locationFilter, workTypeFilter, employmentTypeFilter, experienceFilter, categoryFilter]);
+  }, [
+    searchKeyword,
+    locationFilter,
+    workTypeFilter,
+    employmentTypeFilter,
+    experienceFilter,
+    categoryFilter,
+  ]);
 
   const applyFilters = () => {
-    let filtered = jobs.filter(job => {
-      const matchesKeyword = !searchKeyword ||
+    let filtered = jobs.filter((job) => {
+      const matchesKeyword =
+        !searchKeyword ||
         job.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
         job.company.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        job.skills.some(skill => skill.toLowerCase().includes(searchKeyword.toLowerCase()));
+        job.skills.some((skill) =>
+          skill.toLowerCase().includes(searchKeyword.toLowerCase())
+        );
 
-      const matchesLocation = !locationFilter || job.location.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchesWorkType = !workTypeFilter || job.workType === workTypeFilter;
-      const matchesEmploymentType = !employmentTypeFilter || job.employmentType === employmentTypeFilter;
-      const matchesExperience = !experienceFilter || job.experience.includes(experienceFilter);
-      const matchesCategory = !categoryFilter || job.category === categoryFilter;
+      const matchesLocation =
+        !locationFilter ||
+        job.location.toLowerCase().includes(locationFilter.toLowerCase());
+      const matchesWorkType =
+        !workTypeFilter || job.workType === workTypeFilter;
+      const matchesEmploymentType =
+        !employmentTypeFilter || job.employmentType === employmentTypeFilter;
+      const matchesExperience =
+        !experienceFilter || job.experience.includes(experienceFilter);
+      const matchesCategory =
+        !categoryFilter || job.category === categoryFilter;
 
-      return matchesKeyword && matchesLocation && matchesWorkType && matchesEmploymentType && matchesExperience && matchesCategory;
+      return (
+        matchesKeyword &&
+        matchesLocation &&
+        matchesWorkType &&
+        matchesEmploymentType &&
+        matchesExperience &&
+        matchesCategory
+      );
     });
 
     setFilteredJobs(filtered);
@@ -187,16 +233,16 @@ const CandidateJobs = () => {
     setSavedJobs(newSavedJobs);
 
     // Update jobs state to reflect saved status
-    setJobs(prevJobs =>
-      prevJobs.map(j => ({
+    setJobs((prevJobs) =>
+      prevJobs.map((j) => ({
         ...j,
-        isSaved: j._id === job._id ? !j.isSaved : j.isSaved
+        isSaved: j._id === job._id ? !j.isSaved : j.isSaved,
       }))
     );
-    setFilteredJobs(prevJobs =>
-      prevJobs.map(j => ({
+    setFilteredJobs((prevJobs) =>
+      prevJobs.map((j) => ({
         ...j,
-        isSaved: j._id === job._id ? !j.isSaved : j.isSaved
+        isSaved: j._id === job._id ? !j.isSaved : j.isSaved,
       }))
     );
   };
@@ -240,11 +286,23 @@ const CandidateJobs = () => {
   const filterDropdownMenu = {
     items: [
       {
-        key: 'filters',
+        key: "filters",
         label: (
-          <div style={{ padding: '16px', minWidth: '280px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          <div
+            style={{ padding: "16px", minWidth: "280px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                }}
+              >
                 <Text strong style={{ fontSize: "16px", color: "#da2c46" }}>
                   Filter Jobs
                 </Text>
@@ -254,7 +312,9 @@ const CandidateJobs = () => {
               </div>
 
               <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>Work Type</Text>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Work Type
+                </Text>
                 <Select
                   placeholder="Select work type"
                   style={{ width: "100%" }}
@@ -269,7 +329,9 @@ const CandidateJobs = () => {
               </div>
 
               <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>Employment Type</Text>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Employment Type
+                </Text>
                 <Select
                   placeholder="Select employment type"
                   style={{ width: "100%" }}
@@ -285,7 +347,9 @@ const CandidateJobs = () => {
               </div>
 
               <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>Experience Level</Text>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Experience Level
+                </Text>
                 <Select
                   placeholder="Select experience"
                   style={{ width: "100%" }}
@@ -301,7 +365,9 @@ const CandidateJobs = () => {
               </div>
 
               <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>Category</Text>
+                <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                  Category
+                </Text>
                 <Select
                   placeholder="Select category"
                   style={{ width: "100%" }}
@@ -329,11 +395,17 @@ const CandidateJobs = () => {
       <div style={{ padding: "16px", minHeight: "100vh" }}>
         {/* Header */}
         <div style={{ marginBottom: "24px" }}>
-          <Title level={2} style={{ margin: 0, color: "#2c3e50", textAlign: "center" }}>
+          <Title
+            level={2}
+            style={{ margin: 0, color: "#2c3e50", textAlign: "center" }}
+          >
             <BulbOutlined style={{ marginRight: 8, color: "#da2c46" }} />
             Your Perfect Job Awaits
           </Title>
-          <Text type="secondary" style={{ display: "block", textAlign: "center", marginTop: 8 }}>
+          <Text
+            type="secondary"
+            style={{ display: "block", textAlign: "center", marginTop: 8 }}
+          >
             Browse opportunities that reflect your abilities and aspirations.
           </Text>
         </div>
@@ -370,7 +442,7 @@ const CandidateJobs = () => {
             <Col xs={12} sm={6} md={4} lg={4}>
               <Dropdown
                 menu={filterDropdownMenu}
-                trigger={['click']}
+                trigger={["click"]}
                 placement="bottomRight"
               >
                 <Button
@@ -379,7 +451,9 @@ const CandidateJobs = () => {
                 >
                   <FilterOutlined />
                   Filters
-                  <DownOutlined style={{ fontSize: "10px", marginLeft: "4px" }} />
+                  <DownOutlined
+                    style={{ fontSize: "10px", marginLeft: "4px" }}
+                  />
                   {getActiveFiltersCount() > 0 && (
                     <Badge
                       count={getActiveFiltersCount()}
@@ -402,7 +476,8 @@ const CandidateJobs = () => {
                 icon={<SearchOutlined />}
                 style={{
                   width: "100%",
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   border: "none",
                 }}
               >
@@ -415,7 +490,14 @@ const CandidateJobs = () => {
         {/* Active Filters Display */}
         {getActiveFiltersCount() > 0 && (
           <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
               <Text style={{ fontWeight: 500 }}>Active Filters:</Text>
               {workTypeFilter && (
                 <Tag
@@ -474,23 +556,50 @@ const CandidateJobs = () => {
           </div>
         ) : filteredJobs.length > 0 ? (
           <>
-            <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)" }}>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "12px",
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+              }}
+            >
               {getCurrentPageJobs().map((job, index) => (
                 <div
                   key={job._id}
                   style={{
                     padding: "20px 24px",
-                    borderBottom: index === getCurrentPageJobs().length - 1 ? "none" : "1px solid #f0f0f0",
+                    borderBottom:
+                      index === getCurrentPageJobs().length - 1
+                        ? "none"
+                        : "1px solid #f0f0f0",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                   }}
                   onClick={() => handleJobClick(job)}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#f8f9fa")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "transparent")
+                  }
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                    }}
+                  >
                     {/* Left Section - Company Logo & Job Info */}
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", flex: 1 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "16px",
+                        flex: 1,
+                      }}
+                    >
                       <Avatar
                         src={job.companyLogo}
                         size={48}
@@ -501,10 +610,25 @@ const CandidateJobs = () => {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Job Title & Company */}
                         <div style={{ marginBottom: "8px" }}>
-                          <Title level={4} style={{ margin: 0, fontSize: "18px", lineHeight: "24px", color: "#1a1a1a" }}>
+                          <Title
+                            level={4}
+                            style={{
+                              margin: 0,
+                              fontSize: "18px",
+                              lineHeight: "24px",
+                              color: "#1a1a1a",
+                            }}
+                          >
                             {job.title}
                           </Title>
-                          <Text style={{ fontSize: "14px", color: "#666", display: "block", marginTop: "2px" }}>
+                          <Text
+                            style={{
+                              fontSize: "14px",
+                              color: "#666",
+                              display: "block",
+                              marginTop: "2px",
+                            }}
+                          >
                             {job.company}
                           </Text>
                         </div>
@@ -512,14 +636,32 @@ const CandidateJobs = () => {
                         {/* Location & Work Type Tags */}
                         <div style={{ marginBottom: "12px" }}>
                           <Space wrap size="small">
-                            <Tag icon={<EnvironmentOutlined />} color="blue" style={{ fontSize: "12px" }}>
+                            <Tag
+                              icon={<EnvironmentOutlined />}
+                              color="blue"
+                              style={{ fontSize: "12px" }}
+                            >
                               {job.location.split(",")[0]}
                             </Tag>
-                            <Tag icon={job.workType === "Remote" ? <HomeOutlined /> : <BankOutlined />} color="green" style={{ fontSize: "12px" }}>
+                            <Tag
+                              icon={
+                                job.workType === "Remote" ? (
+                                  <HomeOutlined />
+                                ) : (
+                                  <BankOutlined />
+                                )
+                              }
+                              color="green"
+                              style={{ fontSize: "12px" }}
+                            >
                               {job.workType}
                             </Tag>
-                            <Tag color="orange" style={{ fontSize: "12px" }}>{job.employmentType}</Tag>
-                            <Tag color="purple" style={{ fontSize: "12px" }}>{job.experience}</Tag>
+                            <Tag color="orange" style={{ fontSize: "12px" }}>
+                              {job.employmentType}
+                            </Tag>
+                            <Tag color="purple" style={{ fontSize: "12px" }}>
+                              {job.experience}
+                            </Tag>
                           </Space>
                         </div>
 
@@ -534,7 +676,7 @@ const CandidateJobs = () => {
                                   border: "1px solid #da2c46",
                                   color: "#da2c46",
                                   background: "#fff",
-                                  borderRadius: "4px"
+                                  borderRadius: "4px",
                                 }}
                               >
                                 {skill}
@@ -551,7 +693,12 @@ const CandidateJobs = () => {
                         {/* Job Description */}
                         <Paragraph
                           ellipsis={{ rows: 2 }}
-                          style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "20px" }}
+                          style={{
+                            margin: 0,
+                            color: "#666",
+                            fontSize: "14px",
+                            lineHeight: "20px",
+                          }}
                         >
                           {job.description}
                         </Paragraph>
@@ -559,17 +706,22 @@ const CandidateJobs = () => {
                     </div>
 
                     {/* Right Section - Salary, Date & Actions */}
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "12px",
-                      minWidth: "200px",
-                      flexShrink: 0
-                    }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: "12px",
+                        minWidth: "200px",
+                        flexShrink: 0,
+                      }}
+                    >
                       {/* Salary */}
                       {job.salary && (
-                        <Text strong style={{ color: "#da2c46", fontSize: "16px" }}>
+                        <Text
+                          strong
+                          style={{ color: "#da2c46", fontSize: "16px" }}
+                        >
                           <DollarOutlined style={{ marginRight: 4 }} />
                           {job.salary}
                         </Text>
@@ -581,12 +733,30 @@ const CandidateJobs = () => {
                       </Text>
 
                       {/* Action Buttons */}
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        <Tooltip title={savedJobs.has(job._id) ? "Remove from saved" : "Save job"}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Tooltip
+                          title={
+                            savedJobs.has(job._id)
+                              ? "Remove from saved"
+                              : "Save job"
+                          }
+                        >
                           <Button
                             type="text"
                             size="small"
-                            icon={savedJobs.has(job._id) ? <HeartFilled style={{ color: "#da2c46" }} /> : <HeartOutlined />}
+                            icon={
+                              savedJobs.has(job._id) ? (
+                                <HeartFilled style={{ color: "#da2c46" }} />
+                              ) : (
+                                <HeartOutlined />
+                              )
+                            }
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSaveJob(job);
@@ -602,7 +772,9 @@ const CandidateJobs = () => {
                             icon={<ShareAltOutlined />}
                             onClick={(e) => {
                               e.stopPropagation();
-                              message.info("Share functionality would be implemented here");
+                              message.info(
+                                "Share functionality would be implemented here"
+                              );
                             }}
                             style={{ border: "1px solid #e0e0e0" }}
                           />
@@ -616,10 +788,11 @@ const CandidateJobs = () => {
                             message.success("Application submitted!");
                           }}
                           style={{
-                            background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                            background:
+                              "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                             border: "none",
                             padding: "4px 16px",
-                            height: "32px"
+                            height: "32px",
                           }}
                         >
                           Apply Now
@@ -665,7 +838,8 @@ const CandidateJobs = () => {
                   </Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: "14px" }}>
-                    Try adjusting your search filters or check back later for new opportunities
+                    Try adjusting your search filters or check back later for
+                    new opportunities
                   </Text>
                   <div style={{ marginTop: 16 }}>
                     <Button type="link" onClick={clearFilters}>

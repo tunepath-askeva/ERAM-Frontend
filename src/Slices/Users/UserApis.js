@@ -50,7 +50,14 @@ export const userApi = createApi({
     }),
     getBranches: builder.query({
       query: () => "/branch",
-      providesTags: ["Branch"],
+    }),
+
+    //jobs
+    getJobsByBranch: builder.query({
+      query: () => ({
+        url: "/branchById",
+        method: "GET",
+      }),
     }),
   }),
 });
@@ -60,5 +67,8 @@ export const {
   useLoginUserMutation,
   useVerifyOtpMutation,
   useResendOtpMutation,
-  useGetBranchesQuery
+  useGetBranchesQuery,
+
+  //Jobs for candidates
+  useGetJobsByBranchQuery,
 } = userApi;
