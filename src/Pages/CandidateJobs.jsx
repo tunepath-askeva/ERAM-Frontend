@@ -22,6 +22,8 @@ import {
   Dropdown,
   Avatar,
   Pagination,
+  Result,
+  Skeleton,
 } from "antd";
 import {
   SearchOutlined,
@@ -53,114 +55,17 @@ const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { Search } = Input;
 
-// Mock data for demonstration
-const mockJobs = [
-  {
-    _id: "1",
-    title: "Backend Developer",
-    company: "Seekho",
-    companyLogo: "https://via.placeholder.com/40",
-    location: "Bengaluru, Karnataka, India",
-    workType: "On-site",
-    employmentType: "Full-time",
-    experience: "2-5 years",
-    salary: "₹8-15 LPA",
-    postedDate: "2025-06-10",
-    skills: ["Node.js", "MongoDB", "Express.js", "JavaScript"],
-    description:
-      "We are looking for a skilled Backend Developer to join our growing team. You will be responsible for developing server-side logic, maintaining the central database, and ensuring high performance and responsiveness to requests from the front-end.",
-    requirements: [
-      "2+ years of experience in backend development",
-      "Strong knowledge of Node.js",
-      "Experience with databases",
-    ],
-    category: "Technology",
-    isRemote: false,
-    isSaved: false,
-  },
-  {
-    _id: "2",
-    title: "Sr Data Engineer",
-    company: "Reveal Health Tech",
-    companyLogo: "https://via.placeholder.com/40",
-    location: "Bengaluru, Karnataka, India",
-    workType: "Hybrid",
-    employmentType: "Full-time",
-    experience: "5-8 years",
-    salary: "₹15-25 LPA",
-    postedDate: "2025-06-10",
-    skills: ["Python", "SQL", "AWS", "Data Engineering"],
-    description:
-      "Join our data team to build scalable data pipelines and analytics solutions. You will work with cutting-edge technologies to process and analyze large datasets.",
-    requirements: [
-      "5+ years in data engineering",
-      "Strong Python skills",
-      "Cloud experience preferred",
-    ],
-    category: "Engineering",
-    isRemote: false,
-    isSaved: true,
-  },
-  {
-    _id: "3",
-    title: "Graphic Designer",
-    company: "Astrome Technologies",
-    companyLogo: "https://via.placeholder.com/40",
-    location: "Bengaluru, Karnataka, India",
-    workType: "On-site",
-    employmentType: "Full-time",
-    experience: "2-4 years",
-    salary: "₹6-12 LPA",
-    postedDate: "2025-06-10",
-    skills: ["Adobe Creative Suite", "UI/UX", "Figma", "Branding"],
-    description:
-      "Astrome Technologies is seeking a talented and creative Graphic Designer with 2+ years of experience to join our design team and create compelling visual content.",
-    requirements: [
-      "2+ years of graphic design experience",
-      "Proficiency in Adobe Creative Suite",
-      "Strong portfolio",
-    ],
-    category: "Design",
-    isRemote: false,
-    isSaved: false,
-  },
-  {
-    _id: "4",
-    title: "Sales Engineer, India",
-    company: "Genetec",
-    companyLogo: "https://via.placeholder.com/40",
-    location: "Bengaluru, Karnataka, India",
-    workType: "On-site",
-    employmentType: "Full-time",
-    experience: "3-6 years",
-    salary: "₹10-18 LPA",
-    postedDate: "2025-03-10",
-    skills: ["Sales", "Engineering", "B2B", "Technical Sales"],
-    description:
-      "We are looking for a Sales Engineer to drive business growth in the Indian market. You will combine technical expertise with sales skills to help customers understand our solutions.",
-    requirements: [
-      "3+ years in technical sales",
-      "Engineering background",
-      "Strong communication skills",
-    ],
-    category: "Sales",
-    isRemote: false,
-    isSaved: false,
-  },
-];
-
 const CandidateJobs = () => {
-  const [jobs, setJobs] = useState(mockJobs);
-  const [filteredJobs, setFilteredJobs] = useState(mockJobs);
-  const [loading, setLoading] = useState(false);
+  const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobDetailVisible, setJobDetailVisible] = useState(false);
-  const [savedJobs, setSavedJobs] = useState(new Set(["2"]));
+  const [savedJobs, setSavedJobs] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const navigate = useNavigate();
 
-  const { data } = useGetJobsByBranchQuery();
+  // API call
+  const { data: apiData, isLoading, error } = useGetJobsByBranchQuery();
 
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -169,6 +74,67 @@ const CandidateJobs = () => {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+
+  const transformJobData = (workorders) => {
+    return (
+      workorders?.map((workorder) => ({
+        _id: workorder._id,
+        title: workorder.title,
+        company: "Company Name",
+        companyLogo: "https://via.placeholder.com/40",
+        location: workorder.officeLocation || "Location not specified",
+        workType:
+          workorder.workplace === "on-site"
+            ? "On-site"
+            : workorder.workplace === "remote"
+            ? "Remote"
+            : "Hybrid",
+        employmentType:
+          workorder.EmploymentType === "full-time"
+            ? "Full-time"
+            : workorder.EmploymentType === "part-time"
+            ? "Part-time"
+            : workorder.EmploymentType === "contract"
+            ? "Contract"
+            : "Full-time",
+        experience: workorder.Experience
+          ? `${workorder.Experience}+ years`
+          : "Not specified",
+        salary:
+          workorder.salaryType === "annual" && workorder.annualSalary
+            ? `₹${(workorder.annualSalary / 100000).toFixed(1)} LPA`
+            : workorder.salaryType === "monthly" && workorder.monthlySalary
+            ? `₹${workorder.monthlySalary}/month`
+            : "Salary not disclosed",
+        postedDate: workorder.createdAt,
+        skills: workorder.requiredSkills || [],
+        description: workorder.description || "No description available",
+        requirements: workorder.jobRequirements
+          ? [workorder.jobRequirements]
+          : [],
+        category: workorder.jobFunction || "General",
+        isRemote: workorder.workplace === "remote",
+        isSaved: false,
+        jobCode: workorder.jobCode,
+        startDate: workorder.startDate,
+        endDate: workorder.endDate,
+        deadlineDate: workorder.deadlineDate,
+        numberOfCandidate: workorder.numberOfCandidate,
+        benefits: workorder.benefits || [],
+        education: workorder.Education,
+        companyIndustry: workorder.companyIndustry,
+        workOrderStatus: workorder.workOrderStatus,
+        isActive: workorder.isActive,
+      })) || []
+    );
+  };
+
+  useEffect(() => {
+    if (apiData?.workorders) {
+      const transformedJobs = transformJobData(apiData.workorders);
+      setFilteredJobs(transformedJobs);
+    }
+  }, [apiData]);
 
   useEffect(() => {
     applyFilters();
@@ -182,7 +148,11 @@ const CandidateJobs = () => {
   ]);
 
   const applyFilters = () => {
-    let filtered = jobs.filter((job) => {
+    if (!apiData?.workorders) return;
+
+    const transformedJobs = transformJobData(apiData.workorders);
+
+    let filtered = transformedJobs.filter((job) => {
       const matchesKeyword =
         !searchKeyword ||
         job.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
@@ -232,13 +202,7 @@ const CandidateJobs = () => {
     }
     setSavedJobs(newSavedJobs);
 
-    // Update jobs state to reflect saved status
-    setJobs((prevJobs) =>
-      prevJobs.map((j) => ({
-        ...j,
-        isSaved: j._id === job._id ? !j.isSaved : j.isSaved,
-      }))
-    );
+    // Update filtered jobs to reflect saved status
     setFilteredJobs((prevJobs) =>
       prevJobs.map((j) => ({
         ...j,
@@ -283,6 +247,61 @@ const CandidateJobs = () => {
     return count;
   };
 
+  // Get unique values for filter options from API data
+  const getFilterOptions = () => {
+    if (!apiData?.workorders) {
+      return {
+        workTypes: [],
+        employmentTypes: [],
+        categories: [],
+        experiences: [],
+      };
+    }
+
+    const workTypes = [
+      ...new Set(
+        apiData.workorders.map((job) =>
+          job.workplace === "on-site"
+            ? "On-site"
+            : job.workplace === "remote"
+            ? "Remote"
+            : "Hybrid"
+        )
+      ),
+    ];
+
+    const employmentTypes = [
+      ...new Set(
+        apiData.workorders.map((job) =>
+          job.EmploymentType === "full-time"
+            ? "Full-time"
+            : job.EmploymentType === "part-time"
+            ? "Part-time"
+            : job.EmploymentType === "contract"
+            ? "Contract"
+            : "Full-time"
+        )
+      ),
+    ];
+
+    const categories = [
+      ...new Set(
+        apiData.workorders.map((job) => job.jobFunction).filter(Boolean)
+      ),
+    ];
+
+    const experiences = [
+      ...new Set(
+        apiData.workorders.map((job) => job.Experience).filter(Boolean)
+      ),
+    ];
+
+    return { workTypes, employmentTypes, categories, experiences };
+  };
+
+  const { workTypes, employmentTypes, categories, experiences } =
+    getFilterOptions();
+
   const filterDropdownMenu = {
     items: [
       {
@@ -322,9 +341,11 @@ const CandidateJobs = () => {
                   onChange={setWorkTypeFilter}
                   allowClear
                 >
-                  <Option value="On-site">On-site</Option>
-                  <Option value="Remote">Remote</Option>
-                  <Option value="Hybrid">Hybrid</Option>
+                  {workTypes.map((type) => (
+                    <Option key={type} value={type}>
+                      {type}
+                    </Option>
+                  ))}
                 </Select>
               </div>
 
@@ -339,10 +360,11 @@ const CandidateJobs = () => {
                   onChange={setEmploymentTypeFilter}
                   allowClear
                 >
-                  <Option value="Full-time">Full-time</Option>
-                  <Option value="Part-time">Part-time</Option>
-                  <Option value="Contract">Contract</Option>
-                  <Option value="Internship">Internship</Option>
+                  {employmentTypes.map((type) => (
+                    <Option key={type} value={type}>
+                      {type}
+                    </Option>
+                  ))}
                 </Select>
               </div>
 
@@ -357,10 +379,11 @@ const CandidateJobs = () => {
                   onChange={setExperienceFilter}
                   allowClear
                 >
-                  <Option value="0-1">0-1 years</Option>
-                  <Option value="2-5">2-5 years</Option>
-                  <Option value="5-8">5-8 years</Option>
-                  <Option value="8+">8+ years</Option>
+                  {experiences.map((exp) => (
+                    <Option key={exp} value={exp}>
+                      {exp}+ years
+                    </Option>
+                  ))}
                 </Select>
               </div>
 
@@ -375,12 +398,11 @@ const CandidateJobs = () => {
                   onChange={setCategoryFilter}
                   allowClear
                 >
-                  <Option value="Technology">Technology</Option>
-                  <Option value="Engineering">Engineering</Option>
-                  <Option value="Design">Design</Option>
-                  <Option value="Sales">Sales</Option>
-                  <Option value="Marketing">Marketing</Option>
-                  <Option value="Finance">Finance</Option>
+                  {categories.map((category) => (
+                    <Option key={category} value={category}>
+                      {category}
+                    </Option>
+                  ))}
                 </Select>
               </div>
             </div>
@@ -389,6 +411,42 @@ const CandidateJobs = () => {
       },
     ],
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div style={{ padding: "16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "16px", minHeight: "100vh" }}>
+        <Result
+          status="404"
+          title="Failed to Load Jobs"
+          subTitle={"Something went wrong while fetching jobs."}
+          extra={[
+            <Button
+              type="primary"
+              onClick={() => window.location.reload()}
+              key="retry"
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              }}
+            >
+              Retry
+            </Button>,
+          ]}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -550,11 +608,7 @@ const CandidateJobs = () => {
         </div>
 
         {/* Job Listings */}
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <Spin size="large" />
-          </div>
-        ) : filteredJobs.length > 0 ? (
+        {filteredJobs.length > 0 ? (
           <>
             <div
               style={{
@@ -629,8 +683,20 @@ const CandidateJobs = () => {
                               marginTop: "2px",
                             }}
                           >
-                            {job.company}
+                            {job.companyIndustry || job.company}
                           </Text>
+                          {job.jobCode && (
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: "12px",
+                                display: "block",
+                                marginTop: "2px",
+                              }}
+                            >
+                              Job Code: {job.jobCode}
+                            </Text>
+                          )}
                         </div>
 
                         {/* Location & Work Type Tags */}
@@ -641,7 +707,7 @@ const CandidateJobs = () => {
                               color="blue"
                               style={{ fontSize: "12px" }}
                             >
-                              {job.location.split(",")[0]}
+                              {job.location}
                             </Tag>
                             <Tag
                               icon={
@@ -662,33 +728,44 @@ const CandidateJobs = () => {
                             <Tag color="purple" style={{ fontSize: "12px" }}>
                               {job.experience}
                             </Tag>
-                          </Space>
-                        </div>
-
-                        {/* Skills */}
-                        <div style={{ marginBottom: "12px" }}>
-                          <Space wrap size="small">
-                            {job.skills.slice(0, 4).map((skill, skillIndex) => (
-                              <Tag
-                                key={skillIndex}
-                                style={{
-                                  fontSize: "11px",
-                                  border: "1px solid #da2c46",
-                                  color: "#da2c46",
-                                  background: "#fff",
-                                  borderRadius: "4px",
-                                }}
-                              >
-                                {skill}
-                              </Tag>
-                            ))}
-                            {job.skills.length > 4 && (
-                              <Tag style={{ fontSize: "11px", color: "#666" }}>
-                                +{job.skills.length - 4} more
+                            {job.numberOfCandidate && (
+                              <Tag color="cyan" style={{ fontSize: "12px" }}>
+                                {job.numberOfCandidate} positions
                               </Tag>
                             )}
                           </Space>
                         </div>
+
+                        {/* Skills */}
+                        {job.skills.length > 0 && (
+                          <div style={{ marginBottom: "12px" }}>
+                            <Space wrap size="small">
+                              {job.skills
+                                .slice(0, 4)
+                                .map((skill, skillIndex) => (
+                                  <Tag
+                                    key={skillIndex}
+                                    style={{
+                                      fontSize: "11px",
+                                      border: "1px solid #da2c46",
+                                      color: "#da2c46",
+                                      background: "#fff",
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    {skill}
+                                  </Tag>
+                                ))}
+                              {job.skills.length > 4 && (
+                                <Tag
+                                  style={{ fontSize: "11px", color: "#666" }}
+                                >
+                                  +{job.skills.length - 4} more
+                                </Tag>
+                              )}
+                            </Space>
+                          </div>
+                        )}
 
                         {/* Job Description */}
                         <Paragraph
@@ -731,6 +808,14 @@ const CandidateJobs = () => {
                       <Text type="secondary" style={{ fontSize: "12px" }}>
                         Posted {formatDate(job.postedDate)}
                       </Text>
+
+                      {/* Deadline Date */}
+                      {job.deadlineDate && (
+                        <Text type="warning" style={{ fontSize: "12px" }}>
+                          Deadline:{" "}
+                          {new Date(job.deadlineDate).toLocaleDateString()}
+                        </Text>
+                      )}
 
                       {/* Action Buttons */}
                       <div

@@ -59,6 +59,22 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getJobsbyId: builder.query({
+      query: (jobId) => ({
+        url: `/job/${jobId}`,
+        method: "GET",
+      }),
+    }),
+    submitJobApplication: builder.mutation({
+      query: (payload) => ({
+        url: "/candidate",
+        method: "POST",
+        body: payload,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    }),
   }),
 });
 
@@ -71,4 +87,6 @@ export const {
 
   //Jobs for candidates
   useGetJobsByBranchQuery,
+  useGetJobsbyIdQuery,
+  useSubmitJobApplicationMutation,
 } = userApi;
