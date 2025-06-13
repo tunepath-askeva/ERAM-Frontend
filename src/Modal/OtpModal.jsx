@@ -3,7 +3,7 @@ import { Modal, Input, Button, Typography, Space, message } from "antd";
 import {
   useVerifyOtpMutation,
   useResendOtpMutation,
-} from "../Slices/Users/UserApis";
+} from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack"; // Add this import
 import { CloseOutlined } from "@ant-design/icons";

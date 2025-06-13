@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import { useRegisterUserMutation } from "../Slices/Users/UserApis";
+import { useRegisterUserMutation } from "../Slices/Users/UserApis.js";
 import OtpModal from "../Modal/OtpModal";
 import Header from "../Global/HEader";
 import HomeFooter from "../Global/Footer";

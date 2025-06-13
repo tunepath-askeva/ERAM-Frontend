@@ -9,7 +9,7 @@ import {
     CheckCircleOutlined,
     CloseCircleOutlined
 } from '@ant-design/icons';
-import { useGetBranchesQuery } from "../Slices/Users/UserApis";
+import { useGetBranchesQuery } from "../Slices/Users/UserApis.js";
 import HomeFooter from "../Global/Footer";
 import Header from "../Global/HEader";
 import { useNavigate } from 'react-router-dom';
