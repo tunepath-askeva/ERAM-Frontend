@@ -136,7 +136,7 @@ const AppRoutes = () => {
 
       <Route element={<CandidateLayout />}>
         <Route path="/candidate-jobs" element={<CandidateJobs />} />
-        <Route path="/candidate-applied-jobs/:jobId" element={<JobDetailsPage />} />-
+        <Route path="/candidate-jobs/:jobId" element={<JobDetailsPage />} />-
         <Route
           path="/candidate-applied-jobs"
           element={<CandidateAppliedJobs />}

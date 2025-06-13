@@ -188,7 +188,7 @@ const CandidateJobs = () => {
   };
 
   const handleJobClick = (job) => {
-    navigate(`/candidate-applied-jobs/${job._id}`);
+    navigate(`/candidate-jobs/${job._id}`);
   };
 
   const handleSaveJob = (job) => {
@@ -868,10 +868,7 @@ const CandidateJobs = () => {
                         <Button
                           type="primary"
                           size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            message.success("Application submitted!");
-                          }}
+                          onClick={handleJobClick}
                           style={{
                             background:
                               "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
