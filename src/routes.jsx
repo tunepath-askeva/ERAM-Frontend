@@ -31,6 +31,9 @@ import CandidateLayout from "./Global/CandidateLayout";
 import CandidateJobs from "./Pages/CandidateJobs";
 import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
+import JobDetailsPage from "./Components/JobDetailsPage";
+
+
 
 const AppRoutes = () => {
   return (
@@ -124,6 +127,7 @@ const AppRoutes = () => {
 
         <Route path="/candidate-jobs" element={<CandidateJobs />} />
         <Route path="/candidate-applied-jobs" element={<CandidateAppliedJobs />} />
+        <Route path="/candidate-applied-jobs/:id" element={<JobDetailsPage />} />
         <Route path="/candidate-settings" element={<CandidateSettings />} />
 -
       </Route>

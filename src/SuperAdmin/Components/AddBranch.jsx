@@ -24,6 +24,7 @@ import {
   MailOutlined,
   CodeOutlined,
   FileImageOutlined,
+  CloudServerOutlined,
   HomeOutlined,
   TeamOutlined,
   CustomerServiceOutlined,
@@ -384,6 +385,21 @@ const AddBranch = () => {
                     </Text>
                   )}
                 </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="domain"
+                  label="White Label Domain"
+                  rules={[
+                    { required: true, message: "Please enter a branch Domain" },
+                  ]}
+                >
+                  <Input
+                    prefix={<CloudServerOutlined />}
+                    placeholder="Enter branch Domain"
+                    size="large"
+                  />
+                </Form.Item>
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item
