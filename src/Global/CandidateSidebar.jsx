@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Layout, Button, Drawer } from "antd";
 import {
-  UnorderedListOutlined,
-  ApartmentOutlined,
+  BulbOutlined,
+  SettingOutlined,
   LogoutOutlined,
-  UserOutlined,
+  FormOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -52,17 +52,17 @@ const CandidateSidebar = ({
   const menuItems = [
     {
       key: "/candidate-jobs",
-      icon: <UnorderedListOutlined />,
+      icon: <BulbOutlined />,
       label: "Jobs",
     },
     {
       key: "/candidate-applied-jobs",
-      icon: <UserOutlined />,
+      icon: <FormOutlined />,
       label: "Applied Jobs",
     },
     {
       key: "/candidate-settings",
-      icon: <ApartmentOutlined />,
+      icon: <SettingOutlined />,
       label: "Settings",
     }
   ];

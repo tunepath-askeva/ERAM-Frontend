@@ -31,6 +31,9 @@ import CandidateLayout from "./Global/CandidateLayout";
 import CandidateJobs from "./Pages/CandidateJobs";
 import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
+import JobDetailsPage from "./Components/JobDetailsPage";
+
+
 import AdminCandidates from "./Admin/Pages/AdminCandidates";
 import ProtectedRecruiter from "./Recruiters/Auth/ProtectedRecruiter";
 import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
@@ -133,6 +136,7 @@ const AppRoutes = () => {
 
       <Route element={<CandidateLayout />}>
         <Route path="/candidate-jobs" element={<CandidateJobs />} />
+        <Route path="/candidate-applied-jobs/:id" element={<JobDetailsPage />} />-
         <Route
           path="/candidate-applied-jobs"
           element={<CandidateAppliedJobs />}
