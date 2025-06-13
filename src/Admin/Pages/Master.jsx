@@ -33,8 +33,8 @@ import {
   useGetProjectsQuery,
   useGetProjectByIdQuery,
   useDeleteProjectMutation,
-  useDisableProjectStatusMutation, // Add this new mutation
-} from "../../Slices/Admin/AdminApis";
+  useDisableProjectStatusMutation,
+} from "../../Slices/Admin/AdminApis.js";
 import ProjectFormModal from "../Components/ProjectFormModal";
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
