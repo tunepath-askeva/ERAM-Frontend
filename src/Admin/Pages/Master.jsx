@@ -12,6 +12,7 @@ import {
   Modal,
   Tag,
   Spin,
+  Input,
 } from "antd";
 import {
   PlusOutlined,
@@ -32,11 +33,11 @@ import {
   useGetProjectsQuery,
   useGetProjectByIdQuery,
   useDeleteProjectMutation,
-  useDisableProjectStatusMutation, // Add this new mutation
-} from "../../Slices/Admin/AdminApis";
+  useDisableProjectStatusMutation,
+} from "../../Slices/Admin/AdminApis.js";
 import ProjectFormModal from "../Components/ProjectFormModal";
 const { Title, Text, Paragraph } = Typography;
-
+const { TextArea } = Input;
 const Master = () => {
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -224,6 +225,17 @@ const Master = () => {
               Project Management
             </Title>
           </div>
+
+          <Input.Search
+            placeholder="Search Projects"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
 
           <Button
             type="primary"

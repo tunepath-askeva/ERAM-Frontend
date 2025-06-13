@@ -30,7 +30,7 @@ import {
   CustomerServiceOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
-import { useCreateBranchMutation } from "../../Slices/SuperAdmin/SuperAdminAPIs";
+import { useCreateBranchMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -90,16 +90,13 @@ const AddBranch = () => {
     try {
       console.log("Form values:", values);
 
-      // Create FormData for multipart/form-data submission
       const formData = new FormData();
 
-      // Add basic fields to match your controller expectations
       formData.append("name", values.name);
       formData.append("branchCode", values.branchCode);
       formData.append("isActive", values.isActive);
       formData.append("description", values.description || "");
 
-      // Add location fields individually to match your controller
       if (values.location) {
         Object.keys(values.location).forEach((key) => {
           if (values.location[key]) {
@@ -108,12 +105,10 @@ const AddBranch = () => {
         });
       }
 
-      // Add the image file if exists (field name must match multer config)
       if (imageFile) {
         formData.append("branch_image", imageFile);
       }
 
-      // Log FormData contents for debugging
       console.log("FormData contents:");
       for (let pair of formData.entries()) {
         console.log(pair[0] + ": " + pair[1]);

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack"; // Add this import
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
-import { userLogout } from "../../Slices/Users/UserSlice";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
+import { userLogout } from "../../Slices/Users/UserSlice.js";
 
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack"; // Add this import
-import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
+import { userLogout } from "../../Slices/Users/UserSlice.js";
+
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
   UserOutlined,
@@ -12,12 +13,12 @@ import {
   DoubleLeftOutlined,
   DoubleRightOutlined,
   BellOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 
 const { Header } = Layout;
 
-// Responsive breakpoints
 const BREAKPOINTS = {
   mobile: 768,
   tablet: 1024,
@@ -80,10 +81,29 @@ const NavButton = styled(Button)`
   }
 `;
 
-const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
-  const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+const UserInfoContainer = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f8f9fa;
+  margin: -8px -12px 8px -12px;
+`;
 
+const UserName = styled.div`
+  font-weight: 600;
+  color: #2a4365;
+  font-size: 14px;
+  margin-bottom: 2px;
+`;
+
+const UserEmail = styled.div`
+  color: #64748b;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
     isMobile: window.innerWidth < BREAKPOINTS.mobile,
@@ -96,8 +116,58 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
   });
 
+  const [recruiterInfo, setRecruiterInfo] = useState({
+    name: "Recruiter",
+    email: "",
+    roles: "",
+  });
+
+  const [logout] = useLogoutSuperAdminMutation();
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const fetchRecruiterInfo = () => {
+      try {
+        const recruiterDate =
+          localStorage.getItem("recruiterInfo") 
+          
+
+        if (recruiterDate) {
+          const parsedData = JSON.parse(recruiterDate);
+
+          // Handle different data structures for name
+          const name =
+            parsedData.name ||
+            parsedData.fullName ||
+            parsedData.firstName ||
+            parsedData.username ||
+            "Recruiter";
+
+          const email = parsedData.email || "";
+
+          // Handle different data structures for roles
+          const roles =
+            parsedData.roles ||
+            parsedData.role ||
+            parsedData.userRole ||
+            "";
+
+          setRecruiterInfo({
+            name: name,
+            email: email,
+            roles: roles,
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing admin info from localStorage:", error);
+        // Keep default values if parsing fails
+      }
+    };
+
+    fetchRecruiterInfo();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -149,11 +219,11 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   };
 
   const getNavbarLeftMargin = () => {
-    if (screenSize.isMobile) return 0; 
-    
+    if (screenSize.isMobile) return 0;
+
     const sidebarWidth = screenSize.isTablet ? 220 : 250;
     const collapsedWidth = screenSize.isTablet ? 70 : 80;
-    
+
     return collapsed ? collapsedWidth : sidebarWidth;
   };
 
@@ -184,29 +254,64 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const handleLogout = async () => {
     try {
-      await logoutSuperAdmin().unwrap();
-      dispatch(SuperAdminlogout());
-      
+      await logout().unwrap();
+      dispatch(userLogout({ role: "recruiter" }));
+
       enqueueSnackbar("Logged out successfully", {
         variant: "success",
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
       });
-      
-      navigate("/superadmin/login");
-      
+
+      navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
-      
-      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-        autoHideDuration: 3000,
-      });
+
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Logout failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
     }
   };
 
+  const getFirstLetter = () => {
+    return recruiterInfo.name.charAt(0).toUpperCase();
+  };
+
   const userMenuItems = [
+    {
+      key: "user-info",
+      label: (
+        <UserInfoContainer>
+          <UserName>{recruiterInfo.name}</UserName>
+          {recruiterInfo.roles && (
+            <div
+              style={{
+                color: "#64748b",
+                fontSize: "11px",
+                marginTop: "4px",
+                fontWeight: "500",
+              }}
+            >
+              {recruiterInfo.roles}
+            </div>
+          )}
+          {recruiterInfo.email && (
+            <UserEmail>
+              <MailOutlined style={{ fontSize: "12px" }} />
+              {recruiterInfo.email}
+            </UserEmail>
+          )}
+        </UserInfoContainer>
+      ),
+      disabled: true,
+    },
     {
       key: "profile",
       icon: <UserOutlined style={{ color: "#2a4365" }} />,
@@ -220,13 +325,13 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       key: "logout",
       icon: <LogoutOutlined style={{ color: "#ff4d4f" }} />,
       label: <span style={{ color: "#ff4d4f" }}>Logout</span>,
-      onClick: handleLogout,
+      onClick: () => handleLogout(),
     },
   ];
 
   return (
-    <AppBar 
-      height={getNavbarHeight()} 
+    <AppBar
+      height={getNavbarHeight()}
       padding={getPadding()}
       leftMargin={getNavbarLeftMargin()}
     >
@@ -241,7 +346,6 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }}
       />
 
-      {/* Center - Title (optional, hidden on mobile) */}
       {!screenSize.isMobile && (
         <div
           style={{
@@ -251,13 +355,12 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             marginRight: "auto",
           }}
         >
+          {" "}
         </div>
       )}
 
-      {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Right side - Actions */}
       <div
         style={{
           display: "flex",
@@ -265,7 +368,6 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           gap: screenSize.isMobile ? "8px" : "12px",
         }}
       >
-        {/* Notifications */}
         <Badge count={5} size="small">
           <NavButton
             type="text"
@@ -302,13 +404,15 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.2s ease",
+              fontWeight: "600",
             }}
-            icon={<UserOutlined />}
-          />
+          >
+            {recruiterInfo.name ? getFirstLetter() : <UserOutlined />}
+          </Avatar>
         </Dropdown>
       </div>
     </AppBar>
   );
 };
 
-export default SuperNavbar;
+export default RecruiterNavbar;

@@ -24,7 +24,7 @@ import {
   FileTextOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import { useGetAdminBranchQuery } from "../../Slices/Admin/AdminApis";
+import { useGetAdminBranchQuery } from "../../Slices/Admin/AdminApis.js";
 
 const { Title, Text } = Typography;
 

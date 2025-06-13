@@ -28,7 +28,7 @@ import {
 import {
   useCreateRecruiterMutation,
   useEditRecruiterMutation,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -60,7 +60,7 @@ const RecruiterForm = ({
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
-          experience: initialValues.experienceYears || 0,
+          experience: initialValues.experience || 0,
         });
       } else {
         form.resetFields();

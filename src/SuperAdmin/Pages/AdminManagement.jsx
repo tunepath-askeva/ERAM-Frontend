@@ -46,7 +46,7 @@ import {
   useGetSingleAdminQuery,
   useUpdateAdminMutation,
   useDisableAdminMutation,
-} from "../../Slices/SuperAdmin/SuperAdminAPIs";
+} from "../../Slices/SuperAdmin/SuperAdminApis.js";
 
 import SkeletonLoader from "../../Global/SkeletonLoader";
 

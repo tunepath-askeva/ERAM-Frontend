@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Button, Drawer } from "antd";
+import { Layout, Menu, Button, Drawer } from "antd";
 import {
-  BulbOutlined,
-  SettingOutlined,
+  DashboardOutlined,
+  UnorderedListOutlined,
+  AppstoreOutlined,
+  ApartmentOutlined,
   LogoutOutlined,
-  FormOutlined,
+  UserOutlined,
+  DeploymentUnitOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import { useLogoutSuperAdminMutation } from "../Slices/SuperAdmin/SuperAdminApis.js";
-import { userLogout } from "../Slices/Users/UserSlice.js";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
+import { userLogout } from "../../Slices/Users/UserSlice.js";
 
 const { Sider } = Layout;
 
@@ -20,7 +24,7 @@ const BREAKPOINTS = {
   desktop: 1200,
 };
 
-const CandidateSidebar = ({
+const RecruiterSidebar = ({
   collapsed,
   setCollapsed,
   setDrawerVisible,
@@ -35,10 +39,10 @@ const CandidateSidebar = ({
     isDesktop: window.innerWidth >= BREAKPOINTS.desktop,
   });
 
-  const [candidateInfo, setCandidateInfo] = useState({
-    name: "Candidate",
+  const [recruiterInfo, setRecruiterInfo] = useState({
+    name: "Recruiter",
     email: "",
-    roles: "",
+    roles: "", // Added roles to the state
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -51,105 +55,72 @@ const CandidateSidebar = ({
 
   const menuItems = [
     {
-      key: "/candidate-jobs",
-      icon: <BulbOutlined />,
-      label: "Jobs",
+      key: "/recruiter/dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
     },
     {
-      key: "/candidate-applied-jobs",
-      icon: <FormOutlined />,
-      label: "Applied Jobs",
+      key: "/recruiter/jobs",
+      icon: <UnorderedListOutlined />,
+      label: "Work Order",
     },
     {
-      key: "/candidate-settings",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    }
+      key: "/recruiter/candidates",
+      icon: <UserOutlined />,
+      label: "Recruiters",
+    },
+    {
+      key: "/recruiter/employees",
+      icon: <UsergroupAddOutlined />,
+      label: "Candidates",
+    },
+    {
+      key: "/recruiter/payroll",
+      icon: <ApartmentOutlined />,
+      label: "Pipeline",
+    },
+    
   ];
 
+  // Fetch admin info from localStorage
   useEffect(() => {
-    const fetchCandidateInfo = () => {
+    const fetchRecruiterInfo = () => {
       try {
-        const possibleKeys = [
-          'candidateInfo',
-          'userInfo',
-        ];
+        const recruiterData =
+          localStorage.getItem("recruiterInfo")
 
-        let candidateData = null;
-        let foundKey = null;
+        if (recruiterData) {
+          const parsedData = JSON.parse(recruiterData);
 
-        for (const key of possibleKeys) {
-          const data = localStorage.getItem(key);
-          if (data) {
-            candidateData = data;
-            foundKey = key;
-            console.log(`Found candidate data in localStorage key: ${key}`);
-            break;
-          }
-        }
-
-        if (candidateData) {
-          const parsedData = JSON.parse(candidateData);
-          console.log(`Parsed data from ${foundKey}:`, parsedData);
-
-          const name = parsedData.name ||
+          // Handle different data structures for name
+          const name =
+            parsedData.name ||
             parsedData.fullName ||
-            "Candidate";
+            parsedData.firstName ||
+            parsedData.username ||
+            "Recruiter";
 
-          // Extract email with multiple fallbacks
-          const email = parsedData.email ||
+          const email = parsedData.email || "";
+
+          // Handle different data structures for roles
+          const roles =
+            parsedData.roles ||
+            parsedData.role ||
+            parsedData.userRole ||
             "";
 
-          let roles = "";
-          if (parsedData.roles) {
-            if (Array.isArray(parsedData.roles)) {
-              roles = parsedData.roles.join(", ");
-            } else {
-              roles = parsedData.roles;
-            }
-          } else {
-            roles = parsedData.role ||
-              "";
-          }
-
-          const extractedInfo = {
+          setRecruiterInfo({
             name: name,
             email: email,
             roles: roles,
-          };
-
-          console.log("Extracted candidate info:", extractedInfo);
-          setCandidateInfo(extractedInfo);
-        } else {
-          console.warn("No candidate data found in localStorage");
-          console.log("Available localStorage keys:", Object.keys(localStorage));
-
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const value = localStorage.getItem(key);
-            console.log(`localStorage[${key}]:`, value);
-          }
+          });
         }
       } catch (error) {
-        console.error("Error parsing candidate info from localStorage:", error);
-        // Keep default values if parsing fails
+        console.error("Error parsing admin info from localStorage:", error);
       }
     };
 
-    fetchCandidateInfo();
-
-    const handleStorageChange = (e) => {
-      if (e.key && (e.key.includes('candidate') || e.key.includes('user'))) {
-        console.log("localStorage changed for key:", e.key);
-        fetchCandidateInfo();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    fetchRecruiterInfo();
   }, []);
 
   useEffect(() => {
@@ -201,15 +172,14 @@ const CandidateSidebar = ({
     return "20px";
   };
 
-  // Get first letter of candidate name for logo
   const getFirstLetter = () => {
-    return candidateInfo.name.charAt(0).toUpperCase();
+    return recruiterInfo.name.charAt(0).toUpperCase();
   };
 
   const handleLogout = async () => {
     try {
       await logout().unwrap();
-      dispatch(userLogout({ role: "candidate" }));
+      dispatch(userLogout({ role: "recruiter" }));
 
       enqueueSnackbar("Logged out successfully", {
         variant: "success",
@@ -223,8 +193,8 @@ const CandidateSidebar = ({
 
       enqueueSnackbar(
         error?.data?.message ||
-        error?.message ||
-        "Logout failed. Please try again.",
+          error?.message ||
+          "Logout failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -285,9 +255,9 @@ const CandidateSidebar = ({
                   lineHeight: 1,
                 }}
               >
-                {candidateInfo.name}
+                {recruiterInfo.name}
               </h1>
-              {candidateInfo.roles && (
+              {recruiterInfo.roles && (
                 <span
                   style={{
                     fontSize: "12px",
@@ -295,7 +265,7 @@ const CandidateSidebar = ({
                     marginTop: "2px",
                   }}
                 >
-                  {candidateInfo.roles}
+                  {recruiterInfo.roles}
                 </span>
               )}
             </div>
@@ -346,14 +316,14 @@ const CandidateSidebar = ({
                 selectedKey === item.key
                   ? "#fde2e4"
                   : hoveredKey === item.key
-                    ? "#f1f5f9"
-                    : "transparent",
+                  ? "#f1f5f9"
+                  : "transparent",
               color:
                 selectedKey === item.key
                   ? "#e11d48"
                   : hoveredKey === item.key
-                    ? "#1e293b"
-                    : "#475569",
+                  ? "#1e293b"
+                  : "#475569",
               border: "none",
               cursor: "pointer",
               fontWeight: "500",
@@ -374,8 +344,8 @@ const CandidateSidebar = ({
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                      ? "#e11d48"
-                      : "#64748b",
+                    ? "#e11d48"
+                    : "#64748b",
                 fontSize: getIconSize(),
                 minWidth: getIconSize(),
               },
@@ -475,4 +445,4 @@ const CandidateSidebar = ({
   );
 };
 
-export default CandidateSidebar;
+export default RecruiterSidebar;

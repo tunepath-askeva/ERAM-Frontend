@@ -8,12 +8,13 @@ import {
   LogoutOutlined,
   UserOutlined,
   DeploymentUnitOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
-import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis";
-import { userLogout } from "../../Slices/Users/UserSlice";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
+import { userLogout } from "../../Slices/Users/UserSlice.js";
 
 const { Sider } = Layout;
 
@@ -69,6 +70,11 @@ const AdminSidebar = ({
       label: "Recruiters",
     },
     {
+      key: "/admin/candidates",
+      icon: <UsergroupAddOutlined />,
+      label: "Candidates",
+    },
+    {
       key: "/admin/pipeline",
       icon: <ApartmentOutlined />,
       label: "Pipeline",
@@ -82,7 +88,7 @@ const AdminSidebar = ({
       key: "/admin/branches",
       icon: <AppstoreOutlined />,
       label: "Branch",
-    }
+    },
   ];
 
   // Fetch admin info from localStorage
@@ -90,33 +96,36 @@ const AdminSidebar = ({
     const fetchAdminInfo = () => {
       try {
         // Try to get admin info from different possible localStorage keys
-        const adminData = 
-          localStorage.getItem('adminInfo') || 
-          localStorage.getItem('superAdminInfo') || 
-          localStorage.getItem('userInfo') ||
-          localStorage.getItem('user');
+        const adminData =
+          localStorage.getItem("adminInfo") ||
+          localStorage.getItem("superAdminInfo") ||
+          localStorage.getItem("userInfo") ||
+          localStorage.getItem("user");
 
         if (adminData) {
           const parsedData = JSON.parse(adminData);
-          
+
           // Handle different data structures for name
-          const name = parsedData.name || 
-                      parsedData.fullName || 
-                      parsedData.firstName || 
-                      parsedData.username || 
-                      "Admin";
-          
+          const name =
+            parsedData.name ||
+            parsedData.fullName ||
+            parsedData.firstName ||
+            parsedData.username ||
+            "Admin";
+
           const email = parsedData.email || "";
 
           // Handle different data structures for roles
-          const roles = parsedData.roles || 
-                       parsedData.role || 
-                       parsedData.userRole || 
-                       parsedData.position || 
-                       parsedData.designation ||
-                       (Array.isArray(parsedData.roles) ? 
-                         parsedData.roles.join(", ") : "") ||
-                       "";
+          const roles =
+            parsedData.roles ||
+            parsedData.role ||
+            parsedData.userRole ||
+            parsedData.position ||
+            parsedData.designation ||
+            (Array.isArray(parsedData.roles)
+              ? parsedData.roles.join(", ")
+              : "") ||
+            "";
 
           setAdminInfo({
             name: name,

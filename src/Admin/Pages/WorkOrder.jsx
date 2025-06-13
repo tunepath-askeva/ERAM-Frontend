@@ -14,6 +14,8 @@ import {
   message,
   Divider,
   Switch,
+  Skeleton,
+  Input 
 } from "antd";
 import {
   PlusOutlined,
@@ -39,9 +41,10 @@ import {
   useDeleteWorkOrderMutation,
   usePublishWorkOrderMutation,
   useToggleWorkOrderStatusMutation,
-} from "../../Slices/Admin/AdminApis";
+} from "../../Slices/Admin/AdminApis.js";
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const WorkOrder = () => {
   const navigate = useNavigate();
@@ -54,10 +57,9 @@ const WorkOrder = () => {
   const [activateModalVisible, setActivateModalVisible] = useState(false);
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
 
-  const { data: workOrdersData, refetch } = useGetWorkOrdersQuery();
+  const { data: workOrdersData, isLoading, refetch } = useGetWorkOrdersQuery();
   const workOrders = workOrdersData?.workorders || [];
 
-  // RTK Mutations
   const [deleteWorkOrder] = useDeleteWorkOrderMutation();
   const [publishWorkOrder] = usePublishWorkOrderMutation();
   const [toggleWorkOrderStatus] = useToggleWorkOrderStatusMutation();
@@ -346,6 +348,19 @@ const WorkOrder = () => {
               Work Order Management
             </Title>
           </div>
+
+          {/* Search Bar */}
+          <Input.Search
+            placeholder="Search Work orders"
+            allowClear
+            style={{
+              maxWidth: "300px",
+              width: "100%",
+              borderRadius: "8px",
+              height: "44px",
+            }}
+          />
+
           <Button
             type="primary"
             size="large"
@@ -366,7 +381,17 @@ const WorkOrder = () => {
           </Button>
         </div>
 
-        {workOrders?.length > 0 ? (
+        {isLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: "20px",
+            }}
+          >
+            <Skeleton />
+          </div>
+        ) : workOrders?.length > 0 ? (
           <Row
             gutter={[
               { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
@@ -615,7 +640,6 @@ const WorkOrder = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
       <Modal
         title={
           <div

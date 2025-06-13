@@ -40,6 +40,14 @@ export const adminApi = createApi({
         body: pipelineData,
       }),
     }),
+    disablePipeline: builder.mutation({
+      query: (pipelineId) => ({
+        url: `pipeline/${pipelineId}`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Pipeline"],
+    }),
+
     editStage: builder.mutation({
       query: ({ stageId, stageData }) => ({
         url: `/stagesEdit/${stageId}`,
@@ -129,6 +137,12 @@ export const adminApi = createApi({
         body: { accountStatus },
       }),
     }),
+    deleteRecruiter: builder.mutation({
+      query: (recruiterId) => ({
+        url: `/recruiters/${recruiterId}`,
+        method: "DELETE",
+      }),
+    }),
     getRecruiterById: builder.query({
       query: (recruiterId) => ({
         url: `/recruiters/${recruiterId}`,
@@ -171,6 +185,53 @@ export const adminApi = createApi({
         body: { accountStatus },
       }),
     }),
+
+    addCandidate: builder.mutation({
+      query: (candidateData) => ({
+        url: "/candidate",
+        method: "POST",
+        body: candidateData,
+      }),
+    }),
+
+    bulkImportCandidates: builder.mutation({
+      query: (formData) => ({
+        url: "/Candidate/bulk",
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    getCandidates: builder.query({
+      query: () => ({
+        url: "/candidate",
+        method: "GET",
+      }),
+    }),
+    editCandidate: builder.mutation({
+      query: ({ id, candidateData }) => ({
+        url: `/candidate/${id}`,
+        method: "PUT",
+        body: candidateData,
+      }),
+    }),
+    deleteCandidate: builder.mutation({
+      query: (candidateId) => ({
+        url: `/candidate/${candidateId}`,
+        method: "DELETE",
+      }),
+    }),
+    getCandidateById: builder.query({
+      query: (candidateId) => ({
+        url: `/candidate/${candidateId}`,
+        method: "GET",
+      }),
+    }),
+    disableCandidateStatus: builder.mutation({
+      query: (candidateId) => ({
+        url: `/candidate/${candidateId}`,
+        method: "PATCH",
+      }),
+    }),
   }),
 });
 
@@ -181,6 +242,7 @@ export const {
   useDeletePipelineMutation,
   useEditPipelineMutation,
   useGetPipelineByIdQuery,
+  useDisablePipelineMutation,
   //pipeline stages
   useEditStageMutation,
   useDeleteStageMutation,
@@ -203,6 +265,7 @@ export const {
   useEditRecruiterMutation,
   useDisableRecruiterStatusMutation,
   useGetRecruiterByIdQuery,
+  useDeleteRecruiterMutation,
 
   //projects
   useAddProjectMutation,
@@ -211,4 +274,13 @@ export const {
   useDeleteProjectMutation,
   useGetProjectByIdQuery,
   useDisableProjectStatusMutation,
+
+  //Candidate
+  useAddCandidateMutation,
+  useBulkImportCandidatesMutation,
+  useGetCandidatesQuery,
+  useDeleteCandidateMutation,
+  useGetCandidateByIdQuery,
+  useEditCandidateMutation,
+  useDisableCandidateStatusMutation
 } = adminApi;
