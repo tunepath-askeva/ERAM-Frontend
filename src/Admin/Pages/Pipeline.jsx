@@ -489,52 +489,7 @@ const Pipeline = () => {
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      borderTop: "1px solid #f0f0f0",
-                      paddingTop: 12,
-                      marginTop: "auto",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                          "@media (min-width: 576px)": {
-                            fontSize: "12px",
-                          },
-                        }}
-                      >
-                        Created:{" "}
-                        {new Date(
-                          pipeline.createdAt || Date.now()
-                        ).toLocaleDateString(undefined, {
-                          year: "2-digit",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </Text>
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "10px",
-                          "@media (min-width: 576px)": {
-                            fontSize: "12px",
-                          },
-                        }}
-                      >
-                        ID: {pipeline._id.slice(-6)}
-                      </Text>
-                    </div>
-                  </div>
+                  
                 </Card>
               </div>
             ))}
