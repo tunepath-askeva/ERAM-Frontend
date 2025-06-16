@@ -60,6 +60,9 @@ const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { Search } = Input;
 
+
+
+
 const CandidateJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
