@@ -223,7 +223,12 @@ function SortableStageItem({
   );
 }
 
-const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
+const CreatePipelineModal = ({
+  visible,
+  onClose,
+  editingPipeline,
+  onSuccess,
+}) => {
   const [form] = Form.useForm();
   const [stages, setStages] = useState([]);
   const [currentStage, setCurrentStage] = useState({
@@ -550,6 +555,7 @@ const CreatePipelineModal = ({ visible, onClose, editingPipeline }) => {
       console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
       resetForm();
       onClose();
+      if (onSuccess) onSuccess(result);
     } catch (error) {
       const errorMessage =
         error?.data?.message ||

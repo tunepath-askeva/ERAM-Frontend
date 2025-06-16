@@ -39,6 +39,7 @@ import {
   useCreateWorkOrderMutation,
   useGetAdminBranchQuery,
 } from "../../Slices/Admin/AdminApis.js";
+import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
 import { useNavigate } from "react-router-dom";
 
 const { TextArea } = Input;
@@ -72,12 +73,14 @@ const AddWorkOrder = () => {
     useState(false);
   const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
   const [pipelineStageDates, setPipelineStageDates] = useState({});
+  const [pipelineModalVisible, setPipelineModalVisible] = useState(false);
+  const [editingPipeline, setEditingPipeline] = useState(null);
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
-  const { data: pipeline } = useGetPipelinesQuery();
+  const { data: pipeline, refetch } = useGetPipelinesQuery();
   const [createWorkOrder] = useCreateWorkOrderMutation();
 
   const branchId = Branch?.branch?._id;
@@ -139,6 +142,18 @@ const AddWorkOrder = () => {
     if (pipeline) {
       setCurrentPipelineForDates(pipeline);
       setPipelineDatesModalVisible(true);
+
+      // Initialize dates if they don't exist
+      if (!pipelineStageDates[pipelineId]) {
+        setPipelineStageDates((prev) => ({
+          ...prev,
+          [pipelineId]: pipeline.stages.map((stage) => ({
+            stageId: stage._id,
+            startDate: null,
+            endDate: null,
+          })),
+        }));
+      }
     }
   };
 
@@ -815,6 +830,17 @@ const AddWorkOrder = () => {
       visible={pipelineDatesModalVisible}
       onCancel={() => setPipelineDatesModalVisible(false)}
       footer={[
+        <Button
+          key="edit"
+          icon={<EditOutlined />}
+          onClick={() => {
+            setEditingPipeline(currentPipelineForDates);
+            setPipelineDatesModalVisible(false);
+            setPipelineModalVisible(true);
+          }}
+        >
+          Edit Stages
+        </Button>,
         <Button key="back" onClick={() => setPipelineDatesModalVisible(false)}>
           Close
         </Button>,
@@ -823,7 +849,7 @@ const AddWorkOrder = () => {
           type="primary"
           onClick={() => setPipelineDatesModalVisible(false)}
           style={{
-            background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+            background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
           }}
         >
           Save Dates
@@ -904,13 +930,27 @@ const AddWorkOrder = () => {
             <Tag
               key={pipelineId}
               color="blue"
-              style={{ cursor: "pointer", padding: "4px 8px" }}
+              style={{
+                cursor: "pointer",
+                padding: "4px 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
               onClick={() => showPipelineDatesModal(pipelineId)}
             >
               {pipeline.name}
               {pipelineStageDates[pipelineId]?.some(
                 (stage) => stage.startDate || stage.endDate
               ) && <span style={{ marginLeft: "4px" }}>(Dates set)</span>}
+              <EditOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingPipeline(pipeline);
+                  setPipelineModalVisible(true);
+                }}
+                style={{ color: "#fff" }}
+              />
             </Tag>
           );
         })}
@@ -1045,19 +1085,35 @@ const AddWorkOrder = () => {
                       { required: true, message: "Please select a pipeline" },
                     ]}
                   >
-                    <Select
-                      mode="multiple"
-                      placeholder="Select pipeline"
-                      onChange={handlePipelineChange}
-                    >
-                      {activePipelines.map((pipeline) => (
-                        <Option key={pipeline._id} value={pipeline._id}>
-                          {pipeline.name}
-                        </Option>
-                      ))}
-                    </Select>
+                    <Space.Compact style={{ width: "100%" }}>
+                      <Select
+                        mode="multiple"
+                        placeholder="Select pipeline"
+                        onChange={handlePipelineChange}
+                        style={{ width: "calc(100% - 120px)" }}
+                      >
+                        {activePipelines.map((pipeline) => (
+                          <Option key={pipeline._id} value={pipeline._id}>
+                            {pipeline.name}
+                          </Option>
+                        ))}
+                      </Select>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setEditingPipeline(null);
+                          setPipelineModalVisible(true);
+                        }}
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                          width: "120px",
+                        }}
+                      >
+                        + New Pipeline
+                      </Button>
+                    </Space.Compact>
                   </Form.Item>
-
                   {selectedPipelines.length > 0 && renderSelectedPipelines()}
                 </Col>
                 <Col xs={24} md={12} lg={8}>
@@ -1321,6 +1377,15 @@ const AddWorkOrder = () => {
         </Card>
 
         {renderPipelineDatesModal()}
+
+        <CreatePipelineModal
+          visible={pipelineModalVisible}
+          onClose={() => setPipelineModalVisible(false)}
+          editingPipeline={editingPipeline}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
       </div>
     );
   }
