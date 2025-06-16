@@ -55,7 +55,6 @@ import {
   useGetJobsByBranchQuery,
   useLazySearchJobsQuery,
 } from "../Slices/Users/UserApis";
-import { debounce } from "lodash";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -70,12 +69,23 @@ const CandidateJobs = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  const { data: apiData, isLoading, error } = useGetJobsByBranchQuery();
-  const [searchJobs, { data }] = useLazySearchJobsQuery();
+  // Get initial jobs data
+  const {
+    data: apiData,
+    isLoading: initialLoading,
+    error: initialError,
+  } = useGetJobsByBranchQuery();
 
-  // Filter states
+  // Search jobs API
+  const [
+    searchJobs,
+    { data: searchData, isLoading: searchLoading, error: searchError },
+  ] = useLazySearchJobsQuery();
+
+  // Filter states - these will be applied locally after API search
   const [searchKeyword, setSearchKeyword] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [workTypeFilter, setWorkTypeFilter] = useState("");
@@ -83,15 +93,8 @@ const CandidateJobs = () => {
   const [experienceFilter, setExperienceFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
-  const handleSearch = debounce((keyword, location) => {
-    searchJobs({ title: keyword, location });
-  }, 500);
-
-  useEffect(() => {
-    if (searchKeyword || locationFilter) {
-      handleSearch(searchKeyword, locationFilter);
-    }
-  }, [searchKeyword, locationFilter]);
+  // Track if we're showing search results or initial data
+  const [showingSearchResults, setShowingSearchResults] = useState(false);
 
   const transformJobData = (workorders) => {
     return (
@@ -147,41 +150,67 @@ const CandidateJobs = () => {
     );
   };
 
+  // Load initial jobs data
   useEffect(() => {
-    if (apiData?.workorders) {
+    if (apiData?.workorders && !showingSearchResults) {
       const transformedJobs = transformJobData(apiData.workorders);
       setFilteredJobs(transformedJobs);
     }
-  }, [apiData]);
+  }, [apiData, showingSearchResults]);
 
+  // Handle search results
   useEffect(() => {
-    applyFilters();
-  }, [
-    searchKeyword,
-    locationFilter,
-    workTypeFilter,
-    employmentTypeFilter,
-    experienceFilter,
-    categoryFilter,
-  ]);
+    if (searchData?.workorders && showingSearchResults) {
+      const transformedJobs = transformJobData(searchData.workorders);
+      setFilteredJobs(transformedJobs);
+    }
+  }, [searchData, showingSearchResults]);
 
-  const applyFilters = () => {
-    if (!apiData?.workorders) return;
+  // Apply local filters when filter states change
+  useEffect(() => {
+    applyLocalFilters();
+  }, [workTypeFilter, employmentTypeFilter, experienceFilter, categoryFilter]);
 
-    const transformedJobs = transformJobData(apiData.workorders);
+  // Handle search button click
+  const handleSearch = async () => {
+    if (!searchKeyword.trim() && !locationFilter.trim()) {
+      // If both search fields are empty, show initial data
+      setShowingSearchResults(false);
+      setCurrentPage(1);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      await searchJobs({
+        title: searchKeyword.trim() || undefined,
+        location: locationFilter.trim() || undefined,
+      });
+      setShowingSearchResults(true);
+      setCurrentPage(1);
+    } catch (error) {
+      message.error("Failed to search jobs. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Clear search and show initial data
+  const clearSearch = () => {
+    setSearchKeyword("");
+    setLocationFilter("");
+    setShowingSearchResults(false);
+    clearFilters();
+  };
+
+  // Apply local filters to current job data (search results or initial data)
+  const applyLocalFilters = () => {
+    const currentData = showingSearchResults ? searchData : apiData;
+    if (!currentData?.workorders) return;
+
+    const transformedJobs = transformJobData(currentData.workorders);
 
     let filtered = transformedJobs.filter((job) => {
-      const matchesKeyword =
-        !searchKeyword ||
-        job.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        job.skills.some((skill) =>
-          skill.toLowerCase().includes(searchKeyword.toLowerCase())
-        );
-
-      const matchesLocation =
-        !locationFilter ||
-        job.location.toLowerCase().includes(locationFilter.toLowerCase());
       const matchesWorkType =
         !workTypeFilter || job.workType === workTypeFilter;
       const matchesEmploymentType =
@@ -192,8 +221,6 @@ const CandidateJobs = () => {
         !categoryFilter || job.category === categoryFilter;
 
       return (
-        matchesKeyword &&
-        matchesLocation &&
         matchesWorkType &&
         matchesEmploymentType &&
         matchesExperience &&
@@ -228,8 +255,6 @@ const CandidateJobs = () => {
   };
 
   const clearFilters = () => {
-    setSearchKeyword("");
-    setLocationFilter("");
     setWorkTypeFilter("");
     setEmploymentTypeFilter("");
     setExperienceFilter("");
@@ -263,9 +288,10 @@ const CandidateJobs = () => {
     return count;
   };
 
-  // Get unique values for filter options from API data
+  // Get unique values for filter options from current data
   const getFilterOptions = () => {
-    if (!apiData?.workorders) {
+    const currentData = showingSearchResults ? searchData : apiData;
+    if (!currentData?.workorders) {
       return {
         workTypes: [],
         employmentTypes: [],
@@ -276,7 +302,7 @@ const CandidateJobs = () => {
 
     const workTypes = [
       ...new Set(
-        apiData.workorders.map((job) =>
+        currentData.workorders.map((job) =>
           job.workplace === "on-site"
             ? "On-site"
             : job.workplace === "remote"
@@ -288,7 +314,7 @@ const CandidateJobs = () => {
 
     const employmentTypes = [
       ...new Set(
-        apiData.workorders.map((job) =>
+        currentData.workorders.map((job) =>
           job.EmploymentType === "full-time"
             ? "Full-time"
             : job.EmploymentType === "part-time"
@@ -302,13 +328,13 @@ const CandidateJobs = () => {
 
     const categories = [
       ...new Set(
-        apiData.workorders.map((job) => job.jobFunction).filter(Boolean)
+        currentData.workorders.map((job) => job.jobFunction).filter(Boolean)
       ),
     ];
 
     const experiences = [
       ...new Set(
-        apiData.workorders.map((job) => job.Experience).filter(Boolean)
+        currentData.workorders.map((job) => job.Experience).filter(Boolean)
       ),
     ];
 
@@ -453,6 +479,12 @@ const CandidateJobs = () => {
     ],
   };
 
+  // Determine loading state
+  const isLoading = initialLoading || (isSearching && searchLoading);
+
+  // Determine error state
+  const error = initialError || (showingSearchResults && searchError);
+
   if (isLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -529,12 +561,13 @@ const CandidateJobs = () => {
           <div className="desktop-search" style={{ display: "block" }}>
             <Row gutter={[12, 12]} align="middle">
               <Col xs={24} sm={24} md={10} lg={10} xl={10}>
-                <Search
+                <Input
                   placeholder="Job title or keyword"
                   size="large"
                   prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
+                  onPressEnter={handleSearch}
                   style={{ width: "100%" }}
                 />
               </Col>
@@ -545,6 +578,7 @@ const CandidateJobs = () => {
                   prefix={<EnvironmentOutlined style={{ color: "#da2c46" }} />}
                   value={locationFilter}
                   onChange={(e) => setLocationFilter(e.target.value)}
+                  onPressEnter={handleSearch}
                   style={{ width: "100%" }}
                 />
               </Col>
@@ -607,6 +641,7 @@ const CandidateJobs = () => {
                   type="primary"
                   size="large"
                   icon={<SearchOutlined />}
+                  loading={isSearching}
                   style={{
                     width: "100%",
                     background:
@@ -623,6 +658,42 @@ const CandidateJobs = () => {
             </Row>
           </div>
         </Card>
+
+        {/* Search Results Indicator */}
+        {showingSearchResults && (
+          <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <Text style={{ fontWeight: 500, fontSize: "14px" }}>
+                  Search results for:
+                </Text>
+                {searchKeyword && (
+                  <Tag color="blue" style={{ fontSize: "12px" }}>
+                    "{searchKeyword}"
+                  </Tag>
+                )}
+                {locationFilter && (
+                  <Tag color="green" style={{ fontSize: "12px" }}>
+                    <EnvironmentOutlined /> {locationFilter}
+                  </Tag>
+                )}
+              </div>
+              <Button type="link" size="small" onClick={clearSearch}>
+                <CloseOutlined /> Clear Search
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Mobile Filter Drawer */}
         <Drawer
@@ -708,6 +779,7 @@ const CandidateJobs = () => {
             }}
           >
             {filteredJobs.length} jobs found
+            {showingSearchResults && " (from search results)"}
           </Text>
         </div>
 
@@ -897,125 +969,72 @@ const CandidateJobs = () => {
                             color="cyan"
                             style={{ fontSize: "11px", margin: "2px" }}
                           >
-                            {job.numberOfCandidate} positions
+                            <TeamOutlined /> {job.numberOfCandidate} openings
                           </Tag>
                         )}
                       </Space>
                     </div>
 
-                    {/* Skills */}
-                    {job.skills.length > 0 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <Space wrap size="small">
-                          {job.skills.slice(0, 3).map((skill, skillIndex) => (
-                            <Tag
-                              key={skillIndex}
-                              style={{
-                                fontSize: "10px",
-                                border: "1px solid #da2c46",
-                                color: "#da2c46",
-                                background: "#fff",
-                                borderRadius: "4px",
-                                margin: "2px",
-                              }}
-                            >
-                              {skill}
-                            </Tag>
-                          ))}
-                          {job.skills.length > 3 && (
-                            <Tag
-                              style={{
-                                fontSize: "10px",
-                                color: "#666",
-                                margin: "2px",
-                              }}
-                            >
-                              +{job.skills.length - 3} more
-                            </Tag>
-                          )}
-                        </Space>
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    <Paragraph
-                      ellipsis={{ rows: 2 }}
-                      style={{
-                        margin: "0 0 12px 0",
-                        color: "#666",
-                        fontSize: "clamp(12px, 2.5vw, 14px)",
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      {job.description}
-                    </Paragraph>
-
-                    {/* Footer with Date and Actions */}
+                    {/* Skills and Posted Date */}
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "center",
                         justifyContent: "space-between",
-                        gap: "8px",
+                        alignItems: "flex-end",
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <Text
-                          type="secondary"
-                          style={{ fontSize: "11px", display: "block" }}
-                        >
-                          Posted {formatDate(job.postedDate)}
-                        </Text>
-                        {job.deadlineDate && (
-                          <Text
-                            type="warning"
-                            style={{ fontSize: "11px", display: "block" }}
-                          >
-                            Deadline:{" "}
-                            {new Date(job.deadlineDate).toLocaleDateString()}
-                          </Text>
+                        {job.skills && job.skills.length > 0 && (
+                          <div style={{ marginBottom: "8px" }}>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: "11px",
+                                display: "block",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              Skills:
+                            </Text>
+                            <Space wrap size={[4, 4]}>
+                              {job.skills.slice(0, 3).map((skill, i) => (
+                                <Tag
+                                  key={i}
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "0 6px",
+                                    margin: 0,
+                                  }}
+                                >
+                                  {skill}
+                                </Tag>
+                              ))}
+                              {job.skills.length > 3 && (
+                                <Tag
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "0 6px",
+                                    margin: 0,
+                                  }}
+                                >
+                                  +{job.skills.length - 3} more
+                                </Tag>
+                              )}
+                            </Space>
+                          </div>
                         )}
                       </div>
-
-                      <div
+                      <Text
+                        type="secondary"
                         style={{
-                          display: "flex",
-                          gap: "8px",
-                          alignItems: "center",
+                          fontSize: "11px",
+                          alignSelf: "flex-end",
                           flexShrink: 0,
                         }}
                       >
-                        <Tooltip title="Share job">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<ShareAltOutlined />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              message.info(
-                                "Share functionality would be implemented here"
-                              );
-                            }}
-                            style={{ border: "1px solid #e0e0e0" }}
-                          />
-                        </Tooltip>
-
-                        <Button
-                          type="primary"
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleJobClick(job);
-                          }}
-                          style={{
-                            background:
-                              "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                            border: "none",
-                          }}
-                        >
-                          View
-                        </Button>
-                      </div>
+                        <ClockCircleOutlined /> Posted{" "}
+                        {formatDate(job.postedDate)}
+                      </Text>
                     </div>
                   </div>
                 </div>
@@ -1023,21 +1042,27 @@ const CandidateJobs = () => {
             </div>
 
             {/* Pagination */}
-            <div style={{ marginTop: "24px", textAlign: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "24px",
+                marginBottom: "24px",
+              }}
+            >
               <Pagination
                 current={currentPage}
-                pageSize={pageSize}
                 total={filteredJobs.length}
+                pageSize={pageSize}
                 onChange={(page) => setCurrentPage(page)}
                 showSizeChanger={false}
                 showQuickJumper
-                style={{ marginTop: "16px" }}
                 itemRender={(current, type, originalElement) => {
                   if (type === "prev") {
-                    return <Button>Previous</Button>;
+                    return <Button size="small">Previous</Button>;
                   }
                   if (type === "next") {
-                    return <Button>Next</Button>;
+                    return <Button size="small">Next</Button>;
                   }
                   return originalElement;
                 }}
@@ -1047,35 +1072,45 @@ const CandidateJobs = () => {
         ) : (
           <Card
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: "300px",
-              background: "#fff",
               borderRadius: "12px",
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+              textAlign: "center",
             }}
           >
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <Text type="secondary" style={{ fontSize: "16px" }}>
-                  No jobs found matching your criteria
+                <Text type="secondary">
+                  No jobs found matching your criteria. Try adjusting your
+                  filters.
                 </Text>
               }
             >
-              <Button
-                type="primary"
-                onClick={clearFilters}
-                style={{
-                  background:
-                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  border: "none",
-                }}
-              >
-                Clear Filters
-              </Button>
+              {showingSearchResults ? (
+                <Button
+                  type="primary"
+                  onClick={clearSearch}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
+                  }}
+                >
+                  Clear Search
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  onClick={clearFilters}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
             </Empty>
           </Card>
         )}
