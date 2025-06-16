@@ -34,6 +34,7 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import CreatePipelineModal from "./CreatePipelineModal.jsx";
 
 import {
   useGetRecruitersQuery,
@@ -77,12 +78,14 @@ const EditWorkOrder = () => {
     useState(false);
   const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
   const [pipelineStageDates, setPipelineStageDates] = useState({});
+  const [pipelineModalVisible, setPipelineModalVisible] = useState(false);
+  const [editingPipeline, setEditingPipeline] = useState(null);
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
-  const { data: pipeline } = useGetPipelinesQuery();
+  const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery();
   const {
     data: workOrderData,
     isLoading: isLoadingWorkOrder,
@@ -955,6 +958,17 @@ const EditWorkOrder = () => {
       visible={pipelineDatesModalVisible}
       onCancel={() => setPipelineDatesModalVisible(false)}
       footer={[
+        <Button
+          key="edit"
+          icon={<EditOutlined />}
+          onClick={() => {
+            setEditingPipeline(currentPipelineForDates);
+            setPipelineDatesModalVisible(false);
+            setPipelineModalVisible(true);
+          }}
+        >
+          Edit Stages
+        </Button>,
         <Button key="back" onClick={() => setPipelineDatesModalVisible(false)}>
           Close
         </Button>,
@@ -1058,13 +1072,27 @@ const EditWorkOrder = () => {
             <Tag
               key={pipelineId}
               color="blue"
-              style={{ cursor: "pointer", padding: "4px 8px" }}
+              style={{
+                cursor: "pointer",
+                padding: "4px 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
               onClick={() => showPipelineDatesModal(pipelineId)}
             >
               {pipeline.name}
-              {pipelineStageDates[pipelineId]?.some(
-                (stage) => stage.startDate || stage.endDate
+              {hasDates && (
+                <span style={{ marginLeft: "4px" }}>(Dates set)</span>
               )}
+              <EditOutlined
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingPipeline(pipeline);
+                  setPipelineModalVisible(true);
+                }}
+                style={{ color: "#fff" }}
+              />
             </Tag>
           );
         })}
@@ -1269,17 +1297,34 @@ const EditWorkOrder = () => {
                       { required: true, message: "Please select a pipeline" },
                     ]}
                   >
-                    <Select
-                      mode="multiple"
-                      placeholder="Select pipeline"
-                      onChange={handlePipelineChange}
-                    >
-                      {activePipelines.map((pipeline) => (
-                        <Option key={pipeline._id} value={pipeline._id}>
-                          {pipeline.name}
-                        </Option>
-                      ))}
-                    </Select>
+                    <Space.Compact style={{ width: "100%" }}>
+                      <Select
+                        mode="multiple"
+                        placeholder="Select pipeline"
+                        onChange={handlePipelineChange}
+                        style={{ width: "calc(100% - 120px)" }}
+                      >
+                        {activePipelines.map((pipeline) => (
+                          <Option key={pipeline._id} value={pipeline._id}>
+                            {pipeline.name}
+                          </Option>
+                        ))}
+                      </Select>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setEditingPipeline(null);
+                          setPipelineModalVisible(true);
+                        }}
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                          width: "120px",
+                        }}
+                      >
+                        + New Pipeline
+                      </Button>
+                    </Space.Compact>
                   </Form.Item>
 
                   {selectedPipelines.length > 0 && renderSelectedPipelines()}
@@ -1550,6 +1595,14 @@ const EditWorkOrder = () => {
           </Form>
         </Card>
         {renderPipelineDatesModal()}
+        <CreatePipelineModal
+          visible={pipelineModalVisible}
+          onClose={() => setPipelineModalVisible(false)}
+          editingPipeline={editingPipeline}
+          onSuccess={() => {
+            refetchPipeline();
+          }}
+        />
       </div>
     );
   }
