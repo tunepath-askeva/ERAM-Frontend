@@ -74,6 +74,12 @@ export const userApi = createApi({
         body: formData,
       }),
     }),
+searchJobs: builder.query({
+  query: ({ title, location }) => ({
+    url: `/api/jobs/search?title=${encodeURIComponent(title)}&location=${encodeURIComponent(location)}`,
+    method: "GET",
+  }),
+}),
     getUserAppliedJobs: builder.query({
       query: () => ({
         url: "/jobs",
@@ -95,4 +101,5 @@ export const {
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
+  useLazySearchJobsQuery
 } = userApi;

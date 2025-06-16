@@ -51,7 +51,11 @@ import {
   MenuOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useGetJobsByBranchQuery } from "../Slices/Users/UserApis";
+import {
+  useGetJobsByBranchQuery,
+  useLazySearchJobsQuery,
+} from "../Slices/Users/UserApis";
+import { debounce } from "lodash";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -62,13 +66,14 @@ const CandidateJobs = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobDetailVisible, setJobDetailVisible] = useState(false);
   const [savedJobs, setSavedJobs] = useState(new Set());
+  const [jobs, setJobs] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const navigate = useNavigate();
 
-  // API call
   const { data: apiData, isLoading, error } = useGetJobsByBranchQuery();
+  const [searchJobs, { data }] = useLazySearchJobsQuery();
 
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -77,6 +82,16 @@ const CandidateJobs = () => {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+
+  const handleSearch = debounce((keyword, location) => {
+    searchJobs({ title: keyword, location });
+  }, 500);
+
+  useEffect(() => {
+    if (searchKeyword || locationFilter) {
+      handleSearch(searchKeyword, locationFilter);
+    }
+  }, [searchKeyword, locationFilter]);
 
   const transformJobData = (workorders) => {
     return (
@@ -204,8 +219,6 @@ const CandidateJobs = () => {
       message.success("Job saved successfully");
     }
     setSavedJobs(newSavedJobs);
-
-    // Update filtered jobs to reflect saved status
     setFilteredJobs((prevJobs) =>
       prevJobs.map((j) => ({
         ...j,
@@ -440,7 +453,6 @@ const CandidateJobs = () => {
     ],
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -481,7 +493,6 @@ const CandidateJobs = () => {
   return (
     <>
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
-        {/* Header */}
         <div style={{ marginBottom: "16px", textAlign: "center" }}>
           <Title
             level={2}
@@ -508,7 +519,6 @@ const CandidateJobs = () => {
           </Text>
         </div>
 
-        {/* Search and Filter Section */}
         <Card
           style={{
             marginBottom: "16px",
@@ -516,7 +526,6 @@ const CandidateJobs = () => {
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
           }}
         >
-          {/* Desktop Search Bar */}
           <div className="desktop-search" style={{ display: "block" }}>
             <Row gutter={[12, 12]} align="middle">
               <Col xs={24} sm={24} md={10} lg={10} xl={10}>
@@ -540,7 +549,6 @@ const CandidateJobs = () => {
                 />
               </Col>
               <Col xs={12} sm={6} md={4} lg={4} xl={4}>
-                {/* Desktop Filter Dropdown */}
                 <div className="desktop-filter" style={{ display: "none" }}>
                   <Dropdown
                     menu={filterDropdownMenu}
@@ -571,7 +579,6 @@ const CandidateJobs = () => {
                     </Button>
                   </Dropdown>
                 </div>
-                {/* Mobile Filter Button */}
                 <div className="mobile-filter" style={{ display: "block" }}>
                   <Button
                     size="large"
@@ -606,6 +613,7 @@ const CandidateJobs = () => {
                       "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                     border: "none",
                   }}
+                  onClick={handleSearch}
                 >
                   <span className="search-text" style={{ display: "inline" }}>
                     Search
