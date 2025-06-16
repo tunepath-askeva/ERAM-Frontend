@@ -20,6 +20,7 @@ import {
   Radio,
   Spin,
   Modal,
+  Skeleton
 } from "antd";
 import {
   PlusOutlined,
@@ -1091,7 +1092,6 @@ const EditWorkOrder = () => {
                   setEditingPipeline(pipeline);
                   setPipelineModalVisible(true);
                 }}
-                style={{ color: "#fff" }}
               />
             </Tag>
           );
@@ -1111,9 +1111,8 @@ const EditWorkOrder = () => {
           height: "400px",
         }}
       >
-        <Spin size="large" indicator={<LoadingOutlined spin />} />
-        <div style={{ marginLeft: "16px" }}>Loading work order data...</div>
-      </div>
+        <Skeleton />
+=      </div>
     );
   }
 
@@ -1607,7 +1606,6 @@ const EditWorkOrder = () => {
     );
   }
 
-  // Step 2: Application Form Builder
   return (
     <div style={{ padding: "16px 8px", maxWidth: "1400px", margin: "0 auto" }}>
       <Steps
