@@ -74,6 +74,12 @@ export const userApi = createApi({
         body: formData,
       }),
     }),
+    getUserAppliedJobs: builder.query({
+      query: () => ({
+        url: "/jobs",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -88,4 +94,5 @@ export const {
   useGetJobsByBranchQuery,
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
+  useGetUserAppliedJobsQuery,
 } = userApi;
