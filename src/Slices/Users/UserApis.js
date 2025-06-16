@@ -66,13 +66,10 @@ export const userApi = createApi({
       }),
     }),
     submitJobApplication: builder.mutation({
-      query: (payload) => ({
+      query: (formData) => ({
         url: "/candidate",
         method: "POST",
-        body: payload,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        body: formData,
       }),
     }),
   }),

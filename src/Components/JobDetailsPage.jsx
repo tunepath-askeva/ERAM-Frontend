@@ -197,14 +197,15 @@ const JobDetailsPage = () => {
   const handleSubmitApplication = async (values) => {
     try {
       if (currentStep === 0) {
-        // On first submit, just move to review step
         setReviewData(values);
         setCurrentStep(1);
         return;
       }
 
-      // On final submit (from review step)
-      const responses = [];
+      const formData = {
+        workOrderId: jobId,
+        fields: {},
+      };
 
       if (job.customFields) {
         for (const field of job.customFields) {
@@ -219,30 +220,23 @@ const JobDetailsPage = () => {
             if (field.type === "file") {
               const files = fileList[field.id];
               if (files && files[0]?.originFileObj) {
-                const base64Content = await fileToBase64(
-                  files[0].originFileObj
-                );
-                responses.push({
-                  fieldKey: fieldId,
-                  value: base64Content,
-                });
+                const base64File = await fileToBase64(files[0].originFileObj);
+                formData.fields[fieldId] = {
+                  filename: files[0].name,
+                  type: files[0].type,
+                  data: base64File,
+                };
               }
             } else {
-              responses.push({
-                fieldKey: fieldId,
-                value: fieldValue,
-              });
+              formData.fields[fieldId] = fieldValue;
             }
           }
         }
       }
 
-      const payload = {
-        workOrderId: jobId,
-        responses: responses,
-      };
+      await submitJobApplication(formData).unwrap();
+      console.log(formData, "FormData");
 
-      await submitJobApplication(payload).unwrap();
       message.success("Application submitted successfully!");
       form.resetFields();
       setFileList({});
@@ -253,13 +247,14 @@ const JobDetailsPage = () => {
     }
   };
 
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result.split(",")[1]);
       reader.onerror = (error) => reject(error);
     });
+  };
 
   const handleGoBack = () => {
     navigate("/candidate-jobs");

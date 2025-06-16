@@ -539,9 +539,7 @@ const EditBranch = () => {
                 <Form.Item
                   name="domain"
                   label="White Label Domain"
-                  rules={[
-                    { required: true, message: "Please enter branch Domain" },
-                  ]}
+                 
                 >
                   <Input
                     prefix={<CloudServerOutlined />}
