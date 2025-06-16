@@ -122,7 +122,7 @@ const EditBranch = () => {
             uid: '-1',
             name: 'Current Logo',
             status: 'done',
-            url: `https://res.cloudinary.com/dj0rho12o/image/upload/${branch.brand_logo}`,
+            url: branch.brand_logo,
           },
         ]);
       }

@@ -269,7 +269,7 @@ const ViewBranch = () => {
             }}>
               {branch.brand_logo ? (
                 <Image
-                  src={`https://res.cloudinary.com/dj0rho12o/image/upload/${branch.brand_logo}`}
+                  src={branch.brand_logo} 
                   alt={branch.name}
                   style={{
                     maxWidth: isMobile ? "150px" : "200px",

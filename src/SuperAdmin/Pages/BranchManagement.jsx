@@ -87,6 +87,7 @@ const BranchManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
+
   const handleAdd = () => {
     navigate("/superadmin/add");
   };
@@ -248,7 +249,7 @@ const BranchManagement = () => {
                   <div style={{ height: "140px", overflow: "hidden" }}>
                     <img
                       alt={branch.name}
-                      src={`https://res.cloudinary.com/dj0rho12o/image/upload/${branch.brandLogo}`}
+                       src={branch.brandLogo} 
                       style={{
                         width: "100%",
                         height: "100%",

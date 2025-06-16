@@ -7,8 +7,10 @@ export const userApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl,
     credentials: "include",
-    prepareHeaders: (headers, { getState }) => {
-      headers.set("Content-Type", "application/json");
+    prepareHeaders: (headers, { getState, endpoint }) => {
+      if (endpoint !== "submitJobApplication") {
+        headers.set("Content-Type", "application/json");
+      }
       return headers;
     },
   }),
