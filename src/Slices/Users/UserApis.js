@@ -74,6 +74,14 @@ export const userApi = createApi({
         body: formData,
       }),
     }),
+    searchJobs: builder.query({
+      query: ({ title, location }) => ({
+        url: `/api/jobs/search?title=${encodeURIComponent(
+          title
+        )}&location=${encodeURIComponent(location)}`,
+        method: "GET",
+      }),
+    }),
     getUserAppliedJobs: builder.query({
       query: () => ({
         url: "/jobs",
@@ -82,7 +90,7 @@ export const userApi = createApi({
     }),
     withdrawJobApplication: builder.mutation({
       query: (applicationId) => ({
-        url: `/status/${applicationId}`, 
+        url: `/status/${applicationId}`,
         method: "POST",
       }),
     }),
@@ -101,5 +109,6 @@ export const {
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
-  useWithdrawJobApplicationMutation
+  useWithdrawJobApplicationMutation,
+  useLazySearchJobsQuery,
 } = userApi;
