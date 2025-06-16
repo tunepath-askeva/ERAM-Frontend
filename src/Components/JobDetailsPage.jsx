@@ -21,6 +21,8 @@ import {
   Spin,
   Result,
   Skeleton,
+  Progress,
+  Steps,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -39,24 +41,31 @@ import {
   UserOutlined,
   MailOutlined,
   FileTextOutlined,
+  SendOutlined,
+  SafetyCertificateOutlined,
+  PhoneOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 import {
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
-} from "../Slices/Users/UserApis"; // Add the mutation import
+} from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
+const { Step } = Steps;
 
 const JobDetailsPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [form] = Form.useForm();
-  const [fileList, setFileList] = useState({}); // Track uploaded files for each field
+  const [fileList, setFileList] = useState({});
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formProgress, setFormProgress] = useState(0);
+  const [reviewData, setReviewData] = useState(null);
 
-  // RTK Query hooks
   const {
     data: job,
     isLoading,
@@ -70,23 +79,29 @@ const JobDetailsPage = () => {
   const [submitJobApplication, { isLoading: isSubmitting }] =
     useSubmitJobApplicationMutation();
 
+  React.useEffect(() => {
+    const values = form.getFieldsValue();
+    const totalFields = job?.customFields?.length || 1;
+    const filledFields = Object.values(values).filter(
+      (value) => value !== undefined && value !== null && value !== ""
+    ).length;
+    setFormProgress(Math.round((filledFields / totalFields) * 100));
+  }, [form, job]);
+
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Skeleton />
+      <div className="loading-container">
+        <Spin size="large" />
+        <div style={{ marginTop: 16 }}>
+          <Skeleton active paragraph={{ rows: 4 }} />
+        </div>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="error-container">
         <Result
           status="404"
           title="Failed to Load Job Details"
@@ -99,10 +114,7 @@ const JobDetailsPage = () => {
               type="primary"
               onClick={() => refetch()}
               key="retry"
-              style={{
-                background:
-                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-              }}
+              className="primary-button"
             >
               Try Again
             </Button>,
@@ -117,7 +129,7 @@ const JobDetailsPage = () => {
 
   if (!job) {
     return (
-      <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+      <div className="error-container">
         <Result
           status="404"
           title="Job Not Found"
@@ -126,10 +138,7 @@ const JobDetailsPage = () => {
             <Button
               type="primary"
               onClick={() => navigate("/candidate-jobs")}
-              style={{
-                background:
-                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-              }}
+              className="primary-button"
             >
               Back to Jobs
             </Button>
@@ -187,14 +196,20 @@ const JobDetailsPage = () => {
 
   const handleSubmitApplication = async (values) => {
     try {
-      // Transform form values into the expected responses format
+      if (currentStep === 0) {
+        // On first submit, just move to review step
+        setReviewData(values);
+        setCurrentStep(1);
+        return;
+      }
+
+      // On final submit (from review step)
       const responses = [];
 
-      // Process custom fields
       if (job.customFields) {
         for (const field of job.customFields) {
           const fieldId = field.id.toString();
-          const fieldValue = values[fieldId];
+          const fieldValue = reviewData[fieldId];
 
           if (
             fieldValue !== undefined &&
@@ -202,7 +217,6 @@ const JobDetailsPage = () => {
             fieldValue !== ""
           ) {
             if (field.type === "file") {
-              // Handle file uploads
               const files = fileList[field.id];
               if (files && files[0]?.originFileObj) {
                 const base64Content = await fileToBase64(
@@ -214,7 +228,6 @@ const JobDetailsPage = () => {
                 });
               }
             } else {
-              // Handle regular form fields
               responses.push({
                 fieldKey: fieldId,
                 value: fieldValue,
@@ -229,26 +242,22 @@ const JobDetailsPage = () => {
         responses: responses,
       };
 
-      console.log("Submitting payload:", payload); // For debugging
-
-      // Submit the application
       await submitJobApplication(payload).unwrap();
-
       message.success("Application submitted successfully!");
       form.resetFields();
       setFileList({});
+      setCurrentStep(2);
     } catch (error) {
       console.error("Submission error:", error);
       message.error(error?.data?.message || "Submission failed");
     }
   };
 
-  // Helper function to convert file to base64
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(",")[1]); // Remove data URL prefix
+      reader.onload = () => resolve(reader.result.split(",")[1]);
       reader.onerror = (error) => reject(error);
     });
 
@@ -263,11 +272,34 @@ const JobDetailsPage = () => {
     }));
   };
 
+  const getFieldIcon = (type) => {
+    switch (type) {
+      case "email":
+        return <MailOutlined />;
+      case "file":
+        return <UploadOutlined />;
+      case "phone":
+        return <PhoneOutlined />;
+      case "url":
+        return <LinkOutlined />;
+      case "textarea":
+        return <FileTextOutlined />;
+      default:
+        return <UserOutlined />;
+    }
+  };
+
   const renderCustomField = (field) => {
     const commonProps = {
       key: field.id,
       name: field.id.toString(),
-      label: field.label,
+      label: (
+        <span className="form-label">
+          {getFieldIcon(field.type)}
+          <span style={{ marginLeft: 8 }}>{field.label}</span>
+          {field.required && <span style={{ color: "#ff4d4f" }}> *</span>}
+        </span>
+      ),
       rules: field.required
         ? [{ required: true, message: `${field.label} is required` }]
         : [],
@@ -278,8 +310,9 @@ const JobDetailsPage = () => {
         return (
           <Form.Item {...commonProps}>
             <Input
+              size="large"
               placeholder={`Enter your ${field.label.toLowerCase()}`}
-              prefix={<UserOutlined />}
+              className="modern-input"
             />
           </Form.Item>
         );
@@ -294,8 +327,20 @@ const JobDetailsPage = () => {
             ]}
           >
             <Input
+              size="large"
               placeholder={`Enter your ${field.label.toLowerCase()}`}
-              prefix={<MailOutlined />}
+              className="modern-input"
+            />
+          </Form.Item>
+        );
+
+      case "phone":
+        return (
+          <Form.Item {...commonProps}>
+            <Input
+              size="large"
+              placeholder={`Enter your ${field.label.toLowerCase()}`}
+              className="modern-input"
             />
           </Form.Item>
         );
@@ -304,15 +349,10 @@ const JobDetailsPage = () => {
         return (
           <Form.Item
             name={field.id}
-            label={field.label}
-            rules={
-              field.required
-                ? [{ required: true, message: `${field.label} is required` }]
-                : []
-            }
-            // Remove valuePropName and getValueFromEvent for file fields
+            label={commonProps.label}
+            rules={commonProps.rules}
           >
-            <Upload
+            <Upload.Dragger
               beforeUpload={(file) => {
                 const isValidType = [
                   "image/jpeg",
@@ -326,14 +366,23 @@ const JobDetailsPage = () => {
                   message.error("Only images, PDFs, or Word docs allowed!");
                   return Upload.LIST_OFF;
                 }
-                return false; // Prevent auto upload
+                return false;
               }}
               maxCount={1}
               fileList={fileList[field.id] || []}
               onChange={(info) => handleFileChange(field.id, info)}
+              className="upload-dragger"
             >
-              <Button icon={<UploadOutlined />}>Upload {field.label}</Button>
-            </Upload>
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ color: "#da2c46" }} />
+              </p>
+              <p className="ant-upload-text">
+                Click or drag file to upload {field.label}
+              </p>
+              <p className="ant-upload-hint">
+                Support for PDF, DOC, DOCX, JPG, PNG files
+              </p>
+            </Upload.Dragger>
           </Form.Item>
         );
 
@@ -342,7 +391,9 @@ const JobDetailsPage = () => {
           <Form.Item {...commonProps}>
             <TextArea
               rows={4}
+              size="large"
               placeholder={`Enter your ${field.label.toLowerCase()}`}
+              className="modern-textarea"
             />
           </Form.Item>
         );
@@ -350,279 +401,195 @@ const JobDetailsPage = () => {
       default:
         return (
           <Form.Item {...commonProps}>
-            <Input placeholder={`Enter your ${field.label.toLowerCase()}`} />
+            <Input
+              size="large"
+              placeholder={`Enter your ${field.label.toLowerCase()}`}
+              className="modern-input"
+            />
           </Form.Item>
         );
     }
   };
 
   const JobOverview = () => (
-    <div>
+    <div className="job-overview">
       {/* Job Header */}
-      <div style={{ display: "flex", marginBottom: "24px" }}>
-        <Avatar
-          size={80}
-          style={{
-            backgroundColor: "#f0f0f0",
-            marginRight: "24px",
-            flexShrink: 0,
-          }}
-          icon={<BankOutlined />}
-        />
-        <div style={{ flex: 1 }}>
-          <Title level={2} style={{ margin: 0 }}>
-            {job.title}
-          </Title>
-          <Text
-            style={{
-              fontSize: "18px",
-              color: "#666",
-              display: "block",
-              margin: "8px 0 16px",
-            }}
-          >
-            {job.companyIndustry}
-          </Text>
-
-          {job.jobCode && (
-            <Text
-              type="secondary"
-              style={{ display: "block", marginBottom: "16px" }}
-            >
-              Job Code: {job.jobCode}
-            </Text>
-          )}
-
-          <Space wrap size="middle">
-            <Tag
-              icon={<EnvironmentOutlined />}
-              color="blue"
-              style={{ fontSize: "14px", padding: "6px 12px" }}
-            >
-              {job.officeLocation}
-            </Tag>
-            <Tag
-              icon={
-                job.workplace === "remote" ? <HomeOutlined /> : <BankOutlined />
-              }
-              color="green"
-              style={{ fontSize: "14px", padding: "6px 12px" }}
-            >
-              {job.workplace}
-            </Tag>
-            <Tag
-              color="orange"
-              style={{ fontSize: "14px", padding: "6px 12px" }}
-            >
-              {job.EmploymentType}
-            </Tag>
-            <Tag
-              color="purple"
-              style={{ fontSize: "14px", padding: "6px 12px" }}
-            >
-              {job.Experience} years exp
-            </Tag>
-            {job.numberOfCandidate && (
-              <Tag
-                color="cyan"
-                style={{ fontSize: "14px", padding: "6px 12px" }}
-              >
-                {job.numberOfCandidate} positions
-              </Tag>
-            )}
-          </Space>
-        </div>
-
-        <div style={{ display: "flex", gap: "12px" }}>
-          <Button
-            icon={savedJobs.has(job._id) ? <HeartFilled /> : <HeartOutlined />}
-            onClick={handleSaveJob}
-            style={{
-              color: savedJobs.has(job._id) ? "#da2c46" : undefined,
-              height: "40px",
-              width: "40px",
-            }}
-          />
-          <Button
-            icon={<ShareAltOutlined />}
-            onClick={handleShareJob}
-            style={{ height: "40px", width: "40px" }}
-          />
-        </div>
+      <div className="job-header">
+        <Row gutter={[24, 16]} align="middle">
+          <Col xs={24} sm={4} md={3}>
+            <Avatar
+              size={{ xs: 60, sm: 70, md: 80 }}
+              className="company-avatar"
+              icon={<BankOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={14} md={17}>
+            <div className="job-title-section">
+              <Title level={2} className="job-title">
+                {job.title}
+              </Title>
+              <Text className="company-name">{job.companyIndustry}</Text>
+              {job.jobCode && (
+                <Text type="secondary" className="job-code">
+                  Job Code: {job.jobCode}
+                </Text>
+              )}
+              <div className="job-tags">
+                <Tag
+                  icon={<EnvironmentOutlined />}
+                  color="blue"
+                  className="job-tag"
+                >
+                  {job.officeLocation}
+                </Tag>
+                <Tag
+                  icon={
+                    job.workplace === "remote" ? (
+                      <HomeOutlined />
+                    ) : (
+                      <BankOutlined />
+                    )
+                  }
+                  color="green"
+                  className="job-tag"
+                >
+                  {job.workplace}
+                </Tag>
+                <Tag color="orange" className="job-tag">
+                  {job.EmploymentType}
+                </Tag>
+                <Tag color="purple" className="job-tag">
+                  {job.Experience} years exp
+                </Tag>
+                {job.numberOfCandidate && (
+                  <Tag color="cyan" className="job-tag">
+                    {job.numberOfCandidate} positions
+                  </Tag>
+                )}
+              </div>
+            </div>
+          </Col>
+          <Col xs={24} sm={6} md={4}>
+            <div className="action-buttons">
+              <Button
+                icon={
+                  savedJobs.has(job._id) ? <HeartFilled /> : <HeartOutlined />
+                }
+                onClick={handleSaveJob}
+                className={`action-btn ${
+                  savedJobs.has(job._id) ? "saved" : ""
+                }`}
+                size="large"
+              />
+              <Button
+                icon={<ShareAltOutlined />}
+                onClick={handleShareJob}
+                className="action-btn"
+                size="large"
+              />
+            </div>
+          </Col>
+        </Row>
       </div>
 
-      {/* Salary and Key Info */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "24px",
-          padding: "16px",
-          background: "#f8f9fa",
-          borderRadius: "8px",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
+      {/* Key Information Cards */}
+      <Row gutter={[16, 16]} className="key-info-section">
         {job.annualSalary && (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <DollarOutlined
-              style={{
-                color: "#da2c46",
-                fontSize: "20px",
-                marginRight: "12px",
-              }}
-            />
-            <div>
-              <Text strong style={{ display: "block", color: "#666" }}>
-                Salary
-              </Text>
-              <Text strong style={{ color: "#da2c46", fontSize: "16px" }}>
-                {formatSalary(job.annualSalary, job.salaryType)}
-              </Text>
-            </div>
-          </div>
+          <Col xs={12} sm={12} md={6}>
+            <Card className="info-card salary-card">
+              <DollarOutlined className="info-icon" />
+              <div className="info-content">
+                <Text className="info-label">Salary</Text>
+                <Text className="info-value">
+                  {formatSalary(job.annualSalary, job.salaryType)}
+                </Text>
+              </div>
+            </Card>
+          </Col>
         )}
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <CalendarOutlined
-            style={{
-              color: "#666",
-              fontSize: "20px",
-              marginRight: "12px",
-            }}
-          />
-          <div>
-            <Text strong style={{ display: "block", color: "#666" }}>
-              Posted
-            </Text>
-            <Text style={{ color: "#333", fontSize: "16px" }}>
-              {formatDate(job.createdAt)}
-            </Text>
-          </div>
-        </div>
+        <Col xs={12} sm={12} md={6}>
+          <Card className="info-card">
+            <CalendarOutlined className="info-icon" />
+            <div className="info-content">
+              <Text className="info-label">Posted</Text>
+              <Text className="info-value">{formatDate(job.createdAt)}</Text>
+            </div>
+          </Card>
+        </Col>
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <BookOutlined
-            style={{
-              color: "#666",
-              fontSize: "20px",
-              marginRight: "12px",
-            }}
-          />
-          <div>
-            <Text strong style={{ display: "block", color: "#666" }}>
-              Function
-            </Text>
-            <Text style={{ color: "#333", fontSize: "16px" }}>
-              {job.jobFunction}
-            </Text>
-          </div>
-        </div>
+        <Col xs={12} sm={12} md={6}>
+          <Card className="info-card">
+            <BookOutlined className="info-icon" />
+            <div className="info-content">
+              <Text className="info-label">Function</Text>
+              <Text className="info-value">{job.jobFunction}</Text>
+            </div>
+          </Card>
+        </Col>
 
         {job.deadlineDate && (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <ClockCircleOutlined
-              style={{
-                color: "#ff4d4f",
-                fontSize: "20px",
-                marginRight: "12px",
-              }}
-            />
-            <div>
-              <Text strong style={{ display: "block", color: "#666" }}>
-                Deadline
-              </Text>
-              <Text style={{ color: "#ff4d4f", fontSize: "16px" }}>
-                {new Date(job.deadlineDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </div>
+          <Col xs={12} sm={12} md={6}>
+            <Card className="info-card deadline-card">
+              <ClockCircleOutlined className="info-icon" />
+              <div className="info-content">
+                <Text className="info-label">Deadline</Text>
+                <Text className="info-value">
+                  {new Date(job.deadlineDate).toLocaleDateString()}
+                </Text>
+              </div>
+            </Card>
+          </Col>
         )}
-      </div>
+      </Row>
 
       {/* Job Description */}
-      <div style={{ marginBottom: "24px" }}>
-        <Title level={4} style={{ marginBottom: "16px" }}>
+      <Card className="content-card">
+        <Title level={4} className="section-title">
           Job Description
         </Title>
-        <Paragraph
-          style={{
-            fontSize: "16px",
-            lineHeight: "1.7",
-            color: "#444",
-          }}
-        >
-          {job.description}
-        </Paragraph>
-      </div>
+        <Paragraph className="job-description">{job.description}</Paragraph>
+      </Card>
 
       {/* Requirements */}
       {job.jobRequirements && (
-        <div style={{ marginBottom: "24px" }}>
-          <Title level={4} style={{ marginBottom: "16px" }}>
+        <Card className="content-card">
+          <Title level={4} className="section-title">
             Requirements
           </Title>
-          <div
-            style={{
-              fontSize: "16px",
-              lineHeight: "1.7",
-              color: "#444",
-              whiteSpace: "pre-line",
-            }}
-          >
+          <div className="requirements-list">
             {job.jobRequirements.split("\n\n").map((requirement, index) => (
-              <div
-                key={index}
-                style={{ marginBottom: "12px", display: "flex" }}
-              >
-                <CheckCircleOutlined
-                  style={{
-                    color: "#52c41a",
-                    marginRight: "8px",
-                    marginTop: "4px",
-                    flexShrink: 0,
-                  }}
-                />
+              <div key={index} className="requirement-item">
+                <CheckCircleOutlined className="check-icon" />
                 <span>{requirement}</span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Skills */}
       {job.requiredSkills && job.requiredSkills.length > 0 && (
-        <div style={{ marginBottom: "24px" }}>
-          <Title level={4} style={{ marginBottom: "16px" }}>
+        <Card className="content-card">
+          <Title level={4} className="section-title">
             Required Skills
           </Title>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div className="skills-container">
             {job.requiredSkills.map((skill, index) => (
-              <Tag
-                key={index}
-                style={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  border: "1px solid #da2c46",
-                  color: "#da2c46",
-                  background: "#fff",
-                  borderRadius: "20px",
-                }}
-              >
+              <Tag key={index} className="skill-tag">
                 {skill}
               </Tag>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Additional Info */}
-      <div style={{ marginBottom: "24px" }}>
-        <Title level={4} style={{ marginBottom: "16px" }}>
+      <Card className="content-card">
+        <Title level={4} className="section-title">
           Additional Information
         </Title>
-        <Descriptions column={2} bordered>
+        <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
           {job.Education && (
             <Descriptions.Item label="Education">
               {job.Education}
@@ -640,108 +607,588 @@ const JobDetailsPage = () => {
           )}
           {job.benefits && job.benefits.length > 0 && (
             <Descriptions.Item label="Responsibilities" span={2}>
-              <ul style={{ margin: 0, paddingLeft: "20px" }}>
+              <ul className="benefits-list">
                 {job.benefits.map((benefit, index) => (
-                  <li key={index} style={{ marginBottom: "8px" }}>
-                    {benefit}
-                  </li>
+                  <li key={index}>{benefit}</li>
                 ))}
               </ul>
             </Descriptions.Item>
           )}
         </Descriptions>
-      </div>
+      </Card>
     </div>
   );
 
   const ApplicationForm = () => (
-    <div>
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmitApplication}
-        style={{ maxWidth: "600px" }}
-      >
-        {job.customFields &&
-          job.customFields.map((field) => renderCustomField(field))}
+    <div className="application-form-container">
+      {/* Application Progress */}
+      <Card className="progress-card">
+        <div className="progress-header">
+          <Title level={4}>Application Progress</Title>
+          <Text type="secondary">Complete all required fields</Text>
+        </div>
+        <Progress
+          percent={formProgress}
+          strokeColor={{
+            "0%": "#da2c46",
+            "100%": "#a51632",
+          }}
+          trailColor="#f0f0f0"
+          className="application-progress"
+        />
+      </Card>
 
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={isSubmitting}
-            size="large"
-            style={{
-              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-              border: "none",
-              padding: "0 48px",
-              height: "48px",
-              fontWeight: 600,
-              fontSize: "16px",
-              width: "100%",
+      {/* Application Steps */}
+      <Card className="steps-card">
+        <Steps
+          current={currentStep}
+          className="application-steps"
+          items={[
+            {
+              title: "Fill Details",
+              description: "Complete application form",
+              icon: <UserOutlined style={{ color: "#da2c46" }} />,
+            },
+            {
+              title: "Review",
+              description: "Review your information",
+              icon: <SafetyCertificateOutlined style={{ color: "#da2c46" }} />,
+            },
+            {
+              title: "Submit",
+              description: "Send your application",
+              icon: <SendOutlined style={{ color: "#da2c46" }} />,
+            },
+          ]}
+        />
+      </Card>
+
+      {currentStep === 0 && (
+        <Card className="form-card">
+          <div className="form-header">
+            <Title level={4}>Apply for {job.title}</Title>
+            <Text type="secondary">
+              Fill out the form below to apply for this position
+            </Text>
+          </div>
+
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmitApplication}
+            className="application-form"
+            onValuesChange={() => {
+              setTimeout(() => {
+                const values = form.getFieldsValue();
+                const totalFields = job?.customFields?.length || 1;
+                const filledFields = Object.values(values).filter(
+                  (value) =>
+                    value !== undefined && value !== null && value !== ""
+                ).length;
+                setFormProgress(Math.round((filledFields / totalFields) * 100));
+              }, 100);
             }}
           >
-            {isSubmitting ? "Submitting Application..." : "Submit Application"}
-          </Button>
-        </Form.Item>
-      </Form>
+            <Row gutter={[24, 0]}>
+              {job.customFields &&
+                job.customFields.map((field, index) => (
+                  <Col
+                    xs={24}
+                    sm={
+                      field.type === "textarea" || field.type === "file"
+                        ? 24
+                        : 12
+                    }
+                    key={field.id}
+                  >
+                    {renderCustomField(field)}
+                  </Col>
+                ))}
+            </Row>
+
+            <Divider />
+
+            <Row justify="end">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                size="large"
+                className="submit-button"
+              >
+                Continue to Review
+              </Button>
+            </Row>
+          </Form>
+        </Card>
+      )}
+
+      {currentStep === 1 && (
+        <ReviewStep
+          job={job}
+          reviewData={reviewData}
+          fileList={fileList}
+          onEdit={() => setCurrentStep(0)}
+        />
+      )}
+
+      {currentStep === 2 && (
+        <Card className="success-card">
+          <Result
+            status="success"
+            title="Application Submitted Successfully!"
+            subTitle={`Your application for ${job.title} has been submitted. We'll review your application and get back to you soon.`}
+            extra={[
+              <Button
+                type="primary"
+                key="console"
+                onClick={() => navigate("/candidate-jobs")}
+                style={{
+                  background:
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                }}
+              >
+                Back to Jobs
+              </Button>,
+            ]}
+          />
+        </Card>
+      )}
     </div>
   );
 
-  return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Breadcrumb */}
-      <Breadcrumb style={{ marginBottom: "24px" }}>
-        <Breadcrumb.Item>
-          <a href="/candidate-jobs">Jobs</a>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{job.title}</Breadcrumb.Item>
-      </Breadcrumb>
+  const ReviewStep = ({ job, reviewData, fileList, onEdit }) => {
+    const getFieldValue = (field, fieldId) => {
+      if (field.type === "file") {
+        const files = fileList[field.id];
+        return files && files[0] ? files[0].name : "No file uploaded";
+      }
+      return reviewData[fieldId] || "Not provided";
+    };
 
-      <Button
-        type="text"
-        icon={<ArrowLeftOutlined />}
-        style={{
-          marginBottom: "16px",
-        }}
-        onClick={handleGoBack}
-      >
-        Back to Jobs
-      </Button>
+    return (
+      <Card className="review-card">
+        <Title level={4} style={{ marginBottom: 24 }}>
+          Review Your Application
+        </Title>
+        <Descriptions column={1} bordered>
+          {job.customFields &&
+            job.customFields.map((field) => {
+              const fieldId = field.id.toString();
+              return (
+                <Descriptions.Item key={fieldId} label={field.label}>
+                  {getFieldValue(field, fieldId)}
+                </Descriptions.Item>
+              );
+            })}
+        </Descriptions>
 
-      {/* Main Job Card with Tabs */}
-      <Card
-        style={{
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-        }}
-      >
-        <Tabs defaultActiveKey="overview" size="large">
-          <TabPane
-            tab={
-              <span>
-                <FileTextOutlined />
-                Job Overview
-              </span>
-            }
-            key="overview"
+        <div
+          style={{
+            marginTop: 24,
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <Button onClick={() => onEdit()}>Edit Application</Button>
+          <Button
+            type="primary"
+            onClick={() => handleSubmitApplication()}
+            icon={<SendOutlined />}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            }}
           >
+            Submit Application
+          </Button>
+        </div>
+      </Card>
+    );
+  };
+
+  return (
+    <>
+      <style jsx>{`
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          min-height: 50vh;
+          padding: 24px;
+        }
+
+        .error-container {
+          padding: 24px;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .job-details-container {
+          padding: 12px;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+          .job-details-container {
+            padding: 24px;
+          }
+        }
+
+        .primary-button {
+          background: linear-gradient(
+            135deg,
+            #da2c46 70%,
+            #a51632 100%
+          ) !important;
+          border: none !important;
+        }
+
+        .job-overview {
+          padding: 0;
+        }
+
+        .job-header {
+          margin-bottom: 24px;
+        }
+
+        .company-avatar {
+          background-color: #f0f2f5 !important;
+          border: 2px solid #e6f7ff;
+        }
+
+        .job-title-section {
+          width: 100%;
+        }
+
+        .job-title {
+          margin: 0 !important;
+          font-size: 24px !important;
+          color: #262626 !important;
+          font-weight: 600 !important;
+        }
+
+        @media (max-width: 768px) {
+          .job-title {
+            font-size: 20px !important;
+          }
+        }
+
+        .company-name {
+          font-size: 16px !important;
+          color: #666 !important;
+          display: block !important;
+          margin: 8px 0 16px 0 !important;
+        }
+
+        .job-code {
+          display: block !important;
+          margin-bottom: 16px !important;
+        }
+
+        .job-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .job-tag {
+          font-size: 13px !important;
+          padding: 4px 12px !important;
+          border-radius: 16px !important;
+          margin: 0 !important;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+        }
+
+        @media (max-width: 576px) {
+          .action-buttons {
+            justify-content: center;
+          }
+        }
+
+        .action-btn {
+          border-radius: 50% !important;
+        }
+
+        .action-btn.saved {
+          color: #da2c46 !important;
+          border-color: #da2c46 !important;
+        }
+
+        .key-info-section {
+          margin: 24px 0;
+        }
+
+        .info-card {
+          border-radius: 12px !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+          border: 1px solid #f0f0f0 !important;
+          transition: all 0.3s ease !important;
+          height: 100%;
+        }
+
+        .info-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+          transform: translateY(-2px);
+        }
+
+        .info-card .ant-card-body {
+          padding: 16px !important;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .info-icon {
+          font-size: 20px !important;
+          color: #666 !important;
+          flex-shrink: 0;
+        }
+
+        .salary-card .info-icon {
+          color: #da2c46 !important;
+        }
+
+        .deadline-card .info-icon {
+          color: #ff4d4f !important;
+        }
+
+        .info-content {
+          flex: 1;
+        }
+
+        .info-label {
+          display: block !important;
+          color: #666 !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .info-value {
+          display: block !important;
+          color: #333 !important;
+          font-size: 14px !important;
+          font-weight: 600 !important;
+          margin-top: 4px;
+        }
+
+        .salary-card .info-value {
+          color: #da2c46 !important;
+        }
+
+        .deadline-card .info-value {
+          color: #ff4d4f !important;
+        }
+
+        .content-card {
+          margin-bottom: 24px;
+          border-radius: 12px !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+          border: 1px solid #f0f0f0 !important;
+        }
+
+        .section-title {
+          color: #262626 !important;
+          margin-bottom: 16px !important;
+          font-weight: 600 !important;
+        }
+
+        .job-description {
+          font-size: 15px !important;
+          line-height: 1.7 !important;
+          color: #444 !important;
+          margin: 0 !important;
+        }
+
+        .requirements-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .requirement-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          font-size: 15px;
+          line-height: 1.6;
+          color: #444;
+        }
+
+        .check-icon {
+          color: #52c41a !important;
+          margin-top: 4px;
+          flex-shrink: 0;
+        }
+
+        .skills-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .skill-tag {
+          font-size: 13px !important;
+          padding: 6px 12px !important;
+          border: 1px solid #da2c46 !important;
+          color: #da2c46 !important;
+          background: #fff !important;
+          border-radius: 20px !important;
+          margin: 0 !important;
+        }
+
+        .benefits-list {
+          margin: 0;
+          padding-left: 20px;
+        }
+
+        .benefits-list li {
+          margin-bottom: 8px;
+          line-height: 1.6;
+        }
+
+        .application-form-container {
+          padding: 0;
+        }
+
+        .progress-card,
+        .steps-card,
+        .form-card {
+          margin-bottom: 24px;
+          border-radius: 12px !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+          border: 1px solid #f0f0f0 !important;
+        }
+
+        .progress-header {
+          margin-bottom: 16px;
+        }
+
+        .progress-header .ant-typography {
+          margin: 0 !important;
+        }
+
+        .application-progress {
+          margin: 0 !important;
+        }
+
+        .application-steps {
+          margin: 0 !important;
+        }
+
+        .form-header {
+          margin-bottom: 24px;
+          text-align: center;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .form-header .ant-typography {
+          margin: 0 !important;
+        }
+
+        .form-header .ant-typography + .ant-typography {
+          margin-top: 8px !important;
+        }
+
+        .application-form {
+          margin: 0;
+        }
+
+        .form-label {
+          display: flex;
+          align-items: center;
+          font-weight: 500 !important;
+          color: #333 !important;
+        }
+
+        .modern-input,
+        .modern-textarea {
+          border-radius: 8px !important;
+          border: 1.5px solid #e0e0e0 !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .modern-input:hover,
+        .modern-textarea:hover {
+          border-color: #da2c46 !important;
+        }
+
+        .modern-input:focus,
+        .modern-textarea:focus {
+          border-color: #da2c46 !important;
+          box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.1) !important;
+        }
+
+        .upload-dragger {
+          border: 2px dashed #e0e0e0 !important;
+          border-radius: 12px !important;
+          background: #fafafa !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .upload-dragger:hover {
+          border-color: #da2c46 !important;
+        }
+
+        .submit-button {
+          background: linear-gradient(
+            135deg,
+            #da2c46 70%,
+            #a51632 100%
+          ) !important;
+          border: none !important;
+          border-radius: 8px !important;
+          font-weight: 500 !important;
+          height: auto !important;
+          padding: 12px 24px !important;
+        }
+
+        .submit-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(218, 44, 70, 0.2) !important;
+        }
+      `}</style>
+
+      <div className="job-details-container">
+        <Breadcrumb
+          style={{ marginBottom: 24 }}
+          items={[
+            {
+              title: (
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={handleGoBack}
+                >
+                  Jobs
+                </Button>
+              ),
+            },
+            {
+              title: job.title,
+            },
+          ]}
+        />
+
+        <Tabs defaultActiveKey="1" className="job-tabs">
+          <TabPane tab="Job Overview" key="1">
             <JobOverview />
           </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <UserOutlined />
-                Apply Now
-              </span>
-            }
-            key="application"
-          >
+          <TabPane tab="Apply Now" key="2">
             <ApplicationForm />
           </TabPane>
         </Tabs>
-      </Card>
-    </div>
+      </div>
+    </>
   );
 };
 

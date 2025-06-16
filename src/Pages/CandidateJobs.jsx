@@ -24,6 +24,7 @@ import {
   Pagination,
   Result,
   Skeleton,
+  Drawer,
 } from "antd";
 import {
   SearchOutlined,
@@ -47,6 +48,7 @@ import {
   InfoCircleOutlined,
   CloseOutlined,
   DownOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useGetJobsByBranchQuery } from "../Slices/Users/UserApis";
@@ -62,6 +64,7 @@ const CandidateJobs = () => {
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
+  const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const navigate = useNavigate();
 
   // API call
@@ -302,112 +305,137 @@ const CandidateJobs = () => {
   const { workTypes, employmentTypes, categories, experiences } =
     getFilterOptions();
 
+  // Filter form component for reuse in dropdown and drawer
+  const FilterForm = ({ isDrawer = false }) => (
+    <div
+      style={{
+        padding: isDrawer ? "0" : "16px",
+        minWidth: isDrawer ? "auto" : "280px",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {!isDrawer && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "8px",
+            }}
+          >
+            <Text strong style={{ fontSize: "16px", color: "#da2c46" }}>
+              Filter Jobs
+            </Text>
+            <Button type="link" onClick={clearFilters} size="small">
+              Clear All
+            </Button>
+          </div>
+        )}
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: "8px" }}>
+            Work Type
+          </Text>
+          <Select
+            placeholder="Select work type"
+            style={{ width: "100%" }}
+            value={workTypeFilter}
+            onChange={setWorkTypeFilter}
+            allowClear
+          >
+            {workTypes.map((type) => (
+              <Option key={type} value={type}>
+                {type}
+              </Option>
+            ))}
+          </Select>
+        </div>
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: "8px" }}>
+            Employment Type
+          </Text>
+          <Select
+            placeholder="Select employment type"
+            style={{ width: "100%" }}
+            value={employmentTypeFilter}
+            onChange={setEmploymentTypeFilter}
+            allowClear
+          >
+            {employmentTypes.map((type) => (
+              <Option key={type} value={type}>
+                {type}
+              </Option>
+            ))}
+          </Select>
+        </div>
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: "8px" }}>
+            Experience Level
+          </Text>
+          <Select
+            placeholder="Select experience"
+            style={{ width: "100%" }}
+            value={experienceFilter}
+            onChange={setExperienceFilter}
+            allowClear
+          >
+            {experiences.map((exp) => (
+              <Option key={exp} value={exp}>
+                {exp}+ years
+              </Option>
+            ))}
+          </Select>
+        </div>
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: "8px" }}>
+            Category
+          </Text>
+          <Select
+            placeholder="Select category"
+            style={{ width: "100%" }}
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            allowClear
+          >
+            {categories.map((category) => (
+              <Option key={category} value={category}>
+                {category}
+              </Option>
+            ))}
+          </Select>
+        </div>
+
+        {isDrawer && (
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <Button type="link" onClick={clearFilters} style={{ flex: 1 }}>
+              Clear All
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => setMobileFiltersVisible(false)}
+              style={{
+                flex: 1,
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                border: "none",
+              }}
+            >
+              Apply Filters
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const filterDropdownMenu = {
     items: [
       {
         key: "filters",
-        label: (
-          <div
-            style={{ padding: "16px", minWidth: "280px" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "8px",
-                }}
-              >
-                <Text strong style={{ fontSize: "16px", color: "#da2c46" }}>
-                  Filter Jobs
-                </Text>
-                <Button type="link" onClick={clearFilters} size="small">
-                  Clear All
-                </Button>
-              </div>
-
-              <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>
-                  Work Type
-                </Text>
-                <Select
-                  placeholder="Select work type"
-                  style={{ width: "100%" }}
-                  value={workTypeFilter}
-                  onChange={setWorkTypeFilter}
-                  allowClear
-                >
-                  {workTypes.map((type) => (
-                    <Option key={type} value={type}>
-                      {type}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>
-                  Employment Type
-                </Text>
-                <Select
-                  placeholder="Select employment type"
-                  style={{ width: "100%" }}
-                  value={employmentTypeFilter}
-                  onChange={setEmploymentTypeFilter}
-                  allowClear
-                >
-                  {employmentTypes.map((type) => (
-                    <Option key={type} value={type}>
-                      {type}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>
-                  Experience Level
-                </Text>
-                <Select
-                  placeholder="Select experience"
-                  style={{ width: "100%" }}
-                  value={experienceFilter}
-                  onChange={setExperienceFilter}
-                  allowClear
-                >
-                  {experiences.map((exp) => (
-                    <Option key={exp} value={exp}>
-                      {exp}+ years
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <Text strong style={{ display: "block", marginBottom: "8px" }}>
-                  Category
-                </Text>
-                <Select
-                  placeholder="Select category"
-                  style={{ width: "100%" }}
-                  value={categoryFilter}
-                  onChange={setCategoryFilter}
-                  allowClear
-                >
-                  {categories.map((category) => (
-                    <Option key={category} value={category}>
-                      {category}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </div>
-        ),
+        label: <FilterForm />,
       },
     ],
   };
@@ -415,9 +443,11 @@ const CandidateJobs = () => {
   // Show loading state
   if (isLoading) {
     return (
-      <div style={{ padding: "16px", minHeight: "100vh" }}>
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <Skeleton />
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
         </div>
       </div>
     );
@@ -425,7 +455,7 @@ const CandidateJobs = () => {
 
   if (error) {
     return (
-      <div style={{ padding: "16px", minHeight: "100vh" }}>
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <Result
           status="404"
           title="Failed to Load Jobs"
@@ -450,19 +480,29 @@ const CandidateJobs = () => {
 
   return (
     <>
-      <div style={{ padding: "16px", minHeight: "100vh" }}>
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         {/* Header */}
-        <div style={{ marginBottom: "24px" }}>
+        <div style={{ marginBottom: "16px", textAlign: "center" }}>
           <Title
             level={2}
-            style={{ margin: 0, color: "#2c3e50", textAlign: "center" }}
+            style={{
+              margin: 0,
+              color: "#2c3e50",
+              fontSize: "clamp(20px, 4vw, 28px)",
+              lineHeight: "1.2",
+            }}
           >
             <BulbOutlined style={{ marginRight: 8, color: "#da2c46" }} />
             Your Perfect Job Awaits
           </Title>
           <Text
             type="secondary"
-            style={{ display: "block", textAlign: "center", marginTop: 8 }}
+            style={{
+              display: "block",
+              marginTop: 8,
+              fontSize: "clamp(12px, 2.5vw, 14px)",
+              padding: "0 16px",
+            }}
           >
             Browse opportunities that reflect your abilities and aspirations.
           </Text>
@@ -471,79 +511,123 @@ const CandidateJobs = () => {
         {/* Search and Filter Section */}
         <Card
           style={{
-            marginBottom: "24px",
+            marginBottom: "16px",
             borderRadius: "12px",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
           }}
         >
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} sm={24} md={8} lg={8}>
-              <Search
-                placeholder="Job title or keyword"
-                size="large"
-                prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                style={{ width: "100%" }}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={6} lg={6}>
-              <Input
-                placeholder="City or country"
-                size="large"
-                prefix={<EnvironmentOutlined style={{ color: "#da2c46" }} />}
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                style={{ width: "100%" }}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={4} lg={4}>
-              <Dropdown
-                menu={filterDropdownMenu}
-                trigger={["click"]}
-                placement="bottomRight"
-              >
-                <Button
+          {/* Desktop Search Bar */}
+          <div className="desktop-search" style={{ display: "block" }}>
+            <Row gutter={[12, 12]} align="middle">
+              <Col xs={24} sm={24} md={10} lg={10} xl={10}>
+                <Search
+                  placeholder="Job title or keyword"
                   size="large"
-                  style={{ width: "100%", position: "relative" }}
+                  prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  style={{ width: "100%" }}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={6} lg={6} xl={6}>
+                <Input
+                  placeholder="City or country"
+                  size="large"
+                  prefix={<EnvironmentOutlined style={{ color: "#da2c46" }} />}
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  style={{ width: "100%" }}
+                />
+              </Col>
+              <Col xs={12} sm={6} md={4} lg={4} xl={4}>
+                {/* Desktop Filter Dropdown */}
+                <div className="desktop-filter" style={{ display: "none" }}>
+                  <Dropdown
+                    menu={filterDropdownMenu}
+                    trigger={["click"]}
+                    placement="bottomRight"
+                  >
+                    <Button
+                      size="large"
+                      style={{ width: "100%", position: "relative" }}
+                    >
+                      <FilterOutlined />
+                      Filters
+                      <DownOutlined
+                        style={{ fontSize: "10px", marginLeft: "4px" }}
+                      />
+                      {getActiveFiltersCount() > 0 && (
+                        <Badge
+                          count={getActiveFiltersCount()}
+                          size="small"
+                          style={{
+                            position: "absolute",
+                            top: "-8px",
+                            right: "-8px",
+                            backgroundColor: "#da2c46",
+                          }}
+                        />
+                      )}
+                    </Button>
+                  </Dropdown>
+                </div>
+                {/* Mobile Filter Button */}
+                <div className="mobile-filter" style={{ display: "block" }}>
+                  <Button
+                    size="large"
+                    style={{ width: "100%", position: "relative" }}
+                    onClick={() => setMobileFiltersVisible(true)}
+                  >
+                    <FilterOutlined />
+                    <span style={{ display: "none" }}>Filters</span>
+                    {getActiveFiltersCount() > 0 && (
+                      <Badge
+                        count={getActiveFiltersCount()}
+                        size="small"
+                        style={{
+                          position: "absolute",
+                          top: "-8px",
+                          right: "-8px",
+                          backgroundColor: "#da2c46",
+                        }}
+                      />
+                    )}
+                  </Button>
+                </div>
+              </Col>
+              <Col xs={12} sm={6} md={4} lg={4} xl={4}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<SearchOutlined />}
+                  style={{
+                    width: "100%",
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
+                  }}
                 >
-                  <FilterOutlined />
-                  Filters
-                  <DownOutlined
-                    style={{ fontSize: "10px", marginLeft: "4px" }}
-                  />
-                  {getActiveFiltersCount() > 0 && (
-                    <Badge
-                      count={getActiveFiltersCount()}
-                      size="small"
-                      style={{
-                        position: "absolute",
-                        top: "-8px",
-                        right: "-8px",
-                        backgroundColor: "#da2c46",
-                      }}
-                    />
-                  )}
+                  <span className="search-text" style={{ display: "inline" }}>
+                    Search
+                  </span>
                 </Button>
-              </Dropdown>
-            </Col>
-            <Col xs={24} sm={12} md={6} lg={6}>
-              <Button
-                type="primary"
-                size="large"
-                icon={<SearchOutlined />}
-                style={{
-                  width: "100%",
-                  background:
-                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  border: "none",
-                }}
-              >
-                Search Jobs
-              </Button>
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          </div>
         </Card>
+
+        {/* Mobile Filter Drawer */}
+        <Drawer
+          title="Filter Jobs"
+          placement="bottom"
+          closable={true}
+          onClose={() => setMobileFiltersVisible(false)}
+          open={mobileFiltersVisible}
+          height="auto"
+          style={{ maxHeight: "80vh" }}
+        >
+          <FilterForm isDrawer={true} />
+        </Drawer>
 
         {/* Active Filters Display */}
         {getActiveFiltersCount() > 0 && (
@@ -556,14 +640,17 @@ const CandidateJobs = () => {
                 flexWrap: "wrap",
               }}
             >
-              <Text style={{ fontWeight: 500 }}>Active Filters:</Text>
+              <Text style={{ fontWeight: 500, fontSize: "14px" }}>
+                Active Filters:
+              </Text>
               {workTypeFilter && (
                 <Tag
                   closable
                   onClose={() => setWorkTypeFilter("")}
                   color="blue"
+                  style={{ fontSize: "12px" }}
                 >
-                  Work Type: {workTypeFilter}
+                  Work: {workTypeFilter}
                 </Tag>
               )}
               {employmentTypeFilter && (
@@ -571,6 +658,7 @@ const CandidateJobs = () => {
                   closable
                   onClose={() => setEmploymentTypeFilter("")}
                   color="green"
+                  style={{ fontSize: "12px" }}
                 >
                   Employment: {employmentTypeFilter}
                 </Tag>
@@ -580,8 +668,9 @@ const CandidateJobs = () => {
                   closable
                   onClose={() => setExperienceFilter("")}
                   color="orange"
+                  style={{ fontSize: "12px" }}
                 >
-                  Experience: {experienceFilter}
+                  Exp: {experienceFilter}
                 </Tag>
               )}
               {categoryFilter && (
@@ -589,6 +678,7 @@ const CandidateJobs = () => {
                   closable
                   onClose={() => setCategoryFilter("")}
                   color="purple"
+                  style={{ fontSize: "12px" }}
                 >
                   Category: {categoryFilter}
                 </Tag>
@@ -602,7 +692,13 @@ const CandidateJobs = () => {
 
         {/* Results Counter */}
         <div style={{ marginBottom: "16px" }}>
-          <Text style={{ fontSize: "16px", fontWeight: 500, color: "#374151" }}>
+          <Text
+            style={{
+              fontSize: "clamp(14px, 2.5vw, 16px)",
+              fontWeight: 500,
+              color: "#374151",
+            }}
+          >
             {filteredJobs.length} jobs found
           </Text>
         </div>
@@ -621,7 +717,7 @@ const CandidateJobs = () => {
                 <div
                   key={job._id}
                   style={{
-                    padding: "20px 24px",
+                    padding: "16px",
                     borderBottom:
                       index === getCurrentPageJobs().length - 1
                         ? "none"
@@ -637,39 +733,40 @@ const CandidateJobs = () => {
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                    }}
-                  >
-                    {/* Left Section - Company Logo & Job Info */}
+                  {/* Mobile Layout */}
+                  <div className="mobile-job-card" style={{ display: "block" }}>
+                    {/* Header with Company Logo, Title, and Save Button */}
                     <div
                       style={{
                         display: "flex",
                         alignItems: "flex-start",
-                        gap: "16px",
-                        flex: 1,
+                        justifyContent: "space-between",
+                        marginBottom: "12px",
+                        gap: "12px",
                       }}
                     >
-                      <Avatar
-                        src={job.companyLogo}
-                        size={48}
-                        style={{ backgroundColor: "#f0f0f0", flexShrink: 0 }}
-                        icon={<BankOutlined />}
-                      />
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {/* Job Title & Company */}
-                        <div style={{ marginBottom: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "12px",
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Avatar
+                          src={job.companyLogo}
+                          size={40}
+                          style={{ backgroundColor: "#f0f0f0", flexShrink: 0 }}
+                          icon={<BankOutlined />}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <Title
                             level={4}
                             style={{
                               margin: 0,
-                              fontSize: "18px",
-                              lineHeight: "24px",
+                              fontSize: "clamp(16px, 3vw, 18px)",
+                              lineHeight: "1.3",
                               color: "#1a1a1a",
                             }}
                           >
@@ -677,7 +774,7 @@ const CandidateJobs = () => {
                           </Title>
                           <Text
                             style={{
-                              fontSize: "14px",
+                              fontSize: "clamp(12px, 2.5vw, 14px)",
                               color: "#666",
                               display: "block",
                               marginTop: "2px",
@@ -689,167 +786,197 @@ const CandidateJobs = () => {
                             <Text
                               type="secondary"
                               style={{
-                                fontSize: "12px",
+                                fontSize: "11px",
                                 display: "block",
                                 marginTop: "2px",
                               }}
                             >
-                              Job Code: {job.jobCode}
+                              Code: {job.jobCode}
                             </Text>
                           )}
                         </div>
-
-                        {/* Location & Work Type Tags */}
-                        <div style={{ marginBottom: "12px" }}>
-                          <Space wrap size="small">
-                            <Tag
-                              icon={<EnvironmentOutlined />}
-                              color="blue"
-                              style={{ fontSize: "12px" }}
-                            >
-                              {job.location}
-                            </Tag>
-                            <Tag
-                              icon={
-                                job.workType === "Remote" ? (
-                                  <HomeOutlined />
-                                ) : (
-                                  <BankOutlined />
-                                )
-                              }
-                              color="green"
-                              style={{ fontSize: "12px" }}
-                            >
-                              {job.workType}
-                            </Tag>
-                            <Tag color="orange" style={{ fontSize: "12px" }}>
-                              {job.employmentType}
-                            </Tag>
-                            <Tag color="purple" style={{ fontSize: "12px" }}>
-                              {job.experience}
-                            </Tag>
-                            {job.numberOfCandidate && (
-                              <Tag color="cyan" style={{ fontSize: "12px" }}>
-                                {job.numberOfCandidate} positions
-                              </Tag>
-                            )}
-                          </Space>
-                        </div>
-
-                        {/* Skills */}
-                        {job.skills.length > 0 && (
-                          <div style={{ marginBottom: "12px" }}>
-                            <Space wrap size="small">
-                              {job.skills
-                                .slice(0, 4)
-                                .map((skill, skillIndex) => (
-                                  <Tag
-                                    key={skillIndex}
-                                    style={{
-                                      fontSize: "11px",
-                                      border: "1px solid #da2c46",
-                                      color: "#da2c46",
-                                      background: "#fff",
-                                      borderRadius: "4px",
-                                    }}
-                                  >
-                                    {skill}
-                                  </Tag>
-                                ))}
-                              {job.skills.length > 4 && (
-                                <Tag
-                                  style={{ fontSize: "11px", color: "#666" }}
-                                >
-                                  +{job.skills.length - 4} more
-                                </Tag>
-                              )}
-                            </Space>
-                          </div>
-                        )}
-
-                        {/* Job Description */}
-                        <Paragraph
-                          ellipsis={{ rows: 2 }}
-                          style={{
-                            margin: 0,
-                            color: "#666",
-                            fontSize: "14px",
-                            lineHeight: "20px",
-                          }}
-                        >
-                          {job.description}
-                        </Paragraph>
                       </div>
+
+                      {/* Save Button */}
+                      <Tooltip
+                        title={
+                          savedJobs.has(job._id)
+                            ? "Remove from saved"
+                            : "Save job"
+                        }
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={
+                            savedJobs.has(job._id) ? (
+                              <HeartFilled style={{ color: "#da2c46" }} />
+                            ) : (
+                              <HeartOutlined />
+                            )
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveJob(job);
+                          }}
+                          style={{ border: "1px solid #e0e0e0", flexShrink: 0 }}
+                        />
+                      </Tooltip>
                     </div>
 
-                    {/* Right Section - Salary, Date & Actions */}
+                    {/* Location, Work Type, and Salary */}
+                    <div style={{ marginBottom: "12px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <Space wrap size="small" style={{ flex: 1 }}>
+                          <Tag
+                            icon={<EnvironmentOutlined />}
+                            color="blue"
+                            style={{ fontSize: "11px", margin: "2px" }}
+                          >
+                            {job.location}
+                          </Tag>
+                          <Tag
+                            icon={
+                              job.workType === "Remote" ? (
+                                <HomeOutlined />
+                              ) : (
+                                <BankOutlined />
+                              )
+                            }
+                            color="green"
+                            style={{ fontSize: "11px", margin: "2px" }}
+                          >
+                            {job.workType}
+                          </Tag>
+                        </Space>
+                        {job.salary && (
+                          <Text
+                            strong
+                            style={{
+                              color: "#da2c46",
+                              fontSize: "clamp(14px, 2.5vw, 16px)",
+                              flexShrink: 0,
+                              marginLeft: "8px",
+                            }}
+                          >
+                            {job.salary}
+                          </Text>
+                        )}
+                      </div>
+
+                      <Space wrap size="small">
+                        <Tag
+                          color="orange"
+                          style={{ fontSize: "11px", margin: "2px" }}
+                        >
+                          {job.employmentType}
+                        </Tag>
+                        <Tag
+                          color="purple"
+                          style={{ fontSize: "11px", margin: "2px" }}
+                        >
+                          {job.experience}
+                        </Tag>
+                        {job.numberOfCandidate && (
+                          <Tag
+                            color="cyan"
+                            style={{ fontSize: "11px", margin: "2px" }}
+                          >
+                            {job.numberOfCandidate} positions
+                          </Tag>
+                        )}
+                      </Space>
+                    </div>
+
+                    {/* Skills */}
+                    {job.skills.length > 0 && (
+                      <div style={{ marginBottom: "12px" }}>
+                        <Space wrap size="small">
+                          {job.skills.slice(0, 3).map((skill, skillIndex) => (
+                            <Tag
+                              key={skillIndex}
+                              style={{
+                                fontSize: "10px",
+                                border: "1px solid #da2c46",
+                                color: "#da2c46",
+                                background: "#fff",
+                                borderRadius: "4px",
+                                margin: "2px",
+                              }}
+                            >
+                              {skill}
+                            </Tag>
+                          ))}
+                          {job.skills.length > 3 && (
+                            <Tag
+                              style={{
+                                fontSize: "10px",
+                                color: "#666",
+                                margin: "2px",
+                              }}
+                            >
+                              +{job.skills.length - 3} more
+                            </Tag>
+                          )}
+                        </Space>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    <Paragraph
+                      ellipsis={{ rows: 2 }}
+                      style={{
+                        margin: "0 0 12px 0",
+                        color: "#666",
+                        fontSize: "clamp(12px, 2.5vw, 14px)",
+                        lineHeight: "1.4",
+                      }}
+                    >
+                      {job.description}
+                    </Paragraph>
+
+                    {/* Footer with Date and Actions */}
                     <div
                       style={{
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: "12px",
-                        minWidth: "200px",
-                        flexShrink: 0,
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "8px",
                       }}
                     >
-                      {/* Salary */}
-                      {job.salary && (
+                      <div style={{ flex: 1 }}>
                         <Text
-                          strong
-                          style={{ color: "#da2c46", fontSize: "16px" }}
+                          type="secondary"
+                          style={{ fontSize: "11px", display: "block" }}
                         >
-                          <DollarOutlined style={{ marginRight: 4 }} />
-                          {job.salary}
+                          Posted {formatDate(job.postedDate)}
                         </Text>
-                      )}
+                        {job.deadlineDate && (
+                          <Text
+                            type="warning"
+                            style={{ fontSize: "11px", display: "block" }}
+                          >
+                            Deadline:{" "}
+                            {new Date(job.deadlineDate).toLocaleDateString()}
+                          </Text>
+                        )}
+                      </div>
 
-                      {/* Posted Date */}
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        Posted {formatDate(job.postedDate)}
-                      </Text>
-
-                      {/* Deadline Date */}
-                      {job.deadlineDate && (
-                        <Text type="warning" style={{ fontSize: "12px" }}>
-                          Deadline:{" "}
-                          {new Date(job.deadlineDate).toLocaleDateString()}
-                        </Text>
-                      )}
-
-                      {/* Action Buttons */}
                       <div
                         style={{
                           display: "flex",
                           gap: "8px",
                           alignItems: "center",
+                          flexShrink: 0,
                         }}
                       >
-                        <Tooltip
-                          title={
-                            savedJobs.has(job._id)
-                              ? "Remove from saved"
-                              : "Save job"
-                          }
-                        >
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={
-                              savedJobs.has(job._id) ? (
-                                <HeartFilled style={{ color: "#da2c46" }} />
-                              ) : (
-                                <HeartOutlined />
-                              )
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveJob(job);
-                            }}
-                            style={{ border: "1px solid #e0e0e0" }}
-                          />
-                        </Tooltip>
-
                         <Tooltip title="Share job">
                           <Button
                             type="text"
@@ -868,16 +995,17 @@ const CandidateJobs = () => {
                         <Button
                           type="primary"
                           size="small"
-                          onClick={handleJobClick}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleJobClick(job);
+                          }}
                           style={{
                             background:
                               "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                             border: "none",
-                            padding: "4px 16px",
-                            height: "32px",
                           }}
                         >
-                          Apply Now
+                          View
                         </Button>
                       </div>
                     </div>
@@ -887,50 +1015,60 @@ const CandidateJobs = () => {
             </div>
 
             {/* Pagination */}
-            {filteredJobs.length > pageSize && (
-              <div style={{ textAlign: "center", marginTop: "24px" }}>
-                <Pagination
-                  current={currentPage}
-                  total={filteredJobs.length}
-                  pageSize={pageSize}
-                  onChange={setCurrentPage}
-                  showSizeChanger={false}
-                  showQuickJumper
-                  showTotal={(total, range) =>
-                    `${range[0]}-${range[1]} of ${total} jobs`
+            <div style={{ marginTop: "24px", textAlign: "center" }}>
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={filteredJobs.length}
+                onChange={(page) => setCurrentPage(page)}
+                showSizeChanger={false}
+                showQuickJumper
+                style={{ marginTop: "16px" }}
+                itemRender={(current, type, originalElement) => {
+                  if (type === "prev") {
+                    return <Button>Previous</Button>;
                   }
-                />
-              </div>
-            )}
+                  if (type === "next") {
+                    return <Button>Next</Button>;
+                  }
+                  return originalElement;
+                }}
+              />
+            </div>
           </>
         ) : (
           <Card
             style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "300px",
+              background: "#fff",
               borderRadius: "12px",
               boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-              textAlign: "center",
             }}
           >
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <div>
-                  <Text style={{ fontSize: "16px", color: "#7f8c8d" }}>
-                    No jobs found matching your criteria
-                  </Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: "14px" }}>
-                    Try adjusting your search filters or check back later for
-                    new opportunities
-                  </Text>
-                  <div style={{ marginTop: 16 }}>
-                    <Button type="link" onClick={clearFilters}>
-                      Clear all filters
-                    </Button>
-                  </div>
-                </div>
+                <Text type="secondary" style={{ fontSize: "16px" }}>
+                  No jobs found matching your criteria
+                </Text>
               }
-            />
+            >
+              <Button
+                type="primary"
+                onClick={clearFilters}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  border: "none",
+                }}
+              >
+                Clear Filters
+              </Button>
+            </Empty>
           </Card>
         )}
       </div>
