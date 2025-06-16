@@ -76,7 +76,7 @@ export const userApi = createApi({
     }),
     searchJobs: builder.query({
       query: ({ title, location }) => ({
-        url: `/api/jobs/search?title=${encodeURIComponent(
+        url: `/search?title=${encodeURIComponent(
           title
         )}&location=${encodeURIComponent(location)}`,
         method: "GET",
