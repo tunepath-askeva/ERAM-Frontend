@@ -31,7 +31,7 @@ import {
   DatePicker,
   Alert,
   Statistic,
-  Popconfirm,
+  Skeleton,
   Result,
 } from "antd";
 import {
@@ -404,8 +404,12 @@ const CandidateAppliedJobs = () => {
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 0" }}>
-        <Spin size="large" />
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
+        </div>
       </div>
     );
   }

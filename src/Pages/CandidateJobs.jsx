@@ -72,85 +72,26 @@ const CandidateJobs = () => {
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  // Get initial jobs data
   const {
     data: apiData,
     isLoading: initialLoading,
     error: initialError,
   } = useGetJobsByBranchQuery();
 
-  // Search jobs API
   const [
     searchJobs,
     { data: searchData, isLoading: searchLoading, error: searchError },
   ] = useLazySearchJobsQuery();
 
-  // Filter states - these will be applied locally after API search
   const [searchKeyword, setSearchKeyword] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [workTypeFilter, setWorkTypeFilter] = useState("");
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [postedDateFilter, setPostedDateFilter] = useState("");
 
-  // Track if we're showing search results or initial data
   const [showingSearchResults, setShowingSearchResults] = useState(false);
 
-  const transformJobData = (workorders) => {
-    return (
-      workorders?.map((workorder) => ({
-        _id: workorder._id,
-        title: workorder.title,
-        company: "Company Name",
-        companyLogo: "https://via.placeholder.com/40",
-        location: workorder.officeLocation || "Location not specified",
-        workType:
-          workorder.workplace === "on-site"
-            ? "On-site"
-            : workorder.workplace === "remote"
-            ? "Remote"
-            : "Hybrid",
-        employmentType:
-          workorder.EmploymentType === "full-time"
-            ? "Full-time"
-            : workorder.EmploymentType === "part-time"
-            ? "Part-time"
-            : workorder.EmploymentType === "contract"
-            ? "Contract"
-            : "Full-time",
-        experience: workorder.Experience
-          ? `${workorder.Experience}+ years`
-          : "Not specified",
-        salary:
-          workorder.salaryType === "annual" && workorder.annualSalary
-            ? `₹${(workorder.annualSalary / 100000).toFixed(1)} LPA`
-            : workorder.salaryType === "monthly" && workorder.monthlySalary
-            ? `₹${workorder.monthlySalary}/month`
-            : "Salary not disclosed",
-        postedDate: workorder.createdAt,
-        skills: workorder.requiredSkills || [],
-        description: workorder.description || "No description available",
-        requirements: workorder.jobRequirements
-          ? [workorder.jobRequirements]
-          : [],
-        category: workorder.jobFunction || "General",
-        isRemote: workorder.workplace === "remote",
-        isSaved: false,
-        jobCode: workorder.jobCode,
-        startDate: workorder.startDate,
-        endDate: workorder.endDate,
-        deadlineDate: workorder.deadlineDate,
-        numberOfCandidate: workorder.numberOfCandidate,
-        benefits: workorder.benefits || [],
-        education: workorder.Education,
-        companyIndustry: workorder.companyIndustry,
-        workOrderStatus: workorder.workOrderStatus,
-        isActive: workorder.isActive,
-      })) || []
-    );
-  };
-
-  // Load initial jobs data
   useEffect(() => {
     if (apiData?.workorders && !showingSearchResults) {
       const transformedJobs = transformJobData(apiData.workorders);
@@ -158,23 +99,70 @@ const CandidateJobs = () => {
     }
   }, [apiData, showingSearchResults]);
 
-  // Handle search results
   useEffect(() => {
-    if (searchData?.workorders && showingSearchResults) {
-      const transformedJobs = transformJobData(searchData.workorders);
+    if (searchData?.jobs && showingSearchResults) {
+      const transformedJobs = transformJobData(searchData.jobs);
       setFilteredJobs(transformedJobs);
     }
   }, [searchData, showingSearchResults]);
 
-  // Apply local filters when filter states change
   useEffect(() => {
     applyLocalFilters();
-  }, [workTypeFilter, employmentTypeFilter, experienceFilter, categoryFilter]);
+  }, [workTypeFilter, employmentTypeFilter, experienceFilter, postedDateFilter]);
 
-  // Handle search button click
+  const transformJobData = (jobs) => {
+    if (!jobs || !Array.isArray(jobs)) return [];
+
+    return jobs.map((job) => ({
+      _id: job._id || "",
+      title: job.title || "No title",
+      company: "Company Name",
+      companyLogo: "https://via.placeholder.com/40",
+      location: job.officeLocation || "Location not specified",
+      workType:
+        job.workplace === "on-site"
+          ? "On-site"
+          : job.workplace === "remote"
+          ? "Remote"
+          : "Hybrid",
+      employmentType:
+        job.EmploymentType === "full-time"
+          ? "Full-time"
+          : job.EmploymentType === "part-time"
+          ? "Part-time"
+          : job.EmploymentType === "contract"
+          ? "Contract"
+          : job.EmploymentType === "internship"
+          ? "Internship"
+          : "Full-time",
+      experience: job.Experience ? `${job.Experience}+ years` : "Not specified",
+      salary:
+        job.salaryType === "annual" && job.annualSalary
+          ? `₹${(job.annualSalary / 100000).toFixed(1)} LPA`
+          : job.salaryType === "monthly" && job.monthlySalary
+          ? `₹${job.monthlySalary}/month`
+          : "Salary not disclosed",
+      postedDate: job.createdAt,
+      skills: job.requiredSkills || [],
+      description: job.description || "No description available",
+      requirements: job.jobRequirements ? [job.jobRequirements] : [],
+      isRemote: job.workplace === "remote",
+      isSaved: false,
+      jobCode: job.jobCode,
+      startDate: job.startDate,
+      endDate: job.endDate,
+      deadlineDate: job.deadlineDate,
+      numberOfCandidate: job.numberOfCandidate,
+      benefits: job.benefits || [],
+      education: job.Education,
+      companyIndustry: job.companyIndustry,
+      workOrderStatus: job.workOrderStatus,
+      isActive: job.isActive,
+    }));
+  };
+
   const handleSearch = async () => {
     if (!searchKeyword.trim() && !locationFilter.trim()) {
-      // If both search fields are empty, show initial data
       setShowingSearchResults(false);
       setCurrentPage(1);
       return;
@@ -183,8 +171,8 @@ const CandidateJobs = () => {
     setIsSearching(true);
     try {
       await searchJobs({
-        title: searchKeyword.trim() || undefined,
-        location: locationFilter.trim() || undefined,
+        title: searchKeyword.trim() || "",
+        location: locationFilter.trim() || "",
       });
       setShowingSearchResults(true);
       setCurrentPage(1);
@@ -195,7 +183,6 @@ const CandidateJobs = () => {
     }
   };
 
-  // Clear search and show initial data
   const clearSearch = () => {
     setSearchKeyword("");
     setLocationFilter("");
@@ -203,7 +190,6 @@ const CandidateJobs = () => {
     clearFilters();
   };
 
-  // Apply local filters to current job data (search results or initial data)
   const applyLocalFilters = () => {
     const currentData = showingSearchResults ? searchData : apiData;
     if (!currentData?.workorders) return;
@@ -217,19 +203,40 @@ const CandidateJobs = () => {
         !employmentTypeFilter || job.employmentType === employmentTypeFilter;
       const matchesExperience =
         !experienceFilter || job.experience.includes(experienceFilter);
-      const matchesCategory =
-        !categoryFilter || job.category === categoryFilter;
+      const matchesPostedDate = checkPostedDate(job.postedDate, postedDateFilter);
 
       return (
         matchesWorkType &&
         matchesEmploymentType &&
         matchesExperience &&
-        matchesCategory
+        matchesPostedDate
       );
     });
 
     setFilteredJobs(filtered);
     setCurrentPage(1);
+  };
+
+  const checkPostedDate = (postedDate, filter) => {
+    if (!filter) return true;
+    
+    const now = new Date();
+    const postDate = new Date(postedDate);
+    const diffTime = now - postDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    switch(filter) {
+      case '1day':
+        return diffDays <= 1;
+      case '1week':
+        return diffDays <= 7;
+      case '1month':
+        return diffDays <= 30;
+      case '1year':
+        return diffDays <= 365;
+      default:
+        return true;
+    }
   };
 
   const handleJobClick = (job) => {
@@ -258,7 +265,7 @@ const CandidateJobs = () => {
     setWorkTypeFilter("");
     setEmploymentTypeFilter("");
     setExperienceFilter("");
-    setCategoryFilter("");
+    setPostedDateFilter("");
   };
 
   const formatDate = (dateString) => {
@@ -284,67 +291,10 @@ const CandidateJobs = () => {
     if (workTypeFilter) count++;
     if (employmentTypeFilter) count++;
     if (experienceFilter) count++;
-    if (categoryFilter) count++;
+    if (postedDateFilter) count++;
     return count;
   };
 
-  // Get unique values for filter options from current data
-  const getFilterOptions = () => {
-    const currentData = showingSearchResults ? searchData : apiData;
-    if (!currentData?.workorders) {
-      return {
-        workTypes: [],
-        employmentTypes: [],
-        categories: [],
-        experiences: [],
-      };
-    }
-
-    const workTypes = [
-      ...new Set(
-        currentData.workorders.map((job) =>
-          job.workplace === "on-site"
-            ? "On-site"
-            : job.workplace === "remote"
-            ? "Remote"
-            : "Hybrid"
-        )
-      ),
-    ];
-
-    const employmentTypes = [
-      ...new Set(
-        currentData.workorders.map((job) =>
-          job.EmploymentType === "full-time"
-            ? "Full-time"
-            : job.EmploymentType === "part-time"
-            ? "Part-time"
-            : job.EmploymentType === "contract"
-            ? "Contract"
-            : "Full-time"
-        )
-      ),
-    ];
-
-    const categories = [
-      ...new Set(
-        currentData.workorders.map((job) => job.jobFunction).filter(Boolean)
-      ),
-    ];
-
-    const experiences = [
-      ...new Set(
-        currentData.workorders.map((job) => job.Experience).filter(Boolean)
-      ),
-    ];
-
-    return { workTypes, employmentTypes, categories, experiences };
-  };
-
-  const { workTypes, employmentTypes, categories, experiences } =
-    getFilterOptions();
-
-  // Filter form component for reuse in dropdown and drawer
   const FilterForm = ({ isDrawer = false }) => (
     <div
       style={{
@@ -382,11 +332,9 @@ const CandidateJobs = () => {
             onChange={setWorkTypeFilter}
             allowClear
           >
-            {workTypes.map((type) => (
-              <Option key={type} value={type}>
-                {type}
-              </Option>
-            ))}
+            <Option value="Remote">Remote</Option>
+            <Option value="On-site">On-site</Option>
+            <Option value="Hybrid">Hybrid</Option>
           </Select>
         </div>
 
@@ -401,11 +349,10 @@ const CandidateJobs = () => {
             onChange={setEmploymentTypeFilter}
             allowClear
           >
-            {employmentTypes.map((type) => (
-              <Option key={type} value={type}>
-                {type}
-              </Option>
-            ))}
+            <Option value="Full-time">Full-time</Option>
+            <Option value="Part-time">Part-time</Option>
+            <Option value="Contract">Contract</Option>
+            <Option value="Internship">Internship</Option>
           </Select>
         </div>
 
@@ -420,30 +367,28 @@ const CandidateJobs = () => {
             onChange={setExperienceFilter}
             allowClear
           >
-            {experiences.map((exp) => (
-              <Option key={exp} value={exp}>
-                {exp}+ years
-              </Option>
-            ))}
+            <Option value="0">Fresher (0-2 years)</Option>
+            <Option value="3">Mid (3-5 years)</Option>
+            <Option value="6">Senior (6-10 years)</Option>
+            <Option value="11">Executive (10+ years)</Option>
           </Select>
         </div>
 
         <div>
           <Text strong style={{ display: "block", marginBottom: "8px" }}>
-            Category
+            Posted Date
           </Text>
           <Select
-            placeholder="Select category"
+            placeholder="Select time period"
             style={{ width: "100%" }}
-            value={categoryFilter}
-            onChange={setCategoryFilter}
+            value={postedDateFilter}
+            onChange={setPostedDateFilter}
             allowClear
           >
-            {categories.map((category) => (
-              <Option key={category} value={category}>
-                {category}
-              </Option>
-            ))}
+            <Option value="1day">Last 24 hours</Option>
+            <Option value="1week">Last week</Option>
+            <Option value="1month">Last month</Option>
+            <Option value="1year">Last year</Option>
           </Select>
         </div>
 
@@ -457,8 +402,7 @@ const CandidateJobs = () => {
               onClick={() => setMobileFiltersVisible(false)}
               style={{
                 flex: 1,
-                background:
-                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                 border: "none",
               }}
             >
@@ -479,10 +423,8 @@ const CandidateJobs = () => {
     ],
   };
 
-  // Determine loading state
   const isLoading = initialLoading || (isSearching && searchLoading);
 
-  // Determine error state
   const error = initialError || (showingSearchResults && searchError);
 
   if (isLoading) {
@@ -510,8 +452,7 @@ const CandidateJobs = () => {
               onClick={() => window.location.reload()}
               key="retry"
               style={{
-                background:
-                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               }}
             >
               Retry
@@ -644,8 +585,7 @@ const CandidateJobs = () => {
                   loading={isSearching}
                   style={{
                     width: "100%",
-                    background:
-                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                     border: "none",
                   }}
                   onClick={handleSearch}
@@ -659,7 +599,6 @@ const CandidateJobs = () => {
           </div>
         </Card>
 
-        {/* Search Results Indicator */}
         {showingSearchResults && (
           <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
             <div
@@ -695,7 +634,6 @@ const CandidateJobs = () => {
           </Card>
         )}
 
-        {/* Mobile Filter Drawer */}
         <Drawer
           title="Filter Jobs"
           placement="bottom"
@@ -708,7 +646,6 @@ const CandidateJobs = () => {
           <FilterForm isDrawer={true} />
         </Drawer>
 
-        {/* Active Filters Display */}
         {getActiveFiltersCount() > 0 && (
           <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
             <div
@@ -752,14 +689,19 @@ const CandidateJobs = () => {
                   Exp: {experienceFilter}
                 </Tag>
               )}
-              {categoryFilter && (
+              {postedDateFilter && (
                 <Tag
                   closable
-                  onClose={() => setCategoryFilter("")}
+                  onClose={() => setPostedDateFilter("")}
                   color="purple"
                   style={{ fontSize: "12px" }}
                 >
-                  Category: {categoryFilter}
+                  Posted: {
+                    postedDateFilter === '1day' ? 'Last 24h' : 
+                    postedDateFilter === '1week' ? 'Last week' : 
+                    postedDateFilter === '1month' ? 'Last month' : 
+                    'Last year'
+                  }
                 </Tag>
               )}
               <Button type="link" size="small" onClick={clearFilters}>
@@ -769,7 +711,6 @@ const CandidateJobs = () => {
           </Card>
         )}
 
-        {/* Results Counter */}
         <div style={{ marginBottom: "16px" }}>
           <Text
             style={{
@@ -783,7 +724,6 @@ const CandidateJobs = () => {
           </Text>
         </div>
 
-        {/* Job Listings */}
         {filteredJobs.length > 0 ? (
           <>
             <div
@@ -813,9 +753,7 @@ const CandidateJobs = () => {
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  {/* Mobile Layout */}
                   <div className="mobile-job-card" style={{ display: "block" }}>
-                    {/* Header with Company Logo, Title, and Save Button */}
                     <div
                       style={{
                         display: "flex",
@@ -877,7 +815,6 @@ const CandidateJobs = () => {
                         </div>
                       </div>
 
-                      {/* Save Button */}
                       <Tooltip
                         title={
                           savedJobs.has(job._id)
@@ -904,7 +841,6 @@ const CandidateJobs = () => {
                       </Tooltip>
                     </div>
 
-                    {/* Location, Work Type, and Salary */}
                     <div style={{ marginBottom: "12px" }}>
                       <div
                         style={{
@@ -975,7 +911,6 @@ const CandidateJobs = () => {
                       </Space>
                     </div>
 
-                    {/* Skills and Posted Date */}
                     <div
                       style={{
                         display: "flex",
@@ -1041,7 +976,6 @@ const CandidateJobs = () => {
               ))}
             </div>
 
-            {/* Pagination */}
             <div
               style={{
                 display: "flex",
@@ -1091,8 +1025,7 @@ const CandidateJobs = () => {
                   type="primary"
                   onClick={clearSearch}
                   style={{
-                    background:
-                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                     border: "none",
                   }}
                 >
@@ -1103,8 +1036,7 @@ const CandidateJobs = () => {
                   type="primary"
                   onClick={clearFilters}
                   style={{
-                    background:
-                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                     border: "none",
                   }}
                 >

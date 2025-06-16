@@ -90,10 +90,11 @@ const JobDetailsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <Spin size="large" />
-        <div style={{ marginTop: 16 }}>
-          <Skeleton active paragraph={{ rows: 4 }} />
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
         </div>
       </div>
     );
@@ -194,53 +195,56 @@ const JobDetailsPage = () => {
     }
   };
 
-const handleSubmitApplication = async (values) => {
-  try {
-    if (currentStep === 0) {
-      setReviewData(values);
-      setCurrentStep(1);
-      return;
-    }
+  const handleSubmitApplication = async (values) => {
+    try {
+      if (currentStep === 0) {
+        setReviewData(values);
+        setCurrentStep(1);
+        return;
+      }
 
-    const formData = new FormData();
-    formData.append("workOrderId", jobId);
+      const formData = new FormData();
+      formData.append("workOrderId", jobId);
 
-    const responses = [];
+      const responses = [];
 
-    for (const field of job.customFields) {
-      const fieldId = field.id.toString();
-      const fieldValue = reviewData[fieldId];
+      for (const field of job.customFields) {
+        const fieldId = field.id.toString();
+        const fieldValue = reviewData[fieldId];
 
-      if (field.type === "file") {
-        const files = fileList[field.id];
-        if (files && files[0]?.originFileObj) {
-          formData.append("files", files[0].originFileObj);
+        if (field.type === "file") {
+          const files = fileList[field.id];
+          if (files && files[0]?.originFileObj) {
+            formData.append("files", files[0].originFileObj);
+            responses.push({
+              fieldKey: fieldId,
+              value: files[0].name,
+            });
+          }
+        } else if (
+          fieldValue !== undefined &&
+          fieldValue !== null &&
+          fieldValue !== ""
+        ) {
           responses.push({
             fieldKey: fieldId,
-            value: files[0].name,
+            value: fieldValue,
           });
         }
-      } else if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
-        responses.push({
-          fieldKey: fieldId,
-          value: fieldValue,
-        });
       }
+
+      formData.append("responses", JSON.stringify(responses));
+
+      await submitJobApplication(formData).unwrap();
+      message.success("Application submitted successfully!");
+      form.resetFields();
+      setFileList({});
+      setCurrentStep(2);
+    } catch (error) {
+      console.error("Submission error:", error);
+      message.error(error?.data?.message || "Submission failed");
     }
-
-    formData.append("responses", JSON.stringify(responses));
-
-    await submitJobApplication(formData).unwrap();
-    message.success("Application submitted successfully!");
-    form.resetFields();
-    setFileList({});
-    setCurrentStep(2);
-  } catch (error) {
-    console.error("Submission error:", error);
-    message.error(error?.data?.message || "Submission failed");
-  }
-};
-
+  };
 
   const handleGoBack = () => {
     navigate("/candidate-jobs");
