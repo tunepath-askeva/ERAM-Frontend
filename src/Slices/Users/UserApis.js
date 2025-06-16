@@ -80,6 +80,12 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    withdrawJobApplication: builder.mutation({
+      query: (applicationId) => ({
+        url: `/status/${applicationId}`, 
+        method: "POST",
+      }),
+    }),
   }),
 });
 
@@ -95,4 +101,5 @@ export const {
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
+  useWithdrawJobApplicationMutation
 } = userApi;

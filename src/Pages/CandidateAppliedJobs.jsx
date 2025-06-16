@@ -32,7 +32,7 @@ import {
   Alert,
   Statistic,
   Popconfirm,
-  Result
+  Result,
 } from "antd";
 import {
   SearchOutlined,
@@ -78,7 +78,10 @@ import {
   NotificationOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { useGetUserAppliedJobsQuery } from "../Slices/Users/UserApis";
+import {
+  useGetUserAppliedJobsQuery,
+  useWithdrawJobApplicationMutation,
+} from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -96,6 +99,13 @@ const APPLICATION_STATUSES = {
     color: "#6b7280",
     icon: <FileTextOutlined />,
     description: "Your application has been submitted successfully",
+  },
+  DECLINED: {
+    key: "declined",
+    label: "Declined",
+    color: "#ef4444",
+    icon: <CloseOutlined />,
+    description: "You declined this offer",
   },
   UNDER_REVIEW: {
     key: "under_review",
@@ -178,31 +188,30 @@ const CandidateAppliedJobs = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [dateRangeFilter, setDateRangeFilter] = useState([]);
+  const [withdrawJobApplication, { isLoading: isWithdrawing }] =
+    useWithdrawJobApplicationMutation();
 
   useEffect(() => {
     if (apiData?.appliedJobs) {
       const formattedApplications = apiData.appliedJobs.map((app) => {
         const workOrder = app.workOrder;
-        const responses = app.responses.reduce((acc, curr) => {
-          acc[curr.fieldKey] = curr.value;
-          return acc;
-        }, {});
 
         return {
           _id: app._id,
           title: workOrder.title,
-          company: "Company Name", // You might want to get this from API if available
+          company: workOrder.companyIndustry || "Company Name",
           companyLogo: "https://via.placeholder.com/40",
           location: workOrder.officeLocation,
           workType: workOrder.workplace === "on-site" ? "On-site" : "Remote",
-          employmentType: workOrder.EmploymentType,
-          experience: `${workOrder.Experience} years`,
+          employmentType: workOrder.employmentType || "Full-time",
+          experience: workOrder.experience || "Not specified",
           salary: `₹${workOrder.annualSalary}`,
           appliedDate: app.createdAt.split("T")[0],
           status: app.status,
           applicationId: workOrder.jobCode,
-          skills: workOrder.requiredSkills,
+          skills: workOrder.requiredSkills || [],
           notes: workOrder.description,
+          benefits: workOrder.benefits || [],
           priority: "medium",
           timeline: [
             {
@@ -249,7 +258,9 @@ const CandidateAppliedJobs = () => {
       // Tab-based filtering
       let matchesTab = true;
       if (activeTab === "active") {
-        matchesTab = !["rejected", "withdrawn", "hired"].includes(app.status);
+        matchesTab = !["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
       } else if (activeTab === "interviews") {
         matchesTab = [
           "interview_scheduled",
@@ -259,7 +270,9 @@ const CandidateAppliedJobs = () => {
       } else if (activeTab === "offers") {
         matchesTab = ["offer_extended", "hired"].includes(app.status);
       } else if (activeTab === "closed") {
-        matchesTab = ["rejected", "withdrawn", "hired"].includes(app.status);
+        matchesTab = ["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
       }
 
       return (
@@ -275,9 +288,6 @@ const CandidateAppliedJobs = () => {
     setCurrentPage(1);
   };
 
-  // Rest of your component code remains the same...
-  // Only the data source has changed from mockAppliedJobs to the API response
-
   const handleApplicationClick = (application) => {
     setSelectedApplication(application);
     setDetailModalVisible(true);
@@ -288,22 +298,29 @@ const CandidateAppliedJobs = () => {
     setWithdrawModalVisible(true);
   };
 
-  const confirmWithdraw = () => {
+  const confirmWithdraw = async () => {
     if (selectedApplication) {
-      setApplications((prev) =>
-        prev.map((app) =>
-          app._id === selectedApplication._id
-            ? {
-                ...app,
-                status: "withdrawn",
-                withdrawnDate: new Date().toISOString().split("T")[0],
-              }
-            : app
-        )
-      );
-      message.success("Application withdrawn successfully");
-      setWithdrawModalVisible(false);
-      setSelectedApplication(null);
+      try {
+        await withdrawJobApplication(selectedApplication._id).unwrap();
+
+        setApplications((prev) =>
+          prev.map((app) =>
+            app._id === selectedApplication._id
+              ? {
+                  ...app,
+                  status: "withdrawn",
+                  withdrawnDate: new Date().toISOString().split("T")[0],
+                }
+              : app
+          )
+        );
+        message.success("Application withdrawn successfully");
+        setWithdrawModalVisible(false);
+        setSelectedApplication(null);
+      } catch (error) {
+        message.error("Failed to withdraw application. Please try again.");
+        console.error("Withdrawal error:", error);
+      }
     }
   };
 
@@ -346,7 +363,9 @@ const CandidateAppliedJobs = () => {
     return applications.filter((app) => {
       if (tabKey === "all") return true;
       if (tabKey === "active")
-        return !["rejected", "withdrawn", "hired"].includes(app.status);
+        return !["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
       if (tabKey === "interviews")
         return [
           "interview_scheduled",
@@ -356,7 +375,9 @@ const CandidateAppliedJobs = () => {
       if (tabKey === "offers")
         return ["offer_extended", "hired"].includes(app.status);
       if (tabKey === "closed")
-        return ["rejected", "withdrawn", "hired"].includes(app.status);
+        return ["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
       return false;
     }).length;
   };
@@ -402,9 +423,6 @@ const CandidateAppliedJobs = () => {
     );
   }
 
-  // Rest of your JSX remains the same...
-  // Only the data source has changed from mockAppliedJobs to the API response
-
   return (
     <>
       <div
@@ -422,13 +440,13 @@ const CandidateAppliedJobs = () => {
             style={{ margin: 0, color: "#2c3e50", textAlign: "center" }}
           >
             <FileTextOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Empowering Your Career Journey
+            My Job Applications
           </Title>
           <Text
             type="secondary"
             style={{ display: "block", textAlign: "center", marginTop: 8 }}
           >
-            Personalized job matches for your unique aspirations.
+            Track all your job applications in one place
           </Text>
         </div>
 
@@ -661,66 +679,6 @@ const CandidateAppliedJobs = () => {
                         flexDirection: "column",
                       }}
                       onClick={() => handleApplicationClick(application)}
-                    //   actions={[
-                    //     <Tooltip title="View Details" key="view">
-                    //       <Button
-                    //         type="text"
-                    //         icon={<EyeOutlined />}
-                    //         style={{ color: "#6b7280" }}
-                    //         onClick={(e) => {
-                    //           e.stopPropagation();
-                    //           handleApplicationClick(application);
-                    //         }}
-                    //       />
-                    //     </Tooltip>,
-                    //     <Tooltip title="Contact" key="contact">
-                    //       <Button
-                    //         type="text"
-                    //         icon={<MailOutlined />}
-                    //         style={{ color: "#6b7280" }}
-                    //         onClick={(e) => {
-                    //           e.stopPropagation();
-                    //           // Handle contact functionality
-                    //         }}
-                    //       />
-                    //     </Tooltip>,
-                    //     <Tooltip title="Withdraw Application" key="withdraw">
-                    //       <Popconfirm
-                    //         title="Are you sure you want to withdraw this application?"
-                    //         onConfirm={(e) => {
-                    //           e.stopPropagation();
-                    //           handleWithdrawApplication(application);
-                    //         }}
-                    //         okText="Yes"
-                    //         cancelText="No"
-                    //         disabled={[
-                    //           "hired",
-                    //           "rejected",
-                    //           "withdrawn",
-                    //         ].includes(application.status)}
-                    //       >
-                    //         <Button
-                    //           type="text"
-                    //           icon={<DeleteOutlined />}
-                    //           style={{
-                    //             color: [
-                    //               "hired",
-                    //               "rejected",
-                    //               "withdrawn",
-                    //             ].includes(application.status)
-                    //               ? "#d1d5db"
-                    //               : "#ef4444",
-                    //           }}
-                    //           disabled={[
-                    //             "hired",
-                    //             "rejected",
-                    //             "withdrawn",
-                    //           ].includes(application.status)}
-                    //           onClick={(e) => e.stopPropagation()}
-                    //         />
-                    //       </Popconfirm>
-                    //     </Tooltip>,
-                    //   ]}
                     >
                       {/* Priority Badge */}
                       <div
@@ -1007,23 +965,12 @@ const CandidateAppliedJobs = () => {
               boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <Result
-              status="404"
-              title="Failed to Load"
-              subTitle={"Something went wrong while fetching."}
-              extra={[
-                <Button
-                  type="primary"
-                  onClick={() => window.location.reload()}
-                  key="retry"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  }}
-                >
-                  Retry
-                </Button>,
-              ]}
+            <Empty
+              description={
+                <Text type="secondary">
+                  No applications found. Try adjusting your filters.
+                </Text>
+              }
             />
           </Card>
         )}
@@ -1165,6 +1112,16 @@ const CandidateAppliedJobs = () => {
                     {selectedApplication.notes}
                   </Descriptions.Item>
                 )}
+                {selectedApplication.benefits &&
+                  selectedApplication.benefits.length > 0 && (
+                    <Descriptions.Item label="Benefits">
+                      <ul style={{ margin: 0, paddingLeft: "20px" }}>
+                        {selectedApplication.benefits.map((benefit, index) => (
+                          <li key={index}>{benefit}</li>
+                        ))}
+                      </ul>
+                    </Descriptions.Item>
+                  )}
               </Descriptions>
             </TabPane>
 
@@ -1210,7 +1167,11 @@ const CandidateAppliedJobs = () => {
         }}
         okText="Yes, Withdraw"
         cancelText="Cancel"
-        okButtonProps={{ danger: true }}
+        okButtonProps={{
+          danger: true,
+          loading: isWithdrawing,
+        }}
+        confirmLoading={isWithdrawing}
       >
         <p>Are you sure you want to withdraw your application for:</p>
         {selectedApplication && (
