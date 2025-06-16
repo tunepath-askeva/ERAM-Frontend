@@ -201,11 +201,7 @@ const JobDetailsPage = () => {
         setCurrentStep(1);
         return;
       }
-
-      const formData = {
-        workOrderId: jobId,
-        fields: {},
-      };
+      const responses = [];
 
       if (job.customFields) {
         for (const field of job.customFields) {
@@ -220,23 +216,30 @@ const JobDetailsPage = () => {
             if (field.type === "file") {
               const files = fileList[field.id];
               if (files && files[0]?.originFileObj) {
-                const base64File = await fileToBase64(files[0].originFileObj);
-                formData.fields[fieldId] = {
-                  filename: files[0].name,
-                  type: files[0].type,
-                  data: base64File,
-                };
+                const base64Content = await fileToBase64(
+                  files[0].originFileObj
+                );
+                responses.push({
+                  fieldKey: fieldId,
+                  value: base64Content,
+                });
               }
             } else {
-              formData.fields[fieldId] = fieldValue;
+              responses.push({
+                fieldKey: fieldId,
+                value: fieldValue,
+              });
             }
           }
         }
       }
 
-      await submitJobApplication(formData).unwrap();
-      console.log(formData, "FormData");
+      const payload = {
+        workOrderId: jobId,
+        responses: responses,
+      };
 
+      await submitJobApplication(payload).unwrap();
       message.success("Application submitted successfully!");
       form.resetFields();
       setFileList({});
@@ -247,14 +250,13 @@ const JobDetailsPage = () => {
     }
   };
 
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result.split(",")[1]);
       reader.onerror = (error) => reject(error);
     });
-  };
 
   const handleGoBack = () => {
     navigate("/candidate-jobs");
