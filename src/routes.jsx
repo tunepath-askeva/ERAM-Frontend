@@ -147,23 +147,23 @@ const AppRoutes = () => {
       <Route element={<RecruiterLayout />}>
         <Route
           path="/recruiter/dashboard"
-          element={<ProtectedRecruiter element={<RecruiterDashboard />} />}
+          element={<RecruiterDashboard />}
         />
         <Route
           path="/recruiter/jobs"
-          element={<ProtectedRecruiter element={<RecruiterJobs />} />}
+          element={<RecruiterJobs />}
         />
         <Route
           path="/recruiter/employees"
-          element={<ProtectedRecruiter element={<RecruiterEmployee />} />}
+          element={<RecruiterEmployee />}
         />
         <Route
           path="/recruiter/payroll"
-          element={<ProtectedRecruiter element={<RecruiterPayroll />} />}
+          element={<RecruiterPayroll />}
         />
         <Route
           path="/recruiter/candidates"
-          element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
+          element={<RecruiterCandidates />}
         />
       </Route>
     </Routes>
