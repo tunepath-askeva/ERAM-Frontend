@@ -20,6 +20,7 @@ import {
   Radio,
   Spin,
   Modal,
+  Skeleton,
 } from "antd";
 import {
   PlusOutlined,
@@ -111,13 +112,6 @@ const EditWorkOrder = () => {
   const activeProjects =
     projects?.allProjects?.filter((project) => project.status === "active") ||
     [];
-
-  useEffect(() => {
-    console.log("Work Order ID:", id);
-    console.log("Work Order Data:", workOrderData);
-    console.log("Loading:", isLoadingWorkOrder);
-    console.log("Error:", error);
-  }, [id, workOrderData, isLoadingWorkOrder, error]);
 
   useEffect(() => {
     if (workOrderData?.workOrder) {
@@ -1091,7 +1085,6 @@ const EditWorkOrder = () => {
                   setEditingPipeline(pipeline);
                   setPipelineModalVisible(true);
                 }}
-                style={{ color: "#fff" }}
               />
             </Tag>
           );
@@ -1111,8 +1104,7 @@ const EditWorkOrder = () => {
           height: "400px",
         }}
       >
-        <Spin size="large" indicator={<LoadingOutlined spin />} />
-        <div style={{ marginLeft: "16px" }}>Loading work order data...</div>
+        <Skeleton />={" "}
       </div>
     );
   }
@@ -1303,9 +1295,10 @@ const EditWorkOrder = () => {
                         placeholder="Select pipeline"
                         onChange={handlePipelineChange}
                         style={{ width: "calc(100% - 120px)" }}
+                         value={selectedPipelines} 
                       >
                         {activePipelines.map((pipeline) => (
-                          <Option key={pipeline._id} value={pipeline._id}>
+                          <Option key={pipeline._id} value={pipeline._id} >
                             {pipeline.name}
                           </Option>
                         ))}
@@ -1345,7 +1338,7 @@ const EditWorkOrder = () => {
                       placeholder="Select recruiters"
                       optionLabelProp="label"
                     >
-                      {recruiters?.recruiters?.map((recruiter) => (
+                      {activeRecruiters?.map((recruiter) => (
                         <Option
                           key={recruiter._id}
                           value={recruiter._id}
@@ -1607,7 +1600,6 @@ const EditWorkOrder = () => {
     );
   }
 
-  // Step 2: Application Form Builder
   return (
     <div style={{ padding: "16px 8px", maxWidth: "1400px", margin: "0 auto" }}>
       <Steps

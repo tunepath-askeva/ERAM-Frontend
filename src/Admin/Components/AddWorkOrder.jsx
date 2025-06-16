@@ -949,7 +949,6 @@ const AddWorkOrder = () => {
                   setEditingPipeline(pipeline);
                   setPipelineModalVisible(true);
                 }}
-                style={{ color: "#fff" }}
               />
             </Tag>
           );

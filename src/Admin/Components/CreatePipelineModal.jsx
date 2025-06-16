@@ -50,6 +50,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 // Sortable Stage Item Component
+// Updated SortableStageItem Component
 function SortableStageItem({
   stage,
   index,
@@ -76,7 +77,12 @@ function SortableStageItem({
 
   return (
     <Col xs={24} sm={12} lg={8}>
-      <div ref={setNodeRef} style={style}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners} // Move listeners to the main container
+      >
         <Card
           size="small"
           style={{
@@ -86,23 +92,10 @@ function SortableStageItem({
               : "0 4px 16px rgba(0, 0, 0, 0.08)",
             border: isDragging ? "2px solid #da2c46" : "2px solid #e8f4fd",
             transition: "all 0.3s ease",
-            cursor: isDragging ? "grabbing" : "pointer",
+            cursor: isDragging ? "grabbing" : "grab", // Always show grab cursor
             transform: isDragging ? "rotate(2deg)" : "none",
           }}
-          onMouseEnter={(e) => {
-            if (!isDragging) {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow =
-                "0 8px 24px rgba(0, 0, 0, 0.12)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isDragging) {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow =
-                "0 4px 16px rgba(0, 0, 0, 0.08)";
-            }
-          }}
+          // Remove onMouseEnter and onMouseLeave to disable hover effects
           title={
             <div
               style={{
@@ -111,24 +104,7 @@ function SortableStageItem({
                 gap: "8px",
               }}
             >
-              <div
-                {...attributes}
-                {...listeners}
-                style={{
-                  cursor: isDragging ? "grabbing" : "grab",
-                  padding: "4px 8px",
-                  background: "#fff5f5",
-                  borderRadius: "4px",
-                  border: "1px solid #da2c47",
-                  color: "#da2c47",
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: "12px",
-                }}
-              >
-                <DragOutlined style={{ marginRight: "4px" }} />
-                Drag
-              </div>
+              {/* Remove the separate drag handle since the whole card is draggable now */}
               <Tag
                 color="blue"
                 style={{
@@ -155,9 +131,13 @@ function SortableStageItem({
                   type="text"
                   size="small"
                   icon={<EditOutlined />}
-                  onClick={() => onEdit(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(index);
+                  }}
                   style={{ borderRadius: "6px" }}
                   loading={isEditingStageAPI}
+                  onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
                 />
               </Tooltip>
               <Tooltip title="Delete Stage">
@@ -169,7 +149,11 @@ function SortableStageItem({
                       : "Are you sure you want to remove this stage?"
                   }
                   icon={<ExclamationCircleOutlined style={{ color: "red" }} />}
-                  onConfirm={() => onDelete(index)}
+                  onConfirm={(e) => {
+                    e?.stopPropagation();
+                    onDelete(index);
+                  }}
+                  onCancel={(e) => e?.stopPropagation()}
                   okText="Yes"
                   cancelText="No"
                   okButtonProps={{
@@ -184,6 +168,8 @@ function SortableStageItem({
                     icon={<DeleteOutlined />}
                     style={{ borderRadius: "6px" }}
                     loading={isDeletingStage}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
                   />
                 </Popconfirm>
               </Tooltip>
