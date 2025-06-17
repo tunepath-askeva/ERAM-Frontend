@@ -54,14 +54,12 @@ import { useNavigate } from "react-router-dom";
 import {
   useGetJobsByBranchQuery,
   useLazySearchJobsQuery,
+  useLazyFilterJobsQuery, // Add this import
 } from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { Search } = Input;
-
-
-
 
 const CandidateJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -73,6 +71,7 @@ const CandidateJobs = () => {
   const [pageSize] = useState(6);
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false); // Add this state
   const navigate = useNavigate();
 
   const {
@@ -86,6 +85,12 @@ const CandidateJobs = () => {
     { data: searchData, isLoading: searchLoading, error: searchError },
   ] = useLazySearchJobsQuery();
 
+  // Add the filter API hook
+  const [
+    filterJobs,
+    { data: filterData, isLoading: filterLoading, error: filterError },
+  ] = useLazyFilterJobsQuery();
+
   const [searchKeyword, setSearchKeyword] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [workTypeFilter, setWorkTypeFilter] = useState("");
@@ -94,13 +99,14 @@ const CandidateJobs = () => {
   const [postedDateFilter, setPostedDateFilter] = useState("");
 
   const [showingSearchResults, setShowingSearchResults] = useState(false);
+  const [showingFilterResults, setShowingFilterResults] = useState(false); // Add this state
 
   useEffect(() => {
-    if (apiData?.workorders && !showingSearchResults) {
+    if (apiData?.workorders && !showingSearchResults && !showingFilterResults) {
       const transformedJobs = transformJobData(apiData.workorders);
       setFilteredJobs(transformedJobs);
     }
-  }, [apiData, showingSearchResults]);
+  }, [apiData, showingSearchResults, showingFilterResults]);
 
   useEffect(() => {
     if (searchData?.jobs && showingSearchResults) {
@@ -110,8 +116,21 @@ const CandidateJobs = () => {
   }, [searchData, showingSearchResults]);
 
   useEffect(() => {
-    applyLocalFilters();
-  }, [workTypeFilter, employmentTypeFilter, experienceFilter, postedDateFilter]);
+    if (filterData?.jobs && showingFilterResults) {
+      const transformedJobs = transformJobData(filterData.jobs);
+      setFilteredJobs(transformedJobs);
+    }
+  }, [filterData, showingFilterResults]);
+
+  useEffect(() => {
+    handleFilterJobs();
+  }, [
+    workTypeFilter,
+    employmentTypeFilter,
+    experienceFilter,
+    postedDateFilter,
+    locationFilter,
+  ]);
 
   const transformJobData = (jobs) => {
     if (!jobs || !Array.isArray(jobs)) return [];
@@ -164,9 +183,83 @@ const CandidateJobs = () => {
     }));
   };
 
+  const handleFilterJobs = async () => {
+    // If no filters are applied, show all jobs
+    if (
+      !workTypeFilter &&
+      !employmentTypeFilter &&
+      !experienceFilter &&
+      !postedDateFilter &&
+      !locationFilter
+    ) {
+      setShowingFilterResults(false);
+      setShowingSearchResults(false);
+      return;
+    }
+
+    setIsFiltering(true);
+    try {
+      const filterParams = {};
+
+      if (locationFilter) filterParams.location = locationFilter;
+
+      if (workTypeFilter) {
+        // Map UI values to backend values
+        const workTypeMap = {
+          Remote: "remote",
+          "On-site": "on-site",
+          Hybrid: "hybrid",
+        };
+        filterParams.workplace = workTypeMap[workTypeFilter] || workTypeFilter;
+      }
+
+      if (employmentTypeFilter) {
+        // Map UI values to backend values
+        const employmentTypeMap = {
+          "Full-time": "full-time",
+          "Part-time": "part-time",
+          Contract: "contract",
+          Internship: "internship",
+        };
+        filterParams.employmentType =
+          employmentTypeMap[employmentTypeFilter] || employmentTypeFilter;
+      }
+
+      if (experienceFilter) {
+        // Extract number from experience filter
+        const expValue =
+          experienceFilter === "0" ? 0 : parseInt(experienceFilter);
+        filterParams.experience = expValue;
+      }
+
+      if (postedDateFilter) {
+        // Map UI values to backend values
+        const postedDateMap = {
+          "1day": "today",
+          "1week": "week",
+          "1month": "month",
+          "1year": "year",
+        };
+        filterParams.postedWithin =
+          postedDateMap[postedDateFilter] || postedDateFilter;
+      }
+
+      await filterJobs(filterParams);
+      setShowingFilterResults(true);
+      setShowingSearchResults(false);
+      setCurrentPage(1);
+    } catch (error) {
+      message.error("Failed to filter jobs. Please try again.");
+      console.error("Filter error:", error);
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!searchKeyword.trim() && !locationFilter.trim()) {
       setShowingSearchResults(false);
+      setShowingFilterResults(false);
       setCurrentPage(1);
       return;
     }
@@ -178,6 +271,7 @@ const CandidateJobs = () => {
         location: locationFilter.trim() || "",
       });
       setShowingSearchResults(true);
+      setShowingFilterResults(false);
       setCurrentPage(1);
     } catch (error) {
       message.error("Failed to search jobs. Please try again.");
@@ -190,57 +284,19 @@ const CandidateJobs = () => {
     setSearchKeyword("");
     setLocationFilter("");
     setShowingSearchResults(false);
+    setShowingFilterResults(false);
     clearFilters();
   };
 
-  const applyLocalFilters = () => {
-    const currentData = showingSearchResults ? searchData : apiData;
-    if (!currentData?.workorders) return;
-
-    const transformedJobs = transformJobData(currentData.workorders);
-
-    let filtered = transformedJobs.filter((job) => {
-      const matchesWorkType =
-        !workTypeFilter || job.workType === workTypeFilter;
-      const matchesEmploymentType =
-        !employmentTypeFilter || job.employmentType === employmentTypeFilter;
-      const matchesExperience =
-        !experienceFilter || job.experience.includes(experienceFilter);
-      const matchesPostedDate = checkPostedDate(job.postedDate, postedDateFilter);
-
-      return (
-        matchesWorkType &&
-        matchesEmploymentType &&
-        matchesExperience &&
-        matchesPostedDate
-      );
-    });
-
-    setFilteredJobs(filtered);
-    setCurrentPage(1);
+  const clearFilters = () => {
+    setWorkTypeFilter("");
+    setEmploymentTypeFilter("");
+    setExperienceFilter("");
+    setPostedDateFilter("");
+    setShowingFilterResults(false);
   };
 
-  const checkPostedDate = (postedDate, filter) => {
-    if (!filter) return true;
-    
-    const now = new Date();
-    const postDate = new Date(postedDate);
-    const diffTime = now - postDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    switch(filter) {
-      case '1day':
-        return diffDays <= 1;
-      case '1week':
-        return diffDays <= 7;
-      case '1month':
-        return diffDays <= 30;
-      case '1year':
-        return diffDays <= 365;
-      default:
-        return true;
-    }
-  };
+  // Remove the old checkPostedDate function as it's now handled by the backend
 
   const handleJobClick = (job) => {
     navigate(`/candidate-jobs/${job._id}`);
@@ -262,13 +318,6 @@ const CandidateJobs = () => {
         isSaved: j._id === job._id ? !j.isSaved : j.isSaved,
       }))
     );
-  };
-
-  const clearFilters = () => {
-    setWorkTypeFilter("");
-    setEmploymentTypeFilter("");
-    setExperienceFilter("");
-    setPostedDateFilter("");
   };
 
   const formatDate = (dateString) => {
@@ -405,7 +454,8 @@ const CandidateJobs = () => {
               onClick={() => setMobileFiltersVisible(false)}
               style={{
                 flex: 1,
-                background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                 border: "none",
               }}
             >
@@ -426,9 +476,17 @@ const CandidateJobs = () => {
     ],
   };
 
-  const isLoading = initialLoading || (isSearching && searchLoading);
+  // Update loading state to include filter loading
+  const isLoading =
+    initialLoading ||
+    (isSearching && searchLoading) ||
+    (isFiltering && filterLoading);
 
-  const error = initialError || (showingSearchResults && searchError);
+  // Update error state to include filter error
+  const error =
+    initialError ||
+    (showingSearchResults && searchError) ||
+    (showingFilterResults && filterError);
 
   if (isLoading) {
     return (
@@ -455,7 +513,8 @@ const CandidateJobs = () => {
               onClick={() => window.location.reload()}
               key="retry"
               style={{
-                background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               }}
             >
               Retry
@@ -536,6 +595,7 @@ const CandidateJobs = () => {
                     <Button
                       size="large"
                       style={{ width: "100%", position: "relative" }}
+                      loading={isFiltering}
                     >
                       <FilterOutlined />
                       Filters
@@ -562,6 +622,7 @@ const CandidateJobs = () => {
                     size="large"
                     style={{ width: "100%", position: "relative" }}
                     onClick={() => setMobileFiltersVisible(true)}
+                    loading={isFiltering}
                   >
                     <FilterOutlined />
                     <span style={{ display: "none" }}>Filters</span>
@@ -588,7 +649,8 @@ const CandidateJobs = () => {
                   loading={isSearching}
                   style={{
                     width: "100%",
-                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                     border: "none",
                   }}
                   onClick={handleSearch}
@@ -602,6 +664,7 @@ const CandidateJobs = () => {
           </div>
         </Card>
 
+        {/* Update the search results indicator */}
         {showingSearchResults && (
           <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
             <div
@@ -699,12 +762,14 @@ const CandidateJobs = () => {
                   color="purple"
                   style={{ fontSize: "12px" }}
                 >
-                  Posted: {
-                    postedDateFilter === '1day' ? 'Last 24h' : 
-                    postedDateFilter === '1week' ? 'Last week' : 
-                    postedDateFilter === '1month' ? 'Last month' : 
-                    'Last year'
-                  }
+                  Posted:{" "}
+                  {postedDateFilter === "1day"
+                    ? "Last 24h"
+                    : postedDateFilter === "1week"
+                    ? "Last week"
+                    : postedDateFilter === "1month"
+                    ? "Last month"
+                    : "Last year"}
                 </Tag>
               )}
               <Button type="link" size="small" onClick={clearFilters}>
@@ -724,6 +789,7 @@ const CandidateJobs = () => {
           >
             {filteredJobs.length} jobs found
             {showingSearchResults && " (from search results)"}
+            {showingFilterResults && " (filtered results)"}
           </Text>
         </div>
 
@@ -817,17 +883,16 @@ const CandidateJobs = () => {
                           )}
                         </div>
                       </div>
-
-                      <Tooltip
-                        title={
-                          savedJobs.has(job._id)
-                            ? "Remove from saved"
-                            : "Save job"
-                        }
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "8px",
+                        }}
                       >
                         <Button
                           type="text"
-                          size="small"
                           icon={
                             savedJobs.has(job._id) ? (
                               <HeartFilled style={{ color: "#da2c46" }} />
@@ -839,167 +904,220 @@ const CandidateJobs = () => {
                             e.stopPropagation();
                             handleSaveJob(job);
                           }}
-                          style={{ border: "1px solid #e0e0e0", flexShrink: 0 }}
                         />
-                      </Tooltip>
+                        <Tag
+                          color={
+                            job.workType === "Remote"
+                              ? "green"
+                              : job.workType === "Hybrid"
+                              ? "blue"
+                              : "orange"
+                          }
+                          style={{
+                            fontSize: "10px",
+                            textTransform: "uppercase",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {job.workType}
+                        </Tag>
+                      </div>
                     </div>
-
-                    <div style={{ marginBottom: "12px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "8px",
+                        marginBottom: "12px",
+                      }}
+                    >
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "8px",
+                          gap: "4px",
                         }}
                       >
-                        <Space wrap size="small" style={{ flex: 1 }}>
-                          <Tag
-                            icon={<EnvironmentOutlined />}
-                            color="blue"
-                            style={{ fontSize: "11px", margin: "2px" }}
-                          >
-                            {job.location}
-                          </Tag>
-                          <Tag
-                            icon={
-                              job.workType === "Remote" ? (
-                                <HomeOutlined />
-                              ) : (
-                                <BankOutlined />
-                              )
-                            }
-                            color="green"
-                            style={{ fontSize: "11px", margin: "2px" }}
-                          >
-                            {job.workType}
-                          </Tag>
-                        </Space>
-                        {job.salary && (
-                          <Text
-                            strong
-                            style={{
-                              color: "#da2c46",
-                              fontSize: "clamp(14px, 2.5vw, 16px)",
-                              flexShrink: 0,
-                              marginLeft: "8px",
-                            }}
-                          >
-                            {job.salary}
-                          </Text>
-                        )}
-                      </div>
-
-                      <Space wrap size="small">
-                        <Tag
-                          color="orange"
-                          style={{ fontSize: "11px", margin: "2px" }}
+                        <EnvironmentOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: "12px",
+                            color: "#666",
+                          }}
                         >
-                          {job.employmentType}
-                        </Tag>
-                        <Tag
-                          color="purple"
-                          style={{ fontSize: "11px", margin: "2px" }}
+                          {job.location}
+                        </Text>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <DollarOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: "12px",
+                            color: "#666",
+                          }}
+                        >
+                          {job.salary}
+                        </Text>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <ClockCircleOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: "12px",
+                            color: "#666",
+                          }}
                         >
                           {job.experience}
-                        </Tag>
-                        {job.numberOfCandidate && (
-                          <Tag
-                            color="cyan"
-                            style={{ fontSize: "11px", margin: "2px" }}
-                          >
-                            <TeamOutlined /> {job.numberOfCandidate} openings
-                          </Tag>
-                        )}
-                      </Space>
+                        </Text>
+                      </div>
                     </div>
-
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "4px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      {job.skills.slice(0, 3).map((skill, index) => (
+                        <Tag
+                          key={index}
+                          style={{
+                            fontSize: "10px",
+                            padding: "0 6px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          {skill}
+                        </Tag>
+                      ))}
+                      {job.skills.length > 3 && (
+                        <Tooltip
+                          title={job.skills.slice(3).join(", ")}
+                          placement="top"
+                        >
+                          <Tag
+                            style={{
+                              fontSize: "10px",
+                              padding: "0 6px",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            +{job.skills.length - 3} more
+                          </Tag>
+                        </Tooltip>
+                      )}
+                    </div>
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "flex-end",
+                        alignItems: "center",
                       }}
                     >
-                      <div style={{ flex: 1 }}>
-                        {job.skills && job.skills.length > 0 && (
-                          <div style={{ marginBottom: "8px" }}>
-                            <Text
-                              type="secondary"
-                              style={{
-                                fontSize: "11px",
-                                display: "block",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              Skills:
-                            </Text>
-                            <Space wrap size={[4, 4]}>
-                              {job.skills.slice(0, 3).map((skill, i) => (
-                                <Tag
-                                  key={i}
-                                  style={{
-                                    fontSize: "10px",
-                                    padding: "0 6px",
-                                    margin: 0,
-                                  }}
-                                >
-                                  {skill}
-                                </Tag>
-                              ))}
-                              {job.skills.length > 3 && (
-                                <Tag
-                                  style={{
-                                    fontSize: "10px",
-                                    padding: "0 6px",
-                                    margin: 0,
-                                  }}
-                                >
-                                  +{job.skills.length - 3} more
-                                </Tag>
-                              )}
-                            </Space>
-                          </div>
-                        )}
-                      </div>
                       <Text
                         type="secondary"
                         style={{
                           fontSize: "11px",
-                          alignSelf: "flex-end",
-                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
                         }}
                       >
-                        <ClockCircleOutlined /> Posted{" "}
-                        {formatDate(job.postedDate)}
+                        <CalendarOutlined />
+                        Posted {formatDate(job.postedDate)}
                       </Text>
+                      <Button
+                        type="primary"
+                        size="small"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                          border: "none",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleJobClick(job);
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-
             <div
               style={{
                 display: "flex",
                 justifyContent: "center",
                 marginTop: "24px",
-                marginBottom: "24px",
               }}
             >
               <Pagination
                 current={currentPage}
-                total={filteredJobs.length}
                 pageSize={pageSize}
+                total={filteredJobs.length}
                 onChange={(page) => setCurrentPage(page)}
                 showSizeChanger={false}
-                showQuickJumper
                 itemRender={(current, type, originalElement) => {
                   if (type === "prev") {
-                    return <Button size="small">Previous</Button>;
+                    return (
+                      <Button
+                        style={{
+                          background: "#fff",
+                          color: "#da2c46",
+                          borderColor: "#d9d9d9",
+                        }}
+                      >
+                        Previous
+                      </Button>
+                    );
                   }
                   if (type === "next") {
-                    return <Button size="small">Next</Button>;
+                    return (
+                      <Button
+                        style={{
+                          background: "#fff",
+                          color: "#da2c46",
+                          borderColor: "#d9d9d9",
+                        }}
+                      >
+                        Next
+                      </Button>
+                    );
+                  }
+                  if (type === "page") {
+                    return (
+                      <Button
+                        style={{
+                          background:
+                            current === currentPage ? "#da2c46" : "#fff",
+                          color: current === currentPage ? "#fff" : "#da2c46",
+                          borderColor: "#d9d9d9",
+                        }}
+                      >
+                        {current}
+                      </Button>
+                    );
                   }
                   return originalElement;
                 }}
@@ -1009,43 +1127,42 @@ const CandidateJobs = () => {
         ) : (
           <Card
             style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "300px",
               borderRadius: "12px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-              textAlign: "center",
             }}
           >
             <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <Text type="secondary">
-                  No jobs found matching your criteria. Try adjusting your
-                  filters.
+                <Text
+                  style={{
+                    fontSize: "clamp(14px, 2.5vw, 16px)",
+                    color: "#666",
+                  }}
+                >
+                  {showingSearchResults || showingFilterResults
+                    ? "No jobs match your search criteria"
+                    : "No jobs available at the moment"}
                 </Text>
               }
             >
-              {showingSearchResults ? (
+              {showingSearchResults || showingFilterResults ? (
                 <Button
                   type="primary"
-                  onClick={clearSearch}
+                  onClick={() => {
+                    clearSearch();
+                    clearFilters();
+                  }}
                   style={{
-                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                    border: "none",
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   }}
                 >
-                  Clear Search
+                  Clear search and filters
                 </Button>
-              ) : (
-                <Button
-                  type="primary"
-                  onClick={clearFilters}
-                  style={{
-                    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                    border: "none",
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              )}
+              ) : null}
             </Empty>
           </Card>
         )}

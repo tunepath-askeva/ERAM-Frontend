@@ -403,10 +403,6 @@ const AddWorkOrder = () => {
             isCustomStage:
               stages.find((s) => (s._id || s.id) === dateEntry.stageId)
                 ?.isCustom || false,
-            // Add approval data
-            approvers: stageApprovers[pipeId]?.[dateEntry.stageId] || [],
-            approvalType: "any", // You can make this configurable
-            autoApprove: false, // You can make this configurable
           })) || []
         );
       });
@@ -416,7 +412,6 @@ const AddWorkOrder = () => {
         customFields: applicationFields,
         WorkorderStatus: status,
         pipelineStageTimeline,
-        // Add stage approvers as a separate field for easy access
         stageApprovers: stageApprovers,
       };
 
@@ -430,13 +425,12 @@ const AddWorkOrder = () => {
         } successfully with approval settings!`
       );
 
-      // Reset all forms and state
       jobForm.resetFields();
       setSelectedProject(null);
       setJobData(null);
       setApplicationFields([]);
       setCustomStages({});
-      setStageApprovers({}); // Reset approvers
+      setStageApprovers({}); 
       setCurrentStep(0);
       navigate("/admin/workorder");
     } catch (error) {

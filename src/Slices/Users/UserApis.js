@@ -97,6 +97,24 @@ export const userApi = createApi({
         method: "POST",
       }),
     }),
+    filterJobs: builder.query({
+      query: (filters) => {
+        const params = new URLSearchParams();
+
+        if (filters.location) params.append("location", filters.location);
+        if (filters.employmentType)
+          params.append("employmentType", filters.employmentType);
+        if (filters.experience) params.append("experience", filters.experience);
+        if (filters.postedWithin)
+          params.append("postedWithin", filters.postedWithin);
+        if (filters.workplace) params.append("workplace", filters.workplace);
+
+        return {
+          url: `/filter?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
@@ -114,4 +132,5 @@ export const {
   useGetUserAppliedJobsQuery,
   useWithdrawJobApplicationMutation,
   useLazySearchJobsQuery,
+  useLazyFilterJobsQuery,
 } = userApi;
