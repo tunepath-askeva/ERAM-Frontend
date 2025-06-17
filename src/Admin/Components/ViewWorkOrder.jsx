@@ -519,7 +519,7 @@ const ViewWorkOrder = () => {
                     <Text strong style={{ fontSize: "12px", display: "block" }}>
                       Stage {index + 1}
                     </Text>
-                    <Text style={{ fontSize: "12px" }}>{stage.stageId}</Text>
+                    <Text style={{ fontSize: "12px" }}>{stage.stageName}</Text>
                   </div>
                 </Col>
                 <Col xs={12} sm={8}>

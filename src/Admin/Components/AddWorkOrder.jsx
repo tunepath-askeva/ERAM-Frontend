@@ -983,13 +983,13 @@ const AddWorkOrder = () => {
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
-          <Button
-            key="add"
-            icon={<PlusOutlined />}
-            onClick={() => addCustomStage(currentPipelineForDates._id)}
-          >
-            Add Stage
-          </Button>,
+          // <Button
+          //   key="add"
+          //   icon={<PlusOutlined />}
+          //   onClick={() => addCustomStage(currentPipelineForDates._id)}
+          // >
+          //   Add Stage
+          // </Button>,
           <Button
             key="back"
             onClick={() => setPipelineDatesModalVisible(false)}
