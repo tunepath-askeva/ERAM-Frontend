@@ -50,7 +50,6 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 // Sortable Stage Item Component
-// Updated SortableStageItem Component
 function SortableStageItem({
   stage,
   index,
@@ -77,12 +76,7 @@ function SortableStageItem({
 
   return (
     <Col xs={24} sm={12} lg={8}>
-      <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners} // Move listeners to the main container
-      >
+      <div ref={setNodeRef} style={style} {...attributes}>
         <Card
           size="small"
           style={{
@@ -92,10 +86,8 @@ function SortableStageItem({
               : "0 4px 16px rgba(0, 0, 0, 0.08)",
             border: isDragging ? "2px solid #da2c46" : "2px solid #e8f4fd",
             transition: "all 0.3s ease",
-            cursor: isDragging ? "grabbing" : "grab", // Always show grab cursor
             transform: isDragging ? "rotate(2deg)" : "none",
           }}
-          // Remove onMouseEnter and onMouseLeave to disable hover effects
           title={
             <div
               style={{
@@ -104,7 +96,20 @@ function SortableStageItem({
                 gap: "8px",
               }}
             >
-              {/* Remove the separate drag handle since the whole card is draggable now */}
+              {/* Add dedicated drag handle */}
+              <div
+                {...listeners}
+                style={{
+                  cursor: isDragging ? "grabbing" : "grab",
+                  padding: "4px",
+                  borderRadius: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  color: "#666",
+                }}
+              >
+                <DragOutlined />
+              </div>
               <Tag
                 color="blue"
                 style={{
@@ -137,7 +142,6 @@ function SortableStageItem({
                   }}
                   style={{ borderRadius: "6px" }}
                   loading={isEditingStageAPI}
-                  onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
                 />
               </Tooltip>
               <Tooltip title="Delete Stage">
@@ -153,7 +157,9 @@ function SortableStageItem({
                     e?.stopPropagation();
                     onDelete(index);
                   }}
-                  onCancel={(e) => e?.stopPropagation()}
+                  onCancel={(e) => {
+                    e?.stopPropagation();
+                  }}
                   okText="Yes"
                   cancelText="No"
                   okButtonProps={{
@@ -168,8 +174,9 @@ function SortableStageItem({
                     icon={<DeleteOutlined />}
                     style={{ borderRadius: "6px" }}
                     loading={isDeletingStage}
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   />
                 </Popconfirm>
               </Tooltip>
@@ -473,35 +480,37 @@ const CreatePipelineModal = ({
   const deleteStageHandler = async (index) => {
     const stageToDelete = stages[index];
 
-    if (isEditMode && stageToDelete._id) {
-      try {
+    try {
+      // If in edit mode and stage has _id, call API first
+      if (isEditMode && stageToDelete._id) {
         await deleteStage(stageToDelete._id).unwrap();
         message.success("Stage deleted successfully from database");
-      } catch (error) {
-        const errorMessage =
-          error?.data?.message || error?.message || "Failed to delete stage";
-        message.error(errorMessage);
-        console.error("Stage delete error:", error);
-        return;
       }
-    }
 
-    const updatedStages = stages.filter((_, i) => i !== index);
-    const reorderedStages = updatedStages.map((stage, i) => ({
-      ...stage,
-      order: i + 1,
-    }));
-    setStages(reorderedStages);
-
-    if (!isEditingStage) {
-      setCurrentStage((prev) => ({
-        ...prev,
-        order: reorderedStages.length + 1,
+      // Remove stage from local state
+      const updatedStages = stages.filter((_, i) => i !== index);
+      const reorderedStages = updatedStages.map((stage, i) => ({
+        ...stage,
+        order: i + 1,
       }));
-    }
+      setStages(reorderedStages);
 
-    if (!isEditMode || !stageToDelete._id) {
-      message.success("Stage removed successfully");
+      // Update current stage order if not editing
+      if (!isEditingStage) {
+        setCurrentStage((prev) => ({
+          ...prev,
+          order: reorderedStages.length + 1,
+        }));
+      }
+
+      if (!isEditMode || !stageToDelete._id) {
+        message.success("Stage removed successfully");
+      }
+    } catch (error) {
+      const errorMessage =
+        error?.data?.message || error?.message || "Failed to delete stage";
+      message.error(errorMessage);
+      console.error("Stage delete error:", error);
     }
   };
 

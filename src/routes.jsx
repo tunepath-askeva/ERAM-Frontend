@@ -41,6 +41,8 @@ import RecruiterJobs from "./Recruiters/Pages/RecruiterJobs";
 import RecruiterEmployee from "./Recruiters/Pages/RecruiterEmployee";
 import RecruiterPayroll from "./Recruiters/Pages/RecruiterPayroll";
 import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
+import RecruiterEditJob from "./Recruiters/Components/RecruiterEditJob";
+import RecruiterViewJob from "./Recruiters/Components/RecruiterViewJob";
 
 const AppRoutes = () => {
   return (
@@ -151,6 +153,14 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/jobs"
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
+        />
+        <Route
+          path="/recruiter-jobs/:id"
+          element={<ProtectedRecruiter element={<RecruiterViewJob />} />}
+        />
+        <Route
+          path="/recruiter-jobs/edit/:id"
+          element={<ProtectedRecruiter element={<RecruiterEditJob />} />}
         />
         <Route
           path="/recruiter/employees"
