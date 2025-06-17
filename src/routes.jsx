@@ -33,7 +33,6 @@ import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
 import JobDetailsPage from "./Components/JobDetailsPage";
 
-
 import AdminCandidates from "./Admin/Pages/AdminCandidates";
 import ProtectedRecruiter from "./Recruiters/Auth/ProtectedRecruiter";
 import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
