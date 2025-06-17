@@ -75,6 +75,9 @@ const AddWorkOrder = () => {
   const [pipelineStageDates, setPipelineStageDates] = useState({});
   const [pipelineModalVisible, setPipelineModalVisible] = useState(false);
   const [editingPipeline, setEditingPipeline] = useState(null);
+  const [customStages, setCustomStages] = useState({});
+  const [draggedStage, setDraggedStage] = useState(null);
+  const [stageApprovers, setStageApprovers] = useState({});
   const navigate = useNavigate();
 
   const { data: Branch } = useGetAdminBranchQuery();
@@ -111,8 +114,21 @@ const AddWorkOrder = () => {
     }
   };
 
+  const handleApproverChange = (pipelineId, stageId, approvers) => {
+    setStageApprovers((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: approvers,
+      },
+    }));
+  };
+
   const handlePipelineChange = (selectedPipelineIds) => {
     setSelectedPipelines(selectedPipelineIds);
+
+    // Update the form field value to keep it in sync
+    jobForm.setFieldsValue({ pipeline: selectedPipelineIds });
 
     const newStageDates = { ...pipelineStageDates };
     selectedPipelineIds.forEach((pipeId) => {
@@ -143,20 +159,29 @@ const AddWorkOrder = () => {
       setCurrentPipelineForDates(pipeline);
       setPipelineDatesModalVisible(true);
 
+      // Initialize custom stages if they don't exist
+      if (!customStages[pipelineId]) {
+        setCustomStages((prev) => ({
+          ...prev,
+          [pipelineId]: [...pipeline.stages],
+        }));
+      }
+
       // Initialize dates if they don't exist
       if (!pipelineStageDates[pipelineId]) {
         setPipelineStageDates((prev) => ({
           ...prev,
-          [pipelineId]: pipeline.stages.map((stage) => ({
-            stageId: stage._id,
-            startDate: null,
-            endDate: null,
-          })),
+          [pipelineId]: (customStages[pipelineId] || pipeline.stages).map(
+            (stage) => ({
+              stageId: stage._id || stage.id || `temp-${Date.now()}`,
+              startDate: null,
+              endDate: null,
+            })
+          ),
         }));
       }
     }
   };
-
   const handleStageDateChange = (pipelineId, stageId, field, value) => {
     setPipelineStageDates((prev) => {
       const newDates = { ...prev };
@@ -173,10 +198,117 @@ const AddWorkOrder = () => {
     });
   };
 
+  const addCustomStage = (pipelineId) => {
+    const newStage = {
+      id: `temp-${Date.now()}`,
+      name: `New Stage`,
+      description: "",
+      isCustom: true,
+    };
+
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: [...(prev[pipelineId] || []), newStage],
+    }));
+
+    // Add corresponding date entry
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: [
+        ...(prev[pipelineId] || []),
+        {
+          stageId: newStage.id,
+          startDate: null,
+          endDate: null,
+        },
+      ],
+    }));
+  };
+
+  const updateCustomStage = (pipelineId, stageId, updates) => {
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].map((stage) =>
+        (stage._id || stage.id) === stageId ? { ...stage, ...updates } : stage
+      ),
+    }));
+  };
+
+  const removeCustomStage = (pipelineId, stageId) => {
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => (stage._id || stage.id) !== stageId
+      ),
+    }));
+
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => stage.stageId !== stageId
+      ),
+    }));
+  };
+
+  const handleDragStart = (e, stage) => {
+    setDraggedStage(stage);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetStage, pipelineId) => {
+    e.preventDefault();
+    if (!draggedStage) return;
+
+    const stages = customStages[pipelineId] || [];
+    const draggedIndex = stages.findIndex(
+      (s) => (s._id || s.id) === (draggedStage._id || draggedStage.id)
+    );
+    const targetIndex = stages.findIndex(
+      (s) => (s._id || s.id) === (targetStage._id || targetStage.id)
+    );
+
+    if (draggedIndex !== targetIndex) {
+      const newStages = [...stages];
+      const [draggedItem] = newStages.splice(draggedIndex, 1);
+      newStages.splice(targetIndex, 0, draggedItem);
+
+      setCustomStages((prev) => ({
+        ...prev,
+        [pipelineId]: newStages,
+      }));
+
+      // Reorder the dates array to match
+      const dates = pipelineStageDates[pipelineId] || [];
+      const newDates = newStages.map(
+        (stage) =>
+          dates.find((d) => d.stageId === (stage._id || stage.id)) || {
+            stageId: stage._id || stage.id,
+            startDate: null,
+            endDate: null,
+          }
+      );
+
+      setPipelineStageDates((prev) => ({
+        ...prev,
+        [pipelineId]: newDates,
+      }));
+    }
+
+    setDraggedStage(null);
+  };
+
   const handleNextStep = () => {
     jobForm
       .validateFields()
       .then((values) => {
+        console.log("Form values:", values); // Debug log
+        console.log("Selected pipelines:", selectedPipelines); // Debug log
+
         const formattedData = {
           ...values,
           startDate: values.startDate?.format("YYYY-MM-DD"),
@@ -185,6 +317,8 @@ const AddWorkOrder = () => {
           alertDate: values.alertDate?.format("YYYY-MM-DD"),
           branchId: branchId,
         };
+
+        console.log("Formatted data:", formattedData); // Debug log
         setJobData(formattedData);
         setCurrentStep(1);
       })
@@ -249,36 +383,56 @@ const AddWorkOrder = () => {
     setLoading(true);
     try {
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        const stages =
+          customStages[pipeId] ||
+          activePipelines.find((p) => p._id === pipeId)?.stages ||
+          [];
         return (
-          pipelineStageDates[pipeId]?.map((stage) => ({
+          pipelineStageDates[pipeId]?.map((dateEntry, index) => ({
             pipelineId: pipeId,
-            stageId: stage.stageId,
-            startDate: stage.startDate,
-            endDate: stage.endDate,
+            stageId: dateEntry.stageId,
+            stageName: stages.find((s) => (s._id || s.id) === dateEntry.stageId)
+              ?.name,
+            stageOrder: index,
+            startDate: dateEntry.startDate,
+            endDate: dateEntry.endDate,
+            isCustomStage:
+              stages.find((s) => (s._id || s.id) === dateEntry.stageId)
+                ?.isCustom || false,
+            // Add approval data
+            approvers: stageApprovers[pipeId]?.[dateEntry.stageId] || [],
+            approvalType: "any", // You can make this configurable
+            autoApprove: false, // You can make this configurable
           })) || []
         );
       });
+
       const workOrderData = {
         ...jobData,
         customFields: applicationFields,
         WorkorderStatus: status,
         pipelineStageTimeline,
+        // Add stage approvers as a separate field for easy access
+        stageApprovers: stageApprovers,
       };
 
-      console.log("Submitting work order:", workOrderData);
+      console.log("Submitting work order with approvals:", workOrderData);
 
       const result = await createWorkOrder(workOrderData).unwrap();
 
       message.success(
         `Work order ${
           status === "published" ? "published" : "saved as draft"
-        } successfully!`
+        } successfully with approval settings!`
       );
 
+      // Reset all forms and state
       jobForm.resetFields();
       setSelectedProject(null);
       setJobData(null);
       setApplicationFields([]);
+      setCustomStages({});
+      setStageApprovers({}); // Reset approvers
       setCurrentStep(0);
       navigate("/admin/workorder");
     } catch (error) {
@@ -822,101 +976,271 @@ const AddWorkOrder = () => {
     </Card>
   );
 
-  const renderPipelineDatesModal = () => (
-    <Modal
-      title={`Set Stage Dates for ${
-        currentPipelineForDates?.name || "Pipeline"
-      }`}
-      visible={pipelineDatesModalVisible}
-      onCancel={() => setPipelineDatesModalVisible(false)}
-      footer={[
-        <Button
-          key="edit"
-          icon={<EditOutlined />}
-          onClick={() => {
-            setEditingPipeline(currentPipelineForDates);
-            setPipelineDatesModalVisible(false);
-            setPipelineModalVisible(true);
-          }}
-        >
-          Edit Stages
-        </Button>,
-        <Button key="back" onClick={() => setPipelineDatesModalVisible(false)}>
-          Close
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          onClick={() => setPipelineDatesModalVisible(false)}
-          style={{
-            background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-          }}
-        >
-          Save Dates
-        </Button>,
-      ]}
-      width={800}
-    >
-      {currentPipelineForDates?.stages?.map((stage, index) => (
+  const renderPipelineDatesModal = () => {
+    // Static approval levels
+    const approvalLevels = [
+      { id: "level1", name: "Level 1 - Initial Approval" },
+      { id: "level2", name: "Level 2 - Manager Approval" },
+      { id: "level3", name: "Level 3 - Final Approval" },
+    ];
+
+    return (
+      <Modal
+        title={`Set Stage Dates & Approvals for ${
+          currentPipelineForDates?.name || "Pipeline"
+        }`}
+        visible={pipelineDatesModalVisible}
+        onCancel={() => setPipelineDatesModalVisible(false)}
+        footer={[
+          <Button
+            key="add"
+            icon={<PlusOutlined />}
+            onClick={() => addCustomStage(currentPipelineForDates._id)}
+          >
+            Add Stage
+          </Button>,
+          <Button
+            key="back"
+            onClick={() => setPipelineDatesModalVisible(false)}
+          >
+            Close
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={() => setPipelineDatesModalVisible(false)}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            }}
+          >
+            Save Dates & Approvals
+          </Button>,
+        ]}
+        width={800}
+      >
+        {(
+          customStages[currentPipelineForDates?._id] ||
+          currentPipelineForDates?.stages ||
+          []
+        ).map((stage, index) => {
+          const stageId = stage._id || stage.id;
+          const dateEntry = pipelineStageDates[
+            currentPipelineForDates._id
+          ]?.find((d) => d.stageId === stageId);
+
+          return (
+            <Card
+              key={stageId}
+              title={
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    justifyContent: "space-between",
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ cursor: "grab" }}>⋮⋮</span>
+                    <Input
+                      value={stage.name}
+                      onChange={(e) =>
+                        updateCustomStage(
+                          currentPipelineForDates._id,
+                          stageId,
+                          {
+                            name: e.target.value,
+                          }
+                        )
+                      }
+                      style={{ maxWidth: "200px" }}
+                      size="small"
+                    />
+                    {stage.isCustom && (
+                      <Tag color="orange" size="small">
+                        Custom
+                      </Tag>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {stage.isCustom && (
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() =>
+                          removeCustomStage(
+                            currentPipelineForDates._id,
+                            stageId
+                          )
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              }
+              style={{
+                marginBottom: 16,
+                cursor: "move",
+              }}
+              draggable
+              onDragStart={(e) => handleDragStart(e, stage)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, stage, currentPipelineForDates._id)}
+            >
+              <Row gutter={16} align="bottom">
+                {/* Date Section */}
+                <Col span={16}>
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Form.Item
+                        label="Start Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }} // Full width label
+                        wrapperCol={{ span: 24 }} // Full width field
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.startDate
+                              ? dayjs(dateEntry.startDate)
+                              : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "startDate",
+                              date
+                            )
+                          }
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        label="End Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "endDate",
+                              date
+                            )
+                          }
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Col>
+
+                {/* Approval Section */}
+                <Col span={8}>
+                  <Form.Item
+                    label="Required Approval"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      placeholder="Select approval level"
+                      style={{ width: "100%" }}
+                      size="small"
+                    >
+                      {approvalLevels.map((level) => (
+                        <Option key={level.id} value={level.id}>
+                          {level.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Stage Summary */}
+              {(dateEntry?.startDate || dateEntry?.endDate) && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "8px 12px",
+                    backgroundColor: "#f6ffed",
+                    borderRadius: "4px",
+                    border: "1px solid #d9f7be",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "#389e0d" }}>
+                    <strong>Stage Configuration:</strong>
+                    {dateEntry?.startDate && (
+                      <span style={{ marginLeft: "8px" }}>
+                        📅 Start:{" "}
+                        {dayjs(dateEntry.startDate).format("MMM DD, YYYY")}
+                      </span>
+                    )}
+                    {dateEntry?.endDate && (
+                      <span style={{ marginLeft: "8px" }}>
+                        📅 End:{" "}
+                        {dayjs(dateEntry.endDate).format("MMM DD, YYYY")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+
+        {/* Global Actions */}
         <Card
-          key={stage._id}
-          title={`Stage ${index + 1}: ${stage.name}`}
-          style={{ marginBottom: 16 }}
+          style={{
+            marginTop: "16px",
+            backgroundColor: "#fafafa",
+            border: "1px dashed #d9d9d9",
+          }}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Start Date">
-                <DatePicker
-                  style={{ width: "100%" }}
-                  value={
-                    pipelineStageDates[currentPipelineForDates._id]?.[index]
-                      ?.startDate
-                      ? dayjs(
-                          pipelineStageDates[currentPipelineForDates._id][index]
-                            .startDate
-                        )
-                      : null
-                  }
-                  onChange={(date) =>
-                    handleStageDateChange(
-                      currentPipelineForDates._id,
-                      stage._id,
-                      "startDate",
-                      date
-                    )
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="End Date">
-                <DatePicker
-                  style={{ width: "100%" }}
-                  value={
-                    pipelineStageDates[currentPipelineForDates._id]?.[index]
-                      ?.endDate
-                      ? dayjs(
-                          pipelineStageDates[currentPipelineForDates._id][index]
-                            .endDate
-                        )
-                      : null
-                  }
-                  onChange={(date) =>
-                    handleStageDateChange(
-                      currentPipelineForDates._id,
-                      stage._id,
-                      "endDate",
-                      date
-                    )
-                  }
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div style={{ textAlign: "center" }}>
+            <h4 style={{ color: "#666", marginBottom: "12px" }}>
+              Quick Configuration
+            </h4>
+            <Space wrap>
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => addCustomStage(currentPipelineForDates._id)}
+                type="dashed"
+              >
+                Add Custom Stage
+              </Button>
+            </Space>
+          </div>
         </Card>
-      ))}
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const renderSelectedPipelines = () => (
     <div style={{ marginBottom: "16px" }}>
