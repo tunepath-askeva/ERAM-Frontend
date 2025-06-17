@@ -85,7 +85,6 @@ const CandidateJobs = () => {
     { data: searchData, isLoading: searchLoading, error: searchError },
   ] = useLazySearchJobsQuery();
 
-  // Add the filter API hook
   const [
     filterJobs,
     { data: filterData, isLoading: filterLoading, error: filterError },
@@ -121,16 +120,6 @@ const CandidateJobs = () => {
       setFilteredJobs(transformedJobs);
     }
   }, [filterData, showingFilterResults]);
-
-  useEffect(() => {
-    handleFilterJobs();
-  }, [
-    workTypeFilter,
-    employmentTypeFilter,
-    experienceFilter,
-    postedDateFilter,
-    locationFilter,
-  ]);
 
   const transformJobData = (jobs) => {
     if (!jobs || !Array.isArray(jobs)) return [];
@@ -204,7 +193,6 @@ const CandidateJobs = () => {
       if (locationFilter) filterParams.location = locationFilter;
 
       if (workTypeFilter) {
-        // Map UI values to backend values
         const workTypeMap = {
           Remote: "remote",
           "On-site": "on-site",
@@ -214,7 +202,6 @@ const CandidateJobs = () => {
       }
 
       if (employmentTypeFilter) {
-        // Map UI values to backend values
         const employmentTypeMap = {
           "Full-time": "full-time",
           "Part-time": "part-time",
@@ -226,14 +213,12 @@ const CandidateJobs = () => {
       }
 
       if (experienceFilter) {
-        // Extract number from experience filter
         const expValue =
           experienceFilter === "0" ? 0 : parseInt(experienceFilter);
         filterParams.experience = expValue;
       }
 
       if (postedDateFilter) {
-        // Map UI values to backend values
         const postedDateMap = {
           "1day": "today",
           "1week": "week",
@@ -295,8 +280,6 @@ const CandidateJobs = () => {
     setPostedDateFilter("");
     setShowingFilterResults(false);
   };
-
-  // Remove the old checkPostedDate function as it's now handled by the backend
 
   const handleJobClick = (job) => {
     navigate(`/candidate-jobs/${job._id}`);
@@ -444,6 +427,30 @@ const CandidateJobs = () => {
           </Select>
         </div>
 
+        {!isDrawer && (
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <Button type="link" onClick={clearFilters} style={{ flex: 1 }}>
+              Clear All
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                handleFilterJobs();
+                setMobileFiltersVisible(false);
+              }}
+              style={{
+                flex: 1,
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                border: "none",
+              }}
+              loading={isFiltering}
+            >
+              Apply Filters
+            </Button>
+          </div>
+        )}
+
         {isDrawer && (
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
             <Button type="link" onClick={clearFilters} style={{ flex: 1 }}>
@@ -451,13 +458,17 @@ const CandidateJobs = () => {
             </Button>
             <Button
               type="primary"
-              onClick={() => setMobileFiltersVisible(false)}
+              onClick={() => {
+                handleFilterJobs();
+                setMobileFiltersVisible(false);
+              }}
               style={{
                 flex: 1,
                 background:
                   "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                 border: "none",
               }}
+              loading={isFiltering}
             >
               Apply Filters
             </Button>
@@ -467,22 +478,20 @@ const CandidateJobs = () => {
     </div>
   );
 
-  const filterDropdownMenu = {
-    items: [
-      {
-        key: "filters",
-        label: <FilterForm />,
-      },
-    ],
-  };
+const filterDropdownMenu = {
+  items: [
+    {
+      key: "filters",
+      label: <FilterForm />,
+    },
+  ],
+};
 
-  // Update loading state to include filter loading
   const isLoading =
     initialLoading ||
     (isSearching && searchLoading) ||
     (isFiltering && filterLoading);
 
-  // Update error state to include filter error
   const error =
     initialError ||
     (showingSearchResults && searchError) ||
