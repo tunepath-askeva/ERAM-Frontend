@@ -588,7 +588,7 @@ const RecruiterViewJob = () => {
             level={4}
             style={{ margin: "0", fontSize: "16px", color: " #da2c46" }}
           >
-            Job Details
+            Job Details - {workOrder.title}
           </Title>
         </div>
 
@@ -641,7 +641,17 @@ const RecruiterViewJob = () => {
               }
               key="candidates"
             >
-              <AppliedCandidates jobId={id} />
+              <AppliedCandidates jobId={id} candidateType="applied" />
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Declined Candidates
+                </span>
+              }
+              key="declined"
+            >
+              <AppliedCandidates jobId={id} candidateType="declined" />
             </TabPane>
           </Tabs>
         </div>
