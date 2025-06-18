@@ -18,11 +18,9 @@ import {
   Spin,
   Modal,
   Skeleton,
-  Typography,
   DatePicker,
-  Result,
-  Descriptions,
-  Alert,
+  InputNumber,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
@@ -30,7 +28,6 @@ import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
   DeleteOutlined,
-  CheckCircleOutlined,
   EyeOutlined,
   FormOutlined,
   MobileOutlined,
@@ -46,7 +43,6 @@ import {
 const { TextArea } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
-const { Title, Text } = Typography;
 
 const fieldTypes = [
   { value: "text", label: "Text Input" },
@@ -77,74 +73,99 @@ const RecruiterEditJob = () => {
   const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
   const [pipelineStageDates, setPipelineStageDates] = useState({});
   const [customStages, setCustomStages] = useState({});
+  const [draggedStage, setDraggedStage] = useState(null);
+  const [stageApprovers, setStageApprovers] = useState({});
 
   const {
     data: fetchedJobData,
     isLoading,
     error,
+    refetch,
   } = useGetRecruiterJobIdQuery(id);
   const { data: pipelineData } = useGetPipelinesQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
-  const activePipelines =
-    pipelineData?.allPipelines?.filter(
-      (pipeline) => pipeline.pipelineStatus === "active"
-    ) || [];
+  const activePipelines = pipelineData?.pipelines || [];
 
   useEffect(() => {
-    if (fetchedJobData) {
+    if (fetchedJobData?.workOrder) {
       try {
+        const formatDate = (dateString) => {
+          if (!dateString) return null;
+          try {
+            return dayjs(dateString);
+          } catch (error) {
+            console.error("Error formatting date:", dateString, error);
+            return null;
+          }
+        };
+
+        const job = fetchedJobData.workOrder;
+
+        // Initialize pipeline stage dates
+        const initialStageDates = {};
+        if (job.pipelineStageTimeline) {
+          job.pipelineStageTimeline.forEach((timeline) => {
+            const pipelineId = job.pipeline[0]?._id;
+
+            if (!initialStageDates[pipelineId]) {
+              initialStageDates[pipelineId] = [];
+            }
+
+            initialStageDates[pipelineId].push({
+              stageId: timeline.stageId,
+              startDate: timeline.startDate,
+              endDate: timeline.endDate,
+              dependencyType: timeline.dependencyType || "independent",
+            });
+          });
+        }
+
+        setPipelineStageDates(initialStageDates);
+
+        // Set selected pipelines
+        const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
+        setSelectedPipelines(selectedPipeIds);
+
+        // Prepare form data
         const formData = {
-          ...fetchedJobData,
-          pipeline: Array.isArray(fetchedJobData.pipeline)
-            ? fetchedJobData.pipeline.map((p) => p._id || p)
-            : [fetchedJobData.pipeline],
+          title: job.title,
+          jobCode: job.jobCode,
+          workplace: job.workplace,
+          officeLocation: job.officeLocation,
+          description: job.description,
+          jobFunction: job.jobFunction,
+          companyIndustry: job.companyIndustry,
+          EmploymentType: job.EmploymentType,
+          Experience: job.Experience,
+          Education: job.Education,
+          salaryType: job.salaryType,
+          annualSalary: job.annualSalary,
+          startDate: formatDate(job.startDate),
+          endDate: formatDate(job.endDate),
+          deadlineDate: formatDate(job.deadlineDate),
+          alertDate: formatDate(job.alertDate),
+          requiredSkills: job.requiredSkills || [],
+          jobRequirements: job.jobRequirements,
+          numberOfCandidate: job.numberOfCandidate,
+          benefits: job.benefits || [],
+          languagesRequired: job.languagesRequired || [],
+          pipeline: selectedPipeIds,
+          isActive: job.isActive === "active",
         };
 
         jobForm.setFieldsValue(formData);
         setJobData(formData);
-        setSelectedPipelines(formData.pipeline);
-        setApplicationFields(fetchedJobData.customFields || []);
 
-        // Initialize custom stages and stage dates from pipelineStageTimeline
-        const initialCustomStages = {};
-        const initialDates = {};
-
-        if (fetchedJobData.pipelineStageTimeline) {
-          fetchedJobData.pipelineStageTimeline.forEach((timeline) => {
-            if (!initialDates[timeline.pipelineId]) {
-              initialDates[timeline.pipelineId] = [];
-            }
-            initialDates[timeline.pipelineId].push({
-              stageId: timeline.stageId,
-              startDate: timeline.startDate,
-              endDate: timeline.endDate,
-            });
-
-            // Check if this is a custom stage (has temp- prefix in ID)
-            if (timeline.stageId.startsWith("temp-")) {
-              if (!initialCustomStages[timeline.pipelineId]) {
-                initialCustomStages[timeline.pipelineId] = [];
-              }
-
-              if (
-                !initialCustomStages[timeline.pipelineId].some(
-                  (s) => s.id === timeline.stageId
-                )
-              ) {
-                initialCustomStages[timeline.pipelineId].push({
-                  id: timeline.stageId,
-                  name: timeline.stageName,
-                  description: "",
-                  isCustom: true,
-                });
-              }
-            }
-          });
-        }
-
-        setCustomStages(initialCustomStages);
-        setPipelineStageDates(initialDates);
+        // Initialize custom fields
+        setApplicationFields(
+          job.customFields?.map((field) => ({
+            ...field,
+            id:
+              field.id ||
+              `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          })) || []
+        );
       } catch (error) {
         console.error("Error initializing form:", error);
         message.error("Error loading job data");
@@ -156,7 +177,14 @@ const RecruiterEditJob = () => {
     jobForm
       .validateFields()
       .then((values) => {
-        setJobData(values);
+        const formattedData = {
+          ...values,
+          startDate: values.startDate?.format("YYYY-MM-DD"),
+          endDate: values.endDate?.format("YYYY-MM-DD"),
+          deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
+          alertDate: values.alertDate?.format("YYYY-MM-DD"),
+        };
+        setJobData(formattedData);
         setCurrentStep(1);
       })
       .catch((errorInfo) => {
@@ -200,11 +228,9 @@ const RecruiterEditJob = () => {
     if (pipeline) {
       setCurrentPipelineForDates(pipeline);
 
-      // Initialize dates if not already present
       if (!pipelineStageDates[pipelineId]) {
         const initialDates = [];
 
-        // First add existing timeline entries from the job
         if (fetchedJobData?.pipelineStageTimeline) {
           fetchedJobData.pipelineStageTimeline
             .filter((t) => t.pipelineId === pipelineId)
@@ -213,22 +239,22 @@ const RecruiterEditJob = () => {
                 stageId: timeline.stageId,
                 startDate: timeline.startDate,
                 endDate: timeline.endDate,
+                dependencyType: timeline.dependencyType || "independent",
               });
             });
         }
 
-        // Then add any missing stages from the pipeline
         pipeline.stages.forEach((stage) => {
           if (!initialDates.some((d) => d.stageId === stage._id)) {
             initialDates.push({
               stageId: stage._id,
               startDate: null,
               endDate: null,
+              dependencyType: "independent",
             });
           }
         });
 
-        // Then add any custom stages not in the timeline
         if (customStages[pipelineId]) {
           customStages[pipelineId].forEach((customStage) => {
             if (!initialDates.some((d) => d.stageId === customStage.id)) {
@@ -236,6 +262,7 @@ const RecruiterEditJob = () => {
                 stageId: customStage.id,
                 startDate: null,
                 endDate: null,
+                dependencyType: "independent",
               });
             }
           });
@@ -269,6 +296,7 @@ const RecruiterEditJob = () => {
           stageId,
           startDate: null,
           endDate: null,
+          dependencyType: "independent",
         });
       }
 
@@ -276,6 +304,37 @@ const RecruiterEditJob = () => {
         ...newDates[pipelineId][stageIndex],
         [field]: value ? value.format("YYYY-MM-DD") : null,
       };
+
+      return newDates;
+    });
+  };
+
+  const handleDependencyTypeChange = (pipelineId, stageId, value) => {
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      let stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+
+      if (stageIndex === -1) {
+        stageIndex = newDates[pipelineId].length;
+        newDates[pipelineId].push({
+          stageId,
+          startDate: null,
+          endDate: null,
+          dependencyType: value,
+        });
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          dependencyType: value,
+        };
+      }
 
       return newDates;
     });
@@ -332,6 +391,72 @@ const RecruiterEditJob = () => {
     }));
   };
 
+  const handleDragStart = (e, stage) => {
+    setDraggedStage(stage);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetStage, pipelineId) => {
+    e.preventDefault();
+    if (!draggedStage) return;
+    const allStages = [
+      ...(customStages[pipelineId] || []),
+      ...(currentPipelineForDates?.stages || []),
+    ];
+
+    const draggedIndex = allStages.findIndex(
+      (s) => (s._id || s.id) === (draggedStage._id || draggedStage.id)
+    );
+    const targetIndex = allStages.findIndex(
+      (s) => (s._id || s.id) === (targetStage._id || targetStage.id)
+    );
+
+    if (draggedIndex !== targetIndex) {
+      const newStages = [...allStages];
+      const [draggedItem] = newStages.splice(draggedIndex, 1);
+      newStages.splice(targetIndex, 0, draggedItem);
+
+      const newCustomStages = newStages.filter((s) => s.isCustom);
+      const newExistingStages = newStages.filter((s) => !s.isCustom);
+
+      setCustomStages((prev) => ({
+        ...prev,
+        [pipelineId]: newCustomStages,
+      }));
+      const dates = pipelineStageDates[pipelineId] || [];
+      const newDates = newStages.map(
+        (stage) =>
+          dates.find((d) => d.stageId === (stage._id || stage.id)) || {
+            stageId: stage._id || stage.id,
+            startDate: null,
+            endDate: null,
+          }
+      );
+
+      setPipelineStageDates((prev) => ({
+        ...prev,
+        [pipelineId]: newDates,
+      }));
+    }
+
+    setDraggedStage(null);
+  };
+
+  const handleApproverChange = (pipelineId, stageId, approvers) => {
+    setStageApprovers((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: approvers,
+      },
+    }));
+  };
+
   const addApplicationField = () => {
     const newField = {
       id: `field_${Date.now()}`,
@@ -355,15 +480,40 @@ const RecruiterEditJob = () => {
     setApplicationFields((fields) => fields.filter((field) => field.id !== id));
   };
 
+  const addFieldOption = (fieldId) => {
+    updateApplicationField(fieldId, {
+      options: [
+        ...(applicationFields.find((f) => f.id === fieldId)?.options || []),
+        "",
+      ],
+    });
+  };
+
+  const updateFieldOption = (fieldId, optionIndex, value) => {
+    const field = applicationFields.find((f) => f.id === fieldId);
+    const newOptions = [...field.options];
+    newOptions[optionIndex] = value;
+    updateApplicationField(fieldId, { options: newOptions });
+  };
+
+  const removeFieldOption = (fieldId, optionIndex) => {
+    const field = applicationFields.find((f) => f.id === fieldId);
+    const newOptions = field.options.filter(
+      (_, index) => index !== optionIndex
+    );
+    updateApplicationField(fieldId, { options: newOptions });
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const values = jobForm.getFieldsValue();
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        const pipeline = activePipelines.find((p) => p._id === pipeId);
         const stages = [
           ...(customStages[pipeId] || []),
-          ...(activePipelines.find((p) => p._id === pipeId)?.stages || []),
+          ...(pipeline?.stages || []),
         ];
 
         return (
@@ -375,6 +525,7 @@ const RecruiterEditJob = () => {
             stageOrder: index,
             startDate: dateEntry.startDate,
             endDate: dateEntry.endDate,
+            dependencyType: dateEntry.dependencyType || "independent",
             isCustomStage: !!stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             )?.isCustom,
@@ -383,9 +534,16 @@ const RecruiterEditJob = () => {
       });
 
       const updatePayload = {
-        pipeline: values.pipeline,
+        ...jobData,
+        ...values,
         customFields: applicationFields,
         pipelineStageTimeline,
+        stageApprovers,
+        startDate: values.startDate?.format("YYYY-MM-DD"),
+        endDate: values.endDate?.format("YYYY-MM-DD"),
+        deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
+        alertDate: values.alertDate?.format("YYYY-MM-DD"),
+        isActive: values.isActive ? "active" : "inactive",
       };
 
       const result = await updateJob({
@@ -510,6 +668,23 @@ const RecruiterEditJob = () => {
             </Col>
           </Row>
 
+          {displayData?.annualSalary && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Annual Salary
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                ${displayData.annualSalary.toLocaleString()}
+              </p>
+            </div>
+          )}
+
           {displayData?.requiredSkills?.length > 0 && (
             <div style={{ marginBottom: "12px" }}>
               <h4
@@ -562,47 +737,34 @@ const RecruiterEditJob = () => {
               </p>
             </div>
           )}
+
+          {displayData?.benefits && (
+            <div style={{ marginBottom: "0" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Benefits
+              </h4>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {displayData.benefits}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
   };
-
-  const renderApplicationForm = () => (
-    <div style={{ padding: "0", fontSize: "12px" }}>
-      <h4 style={{ marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>
-        Application Form
-      </h4>
-      <Form layout="vertical" size="small">
-        {applicationFields.map((field) => (
-          <Form.Item
-            key={field.id}
-            label={
-              <span style={{ fontSize: "12px", fontWeight: "500" }}>
-                {field.label}
-                {field.required && <span style={{ color: "red" }}> *</span>}
-              </span>
-            }
-            required={field.required}
-            style={{ marginBottom: "12px" }}
-          >
-            {renderApplicationField(field)}
-          </Form.Item>
-        ))}
-        {applicationFields.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              color: "#999",
-              padding: "20px 8px",
-              fontSize: "12px",
-            }}
-          >
-            No application fields added yet. Add fields using the form builder.
-          </div>
-        )}
-      </Form>
-    </div>
-  );
 
   const renderApplicationField = (field) => {
     const commonProps = {
@@ -665,6 +827,178 @@ const RecruiterEditJob = () => {
         return <Input {...commonProps} />;
     }
   };
+
+  const renderApplicationForm = () => (
+    <div style={{ padding: "0", fontSize: "12px" }}>
+      <h4 style={{ marginBottom: "12px", fontSize: "14px", fontWeight: "600" }}>
+        Application Form
+      </h4>
+      <Form layout="vertical" size="small">
+        {applicationFields.map((field) => (
+          <Form.Item
+            key={field.id}
+            label={
+              <span style={{ fontSize: "12px", fontWeight: "500" }}>
+                {field.label}
+                {field.required && <span style={{ color: "red" }}> *</span>}
+              </span>
+            }
+            required={field.required}
+            style={{ marginBottom: "12px" }}
+          >
+            {renderApplicationField(field)}
+          </Form.Item>
+        ))}
+        {applicationFields.length === 0 && (
+          <div
+            style={{
+              textAlign: "center",
+              color: "#999",
+              padding: "20px 8px",
+              fontSize: "12px",
+            }}
+          >
+            No application fields added yet. Add fields using the form builder.
+          </div>
+        )}
+        <Form.Item style={{ marginTop: "16px", marginBottom: "0" }}>
+          <Button
+            type="primary"
+            size="small"
+            block
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              border: "none",
+              borderRadius: "4px",
+              fontSize: "12px",
+            }}
+          >
+            Submit Application
+          </Button>
+        </Form.Item>
+      </Form>
+    </div>
+  );
+
+  const renderMobilePreview = () => (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "320px",
+        height: "580px",
+        margin: "0 auto",
+        position: "relative",
+        background: "linear-gradient(145deg, #2c3e50 0%, #34495e 100%)",
+        borderRadius: "25px",
+        padding: "4px",
+        boxShadow:
+          "0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: "#000",
+          borderRadius: "22px",
+          padding: "2px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Notch */}
+        <div
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "120px",
+            height: "20px",
+            backgroundColor: "#000",
+            borderRadius: "10px",
+            zIndex: 10,
+          }}
+        />
+
+        {/* Screen */}
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: "#fff",
+            borderRadius: "20px",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Status Bar */}
+          <div
+            style={{
+              height: "28px",
+              backgroundColor: "#f8f9fa",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 16px",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#333",
+              borderBottom: "1px solid #e8e8e8",
+            }}
+          >
+            <span>9:41</span>
+            <span>●●●●●</span>
+            <span>100%</span>
+          </div>
+
+          {/* Content Area */}
+          <div
+            style={{
+              height: "calc(100% - 28px)",
+              overflow: "auto",
+              padding: "12px",
+              backgroundColor: "#fff",
+            }}
+          >
+            <Tabs
+              activeKey={previewTab}
+              onChange={setPreviewTab}
+              size="small"
+              style={{
+                height: "100%",
+                "& .ant-tabs-content-holder": {
+                  height: "calc(100% - 40px)",
+                  overflow: "auto",
+                },
+              }}
+              tabBarStyle={{
+                marginBottom: "8px",
+                fontSize: "11px",
+              }}
+            >
+              <TabPane
+                tab={<span style={{ fontSize: "11px" }}>Overview</span>}
+                key="overview"
+              >
+                <div style={{ height: "100%", overflow: "auto" }}>
+                  {renderJobPreview()}
+                </div>
+              </TabPane>
+              <TabPane
+                tab={<span style={{ fontSize: "11px" }}>Apply</span>}
+                key="apply"
+              >
+                <div style={{ height: "100%", overflow: "auto" }}>
+                  {renderApplicationForm()}
+                </div>
+              </TabPane>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderFieldBuilder = (field, index) => (
     <Card
@@ -742,11 +1076,7 @@ const RecruiterEditJob = () => {
               <Input
                 value={option}
                 onChange={(e) =>
-                  updateApplicationField(field.id, {
-                    options: field.options.map((o, i) =>
-                      i === optionIndex ? e.target.value : o
-                    ),
-                  })
+                  updateFieldOption(field.id, optionIndex, e.target.value)
                 }
                 placeholder={`Option ${optionIndex + 1}`}
                 style={{ flex: 1 }}
@@ -755,21 +1085,13 @@ const RecruiterEditJob = () => {
                 type="text"
                 danger
                 icon={<MinusCircleOutlined />}
-                onClick={() =>
-                  updateApplicationField(field.id, {
-                    options: field.options.filter((_, i) => i !== optionIndex),
-                  })
-                }
+                onClick={() => removeFieldOption(field.id, optionIndex)}
               />
             </div>
           ))}
           <Button
             type="dashed"
-            onClick={() =>
-              updateApplicationField(field.id, {
-                options: [...(field.options || []), ""],
-              })
-            }
+            onClick={() => addFieldOption(field.id)}
             icon={<PlusOutlined />}
             size="small"
           >
@@ -781,15 +1103,23 @@ const RecruiterEditJob = () => {
   );
 
   const renderPipelineDatesModal = () => {
+    const approvalLevels = [
+      { id: "level1", name: "Level 1 - Initial Approval" },
+      { id: "level2", name: "Level 2 - Manager Approval" },
+      { id: "level3", name: "Level 3 - Final Approval" },
+    ];
+    const dependencyTypes = [
+      { id: "independent", name: "Independent" },
+      { id: "dependent", name: "Dependent" },
+    ];
+
     if (!currentPipelineForDates) return null;
 
-    // Combine custom stages and regular stages
     const allStages = [
       ...(customStages[currentPipelineForDates._id] || []),
       ...(currentPipelineForDates.stages || []),
     ];
 
-    // Sort stages based on their order in pipelineStageDates
     const sortedStages = allStages.sort((a, b) => {
       const aIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
         (d) => d.stageId === (a._id || a.id)
@@ -802,7 +1132,7 @@ const RecruiterEditJob = () => {
 
     return (
       <Modal
-        title={`Set Stage Dates for ${
+        title={`Set Stage Dates & Approvals for ${
           currentPipelineForDates?.name || "Pipeline"
         }`}
         visible={pipelineDatesModalVisible}
@@ -818,11 +1148,14 @@ const RecruiterEditJob = () => {
             key="submit"
             type="primary"
             onClick={() => setPipelineDatesModalVisible(false)}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            }}
           >
-            Save Dates
+            Save Dates & Approvals
           </Button>,
         ]}
-        width={600}
+        width={800}
       >
         {sortedStages.map((stage) => {
           const stageId = stage._id || stage.id;
@@ -850,6 +1183,7 @@ const RecruiterEditJob = () => {
                       gap: "8px",
                     }}
                   >
+                    <span style={{ cursor: "grab" }}>⋮⋮</span>
                     {stage.isCustom ? (
                       <Input
                         value={stage.name}
@@ -869,6 +1203,11 @@ const RecruiterEditJob = () => {
                     {stage.isCustom && (
                       <Tag color="orange" size="small">
                         Custom
+                      </Tag>
+                    )}
+                    {dateEntry?.dependencyType && (
+                      <Tag color="green" size="small">
+                        {dateEntry.dependencyType}
                       </Tag>
                     )}
                   </div>
@@ -896,120 +1235,126 @@ const RecruiterEditJob = () => {
                   </div>
                 </div>
               }
-              style={{ marginBottom: 16 }}
+              style={{
+                marginBottom: 16,
+                cursor: stage.isCustom ? "move" : "default",
+              }}
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, stage)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, stage, currentPipelineForDates._id)}
             >
-              <Row gutter={16} align="bottom">
-                <Col span={24}>
-                  <Row gutter={8}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="Start Date"
-                        style={{ marginBottom: 0 }}
-                        labelCol={{ span: 24 }}
-                        wrapperCol={{ span: 24 }}
-                      >
-                        <DatePicker
-                          style={{ width: "100%" }}
-                          size="small"
-                          value={
-                            dateEntry?.startDate
-                              ? dayjs(dateEntry.startDate)
-                              : null
-                          }
-                          onChange={(date) =>
-                            handleStageDateChange(
-                              currentPipelineForDates._id,
-                              stageId,
-                              "startDate",
-                              date
-                            )
-                          }
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        label="End Date"
-                        style={{ marginBottom: 0 }}
-                        labelCol={{ span: 24 }}
-                        wrapperCol={{ span: 24 }}
-                      >
-                        <DatePicker
-                          style={{ width: "100%" }}
-                          size="small"
-                          value={
-                            dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
-                          }
-                          onChange={(date) =>
-                            handleStageDateChange(
-                              currentPipelineForDates._id,
-                              stageId,
-                              "endDate",
-                              date
-                            )
-                          }
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
+              <Row gutter={[16, 16]} align="bottom">
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Start Date"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      size="small"
+                      value={
+                        dateEntry?.startDate ? dayjs(dateEntry.startDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "startDate",
+                          date
+                        )
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="End Date"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      size="small"
+                      value={
+                        dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "endDate",
+                          date
+                        )
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Required Approval"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      placeholder="Select approval level"
+                      style={{ width: "100%" }}
+                      size="small"
+                    >
+                      {approvalLevels.map((level) => (
+                        <Option key={level.id} value={level.id}>
+                          {level.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Dependency Type"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      value={dateEntry?.dependencyType || "independent"}
+                      onChange={(value) =>
+                        handleDependencyTypeChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          value
+                        )
+                      }
+                      style={{ width: "100%" }}
+                      size="small"
+                    >
+                      {dependencyTypes.map((type) => (
+                        <Option key={type.id} value={type.id}>
+                          {type.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
                 </Col>
               </Row>
-
-              {(dateEntry?.startDate || dateEntry?.endDate) && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "8px 12px",
-                    backgroundColor: "#f6ffed",
-                    borderRadius: "4px",
-                    border: "1px solid #d9f7be",
-                  }}
-                >
-                  <div style={{ fontSize: "12px", color: "#389e0d" }}>
-                    <strong>Stage Configuration:</strong>
-                    {dateEntry?.startDate && (
-                      <span style={{ marginLeft: "8px" }}>
-                        📅 Start:{" "}
-                        {dayjs(dateEntry.startDate).format("MMM DD, YYYY")}
-                      </span>
-                    )}
-                    {dateEntry?.endDate && (
-                      <span style={{ marginLeft: "8px" }}>
-                        📅 End:{" "}
-                        {dayjs(dateEntry.endDate).format("MMM DD, YYYY")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </Card>
           );
         })}
-
-        {/* Global Actions */}
-        <Card
-          style={{
-            marginTop: "16px",
-            backgroundColor: "#fafafa",
-            border: "1px dashed #d9d9d9",
-          }}
+        <Button
+          type="dashed"
+          onClick={() => addCustomStage(currentPipelineForDates._id)}
+          icon={<PlusOutlined />}
+          style={{ width: "100%" }}
         >
-          <div style={{ textAlign: "center" }}>
-            <h4 style={{ color: "#666", marginBottom: "12px" }}>
-              Quick Configuration
-            </h4>
-            <Space wrap>
-              <Button
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() => addCustomStage(currentPipelineForDates._id)}
-                type="dashed"
-              >
-                Add Custom Stage
-              </Button>
-            </Space>
-          </div>
-        </Card>
+          Add Custom Stage
+        </Button>
       </Modal>
     );
   };
@@ -1026,7 +1371,7 @@ const RecruiterEditJob = () => {
             pipelineStageDates[pipelineId]?.some(
               (stage) => stage.startDate || stage.endDate
             ) ||
-            fetchedJobData?.pipelineStageTimeline?.some(
+            fetchedJobData?.workOrder?.pipelineStageTimeline?.some(
               (timeline) => timeline.pipelineId === pipelineId
             );
 
@@ -1064,13 +1409,12 @@ const RecruiterEditJob = () => {
           height: "400px",
         }}
       >
-        <Skeleton />
+        <Skeleton active paragraph={{ rows: 8 }} />
       </div>
     );
   }
 
   if (error) {
-    console.error("Job fetch error:", error);
     return (
       <div
         style={{
@@ -1089,7 +1433,7 @@ const RecruiterEditJob = () => {
               "Failed to load job data"}
           </p>
           <Space>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button onClick={() => refetch()}>Retry</Button>
             <Button onClick={() => navigate("/recruiter/jobs")}>
               Back to Jobs
             </Button>
@@ -1099,7 +1443,7 @@ const RecruiterEditJob = () => {
     );
   }
 
-  if (!isLoading && !fetchedJobData) {
+  if (!isLoading && !fetchedJobData?.workOrder) {
     return (
       <div
         style={{
@@ -1133,72 +1477,391 @@ const RecruiterEditJob = () => {
           responsive={false}
         >
           <Steps.Step
-            title={
-              <span style={{ fontSize: "12px" }}>Pipeline Configuration</span>
-            }
-            icon={<FormOutlined />}
+            title={<span style={{ fontSize: "12px" }}>Job Details</span>}
+            icon={<FormOutlined style={{ color: "#ff4d4f" }} />}
           />
           <Steps.Step
             title={<span style={{ fontSize: "12px" }}>Application Form</span>}
-            icon={<MobileOutlined />}
+            icon={<MobileOutlined style={{ color: "#ff4d4f" }} />}
           />
         </Steps>
 
-        <Card
-          title="Edit Job - Pipeline Configuration"
-          style={{ marginBottom: "24px" }}
-        >
-          <Alert
-            message="Job information is read-only. You can only modify pipeline and application form settings."
-            type="info"
-            showIcon
-            style={{ marginBottom: "16px" }}
-          />
+        <Card title="Edit Job - Job Details" style={{ marginBottom: "24px" }}>
+          <Form
+            form={jobForm}
+            layout="vertical"
+            initialValues={{
+              isActive: true,
+            }}
+          >
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="title"
+                  label="Job Title"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job title",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Senior Software Engineer" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="jobCode"
+                  label="Job Code"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job code",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. AWINC-1-1112" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="Job Title">
-              {fetchedJobData?.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Project">
-              {fetchedJobData?.project?.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Description">
-              {fetchedJobData?.description || "No description"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Requirements">
-              {fetchedJobData?.jobRequirements || "No requirements"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Skills">
-              {fetchedJobData?.requiredSkills?.map((skill, i) => (
-                <Tag key={i}>{skill}</Tag>
-              ))}
-            </Descriptions.Item>
-          </Descriptions>
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="EmploymentType"
+                  label="Employment Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select employment type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select employment type">
+                    <Option value="full-time">Full-time</Option>
+                    <Option value="part-time">Part-time</Option>
+                    <Option value="contract">Contract</Option>
+                    <Option value="internship">Internship</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="workplace"
+                  label="Workplace Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select workplace type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select workplace type">
+                    <Option value="remote">Remote</Option>
+                    <Option value="hybrid">Hybrid</Option>
+                    <Option value="on-site">On-site</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Divider />
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="officeLocation" label="Office Location">
+                  <Input placeholder="e.g. San Francisco, CA" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="jobFunction"
+                  label="Job Function"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job function",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Software Development" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Form form={jobForm} layout="vertical">
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="companyIndustry"
+                  label="Company Industry"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter company industry",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Information Technology" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="Experience"
+                  label="Required Experience (years)"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter required experience",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={50}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 5"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="Education"
+                  label="Required Education"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select education level",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select education level">
+                    <Option value="High School">High School</Option>
+                    <Option value="Associate Degree">Associate Degree</Option>
+                    <Option value="Bachelor's Degree">Bachelor's Degree</Option>
+                    <Option value="Master's Degree">Master's Degree</Option>
+                    <Option value="PhD">PhD</Option>
+                    <Option value="None">None</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="salaryType"
+                  label="Salary Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select salary type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select salary type">
+                    <Option value="annual">Annual</Option>
+                    <Option value="monthly">Monthly</Option>
+                    <Option value="hourly">Hourly</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="annualSalary"
+                  label="Salary Amount"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter salary amount",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 80000"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="numberOfCandidate"
+                  label="Number of Candidates Needed"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter number of candidates",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={1}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 5"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="description"
+              label="Job Description"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter job description",
+                },
+              ]}
+            >
+              <TextArea rows={6} placeholder="Enter detailed job description" />
+            </Form.Item>
+
+            <Form.Item
+              name="requiredSkills"
+              label="Required Skills"
+              rules={[
+                {
+                  required: true,
+                  message: "Please add at least one skill",
+                },
+              ]}
+            >
+              <Select
+                mode="tags"
+                placeholder="Add skills (type and press enter)"
+                tokenSeparators={[","]}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="jobRequirements"
+              label="Additional Requirements"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter job requirements",
+                },
+              ]}
+            >
+              <TextArea
+                rows={4}
+                placeholder="Enter any additional requirements"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="benefits"
+              label="Benefits"
+              rules={[
+                {
+                  required: true,
+                  message: "Please add at least one benefit",
+                },
+              ]}
+            >
+              <TextArea
+                rows={4}
+                placeholder="Add benefits (type and press enter)"
+              />
+            </Form.Item>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="startDate"
+                  label="Start Date"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select start date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="endDate"
+                  label="End Date"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select end date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="deadlineDate"
+                  label="Application Deadline"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select deadline date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="alertDate"
+              label="Alert Date (optional)"
+              help="Set a date to receive reminders about this job posting"
+            >
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+
             <Card
               type="inner"
-              title="Pipeline Selection"
+              title="Hiring Pipeline"
               style={{ marginBottom: "16px" }}
             >
               <Form.Item
                 name="pipeline"
-                label="Select Pipeline"
+                label="Pipeline"
                 rules={[
                   { required: true, message: "Please select a pipeline" },
                 ]}
               >
                 <Select
                   mode="multiple"
-                  placeholder="Select pipeline"
+                  placeholder="Select hiring pipelines"
                   onChange={handlePipelineChange}
                   value={selectedPipelines}
+                  optionFilterProp="label"
+                  showSearch
                 >
                   {activePipelines.map((pipeline) => (
-                    <Option key={pipeline._id} value={pipeline._id}>
-                      {pipeline.name}
+                    <Option
+                      key={pipeline._id}
+                      value={pipeline._id}
+                      label={pipeline.name}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <span>{pipeline.name}</span>
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<FormOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showPipelineDatesModal(pipeline._id);
+                          }}
+                        />
+                      </div>
                     </Option>
                   ))}
                 </Select>
@@ -1207,10 +1870,32 @@ const RecruiterEditJob = () => {
               {selectedPipelines.length > 0 && renderSelectedPipelines()}
             </Card>
 
-            <div style={{ textAlign: "right", marginTop: "16px" }}>
+            <Form.Item
+              name="isActive"
+              label="Job Status"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+            </Form.Item>
+
+            <div
+              style={{
+                textAlign: "right",
+                paddingTop: "16px",
+                borderTop: "1px solid #f0f0f0",
+              }}
+            >
               <Space>
                 <Button onClick={handleCancel}>Cancel</Button>
-                <Button type="primary" onClick={handleNextStep}>
+                <Button
+                  type="primary"
+                  onClick={handleNextStep}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
+                  }}
+                >
                   Next Step <ArrowRightOutlined />
                 </Button>
               </Space>
@@ -1231,9 +1916,7 @@ const RecruiterEditJob = () => {
         responsive={false}
       >
         <Steps.Step
-          title={
-            <span style={{ fontSize: "12px" }}>Pipeline Configuration</span>
-          }
+          title={<span style={{ fontSize: "12px" }}>Job Details</span>}
           icon={<FormOutlined style={{ color: "#52c41a" }} />}
         />
         <Steps.Step
@@ -1252,6 +1935,11 @@ const RecruiterEditJob = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={addApplicationField}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  border: "none",
+                }}
               >
                 Add Field
               </Button>
@@ -1289,123 +1977,7 @@ const RecruiterEditJob = () => {
             }
             style={{ position: "sticky", top: "20px" }}
           >
-            <div
-              style={{
-                width: "100%",
-                maxWidth: "320px",
-                height: "580px",
-                margin: "0 auto",
-                position: "relative",
-                background: "linear-gradient(145deg, #2c3e50 0%, #34495e 100%)",
-                borderRadius: "25px",
-                padding: "4px",
-                boxShadow:
-                  "0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1)",
-              }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  backgroundColor: "#000",
-                  borderRadius: "22px",
-                  padding: "2px",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Notch */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "120px",
-                    height: "20px",
-                    backgroundColor: "#000",
-                    borderRadius: "10px",
-                    zIndex: 10,
-                  }}
-                />
-
-                {/* Screen */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    backgroundColor: "#fff",
-                    borderRadius: "20px",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* Status Bar */}
-                  <div
-                    style={{
-                      height: "28px",
-                      backgroundColor: "#f8f9fa",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0 16px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "#333",
-                      borderBottom: "1px solid #e8e8e8",
-                    }}
-                  >
-                    <span>9:41</span>
-                    <span>●●●●●</span>
-                    <span>100%</span>
-                  </div>
-
-                  {/* Content Area */}
-                  <div
-                    style={{
-                      height: "calc(100% - 28px)",
-                      overflow: "auto",
-                      padding: "12px",
-                      backgroundColor: "#fff",
-                    }}
-                  >
-                    <Tabs
-                      activeKey={previewTab}
-                      onChange={setPreviewTab}
-                      size="small"
-                      style={{
-                        height: "100%",
-                        "& .ant-tabs-content-holder": {
-                          height: "calc(100% - 40px)",
-                          overflow: "auto",
-                        },
-                      }}
-                      tabBarStyle={{
-                        marginBottom: "8px",
-                        fontSize: "11px",
-                      }}
-                    >
-                      <TabPane
-                        tab={<span style={{ fontSize: "11px" }}>Overview</span>}
-                        key="overview"
-                      >
-                        <div style={{ height: "100%", overflow: "auto" }}>
-                          {renderJobPreview()}
-                        </div>
-                      </TabPane>
-                      <TabPane
-                        tab={<span style={{ fontSize: "11px" }}>Apply</span>}
-                        key="apply"
-                      >
-                        <div style={{ height: "100%", overflow: "auto" }}>
-                          {renderApplicationForm()}
-                        </div>
-                      </TabPane>
-                    </Tabs>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {renderMobilePreview()}
           </Card>
         </Col>
       </Row>
@@ -1427,8 +1999,17 @@ const RecruiterEditJob = () => {
 
           <Space wrap>
             <Button onClick={handleCancel}>Cancel</Button>
-            <Button type="primary" onClick={handleSubmit} loading={loading}>
-              Save Changes
+            <Button
+              type="primary"
+              onClick={handleSubmit}
+              loading={loading}
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                border: "none",
+              }}
+            >
+              Update Job
             </Button>
           </Space>
         </div>
