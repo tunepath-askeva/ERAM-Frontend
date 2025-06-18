@@ -792,6 +792,7 @@ const RecruiterJobs = () => {
               ⚠️ This action will pause all recruitment activities for this
               position until approved.
             </Text>
+            
           </div>
         </div>
       </Modal>
