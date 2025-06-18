@@ -130,7 +130,6 @@ const EditWorkOrder = () => {
           }
         };
 
-        // Initialize custom stages and stage dates from pipelineStageTimeline
         const initialCustomStages = {};
         const initialStageDates = {};
         const initialStageApprovers = {};
@@ -147,13 +146,11 @@ const EditWorkOrder = () => {
               endDate: timeline.endDate,
             });
 
-            // Check if this is a custom stage (has temp- prefix in ID)
             if (timeline.stageId.startsWith("temp-")) {
               if (!initialCustomStages[timeline.pipelineId]) {
                 initialCustomStages[timeline.pipelineId] = [];
               }
 
-              // Check if we already added this custom stage
               if (
                 !initialCustomStages[timeline.pipelineId].some(
                   (s) => s.id === timeline.stageId
@@ -292,11 +289,9 @@ const EditWorkOrder = () => {
     if (pipeline) {
       setCurrentPipelineForDates(pipeline);
 
-      // Initialize dates if not already present
       if (!pipelineStageDates[pipelineId]) {
         const initialDates = [];
 
-        // First add existing timeline entries from the work order
         if (workOrderData?.workOrder?.pipelineStageTimeline) {
           workOrderData.workOrder.pipelineStageTimeline
             .filter((t) => t.pipelineId === pipelineId)
@@ -309,7 +304,6 @@ const EditWorkOrder = () => {
             });
         }
 
-        // Then add any missing stages from the pipeline
         pipeline.stages.forEach((stage) => {
           if (!initialDates.some((d) => d.stageId === stage._id)) {
             initialDates.push({
@@ -320,7 +314,6 @@ const EditWorkOrder = () => {
           }
         });
 
-        // Then add any custom stages not in the timeline
         if (customStages[pipelineId]) {
           customStages[pipelineId].forEach((customStage) => {
             if (!initialDates.some((d) => d.stageId === customStage.id)) {
@@ -1141,13 +1134,11 @@ const EditWorkOrder = () => {
 
     if (!currentPipelineForDates) return null;
 
-    // Combine custom stages and regular stages
     const allStages = [
       ...(customStages[currentPipelineForDates._id] || []),
       ...(currentPipelineForDates.stages || []),
     ];
 
-    // Sort stages based on their order in pipelineStageDates
     const sortedStages = allStages.sort((a, b) => {
       const aIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
         (d) => d.stageId === (a._id || a.id)
@@ -1238,6 +1229,11 @@ const EditWorkOrder = () => {
                     {stage.isCustom && (
                       <Tag color="orange" size="small">
                         Custom
+                      </Tag>
+                    )}
+                    {stage.dependencyType && (
+                      <Tag color="green" size="small">
+                        {stage.dependencyType}
                       </Tag>
                     )}
                   </div>
@@ -1353,34 +1349,6 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
               </Row>
-
-              {(dateEntry?.startDate || dateEntry?.endDate) && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "8px 12px",
-                    backgroundColor: "#f6ffed",
-                    borderRadius: "4px",
-                    border: "1px solid #d9f7be",
-                  }}
-                >
-                  <div style={{ fontSize: "12px", color: "#389e0d" }}>
-                    <strong>Stage Configuration:</strong>
-                    {dateEntry?.startDate && (
-                      <span style={{ marginLeft: "8px" }}>
-                        📅 Start:{" "}
-                        {dayjs(dateEntry.startDate).format("MMM DD, YYYY")}
-                      </span>
-                    )}
-                    {dateEntry?.endDate && (
-                      <span style={{ marginLeft: "8px" }}>
-                        📅 End:{" "}
-                        {dayjs(dateEntry.endDate).format("MMM DD, YYYY")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </Card>
           );
         })}
