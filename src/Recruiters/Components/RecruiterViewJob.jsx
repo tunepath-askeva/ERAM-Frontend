@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useGetRecruiterJobIdQuery } from "../../Slices/Recruiter/RecruiterApis";
+import AppliedCandidates from "./AppliedCandidates";
 import {
   Card,
   Spin,
@@ -57,7 +58,6 @@ const RecruiterViewJob = () => {
       <div
         style={{
           padding: "16px",
-
           borderRadius: "8px",
           marginBottom: "16px",
         }}
@@ -349,6 +349,7 @@ const RecruiterViewJob = () => {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {workOrder.benefits.map((benefit, index) => (
                 <Paragraph
+                  key={index}
                   style={{
                     whiteSpace: "pre-wrap",
                     margin: "0",
@@ -631,6 +632,16 @@ const RecruiterViewJob = () => {
               key="pipeline"
             >
               {renderPipelineStages()}
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Applied Candidates
+                </span>
+              }
+              key="candidates"
+            >
+              <AppliedCandidates jobId={id} />
             </TabPane>
           </Tabs>
         </div>

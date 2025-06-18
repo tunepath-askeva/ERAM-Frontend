@@ -35,6 +35,12 @@ export const recruiterApi = createApi({
     getRecruiterJobId: builder.query({
       query: (id) => `/jobs/${id}`,
     }),
+    getJobApplications: builder.query({
+      query: (jobId) => ({
+        url: `/application/${jobId}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -43,4 +49,5 @@ export const {
   useGetRecruiterJobsQuery,
   useUpdateRecruiterJobMutation,
   useGetRecruiterJobIdQuery,
+  useGetJobApplicationsQuery
 } = recruiterApi;
