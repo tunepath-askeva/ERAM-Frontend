@@ -144,6 +144,7 @@ const EditWorkOrder = () => {
               stageId: timeline.stageId,
               startDate: timeline.startDate,
               endDate: timeline.endDate,
+              dependencyType: timeline.dependencyType || "independent",
             });
 
             if (timeline.stageId.startsWith("temp-")) {
@@ -354,6 +355,7 @@ const EditWorkOrder = () => {
           stageId,
           startDate: null,
           endDate: null,
+          dependencyType: "independent",
         });
       }
 
@@ -361,6 +363,37 @@ const EditWorkOrder = () => {
         ...newDates[pipelineId][stageIndex],
         [field]: value ? value.format("YYYY-MM-DD") : null,
       };
+
+      return newDates;
+    });
+  };
+
+  const handleDependencyTypeChange = (pipelineId, stageId, value) => {
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      let stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+
+      if (stageIndex === -1) {
+        stageIndex = newDates[pipelineId].length;
+        newDates[pipelineId].push({
+          stageId,
+          startDate: null,
+          endDate: null,
+          dependencyType: value,
+        });
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          dependencyType: value,
+        };
+      }
 
       return newDates;
     });
@@ -550,6 +583,7 @@ const EditWorkOrder = () => {
             stageOrder: index,
             startDate: dateEntry.startDate,
             endDate: dateEntry.endDate,
+            dependencyType: dateEntry.dependencyType || "independent",
             isCustomStage: !!stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             )?.isCustom,
@@ -1131,6 +1165,10 @@ const EditWorkOrder = () => {
       { id: "level2", name: "Level 2 - Manager Approval" },
       { id: "level3", name: "Level 3 - Final Approval" },
     ];
+    const dependencyTypes = [
+      { id: "independent", name: "Independent" },
+      { id: "dependent", name: "Dependent" },
+    ];
 
     if (!currentPipelineForDates) return null;
 
@@ -1270,65 +1308,59 @@ const EditWorkOrder = () => {
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage, currentPipelineForDates._id)}
             >
-              <Row gutter={16} align="bottom">
+              <Row gutter={[16, 16]} align="bottom">
                 {/* Date Section */}
-                <Col span={16}>
-                  <Row gutter={8}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="Start Date"
-                        style={{ marginBottom: 0 }}
-                        labelCol={{ span: 24 }}
-                        wrapperCol={{ span: 24 }}
-                      >
-                        <DatePicker
-                          style={{ width: "100%" }}
-                          size="small"
-                          value={
-                            dateEntry?.startDate
-                              ? dayjs(dateEntry.startDate)
-                              : null
-                          }
-                          onChange={(date) =>
-                            handleStageDateChange(
-                              currentPipelineForDates._id,
-                              stageId,
-                              "startDate",
-                              date
-                            )
-                          }
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        label="End Date"
-                        style={{ marginBottom: 0 }}
-                        labelCol={{ span: 24 }}
-                        wrapperCol={{ span: 24 }}
-                      >
-                        <DatePicker
-                          style={{ width: "100%" }}
-                          size="small"
-                          value={
-                            dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
-                          }
-                          onChange={(date) =>
-                            handleStageDateChange(
-                              currentPipelineForDates._id,
-                              stageId,
-                              "endDate",
-                              date
-                            )
-                          }
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Start Date"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      size="small"
+                      value={
+                        dateEntry?.startDate ? dayjs(dateEntry.startDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "startDate",
+                          date
+                        )
+                      }
+                    />
+                  </Form.Item>
                 </Col>
 
-                {/* Approval Section */}
-                <Col span={8}>
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="End Date"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      size="small"
+                      value={
+                        dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "endDate",
+                          date
+                        )
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Required Approval"
                     style={{ marginBottom: 0 }}
@@ -1341,6 +1373,35 @@ const EditWorkOrder = () => {
                       size="small"
                     >
                       {approvalLevels.map((level) => (
+                        <Option key={level.id} value={level.id}>
+                          {level.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Dependency Type"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      placeholder="Select dependency type"
+                      style={{ width: "100%" }}
+                      size="small"
+                      value={dateEntry?.dependencyType || "independent"}
+                      onChange={(value) =>
+                        handleDependencyTypeChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          value
+                        )
+                      }
+                    >
+                      {dependencyTypes.map((level) => (
                         <Option key={level.id} value={level.id}>
                           {level.name}
                         </Option>
