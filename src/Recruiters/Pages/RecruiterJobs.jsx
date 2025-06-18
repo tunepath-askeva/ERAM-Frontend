@@ -444,6 +444,7 @@ const RecruiterJobs = () => {
                           >
                             Code: {job.jobCode}
                           </Text>
+                          
                         )}
                       </div>
                     </div>
