@@ -16,6 +16,8 @@ import {
   Avatar,
   Badge,
   Popconfirm,
+  Select,
+  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -30,6 +32,9 @@ import {
   SaveOutlined,
   ExclamationCircleOutlined,
   DragOutlined,
+  LinkOutlined,
+  DisconnectOutlined,
+  BranchesOutlined,
 } from "@ant-design/icons";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
@@ -48,8 +53,28 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
-// Sortable Stage Item Component
+const DEPENDENCY_TYPES = {
+  DEPENDENT: "dependent",
+  INDEPENDENT: "independent",
+};
+
+const DEPENDENCY_OPTIONS = [
+  {
+    value: DEPENDENCY_TYPES.DEPENDENT,
+    label: "Dependent",
+    icon: <LinkOutlined />,
+    color: "#1890ff",
+  },
+  {
+    value: DEPENDENCY_TYPES.INDEPENDENT,
+    label: "Independent",
+    icon: <DisconnectOutlined />,
+    color: "#52c41a",
+  },
+];
+
 function SortableStageItem({
   stage,
   index,
@@ -74,6 +99,15 @@ function SortableStageItem({
     opacity: isDragging ? 0.8 : 1,
   };
 
+  const getDependencyConfig = (dependencyType) => {
+    return (
+      DEPENDENCY_OPTIONS.find((option) => option.value === dependencyType) ||
+      DEPENDENCY_OPTIONS[0]
+    );
+  };
+
+  const dependencyConfig = getDependencyConfig(stage.dependencyType);
+
   return (
     <Col xs={24} sm={12} lg={8}>
       <div ref={setNodeRef} style={style} {...attributes}>
@@ -96,7 +130,6 @@ function SortableStageItem({
                 gap: "8px",
               }}
             >
-              {/* Add dedicated drag handle */}
               <div
                 {...listeners}
                 style={{
@@ -195,6 +228,24 @@ function SortableStageItem({
               {stage.description}
             </Paragraph>
           )}
+
+          <div style={{ marginBottom: "8px" }}>
+            <Tag
+              color={dependencyConfig.color}
+              icon={dependencyConfig.icon}
+              style={{
+                borderRadius: "6px",
+                fontSize: "11px",
+                display: "flex",
+                alignItems: "center",
+                width: "fit-content",
+              }}
+            >
+              {dependencyConfig.label}
+            </Tag>
+           
+          </div>
+
           {stage.requiredDocuments && stage.requiredDocuments.length > 0 && (
             <div
               style={{
@@ -229,6 +280,7 @@ const CreatePipelineModal = ({
     order: 1,
     description: "",
     requiredDocuments: [],
+    dependencyType: DEPENDENCY_TYPES.DEPENDENT, 
   });
   const [isEditingStage, setIsEditingStage] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
@@ -262,11 +314,11 @@ const CreatePipelineModal = ({
     if (editingPipeline && visible) {
       setIsEditMode(true);
       setPipelineName(editingPipeline.name);
-      // Ensure each stage has a unique id for drag and drop
       const stagesWithIds = (editingPipeline.stages || []).map(
         (stage, index) => ({
           ...stage,
           id: stage._id || `temp-${index}`,
+          dependencyType: stage.dependencyType || DEPENDENCY_TYPES.DEPENDENT, 
         })
       );
       setStages(stagesWithIds);
@@ -275,6 +327,7 @@ const CreatePipelineModal = ({
         order: (editingPipeline.stages?.length || 0) + 1,
         description: "",
         requiredDocuments: [],
+        dependencyType: DEPENDENCY_TYPES.DEPENDENT,
       });
     } else if (visible) {
       setIsEditMode(false);
@@ -291,6 +344,7 @@ const CreatePipelineModal = ({
       order: 1,
       description: "",
       requiredDocuments: [],
+      dependencyType: DEPENDENCY_TYPES.DEPENDENT,
     });
     setIsEditingStage(false);
     setEditingIndex(-1);
@@ -303,7 +357,6 @@ const CreatePipelineModal = ({
     onClose();
   };
 
-  // Handle drag end event
   const handleDragEnd = async (event) => {
     const { active, over } = event;
 
@@ -322,10 +375,8 @@ const CreatePipelineModal = ({
       return;
     }
 
-    // Reorder stages array
     const reorderedStages = arrayMove(stages, oldIndex, newIndex);
 
-    // Update order numbers
     const updatedStages = reorderedStages.map((stage, index) => ({
       ...stage,
       order: index + 1,
@@ -333,7 +384,6 @@ const CreatePipelineModal = ({
 
     setStages(updatedStages);
 
-    // If in edit mode, update stages in backend
     if (isEditMode) {
       try {
         const updatePromises = updatedStages
@@ -350,6 +400,7 @@ const CreatePipelineModal = ({
                 order: stage.order,
                 description: stage.description,
                 requiredDocuments: stage.requiredDocuments,
+                dependencyType: stage.dependencyType,
               },
             }).unwrap();
           });
@@ -363,14 +414,12 @@ const CreatePipelineModal = ({
           error?.data?.message || error?.message || "Failed to reorder stages";
         message.error(errorMessage);
         console.error("Reorder error:", error);
-        // Revert to original order on error
         setStages(stages);
       }
     } else {
       message.success("Stages reordered successfully");
     }
 
-    // Update current stage order if not editing
     if (!isEditingStage) {
       setCurrentStage((prev) => ({
         ...prev,
@@ -428,6 +477,7 @@ const CreatePipelineModal = ({
             order: newStage.order,
             description: newStage.description,
             requiredDocuments: newStage.requiredDocuments,
+            dependencyType: newStage.dependencyType,
           };
 
           await editStage({
@@ -468,6 +518,7 @@ const CreatePipelineModal = ({
       order: stages.length + 2,
       description: "",
       requiredDocuments: [],
+      dependencyType: DEPENDENCY_TYPES.DEPENDENT,
     });
   };
 
@@ -481,13 +532,10 @@ const CreatePipelineModal = ({
     const stageToDelete = stages[index];
 
     try {
-      // If in edit mode and stage has _id, call API first
       if (isEditMode && stageToDelete._id) {
         await deleteStage(stageToDelete._id).unwrap();
         message.success("Stage deleted successfully from database");
       }
-
-      // Remove stage from local state
       const updatedStages = stages.filter((_, i) => i !== index);
       const reorderedStages = updatedStages.map((stage, i) => ({
         ...stage,
@@ -495,7 +543,6 @@ const CreatePipelineModal = ({
       }));
       setStages(reorderedStages);
 
-      // Update current stage order if not editing
       if (!isEditingStage) {
         setCurrentStage((prev) => ({
           ...prev,
@@ -525,7 +572,6 @@ const CreatePipelineModal = ({
       return;
     }
 
-    // Remove temporary ids before sending to backend
     const cleanedStages = stages.map(({ id, ...stage }) => stage);
 
     const pipelineData = {
@@ -567,7 +613,6 @@ const CreatePipelineModal = ({
   const isLoading =
     isCreating || isUpdating || isEditingStageAPI || isDeletingStage;
 
-  // Create items array for SortableContext
   const sortableItems = stages.map(
     (stage, index) => stage.id || `stage-${index}`
   );
@@ -601,7 +646,6 @@ const CreatePipelineModal = ({
       style={{ top: "20px", padding: "24px" }}
     >
       <div style={{ marginTop: "8px" }}>
-        {/* Pipeline Name Section */}
         <Card
           style={{
             marginBottom: "24px",
@@ -635,7 +679,6 @@ const CreatePipelineModal = ({
           />
         </Card>
 
-        {/* Stages Header */}
         <Card
           style={{
             marginBottom: "20px",
@@ -677,7 +720,6 @@ const CreatePipelineModal = ({
           </div>
         </Card>
 
-        {/* Existing Stages with Drag & Drop */}
         {stages.length > 0 && (
           <div style={{ marginBottom: "24px" }}>
             <DndContext
@@ -707,7 +749,6 @@ const CreatePipelineModal = ({
           </div>
         )}
 
-        {/* Add/Edit Stage Form */}
         <Card
           title={
             <div
@@ -729,7 +770,7 @@ const CreatePipelineModal = ({
           }}
         >
           <Row gutter={16}>
-            <Col xs={24} sm={16}>
+            <Col xs={24} sm={12}>
               <div style={{ marginBottom: "16px" }}>
                 <Text strong style={{ color: "#2c3e50" }}>
                   Stage Name
@@ -751,7 +792,7 @@ const CreatePipelineModal = ({
                 />
               </div>
             </Col>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={6}>
               <div style={{ marginBottom: "16px" }}>
                 <Text strong style={{ color: "#2c3e50" }}>
                   Order
@@ -768,6 +809,41 @@ const CreatePipelineModal = ({
                     borderRadius: "8px",
                   }}
                 />
+              </div>
+            </Col>
+            <Col xs={24} sm={6}>
+              <div style={{ marginBottom: "16px" }}>
+                <Text strong style={{ color: "#2c3e50" }}>
+                  <BranchesOutlined style={{ marginRight: "4px" }} />
+                  Dependency Type
+                </Text>
+                <Select
+                  value={currentStage.dependencyType}
+                  onChange={(value) =>
+                    setCurrentStage((prev) => ({
+                      ...prev,
+                      dependencyType: value,
+                    }))
+                  }
+                  style={{
+                    width: "100%",
+                    marginTop: "8px",
+                  }}
+                  size="middle"
+                >
+                  {DEPENDENCY_OPTIONS.map((option) => (
+                    <Option key={option.value} value={option.value}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span
+                          style={{ color: option.color, marginRight: "8px" }}
+                        >
+                          {option.icon}
+                        </span>
+                        {option.label}
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
               </div>
             </Col>
           </Row>
@@ -826,7 +902,6 @@ const CreatePipelineModal = ({
                 </Button>
               </Space.Compact>
 
-              {/* Common Documents */}
               <div style={{ marginTop: "12px" }}>
                 <Text style={{ fontSize: "12px", color: "#666" }}>
                   <InfoCircleOutlined style={{ marginRight: "4px" }} />
@@ -870,7 +945,6 @@ const CreatePipelineModal = ({
                 </div>
               </div>
 
-              {/* Selected Documents */}
               {currentStage.requiredDocuments.length > 0 && (
                 <div style={{ marginTop: "12px" }}>
                   <Text style={{ fontSize: "12px", color: "#666" }}>
@@ -942,6 +1016,7 @@ const CreatePipelineModal = ({
                     order: stages.length + 1,
                     description: "",
                     requiredDocuments: [],
+                    dependencyType: DEPENDENCY_TYPES.DEPENDENT,
                   });
                 }}
                 disabled={isEditingStageAPI}
@@ -952,7 +1027,6 @@ const CreatePipelineModal = ({
           </div>
         </Card>
 
-        {/* Footer Actions */}
         <div
           style={{
             display: "flex",

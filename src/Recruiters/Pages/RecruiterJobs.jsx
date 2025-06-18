@@ -190,15 +190,18 @@ const RecruiterJobs = () => {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <Result
-          status="error"
+          status="404"
           title="Failed to Load Jobs"
-          subTitle="Something went wrong while fetching jobs."
+          subTitle={"Something went wrong while fetching jobs."}
           extra={[
             <Button
               type="primary"
               onClick={() => window.location.reload()}
               key="retry"
-              style={{ background: primaryColor, border: "none" }}
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              }}
             >
               Retry
             </Button>,

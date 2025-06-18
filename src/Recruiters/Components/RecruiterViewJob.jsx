@@ -185,6 +185,50 @@ const RecruiterViewJob = () => {
           </div>
         )}
 
+        {/* Dates Section */}
+        <Row gutter={[12, 8]} style={{ marginBottom: "16px" }}>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Start Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.startDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                End Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.endDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Deadline
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.deadlineDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Alert Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.alertDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+        </Row>
+
         <div style={{ marginBottom: "16px" }}>
           <Text
             strong
@@ -322,50 +366,6 @@ const RecruiterViewJob = () => {
             </div>
           </div>
         )}
-
-        {/* Dates Section */}
-        <Row gutter={[12, 8]} style={{ marginTop: "16px" }}>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Start Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.startDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                End Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.endDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Deadline
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.deadlineDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Alert Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.alertDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-        </Row>
       </div>
     </div>
   );
