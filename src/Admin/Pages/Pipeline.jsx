@@ -36,12 +36,14 @@ import {
   CheckOutlined,
   StopOutlined,
   CheckCircleOutlined,
+  CopyOutlined, // Add this import for copy icon
 } from "@ant-design/icons";
 import {
   useGetPipelinesQuery,
   useDeletePipelineMutation,
   useGetPipelineByIdQuery,
   useDisablePipelineMutation,
+  useCopyPipelineMutation, // Add this import
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal";
 import "../../index.css";
@@ -58,6 +60,8 @@ const Pipeline = () => {
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [pipelineToToggle, setPipelineToToggle] = useState(null);
+  const [copyModalVisible, setCopyModalVisible] = useState(false); // Add state for copy modal
+  const [pipelineToCopy, setPipelineToCopy] = useState(null); // Add state for pipeline to copy
 
   const {
     data: pipelinesResponse,
@@ -78,6 +82,8 @@ const Pipeline = () => {
 
   const [disablePipeline, { isLoading: isDisabling }] =
     useDisablePipelineMutation();
+
+  const [copyPipeline, { isLoading: isCopying }] = useCopyPipelineMutation(); // Add copy mutation
 
   const pipelines = pipelinesResponse?.allPipelines || [];
 
@@ -147,6 +153,37 @@ const Pipeline = () => {
       console.error("Status change error:", error);
     }
   };
+
+  // Add copy functionality
+  const showCopyModal = (pipeline) => {
+    setPipelineToCopy(pipeline);
+    setCopyModalVisible(true);
+  };
+
+  const handleCopyCancel = () => {
+    setCopyModalVisible(false);
+    setPipelineToCopy(null);
+  };
+
+  const handleCopyConfirm = async () => {
+    if (!pipelineToCopy) return;
+
+    try {
+      const response = await copyPipeline(pipelineToCopy._id).unwrap();
+      message.success(
+        `Pipeline "${pipelineToCopy.name}" copied successfully as "${response.data.name}"`
+      );
+      setCopyModalVisible(false);
+      setPipelineToCopy(null);
+      refetch();
+    } catch (error) {
+      const errorMessage =
+        error?.data?.message || error?.message || "Failed to copy pipeline";
+      message.error(errorMessage);
+      console.error("Copy error:", error);
+    }
+  };
+
   const showCreateModal = () => {
     setEditingPipeline(null);
     setIsModalVisible(true);
@@ -345,60 +382,6 @@ const Pipeline = () => {
                       </div>
                     </div>
                   }
-                  extra={
-                    <Space size="small">
-                      <Tooltip title="View Details">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewPipeline(pipeline._id)}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Edit Pipeline">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => showEditModal(pipeline)}
-                        />
-                      </Tooltip>
-                      <Tooltip
-                        title={
-                          isPipelineActive(pipeline)
-                            ? "Disable Pipeline"
-                            : "Enable Pipeline"
-                        }
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={
-                            isPipelineActive(pipeline) ? (
-                              <StopOutlined />
-                            ) : (
-                              <CheckCircleOutlined />
-                            )
-                          }
-                          onClick={() => showDisableModal(pipeline)}
-                          style={{
-                            color: isPipelineActive(pipeline)
-                              ? "#ff4d4f"
-                              : "#52c41a",
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Delete Pipeline">
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(pipeline)}
-                        />
-                      </Tooltip>
-                    </Space>
-                  }
                   bodyStyle={{
                     flex: 1,
                     display: "flex",
@@ -454,9 +437,9 @@ const Pipeline = () => {
                                   borderRadius: 8,
                                 },
                               }}
-                              title={`${stage.order}. ${stage.name}`}
+                              title={` ${stage.name}`}
                             >
-                              {stage.order}. {stage.name}
+                              {stage.name}
                             </Tag>
                           ))}
                       </div>
@@ -486,6 +469,74 @@ const Pipeline = () => {
                           </Text>
                         )}
                       </div>
+                    </div>
+
+                    {/* Moved actions here */}
+                    <div style={{ marginTop: "auto" }}>
+                      <Space
+                        size="small"
+                        style={{ justifyContent: "flex-end", width: "100%" }}
+                      >
+                        <Tooltip title="View Details">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewPipeline(pipeline._id)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Copy Pipeline">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined />}
+                            onClick={() => showCopyModal(pipeline)}
+                            style={{ color: "#1890ff" }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Edit Pipeline">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => showEditModal(pipeline)}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          title={
+                            isPipelineActive(pipeline)
+                              ? "Disable Pipeline"
+                              : "Enable Pipeline"
+                          }
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={
+                              isPipelineActive(pipeline) ? (
+                                <StopOutlined />
+                              ) : (
+                                <CheckCircleOutlined />
+                              )
+                            }
+                            onClick={() => showDisableModal(pipeline)}
+                            style={{
+                              color: isPipelineActive(pipeline)
+                                ? "#ff4d4f"
+                                : "#52c41a",
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Delete Pipeline">
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => showDeleteModal(pipeline)}
+                          />
+                        </Tooltip>
+                      </Space>
                     </div>
                   </div>
                 </Card>
@@ -765,6 +816,109 @@ const Pipeline = () => {
         editingPipeline={editingPipeline}
       />
 
+      {/* Copy Pipeline Modal */}
+      <Modal
+        title={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color: "#1890ff",
+            }}
+          >
+            <CopyOutlined style={{ marginRight: 8, fontSize: 18 }} />
+            <span style={{ fontSize: "16px" }}>Copy Pipeline</span>
+          </div>
+        }
+        open={copyModalVisible}
+        onCancel={handleCopyCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleCopyCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="copy"
+            type="primary"
+            onClick={handleCopyConfirm}
+            loading={isCopying}
+            size="large"
+            icon={<CopyOutlined />}
+            style={{
+              background: "#1890ff",
+              borderColor: "#1890ff",
+            }}
+          >
+            Copy Pipeline
+          </Button>,
+        ]}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background: "#f6ffed",
+              border: "1px solid #b7eb8f",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              "@media (min-width: 576px)": {
+                padding: "16px",
+                marginBottom: "20px",
+              },
+            }}
+          >
+            <InfoCircleOutlined
+              style={{
+                color: "#52c41a",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+                "@media (min-width: 576px)": {
+                  fontSize: "18px",
+                },
+              }}
+            />
+            <div>
+              <Text strong style={{ color: "#52c41a", fontSize: "13px" }}>
+                Copy Pipeline Information
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                The copied pipeline will be created with "Copy" suffix and
+                inactive status.
+              </Text>
+            </div>
+          </div>
+
+          {pipelineToCopy && (
+            <div>
+              <Text>
+                You are about to copy the pipeline{" "}
+                <Text strong>"{pipelineToCopy.name}"</Text> which contains{" "}
+                <Text strong>{pipelineToCopy.stages.length}</Text> stages.
+              </Text>
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary">
+                  <strong>New pipeline will be named:</strong> "
+                  {pipelineToCopy.name} Copy"
+                </Text>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary">
+                  The copied pipeline will include all stages, configurations,
+                  and required documents.
+                </Text>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
       <Modal
         title={
           <div
@@ -813,34 +967,89 @@ const Pipeline = () => {
         ]}
       >
         <div style={{ padding: "16px 0" }}>
-          <Text>
-            Are you sure you want to{" "}
-            {isPipelineActive(pipelineToToggle) ? "disable" : "enable"} the
-            pipeline <Text strong>"{pipelineToToggle?.name}"</Text>?
-          </Text>
-          {isPipelineActive(pipelineToToggle) && (
-            <div style={{ marginTop: 8 }}>
-              <Text type="secondary">
-                Disabling will prevent this pipeline from being used in new job
-                postings.
+          <div
+            style={{
+              background: isPipelineActive(pipelineToToggle)
+                ? "#fff2f0"
+                : "#f6ffed",
+              border: isPipelineActive(pipelineToToggle)
+                ? "1px solid #ffccc7"
+                : "1px solid #b7eb8f",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <WarningOutlined
+              style={{
+                color: isPipelineActive(pipelineToToggle)
+                  ? "#ff4d4f"
+                  : "#52c41a",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <Text
+                strong
+                style={{
+                  color: isPipelineActive(pipelineToToggle)
+                    ? "#ff4d4f"
+                    : "#52c41a",
+                }}
+              >
+                {isPipelineActive(pipelineToToggle)
+                  ? "Disabling this pipeline"
+                  : "Enabling this pipeline"}
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c" }}>
+                {isPipelineActive(pipelineToToggle)
+                  ? "This pipeline will no longer be available for new hiring processes."
+                  : "This pipeline will become available for new hiring processes."}
               </Text>
             </div>
-          )}
-          {!isPipelineActive(pipelineToToggle) && (
-            <div style={{ marginTop: 8 }}>
-              <Text type="secondary">
-                Enabling will make this pipeline available for use in job
-                postings.
+          </div>
+
+          {pipelineToToggle && (
+            <div>
+              <Text>
+                You are about to{" "}
+                {isPipelineActive(pipelineToToggle) ? "disable" : "enable"} the
+                pipeline{" "}
+                <Text strong style={{ color: "#2c3e50" }}>
+                  "{pipelineToToggle.name}"
+                </Text>
+                .
               </Text>
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary">
+                  Current status:{" "}
+                  <Tag
+                    color={isPipelineActive(pipelineToToggle) ? "green" : "red"}
+                  >
+                    {isPipelineActive(pipelineToToggle) ? "Active" : "Inactive"}
+                  </Tag>
+                </Text>
+              </div>
             </div>
           )}
         </div>
       </Modal>
 
+      {/* Delete Pipeline Modal */}
       <Modal
         title={
           <div
-            style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              color: "#ff4d4f",
+            }}
           >
             <ExclamationCircleOutlined
               style={{ marginRight: 8, fontSize: 18 }}
@@ -854,39 +1063,21 @@ const Pipeline = () => {
         style={{ maxWidth: 500 }}
         centered
         footer={[
-          <Button
-            key="cancel"
-            onClick={handleDeleteCancel}
-            size="large"
-            style={{
-              marginRight: 8,
-              "@media (max-width: 576px)": {
-                marginRight: 0,
-                marginBottom: 8,
-              },
-            }}
-          >
+          <Button key="cancel" onClick={handleDeleteCancel} size="large">
             Cancel
           </Button>,
           <Button
             key="delete"
             type="primary"
             danger
-            loading={isDeleting}
             onClick={handleDeleteConfirm}
+            loading={isDeleting}
             size="large"
             icon={<DeleteOutlined />}
-            style={{
-              "@media (max-width: 576px)": {
-                width: "100%",
-              },
-            }}
           >
             Delete Pipeline
           </Button>,
         ]}
-        maskClosable={false}
-        destroyOnClose
       >
         <div style={{ padding: "16px 0" }}>
           <div
@@ -899,10 +1090,6 @@ const Pipeline = () => {
               display: "flex",
               alignItems: "flex-start",
               gap: "12px",
-              "@media (min-width: 576px)": {
-                padding: "16px",
-                marginBottom: "20px",
-              },
             }}
           >
             <WarningOutlined
@@ -911,19 +1098,16 @@ const Pipeline = () => {
                 fontSize: "16px",
                 marginTop: "2px",
                 flexShrink: 0,
-                "@media (min-width: 576px)": {
-                  fontSize: "18px",
-                },
               }}
             />
             <div>
-              <Text strong style={{ color: "#ff4d4f", fontSize: "13px" }}>
-                This action cannot be undone!
+              <Text strong style={{ color: "#ff4d4f" }}>
+                This action cannot be undone
               </Text>
               <br />
-              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                All pipeline data including stages, configurations, and
-                associated records will be permanently removed.
+              <Text style={{ color: "#8c8c8c" }}>
+                All data associated with this pipeline will be permanently
+                deleted.
               </Text>
             </div>
           </div>
@@ -932,12 +1116,21 @@ const Pipeline = () => {
             <div>
               <Text>
                 You are about to delete the pipeline{" "}
-                <Text strong>"{pipelineToDelete.name}"</Text> which contains{" "}
-                <Text strong>{pipelineToDelete.stages.length}</Text> stages.
+                <Text strong style={{ color: "#2c3e50" }}>
+                  "{pipelineToDelete.name}"
+                </Text>
+                .
               </Text>
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 12 }}>
                 <Text type="secondary">
-                  This action will permanently remove all associated data.
+                  This pipeline contains{" "}
+                  <Text strong>{pipelineToDelete.stages.length}</Text> stages.
+                </Text>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <Text type="danger">
+                  <strong>Warning:</strong> Any ongoing hiring processes using
+                  this pipeline will be affected.
                 </Text>
               </div>
             </div>

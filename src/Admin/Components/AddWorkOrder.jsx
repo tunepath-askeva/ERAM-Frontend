@@ -46,8 +46,6 @@ const { TextArea } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-
-
 const fieldTypes = [
   { value: "text", label: "Text Input" },
   { value: "textarea", label: "Text Area" },
@@ -60,8 +58,6 @@ const fieldTypes = [
   { value: "date", label: "Date" },
   { value: "file", label: "File Upload" },
 ];
-
-
 
 const AddWorkOrder = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -131,7 +127,6 @@ const AddWorkOrder = () => {
   const handlePipelineChange = (selectedPipelineIds) => {
     setSelectedPipelines(selectedPipelineIds);
 
-    // Update the form field value to keep it in sync
     jobForm.setFieldsValue({ pipeline: selectedPipelineIds });
 
     const newStageDates = { ...pipelineStageDates };
@@ -163,7 +158,6 @@ const AddWorkOrder = () => {
       setCurrentPipelineForDates(pipeline);
       setPipelineDatesModalVisible(true);
 
-      // Initialize custom stages if they don't exist
       if (!customStages[pipelineId]) {
         setCustomStages((prev) => ({
           ...prev,
@@ -171,7 +165,6 @@ const AddWorkOrder = () => {
         }));
       }
 
-      // Initialize dates if they don't exist
       if (!pipelineStageDates[pipelineId]) {
         setPipelineStageDates((prev) => ({
           ...prev,
@@ -215,7 +208,6 @@ const AddWorkOrder = () => {
       [pipelineId]: [...(prev[pipelineId] || []), newStage],
     }));
 
-    // Add corresponding date entry
     setPipelineStageDates((prev) => ({
       ...prev,
       [pipelineId]: [
@@ -411,6 +403,7 @@ const AddWorkOrder = () => {
         ...jobData,
         customFields: applicationFields,
         WorkorderStatus: status,
+        isActive: status === "published" ? "active" : "inactive",
         pipelineStageTimeline,
         stageApprovers: stageApprovers,
       };
@@ -430,7 +423,7 @@ const AddWorkOrder = () => {
       setJobData(null);
       setApplicationFields([]);
       setCustomStages({});
-      setStageApprovers({}); 
+      setStageApprovers({});
       setCurrentStep(0);
       navigate("/admin/workorder");
     } catch (error) {
@@ -990,13 +983,13 @@ const AddWorkOrder = () => {
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
-          <Button
-            key="add"
-            icon={<PlusOutlined />}
-            onClick={() => addCustomStage(currentPipelineForDates._id)}
-          >
-            Add Stage
-          </Button>,
+          // <Button
+          //   key="add"
+          //   icon={<PlusOutlined />}
+          //   onClick={() => addCustomStage(currentPipelineForDates._id)}
+          // >
+          //   Add Stage
+          // </Button>,
           <Button
             key="back"
             onClick={() => setPipelineDatesModalVisible(false)}
