@@ -20,24 +20,28 @@ import {
   Skeleton,
   Typography,
   DatePicker,
+  Result,
+  Descriptions,
+  Alert,
 } from "antd";
 import {
   PlusOutlined,
   MinusCircleOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  DeleteOutlined,
+  CheckCircleOutlined,
   EyeOutlined,
   FormOutlined,
   MobileOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  LoadingOutlined,
-  CheckCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useParams } from "react-router-dom";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useUpdateRecruiterJobMutation } from "../../Slices/Recruiter/RecruiterApis";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  useUpdateRecruiterJobMutation,
+  useGetRecruiterJobIdQuery,
+  useGetPipelinesQuery,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -58,10 +62,8 @@ const fieldTypes = [
 ];
 
 const RecruiterEditJob = () => {
-  const location = useLocation();
   const { id } = useParams();
-  const { state } = location;
-  const jobDataFromProps = state?.jobData;
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [jobForm] = Form.useForm();
   const [applicationForm] = Form.useForm();
@@ -75,30 +77,41 @@ const RecruiterEditJob = () => {
   const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
   const [pipelineStageDates, setPipelineStageDates] = useState({});
   const [customStages, setCustomStages] = useState({});
-  const navigate = useNavigate();
 
+  const {
+    data: fetchedJobData,
+    isLoading,
+    error,
+  } = useGetRecruiterJobIdQuery(id);
+  const { data: pipelineData } = useGetPipelinesQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
+  const activePipelines =
+    pipelineData?.allPipelines?.filter(
+      (pipeline) => pipeline.pipelineStatus === "active"
+    ) || [];
+
   useEffect(() => {
-    if (jobDataFromProps) {
+    if (fetchedJobData) {
       try {
-        // Initialize form data
         const formData = {
-          ...jobDataFromProps,
-          pipeline: Array.isArray(jobDataFromProps.pipeline)
-            ? jobDataFromProps.pipeline.map((p) => p._id || p)
-            : [jobDataFromProps.pipeline],
+          ...fetchedJobData,
+          pipeline: Array.isArray(fetchedJobData.pipeline)
+            ? fetchedJobData.pipeline.map((p) => p._id || p)
+            : [fetchedJobData.pipeline],
         };
 
         jobForm.setFieldsValue(formData);
         setJobData(formData);
         setSelectedPipelines(formData.pipeline);
-        setApplicationFields(jobDataFromProps.customFields || []);
+        setApplicationFields(fetchedJobData.customFields || []);
 
-        // Initialize pipeline stage dates if available
-        if (jobDataFromProps.pipelineStageTimeline) {
-          const initialDates = {};
-          jobDataFromProps.pipelineStageTimeline.forEach((timeline) => {
+        // Initialize custom stages and stage dates from pipelineStageTimeline
+        const initialCustomStages = {};
+        const initialDates = {};
+
+        if (fetchedJobData.pipelineStageTimeline) {
+          fetchedJobData.pipelineStageTimeline.forEach((timeline) => {
             if (!initialDates[timeline.pipelineId]) {
               initialDates[timeline.pipelineId] = [];
             }
@@ -107,15 +120,37 @@ const RecruiterEditJob = () => {
               startDate: timeline.startDate,
               endDate: timeline.endDate,
             });
+
+            // Check if this is a custom stage (has temp- prefix in ID)
+            if (timeline.stageId.startsWith("temp-")) {
+              if (!initialCustomStages[timeline.pipelineId]) {
+                initialCustomStages[timeline.pipelineId] = [];
+              }
+
+              if (
+                !initialCustomStages[timeline.pipelineId].some(
+                  (s) => s.id === timeline.stageId
+                )
+              ) {
+                initialCustomStages[timeline.pipelineId].push({
+                  id: timeline.stageId,
+                  name: timeline.stageName,
+                  description: "",
+                  isCustom: true,
+                });
+              }
+            }
           });
-          setPipelineStageDates(initialDates);
         }
+
+        setCustomStages(initialCustomStages);
+        setPipelineStageDates(initialDates);
       } catch (error) {
         console.error("Error initializing form:", error);
         message.error("Error loading job data");
       }
     }
-  }, [jobDataFromProps, jobForm]);
+  }, [fetchedJobData, jobForm]);
 
   const handleNextStep = () => {
     jobForm
@@ -134,37 +169,167 @@ const RecruiterEditJob = () => {
     setCurrentStep(0);
   };
 
+  const handlePipelineChange = (selectedPipelineIds) => {
+    setSelectedPipelines(selectedPipelineIds);
+
+    const newStageDates = { ...pipelineStageDates };
+    selectedPipelineIds.forEach((pipeId) => {
+      if (!newStageDates[pipeId]) {
+        const pipeline = activePipelines.find((p) => p._id === pipeId);
+        if (pipeline) {
+          newStageDates[pipeId] = pipeline.stages.map((stage) => ({
+            stageId: stage._id,
+            startDate: null,
+            endDate: null,
+          }));
+        }
+      }
+    });
+
+    Object.keys(newStageDates).forEach((pipeId) => {
+      if (!selectedPipelineIds.includes(pipeId)) {
+        delete newStageDates[pipeId];
+      }
+    });
+
+    setPipelineStageDates(newStageDates);
+  };
+
   const showPipelineDatesModal = (pipelineId) => {
-    setCurrentPipelineForDates(pipelineId);
-    setPipelineDatesModalVisible(true);
+    const pipeline = activePipelines.find((p) => p._id === pipelineId);
+    if (pipeline) {
+      setCurrentPipelineForDates(pipeline);
+
+      // Initialize dates if not already present
+      if (!pipelineStageDates[pipelineId]) {
+        const initialDates = [];
+
+        // First add existing timeline entries from the job
+        if (fetchedJobData?.pipelineStageTimeline) {
+          fetchedJobData.pipelineStageTimeline
+            .filter((t) => t.pipelineId === pipelineId)
+            .forEach((timeline) => {
+              initialDates.push({
+                stageId: timeline.stageId,
+                startDate: timeline.startDate,
+                endDate: timeline.endDate,
+              });
+            });
+        }
+
+        // Then add any missing stages from the pipeline
+        pipeline.stages.forEach((stage) => {
+          if (!initialDates.some((d) => d.stageId === stage._id)) {
+            initialDates.push({
+              stageId: stage._id,
+              startDate: null,
+              endDate: null,
+            });
+          }
+        });
+
+        // Then add any custom stages not in the timeline
+        if (customStages[pipelineId]) {
+          customStages[pipelineId].forEach((customStage) => {
+            if (!initialDates.some((d) => d.stageId === customStage.id)) {
+              initialDates.push({
+                stageId: customStage.id,
+                startDate: null,
+                endDate: null,
+              });
+            }
+          });
+        }
+
+        setPipelineStageDates((prev) => ({
+          ...prev,
+          [pipelineId]: initialDates,
+        }));
+      }
+
+      setPipelineDatesModalVisible(true);
+    }
   };
 
   const handleStageDateChange = (pipelineId, stageId, field, value) => {
     setPipelineStageDates((prev) => {
       const newDates = { ...prev };
+
       if (!newDates[pipelineId]) {
         newDates[pipelineId] = [];
       }
 
-      const stageIndex = newDates[pipelineId].findIndex(
+      let stageIndex = newDates[pipelineId].findIndex(
         (s) => s.stageId === stageId
       );
+
       if (stageIndex === -1) {
+        stageIndex = newDates[pipelineId].length;
         newDates[pipelineId].push({
           stageId,
           startDate: null,
           endDate: null,
-          [field]: value ? value.format("YYYY-MM-DD") : null,
         });
-      } else {
-        newDates[pipelineId][stageIndex] = {
-          ...newDates[pipelineId][stageIndex],
-          [field]: value ? value.format("YYYY-MM-DD") : null,
-        };
       }
+
+      newDates[pipelineId][stageIndex] = {
+        ...newDates[pipelineId][stageIndex],
+        [field]: value ? value.format("YYYY-MM-DD") : null,
+      };
 
       return newDates;
     });
+  };
+
+  const addCustomStage = (pipelineId) => {
+    const newStage = {
+      id: `temp-${Date.now()}`,
+      name: `New Stage`,
+      description: "",
+      isCustom: true,
+    };
+
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: [...(prev[pipelineId] || []), newStage],
+    }));
+
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: [
+        ...(prev[pipelineId] || []),
+        {
+          stageId: newStage.id,
+          startDate: null,
+          endDate: null,
+        },
+      ],
+    }));
+  };
+
+  const updateCustomStage = (pipelineId, stageId, updates) => {
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].map((stage) =>
+        (stage._id || stage.id) === stageId ? { ...stage, ...updates } : stage
+      ),
+    }));
+  };
+
+  const removeCustomStage = (pipelineId, stageId) => {
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => (stage._id || stage.id) !== stageId
+      ),
+    }));
+
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => stage.stageId !== stageId
+      ),
+    }));
   };
 
   const addApplicationField = () => {
@@ -196,12 +361,23 @@ const RecruiterEditJob = () => {
       const values = jobForm.getFieldsValue();
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        const stages = [
+          ...(customStages[pipeId] || []),
+          ...(activePipelines.find((p) => p._id === pipeId)?.stages || []),
+        ];
+
         return (
-          pipelineStageDates[pipeId]?.map((dateEntry) => ({
+          pipelineStageDates[pipeId]?.map((dateEntry, index) => ({
             pipelineId: pipeId,
             stageId: dateEntry.stageId,
+            stageName: stages.find((s) => (s._id || s.id) === dateEntry.stageId)
+              ?.name,
+            stageOrder: index,
             startDate: dateEntry.startDate,
             endDate: dateEntry.endDate,
+            isCustomStage: !!stages.find(
+              (s) => (s._id || s.id) === dateEntry.stageId
+            )?.isCustom,
           })) || []
         );
       });
@@ -213,7 +389,7 @@ const RecruiterEditJob = () => {
       };
 
       const result = await updateJob({
-        id: jobDataFromProps._id,
+        id: id,
         ...updatePayload,
       }).unwrap();
       message.success("Job updated successfully!");
@@ -242,47 +418,150 @@ const RecruiterEditJob = () => {
             padding: "12px",
             backgroundColor: "#f8f9fa",
             borderRadius: "6px",
+            marginBottom: "12px",
           }}
         >
-          <Title level={4} style={{ marginBottom: "8px" }}>
+          <h3
+            style={{
+              margin: "0 0 8px 0",
+              color: "#1890ff",
+              fontSize: "16px",
+              fontWeight: "600",
+              wordBreak: "break-word",
+              lineHeight: "1.3",
+            }}
+          >
             {displayData?.title || "Job Title"}
-          </Title>
+          </h3>
 
-          <div style={{ marginBottom: "12px" }}>
-            <Text strong>Company:</Text> {displayData?.project?.name || "N/A"}
+          <div
+            style={{
+              marginBottom: "8px",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "4px",
+            }}
+          >
+            <Tag color="blue" style={{ fontSize: "11px", margin: "0" }}>
+              {displayData?.EmploymentType || "Full-time"}
+            </Tag>
+            <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
+              {displayData?.workplace || "Remote"}
+            </Tag>
+            {displayData?.officeLocation && (
+              <Tag style={{ fontSize: "11px", margin: "0" }}>
+                {displayData.officeLocation}
+              </Tag>
+            )}
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <Text strong>Description:</Text>
-            <p style={{ whiteSpace: "pre-wrap", margin: "4px 0 0 0" }}>
-              {displayData?.description || "No description available"}
-            </p>
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <Text strong>Requirements:</Text>
-            <p style={{ whiteSpace: "pre-wrap", margin: "4px 0 0 0" }}>
-              {displayData?.jobRequirements || "No requirements specified"}
-            </p>
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <Text strong>Skills:</Text>
-            <div
+            <h4
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "4px",
-                marginTop: "4px",
+                margin: "0 0 4px 0",
+                fontSize: "13px",
+                fontWeight: "600",
               }}
             >
-              {displayData?.requiredSkills?.map((skill, index) => (
-                <Tag key={index} color="blue">
-                  {skill}
-                </Tag>
-              ))}
-            </div>
+              Job Description
+            </h4>
+            <p
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "12px",
+                wordBreak: "break-word",
+                lineHeight: "1.4",
+              }}
+            >
+              {displayData?.description ||
+                "Job description will appear here..."}
+            </p>
           </div>
+
+          <Row gutter={8} style={{ marginBottom: "12px" }}>
+            <Col span={12}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Experience
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                {displayData?.Experience || "0"} years
+              </p>
+            </Col>
+            <Col span={12}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Education
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                {displayData?.Education || "Not specified"}
+              </p>
+            </Col>
+          </Row>
+
+          {displayData?.requiredSkills?.length > 0 && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Required Skills
+              </h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+                {displayData.requiredSkills.map((skill, index) => (
+                  <Tag
+                    key={index}
+                    color="purple"
+                    style={{
+                      fontSize: "10px",
+                      margin: "0",
+                      padding: "2px 6px",
+                    }}
+                  >
+                    {skill}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {displayData?.jobRequirements && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Requirements
+              </h4>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                }}
+              >
+                {displayData.jobRequirements}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -311,9 +590,14 @@ const RecruiterEditJob = () => {
         ))}
         {applicationFields.length === 0 && (
           <div
-            style={{ textAlign: "center", color: "#999", padding: "20px 8px" }}
+            style={{
+              textAlign: "center",
+              color: "#999",
+              padding: "20px 8px",
+              fontSize: "12px",
+            }}
           >
-            No application fields added yet.
+            No application fields added yet. Add fields using the form builder.
           </div>
         )}
       </Form>
@@ -332,7 +616,10 @@ const RecruiterEditJob = () => {
         return <TextArea rows={2} {...commonProps} />;
       case "select":
         return (
-          <Select {...commonProps}>
+          <Select
+            {...commonProps}
+            placeholder={`Select ${field.label.toLowerCase()}`}
+          >
             {field.options?.map((option, index) => (
               <Option key={index} value={option}>
                 {option}
@@ -342,24 +629,38 @@ const RecruiterEditJob = () => {
         );
       case "checkbox":
         return (
-          <Checkbox.Group>
+          <Checkbox.Group style={{ fontSize: "12px" }}>
             {field.options?.map((option, index) => (
               <div key={index} style={{ marginBottom: "4px" }}>
-                <Checkbox value={option}>{option}</Checkbox>
+                <Checkbox value={option} style={{ fontSize: "12px" }}>
+                  <span style={{ fontSize: "12px" }}>{option}</span>
+                </Checkbox>
               </div>
             ))}
           </Checkbox.Group>
         );
       case "radio":
         return (
-          <Radio.Group>
+          <Radio.Group style={{ fontSize: "12px" }}>
             {field.options?.map((option, index) => (
               <div key={index} style={{ marginBottom: "4px" }}>
-                <Radio value={option}>{option}</Radio>
+                <Radio value={option} style={{ fontSize: "12px" }}>
+                  <span style={{ fontSize: "12px" }}>{option}</span>
+                </Radio>
               </div>
             ))}
           </Radio.Group>
         );
+      case "number":
+        return <InputNumber {...commonProps} />;
+      case "email":
+        return <Input type="email" {...commonProps} />;
+      case "phone":
+        return <Input type="tel" {...commonProps} />;
+      case "date":
+        return <DatePicker {...commonProps} />;
+      case "file":
+        return <Input type="file" {...commonProps} />;
       default:
         return <Input {...commonProps} />;
     }
@@ -431,7 +732,12 @@ const RecruiterEditJob = () => {
           {field.options?.map((option, optionIndex) => (
             <div
               key={optionIndex}
-              style={{ display: "flex", marginBottom: "8px", gap: "8px" }}
+              style={{
+                display: "flex",
+                marginBottom: "8px",
+                alignItems: "center",
+                gap: "8px",
+              }}
             >
               <Input
                 value={option}
@@ -477,9 +783,28 @@ const RecruiterEditJob = () => {
   const renderPipelineDatesModal = () => {
     if (!currentPipelineForDates) return null;
 
+    // Combine custom stages and regular stages
+    const allStages = [
+      ...(customStages[currentPipelineForDates._id] || []),
+      ...(currentPipelineForDates.stages || []),
+    ];
+
+    // Sort stages based on their order in pipelineStageDates
+    const sortedStages = allStages.sort((a, b) => {
+      const aIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
+        (d) => d.stageId === (a._id || a.id)
+      );
+      const bIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
+        (d) => d.stageId === (b._id || b.id)
+      );
+      return (aIndex || 0) - (bIndex || 0);
+    });
+
     return (
       <Modal
-        title="Set Stage Dates"
+        title={`Set Stage Dates for ${
+          currentPipelineForDates?.name || "Pipeline"
+        }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
@@ -499,66 +824,298 @@ const RecruiterEditJob = () => {
         ]}
         width={600}
       >
-        {pipelineStageDates[currentPipelineForDates]?.map(
-          (dateEntry, index) => (
+        {sortedStages.map((stage) => {
+          const stageId = stage._id || stage.id;
+          const dateEntry = pipelineStageDates[
+            currentPipelineForDates._id
+          ]?.find((d) => d.stageId === stageId);
+
+          return (
             <Card
-              key={index}
-              title={`Stage ${index + 1}`}
-              style={{ marginBottom: "16px" }}
+              key={stageId}
+              title={
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    justifyContent: "space-between",
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {stage.isCustom ? (
+                      <Input
+                        value={stage.name}
+                        onChange={(e) =>
+                          updateCustomStage(
+                            currentPipelineForDates._id,
+                            stageId,
+                            { name: e.target.value }
+                          )
+                        }
+                        style={{ maxWidth: "200px" }}
+                        size="small"
+                      />
+                    ) : (
+                      <span>{stage.name}</span>
+                    )}
+                    {stage.isCustom && (
+                      <Tag color="orange" size="small">
+                        Custom
+                      </Tag>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {stage.isCustom && (
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() =>
+                          removeCustomStage(
+                            currentPipelineForDates._id,
+                            stageId
+                          )
+                        }
+                      />
+                    )}
+                  </div>
+                </div>
+              }
+              style={{ marginBottom: 16 }}
             >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="Start Date">
-                    <DatePicker
-                      style={{ width: "100%" }}
-                      value={
-                        dateEntry.startDate ? dayjs(dateEntry.startDate) : null
-                      }
-                      onChange={(date) =>
-                        handleStageDateChange(
-                          currentPipelineForDates,
-                          dateEntry.stageId,
-                          "startDate",
-                          date
-                        )
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="End Date">
-                    <DatePicker
-                      style={{ width: "100%" }}
-                      value={
-                        dateEntry.endDate ? dayjs(dateEntry.endDate) : null
-                      }
-                      onChange={(date) =>
-                        handleStageDateChange(
-                          currentPipelineForDates,
-                          dateEntry.stageId,
-                          "endDate",
-                          date
-                        )
-                      }
-                    />
-                  </Form.Item>
+              <Row gutter={16} align="bottom">
+                <Col span={24}>
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Form.Item
+                        label="Start Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.startDate
+                              ? dayjs(dateEntry.startDate)
+                              : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "startDate",
+                              date
+                            )
+                          }
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        label="End Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "endDate",
+                              date
+                            )
+                          }
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 </Col>
               </Row>
+
+              {(dateEntry?.startDate || dateEntry?.endDate) && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "8px 12px",
+                    backgroundColor: "#f6ffed",
+                    borderRadius: "4px",
+                    border: "1px solid #d9f7be",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", color: "#389e0d" }}>
+                    <strong>Stage Configuration:</strong>
+                    {dateEntry?.startDate && (
+                      <span style={{ marginLeft: "8px" }}>
+                        📅 Start:{" "}
+                        {dayjs(dateEntry.startDate).format("MMM DD, YYYY")}
+                      </span>
+                    )}
+                    {dateEntry?.endDate && (
+                      <span style={{ marginLeft: "8px" }}>
+                        📅 End:{" "}
+                        {dayjs(dateEntry.endDate).format("MMM DD, YYYY")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </Card>
-          )
-        )}
+          );
+        })}
+
+        {/* Global Actions */}
+        <Card
+          style={{
+            marginTop: "16px",
+            backgroundColor: "#fafafa",
+            border: "1px dashed #d9d9d9",
+          }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <h4 style={{ color: "#666", marginBottom: "12px" }}>
+              Quick Configuration
+            </h4>
+            <Space wrap>
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => addCustomStage(currentPipelineForDates._id)}
+                type="dashed"
+              >
+                Add Custom Stage
+              </Button>
+            </Space>
+          </div>
+        </Card>
       </Modal>
     );
   };
 
-  // Loading state if no job data is passed
-  if (!jobDataFromProps) {
+  const renderSelectedPipelines = () => (
+    <div style={{ marginBottom: "16px" }}>
+      <h4 style={{ marginBottom: "8px" }}>Selected Pipelines</h4>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {selectedPipelines.map((pipelineId) => {
+          const pipeline = activePipelines.find((p) => p._id === pipelineId);
+          if (!pipeline) return null;
+
+          const hasDates =
+            pipelineStageDates[pipelineId]?.some(
+              (stage) => stage.startDate || stage.endDate
+            ) ||
+            fetchedJobData?.pipelineStageTimeline?.some(
+              (timeline) => timeline.pipelineId === pipelineId
+            );
+
+          return (
+            <Tag
+              key={pipelineId}
+              color="blue"
+              style={{
+                cursor: "pointer",
+                padding: "4px 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+              onClick={() => showPipelineDatesModal(pipelineId)}
+            >
+              {pipeline.name}
+              {hasDates && (
+                <span style={{ marginLeft: "4px" }}>(Dates set)</span>
+              )}
+            </Tag>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
     return (
-      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <Skeleton active />
-          <Skeleton active />
-          <Skeleton active />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "400px",
+        }}
+      >
+        <Skeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error("Job fetch error:", error);
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "400px",
+          flexDirection: "column",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h3>Error Loading Job</h3>
+          <p>
+            {error?.data?.message ||
+              error?.message ||
+              "Failed to load job data"}
+          </p>
+          <Space>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button onClick={() => navigate("/recruiter/jobs")}>
+              Back to Jobs
+            </Button>
+          </Space>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !fetchedJobData) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "400px",
+          flexDirection: "column",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h3>Job Not Found</h3>
+          <p>The job with ID {id} could not be found.</p>
+          <Button onClick={() => navigate("/recruiter/jobs")}>
+            Back to Jobs
+          </Button>
         </div>
       </div>
     );
@@ -566,13 +1123,60 @@ const RecruiterEditJob = () => {
 
   if (currentStep === 0) {
     return (
-      <div style={{ padding: "16px", maxWidth: "1200px", margin: "0 auto" }}>
-        <Steps current={currentStep} style={{ marginBottom: "24px" }}>
-          <Steps.Step title="Pipeline Configuration" />
-          <Steps.Step title="Application Form" />
+      <div
+        style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}
+      >
+        <Steps
+          current={currentStep}
+          style={{ marginBottom: "24px" }}
+          size="small"
+          responsive={false}
+        >
+          <Steps.Step
+            title={
+              <span style={{ fontSize: "12px" }}>Pipeline Configuration</span>
+            }
+            icon={<FormOutlined />}
+          />
+          <Steps.Step
+            title={<span style={{ fontSize: "12px" }}>Application Form</span>}
+            icon={<MobileOutlined />}
+          />
         </Steps>
 
-        <Card title="Edit Job - Pipeline Configuration">
+        <Card
+          title="Edit Job - Pipeline Configuration"
+          style={{ marginBottom: "24px" }}
+        >
+          <Alert
+            message="Job information is read-only. You can only modify pipeline and application form settings."
+            type="info"
+            showIcon
+            style={{ marginBottom: "16px" }}
+          />
+
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="Job Title">
+              {fetchedJobData?.title}
+            </Descriptions.Item>
+            <Descriptions.Item label="Project">
+              {fetchedJobData?.project?.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Description">
+              {fetchedJobData?.description || "No description"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Requirements">
+              {fetchedJobData?.jobRequirements || "No requirements"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Skills">
+              {fetchedJobData?.requiredSkills?.map((skill, i) => (
+                <Tag key={i}>{skill}</Tag>
+              ))}
+            </Descriptions.Item>
+          </Descriptions>
+
+          <Divider />
+
           <Form form={jobForm} layout="vertical">
             <Card
               type="inner"
@@ -589,9 +1193,10 @@ const RecruiterEditJob = () => {
                 <Select
                   mode="multiple"
                   placeholder="Select pipeline"
-                  onChange={setSelectedPipelines}
+                  onChange={handlePipelineChange}
+                  value={selectedPipelines}
                 >
-                  {jobDataFromProps.availablePipelines?.map((pipeline) => (
+                  {activePipelines.map((pipeline) => (
                     <Option key={pipeline._id} value={pipeline._id}>
                       {pipeline.name}
                     </Option>
@@ -599,42 +1204,14 @@ const RecruiterEditJob = () => {
                 </Select>
               </Form.Item>
 
-              <div style={{ marginTop: "16px" }}>
-                <Text strong>Selected Pipelines:</Text>
-                <div
-                  style={{
-                    marginTop: "8px",
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                  }}
-                >
-                  {selectedPipelines.map((pipelineId) => {
-                    const pipeline = jobDataFromProps.availablePipelines?.find(
-                      (p) => p._id === pipelineId
-                    );
-                    if (!pipeline) return null;
-
-                    return (
-                      <Tag
-                        key={pipelineId}
-                        color="blue"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => showPipelineDatesModal(pipelineId)}
-                      >
-                        {pipeline.name}
-                      </Tag>
-                    );
-                  })}
-                </div>
-              </div>
+              {selectedPipelines.length > 0 && renderSelectedPipelines()}
             </Card>
 
             <div style={{ textAlign: "right", marginTop: "16px" }}>
               <Space>
                 <Button onClick={handleCancel}>Cancel</Button>
                 <Button type="primary" onClick={handleNextStep}>
-                  Next <ArrowRightOutlined />
+                  Next Step <ArrowRightOutlined />
                 </Button>
               </Space>
             </div>
@@ -646,13 +1223,27 @@ const RecruiterEditJob = () => {
   }
 
   return (
-    <div style={{ padding: "16px", maxWidth: "1400px", margin: "0 auto" }}>
-      <Steps current={currentStep} style={{ marginBottom: "24px" }}>
-        <Steps.Step title="Pipeline Configuration" />
-        <Steps.Step title="Application Form" />
+    <div style={{ padding: "16px 8px", maxWidth: "1400px", margin: "0 auto" }}>
+      <Steps
+        current={currentStep}
+        style={{ marginBottom: "24px" }}
+        size="small"
+        responsive={false}
+      >
+        <Steps.Step
+          title={
+            <span style={{ fontSize: "12px" }}>Pipeline Configuration</span>
+          }
+          icon={<FormOutlined style={{ color: "#52c41a" }} />}
+        />
+        <Steps.Step
+          title={<span style={{ fontSize: "12px" }}>Application Form</span>}
+          icon={<MobileOutlined style={{ color: "#ff4d4f" }} />}
+        />
       </Steps>
 
       <Row gutter={[16, 16]}>
+        {/* Form Builder */}
         <Col xs={24} lg={14}>
           <Card
             title="Application Form Builder"
@@ -668,6 +1259,9 @@ const RecruiterEditJob = () => {
           >
             {applicationFields.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ color: "#999", marginBottom: "16px" }}>
+                  No application fields added yet
+                </div>
                 <Button
                   type="dashed"
                   icon={<PlusOutlined />}
@@ -677,45 +1271,168 @@ const RecruiterEditJob = () => {
                 </Button>
               </div>
             ) : (
-              <div>
-                {applicationFields.map((field, index) =>
-                  renderFieldBuilder(field, index)
-                )}
-              </div>
+              applicationFields.map((field, index) =>
+                renderFieldBuilder(field, index)
+              )
             )}
           </Card>
         </Col>
 
+        {/* Mobile Preview */}
         <Col xs={24} lg={10}>
-          <Card title="Preview">
-            <Tabs activeKey={previewTab} onChange={setPreviewTab}>
-              <TabPane tab="Job Overview" key="overview">
-                {renderJobPreview()}
-              </TabPane>
-              <TabPane tab="Application Form" key="apply">
-                {renderApplicationForm()}
-              </TabPane>
-            </Tabs>
+          <Card
+            title={
+              <span>
+                <EyeOutlined style={{ marginRight: "8px" }} />
+                Mobile Preview
+              </span>
+            }
+            style={{ position: "sticky", top: "20px" }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                height: "580px",
+                margin: "0 auto",
+                position: "relative",
+                background: "linear-gradient(145deg, #2c3e50 0%, #34495e 100%)",
+                borderRadius: "25px",
+                padding: "4px",
+                boxShadow:
+                  "0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1)",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "#000",
+                  borderRadius: "22px",
+                  padding: "2px",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Notch */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "8px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "120px",
+                    height: "20px",
+                    backgroundColor: "#000",
+                    borderRadius: "10px",
+                    zIndex: 10,
+                  }}
+                />
+
+                {/* Screen */}
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "#fff",
+                    borderRadius: "20px",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Status Bar */}
+                  <div
+                    style={{
+                      height: "28px",
+                      backgroundColor: "#f8f9fa",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0 16px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#333",
+                      borderBottom: "1px solid #e8e8e8",
+                    }}
+                  >
+                    <span>9:41</span>
+                    <span>●●●●●</span>
+                    <span>100%</span>
+                  </div>
+
+                  {/* Content Area */}
+                  <div
+                    style={{
+                      height: "calc(100% - 28px)",
+                      overflow: "auto",
+                      padding: "12px",
+                      backgroundColor: "#fff",
+                    }}
+                  >
+                    <Tabs
+                      activeKey={previewTab}
+                      onChange={setPreviewTab}
+                      size="small"
+                      style={{
+                        height: "100%",
+                        "& .ant-tabs-content-holder": {
+                          height: "calc(100% - 40px)",
+                          overflow: "auto",
+                        },
+                      }}
+                      tabBarStyle={{
+                        marginBottom: "8px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      <TabPane
+                        tab={<span style={{ fontSize: "11px" }}>Overview</span>}
+                        key="overview"
+                      >
+                        <div style={{ height: "100%", overflow: "auto" }}>
+                          {renderJobPreview()}
+                        </div>
+                      </TabPane>
+                      <TabPane
+                        tab={<span style={{ fontSize: "11px" }}>Apply</span>}
+                        key="apply"
+                      >
+                        <div style={{ height: "100%", overflow: "auto" }}>
+                          {renderApplicationForm()}
+                        </div>
+                      </TabPane>
+                    </Tabs>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Card>
         </Col>
       </Row>
 
-      <div style={{ marginTop: "24px", textAlign: "right" }}>
-        <Space>
+      {/* Action Buttons */}
+      <Card style={{ marginTop: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
           <Button icon={<ArrowLeftOutlined />} onClick={handlePreviousStep}>
-            Back
+            Previous Step
           </Button>
-          <Button onClick={handleCancel}>Cancel</Button>
-          <Button
-            type="primary"
-            onClick={handleSubmit}
-            loading={loading}
-            icon={<CheckCircleOutlined />}
-          >
-            Save Changes
-          </Button>
-        </Space>
-      </div>
+
+          <Space wrap>
+            <Button onClick={handleCancel}>Cancel</Button>
+            <Button type="primary" onClick={handleSubmit} loading={loading}>
+              Save Changes
+            </Button>
+          </Space>
+        </div>
+      </Card>
     </div>
   );
 };

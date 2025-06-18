@@ -16,6 +16,9 @@ export const recruiterApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    getPipelines: builder.query({
+      query: () => "/Pipeline",
+    }),
     getRecruiterJobs: builder.query({
       query: () => ({
         url: "/recruiter",
@@ -36,6 +39,7 @@ export const recruiterApi = createApi({
 });
 
 export const {
+  useGetPipelinesQuery,
   useGetRecruiterJobsQuery,
   useUpdateRecruiterJobMutation,
   useGetRecruiterJobIdQuery,
