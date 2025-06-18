@@ -2026,10 +2026,33 @@ const EditWorkOrder = () => {
                 Add Field
               </Button>
             }
+            style={{
+              height: "680px", 
+              display: "flex",
+              flexDirection: "column",
+            }}
+            bodyStyle={{
+              flex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              padding: "16px",
+            }}
           >
             {applicationFields.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                <div style={{ color: "#999", marginBottom: "16px" }}>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  textAlign: "center",
+                  color: "#999",
+                  padding: "20px",
+                }}
+              >
+                <div style={{ marginBottom: "16px" }}>
                   No application fields added yet
                 </div>
                 <Button
@@ -2041,9 +2064,17 @@ const EditWorkOrder = () => {
                 </Button>
               </div>
             ) : (
-              applicationFields.map((field, index) =>
-                renderFieldBuilder(field, index)
-              )
+              <div
+                style={{
+                  overflowY: "auto",
+                  flex: 1,
+                  paddingRight: "8px", // Prevent scrollbar overlap
+                }}
+              >
+                {applicationFields.map((field, index) =>
+                  renderFieldBuilder(field, index)
+                )}
+              </div>
             )}
           </Card>
         </Col>

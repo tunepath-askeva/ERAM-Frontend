@@ -1783,34 +1783,61 @@ const AddWorkOrder = () => {
                 onClick={addApplicationField}
                 style={{
                   background:
-                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  border: "none",
                 }}
               >
                 Add Field
               </Button>
             }
-            style={{ marginBottom: "16px" }}
+            style={{
+              height: "680px", // Match mobile preview height
+              display: "flex",
+              flexDirection: "column",
+              marginBottom: "16px",
+            }}
+            bodyStyle={{
+              flex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              padding: "16px",
+            }}
           >
             {applicationFields.length > 0 ? (
-              applicationFields.map((field, index) =>
-                renderFieldBuilder(field, index)
-              )
+              <div
+                style={{
+                  overflowY: "auto",
+                  flex: 1,
+                  paddingRight: "8px", // Prevent scrollbar overlap
+                }}
+              >
+                {applicationFields.map((field, index) =>
+                  renderFieldBuilder(field, index)
+                )}
+              </div>
             ) : (
               <div
                 style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
                   textAlign: "center",
                   color: "#999",
-                  padding: "40px 16px",
+                  padding: "16px",
                 }}
               >
-                <p>No fields added yet</p>
+                <p style={{ marginBottom: "16px" }}>No fields added yet</p>
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={addApplicationField}
                   style={{
                     background:
-                      "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                      "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    border: "none",
                   }}
                 >
                   Add First Field

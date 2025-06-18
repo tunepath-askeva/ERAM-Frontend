@@ -1506,7 +1506,7 @@ const RecruiterEditJob = () => {
                     },
                   ]}
                 >
-                  <Input placeholder="e.g. Senior Software Engineer" />
+                  <Input placeholder="e.g. Senior Software Engineer" disabled />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -1520,7 +1520,7 @@ const RecruiterEditJob = () => {
                     },
                   ]}
                 >
-                  <Input placeholder="e.g. AWINC-1-1112" />
+                  <Input placeholder="e.g. AWINC-1-1112" disabled />
                 </Form.Item>
               </Col>
             </Row>
@@ -1636,12 +1636,12 @@ const RecruiterEditJob = () => {
                   ]}
                 >
                   <Select placeholder="Select education level">
-                    <Option value="High School">High School</Option>
-                    <Option value="Associate Degree">Associate Degree</Option>
-                    <Option value="Bachelor's Degree">Bachelor's Degree</Option>
-                    <Option value="Master's Degree">Master's Degree</Option>
-                    <Option value="PhD">PhD</Option>
-                    <Option value="None">None</Option>
+                    <Option value="high-school">High School</Option>
+                    <Option value="associate">Associate Degree</Option>
+                    <Option value="bachelor">Bachelor's Degree</Option>
+                    <Option value="masters">Master's Degree</Option>
+                    <Option value="phd">PhD</Option>
+                    <Option value="none">None</Option>
                   </Select>
                 </Form.Item>
               </Col>
@@ -1806,7 +1806,7 @@ const RecruiterEditJob = () => {
                     },
                   ]}
                 >
-                  <DatePicker style={{ width: "100%" }} />
+                  <DatePicker style={{ width: "100%" }} disabled />
                 </Form.Item>
               </Col>
             </Row>
@@ -1926,7 +1926,6 @@ const RecruiterEditJob = () => {
       </Steps>
 
       <Row gutter={[16, 16]}>
-        {/* Form Builder */}
         <Col xs={24} lg={14}>
           <Card
             title="Application Form Builder"
@@ -1944,9 +1943,30 @@ const RecruiterEditJob = () => {
                 Add Field
               </Button>
             }
+            style={{
+              height: "680px", 
+              display: "flex",
+              flexDirection: "column",
+            }}
+            bodyStyle={{
+              flex: 1,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
             {applicationFields.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
                 <div style={{ color: "#999", marginBottom: "16px" }}>
                   No application fields added yet
                 </div>
@@ -1959,9 +1979,17 @@ const RecruiterEditJob = () => {
                 </Button>
               </div>
             ) : (
-              applicationFields.map((field, index) =>
-                renderFieldBuilder(field, index)
-              )
+              <div
+                style={{
+                  overflowY: "auto",
+                  flex: 1,
+                  paddingRight: "8px", 
+                }}
+              >
+                {applicationFields.map((field, index) =>
+                  renderFieldBuilder(field, index)
+                )}
+              </div>
             )}
           </Card>
         </Col>
