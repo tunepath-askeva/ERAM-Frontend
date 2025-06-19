@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
-import { useGetWorkOrderByIdQuery } from "../../Slices/Admin/AdminApis.js";
+import { useGetRecruiterJobIdQuery } from "../../Slices/Recruiter/RecruiterApis";
+import AppliedCandidates from "./AppliedCandidates";
 import {
   Card,
   Spin,
@@ -23,9 +24,9 @@ const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-const ViewWorkOrder = () => {
+const RecruiterViewJob = () => {
   const { id } = useParams();
-  const { data, error, isLoading } = useGetWorkOrderByIdQuery(id);
+  const { data, error, isLoading } = useGetRecruiterJobIdQuery(id);
 
   if (isLoading) {
     return (
@@ -57,7 +58,6 @@ const ViewWorkOrder = () => {
       <div
         style={{
           padding: "16px",
-
           borderRadius: "8px",
           marginBottom: "16px",
         }}
@@ -185,6 +185,50 @@ const ViewWorkOrder = () => {
           </div>
         )}
 
+        {/* Dates Section */}
+        <Row gutter={[12, 8]} style={{ marginBottom: "16px" }}>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Start Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.startDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                End Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.endDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Deadline
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.deadlineDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={6}>
+            <div>
+              <Text strong style={{ fontSize: "12px", display: "block" }}>
+                Alert Date
+              </Text>
+              <Text style={{ fontSize: "11px" }}>
+                {new Date(workOrder.alertDate).toLocaleDateString()}
+              </Text>
+            </div>
+          </Col>
+        </Row>
+
         <div style={{ marginBottom: "16px" }}>
           <Text
             strong
@@ -305,6 +349,7 @@ const ViewWorkOrder = () => {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {workOrder.benefits.map((benefit, index) => (
                 <Paragraph
+                  key={index}
                   style={{
                     whiteSpace: "pre-wrap",
                     margin: "0",
@@ -322,50 +367,6 @@ const ViewWorkOrder = () => {
             </div>
           </div>
         )}
-
-        {/* Dates Section */}
-        <Row gutter={[12, 8]} style={{ marginTop: "16px" }}>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Start Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.startDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                End Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.endDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Deadline
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.deadlineDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-          <Col xs={12} sm={6}>
-            <div>
-              <Text strong style={{ fontSize: "12px", display: "block" }}>
-                Alert Date
-              </Text>
-              <Text style={{ fontSize: "11px" }}>
-                {new Date(workOrder.alertDate).toLocaleDateString()}
-              </Text>
-            </div>
-          </Col>
-        </Row>
       </div>
     </div>
   );
@@ -453,7 +454,7 @@ const ViewWorkOrder = () => {
               label={
                 <span style={{ fontSize: "12px", fontWeight: "500" }}>
                   {field.label}
-                  {field.required && <span style={{ color: "red" }}> *</span>}
+                  {field.required && <span style={{ color: "red" }}></span>}
                 </span>
               }
               required={field.required}
@@ -587,7 +588,7 @@ const ViewWorkOrder = () => {
             level={4}
             style={{ margin: "0", fontSize: "16px", color: " #da2c46" }}
           >
-            Work Order Details
+            Job Details - {workOrder.title}
           </Title>
         </div>
 
@@ -599,27 +600,58 @@ const ViewWorkOrder = () => {
             style={{
               "& .ant-tabs-content-holder": {
                 padding: "8px 0",
-                
               },
             }}
           >
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Overview</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Overview
+                </span>
+              }
               key="overview"
             >
               {renderJobOverview()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Application Form</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Application Form
+                </span>
+              }
               key="application"
             >
               {renderApplicationForm()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Pipeline Stages</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Pipeline Stages
+                </span>
+              }
               key="pipeline"
             >
               {renderPipelineStages()}
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Applied Candidates
+                </span>
+              }
+              key="candidates"
+            >
+              <AppliedCandidates jobId={id} candidateType="applied" />
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Declined Candidates
+                </span>
+              }
+              key="declined"
+            >
+              <AppliedCandidates jobId={id} candidateType="declined" />
             </TabPane>
           </Tabs>
         </div>
@@ -628,4 +660,4 @@ const ViewWorkOrder = () => {
   );
 };
 
-export default ViewWorkOrder;
+export default RecruiterViewJob;

@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const baseUrl = window.location.hostname === "localhost"
-  ? "http://localhost:5000/api/admin"
-  : "https://eram-backend-2gvv.onrender.com/api/admin";
+const baseUrl =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000/api/admin"
+    : "https://eram-backend-2gvv.onrender.com/api/admin";
 
 export const adminApi = createApi({
   reducerPath: "adminApi",
@@ -48,6 +49,12 @@ export const adminApi = createApi({
         method: "PATCH",
       }),
       invalidatesTags: ["Pipeline"],
+    }),
+    copyPipeline: builder.mutation({
+      query: (pipelineId) => ({
+        url: `/pipeline/copy/${pipelineId}`,
+        method: "POST",
+      }),
     }),
 
     editStage: builder.mutation({
@@ -245,6 +252,7 @@ export const {
   useEditPipelineMutation,
   useGetPipelineByIdQuery,
   useDisablePipelineMutation,
+  useCopyPipelineMutation,
   //pipeline stages
   useEditStageMutation,
   useDeleteStageMutation,
@@ -284,5 +292,5 @@ export const {
   useDeleteCandidateMutation,
   useGetCandidateByIdQuery,
   useEditCandidateMutation,
-  useDisableCandidateStatusMutation
+  useDisableCandidateStatusMutation,
 } = adminApi;

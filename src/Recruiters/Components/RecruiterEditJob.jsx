@@ -3,9 +3,6 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
-  InputNumber,
-  Switch,
   Button,
   Card,
   Row,
@@ -21,31 +18,27 @@ import {
   Spin,
   Modal,
   Skeleton,
+  DatePicker,
+  InputNumber,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
   MinusCircleOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  DeleteOutlined,
   EyeOutlined,
   FormOutlined,
   MobileOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  LoadingOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import CreatePipelineModal from "./CreatePipelineModal.jsx";
-
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  useGetRecruitersQuery,
+  useUpdateRecruiterJobMutation,
+  useGetRecruiterJobIdQuery,
   useGetPipelinesQuery,
-  useGetProjectsQuery,
-  useEditWorkOrderMutation,
-  useGetAdminBranchQuery,
-  useGetWorkOrderByIdQuery,
-} from "../../Slices/Admin/AdminApis.js";
-import { useNavigate, useParams } from "react-router-dom";
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -64,13 +57,13 @@ const fieldTypes = [
   { value: "file", label: "File Upload" },
 ];
 
-const EditWorkOrder = () => {
+const RecruiterEditJob = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [jobForm] = Form.useForm();
   const [applicationForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
   const [jobData, setJobData] = useState(null);
   const [applicationFields, setApplicationFields] = useState([]);
   const [previewTab, setPreviewTab] = useState("overview");
@@ -79,46 +72,23 @@ const EditWorkOrder = () => {
     useState(false);
   const [currentPipelineForDates, setCurrentPipelineForDates] = useState(null);
   const [pipelineStageDates, setPipelineStageDates] = useState({});
-  const [pipelineModalVisible, setPipelineModalVisible] = useState(false);
-  const [editingPipeline, setEditingPipeline] = useState(null);
   const [customStages, setCustomStages] = useState({});
   const [draggedStage, setDraggedStage] = useState(null);
   const [stageApprovers, setStageApprovers] = useState({});
-  const navigate = useNavigate();
 
-  const { data: Branch } = useGetAdminBranchQuery();
-  const { data: recruiters } = useGetRecruitersQuery();
-  const { data: projects } = useGetProjectsQuery();
-  const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery();
   const {
-    data: workOrderData,
-    isLoading: isLoadingWorkOrder,
+    data: fetchedJobData,
+    isLoading,
     error,
     refetch,
-  } = useGetWorkOrderByIdQuery(id, {
-    skip: !id,
-  });
-  const [editWorkOrder] = useEditWorkOrderMutation();
+  } = useGetRecruiterJobIdQuery(id);
+  const { data: pipelineData } = useGetPipelinesQuery();
+  const [updateJob] = useUpdateRecruiterJobMutation();
 
-  const branchId = Branch?.branch?._id;
-
-  const activeRecruiters =
-    recruiters?.recruiters?.filter(
-      (recruiter) => recruiter.accountStatus === "active"
-    ) || [];
-
-  const activePipelines =
-    pipeline?.allPipelines?.filter(
-      (pipeline) => pipeline.pipelineStatus === "active"
-    ) || [];
-
-  const activeProjects =
-    projects?.allProjects?.filter((project) => project.status === "active") ||
-    [];
+  const activePipelines = pipelineData?.pipelines || [];
 
   useEffect(() => {
-    if (workOrderData?.workOrder) {
-      const workOrder = workOrderData?.workOrder;
+    if (fetchedJobData?.workOrder) {
       try {
         const formatDate = (dateString) => {
           if (!dateString) return null;
@@ -130,79 +100,66 @@ const EditWorkOrder = () => {
           }
         };
 
-        const initialCustomStages = {};
-        const initialStageDates = {};
-        const initialStageApprovers = {};
+        const job = fetchedJobData.workOrder;
 
-        if (workOrder.pipelineStageTimeline) {
-          workOrder.pipelineStageTimeline.forEach((timeline) => {
-            if (!initialStageDates[timeline.pipelineId]) {
-              initialStageDates[timeline.pipelineId] = [];
+        // Initialize pipeline stage dates
+        const initialStageDates = {};
+        if (job.pipelineStageTimeline) {
+          job.pipelineStageTimeline.forEach((timeline) => {
+            const pipelineId = job.pipeline[0]?._id;
+
+            if (!initialStageDates[pipelineId]) {
+              initialStageDates[pipelineId] = [];
             }
 
-            initialStageDates[timeline.pipelineId].push({
+            initialStageDates[pipelineId].push({
               stageId: timeline.stageId,
               startDate: timeline.startDate,
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
             });
-
-            if (timeline.stageId.startsWith("temp-")) {
-              if (!initialCustomStages[timeline.pipelineId]) {
-                initialCustomStages[timeline.pipelineId] = [];
-              }
-
-              if (
-                !initialCustomStages[timeline.pipelineId].some(
-                  (s) => s.id === timeline.stageId
-                )
-              ) {
-                initialCustomStages[timeline.pipelineId].push({
-                  id: timeline.stageId,
-                  name: timeline.stageName,
-                  description: "",
-                  isCustom: true,
-                });
-              }
-            }
           });
         }
 
-        setCustomStages(initialCustomStages);
         setPipelineStageDates(initialStageDates);
-        setSelectedPipelines(workOrder.pipeline.map((p) => p._id));
 
+        // Set selected pipelines
+        const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
+        setSelectedPipelines(selectedPipeIds);
+
+        // Prepare form data
         const formData = {
-          ...workOrder,
-          numberOfCandidates: workOrder.numberOfCandidate,
-          startDate: formatDate(workOrder.startDate),
-          endDate: formatDate(workOrder.endDate),
-          deadlineDate: formatDate(workOrder.deadlineDate),
-          alertDate: formatDate(workOrder.alertDate),
-          assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
-            ? workOrder.assignedRecruiters.map((recruiter) =>
-                typeof recruiter === "object" ? recruiter._id : recruiter
-              )
-            : [workOrder.assignedRecruiters],
-          pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline],
-          project:
-            typeof workOrder.project === "object"
-              ? workOrder.project._id
-              : workOrder.project,
-          requiredSkills: Array.isArray(workOrder.requiredSkills)
-            ? workOrder.requiredSkills
-            : [],
-          isCommon: workOrder.isCommon || false,
-          isActive: workOrder.isActive === "active",
+          title: job.title,
+          jobCode: job.jobCode,
+          workplace: job.workplace,
+          officeLocation: job.officeLocation,
+          description: job.description,
+          jobFunction: job.jobFunction,
+          companyIndustry: job.companyIndustry,
+          EmploymentType: job.EmploymentType,
+          Experience: job.Experience,
+          Education: job.Education,
+          salaryType: job.salaryType,
+          annualSalary: job.annualSalary,
+          startDate: formatDate(job.startDate),
+          endDate: formatDate(job.endDate),
+          deadlineDate: formatDate(job.deadlineDate),
+          alertDate: formatDate(job.alertDate),
+          requiredSkills: job.requiredSkills || [],
+          jobRequirements: job.jobRequirements,
+          numberOfCandidate: job.numberOfCandidate,
+          benefits: job.benefits || [],
+          languagesRequired: job.languagesRequired || [],
+          pipeline: selectedPipeIds,
+          isActive: job.isActive === "active",
         };
 
         jobForm.setFieldsValue(formData);
-        setSelectedProject(formData.project);
         setJobData(formData);
+
+        // Initialize custom fields
         setApplicationFields(
-          workOrder.customFields?.map((field) => ({
+          job.customFields?.map((field) => ({
             ...field,
             id:
               field.id ||
@@ -211,28 +168,10 @@ const EditWorkOrder = () => {
         );
       } catch (error) {
         console.error("Error initializing form:", error);
-        message.error("Error loading work order data");
+        message.error("Error loading job data");
       }
     }
-  }, [workOrderData, jobForm]);
-
-  useEffect(() => {
-    if (id && refetch) {
-      refetch();
-    }
-  }, [id, refetch]);
-
-  const handleProjectChange = (projectId) => {
-    setSelectedProject(projectId);
-    const project = projects?.allProjects?.find((p) => p._id === projectId);
-    if (project && project.prefix) {
-      const currentJobCode = jobForm.getFieldValue("jobCode") || "";
-      const codeWithoutPrefix = currentJobCode.replace(/^[A-Z]+-/, "");
-      jobForm.setFieldsValue({
-        jobCode: `${project.prefix}-${codeWithoutPrefix}`,
-      });
-    }
-  };
+  }, [fetchedJobData, jobForm]);
 
   const handleNextStep = () => {
     jobForm
@@ -244,7 +183,6 @@ const EditWorkOrder = () => {
           endDate: values.endDate?.format("YYYY-MM-DD"),
           deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
           alertDate: values.alertDate?.format("YYYY-MM-DD"),
-          branch: branchId,
         };
         setJobData(formattedData);
         setCurrentStep(1);
@@ -293,14 +231,15 @@ const EditWorkOrder = () => {
       if (!pipelineStageDates[pipelineId]) {
         const initialDates = [];
 
-        if (workOrderData?.workOrder?.pipelineStageTimeline) {
-          workOrderData.workOrder.pipelineStageTimeline
+        if (fetchedJobData?.pipelineStageTimeline) {
+          fetchedJobData.pipelineStageTimeline
             .filter((t) => t.pipelineId === pipelineId)
             .forEach((timeline) => {
               initialDates.push({
                 stageId: timeline.stageId,
                 startDate: timeline.startDate,
                 endDate: timeline.endDate,
+                dependencyType: timeline.dependencyType || "independent",
               });
             });
         }
@@ -311,6 +250,7 @@ const EditWorkOrder = () => {
               stageId: stage._id,
               startDate: null,
               endDate: null,
+              dependencyType: "independent",
             });
           }
         });
@@ -322,6 +262,7 @@ const EditWorkOrder = () => {
                 stageId: customStage.id,
                 startDate: null,
                 endDate: null,
+                dependencyType: "independent",
               });
             }
           });
@@ -569,9 +510,10 @@ const EditWorkOrder = () => {
       const values = jobForm.getFieldsValue();
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
+        const pipeline = activePipelines.find((p) => p._id === pipeId);
         const stages = [
           ...(customStages[pipeId] || []),
-          ...(activePipelines.find((p) => p._id === pipeId)?.stages || []),
+          ...(pipeline?.stages || []),
         ];
 
         return (
@@ -591,28 +533,29 @@ const EditWorkOrder = () => {
         );
       });
 
-      const workOrderPayload = {
+      const updatePayload = {
         ...jobData,
         ...values,
         customFields: applicationFields,
-        workOrderStatus: "published",
         pipelineStageTimeline,
         stageApprovers,
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
         alertDate: values.alertDate?.format("YYYY-MM-DD"),
-        isActive: "active",
-        numberOfCandidate: values.numberOfCandidates,
+        isActive: values.isActive ? "active" : "inactive",
       };
 
-      const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
-      message.success(`Work order updated and published successfully!`);
-      navigate("/admin/workorder");
+      const result = await updateJob({
+        id: id,
+        ...updatePayload,
+      }).unwrap();
+      message.success("Job updated successfully!");
+      navigate("/recruiter/jobs");
     } catch (error) {
-      console.error("Error updating work order:", error);
+      console.error("Error updating job:", error);
       message.error(
-        error?.data?.message || "Failed to update work order. Please try again."
+        error?.data?.message || "Failed to update job. Please try again."
       );
     } finally {
       setLoading(false);
@@ -620,7 +563,7 @@ const EditWorkOrder = () => {
   };
 
   const handleCancel = () => {
-    navigate("/admin/workorder");
+    navigate("/recruiter/jobs");
   };
 
   const renderJobPreview = () => {
@@ -1195,13 +1138,6 @@ const EditWorkOrder = () => {
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
-          // <Button
-          //   key="add"
-          //   icon={<PlusOutlined />}
-          //   onClick={() => addCustomStage(currentPipelineForDates._id)}
-          // >
-          //   Add Stage
-          // </Button>,
           <Button
             key="back"
             onClick={() => setPipelineDatesModalVisible(false)}
@@ -1269,9 +1205,9 @@ const EditWorkOrder = () => {
                         Custom
                       </Tag>
                     )}
-                    {stage.dependencyType && (
+                    {dateEntry?.dependencyType && (
                       <Tag color="green" size="small">
-                        {stage.dependencyType}
+                        {dateEntry.dependencyType}
                       </Tag>
                     )}
                   </div>
@@ -1303,13 +1239,12 @@ const EditWorkOrder = () => {
                 marginBottom: 16,
                 cursor: stage.isCustom ? "move" : "default",
               }}
-              draggable={true} // Enable for all stages
+              draggable={true}
               onDragStart={(e) => handleDragStart(e, stage)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage, currentPipelineForDates._id)}
             >
               <Row gutter={[16, 16]} align="bottom">
-                {/* Date Section */}
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Start Date"
@@ -1389,9 +1324,6 @@ const EditWorkOrder = () => {
                     wrapperCol={{ span: 24 }}
                   >
                     <Select
-                      placeholder="Select dependency type"
-                      style={{ width: "100%" }}
-                      size="small"
                       value={dateEntry?.dependencyType || "independent"}
                       onChange={(value) =>
                         handleDependencyTypeChange(
@@ -1400,10 +1332,12 @@ const EditWorkOrder = () => {
                           value
                         )
                       }
+                      style={{ width: "100%" }}
+                      size="small"
                     >
-                      {dependencyTypes.map((level) => (
-                        <Option key={level.id} value={level.id}>
-                          {level.name}
+                      {dependencyTypes.map((type) => (
+                        <Option key={type.id} value={type.id}>
+                          {type.name}
                         </Option>
                       ))}
                     </Select>
@@ -1413,31 +1347,14 @@ const EditWorkOrder = () => {
             </Card>
           );
         })}
-
-        {/* Global Actions */}
-        <Card
-          style={{
-            marginTop: "16px",
-            backgroundColor: "#fafafa",
-            border: "1px dashed #d9d9d9",
-          }}
+        <Button
+          type="dashed"
+          onClick={() => addCustomStage(currentPipelineForDates._id)}
+          icon={<PlusOutlined />}
+          style={{ width: "100%" }}
         >
-          <div style={{ textAlign: "center" }}>
-            <h4 style={{ color: "#666", marginBottom: "12px" }}>
-              Quick Configuration
-            </h4>
-            <Space wrap>
-              <Button
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() => addCustomStage(currentPipelineForDates._id)}
-                type="dashed"
-              >
-                Add Custom Stage
-              </Button>
-            </Space>
-          </div>
-        </Card>
+          Add Custom Stage
+        </Button>
       </Modal>
     );
   };
@@ -1454,7 +1371,7 @@ const EditWorkOrder = () => {
             pipelineStageDates[pipelineId]?.some(
               (stage) => stage.startDate || stage.endDate
             ) ||
-            workOrderData?.workOrder?.pipelineStageTimeline?.some(
+            fetchedJobData?.workOrder?.pipelineStageTimeline?.some(
               (timeline) => timeline.pipelineId === pipelineId
             );
 
@@ -1482,8 +1399,7 @@ const EditWorkOrder = () => {
     </div>
   );
 
-  // Loading state
-  if (isLoadingWorkOrder) {
+  if (isLoading) {
     return (
       <div
         style={{
@@ -1493,14 +1409,12 @@ const EditWorkOrder = () => {
           height: "400px",
         }}
       >
-        <Skeleton />={" "}
+        <Skeleton active paragraph={{ rows: 8 }} />
       </div>
     );
   }
 
-  // Error state
   if (error) {
-    console.error("Work order fetch error:", error);
     return (
       <div
         style={{
@@ -1512,16 +1426,16 @@ const EditWorkOrder = () => {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <h3>Error Loading Work Order</h3>
+          <h3>Error Loading Job</h3>
           <p>
             {error?.data?.message ||
               error?.message ||
-              "Failed to load work order data"}
+              "Failed to load job data"}
           </p>
           <Space>
             <Button onClick={() => refetch()}>Retry</Button>
-            <Button onClick={() => navigate("/admin/workorder")}>
-              Back to Work Orders
+            <Button onClick={() => navigate("/recruiter/jobs")}>
+              Back to Jobs
             </Button>
           </Space>
         </div>
@@ -1529,8 +1443,7 @@ const EditWorkOrder = () => {
     );
   }
 
-  // No data state
-  if (!isLoadingWorkOrder && !workOrderData?.workOrder) {
+  if (!isLoading && !fetchedJobData?.workOrder) {
     return (
       <div
         style={{
@@ -1542,10 +1455,10 @@ const EditWorkOrder = () => {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <h3>Work Order Not Found</h3>
-          <p>The work order with ID {id} could not be found.</p>
-          <Button onClick={() => navigate("/admin/workorder")}>
-            Back to Work Orders
+          <h3>Job Not Found</h3>
+          <p>The job with ID {id} could not be found.</p>
+          <Button onClick={() => navigate("/recruiter/jobs")}>
+            Back to Jobs
           </Button>
         </div>
       </div>
@@ -1573,384 +1486,397 @@ const EditWorkOrder = () => {
           />
         </Steps>
 
-        <Card
-          title="Edit Work Order - Job Details"
-          style={{ marginBottom: "24px" }}
-        >
+        <Card title="Edit Job - Job Details" style={{ marginBottom: "24px" }}>
           <Form
             form={jobForm}
             layout="vertical"
             initialValues={{
-              isCommon: false,
+              isActive: true,
             }}
           >
-            {/* Job Title and Project Assignment */}
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="title"
+                  label="Job Title"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job title",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Senior Software Engineer" disabled />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="jobCode"
+                  label="Job Code"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job code",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. AWINC-1-1112" disabled />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="EmploymentType"
+                  label="Employment Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select employment type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select employment type">
+                    <Option value="full-time">Full-time</Option>
+                    <Option value="part-time">Part-time</Option>
+                    <Option value="contract">Contract</Option>
+                    <Option value="internship">Internship</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="workplace"
+                  label="Workplace Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select workplace type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select workplace type">
+                    <Option value="remote">Remote</Option>
+                    <Option value="hybrid">Hybrid</Option>
+                    <Option value="on-site">On-site</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="officeLocation" label="Office Location">
+                  <Input placeholder="e.g. San Francisco, CA" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="jobFunction"
+                  label="Job Function"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter job function",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Software Development" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="companyIndustry"
+                  label="Company Industry"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter company industry",
+                    },
+                  ]}
+                >
+                  <Input placeholder="e.g. Information Technology" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="Experience"
+                  label="Required Experience (years)"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter required experience",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={50}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 5"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="Education"
+                  label="Required Education"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select education level",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select education level">
+                    <Option value="high-school">High School</Option>
+                    <Option value="associate">Associate Degree</Option>
+                    <Option value="bachelor">Bachelor's Degree</Option>
+                    <Option value="masters">Master's Degree</Option>
+                    <Option value="phd">PhD</Option>
+                    <Option value="none">None</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="salaryType"
+                  label="Salary Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select salary type",
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select salary type">
+                    <Option value="annual">Annual</Option>
+                    <Option value="monthly">Monthly</Option>
+                    <Option value="hourly">Hourly</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="annualSalary"
+                  label="Salary Amount"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter salary amount",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 80000"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="numberOfCandidate"
+                  label="Number of Candidates Needed"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter number of candidates",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={1}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 5"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="description"
+              label="Job Description"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter job description",
+                },
+              ]}
+            >
+              <TextArea rows={6} placeholder="Enter detailed job description" />
+            </Form.Item>
+
+            <Form.Item
+              name="requiredSkills"
+              label="Required Skills"
+              rules={[
+                {
+                  required: true,
+                  message: "Please add at least one skill",
+                },
+              ]}
+            >
+              <Select
+                mode="tags"
+                placeholder="Add skills (type and press enter)"
+                tokenSeparators={[","]}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="jobRequirements"
+              label="Additional Requirements"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter job requirements",
+                },
+              ]}
+            >
+              <TextArea
+                rows={4}
+                placeholder="Enter any additional requirements"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="benefits"
+              label="Benefits"
+              rules={[
+                {
+                  required: true,
+                  message: "Please add at least one benefit",
+                },
+              ]}
+            >
+              <TextArea
+                rows={4}
+                placeholder="Add benefits (type and press enter)"
+              />
+            </Form.Item>
+
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="startDate"
+                  label="Start Date"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select start date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="endDate"
+                  label="End Date"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select end date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  name="deadlineDate"
+                  label="Application Deadline"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select deadline date",
+                    },
+                  ]}
+                >
+                  <DatePicker style={{ width: "100%" }} disabled />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="alertDate"
+              label="Alert Date (optional)"
+              help="Set a date to receive reminders about this job posting"
+            >
+              <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+
             <Card
               type="inner"
-              title="Job Information & Project Assignment"
+              title="Hiring Pipeline"
               style={{ marginBottom: "16px" }}
             >
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="title"
-                    label="Job Title"
-                    rules={[
-                      { required: true, message: "Please enter job title" },
-                    ]}
-                  >
-                    <Input placeholder="Enter job title" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="project"
-                    label="Assign Project"
-                    rules={[
-                      { required: true, message: "Please select a project" },
-                    ]}
-                  >
-                    <Select
-                      placeholder="Select project"
-                      onChange={handleProjectChange}
-                    >
-                      {projects?.allProjects?.map((project) => (
-                        <Option key={project._id} value={project._id}>
-                          {project.name}{" "}
-                          {project.prefix && `(${project.prefix})`}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="jobCode"
-                    label="Job Code"
-                    rules={[
-                      { required: true, message: "Please enter job code" },
-                    ]}
-                  >
-                    <Input placeholder="Enter job code" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Assignment & Pipeline */}
-            <Card
-              type="inner"
-              title="Assignment & Pipeline"
-              style={{ marginBottom: "16px" }}
-            >
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12} lg={8}>
-                  <Form.Item
-                    name="pipeline"
-                    label="Pipeline"
-                    rules={[
-                      { required: true, message: "Please select a pipeline" },
-                    ]}
-                  >
-                    <Space.Compact style={{ width: "100%" }}>
-                      <Select
-                        mode="multiple"
-                        placeholder="Select pipeline"
-                        onChange={handlePipelineChange}
-                        style={{ width: "calc(100% - 120px)" }}
-                        value={selectedPipelines}
-                      >
-                        {activePipelines.map((pipeline) => (
-                          <Option key={pipeline._id} value={pipeline._id}>
-                            {pipeline.name}
-                          </Option>
-                        ))}
-                      </Select>
-                      <Button
-                        type="primary"
-                        onClick={() => {
-                          setEditingPipeline(null);
-                          setPipelineModalVisible(true);
-                        }}
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                          width: "120px",
-                        }}
-                      >
-                        + New Pipeline
-                      </Button>
-                    </Space.Compact>
-                  </Form.Item>
-
-                  {selectedPipelines.length > 0 && renderSelectedPipelines()}
-                </Col>
-                <Col xs={24} md={12} lg={8}>
-                  <Form.Item
-                    name="assignedRecruiters"
-                    label="Assigned Recruiters"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please assign at least one recruiter",
-                      },
-                    ]}
-                  >
-                    <Select
-                      mode="multiple"
-                      placeholder="Select recruiters"
-                      optionLabelProp="label"
-                    >
-                      {activeRecruiters?.map((recruiter) => (
-                        <Option
-                          key={recruiter._id}
-                          value={recruiter._id}
-                          label={recruiter.fullName}
-                        >
-                          {recruiter.fullName}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Basic Information */}
-            <Card
-              type="inner"
-              title="Basic Information"
-              style={{ marginBottom: "16px" }}
-            >
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="workplace"
-                    label="Workplace"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select workplace type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select workplace type">
-                      <Option value="remote">Remote</Option>
-                      <Option value="on-site">On-site</Option>
-                      <Option value="hybrid">Hybrid</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item name="officeLocation" label="Office Location">
-                    <Input placeholder="Enter office location" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
               <Form.Item
-                name="description"
-                label="Job Description"
+                name="pipeline"
+                label="Pipeline"
                 rules={[
-                  { required: true, message: "Please enter job description" },
+                  { required: true, message: "Please select a pipeline" },
                 ]}
-              >
-                <TextArea
-                  rows={4}
-                  placeholder="Enter detailed job description"
-                />
-              </Form.Item>
-            </Card>
-
-            {/* Job Details */}
-            <Card
-              type="inner"
-              title="Job Details"
-              style={{ marginBottom: "16px" }}
-            >
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    name="jobFunction"
-                    label="Job Function"
-                    rules={[
-                      { required: true, message: "Please enter job function" },
-                    ]}
-                  >
-                    <Input placeholder="e.g., Software Development" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="companyIndustry" label="Company Industry">
-                    <Input placeholder="e.g., Technology" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    name="EmploymentType"
-                    label="Employment Type"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select employment type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select employment type">
-                      <Option value="full-time">Full-time</Option>
-                      <Option value="part-time">Part-time</Option>
-                      <Option value="contract">Contract</Option>
-                      <Option value="internship">Internship</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    name="Experience"
-                    label="Required Experience (years)"
-                  >
-                    <InputNumber
-                      min={0}
-                      max={50}
-                      placeholder="Years of experience"
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="Education" label="Education Requirement">
-                    <Select placeholder="Select education level">
-                      <Option value="high-school">High School</Option>
-                      <Option value="associate">Associate Degree</Option>
-                      <Option value="bachelor">Bachelor's Degree</Option>
-                      <Option value="master">Master's Degree</Option>
-                      <Option value="phd">PhD</Option>
-                      <Option value="none">None</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="annualSalary" label="Salary ($)">
-                    <InputNumber
-                      min={0}
-                      formatter={(value) =>
-                        `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    name="salaryType"
-                    label="Salary Type"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select salary type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select salary type">
-                      <Option value="annual">Annual</Option>
-                      <Option value="monthly">Monthly</Option>
-                      <Option value="weekly">Weekly</Option>
-                      <Option value="hourly">Hourly</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    name="numberOfCandidates"
-                    label="Candidates Required"
-                  >
-                    <InputNumber
-                      min={0}
-                      max={50}
-                      placeholder="No of Candidates Required"
-                      style={{ width: "100%" }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="isActive"
-                    label="Common Work Order"
-                    valuePropName="checked"
-                  >
-                    <Switch
-                      checked={workOrderData?.workOrder?.isActive === "active"}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Skills & Requirements */}
-            <Card
-              type="inner"
-              title="Skills & Requirements"
-              style={{ marginBottom: "16px" }}
-            >
-              <Form.Item
-                name="requiredSkills"
-                label="Required Skills (comma separated)"
               >
                 <Select
-                  mode="tags"
-                  tokenSeparators={[","]}
-                  placeholder="e.g., JavaScript, React, Node.js"
-                />
+                  mode="multiple"
+                  placeholder="Select hiring pipelines"
+                  onChange={handlePipelineChange}
+                  value={selectedPipelines}
+                  optionFilterProp="label"
+                  showSearch
+                >
+                  {activePipelines.map((pipeline) => (
+                    <Option
+                      key={pipeline._id}
+                      value={pipeline._id}
+                      label={pipeline.name}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <span>{pipeline.name}</span>
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<FormOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showPipelineDatesModal(pipeline._id);
+                          }}
+                        />
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
 
-              <Form.Item
-                name="jobRequirements"
-                label="Job Requirements"
-                rules={[
-                  { required: true, message: "Please enter job requirements" },
-                ]}
-              >
-                <TextArea
-                  rows={4}
-                  placeholder="Enter detailed job requirements"
-                />
-              </Form.Item>
-
-              <Form.Item name="benefits" label="Benefits">
-                <TextArea rows={4} placeholder="Enter job benefits" />
-              </Form.Item>
+              {selectedPipelines.length > 0 && renderSelectedPipelines()}
             </Card>
+
+            <Form.Item
+              name="isActive"
+              label="Job Status"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+            </Form.Item>
 
             <div
               style={{
@@ -1977,14 +1903,6 @@ const EditWorkOrder = () => {
           </Form>
         </Card>
         {renderPipelineDatesModal()}
-        <CreatePipelineModal
-          visible={pipelineModalVisible}
-          onClose={() => setPipelineModalVisible(false)}
-          editingPipeline={editingPipeline}
-          onSuccess={() => {
-            refetchPipeline();
-          }}
-        />
       </div>
     );
   }
@@ -2008,7 +1926,6 @@ const EditWorkOrder = () => {
       </Steps>
 
       <Row gutter={[16, 16]}>
-        {/* Form Builder */}
         <Col xs={24} lg={14}>
           <Card
             title="Application Form Builder"
@@ -2036,23 +1953,21 @@ const EditWorkOrder = () => {
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              padding: "16px",
             }}
           >
             {applicationFields.length === 0 ? (
               <div
                 style={{
+                  textAlign: "center",
+                  padding: "40px 20px",
                   flex: 1,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
                   alignItems: "center",
-                  textAlign: "center",
-                  color: "#999",
-                  padding: "20px",
                 }}
               >
-                <div style={{ marginBottom: "16px" }}>
+                <div style={{ color: "#999", marginBottom: "16px" }}>
                   No application fields added yet
                 </div>
                 <Button
@@ -2068,7 +1983,7 @@ const EditWorkOrder = () => {
                 style={{
                   overflowY: "auto",
                   flex: 1,
-                  paddingRight: "8px", // Prevent scrollbar overlap
+                  paddingRight: "8px", 
                 }}
               >
                 {applicationFields.map((field, index) =>
@@ -2122,7 +2037,7 @@ const EditWorkOrder = () => {
                 border: "none",
               }}
             >
-              Update & Publish
+              Update Job
             </Button>
           </Space>
         </div>
@@ -2131,4 +2046,4 @@ const EditWorkOrder = () => {
   );
 };
 
-export default EditWorkOrder;
+export default RecruiterEditJob;
