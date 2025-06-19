@@ -18,6 +18,7 @@ import {
   Checkbox,
   Radio,
 } from "antd";
+import SourcedCandidates from "./SourcedCandidates";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -642,6 +643,16 @@ const RecruiterViewJob = () => {
               key="candidates"
             >
               <AppliedCandidates jobId={id} candidateType="applied" />
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Source Candidates
+                </span>
+              }
+              key="source"
+            >
+              <SourcedCandidates jobId={id} candidateType="source" />
             </TabPane>
             <TabPane
               tab={
