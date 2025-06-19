@@ -32,7 +32,6 @@ import CandidateJobs from "./Pages/CandidateJobs";
 import CandidateAppliedJobs from "./Pages/CandidateAppliedJobs";
 import CandidateSettings from "./Pages/CandidateSettings";
 import JobDetailsPage from "./Components/JobDetailsPage";
-
 import AdminCandidates from "./Admin/Pages/AdminCandidates";
 import ProtectedRecruiter from "./Recruiters/Auth/ProtectedRecruiter";
 import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
@@ -41,6 +40,11 @@ import RecruiterJobs from "./Recruiters/Pages/RecruiterJobs";
 import RecruiterEmployee from "./Recruiters/Pages/RecruiterEmployee";
 import RecruiterPayroll from "./Recruiters/Pages/RecruiterPayroll";
 import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
+import EmployeeLayout from "./Employee/Global/EmployeeLayout";
+import EmployeeDashboard from "./Employee/Pages/EmployeeDashboard";
+import EmployeeProfileSettings from "./Employee/Pages/EmployeeProfileSettings";
+import EmployeeLeaveRequest from "./Employee/Pages/EmployeeLeaveRequest";
+import EmployeeRaiseRequest from "./Employee/Pages/EmployeeRaiseRequest";
 
 const AppRoutes = () => {
   return (
@@ -135,12 +139,12 @@ const AppRoutes = () => {
 
       <Route element={<CandidateLayout />}>
         <Route path="/candidate-jobs" element={<CandidateJobs />} />
-        <Route path="/candidate-jobs/:jobId" element={<JobDetailsPage />} />-
+        <Route path="/candidate-jobs/:jobId" element={<JobDetailsPage />} />
         <Route
           path="/candidate-applied-jobs"
           element={<CandidateAppliedJobs />}
         />
-        <Route path="/candidate-settings" element={<CandidateSettings />} />-
+        <Route path="/candidate-settings" element={<CandidateSettings />} />
       </Route>
 
       <Route element={<RecruiterLayout />}>
@@ -164,6 +168,15 @@ const AppRoutes = () => {
           path="/recruiter/candidates"
           element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
         />
+      </Route>
+
+      {/* Employee */}
+
+      <Route element={<EmployeeLayout />}>
+        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+        <Route path="/employee/raise-request" element={<EmployeeRaiseRequest />} />
+        <Route path="/employee/leave-request" element={<EmployeeLeaveRequest />} />
+        <Route path="/employee/profile-settings" element={<EmployeeProfileSettings />} />
       </Route>
     </Routes>
   );

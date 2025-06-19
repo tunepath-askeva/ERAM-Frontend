@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack"; // Add this import
-import { useLogoutSuperAdminMutation } from "../Slices/SuperAdmin/SuperAdminApis.js";
-import { userLogout } from "../Slices/Users/UserSlice.js";
+import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
+import { userLogout } from "../../Slices/Users/UserSlice.js";
 
 import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
 import {
@@ -103,7 +103,7 @@ const UserEmail = styled.div`
   gap: 4px;
 `;
 
-const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
+const EmployeeNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     const [screenSize, setScreenSize] = useState({
         width: window.innerWidth,
         isMobile: window.innerWidth < BREAKPOINTS.mobile,
@@ -116,8 +116,8 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
     });
 
-    const [candidateInfo, setCandidateInfo] = useState({
-        name: "Candidate",
+    const [employeeInfo, setEmployeeInfo] = useState({
+        name: "Employee",
         email: "",
         roles: "",
     });
@@ -128,42 +128,41 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        const fetchCandidateInfo = () => {
+        const fetchEmployeeInfo = () => {
             try {
                 const possibleKeys = [
-                    'candidateInfo',
-                    'candidate',
+                    'employeeInfo',
+                    'employee',
                 ];
 
-                let candidateData = null;
+                let employeeData = null;
                 let foundKey = null;
 
                 for (const key of possibleKeys) {
                     const data = localStorage.getItem(key);
                     if (data) {
-                        candidateData = data;
+                        employeeData = data;
                         foundKey = key;
-                        console.log(`Found candidate data in localStorage key: ${key}`);
+                        console.log(`Found employee data in localStorage key: ${key}`);
                         break;
                     }
                 }
 
-                if (candidateData) {
-                    const parsedData = JSON.parse(candidateData);
+                if (employeeData) {
+                    const parsedData = JSON.parse(employeeData);
                     console.log(`Parsed data from ${foundKey}:`, parsedData);
 
-                    // Extract name with multiple fallbacks
                     const name = parsedData.name ||
                         parsedData.fullName ||
-                        parsedData.candidateName ||
-                        (parsedData.firstName && parsedData.lastName ? 
+                        parsedData.employeeName ||
+                        (parsedData.firstName && parsedData.lastName ?
                             `${parsedData.firstName} ${parsedData.lastName}` : null) ||
-                        (parsedData.first_name && parsedData.last_name ? 
+                        (parsedData.first_name && parsedData.last_name ?
                             `${parsedData.first_name} ${parsedData.last_name}` : null) ||
-                        "Candidate";
+                        "Employee";
 
                     const email = parsedData.email ||
-                        parsedData.candidateEmail ||
+                        parsedData.employeeEmail ||
                         "";
 
                     let roles = "";
@@ -175,7 +174,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                         }
                     } else {
                         roles = parsedData.role ||
-                            parsedData.candidateRole ||
+                            parsedData.employeeRole ||
                             "";
                     }
 
@@ -185,12 +184,12 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                         roles: roles,
                     };
 
-                    console.log("Extracted candidate info:", extractedInfo);
-                    setCandidateInfo(extractedInfo);
+                    console.log("Extracted employee info:", extractedInfo);
+                    setEmployeeInfo(extractedInfo);
                 } else {
-                    console.warn("No candidate data found in localStorage");
+                    console.warn("No employee data found in localStorage");
                     console.log("Available localStorage keys:", Object.keys(localStorage));
-                    
+
                     for (let i = 0; i < localStorage.length; i++) {
                         const key = localStorage.key(i);
                         const value = localStorage.getItem(key);
@@ -198,21 +197,21 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                     }
                 }
             } catch (error) {
-                console.error("Error parsing candidate info from localStorage:", error);
+                console.error("Error parsing employee info from localStorage:", error);
             }
         };
 
-        fetchCandidateInfo();
+        fetchEmployeeInfo();
 
         const handleStorageChange = (e) => {
-            if (e.key && (e.key.includes('candidate') || e.key.includes('user'))) {
+            if (e.key && (e.key.includes('employee') || e.key.includes('user'))) {
                 console.log("localStorage changed for key:", e.key);
-                fetchCandidateInfo();
+                fetchEmployeeInfo();
             }
         };
 
         window.addEventListener('storage', handleStorageChange);
-        
+
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
@@ -304,7 +303,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     const handleLogout = async () => {
         try {
             await logout().unwrap();
-            dispatch(userLogout({ role: "candidate" }));
+            dispatch(userLogout({ role: "employee" }));
 
             enqueueSnackbar("Logged out successfully", {
                 variant: "success",
@@ -326,7 +325,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     };
 
     const getFirstLetter = () => {
-        return candidateInfo.name.charAt(0).toUpperCase();
+        return employeeInfo.name.charAt(0).toUpperCase();
     };
 
     const userMenuItems = [
@@ -334,21 +333,21 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             key: "user-info",
             label: (
                 <UserInfoContainer>
-                    <UserName>{candidateInfo.name}</UserName>
-                    {candidateInfo.roles && (
+                    <UserName>{employeeInfo.name}</UserName>
+                    {employeeInfo.roles && (
                         <div style={{
                             color: "#64748b",
                             fontSize: "11px",
                             marginTop: "4px",
                             fontWeight: "500"
                         }}>
-                            {candidateInfo.roles}
+                            {employeeInfo.roles}
                         </div>
                     )}
-                    {candidateInfo.email && (
+                    {employeeInfo.email && (
                         <UserEmail>
                             <MailOutlined style={{ fontSize: "12px" }} />
-                            {candidateInfo.email}
+                            {employeeInfo.email}
                         </UserEmail>
                     )}
 
@@ -449,7 +448,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                             fontWeight: "600",
                         }}
                     >
-                        {candidateInfo.name ? getFirstLetter() : <UserOutlined />}
+                        {employeeInfo.name ? getFirstLetter() : <UserOutlined />}
                     </Avatar>
                 </Dropdown>
             </div>
@@ -457,4 +456,4 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     );
 };
 
-export default CandidateNavbar;
+export default EmployeeNavbar;
