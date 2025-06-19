@@ -97,6 +97,20 @@ export const userApi = createApi({
         method: "POST",
       }),
     }),
+    profileCompletion: builder.mutation({
+      query: (payload) => ({
+        url: `/profile`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+
+    getCandidate: builder.query({
+      query: () => ({
+        url: `/candidate`,
+        method: "GET",
+      }),
+    }),
     filterJobs: builder.query({
       query: (filters) => {
         const params = new URLSearchParams();
@@ -131,6 +145,8 @@ export const {
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
   useWithdrawJobApplicationMutation,
+  useGetCandidateQuery,
+  useProfileCompletionMutation,
   useLazySearchJobsQuery,
   useLazyFilterJobsQuery,
 } = userApi;

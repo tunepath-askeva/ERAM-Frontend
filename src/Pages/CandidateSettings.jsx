@@ -65,7 +65,12 @@ import {
   StarOutlined,
   DollarOutlined,
   InfoCircleOutlined,
+  FileAddOutlined,
 } from "@ant-design/icons";
+import {
+  useGetCandidateQuery,
+  useProfileCompletionMutation,
+} from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -73,91 +78,119 @@ const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { Step } = Steps;
 
-// Mock user data
-const mockUserData = {
-  _id: "user123",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phone: "+91 9876543210",
-  location: "Bengaluru, Karnataka, India",
-  avatar: "https://via.placeholder.com/100",
-  title: "Full Stack Developer",
-  bio: "Passionate full-stack developer with 3+ years of experience in building scalable web applications using modern technologies.",
-  experience: "3-5 years",
-  expectedSalary: "₹12-18 LPA",
-  skills: [
-    "React",
-    "Node.js",
-    "JavaScript",
-    "MongoDB",
-    "Express.js",
-    "TypeScript",
-  ],
-  languages: ["English", "Hindi", "Kannada"],
-  education: [
-    {
-      id: 1,
-      degree: "Bachelor of Engineering",
-      field: "Computer Science",
-      institution: "XYZ University",
-      year: "2020",
-      grade: "8.5 CGPA",
-    },
-  ],
-  workExperience: [
-    {
-      id: 1,
-      title: "Software Developer",
-      company: "Tech Solutions Inc.",
-      duration: "2021 - Present",
-      description:
-        "Developed and maintained web applications using React and Node.js",
-    },
-  ],
-  socialLinks: {
-    linkedin: "https://linkedin.com/in/johndoe",
-    github: "https://github.com/johndoe",
-    portfolio: "https://johndoe.dev",
-  },
-  preferences: {
-    jobAlerts: true,
-    emailNotifications: true,
-    profileVisibility: "public",
-    preferredLocations: ["Bengaluru", "Mumbai", "Pune"],
-    workType: ["Remote", "Hybrid"],
-    employmentType: ["Full-time"],
-    industries: ["Technology", "Startups"],
-  },
-  privacy: {
-    showEmail: false,
-    showPhone: false,
-    showSalary: true,
-    allowRecruiterContact: true,
-  },
-};
-
 const CandidateSettings = () => {
-  const [userData, setUserData] = useState(mockUserData);
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    fullName: "",
+    email: "",
+    phone: "",
+    skills: [],
+    qualifications: [],
+    accountStatus: "",
+    isActive: false,
+    role: "",
+    branch: "",
+    avatar: "",
+    location: "",
+    title: "",
+    education: [],
+    workExperience: [],
+    preferences: {
+      emailNotifications: false,
+      smsNotifications: false,
+      jobAlerts: false,
+      newsletter: false,
+    },
+    privacy: {
+      profileVisibility: "public",
+      showEmail: false,
+      showPhone: false,
+    },
+  });
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState({});
   const [uploadModal, setUploadModal] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState(75);
+  const [isEduModalVisible, setIsEduModalVisible] = useState(false);
+  const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
+  const [editingEducationId, setEditingEducationId] = useState(null);
+  const [editingEducationData, setEditingEducationData] = useState({});
 
-  // Forms
+  const { data: getCandidate } = useGetCandidateQuery();
+  const [profileComplete] = useProfileCompletionMutation();
+
   const [profileForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
   const [privacyForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [educationForm] = Form.useForm();
+  const [workForm] = Form.useForm();
 
   useEffect(() => {
-    // Initialize forms with current data
-    profileForm.setFieldsValue(userData);
-    preferencesForm.setFieldsValue(userData.preferences);
-    privacyForm.setFieldsValue(userData.privacy);
-    calculateProfileCompletion();
-  }, [userData]);
+    if (
+      getCandidate &&
+      getCandidate.user &&
+      Object.keys(getCandidate.user).length > 0
+    ) {
+      const candidateData = getCandidate.user;
+
+      const mappedData = {
+        firstName: candidateData.firstName || "",
+        lastName: candidateData.lastName || "",
+        fullName: candidateData.fullName || "",
+        email: candidateData.email || "",
+        phone: candidateData.phone || "",
+        skills: Array.isArray(candidateData.skills) ? candidateData.skills : [],
+        qualifications: Array.isArray(candidateData.qualifications)
+          ? candidateData.qualifications
+          : [],
+        accountStatus: candidateData.accountStatus || "",
+        isActive: candidateData.isActive || false,
+        role: candidateData.role || "",
+        branch: candidateData.branch || "",
+        avatar: candidateData.avatar || "",
+        location: candidateData.location || "",
+        title: candidateData.title || "",
+        education: Array.isArray(candidateData.education)
+          ? candidateData.education
+          : [],
+        workExperience: Array.isArray(candidateData.workExperience)
+          ? candidateData.workExperience
+          : [],
+        preferences: {
+          emailNotifications:
+            candidateData.preferences?.emailNotifications || false,
+          smsNotifications:
+            candidateData.preferences?.smsNotifications || false,
+          jobAlerts: candidateData.preferences?.jobAlerts || false,
+          newsletter: candidateData.preferences?.newsletter || false,
+        },
+        privacy: {
+          profileVisibility:
+            candidateData.privacy?.profileVisibility || "public",
+          showEmail: candidateData.privacy?.showEmail || false,
+          showPhone: candidateData.privacy?.showPhone || false,
+        },
+      };
+
+      setUserData(mappedData);
+
+      profileForm.setFieldsValue(mappedData);
+      preferencesForm.setFieldsValue(mappedData.preferences);
+      privacyForm.setFieldsValue(mappedData.privacy);
+
+      calculateProfileCompletion(mappedData);
+    } else if (
+      getCandidate === null ||
+      (getCandidate &&
+        (!getCandidate.user || Object.keys(getCandidate.user).length === 0))
+    ) {
+      console.log("No candidate data available or empty user object");
+    }
+  }, [getCandidate]);
 
   const calculateProfileCompletion = () => {
     let completion = 0;
@@ -168,7 +201,6 @@ const CandidateSettings = () => {
       userData.phone,
       userData.location,
       userData.title,
-      userData.bio,
       userData.skills?.length > 0,
       userData.education?.length > 0,
       userData.workExperience?.length > 0,
@@ -184,12 +216,25 @@ const CandidateSettings = () => {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setUserData({ ...userData, ...values });
+      const payload = {
+        ...userData,
+        ...values,
+        skills: userData.skills,
+        education: userData.education,
+        workExperience: userData.workExperience,
+      };
+
+      console.log("Payload to send to backend:", payload);
+
+      const res = await profileComplete(payload);
+      console.log(res, "hi response =-=");
+
+      setUserData((prevData) => ({ ...prevData, ...values }));
+
       message.success("Profile updated successfully!");
       setEditMode({});
     } catch (error) {
+      console.error("Error updating profile:", error);
       message.error("Failed to update profile");
     }
     setLoading(false);
@@ -198,7 +243,15 @@ const CandidateSettings = () => {
   const handlePreferencesUpdate = async (values) => {
     setLoading(true);
     try {
+      const payload = {
+        ...userData,
+        preferences: values,
+      };
+
+      console.log("Preferences payload:", payload);
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setUserData({ ...userData, preferences: values });
       message.success("Preferences updated successfully!");
     } catch (error) {
@@ -207,21 +260,16 @@ const CandidateSettings = () => {
     setLoading(false);
   };
 
-  const handlePrivacyUpdate = async (values) => {
-    setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setUserData({ ...userData, privacy: values });
-      message.success("Privacy settings updated successfully!");
-    } catch (error) {
-      message.error("Failed to update privacy settings");
-    }
-    setLoading(false);
-  };
-
   const handlePasswordChange = async (values) => {
     setLoading(true);
     try {
+      const payload = {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      };
+
+      console.log("Password change payload:", payload);
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
       message.success("Password changed successfully!");
       passwordForm.resetFields();
@@ -242,32 +290,65 @@ const CandidateSettings = () => {
   };
 
   const addEducation = () => {
-    const newEducation = {
-      id: Date.now(),
-      degree: "",
-      field: "",
-      institution: "",
-      year: "",
-      grade: "",
-    };
-    setUserData({
-      ...userData,
-      education: [...userData.education, newEducation],
-    });
+    educationForm.resetFields();
+    setIsEduModalVisible(true);
   };
 
+  const handleEducationSubmit = async () => {
+    try {
+      const values = await educationForm.validateFields();
+      const newEducation = { ...values };
+      setUserData((prev) => ({
+        ...prev,
+        education: [...prev.education, newEducation],
+      }));
+      setIsEduModalVisible(false);
+    } catch (err) {
+      console.log("Validation error:", err);
+    }
+  };
+
+  const handleEditEducation = (edu) => {
+  setEditingEducationId(edu.id);
+  setEditingEducationData(edu);
+};
+
+const handleCancelEducationEdit = () => {
+  setEditingEducationId(null);
+  setEditingEducationData({});
+};
+
+const handleSaveEducation = () => {
+  const updatedEducation = userData.education.map((edu) =>
+    edu.id === editingEducationId ? editingEducationData : edu
+  );
+  setUserData({ ...userData, education: updatedEducation });
+  setEditingEducationId(null);
+  setEditingEducationData({});
+};
+
+
   const addWorkExperience = () => {
-    const newWork = {
-      id: Date.now(),
-      title: "",
-      company: "",
-      duration: "",
-      description: "",
-    };
-    setUserData({
-      ...userData,
-      workExperience: [...userData.workExperience, newWork],
-    });
+    workForm.resetFields();
+    setIsWorkModalVisible(true);
+  };
+
+  const handleWorkSubmit = async () => {
+    try {
+      const values = await workForm.validateFields();
+      const newWork = {
+        ...values,
+      };
+
+      setUserData((prev) => ({
+        ...prev,
+        workExperience: [...prev.workExperience, newWork],
+      }));
+
+      setIsWorkModalVisible(false);
+    } catch (error) {
+      console.log("Validation failed:", error);
+    }
   };
 
   const removeEducation = (id) => {
@@ -291,19 +372,48 @@ const CandidateSettings = () => {
     });
   };
 
-  // Profile Tab Content
+  const handleSaveChanges = async () => {
+    try {
+      const formValues = await profileForm.validateFields();
+
+      setLoading(true);
+
+      const payload = {
+        ...userData,
+        ...formValues,
+        skills: userData.skills,
+        education: userData.education,
+        workExperience: userData.workExperience,
+      };
+
+      console.log("Payload to send to backend:", payload);
+
+      const res = await profileComplete(payload);
+      console.log(res, "hi response =-=");
+
+      setUserData((prevData) => ({ ...prevData, ...formValues }));
+
+      message.success("Profile updated successfully!");
+      setEditMode({});
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      message.error("Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const ProfileContent = () => (
     <div>
-      {/* Profile Completion */}
-      <Card
+      {/* <Card
         style={{
           marginBottom: 24,
           borderRadius: "12px",
           background:
             "linear-gradient(135deg, rgba(218, 44, 70, 0.05) 0%, rgba(165, 22, 50, 0.05) 100%)",
         }}
-      >
-        <div
+      > */}
+      {/* <div
           style={{
             display: "flex",
             alignItems: "center",
@@ -318,24 +428,23 @@ const CandidateSettings = () => {
           <Text style={{ fontSize: "16px", fontWeight: 600, color: "#da2c46" }}>
             {profileCompletion}%
           </Text>
-        </div>
-        <Progress
+        </div> */}
+      {/* <Progress
           percent={profileCompletion}
           strokeColor={{
             "0%": "#da2c46",
             "100%": "#a51632",
           }}
           showInfo={false}
-        />
-        <Text
+        /> */}
+      {/* <Text
           type="secondary"
           style={{ fontSize: "12px", marginTop: 8, display: "block" }}
         >
           Complete your profile to increase visibility to recruiters
-        </Text>
-      </Card>
+        </Text> */}
+      {/* </Card> */}
 
-      {/* Basic Information */}
       <Card
         title={
           <div
@@ -364,6 +473,9 @@ const CandidateSettings = () => {
           form={profileForm}
           layout="vertical"
           onFinish={handleProfileUpdate}
+          onValuesChange={(changedValues, allValues) => {
+            setUserData((prevData) => ({ ...prevData, ...allValues }));
+          }}
         >
           <Row gutter={24}>
             <Col span={24} style={{ textAlign: "center", marginBottom: 24 }}>
@@ -482,41 +594,10 @@ const CandidateSettings = () => {
                 />
               </Form.Item>
             </Col>
-
-            <Col span={24}>
-              <Form.Item
-                label="Bio"
-                name="bio"
-                rules={[{ required: true, message: "Please enter your bio" }]}
-              >
-                <TextArea
-                  rows={4}
-                  placeholder="Tell us about yourself..."
-                  disabled={!editMode.basic}
-                />
-              </Form.Item>
-            </Col>
           </Row>
-
-          {editMode.basic && (
-            <div style={{ textAlign: "right", marginTop: 16 }}>
-              <Space>
-                <Button onClick={() => toggleEditMode("basic")}>Cancel</Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  style={{ background: "#da2c46", border: "none" }}
-                >
-                  Save Changes
-                </Button>
-              </Space>
-            </div>
-          )}
         </Form>
       </Card>
 
-      {/* Skills Section */}
       <Card
         title={
           <div
@@ -532,10 +613,10 @@ const CandidateSettings = () => {
             </span>
             <Button
               type="link"
-              icon={<EditOutlined />}
+              icon={<PlusOutlined />}
               onClick={() => toggleEditMode("skills")}
             >
-              {editMode.skills ? "Cancel" : "Edit"}
+              {editMode.skills ? "Cancel" : "Add"}
             </Button>
           </div>
         }
@@ -568,27 +649,8 @@ const CandidateSettings = () => {
             ))}
           </Space>
         )}
-
-        {editMode.skills && (
-          <div style={{ textAlign: "right", marginTop: 16 }}>
-            <Space>
-              <Button onClick={() => toggleEditMode("skills")}>Cancel</Button>
-              <Button
-                type="primary"
-                onClick={() => {
-                  message.success("Skills updated successfully!");
-                  toggleEditMode("skills");
-                }}
-                style={{ background: "#da2c46", border: "none" }}
-              >
-                Save Skills
-              </Button>
-            </Space>
-          </div>
-        )}
       </Card>
 
-      {/* Education Section */}
       <Card
         title={
           <div
@@ -644,7 +706,6 @@ const CandidateSettings = () => {
         />
       </Card>
 
-      {/* Work Experience Section */}
       <Card
         title={
           <div
@@ -701,6 +762,86 @@ const CandidateSettings = () => {
           )}
         />
       </Card>
+
+      {editMode.basic && (
+        <div style={{ textAlign: "right", marginTop: 16 }}>
+          <Space>
+            <Button onClick={() => toggleEditMode("basic")}>Cancel</Button>
+            <Button
+              type="primary"
+              loading={loading}
+              onClick={handleSaveChanges}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Save Changes
+            </Button>
+          </Space>
+        </div>
+      )}
+
+      <Modal
+        visible={isEduModalVisible}
+        title="Add Education"
+        onOk={handleEducationSubmit}
+        onCancel={() => setIsEduModalVisible(false)}
+      >
+        <Form layout="vertical" form={educationForm}>
+          <Form.Item name="degree" label="Degree" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="field" label="Field" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="institution"
+            label="Institution"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="year" label="Year" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        visible={isWorkModalVisible}
+        title="Add Work Experience"
+        onOk={handleWorkSubmit}
+        onCancel={() => setIsWorkModalVisible(false)}
+        okText="Add"
+      >
+        <Form form={workForm} layout="vertical">
+          <Form.Item
+            label="Job Title"
+            name="title"
+            rules={[{ required: true, message: "Please enter job title" }]}
+          >
+            <Input placeholder="e.g. Software Engineer" />
+          </Form.Item>
+
+          <Form.Item
+            label="Company"
+            name="company"
+            rules={[{ required: true, message: "Please enter company name" }]}
+          >
+            <Input placeholder="e.g. ABC Tech Pvt Ltd" />
+          </Form.Item>
+
+          <Form.Item
+            label="Duration"
+            name="duration"
+            rules={[{ required: true, message: "Please enter duration" }]}
+          >
+            <Input placeholder="e.g. 2021 - Present" />
+          </Form.Item>
+
+          <Form.Item label="Description" name="description">
+            <Input.TextArea rows={4} placeholder="Describe your role..." />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 
