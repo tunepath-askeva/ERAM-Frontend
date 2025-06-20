@@ -131,8 +131,8 @@ const CandidateSettings = () => {
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
-    const [fileList, setFileList] = useState([]);
-    const [imageFile, setImageFile] = useState(null);
+  const [fileList, setFileList] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
     degree: "",
@@ -282,7 +282,7 @@ const CandidateSettings = () => {
     setLoading(false);
   };
 
-const handleAvatarUpload = ({ fileList: newFileList }) => {
+  const handleAvatarUpload = ({ fileList: newFileList }) => {
     setFileList(newFileList);
 
     if (newFileList.length > 0) {
@@ -331,9 +331,9 @@ const handleAvatarUpload = ({ fileList: newFileList }) => {
         formData.append(key, value);
       });
 
-    if (imageFile) {
-  formData.append("image", imageFile);  
-}
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
       formData.append("skills", JSON.stringify(userData.skills));
       formData.append("education", JSON.stringify(userData.education));
       formData.append(
@@ -349,7 +349,7 @@ const handleAvatarUpload = ({ fileList: newFileList }) => {
       const updatedUserInfo = {
         email: formValues.email,
         name: `${formValues.firstName} ${formValues.lastName}`.trim(),
-        roles: "candidate", 
+        roles: "candidate",
       };
 
       dispatch(
@@ -559,11 +559,10 @@ const handleAvatarUpload = ({ fileList: newFileList }) => {
                   <div style={{ marginTop: 16 }}>
                     <Upload
                       accept="image/*"
-                     fileList={fileList}
-                     onChange={handleAvatarUpload}
-                     beforeUpload={()=> false}
-                     maxCount={1}
-                      
+                      fileList={fileList}
+                      onChange={handleAvatarUpload}
+                      beforeUpload={() => false}
+                      maxCount={1}
                     >
                       <Button
                         type="primary"
