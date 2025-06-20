@@ -98,13 +98,15 @@ export const userApi = createApi({
       }),
     }),
     profileCompletion: builder.mutation({
-      query: (payload) => ({
+      query: (formData) => ({
         url: `/profile`,
         method: "POST",
-        body: payload,
+        body: formData, 
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     }),
-
     getCandidate: builder.query({
       query: () => ({
         url: `/candidate`,

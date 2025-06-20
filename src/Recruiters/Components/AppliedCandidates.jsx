@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { useGetJobApplicationsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetJobApplicationsQuery,
+  useUpdateCandidateStatusMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 import {
   Card,
   Spin,
@@ -32,12 +35,15 @@ import {
   PhoneOutlined,
   DollarOutlined,
   InfoCircleOutlined,
+  ArrowRightOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
 
 const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
-  const { data, error, isLoading } = useGetJobApplicationsQuery(jobId);
+  const { data, error, isLoading, refetch } = useGetJobApplicationsQuery(jobId);
+  const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateCandidateStatusMutation();
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
   const [selectedResume, setSelectedResume] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
@@ -137,6 +143,24 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     console.log("Updating status:", applicationId, newStatus);
     message.success(`Candidate status updated to ${newStatus}`);
     // You would typically refetch the data here or update local state
+  };
+
+  const handleMoveToScreening = async (candidateId) => {
+    try {
+      await updateCandidateStatus({
+        candidateId: candidateId,
+        status: "screening",
+      }).unwrap();
+
+      message.success("Candidate moved to screening successfully!");
+      setDetailsModalVisible(false);
+      refetch(); // Refresh the data
+    } catch (error) {
+      console.error("Failed to move candidate to screening:", error);
+      message.error(
+        error.data?.message || "Failed to move candidate to screening"
+      );
+    }
   };
 
   const getStatusMenuItems = (application, currentStatus) => {
@@ -474,26 +498,6 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
         )}
       </div>
 
-      {/* Footer Actions */}
-      <div
-        style={{
-          marginTop: "16px",
-          padding: "12px 0",
-          borderTop: "1px solid #f0f0f0",
-          textAlign: "center",
-        }}
-      >
-        <Space>
-          <Button type="default" size="small">
-            Export {candidateType === "declined" ? "Declined" : "Applied"}{" "}
-            Candidates
-          </Button>
-          <Button type="primary" size="small" style={{ background: "#da2c46" }}>
-            Bulk Actions
-          </Button>
-        </Space>
-      </div>
-
       {/* Resume Modal */}
       <Modal
         title={`Resume - ${selectedResume?.name || "Candidate"}`}
@@ -538,6 +542,21 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
           <Button key="close" onClick={() => setDetailsModalVisible(false)}>
             Close
           </Button>,
+          // Only show Move to Screening button for applied candidates (not declined)
+          candidateType === "applied" && selectedApplication?.user?._id && (
+            <Button
+              key="move-to-screening"
+              type="primary"
+              icon={<ArrowRightOutlined />}
+              onClick={() =>
+                handleMoveToScreening(selectedApplication.user._id)
+              }
+              loading={isUpdatingStatus}
+              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+            >
+              Move to Screening
+            </Button>
+          ),
         ]}
         width={800}
       >

@@ -71,6 +71,8 @@ import {
   useGetCandidateQuery,
   useProfileCompletionMutation,
 } from "../Slices/Users/UserApis";
+import { useDispatch } from "react-redux";
+import { setUserCredentials } from "../Slices/Users/UserSlice";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -120,6 +122,7 @@ const CandidateSettings = () => {
       showPhone: false,
     },
   });
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -301,13 +304,14 @@ const CandidateSettings = () => {
 
       const formData = new FormData();
 
+      // Append all form values to formData
       Object.entries(formValues).forEach(([key, value]) => {
         formData.append(key, value);
       });
 
-      if (userData.imageFile) {
-        formData.append("image", userData.imageFile);
-      }
+      // if (userData.imageFile) {
+      //   formData.append("image", userData.imageFile);
+      // }
 
       formData.append("skills", JSON.stringify(userData.skills));
       formData.append("education", JSON.stringify(userData.education));
@@ -318,25 +322,43 @@ const CandidateSettings = () => {
       formData.append("preferences", JSON.stringify(userData.preferences));
       formData.append("privacy", JSON.stringify(userData.privacy));
 
-      console.log("FormData contents:");
-      for (let [key, value] of formData.entries()) {
-        console.log(
-          key,
-          value instanceof File ? `${value.name} (${value.type})` : value
-        );
-      }
-
+      // Send the update request
       const res = await profileComplete(formData).unwrap();
       console.log("Profile update response:", res);
 
+      // Check if email was changed
+      const emailChanged = formValues.email !== userData.email;
+
+      // Update local storage with new user info
+      const updatedUserInfo = {
+        email: formValues.email,
+        name: `${formValues.firstName} ${formValues.lastName}`.trim(),
+        roles: "candidate", // Assuming this is always candidate for this component
+      };
+
+      // Dispatch to Redux store
+      dispatch(
+        setUserCredentials({
+          userInfo: updatedUserInfo,
+          role: "candidate",
+        })
+      );
+
+      // Update local state
       setUserData((prev) => ({
         ...prev,
         ...formValues,
-        imageFile: null, 
+        imageFile: null,
+        fullName: `${formValues.firstName} ${formValues.lastName}`.trim(),
       }));
 
       message.success("Profile updated successfully!");
       setIsProfileEditable(false);
+
+      // If email changed, show message about needing to relogin
+      if (emailChanged) {
+        message.info("Email changed. Please login again with your new email.");
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       message.error(
@@ -348,6 +370,7 @@ const CandidateSettings = () => {
       setLoading(false);
     }
   };
+
   const addEducation = () => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to add education");
