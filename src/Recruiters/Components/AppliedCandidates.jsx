@@ -196,80 +196,59 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const renderApplicationDetails = () => {
     if (!selectedApplication) return null;
 
-    const { user, responses, createdAt, status } = selectedApplication;
-    const resumeUrl =
-      user?.resume || responses?.find((r) => r.fieldType === "file")?.value;
+    const { user, responses } = selectedApplication;
 
-    const nameResponse =
-      responses.find((r) => r.fieldKey === "1749639346166")?.value ||
-      user?.fullName;
-    const emailResponse =
-      responses.find((r) => r.fieldKey === "1749639350726")?.value ||
-      user?.email;
-    const phoneResponse =
-      responses.find((r) => r.fieldKey === "1749639358302")?.value ||
-      "Not provided";
-    const experienceResponse =
-      responses.find((r) => r.fieldKey === "1749639365254")?.value ||
-      "Not provided";
-    const currentSalaryResponse =
-      responses.find((r) => r.fieldKey === "1749639382486")?.value ||
-      "Not provided";
-    const expectedSalaryResponse =
-      responses.find((r) => r.fieldKey === "1749639392814")?.value ||
-      "Not provided";
+    const resumeField = responses?.find(
+      (response) =>
+        response.fieldType === "file" ||
+        (response.label && response.label.toLowerCase().includes("resume"))
+    );
+    const resumeUrl = user?.resume || resumeField?.value;
+    const candidateName = user?.fullName || "Candidate";
 
     return (
       <div>
         <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="Full Name">
-            <Text strong>{nameResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Email">
-            <Text>{emailResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Phone">
-            <Text>{phoneResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Experience (years)">
-            <Text>{experienceResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Current Salary">
-            <Text>{currentSalaryResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Expected Salary">
-            <Text>{expectedSalaryResponse}</Text>
-          </Descriptions.Item>
-          <Descriptions.Item label="Application Status">
-            <Tag color={status === "declined" ? "red" : "green"}>
-              {status || "applied"}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Applied On">
-            <Text>{formatDate(createdAt)}</Text>
-          </Descriptions.Item>
+          {responses?.map((response, index) => {
+            if (
+              !response.value ||
+              response.fieldType === "file" ||
+              (response.label &&
+                response.label.toLowerCase().includes("resume"))
+            ) {
+              return null;
+            }
+
+            return (
+              <Descriptions.Item
+                key={`field-${index}`}
+                label={response.label || `Field ${index + 1}`}
+              >
+                {response.value}
+              </Descriptions.Item>
+            );
+          })}
         </Descriptions>
 
-        <Divider orientation="left">Resume</Divider>
-
-        {resumeUrl ? (
-          <Space>
-            <Button
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewResume(resumeUrl, nameResponse)}
-            >
-              View Resume
-            </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownloadResume(resumeUrl, nameResponse)}
-            >
-              Download Resume
-            </Button>
-          </Space>
-        ) : (
-          <Text type="secondary">No resume provided</Text>
+        {resumeUrl && (
+          <>
+            <Divider orientation="left">Resume</Divider>
+            <Space>
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => handleViewResume(resumeUrl, candidateName)}
+              >
+                View Resume
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadResume(resumeUrl, candidateName)}
+              >
+                Download Resume
+              </Button>
+            </Space>
+          </>
         )}
       </div>
     );
@@ -542,7 +521,6 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
           <Button key="close" onClick={() => setDetailsModalVisible(false)}>
             Close
           </Button>,
-          // Only show Move to Screening button for applied candidates (not declined)
           candidateType === "applied" && selectedApplication?.user?._id && (
             <Button
               key="move-to-screening"
@@ -552,7 +530,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                 handleMoveToScreening(selectedApplication.user._id)
               }
               loading={isUpdatingStatus}
-              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+              style={{ backgroundColor: "#da2c46" }}
             >
               Move to Screening
             </Button>
