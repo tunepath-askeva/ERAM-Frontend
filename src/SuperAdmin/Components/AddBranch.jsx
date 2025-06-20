@@ -43,9 +43,8 @@ const AddBranch = () => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("1");
   const [fileList, setFileList] = useState([]);
-  const [imageFile, setImageFile] = useState(null); // Store the actual file object
+  const [imageFile, setImageFile] = useState(null); 
 
-  // RTK mutation hook
   const [createBranch, { isLoading, isError, error }] =
     useCreateBranchMutation();
 
@@ -55,7 +54,6 @@ const AddBranch = () => {
     if (newFileList.length > 0) {
       const file = newFileList[0].originFileObj || newFileList[0];
 
-      // Validate file type
       const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
       if (!allowedTypes.includes(file.type)) {
         message.error("Only JPEG, JPG, and PNG files are allowed!");
@@ -64,7 +62,6 @@ const AddBranch = () => {
         return;
       }
 
-      // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
         message.error("File size should not exceed 5MB!");
         setFileList([]);

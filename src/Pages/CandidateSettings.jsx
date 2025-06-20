@@ -102,7 +102,8 @@ const CandidateSettings = () => {
     isActive: false,
     role: "",
     branch: "",
-    avatar: "",
+    image: "",
+    imageFile: null,
     location: "",
     title: "",
     education: [],
@@ -122,8 +123,7 @@ const CandidateSettings = () => {
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const [isProfileEditable, setIsProfileEditable] = useState(false); // Single edit mode for profile
-  const [uploadModal, setUploadModal] = useState(false);
+  const [isProfileEditable, setIsProfileEditable] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState(75);
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
@@ -170,7 +170,7 @@ const CandidateSettings = () => {
         isActive: candidateData.isActive || false,
         role: candidateData.role || "",
         branch: candidateData.branch || "",
-        avatar: candidateData.avatar || "",
+        image: candidateData.image || "",
         location: candidateData.location || "",
         title: candidateData.title || "",
         education: Array.isArray(candidateData.education)
@@ -282,51 +282,72 @@ const CandidateSettings = () => {
       message.success("Profile picture updated successfully!");
       setUserData({
         ...userData,
-        avatar: URL.createObjectURL(file.originFileObj),
+        image: URL.createObjectURL(file.originFileObj),
       });
     }
   };
 
-  // Toggle edit mode for profile
   const toggleProfileEdit = () => {
     if (isProfileEditable) {
-      // If canceling edit, reset form to original values
       profileForm.setFieldsValue(userData);
     }
     setIsProfileEditable(!isProfileEditable);
   };
 
-  // Handle profile save
   const handleProfileSave = async () => {
     try {
       const formValues = await profileForm.validateFields();
       setLoading(true);
 
-      const payload = {
-        ...userData,
+      const formData = new FormData();
+
+      Object.entries(formValues).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      if (userData.imageFile) {
+        formData.append("image", userData.imageFile);
+      }
+
+      formData.append("skills", JSON.stringify(userData.skills));
+      formData.append("education", JSON.stringify(userData.education));
+      formData.append(
+        "workExperience",
+        JSON.stringify(userData.workExperience)
+      );
+      formData.append("preferences", JSON.stringify(userData.preferences));
+      formData.append("privacy", JSON.stringify(userData.privacy));
+
+      console.log("FormData contents:");
+      for (let [key, value] of formData.entries()) {
+        console.log(
+          key,
+          value instanceof File ? `${value.name} (${value.type})` : value
+        );
+      }
+
+      const res = await profileComplete(formData).unwrap();
+      console.log("Profile update response:", res);
+
+      setUserData((prev) => ({
+        ...prev,
         ...formValues,
-        skills: userData.skills,
-        education: userData.education,
-        workExperience: userData.workExperience,
-      };
-
-      console.log("Payload to send to backend:", payload);
-
-      const res = await profileComplete(payload);
-      console.log(res, "hi response =-=");
-
-      setUserData((prevData) => ({ ...prevData, ...formValues }));
+        imageFile: null, 
+      }));
 
       message.success("Profile updated successfully!");
-      setIsProfileEditable(false); // Exit edit mode after successful save
+      setIsProfileEditable(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      message.error("Failed to update profile");
+      message.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to update profile. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
-
   const addEducation = () => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to add education");
@@ -450,9 +471,8 @@ const CandidateSettings = () => {
 
   const ProfileContent = () => (
     <div>
-
       <div style={{ textAlign: "right", marginBottom: 16 }}>
-        <Space style={{marginTop: "8px"}}>
+        <Space style={{ marginTop: "8px" }}>
           {isProfileEditable && (
             <Button onClick={toggleProfileEdit}>Cancel</Button>
           )}
@@ -493,25 +513,74 @@ const CandidateSettings = () => {
               <div style={{ position: "relative", display: "inline-block" }}>
                 <Avatar
                   size={100}
-                  src={userData.avatar}
+                  src={userData.image}
                   icon={<UserOutlined />}
                   style={{ border: "4px solid #da2c46" }}
                 />
                 {isProfileEditable && (
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    icon={<CameraOutlined />}
-                    size="small"
-                    onClick={() => setUploadModal(true)}
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      right: 0,
-                      background: "#da2c46",
-                      border: "2px solid white",
-                    }}
-                  />
+                  <div style={{ marginTop: 16 }}>
+                    <Upload
+                      accept="image/*"
+                      showUploadList={false}
+                      beforeUpload={(file) => {
+                        // Validate file type
+                        const allowedTypes = [
+                          "image/jpeg",
+                          "image/jpg",
+                          "image/png",
+                          "image/webp",
+                        ];
+                        if (!allowedTypes.includes(file.type)) {
+                          message.error(
+                            "Only JPEG, JPG, PNG, and WEBP files are allowed!"
+                          );
+                          return false;
+                        }
+
+                        // Validate file size (5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          message.error("File size should not exceed 5MB!");
+                          return false;
+                        }
+
+                        // Create preview URL
+                        const previewUrl = URL.createObjectURL(file);
+                        setUserData({
+                          ...userData,
+                          image: previewUrl,
+                          imageFile: file, // Store the File object
+                        });
+                        return false; // Prevent default upload
+                      }}
+                    >
+                      <Button
+                        type="primary"
+                        icon={<CameraOutlined />}
+                        style={{
+                          marginRight: 8,
+                          background: "#da2c46",
+                          border: "none",
+                        }}
+                      >
+                        Upload
+                      </Button>
+                    </Upload>
+                    {userData.image && (
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          setUserData({
+                            ...userData,
+                            image: "",
+                            imageFile: null,
+                          });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </Col>
@@ -1147,46 +1216,6 @@ const CandidateSettings = () => {
     </div>
   );
 
-  const UploadModal = (
-    <Modal
-      title="Upload Profile Picture"
-      visible={uploadModal}
-      onOk={() => setUploadModal(false)}
-      onCancel={() => setUploadModal(false)}
-      footer={[
-        <Button key="cancel" onClick={() => setUploadModal(false)}>
-          Cancel
-        </Button>,
-        <Button
-          key="upload"
-          type="primary"
-          onClick={() => setUploadModal(false)}
-          style={{ background: "#da2c46", border: "none" }}
-        >
-          Upload
-        </Button>,
-      ]}
-    >
-      <Upload.Dragger
-        name="avatar"
-        multiple={false}
-        action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-        onChange={handleAvatarUpload}
-        showUploadList={false}
-      >
-        <p className="ant-upload-drag-icon">
-          <UploadOutlined style={{ fontSize: 48, color: "#da2c46" }} />
-        </p>
-        <p className="ant-upload-text">
-          Click or drag file to this area to upload
-        </p>
-        <p className="ant-upload-hint">
-          Support for a single upload. Recommended size: 500x500 px
-        </p>
-      </Upload.Dragger>
-    </Modal>
-  );
-
   return (
     <div style={{ padding: 24 }}>
       <Row gutter={24}>
@@ -1201,7 +1230,7 @@ const CandidateSettings = () => {
             <div style={{ marginBottom: 24 }}>
               <Avatar
                 size={100}
-                src={userData.avatar}
+                src={userData.image}
                 icon={<UserOutlined />}
                 style={{ border: "4px solid #da2c46" }}
               />
@@ -1274,8 +1303,6 @@ const CandidateSettings = () => {
           </Card>
         </Col>
       </Row>
-
-      {UploadModal}
     </div>
   );
 };
