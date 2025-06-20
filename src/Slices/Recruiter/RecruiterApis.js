@@ -48,10 +48,10 @@ export const recruiterApi = createApi({
       }),
     }),
     updateCandidateStatus: builder.mutation({
-      query: ({ candidateId, status }) => ({
+      query: ({ candidateId, status,jobId }) => ({
         url: `/candidate/status/${candidateId}`,
         method: "POST",
-        body: { status },
+        body: { status , jobId},
       }),
     }),
   }),

@@ -45,6 +45,7 @@ const { Panel } = Collapse;
 const { TabPane } = Tabs;
 
 const SourcedCandidates = ({ jobId }) => {
+  console.log(jobId, "JOB");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("sourced");
@@ -103,7 +104,8 @@ const SourcedCandidates = ({ jobId }) => {
     return {
       // Candidates without candidateStatus or with null/undefined status are considered "sourced"
       sourcedCandidates: allCandidates.filter(
-        (candidate) => !candidate.candidateStatus || candidate.candidateStatus === "sourced"
+        (candidate) =>
+          !candidate.candidateStatus || candidate.candidateStatus === "sourced"
       ),
       selectedCandidates: allCandidates.filter(
         (candidate) => candidate.candidateStatus === "selected"
@@ -192,14 +194,17 @@ const SourcedCandidates = ({ jobId }) => {
       await updateCandidateStatus({
         candidateId: selectedCandidate._id,
         status: newStatus,
+        jobId: jobId,
       }).unwrap();
 
       const statusMessages = {
         selected: "Candidate moved to selected successfully",
-        screening: "Candidate moved to screening successfully"
+        screening: "Candidate moved to screening successfully",
       };
 
-      message.success(statusMessages[newStatus] || "Candidate status updated successfully");
+      message.success(
+        statusMessages[newStatus] || "Candidate status updated successfully"
+      );
       refetch();
       setIsModalVisible(false);
     } catch (error) {
@@ -210,29 +215,29 @@ const SourcedCandidates = ({ jobId }) => {
 
   const getModalButtonText = () => {
     if (!selectedCandidate) return "Update Status";
-    
+
     const currentStatus = selectedCandidate.candidateStatus;
-    
+
     if (!currentStatus || currentStatus === "sourced") {
       return "Move to Selected";
     } else if (currentStatus === "selected") {
       return "Move to Screening";
     }
-    
+
     return "Update Status";
   };
 
   const getNextStatus = () => {
     if (!selectedCandidate) return "selected";
-    
+
     const currentStatus = selectedCandidate.candidateStatus;
-    
+
     if (!currentStatus || currentStatus === "sourced") {
       return "selected";
     } else if (currentStatus === "selected") {
       return "screening";
     }
-    
+
     return "selected";
   };
 
@@ -548,7 +553,13 @@ const SourcedCandidates = ({ jobId }) => {
               {selectedCandidate.title}
             </Descriptions.Item>
             <Descriptions.Item label="Current Status">
-              <Tag color={selectedCandidate.candidateStatus === "selected" ? "green" : "blue"}>
+              <Tag
+                color={
+                  selectedCandidate.candidateStatus === "selected"
+                    ? "green"
+                    : "blue"
+                }
+              >
                 {selectedCandidate.candidateStatus || "Sourced"}
               </Tag>
             </Descriptions.Item>

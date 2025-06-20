@@ -201,6 +201,7 @@ const ScreeningCandidates = ({ jobId }) => {
       await updateCandidateStatus({
         candidateId: selectedCandidate._id,
         status: newStatus,
+        jobId: jobId,
         ...additionalData,
       }).unwrap();
 

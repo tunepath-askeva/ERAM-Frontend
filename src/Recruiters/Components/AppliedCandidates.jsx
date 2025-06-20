@@ -139,10 +139,8 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   };
 
   const handleStatusChange = (applicationId, newStatus) => {
-    // This would typically call an API to update the status
     console.log("Updating status:", applicationId, newStatus);
     message.success(`Candidate status updated to ${newStatus}`);
-    // You would typically refetch the data here or update local state
   };
 
   const handleMoveToScreening = async (candidateId) => {
@@ -150,6 +148,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       await updateCandidateStatus({
         candidateId: candidateId,
         status: "screening",
+        jobId: jobId
       }).unwrap();
 
       message.success("Candidate moved to screening successfully!");
