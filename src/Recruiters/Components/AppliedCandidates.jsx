@@ -42,6 +42,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const { data, error, isLoading, refetch } = useGetJobApplicationsQuery(jobId);
+  console.log(data, "jobs")
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
@@ -146,7 +147,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const handleMoveToScreening = async (candidateId) => {
     try {
       await updateCandidateStatus({
-        candidateId: candidateId,
+        Id: candidateId,
         status: "screening",
         jobId: jobId
       }).unwrap();

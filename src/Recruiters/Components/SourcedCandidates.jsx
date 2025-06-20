@@ -33,8 +33,9 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import {
-  useGetSourcedCandidateQuery,
+  useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
+  useGetSourcedCandidateQuery
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 
@@ -69,13 +70,30 @@ const SourcedCandidates = ({ jobId }) => {
     refetch,
   } = useGetSourcedCandidateQuery({});
 
+  const {
+    data: jobApplications,
+    isLoading: jobLoading,
+    error: jobError,
+    refetch: jobRefetch,
+  } = useGetJobApplicationsQuery(jobId);
+
+  const allCandidates = useMemo(() => {
+    return (
+      jobApplications?.formResponses?.map((response) => ({
+        ...response.user,
+        candidateStatus: response.status,
+        applicationId: response._id,
+        responses: response.responses,
+      })) || []
+    );
+  }, [jobApplications]);
+
   const filterOptions = useMemo(() => {
-    const sourcedUsers = filteredSource?.users || [];
     const allSkills = new Set();
     const allEducation = new Set();
     const allLocations = new Set();
 
-    sourcedUsers.forEach((user) => {
+    allCandidates.forEach((user) => {
       if (user.skills && Array.isArray(user.skills)) {
         user.skills.forEach((skill) => allSkills.add(skill.toLowerCase()));
       }
@@ -97,21 +115,20 @@ const SourcedCandidates = ({ jobId }) => {
       education: Array.from(allEducation).sort(),
       locations: Array.from(allLocations).sort(),
     };
-  }, [filteredSource?.users]);
+  }, [allCandidates]);
 
   const { sourcedCandidates, selectedCandidates } = useMemo(() => {
-    const allCandidates = filteredSource?.users || [];
     return {
-      // Candidates without candidateStatus or with null/undefined status are considered "sourced"
       sourcedCandidates: allCandidates.filter(
         (candidate) =>
-          !candidate.candidateStatus || candidate.candidateStatus === "sourced"
+          candidate.candidateStatus === "applied" ||
+          candidate.candidateStatus === "sourced"
       ),
       selectedCandidates: allCandidates.filter(
         (candidate) => candidate.candidateStatus === "selected"
       ),
     };
-  }, [filteredSource?.users]);
+  }, [allCandidates]);
 
   const filteredCandidates = useMemo(() => {
     let candidates = sourcedCandidates;
@@ -192,7 +209,8 @@ const SourcedCandidates = ({ jobId }) => {
       if (!selectedCandidate) return;
 
       await updateCandidateStatus({
-        candidateId: selectedCandidate._id,
+        applicationId: selectedCandidate.applicationId,
+        Id: selectedCandidate._id,
         status: newStatus,
         jobId: jobId,
       }).unwrap();

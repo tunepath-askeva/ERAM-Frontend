@@ -21,7 +21,6 @@ import {
   DatePicker,
   TimePicker,
   Form,
-  
 } from "antd";
 import {
   SearchOutlined,
@@ -37,12 +36,12 @@ import {
   CloseOutlined,
 } from "@ant-design/icons";
 import {
-  useGetSourcedCandidateQuery,
+  useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
+  useGetSourcedCandidateQuery ,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
-
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -69,17 +68,40 @@ const ScreeningCandidates = ({ jobId }) => {
   });
 
   const {
+    data: jobApplications,
+    isLoading: jobLoading,
+    error: jobError,
+    refetch: jobRefetch,
+  } = useGetJobApplicationsQuery(jobId);
+
+  const {
     data: filteredSource,
     isLoading,
     error,
     refetch,
   } = useGetSourcedCandidateQuery({});
 
+  console.log(filteredSource, "Filtered");
+
+  const allCandidates = useMemo(() => {
+    return (
+      jobApplications?.formResponses?.map((response) => ({
+        ...response.user,
+        candidateStatus: response.status,
+        applicationId: response._id,
+        responses: response.responses,
+      })) || []
+    );
+  }, [jobApplications]);
+
   const filterOptions = useMemo(() => {
-    const screeningCandidates =
-      filteredSource?.users?.filter(
-        (candidate) => candidate.candidateStatus === "screening"
-      ) || [];
+    const screeningCandidates = allCandidates.filter(
+      (candidate) =>
+        candidate.candidateStatus === "screening" ||
+        candidate.candidateStatus === "interview" ||
+        candidate.candidateStatus === "shortlisted" ||
+        candidate.candidateStatus === "rejected"
+    );
 
     const allSkills = new Set();
     const allEducation = new Set();
@@ -107,14 +129,17 @@ const ScreeningCandidates = ({ jobId }) => {
       education: Array.from(allEducation).sort(),
       locations: Array.from(allLocations).sort(),
     };
-  }, [filteredSource?.users]);
+  }, [allCandidates]);
 
   const screeningCandidates = useMemo(() => {
-    const allCandidates = filteredSource?.users || [];
     return allCandidates.filter(
-      (candidate) => candidate.candidateStatus === "screening"
+      (candidate) =>
+        candidate.candidateStatus === "screening" ||
+        candidate.candidateStatus === "interview" ||
+        candidate.candidateStatus === "shortlisted" ||
+        candidate.candidateStatus === "rejected"
     );
-  }, [filteredSource?.users]);
+  }, [allCandidates]);
 
   const filteredCandidates = useMemo(() => {
     let candidates = screeningCandidates;
@@ -199,7 +224,7 @@ const ScreeningCandidates = ({ jobId }) => {
       if (!selectedCandidate) return;
 
       await updateCandidateStatus({
-        candidateId: selectedCandidate._id,
+        applicationId: selectedCandidate.applicationId,
         status: newStatus,
         jobId: jobId,
         ...additionalData,
@@ -223,18 +248,20 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
-const handleScheduleSubmit = (values) => {
-  const interviewDateTime = dayjs(values.date.format('YYYY-MM-DD') + ' ' + values.time.format('HH:mm'));
-  
-  const scheduleData = {
-    interviewType: values.interviewType,
-    interviewDateTime: interviewDateTime.toISOString(),
-    interviewNotes: values.notes,
-    interviewLink: values.interviewLink,
-  };
+  const handleScheduleSubmit = (values) => {
+    const interviewDateTime = dayjs(
+      values.date.format("YYYY-MM-DD") + " " + values.time.format("HH:mm")
+    );
 
-  handleStatusUpdate("interview", scheduleData);
-};
+    const scheduleData = {
+      interviewType: values.interviewType,
+      interviewDateTime: interviewDateTime.toISOString(),
+      interviewNotes: values.notes,
+      interviewLink: values.interviewLink,
+    };
+
+    handleStatusUpdate("interview", scheduleData);
+  };
 
   const getScreeningStatusColor = (status) => {
     const colors = {
