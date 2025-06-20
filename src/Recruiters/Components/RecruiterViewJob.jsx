@@ -29,6 +29,7 @@ const RecruiterViewJob = () => {
   const { id } = useParams();
   const { data, error, isLoading } = useGetRecruiterJobIdQuery(id);
 
+
   if (isLoading) {
     return (
       <div
