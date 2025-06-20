@@ -131,6 +131,8 @@ const CandidateSettings = () => {
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
+    const [fileList, setFileList] = useState([]);
+    const [imageFile, setImageFile] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
     degree: "",
@@ -280,13 +282,34 @@ const CandidateSettings = () => {
     setLoading(false);
   };
 
-  const handleAvatarUpload = ({ file, fileList }) => {
-    if (file.status === "done") {
-      message.success("Profile picture updated successfully!");
-      setUserData({
-        ...userData,
-        image: URL.createObjectURL(file.originFileObj),
-      });
+const handleAvatarUpload = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+
+    if (newFileList.length > 0) {
+      const file = newFileList[0].originFileObj || newFileList[0];
+
+      if (!file || file.url) {
+        return;
+      }
+
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowedTypes.includes(file.type)) {
+        message.error("Only JPEG, JPG, and PNG files are allowed!");
+        setFileList([]);
+        setImageFile(null);
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        message.error("File size should not exceed 5MB!");
+        setFileList([]);
+        setImageFile(null);
+        return;
+      }
+
+      setImageFile(file);
+    } else {
+      setImageFile(null);
     }
   };
 
@@ -304,15 +327,13 @@ const CandidateSettings = () => {
 
       const formData = new FormData();
 
-      // Append all form values to formData
       Object.entries(formValues).forEach(([key, value]) => {
         formData.append(key, value);
       });
 
-      // if (userData.imageFile) {
-      //   formData.append("image", userData.imageFile);
-      // }
-
+    if (imageFile) {
+  formData.append("image", imageFile);  
+}
       formData.append("skills", JSON.stringify(userData.skills));
       formData.append("education", JSON.stringify(userData.education));
       formData.append(
@@ -321,22 +342,16 @@ const CandidateSettings = () => {
       );
       formData.append("preferences", JSON.stringify(userData.preferences));
       formData.append("privacy", JSON.stringify(userData.privacy));
-
-      // Send the update request
       const res = await profileComplete(formData).unwrap();
       console.log("Profile update response:", res);
-
-      // Check if email was changed
       const emailChanged = formValues.email !== userData.email;
 
-      // Update local storage with new user info
       const updatedUserInfo = {
         email: formValues.email,
         name: `${formValues.firstName} ${formValues.lastName}`.trim(),
-        roles: "candidate", // Assuming this is always candidate for this component
+        roles: "candidate", 
       };
 
-      // Dispatch to Redux store
       dispatch(
         setUserCredentials({
           userInfo: updatedUserInfo,
@@ -544,37 +559,11 @@ const CandidateSettings = () => {
                   <div style={{ marginTop: 16 }}>
                     <Upload
                       accept="image/*"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        // Validate file type
-                        const allowedTypes = [
-                          "image/jpeg",
-                          "image/jpg",
-                          "image/png",
-                          "image/webp",
-                        ];
-                        if (!allowedTypes.includes(file.type)) {
-                          message.error(
-                            "Only JPEG, JPG, PNG, and WEBP files are allowed!"
-                          );
-                          return false;
-                        }
-
-                        // Validate file size (5MB)
-                        if (file.size > 5 * 1024 * 1024) {
-                          message.error("File size should not exceed 5MB!");
-                          return false;
-                        }
-
-                        // Create preview URL
-                        const previewUrl = URL.createObjectURL(file);
-                        setUserData({
-                          ...userData,
-                          image: previewUrl,
-                          imageFile: file, // Store the File object
-                        });
-                        return false; // Prevent default upload
-                      }}
+                     fileList={fileList}
+                     onChange={handleAvatarUpload}
+                     beforeUpload={()=> false}
+                     maxCount={1}
+                      
                     >
                       <Button
                         type="primary"
