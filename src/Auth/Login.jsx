@@ -337,7 +337,7 @@ const Login = () => {
             </Form.Item>
           </Form>
 
-          <Divider
+          {/* <Divider
             style={{
               margin: "24px 0",
               color: "#bdc3c7",
@@ -345,9 +345,9 @@ const Login = () => {
             }}
           >
             or sign in with email
-          </Divider>
+          </Divider> */}
 
-          <Button
+          {/* <Button
             onClick={handleGoogleSignIn}
             size="large"
             block
@@ -368,7 +368,7 @@ const Login = () => {
           >
             <img src="/google-logo.svg" />
             Continue with Google
-          </Button>
+          </Button> */}
 
           <div
             style={{

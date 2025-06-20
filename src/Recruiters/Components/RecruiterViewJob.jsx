@@ -19,6 +19,7 @@ import {
   Radio,
 } from "antd";
 import SourcedCandidates from "./SourcedCandidates";
+import ScreeningCandidates from "./ScreeningCandidates";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -664,6 +665,16 @@ const RecruiterViewJob = () => {
               key="declined"
             >
               <AppliedCandidates jobId={id} candidateType="declined" />
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Screening Candidates
+                </span>
+              }
+              key="screening"
+            >
+              <ScreeningCandidates jobId={id} candidateType="screening" />
             </TabPane>
           </Tabs>
         </div>
