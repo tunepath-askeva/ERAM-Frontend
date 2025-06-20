@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Modal, Form, Input, Button, Row, Col, Select, message } from "antd";
+import { Modal, Form, Input, Button, Row, Col, Select } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -15,6 +15,7 @@ import {
   useAddCandidateMutation, 
   useEditCandidateMutation 
 } from "../../Slices/Admin/AdminApis.js";
+import { useSnackbar } from "notistack";
 
 const { Option } = Select;
 
@@ -23,6 +24,7 @@ const { TextArea } = Input;
 const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidate }) => {
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
+  const { enqueueSnackbar } = useSnackbar();
 
   const isEditMode = !!editingCandidate;
   const isLoading = isAdding || isEditing;
@@ -71,7 +73,7 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
           candidateData: editPayload
         }).unwrap();
         
-        message.success("Candidate updated successfully!");
+        enqueueSnackbar("Candidate updated successfully!", { variant: "success" });
       } else {
         const createPayload = {
           ...payload,
@@ -80,7 +82,7 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
         };
 
         await addCandidate(createPayload).unwrap();
-        message.success("Candidate created successfully!");
+        enqueueSnackbar("Candidate created successfully!", { variant: "success" });
       }
 
       if (onSubmit) {
@@ -91,9 +93,10 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
       form.resetFields();
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} candidate:`, error);
-      message.error(
+      enqueueSnackbar(
         error?.data?.message || 
-        `Failed to ${isEditMode ? 'update' : 'create'} candidate. Please try again.`
+        `Failed to ${isEditMode ? 'update' : 'create'} candidate. Please try again.`,
+        { variant: "error" }
       );
     }
   };

@@ -11,7 +11,6 @@ import {
   Space,
   Badge,
   Modal,
-  message,
   Divider,
   Descriptions,
   List,
@@ -36,14 +35,15 @@ import {
   CheckOutlined,
   StopOutlined,
   CheckCircleOutlined,
-  CopyOutlined, // Add this import for copy icon
+  CopyOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 import {
   useGetPipelinesQuery,
   useDeletePipelineMutation,
   useGetPipelineByIdQuery,
   useDisablePipelineMutation,
-  useCopyPipelineMutation, // Add this import
+  useCopyPipelineMutation,
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal";
 import "../../index.css";
@@ -60,8 +60,10 @@ const Pipeline = () => {
   const [selectedPipelineId, setSelectedPipelineId] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [pipelineToToggle, setPipelineToToggle] = useState(null);
-  const [copyModalVisible, setCopyModalVisible] = useState(false); // Add state for copy modal
-  const [pipelineToCopy, setPipelineToCopy] = useState(null); // Add state for pipeline to copy
+  const [copyModalVisible, setCopyModalVisible] = useState(false);
+  const [pipelineToCopy, setPipelineToCopy] = useState(null);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const {
     data: pipelinesResponse,
@@ -83,7 +85,7 @@ const Pipeline = () => {
   const [disablePipeline, { isLoading: isDisabling }] =
     useDisablePipelineMutation();
 
-  const [copyPipeline, { isLoading: isCopying }] = useCopyPipelineMutation(); // Add copy mutation
+  const [copyPipeline, { isLoading: isCopying }] = useCopyPipelineMutation();
 
   const pipelines = pipelinesResponse?.allPipelines || [];
 
@@ -106,8 +108,9 @@ const Pipeline = () => {
 
     try {
       await deletePipeline(pipelineToDelete._id).unwrap();
-      message.success(
-        `Pipeline "${pipelineToDelete.name}" deleted successfully`
+      enqueueSnackbar(
+        `Pipeline "${pipelineToDelete.name}" deleted successfully`,
+        { variant: "success" }
       );
       setDeleteModalVisible(false);
       setPipelineToDelete(null);
@@ -115,7 +118,7 @@ const Pipeline = () => {
     } catch (error) {
       const errorMessage =
         error?.data?.message || error?.message || "Failed to delete pipeline";
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
       console.error("Delete error:", error);
     }
   };
@@ -135,12 +138,11 @@ const Pipeline = () => {
 
     try {
       const response = await disablePipeline(pipelineToToggle._id).unwrap();
-
       const newStatus = response.pipeline.pipelineStatus;
-      message.success(
-        `Pipeline "${pipelineToToggle.name}" is now ${newStatus}`
+      enqueueSnackbar(
+        `Pipeline "${pipelineToToggle.name}" is now ${newStatus}`,
+        { variant: "success" }
       );
-
       setDisableModalVisible(false);
       setPipelineToToggle(null);
       refetch();
@@ -149,12 +151,11 @@ const Pipeline = () => {
         error?.data?.message ||
         error?.message ||
         "Failed to update pipeline status";
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
       console.error("Status change error:", error);
     }
   };
 
-  // Add copy functionality
   const showCopyModal = (pipeline) => {
     setPipelineToCopy(pipeline);
     setCopyModalVisible(true);
@@ -170,8 +171,9 @@ const Pipeline = () => {
 
     try {
       const response = await copyPipeline(pipelineToCopy._id).unwrap();
-      message.success(
-        `Pipeline "${pipelineToCopy.name}" copied successfully as "${response.data.name}"`
+      enqueueSnackbar(
+        `Pipeline "${pipelineToCopy.name}" copied successfully as "${response.data.name}"`,
+        { variant: "success" }
       );
       setCopyModalVisible(false);
       setPipelineToCopy(null);
@@ -179,7 +181,7 @@ const Pipeline = () => {
     } catch (error) {
       const errorMessage =
         error?.data?.message || error?.message || "Failed to copy pipeline";
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
       console.error("Copy error:", error);
     }
   };
@@ -471,7 +473,6 @@ const Pipeline = () => {
                       </div>
                     </div>
 
-                    {/* Moved actions here */}
                     <div style={{ marginTop: "auto" }}>
                       <Space
                         size="small"
