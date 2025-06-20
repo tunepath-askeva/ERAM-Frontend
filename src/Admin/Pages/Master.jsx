@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSnackbar } from 'notistack';
 import {
   Card,
   Button,
@@ -48,6 +49,7 @@ const Master = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [projectToToggle, setProjectToToggle] = useState(null);
+  const { enqueueSnackbar } = useSnackbar();
 
   const {
     data: projectsData,
@@ -109,14 +111,22 @@ const Master = () => {
 
     try {
       await deleteProject(projectToDelete._id).unwrap();
-      message.success(`Project "${projectToDelete.name}" deleted successfully`);
+      enqueueSnackbar(`Project "${projectToDelete.name}" deleted successfully`, {
+        variant: 'success',
+  
+       
+      });
       setDeleteModalVisible(false);
       setProjectToDelete(null);
       refetchProjects();
     } catch (error) {
       console.error("Delete error:", error);
-      message.error(
-        error?.data?.message || error?.message || "Failed to delete project"
+      enqueueSnackbar(
+        error?.data?.message || error?.message || "Failed to delete project",
+        {
+          variant: 'error',
+          
+        }
       );
     }
   };
@@ -135,27 +145,32 @@ const Master = () => {
     if (!projectToToggle) return;
 
     try {
-      const newStatus =
-        projectToToggle.status === "active" ? "inActive" : "active";
+      const newStatus = projectToToggle.status === "active" ? "inActive" : "active";
       await toggleProjectStatus({
         projectId: projectToToggle._id,
         accountStatus: newStatus,
       }).unwrap();
 
-      message.success(
-        `Project "${projectToToggle.name}" has been ${
-          newStatus === "active" ? "activated" : "deactivated"
-        } successfully`
+      enqueueSnackbar(
+        `Project "${projectToToggle.name}" has been ${newStatus === "active" ? "activated" : "deactivated"
+        } successfully`,
+        {
+          variant: 'success',
+          
+        }
       );
+
       setStatusModalVisible(false);
       setProjectToToggle(null);
       refetchProjects();
     } catch (error) {
       console.error("Status toggle error:", error);
-      message.error(
-        error?.data?.message ||
-          error?.message ||
-          "Failed to update project status"
+      enqueueSnackbar(
+        error?.data?.message || error?.message || "Failed to update project status",
+        {
+          variant: 'error',
+         
+        }
       );
     }
   };
@@ -906,7 +921,7 @@ const Master = () => {
                 projectToToggle?.status === "active" ? "#fff2f0" : "#f6ffed",
               border: `1px solid ${
                 projectToToggle?.status === "active" ? "#ffccc7" : "#b7eb8f"
-              }`,
+                }`,
               borderRadius: "8px",
               padding: "16px",
               marginBottom: "20px",

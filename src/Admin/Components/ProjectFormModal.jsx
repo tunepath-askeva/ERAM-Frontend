@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Input, Button, Typography, message } from "antd";
+import { Modal, Input, Button, Typography } from "antd";
 import {
   PlusOutlined,
   ProjectOutlined,
@@ -12,6 +12,7 @@ import {
   useEditProjectMutation,
   useGetAdminBranchQuery,
 } from "../../Slices/Admin/AdminApis.js";
+import { useSnackbar } from "notistack";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -30,6 +31,7 @@ const ProjectFormModal = ({
     description: "",
   });
   const [errors, setErrors] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
 
   const [addProject] = useAddProjectMutation();
   const [updateProject] = useEditProjectMutation();
@@ -41,7 +43,6 @@ const ProjectFormModal = ({
   useEffect(() => {
     if (visible) {
       if (mode === "edit" && editProject) {
-        // For edit mode, split the prefix to show only the part before the branch order
         const prefixParts = editProject.prefix?.split("-") || [];
         const prefixWithoutOrder = prefixParts.slice(0, -1).join("-");
 
@@ -106,17 +107,19 @@ const ProjectFormModal = ({
           id: editProject._id,
           ...finalFormData,
         }).unwrap();
-        message.success("Project updated successfully!");
+        enqueueSnackbar("Project updated successfully!", { variant: "success" });
       } else {
         await addProject(finalFormData).unwrap();
-        message.success("Project created successfully!");
+        enqueueSnackbar("Project created successfully!", { variant: "success" });
       }
 
       handleReset();
       onSuccess?.();
     } catch (error) {
       console.error("Error:", error);
-      message.error(error?.data?.message || `Failed to ${mode} project`);
+      enqueueSnackbar(error?.data?.message || `Failed to ${mode} project`, { 
+        variant: "error" 
+      });
     } finally {
       setLoading(false);
     }
