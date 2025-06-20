@@ -78,6 +78,17 @@ const { TextArea } = Input;
 const { TabPane } = Tabs;
 const { Step } = Steps;
 
+const degreeOptions = [
+  "High School",
+  "Associate Degree",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "Doctorate (PhD)",
+  "Diploma",
+  "Certificate",
+  "Professional Degree",
+];
+
 const CandidateSettings = () => {
   const [userData, setUserData] = useState({
     firstName: "",
@@ -111,13 +122,19 @@ const CandidateSettings = () => {
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const [editMode, setEditMode] = useState({});
+  const [isProfileEditable, setIsProfileEditable] = useState(false); // Single edit mode for profile
   const [uploadModal, setUploadModal] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState(75);
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
-  const [editingEducationData, setEditingEducationData] = useState({});
+  const [editingEducationData, setEditingEducationData] = useState({
+    title: "",
+    degree: "",
+    field: "",
+    institution: "",
+    year: "",
+  });
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [editingWorkData, setEditingWorkData] = useState({});
 
@@ -157,10 +174,16 @@ const CandidateSettings = () => {
         location: candidateData.location || "",
         title: candidateData.title || "",
         education: Array.isArray(candidateData.education)
-          ? candidateData.education.map(edu => ({ ...edu, id: edu.id || Math.random().toString(36).substr(2, 9) }))
+          ? candidateData.education.map((edu) => ({
+              ...edu,
+              id: edu.id || Math.random().toString(36).substr(2, 9),
+            }))
           : [],
         workExperience: Array.isArray(candidateData.workExperience)
-          ? candidateData.workExperience.map(work => ({ ...work, id: work.id || Math.random().toString(36).substr(2, 9) }))
+          ? candidateData.workExperience.map((work) => ({
+              ...work,
+              id: work.id || Math.random().toString(36).substr(2, 9),
+            }))
           : [],
         preferences: {
           emailNotifications:
@@ -215,33 +238,6 @@ const CandidateSettings = () => {
     setProfileCompletion(Math.min(completion, 100));
   };
 
-  const handleProfileUpdate = async (values) => {
-    setLoading(true);
-    try {
-      const payload = {
-        ...userData,
-        ...values,
-        skills: userData.skills,
-        education: userData.education,
-        workExperience: userData.workExperience,
-      };
-
-      console.log("Payload to send to backend:", payload);
-
-      const res = await profileComplete(payload);
-      console.log(res, "hi response =-=");
-
-      setUserData((prevData) => ({ ...prevData, ...values }));
-
-      message.success("Profile updated successfully!");
-      setEditMode({});
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      message.error("Failed to update profile");
-    }
-    setLoading(false);
-  };
-
   const handlePreferencesUpdate = async (values) => {
     setLoading(true);
     try {
@@ -291,114 +287,19 @@ const CandidateSettings = () => {
     }
   };
 
-  const addEducation = () => {
-    educationForm.resetFields();
-    setEditingEducationId(null);
-    setIsEduModalVisible(true);
-  };
-
-  const handleEducationSubmit = async () => {
-    try {
-      const values = await educationForm.validateFields();
-      const newEducation = { 
-        ...values, 
-        id: editingEducationId || Math.random().toString(36).substr(2, 9) 
-      };
-      
-      if (editingEducationId) {
-        setUserData((prev) => ({
-          ...prev,
-          education: prev.education.map(edu => 
-            edu.id === editingEducationId ? newEducation : edu
-          ),
-        }));
-      } else {
-        setUserData((prev) => ({
-          ...prev,
-          education: [...prev.education, newEducation],
-        }));
-      }
-      setIsEduModalVisible(false);
-      setEditingEducationId(null);
-    } catch (err) {
-      console.log("Validation error:", err);
+  // Toggle edit mode for profile
+  const toggleProfileEdit = () => {
+    if (isProfileEditable) {
+      // If canceling edit, reset form to original values
+      profileForm.setFieldsValue(userData);
     }
+    setIsProfileEditable(!isProfileEditable);
   };
 
-  const handleEditEducation = (edu) => {
-    setEditingEducationId(edu.id);
-    setEditingEducationData(edu);
-    educationForm.setFieldsValue(edu);
-    setIsEduModalVisible(true);
-  };
-
-  const addWorkExperience = () => {
-    workForm.resetFields();
-    setEditingWorkId(null);
-    setIsWorkModalVisible(true);
-  };
-
-  const handleWorkSubmit = async () => {
-    try {
-      const values = await workForm.validateFields();
-      const newWork = {
-        ...values,
-        id: editingWorkId || Math.random().toString(36).substr(2, 9)
-      };
-
-      if (editingWorkId) {
-        setUserData((prev) => ({
-          ...prev,
-          workExperience: prev.workExperience.map(work => 
-            work.id === editingWorkId ? newWork : work
-          ),
-        }));
-      } else {
-        setUserData((prev) => ({
-          ...prev,
-          workExperience: [...prev.workExperience, newWork],
-        }));
-      }
-
-      setIsWorkModalVisible(false);
-      setEditingWorkId(null);
-    } catch (error) {
-      console.log("Validation failed:", error);
-    }
-  };
-
-  const handleEditWork = (work) => {
-    setEditingWorkId(work.id);
-    setEditingWorkData(work);
-    workForm.setFieldsValue(work);
-    setIsWorkModalVisible(true);
-  };
-
-  const removeEducation = (id) => {
-    setUserData({
-      ...userData,
-      education: userData.education.filter((edu) => edu.id !== id),
-    });
-  };
-
-  const removeWorkExperience = (id) => {
-    setUserData({
-      ...userData,
-      workExperience: userData.workExperience.filter((work) => work.id !== id),
-    });
-  };
-
-  const toggleEditMode = (section) => {
-    setEditMode({
-      ...editMode,
-      [section]: !editMode[section],
-    });
-  };
-
-  const handleSaveChanges = async () => {
+  // Handle profile save
+  const handleProfileSave = async () => {
     try {
       const formValues = await profileForm.validateFields();
-
       setLoading(true);
 
       const payload = {
@@ -417,7 +318,7 @@ const CandidateSettings = () => {
       setUserData((prevData) => ({ ...prevData, ...formValues }));
 
       message.success("Profile updated successfully!");
-      setEditMode({});
+      setIsProfileEditable(false); // Exit edit mode after successful save
     } catch (error) {
       console.error("Error updating profile:", error);
       message.error("Failed to update profile");
@@ -426,38 +327,167 @@ const CandidateSettings = () => {
     }
   };
 
+  const addEducation = () => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to add education");
+      return;
+    }
+    educationForm.resetFields();
+    setEditingEducationId(null);
+    setIsEduModalVisible(true);
+  };
+
+  const handleEducationSubmit = async () => {
+    try {
+      const values = await educationForm.validateFields();
+      const newEducation = {
+        ...values,
+        id: editingEducationId || Math.random().toString(36).substr(2, 9),
+      };
+
+      if (editingEducationId) {
+        setUserData((prev) => ({
+          ...prev,
+          education: prev.education.map((edu) =>
+            edu.id === editingEducationId ? newEducation : edu
+          ),
+        }));
+      } else {
+        setUserData((prev) => ({
+          ...prev,
+          education: [...prev.education, newEducation],
+        }));
+      }
+      setIsEduModalVisible(false);
+      setEditingEducationId(null);
+    } catch (err) {
+      console.log("Validation error:", err);
+    }
+  };
+
+  const handleEditEducation = (edu) => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to edit education");
+      return;
+    }
+    setEditingEducationId(edu.id);
+    setEditingEducationData(edu);
+    educationForm.setFieldsValue(edu);
+    setIsEduModalVisible(true);
+  };
+
+  const addWorkExperience = () => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to add work experience");
+      return;
+    }
+    workForm.resetFields();
+    setEditingWorkId(null);
+    setIsWorkModalVisible(true);
+  };
+
+  const handleWorkSubmit = async () => {
+    try {
+      const values = await workForm.validateFields();
+      const newWork = {
+        ...values,
+        id: editingWorkId || Math.random().toString(36).substr(2, 9),
+      };
+
+      if (editingWorkId) {
+        setUserData((prev) => ({
+          ...prev,
+          workExperience: prev.workExperience.map((work) =>
+            work.id === editingWorkId ? newWork : work
+          ),
+        }));
+      } else {
+        setUserData((prev) => ({
+          ...prev,
+          workExperience: [...prev.workExperience, newWork],
+        }));
+      }
+
+      setIsWorkModalVisible(false);
+      setEditingWorkId(null);
+    } catch (error) {
+      console.log("Validation failed:", error);
+    }
+  };
+
+  const handleEditWork = (work) => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to edit work experience");
+      return;
+    }
+    setEditingWorkId(work.id);
+    setEditingWorkData(work);
+    workForm.setFieldsValue(work);
+    setIsWorkModalVisible(true);
+  };
+
+  const removeEducation = (id) => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to remove education");
+      return;
+    }
+    setUserData({
+      ...userData,
+      education: userData.education.filter((edu) => edu.id !== id),
+    });
+  };
+
+  const removeWorkExperience = (id) => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to remove work experience");
+      return;
+    }
+    setUserData({
+      ...userData,
+      workExperience: userData.workExperience.filter((work) => work.id !== id),
+    });
+  };
+
   const ProfileContent = () => (
     <div>
+
+      <div style={{ textAlign: "right", marginBottom: 16 }}>
+        <Space style={{marginTop: "8px"}}>
+          {isProfileEditable && (
+            <Button onClick={toggleProfileEdit}>Cancel</Button>
+          )}
+          {isProfileEditable ? (
+            <Button
+              type="primary"
+              loading={loading}
+              onClick={handleProfileSave}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Save Changes
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={toggleProfileEdit}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Edit Profile
+            </Button>
+          )}
+        </Space>
+      </div>
+
       <Card
         title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>
-              <UserOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-              Basic Information
-            </span>
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => toggleEditMode("basic")}
-            >
-              {editMode.basic ? "Cancel" : "Edit"}
-            </Button>
-          </div>
+          <span>
+            <UserOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+            Basic Information
+          </span>
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
       >
-        <Form
-          form={profileForm}
-          layout="vertical"
-          onFinish={handleProfileUpdate}
-          initialValues={userData}
-        >
+        <Form form={profileForm} layout="vertical" initialValues={userData}>
           <Row gutter={24}>
             <Col span={24} style={{ textAlign: "center", marginBottom: 24 }}>
               <div style={{ position: "relative", display: "inline-block" }}>
@@ -467,20 +497,22 @@ const CandidateSettings = () => {
                   icon={<UserOutlined />}
                   style={{ border: "4px solid #da2c46" }}
                 />
-                <Button
-                  type="primary"
-                  shape="circle"
-                  icon={<CameraOutlined />}
-                  size="small"
-                  onClick={() => setUploadModal(true)}
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    right: 0,
-                    background: "#da2c46",
-                    border: "2px solid white",
-                  }}
-                />
+                {isProfileEditable && (
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<CameraOutlined />}
+                    size="small"
+                    onClick={() => setUploadModal(true)}
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      background: "#da2c46",
+                      border: "2px solid white",
+                    }}
+                  />
+                )}
               </div>
             </Col>
 
@@ -494,7 +526,7 @@ const CandidateSettings = () => {
               >
                 <Input
                   placeholder="Enter first name"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -509,7 +541,7 @@ const CandidateSettings = () => {
               >
                 <Input
                   placeholder="Enter last name"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -526,7 +558,7 @@ const CandidateSettings = () => {
                 <Input
                   prefix={<MailOutlined />}
                   placeholder="Enter email"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -542,7 +574,7 @@ const CandidateSettings = () => {
                 <Input
                   prefix={<PhoneOutlined />}
                   placeholder="Enter phone number"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -558,7 +590,7 @@ const CandidateSettings = () => {
                 <Input
                   prefix={<EnvironmentOutlined />}
                   placeholder="Enter location"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -571,7 +603,7 @@ const CandidateSettings = () => {
               >
                 <Input
                   placeholder="e.g. Full Stack Developer"
-                  disabled={!editMode.basic}
+                  disabled={!isProfileEditable}
                 />
               </Form.Item>
             </Col>
@@ -581,29 +613,14 @@ const CandidateSettings = () => {
 
       <Card
         title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>
-              <StarOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-              Skills & Expertise
-            </span>
-            <Button
-              type="link"
-              icon={<PlusOutlined />}
-              onClick={() => toggleEditMode("skills")}
-            >
-              {editMode.skills ? "Cancel" : "Add"}
-            </Button>
-          </div>
+          <span>
+            <StarOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+            Skills & Expertise
+          </span>
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
       >
-        {editMode.skills ? (
+        {isProfileEditable ? (
           <Select
             mode="tags"
             style={{ width: "100%" }}
@@ -645,9 +662,15 @@ const CandidateSettings = () => {
               <BookOutlined style={{ marginRight: 8, color: "#da2c46" }} />
               Education
             </span>
-            <Button type="link" icon={<PlusOutlined />} onClick={addEducation}>
-              Add Education
-            </Button>
+            {isProfileEditable && (
+              <Button
+                type="link"
+                icon={<PlusOutlined />}
+                onClick={addEducation}
+              >
+                Add Education
+              </Button>
+            )}
           </div>
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
@@ -656,28 +679,32 @@ const CandidateSettings = () => {
           dataSource={userData.education}
           renderItem={(edu) => (
             <List.Item
-              actions={[
-                <Button 
-                  type="link" 
-                  icon={<EditOutlined />} 
-                  onClick={() => handleEditEducation(edu)} 
-                  key="edit" 
-                />,
-                <Button
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeEducation(edu.id)}
-                  key="delete"
-                />,
-              ]}
+              actions={
+                isProfileEditable
+                  ? [
+                      <Button
+                        type="link"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditEducation(edu)}
+                        key="edit"
+                      />,
+                      <Button
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeEducation(edu.id)}
+                        key="delete"
+                      />,
+                    ]
+                  : []
+              }
             >
               <List.Item.Meta
-                title={`${edu.degree} in ${edu.field}`}
+                title={`${edu.title} (${edu.degree})`}
                 description={
                   <div>
                     <Text type="secondary">
-                      {edu.institution} • {edu.year}
+                      {edu.field} • {edu.institution} • {edu.year}
                     </Text>
                   </div>
                 }
@@ -700,13 +727,15 @@ const CandidateSettings = () => {
               <BankOutlined style={{ marginRight: 8, color: "#da2c46" }} />
               Work Experience
             </span>
-            <Button
-              type="link"
-              icon={<PlusOutlined />}
-              onClick={addWorkExperience}
-            >
-              Add Experience
-            </Button>
+            {isProfileEditable && (
+              <Button
+                type="link"
+                icon={<PlusOutlined />}
+                onClick={addWorkExperience}
+              >
+                Add Experience
+              </Button>
+            )}
           </div>
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
@@ -715,21 +744,25 @@ const CandidateSettings = () => {
           dataSource={userData.workExperience}
           renderItem={(work) => (
             <List.Item
-              actions={[
-                <Button 
-                  type="link" 
-                  icon={<EditOutlined />} 
-                  onClick={() => handleEditWork(work)} 
-                  key="edit" 
-                />,
-                <Button
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeWorkExperience(work.id)}
-                  key="delete"
-                />,
-              ]}
+              actions={
+                isProfileEditable
+                  ? [
+                      <Button
+                        type="link"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditWork(work)}
+                        key="edit"
+                      />,
+                      <Button
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeWorkExperience(work.id)}
+                        key="delete"
+                      />,
+                    ]
+                  : []
+              }
             >
               <List.Item.Meta
                 title={work.title}
@@ -749,22 +782,6 @@ const CandidateSettings = () => {
         />
       </Card>
 
-      {editMode.basic && (
-        <div style={{ textAlign: "right", marginTop: 16 }}>
-          <Space>
-            <Button onClick={() => toggleEditMode("basic")}>Cancel</Button>
-            <Button
-              type="primary"
-              loading={loading}
-              onClick={handleSaveChanges}
-              style={{ background: "#da2c46", border: "none" }}
-            >
-              Save Changes
-            </Button>
-          </Space>
-        </div>
-      )}
-
       <Modal
         visible={isEduModalVisible}
         title={editingEducationId ? "Edit Education" : "Add Education"}
@@ -776,21 +793,57 @@ const CandidateSettings = () => {
         okText={editingEducationId ? "Update" : "Add"}
       >
         <Form layout="vertical" form={educationForm}>
-          <Form.Item name="degree" label="Degree" rules={[{ required: true }]}>
-            <Input />
+          <Form.Item
+            name="title"
+            label="Education Title"
+            rules={[
+              {
+                required: true,
+                message: "Please enter a title for this education",
+              },
+            ]}
+          >
+            <Input placeholder="e.g. Computer Science Degree" />
           </Form.Item>
-          <Form.Item name="field" label="Field" rules={[{ required: true }]}>
-            <Input />
+
+          <Form.Item
+            name="degree"
+            label="Degree Type"
+            rules={[{ required: true, message: "Please select a degree type" }]}
+          >
+            <Select placeholder="Select degree type">
+              {degreeOptions.map((degree) => (
+                <Option key={degree} value={degree}>
+                  {degree}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
+
+          <Form.Item
+            name="field"
+            label="Field of Study"
+            rules={[{ required: true, message: "Please enter field of study" }]}
+          >
+            <Input placeholder="e.g. Computer Science" />
+          </Form.Item>
+
           <Form.Item
             name="institution"
             label="Institution"
-            rules={[{ required: true }]}
+            rules={[
+              { required: true, message: "Please enter institution name" },
+            ]}
           >
-            <Input />
+            <Input placeholder="e.g. University of California" />
           </Form.Item>
-          <Form.Item name="year" label="Year" rules={[{ required: true }]}>
-            <Input />
+
+          <Form.Item
+            name="year"
+            label="Year"
+            rules={[{ required: true, message: "Please enter year" }]}
+          >
+            <Input placeholder="e.g. 2015-2019" />
           </Form.Item>
         </Form>
       </Modal>
@@ -856,121 +909,130 @@ const CandidateSettings = () => {
       >
         <Row gutter={24}>
           <Col xs={24} sm={12}>
-      <Form.Item 
-        label="Preferred Locations" 
-        name="preferredLocations"
-        rules={[
-          { 
-            required: true, 
-            message: 'Please select at least one preferred location' 
-          },
-          {
-            validator: (_, value) => 
-              value && value.length <= 5 
-                ? Promise.resolve() 
-                : Promise.reject(new Error('Maximum 5 locations allowed'))
-          }
-        ]}
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select preferred locations"
-          style={{ width: "100%" }}
-        >
-          <Option value="Bengaluru">Bengaluru</Option>
-          <Option value="Mumbai">Mumbai</Option>
-          <Option value="Pune">Pune</Option>
-          <Option value="Delhi">Delhi</Option>
-          <Option value="Hyderabad">Hyderabad</Option>
-          <Option value="Chennai">Chennai</Option>
-        </Select>
-      </Form.Item>
-    </Col>
+            <Form.Item
+              label="Preferred Locations"
+              name="preferredLocations"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select at least one preferred location",
+                },
+                {
+                  validator: (_, value) =>
+                    value && value.length <= 5
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error("Maximum 5 locations allowed")
+                        ),
+                },
+              ]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select preferred locations"
+                style={{ width: "100%" }}
+              >
+                <Option value="Bengaluru">Bengaluru</Option>
+                <Option value="Mumbai">Mumbai</Option>
+                <Option value="Pune">Pune</Option>
+                <Option value="Delhi">Delhi</Option>
+                <Option value="Hyderabad">Hyderabad</Option>
+                <Option value="Chennai">Chennai</Option>
+              </Select>
+            </Form.Item>
+          </Col>
 
-    <Col xs={24} sm={12}>
-      <Form.Item 
-        label="Work Type" 
-        name="workType"
-        rules={[
-          { 
-            required: true, 
-            message: 'Please select at least one work type' 
-          }
-        ]}
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select work type"
-          style={{ width: "100%" }}
-          maxTagCount={3}
-        >
-          <Option value="Remote">Remote</Option>
-          <Option value="On-site">On-site</Option>
-          <Option value="Hybrid">Hybrid</Option>
-        </Select>
-      </Form.Item>
-    </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label="Work Type"
+              name="workType"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select at least one work type",
+                },
+              ]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select work type"
+                style={{ width: "100%" }}
+                maxTagCount={3}
+              >
+                <Option value="Remote">Remote</Option>
+                <Option value="On-site">On-site</Option>
+                <Option value="Hybrid">Hybrid</Option>
+              </Select>
+            </Form.Item>
+          </Col>
 
-    <Col xs={24} sm={12}>
-      <Form.Item 
-        label="Employment Type" 
-        name="employmentType"
-        rules={[
-          { 
-            required: true, 
-            message: 'Please select at least one employment type' 
-          },
-          {
-            validator: (_, value) =>
-              value && value.includes('Full-time') || value.includes('Part-time')
-                ? Promise.resolve()
-                : Promise.reject(new Error('Please select either Full-time or Part-time'))
-          }
-        ]}
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select employment type"
-          style={{ width: "100%" }}
-        >
-          <Option value="Full-time">Full-time</Option>
-          <Option value="Part-time">Part-time</Option>
-          <Option value="Contract">Contract</Option>
-          <Option value="Internship">Internship</Option>
-        </Select>
-      </Form.Item>
-    </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label="Employment Type"
+              name="employmentType"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select at least one employment type",
+                },
+                {
+                  validator: (_, value) =>
+                    (value && value.includes("Full-time")) ||
+                    value.includes("Part-time")
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error(
+                            "Please select either Full-time or Part-time"
+                          )
+                        ),
+                },
+              ]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select employment type"
+                style={{ width: "100%" }}
+              >
+                <Option value="Full-time">Full-time</Option>
+                <Option value="Part-time">Part-time</Option>
+                <Option value="Contract">Contract</Option>
+                <Option value="Internship">Internship</Option>
+              </Select>
+            </Form.Item>
+          </Col>
 
-    <Col xs={24} sm={12}>
-      <Form.Item 
-        label="Preferred Industries" 
-        name="industries"
-        rules={[
-          { 
-            required: true, 
-            message: 'Please select at least one industry' 
-          },
-          {
-            validator: (_, value) =>
-              value && value.length >= 1 && value.length <= 3
-                ? Promise.resolve()
-                : Promise.reject(new Error('Please select 1-3 industries'))
-          }
-        ]}
-      >
-        <Select
-          mode="multiple"
-          placeholder="Select industries"
-          style={{ width: "100%" }}
-        >
-          <Option value="Technology">Technology</Option>
-          <Option value="Startups">Startups</Option>
-          <Option value="Finance">Finance</Option>
-          <Option value="Healthcare">Healthcare</Option>
-          <Option value="E-commerce">E-commerce</Option>
-        </Select>
-      </Form.Item>
-    </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item
+              label="Preferred Industries"
+              name="industries"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select at least one industry",
+                },
+                {
+                  validator: (_, value) =>
+                    value && value.length >= 1 && value.length <= 3
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error("Please select 1-3 industries")
+                        ),
+                },
+              ]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select industries"
+                style={{ width: "100%" }}
+              >
+                <Option value="Technology">Technology</Option>
+                <Option value="Startups">Startups</Option>
+                <Option value="Finance">Finance</Option>
+                <Option value="Healthcare">Healthcare</Option>
+                <Option value="E-commerce">E-commerce</Option>
+              </Select>
+            </Form.Item>
+          </Col>
         </Row>
       </Card>
 
@@ -997,7 +1059,7 @@ const CandidateSettings = () => {
         title={
           <span>
             <LockOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Change Password
+            Password & Security
           </span>
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
@@ -1007,219 +1069,213 @@ const CandidateSettings = () => {
           layout="vertical"
           onFinish={handlePasswordChange}
         >
-          <Form.Item
-            label="Current Password"
-            name="currentPassword"
-            rules={[
-              { required: true, message: "Please enter your current password" },
-            ]}
-          >
-            <Input.Password placeholder="Enter current password" />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Current Password"
+                name="currentPassword"
+                rules={[
+                  { required: true, message: "Please enter current password" },
+                ]}
+              >
+                <Input.Password placeholder="Enter current password" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label="New Password"
-            name="newPassword"
-            rules={[
-              { required: true, message: "Please enter new password" },
-              { min: 8, message: "Password must be at least 8 characters" },
-            ]}
-          >
-            <Input.Password placeholder="Enter new password" />
-          </Form.Item>
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="New Password"
+                name="newPassword"
+                rules={[
+                  { required: true, message: "Please enter new password" },
+                  {
+                    min: 8,
+                    message: "Password must be at least 8 characters",
+                  },
+                ]}
+                hasFeedback
+              >
+                <Input.Password placeholder="Enter new password" />
+              </Form.Item>
+            </Col>
 
-          <Form.Item
-            label="Confirm New Password"
-            name="confirmPassword"
-            dependencies={["newPassword"]}
-            rules={[
-              { required: true, message: "Please confirm your password" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue("newPassword") === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("Passwords do not match"));
-                },
-              }),
-            ]}
-          >
-            <Input.Password placeholder="Confirm new password" />
-          </Form.Item>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Confirm New Password"
+                name="confirmPassword"
+                dependencies={["newPassword"]}
+                hasFeedback
+                rules={[
+                  {
+                    required: true,
+                    message: "Please confirm your new password",
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue("newPassword") === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error("The two passwords do not match!")
+                      );
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password placeholder="Confirm new password" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <div style={{ textAlign: "right", marginTop: 16 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              style={{ background: "#da2c46", border: "none" }}
-            >
-              Change Password
-            </Button>
+          <div style={{ textAlign: "right" }}>
+            <Space>
+              <Button onClick={() => passwordForm.resetFields()}>Cancel</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                style={{ background: "#da2c46", border: "none" }}
+              >
+                Change Password
+              </Button>
+            </Space>
           </div>
         </Form>
-      </Card>
-
-      <Card
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{ marginRight: 8, color: "#ff4d4f" }}
-            />
-            Account Actions
-          </span>
-        }
-        style={{ borderRadius: "12px" }}
-      >
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Alert
-            message="Danger Zone"
-            description="These actions cannot be undone. Please be careful."
-            type="warning"
-            showIcon
-          />
-
-          <div style={{ marginTop: 16 }}>
-            <Button
-              danger
-              onClick={() => {
-                Modal.confirm({
-                  title: "Are you sure you want to delete your account?",
-                  content:
-                    "This action cannot be undone. All your data will be permanently removed.",
-                  okText: "Yes, Delete Account",
-                  okType: "danger",
-                  cancelText: "Cancel",
-                  onOk() {
-                    message.success("Account deletion request submitted");
-                  },
-                });
-              }}
-            >
-              Delete Account
-            </Button>
-          </div>
-        </Space>
       </Card>
     </div>
   );
 
+  const UploadModal = (
+    <Modal
+      title="Upload Profile Picture"
+      visible={uploadModal}
+      onOk={() => setUploadModal(false)}
+      onCancel={() => setUploadModal(false)}
+      footer={[
+        <Button key="cancel" onClick={() => setUploadModal(false)}>
+          Cancel
+        </Button>,
+        <Button
+          key="upload"
+          type="primary"
+          onClick={() => setUploadModal(false)}
+          style={{ background: "#da2c46", border: "none" }}
+        >
+          Upload
+        </Button>,
+      ]}
+    >
+      <Upload.Dragger
+        name="avatar"
+        multiple={false}
+        action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+        onChange={handleAvatarUpload}
+        showUploadList={false}
+      >
+        <p className="ant-upload-drag-icon">
+          <UploadOutlined style={{ fontSize: 48, color: "#da2c46" }} />
+        </p>
+        <p className="ant-upload-text">
+          Click or drag file to this area to upload
+        </p>
+        <p className="ant-upload-hint">
+          Support for a single upload. Recommended size: 500x500 px
+        </p>
+      </Upload.Dragger>
+    </Modal>
+  );
+
   return (
-    <div style={{ padding: "16px", minHeight: "100vh" }}>
-      {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
-        <Title level={2} style={{ margin: 0, color: "#2c3e50" }}>
-          <SettingOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-          Profile Settings
-        </Title>
-        <Text
-          type="secondary"
-          style={{ display: "block", marginTop: 8, fontSize: "16px" }}
-        >
-          Manage your profile, preferences, and account settings
-        </Text>
-      </div>
+    <div style={{ padding: 24 }}>
+      <Row gutter={24}>
+        <Col xs={24} lg={6}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              textAlign: "center",
+              marginBottom: 24,
+            }}
+          >
+            <div style={{ marginBottom: 24 }}>
+              <Avatar
+                size={100}
+                src={userData.avatar}
+                icon={<UserOutlined />}
+                style={{ border: "4px solid #da2c46" }}
+              />
+              <Title level={4} style={{ marginTop: 16, marginBottom: 0 }}>
+                {userData.fullName}
+              </Title>
+              <Text type="secondary">{userData.title}</Text>
+            </div>
 
-      {/* Settings Tabs */}
-      <Card
-        style={{
-          borderRadius: "12px",
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-          background: "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          type="card"
-          size="large"
-          style={{
-            ".ant-tabs-tab": {
-              borderRadius: "8px",
-            },
-            ".ant-tabs-tab-active": {
-              background: "#da2c46",
-              color: "white",
-            },
-          }}
-        >
-          <TabPane
-            tab={
-              <span>
-                <UserOutlined style={{ marginRight: "5px" }} />
+            <Divider />
+
+            <div style={{ marginBottom: 24 }}>
+              <Title level={5} style={{ marginBottom: 16 }}>
+                Profile Completion
+              </Title>
+              <Progress
+                percent={profileCompletion}
+                strokeColor="#da2c46"
+                status="active"
+              />
+              {profileCompletion < 100 && (
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginTop: 8 }}
+                >
+                  Complete your profile to increase your visibility
+                </Text>
+              )}
+            </div>
+
+            <Divider />
+
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Button
+                type="text"
+                icon={<FileTextOutlined />}
+                block
+                onClick={() => setActiveTab("profile")}
+                style={activeTab === "profile" ? { color: "#da2c46" } : {}}
+              >
                 Profile
-              </span>
-            }
-            key="profile"
-          >
-            <ProfileContent />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <HeartOutlined style={{ marginRight: "5px" }} />
+              </Button>
+              <Button
+                type="text"
+                icon={<HeartOutlined />}
+                block
+                onClick={() => setActiveTab("preferences")}
+                style={activeTab === "preferences" ? { color: "#da2c46" } : {}}
+              >
                 Preferences
-              </span>
-            }
-            key="preferences"
-          >
-            <PreferencesContent />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
-                <LockOutlined style={{ marginRight: "5px" }} />
+              </Button>
+              <Button
+                type="text"
+                icon={<LockOutlined />}
+                block
+                onClick={() => setActiveTab("security")}
+                style={activeTab === "security" ? { color: "#da2c46" } : {}}
+              >
                 Security
-              </span>
-            }
-            key="security"
-          >
-            <SecurityContent />
-          </TabPane>
-        </Tabs>
-      </Card>
+              </Button>
+            </Space>
+          </Card>
+        </Col>
 
-      {/* Upload Modal */}
-      <Modal
-        title="Upload Profile Picture"
-        open={uploadModal}
-        onCancel={() => setUploadModal(false)}
-        footer={null}
-        centered
-      >
-        <Upload
-          name="avatar"
-          listType="picture-card"
-          className="avatar-uploader"
-          showUploadList={false}
-          beforeUpload={(file) => {
-            const isJpgOrPng =
-              file.type === "image/jpeg" || file.type === "image/png";
-            if (!isJpgOrPng) {
-              message.error("You can only upload JPG/PNG file!");
-            }
-            const isLt2M = file.size / 1024 / 1024 < 2;
-            if (!isLt2M) {
-              message.error("Image must smaller than 2MB!");
-            }
-            return isJpgOrPng && isLt2M;
-          }}
-          onChange={handleAvatarUpload}
-        >
-          <div>
-            <PlusOutlined />
-            <div style={{ marginTop: 8 }}>Upload</div>
-          </div>
-        </Upload>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <Text type="secondary">
-            Upload a profile picture (JPG/PNG, max 2MB)
-          </Text>
-        </div>
-      </Modal>
+        <Col xs={24} lg={18}>
+          <Card style={{ borderRadius: "12px" }} bodyStyle={{ padding: 0 }}>
+            {activeTab === "profile" && <ProfileContent />}
+            {activeTab === "preferences" && <PreferencesContent />}
+            {activeTab === "security" && <SecurityContent />}
+          </Card>
+        </Col>
+      </Row>
+
+      {UploadModal}
     </div>
   );
 };
