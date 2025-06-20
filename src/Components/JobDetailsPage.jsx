@@ -195,56 +195,60 @@ const JobDetailsPage = () => {
     }
   };
 
-  const handleSubmitApplication = async (values) => {
-    try {
-      if (currentStep === 0) {
-        setReviewData(values);
-        setCurrentStep(1);
-        return;
-      }
+ const handleSubmitApplication = async (values) => {
+  try {
+    if (currentStep === 0) {
+      setReviewData(values);
+      setCurrentStep(1);
+      return;
+    }
 
-      const formData = new FormData();
-      formData.append("workOrderId", jobId);
+    const formData = new FormData();
+    formData.append("workOrderId", jobId);
 
-      const responses = [];
+    const responses = [];
 
-      for (const field of job.customFields) {
-        const fieldId = field.id.toString();
-        const fieldValue = reviewData[fieldId];
+    for (const field of job.customFields) {
+      const fieldId = field.id.toString();
+      const fieldValue = reviewData[fieldId];
+      const fieldLabel = field.label; 
 
-        if (field.type === "file") {
-          const files = fileList[field.id];
-          if (files && files[0]?.originFileObj) {
-            formData.append("files", files[0].originFileObj);
-            responses.push({
-              fieldKey: fieldId,
-              value: files[0].name,
-            });
-          }
-        } else if (
-          fieldValue !== undefined &&
-          fieldValue !== null &&
-          fieldValue !== ""
-        ) {
+      if (field.type === "file") {
+        const files = fileList[field.id];
+        if (files && files[0]?.originFileObj) {
+          formData.append("files", files[0].originFileObj);
           responses.push({
             fieldKey: fieldId,
-            value: fieldValue,
+            label: fieldLabel, 
+            value: files[0].name,
           });
         }
+      } else if (
+        fieldValue !== undefined &&
+        fieldValue !== null &&
+        fieldValue !== ""
+      ) {
+        responses.push({
+          fieldKey: fieldId,
+          label: fieldLabel, 
+          value: fieldValue,
+        });
       }
-
-      formData.append("responses", JSON.stringify(responses));
-
-      await submitJobApplication(formData).unwrap();
-      message.success("Application submitted successfully!");
-      form.resetFields();
-      setFileList({});
-      setCurrentStep(2);
-    } catch (error) {
-      console.error("Submission error:", error);
-      message.error(error?.data?.message || "Submission failed");
     }
-  };
+
+    formData.append("responses", JSON.stringify(responses));
+
+    await submitJobApplication(formData).unwrap();
+    message.success("Application submitted successfully!");
+    form.resetFields();
+    setFileList({});
+    setCurrentStep(2);
+  } catch (error) {
+    console.error("Submission error:", error);
+    message.error(error?.data?.message || "Submission failed");
+  }
+};
+
 
   const handleGoBack = () => {
     navigate("/candidate-jobs");
