@@ -118,6 +118,8 @@ const CandidateSettings = () => {
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({});
+  const [editingWorkId, setEditingWorkId] = useState(null);
+  const [editingWorkData, setEditingWorkData] = useState({});
 
   const { data: getCandidate } = useGetCandidateQuery();
   const [profileComplete] = useProfileCompletionMutation();
@@ -155,10 +157,10 @@ const CandidateSettings = () => {
         location: candidateData.location || "",
         title: candidateData.title || "",
         education: Array.isArray(candidateData.education)
-          ? candidateData.education
+          ? candidateData.education.map(edu => ({ ...edu, id: edu.id || Math.random().toString(36).substr(2, 9) }))
           : [],
         workExperience: Array.isArray(candidateData.workExperience)
-          ? candidateData.workExperience
+          ? candidateData.workExperience.map(work => ({ ...work, id: work.id || Math.random().toString(36).substr(2, 9) }))
           : [],
         preferences: {
           emailNotifications:
@@ -291,45 +293,48 @@ const CandidateSettings = () => {
 
   const addEducation = () => {
     educationForm.resetFields();
+    setEditingEducationId(null);
     setIsEduModalVisible(true);
   };
 
   const handleEducationSubmit = async () => {
     try {
       const values = await educationForm.validateFields();
-      const newEducation = { ...values };
-      setUserData((prev) => ({
-        ...prev,
-        education: [...prev.education, newEducation],
-      }));
+      const newEducation = { 
+        ...values, 
+        id: editingEducationId || Math.random().toString(36).substr(2, 9) 
+      };
+      
+      if (editingEducationId) {
+        setUserData((prev) => ({
+          ...prev,
+          education: prev.education.map(edu => 
+            edu.id === editingEducationId ? newEducation : edu
+          ),
+        }));
+      } else {
+        setUserData((prev) => ({
+          ...prev,
+          education: [...prev.education, newEducation],
+        }));
+      }
       setIsEduModalVisible(false);
+      setEditingEducationId(null);
     } catch (err) {
       console.log("Validation error:", err);
     }
   };
 
   const handleEditEducation = (edu) => {
-  setEditingEducationId(edu.id);
-  setEditingEducationData(edu);
-};
-
-const handleCancelEducationEdit = () => {
-  setEditingEducationId(null);
-  setEditingEducationData({});
-};
-
-const handleSaveEducation = () => {
-  const updatedEducation = userData.education.map((edu) =>
-    edu.id === editingEducationId ? editingEducationData : edu
-  );
-  setUserData({ ...userData, education: updatedEducation });
-  setEditingEducationId(null);
-  setEditingEducationData({});
-};
-
+    setEditingEducationId(edu.id);
+    setEditingEducationData(edu);
+    educationForm.setFieldsValue(edu);
+    setIsEduModalVisible(true);
+  };
 
   const addWorkExperience = () => {
     workForm.resetFields();
+    setEditingWorkId(null);
     setIsWorkModalVisible(true);
   };
 
@@ -338,17 +343,35 @@ const handleSaveEducation = () => {
       const values = await workForm.validateFields();
       const newWork = {
         ...values,
+        id: editingWorkId || Math.random().toString(36).substr(2, 9)
       };
 
-      setUserData((prev) => ({
-        ...prev,
-        workExperience: [...prev.workExperience, newWork],
-      }));
+      if (editingWorkId) {
+        setUserData((prev) => ({
+          ...prev,
+          workExperience: prev.workExperience.map(work => 
+            work.id === editingWorkId ? newWork : work
+          ),
+        }));
+      } else {
+        setUserData((prev) => ({
+          ...prev,
+          workExperience: [...prev.workExperience, newWork],
+        }));
+      }
 
       setIsWorkModalVisible(false);
+      setEditingWorkId(null);
     } catch (error) {
       console.log("Validation failed:", error);
     }
+  };
+
+  const handleEditWork = (work) => {
+    setEditingWorkId(work.id);
+    setEditingWorkData(work);
+    workForm.setFieldsValue(work);
+    setIsWorkModalVisible(true);
   };
 
   const removeEducation = (id) => {
@@ -405,46 +428,6 @@ const handleSaveEducation = () => {
 
   const ProfileContent = () => (
     <div>
-      {/* <Card
-        style={{
-          marginBottom: 24,
-          borderRadius: "12px",
-          background:
-            "linear-gradient(135deg, rgba(218, 44, 70, 0.05) 0%, rgba(165, 22, 50, 0.05) 100%)",
-        }}
-      > */}
-      {/* <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <Title level={4} style={{ margin: 0, color: "#da2c46" }}>
-            <TrophyOutlined style={{ marginRight: 8 }} />
-            Profile Completion
-          </Title>
-          <Text style={{ fontSize: "16px", fontWeight: 600, color: "#da2c46" }}>
-            {profileCompletion}%
-          </Text>
-        </div> */}
-      {/* <Progress
-          percent={profileCompletion}
-          strokeColor={{
-            "0%": "#da2c46",
-            "100%": "#a51632",
-          }}
-          showInfo={false}
-        /> */}
-      {/* <Text
-          type="secondary"
-          style={{ fontSize: "12px", marginTop: 8, display: "block" }}
-        >
-          Complete your profile to increase visibility to recruiters
-        </Text> */}
-      {/* </Card> */}
-
       <Card
         title={
           <div
@@ -473,9 +456,7 @@ const handleSaveEducation = () => {
           form={profileForm}
           layout="vertical"
           onFinish={handleProfileUpdate}
-          onValuesChange={(changedValues, allValues) => {
-            setUserData((prevData) => ({ ...prevData, ...allValues }));
-          }}
+          initialValues={userData}
         >
           <Row gutter={24}>
             <Col span={24} style={{ textAlign: "center", marginBottom: 24 }}>
@@ -676,7 +657,12 @@ const handleSaveEducation = () => {
           renderItem={(edu) => (
             <List.Item
               actions={[
-                <Button type="link" icon={<EditOutlined />} key="edit" />,
+                <Button 
+                  type="link" 
+                  icon={<EditOutlined />} 
+                  onClick={() => handleEditEducation(edu)} 
+                  key="edit" 
+                />,
                 <Button
                   type="link"
                   danger
@@ -693,11 +679,6 @@ const handleSaveEducation = () => {
                     <Text type="secondary">
                       {edu.institution} • {edu.year}
                     </Text>
-                    {edu.grade && (
-                      <div>
-                        <Text>Grade: {edu.grade}</Text>
-                      </div>
-                    )}
                   </div>
                 }
               />
@@ -735,7 +716,12 @@ const handleSaveEducation = () => {
           renderItem={(work) => (
             <List.Item
               actions={[
-                <Button type="link" icon={<EditOutlined />} key="edit" />,
+                <Button 
+                  type="link" 
+                  icon={<EditOutlined />} 
+                  onClick={() => handleEditWork(work)} 
+                  key="edit" 
+                />,
                 <Button
                   type="link"
                   danger
@@ -781,9 +767,13 @@ const handleSaveEducation = () => {
 
       <Modal
         visible={isEduModalVisible}
-        title="Add Education"
+        title={editingEducationId ? "Edit Education" : "Add Education"}
         onOk={handleEducationSubmit}
-        onCancel={() => setIsEduModalVisible(false)}
+        onCancel={() => {
+          setIsEduModalVisible(false);
+          setEditingEducationId(null);
+        }}
+        okText={editingEducationId ? "Update" : "Add"}
       >
         <Form layout="vertical" form={educationForm}>
           <Form.Item name="degree" label="Degree" rules={[{ required: true }]}>
@@ -807,10 +797,13 @@ const handleSaveEducation = () => {
 
       <Modal
         visible={isWorkModalVisible}
-        title="Add Work Experience"
+        title={editingWorkId ? "Edit Work Experience" : "Add Work Experience"}
         onOk={handleWorkSubmit}
-        onCancel={() => setIsWorkModalVisible(false)}
-        okText="Add"
+        onCancel={() => {
+          setIsWorkModalVisible(false);
+          setEditingWorkId(null);
+        }}
+        okText={editingWorkId ? "Update" : "Add"}
       >
         <Form form={workForm} layout="vertical">
           <Form.Item
@@ -863,66 +856,121 @@ const handleSaveEducation = () => {
       >
         <Row gutter={24}>
           <Col xs={24} sm={12}>
-            <Form.Item label="Preferred Locations" name="preferredLocations">
-              <Select
-                mode="multiple"
-                placeholder="Select preferred locations"
-                style={{ width: "100%" }}
-              >
-                <Option value="Bengaluru">Bengaluru</Option>
-                <Option value="Mumbai">Mumbai</Option>
-                <Option value="Pune">Pune</Option>
-                <Option value="Delhi">Delhi</Option>
-                <Option value="Hyderabad">Hyderabad</Option>
-                <Option value="Chennai">Chennai</Option>
-              </Select>
-            </Form.Item>
-          </Col>
+      <Form.Item 
+        label="Preferred Locations" 
+        name="preferredLocations"
+        rules={[
+          { 
+            required: true, 
+            message: 'Please select at least one preferred location' 
+          },
+          {
+            validator: (_, value) => 
+              value && value.length <= 5 
+                ? Promise.resolve() 
+                : Promise.reject(new Error('Maximum 5 locations allowed'))
+          }
+        ]}
+      >
+        <Select
+          mode="multiple"
+          placeholder="Select preferred locations"
+          style={{ width: "100%" }}
+        >
+          <Option value="Bengaluru">Bengaluru</Option>
+          <Option value="Mumbai">Mumbai</Option>
+          <Option value="Pune">Pune</Option>
+          <Option value="Delhi">Delhi</Option>
+          <Option value="Hyderabad">Hyderabad</Option>
+          <Option value="Chennai">Chennai</Option>
+        </Select>
+      </Form.Item>
+    </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Work Type" name="workType">
-              <Select
-                mode="multiple"
-                placeholder="Select work type"
-                style={{ width: "100%" }}
-              >
-                <Option value="Remote">Remote</Option>
-                <Option value="On-site">On-site</Option>
-                <Option value="Hybrid">Hybrid</Option>
-              </Select>
-            </Form.Item>
-          </Col>
+    <Col xs={24} sm={12}>
+      <Form.Item 
+        label="Work Type" 
+        name="workType"
+        rules={[
+          { 
+            required: true, 
+            message: 'Please select at least one work type' 
+          }
+        ]}
+      >
+        <Select
+          mode="multiple"
+          placeholder="Select work type"
+          style={{ width: "100%" }}
+          maxTagCount={3}
+        >
+          <Option value="Remote">Remote</Option>
+          <Option value="On-site">On-site</Option>
+          <Option value="Hybrid">Hybrid</Option>
+        </Select>
+      </Form.Item>
+    </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Employment Type" name="employmentType">
-              <Select
-                mode="multiple"
-                placeholder="Select employment type"
-                style={{ width: "100%" }}
-              >
-                <Option value="Full-time">Full-time</Option>
-                <Option value="Part-time">Part-time</Option>
-                <Option value="Contract">Contract</Option>
-                <Option value="Internship">Internship</Option>
-              </Select>
-            </Form.Item>
-          </Col>
+    <Col xs={24} sm={12}>
+      <Form.Item 
+        label="Employment Type" 
+        name="employmentType"
+        rules={[
+          { 
+            required: true, 
+            message: 'Please select at least one employment type' 
+          },
+          {
+            validator: (_, value) =>
+              value && value.includes('Full-time') || value.includes('Part-time')
+                ? Promise.resolve()
+                : Promise.reject(new Error('Please select either Full-time or Part-time'))
+          }
+        ]}
+      >
+        <Select
+          mode="multiple"
+          placeholder="Select employment type"
+          style={{ width: "100%" }}
+        >
+          <Option value="Full-time">Full-time</Option>
+          <Option value="Part-time">Part-time</Option>
+          <Option value="Contract">Contract</Option>
+          <Option value="Internship">Internship</Option>
+        </Select>
+      </Form.Item>
+    </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Preferred Industries" name="industries">
-              <Select
-                mode="multiple"
-                placeholder="Select industries"
-                style={{ width: "100%" }}
-              >
-                <Option value="Technology">Technology</Option>
-                <Option value="Startups">Startups</Option>
-                <Option value="Finance">Finance</Option>
-                <Option value="Healthcare">Healthcare</Option>
-                <Option value="E-commerce">E-commerce</Option>
-              </Select>
-            </Form.Item>
-          </Col>
+    <Col xs={24} sm={12}>
+      <Form.Item 
+        label="Preferred Industries" 
+        name="industries"
+        rules={[
+          { 
+            required: true, 
+            message: 'Please select at least one industry' 
+          },
+          {
+            validator: (_, value) =>
+              value && value.length >= 1 && value.length <= 3
+                ? Promise.resolve()
+                : Promise.reject(new Error('Please select 1-3 industries'))
+          }
+        ]}
+      >
+        <Select
+          mode="multiple"
+          placeholder="Select industries"
+          style={{ width: "100%" }}
+        >
+          <Option value="Technology">Technology</Option>
+          <Option value="Startups">Startups</Option>
+          <Option value="Finance">Finance</Option>
+          <Option value="Healthcare">Healthcare</Option>
+          <Option value="E-commerce">E-commerce</Option>
+        </Select>
+      </Form.Item>
+    </Col>
         </Row>
       </Card>
 
