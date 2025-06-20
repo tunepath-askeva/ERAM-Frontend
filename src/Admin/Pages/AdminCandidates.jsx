@@ -11,7 +11,6 @@ import {
   Space,
   Badge,
   Modal,
-  message,
   Divider,
   Descriptions,
   List,
@@ -49,6 +48,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import Papa from "papaparse";
+import { useSnackbar } from "notistack";
 
 import {
   useGetCandidatesQuery,
@@ -75,9 +75,9 @@ const AdminCandidates = () => {
   const [isToggling, setIsToggling] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
-
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
+  const { enqueueSnackbar } = useSnackbar();
 
   const { data: candidatesData, isLoading, refetch } = useGetCandidatesQuery();
   const [bulkImportCandidates] = useBulkImportCandidatesMutation();
@@ -106,12 +106,16 @@ const AdminCandidates = () => {
     setIsToggling(true);
 
     try {
-      await toggleCandidateStatus(candidateToToggle._id).unwrap();
-      const newStatus =
-        candidateToToggle.accountStatus === "active" ? "inactive" : "active";
+      const response = await toggleCandidateStatus(candidateToToggle._id).unwrap();
 
-      message.success(
-        `Candidate "${candidateToToggle.fullName}" status updated to ${newStatus}`
+      const newStatus = response?.accountStatus ||
+        (candidateToToggle.accountStatus === "active" ? "inactive" : "active");
+
+      enqueueSnackbar(
+        `Candidate "${candidateToToggle.fullName}" status updated to ${newStatus}`,
+        {
+          variant: "success",
+        }
       );
 
       setDisableModalVisible(false);
@@ -119,9 +123,11 @@ const AdminCandidates = () => {
       refetch(); // Refresh the list
     } catch (error) {
       console.error("Toggle status error:", error);
-      message.error(
-        error?.data?.message ||
-          "Failed to update candidate status. Please try again."
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update candidate status. Please try again.",
+        {
+          variant: "error",
+        }
       );
     } finally {
       setIsToggling(false);
@@ -143,16 +149,18 @@ const AdminCandidates = () => {
 
     try {
       await deleteCandidate(candidateToDelete._id).unwrap();
-      message.success(
-        `Candidate "${candidateToDelete.fullName}" has been deleted successfully`
+      enqueueSnackbar(
+        `Candidate "${candidateToDelete.fullName}" has been deleted successfully`,
+        { variant: "success" }
       );
       setDeleteModalVisible(false);
       setCandidateToDelete(null);
       refetch();
     } catch (error) {
       console.error("Delete error:", error);
-      message.error(
-        error?.data?.message || "Failed to delete candidate. Please try again."
+      enqueueSnackbar(
+        error?.data?.message || "Failed to delete candidate. Please try again.",
+        { variant: "error" }
       );
     }
   };
@@ -199,16 +207,16 @@ const AdminCandidates = () => {
       file.type === "text/csv" ||
       file.type === "application/vnd.ms-excel" ||
       file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (!isCSVorExcel) {
-      message.error("You can only upload CSV or Excel files!");
+      enqueueSnackbar("You can only upload CSV or Excel files!", { variant: "error" });
       return false;
     }
 
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
-      message.error("File must be smaller than 5MB!");
+      enqueueSnackbar("File must be smaller than 5MB!", { variant: "error" });
       return false;
     }
 
@@ -243,7 +251,7 @@ const AdminCandidates = () => {
 
   const processImport = async () => {
     if (fileList.length === 0) {
-      message.error("Please select a file first");
+      enqueueSnackbar("Please select a file first", { variant: "error" });
       return;
     }
 
@@ -262,7 +270,7 @@ const AdminCandidates = () => {
       const parsedData = await parseCSV(fileContent);
 
       if (parsedData.length === 0) {
-        message.error("No valid data found in the file");
+        enqueueSnackbar("No valid data found in the file", { variant: "error" });
         setIsImporting(false);
         return;
       }
@@ -273,9 +281,8 @@ const AdminCandidates = () => {
             row["Full Name"] ||
             row["fullName"] ||
             row["Name"] ||
-            `${row["First Name"] || row["firstName"] || ""} ${
-              row["Last Name"] || row["lastName"] || ""
-            }`.trim();
+            `${row["First Name"] || row["firstName"] || ""} ${row["Last Name"] || row["lastName"] || ""
+              }`.trim();
 
           return {
             fullName,
@@ -293,8 +300,9 @@ const AdminCandidates = () => {
         });
 
       if (candidates.length === 0) {
-        message.error(
-          "No valid candidates found. Please check required fields: Full Name, Email, Password"
+        enqueueSnackbar(
+          "No valid candidates found. Please check required fields: Full Name, Email, Password",
+          { variant: "error" }
         );
         setIsImporting(false);
         return;
@@ -307,7 +315,7 @@ const AdminCandidates = () => {
         role: "candidate",
       }).unwrap();
 
-      message.success(`Successfully imported ${response.count} candidates`);
+      enqueueSnackbar(`Successfully imported ${response.count} candidates`, { variant: "success" });
       refetch();
       setBulkImportVisible(false);
       setFileList([]);
@@ -315,12 +323,13 @@ const AdminCandidates = () => {
       console.error("Import error:", error);
 
       if (error?.data?.message) {
-        message.error(error.data.message);
+        enqueueSnackbar(error.data.message, { variant: "error" });
       } else if (error?.message) {
-        message.error(error.message);
+        enqueueSnackbar(error.message, { variant: "error" });
       } else {
-        message.error(
-          "Failed to import candidates. Please check the file format and try again."
+        enqueueSnackbar(
+          "Failed to import candidates. Please check the file format and try again.",
+          { variant: "error" }
         );
       }
     } finally {

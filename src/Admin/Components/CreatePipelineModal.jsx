@@ -7,7 +7,6 @@ import {
   Card,
   InputNumber,
   Space,
-  message,
   Row,
   Col,
   Typography,
@@ -17,7 +16,6 @@ import {
   Badge,
   Popconfirm,
   Select,
-  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -44,6 +42,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useSnackbar } from "notistack";
 import {
   useAddPipelineMutation,
   useEditPipelineMutation,
@@ -243,8 +242,7 @@ function SortableStageItem({
             >
               {dependencyConfig.label}
             </Tag>
-           
-          </div>
+        </div>
 
           {stage.requiredDocuments && stage.requiredDocuments.length > 0 && (
             <div
@@ -280,13 +278,14 @@ const CreatePipelineModal = ({
     order: 1,
     description: "",
     requiredDocuments: [],
-    dependencyType: DEPENDENCY_TYPES.DEPENDENT, 
+    dependencyType: DEPENDENCY_TYPES.DEPENDENT,
   });
   const [isEditingStage, setIsEditingStage] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
   const [newDocument, setNewDocument] = useState("");
   const [pipelineName, setPipelineName] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const [addPipeline, { isLoading: isCreating }] = useAddPipelineMutation();
   const [editPipeline, { isLoading: isUpdating }] = useEditPipelineMutation();
@@ -318,7 +317,7 @@ const CreatePipelineModal = ({
         (stage, index) => ({
           ...stage,
           id: stage._id || `temp-${index}`,
-          dependencyType: stage.dependencyType || DEPENDENCY_TYPES.DEPENDENT, 
+          dependencyType: stage.dependencyType || DEPENDENCY_TYPES.DEPENDENT,
         })
       );
       setStages(stagesWithIds);
@@ -407,17 +406,17 @@ const CreatePipelineModal = ({
 
         if (updatePromises.length > 0) {
           await Promise.all(updatePromises);
-          message.success("Stages reordered successfully");
+          enqueueSnackbar("Stages reordered successfully", { variant: "success" });
         }
       } catch (error) {
         const errorMessage =
           error?.data?.message || error?.message || "Failed to reorder stages";
-        message.error(errorMessage);
+        enqueueSnackbar(errorMessage, { variant: "error" });
         console.error("Reorder error:", error);
         setStages(stages);
       }
     } else {
-      message.success("Stages reordered successfully");
+      enqueueSnackbar("Stages reordered successfully", { variant: "success" });
     }
 
     if (!isEditingStage) {
@@ -456,7 +455,7 @@ const CreatePipelineModal = ({
 
   const addStage = async () => {
     if (!currentStage.name.trim()) {
-      message.error("Stage name is required");
+      enqueueSnackbar("Stage name is required", { variant: "error" });
       return;
     }
 
@@ -491,11 +490,11 @@ const CreatePipelineModal = ({
             ...newStage,
           };
           setStages(updatedStages);
-          message.success("Stage updated successfully");
+          enqueueSnackbar("Stage updated successfully", { variant: "success" });
         } catch (error) {
           const errorMessage =
             error?.data?.message || error?.message || "Failed to update stage";
-          message.error(errorMessage);
+          enqueueSnackbar(errorMessage, { variant: "error" });
           console.error("Stage update error:", error);
           return;
         }
@@ -503,14 +502,14 @@ const CreatePipelineModal = ({
         const updatedStages = [...stages];
         updatedStages[editingIndex] = newStage;
         setStages(updatedStages);
-        message.success("Stage updated successfully");
+        enqueueSnackbar("Stage updated successfully", { variant: "success" });
       }
 
       setIsEditingStage(false);
       setEditingIndex(-1);
     } else {
       setStages([...stages, newStage]);
-      message.success("Stage added successfully");
+      enqueueSnackbar("Stage added successfully", { variant: "success" });
     }
 
     setCurrentStage({
@@ -534,7 +533,7 @@ const CreatePipelineModal = ({
     try {
       if (isEditMode && stageToDelete._id) {
         await deleteStage(stageToDelete._id).unwrap();
-        message.success("Stage deleted successfully from database");
+        enqueueSnackbar("Stage deleted successfully from database", { variant: "success" });
       }
       const updatedStages = stages.filter((_, i) => i !== index);
       const reorderedStages = updatedStages.map((stage, i) => ({
@@ -551,24 +550,24 @@ const CreatePipelineModal = ({
       }
 
       if (!isEditMode || !stageToDelete._id) {
-        message.success("Stage removed successfully");
+        enqueueSnackbar("Stage removed successfully", { variant: "success" });
       }
     } catch (error) {
       const errorMessage =
         error?.data?.message || error?.message || "Failed to delete stage";
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
       console.error("Stage delete error:", error);
     }
   };
 
   const handleSubmit = async () => {
     if (!pipelineName || !pipelineName.trim()) {
-      message.error("Pipeline name is required");
+      enqueueSnackbar("Pipeline name is required", { variant: "error" });
       return;
     }
 
     if (stages.length === 0) {
-      message.error("At least one stage is required");
+      enqueueSnackbar("At least one stage is required", { variant: "error" });
       return;
     }
 
@@ -587,10 +586,10 @@ const CreatePipelineModal = ({
           pipelineId: editingPipeline._id,
           pipelineData,
         }).unwrap();
-        message.success("Pipeline updated successfully!");
+        enqueueSnackbar("Pipeline updated successfully!", { variant: "success" });
       } else {
         result = await addPipeline(pipelineData).unwrap();
-        message.success("Pipeline created successfully!");
+        enqueueSnackbar("Pipeline created successfully!", { variant: "success" });
       }
 
       console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
@@ -602,7 +601,7 @@ const CreatePipelineModal = ({
         error?.data?.message ||
         error?.message ||
         `Failed to ${isEditMode ? "update" : "create"} pipeline`;
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
       console.error(
         `Pipeline ${isEditMode ? "update" : "creation"} error:`,
         error
