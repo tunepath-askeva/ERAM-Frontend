@@ -1,14 +1,5 @@
-import React from 'react';
-import {
-  Card,
-  Tag,
-  Typography,
-  Row,
-  Col,
-  Avatar,
-  Button,
-  Space,
-} from "antd";
+import React from "react";
+import { Card, Tag, Typography, Row, Col, Avatar, Button, Space } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -18,31 +9,36 @@ import {
 
 const { Title, Text } = Typography;
 
-const CandidateCard = ({ 
-  candidate, 
-  index, 
+const CandidateCard = ({
+  candidate,
+  index,
   onViewProfile,
   showExperience = true,
   showSkills = true,
-  maxSkills = 3 
+  maxSkills = 3,
 }) => {
   const calculateExperience = (workExperience) => {
-    if (!workExperience || !Array.isArray(workExperience) || workExperience.length === 0) {
+    if (
+      !workExperience ||
+      !Array.isArray(workExperience) ||
+      workExperience.length === 0
+    ) {
       return 0;
     }
-    
+
     let totalMonths = 0;
-    workExperience.forEach(exp => {
+    workExperience.forEach((exp) => {
       if (exp.startDate) {
         const start = new Date(exp.startDate);
         const end = exp.endDate ? new Date(exp.endDate) : new Date();
-        const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + 
-                          (end.getMonth() - start.getMonth());
+        const monthsDiff =
+          (end.getFullYear() - start.getFullYear()) * 12 +
+          (end.getMonth() - start.getMonth());
         totalMonths += monthsDiff;
       }
     });
-    
-    return Math.round(totalMonths / 12 * 10) / 10;
+
+    return Math.round((totalMonths / 12) * 10) / 10;
   };
 
   const experience = calculateExperience(candidate.workExperience);
@@ -110,7 +106,9 @@ const CandidateCard = ({
               </div>
 
               {showExperience && experience > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <TrophyOutlined style={{ fontSize: "12px", color: "#666" }} />
                   <Text style={{ fontSize: "13px", color: "#666" }}>
                     {experience} years experience
@@ -118,9 +116,10 @@ const CandidateCard = ({
                 </div>
               )}
 
-
               {candidate.location && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
                   <span style={{ fontSize: "12px", color: "#666" }}>📍</span>
                   <Text style={{ fontSize: "13px", color: "#666" }}>
                     {candidate.location}
@@ -128,22 +127,26 @@ const CandidateCard = ({
                 </div>
               )}
 
-              {showSkills && candidate.skills && candidate.skills.length > 0 && (
-                <div style={{ marginTop: "4px" }}>
-                  <Space size={4} wrap>
-                    {candidate.skills.slice(0, maxSkills).map((skill, idx) => (
-                      <Tag key={idx} size="small" color="blue">
-                        {skill}
-                      </Tag>
-                    ))}
-                    {candidate.skills.length > maxSkills && (
-                      <Tag size="small" color="default">
-                        +{candidate.skills.length - maxSkills} more
-                      </Tag>
-                    )}
-                  </Space>
-                </div>
-              )}
+              {showSkills &&
+                candidate.skills &&
+                candidate.skills.length > 0 && (
+                  <div style={{ marginTop: "4px" }}>
+                    <Space size={4} wrap>
+                      {candidate.skills
+                        .slice(0, maxSkills)
+                        .map((skill, idx) => (
+                          <Tag key={idx} size="small" color="blue">
+                            {skill}
+                          </Tag>
+                        ))}
+                      {candidate.skills.length > maxSkills && (
+                        <Tag size="small" color="default">
+                          +{candidate.skills.length - maxSkills} more
+                        </Tag>
+                      )}
+                    </Space>
+                  </div>
+                )}
             </Space>
           </div>
         </Col>
@@ -160,7 +163,7 @@ const CandidateCard = ({
             <Button
               type="primary"
               size="small"
-              style={{ fontSize: "12px" }}
+              style={{ fontSize: "12px", background: "#da2c46" }}
               onClick={handleViewProfile}
             >
               View Profile

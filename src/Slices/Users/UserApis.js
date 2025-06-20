@@ -10,10 +10,8 @@ export const userApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl,
     credentials: "include",
-    prepareHeaders: (headers, { getState, endpoint }) => {
-      if (endpoint !== "submitJobApplication") {
-        headers.set("Content-Type", "application/json");
-      }
+    prepareHeaders: (headers) => {
+
       return headers;
     },
   }),
@@ -98,13 +96,12 @@ export const userApi = createApi({
       }),
     }),
     profileCompletion: builder.mutation({
-      query: (payload) => ({
+      query: (formData) => ({
         url: `/profile`,
         method: "POST",
-        body: payload,
+        body: formData,
       }),
     }),
-
     getCandidate: builder.query({
       query: () => ({
         url: `/candidate`,

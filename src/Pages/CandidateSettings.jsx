@@ -71,6 +71,8 @@ import {
   useGetCandidateQuery,
   useProfileCompletionMutation,
 } from "../Slices/Users/UserApis";
+import { useDispatch } from "react-redux";
+import { setUserCredentials } from "../Slices/Users/UserSlice";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -120,6 +122,7 @@ const CandidateSettings = () => {
       showPhone: false,
     },
   });
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -128,6 +131,8 @@ const CandidateSettings = () => {
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
+    const [fileList, setFileList] = useState([]);
+    const [imageFile, setImageFile] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
     degree: "",
@@ -277,13 +282,34 @@ const CandidateSettings = () => {
     setLoading(false);
   };
 
-  const handleAvatarUpload = ({ file, fileList }) => {
-    if (file.status === "done") {
-      message.success("Profile picture updated successfully!");
-      setUserData({
-        ...userData,
-        image: URL.createObjectURL(file.originFileObj),
-      });
+const handleAvatarUpload = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+
+    if (newFileList.length > 0) {
+      const file = newFileList[0].originFileObj || newFileList[0];
+
+      if (!file || file.url) {
+        return;
+      }
+
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowedTypes.includes(file.type)) {
+        message.error("Only JPEG, JPG, and PNG files are allowed!");
+        setFileList([]);
+        setImageFile(null);
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        message.error("File size should not exceed 5MB!");
+        setFileList([]);
+        setImageFile(null);
+        return;
+      }
+
+      setImageFile(file);
+    } else {
+      setImageFile(null);
     }
   };
 
@@ -305,10 +331,9 @@ const CandidateSettings = () => {
         formData.append(key, value);
       });
 
-      if (userData.imageFile) {
-        formData.append("image", userData.imageFile);
-      }
-
+    if (imageFile) {
+  formData.append("image", imageFile);  
+}
       formData.append("skills", JSON.stringify(userData.skills));
       formData.append("education", JSON.stringify(userData.education));
       formData.append(
@@ -317,26 +342,38 @@ const CandidateSettings = () => {
       );
       formData.append("preferences", JSON.stringify(userData.preferences));
       formData.append("privacy", JSON.stringify(userData.privacy));
-
-      console.log("FormData contents:");
-      for (let [key, value] of formData.entries()) {
-        console.log(
-          key,
-          value instanceof File ? `${value.name} (${value.type})` : value
-        );
-      }
-
       const res = await profileComplete(formData).unwrap();
       console.log("Profile update response:", res);
+      const emailChanged = formValues.email !== userData.email;
 
+      const updatedUserInfo = {
+        email: formValues.email,
+        name: `${formValues.firstName} ${formValues.lastName}`.trim(),
+        roles: "candidate", 
+      };
+
+      dispatch(
+        setUserCredentials({
+          userInfo: updatedUserInfo,
+          role: "candidate",
+        })
+      );
+
+      // Update local state
       setUserData((prev) => ({
         ...prev,
         ...formValues,
-        imageFile: null, 
+        imageFile: null,
+        fullName: `${formValues.firstName} ${formValues.lastName}`.trim(),
       }));
 
       message.success("Profile updated successfully!");
       setIsProfileEditable(false);
+
+      // If email changed, show message about needing to relogin
+      if (emailChanged) {
+        message.info("Email changed. Please login again with your new email.");
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       message.error(
@@ -348,6 +385,7 @@ const CandidateSettings = () => {
       setLoading(false);
     }
   };
+
   const addEducation = () => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to add education");
@@ -521,37 +559,11 @@ const CandidateSettings = () => {
                   <div style={{ marginTop: 16 }}>
                     <Upload
                       accept="image/*"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        // Validate file type
-                        const allowedTypes = [
-                          "image/jpeg",
-                          "image/jpg",
-                          "image/png",
-                          "image/webp",
-                        ];
-                        if (!allowedTypes.includes(file.type)) {
-                          message.error(
-                            "Only JPEG, JPG, PNG, and WEBP files are allowed!"
-                          );
-                          return false;
-                        }
-
-                        // Validate file size (5MB)
-                        if (file.size > 5 * 1024 * 1024) {
-                          message.error("File size should not exceed 5MB!");
-                          return false;
-                        }
-
-                        // Create preview URL
-                        const previewUrl = URL.createObjectURL(file);
-                        setUserData({
-                          ...userData,
-                          image: previewUrl,
-                          imageFile: file, // Store the File object
-                        });
-                        return false; // Prevent default upload
-                      }}
+                     fileList={fileList}
+                     onChange={handleAvatarUpload}
+                     beforeUpload={()=> false}
+                     maxCount={1}
+                      
                     >
                       <Button
                         type="primary"

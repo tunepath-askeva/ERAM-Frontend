@@ -15,6 +15,11 @@ import {
   InputNumber,
   Collapse,
   Badge,
+  Tabs,
+  Modal,
+  Descriptions,
+  Tag,
+  message,
 } from "antd";
 import {
   SearchOutlined,
@@ -23,20 +28,32 @@ import {
   TrophyOutlined,
   ToolOutlined,
   ClearOutlined,
+  UserOutlined,
+  CheckOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
-import { useGetSourcedCandidateQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetSourcedCandidateQuery,
+  useUpdateCandidateStatusMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
+const { TabPane } = Tabs;
 
 const SourcedCandidates = ({ jobId }) => {
+  console.log(jobId, "JOB");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState("sourced");
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateCandidateStatusMutation();
 
-  // Filter states
   const [filters, setFilters] = useState({
     skills: [],
     minExperience: null,
@@ -45,17 +62,15 @@ const SourcedCandidates = ({ jobId }) => {
     location: "",
   });
 
-
   const {
     data: filteredSource,
     isLoading,
     error,
-  } = useGetSourcedCandidateQuery({
-  });
+    refetch,
+  } = useGetSourcedCandidateQuery({});
 
   const filterOptions = useMemo(() => {
     const sourcedUsers = filteredSource?.users || [];
-
     const allSkills = new Set();
     const allEducation = new Set();
     const allLocations = new Set();
@@ -84,9 +99,22 @@ const SourcedCandidates = ({ jobId }) => {
     };
   }, [filteredSource?.users]);
 
+  const { sourcedCandidates, selectedCandidates } = useMemo(() => {
+    const allCandidates = filteredSource?.users || [];
+    return {
+      // Candidates without candidateStatus or with null/undefined status are considered "sourced"
+      sourcedCandidates: allCandidates.filter(
+        (candidate) =>
+          !candidate.candidateStatus || candidate.candidateStatus === "sourced"
+      ),
+      selectedCandidates: allCandidates.filter(
+        (candidate) => candidate.candidateStatus === "selected"
+      ),
+    };
+  }, [filteredSource?.users]);
 
   const filteredCandidates = useMemo(() => {
-    let candidates = filteredSource?.users || [];
+    let candidates = sourcedCandidates;
 
     if (searchTerm) {
       candidates = candidates.filter(
@@ -131,7 +159,7 @@ const SourcedCandidates = ({ jobId }) => {
     }
 
     return candidates;
-  }, [filteredSource?.users, searchTerm, filters]);
+  }, [sourcedCandidates, searchTerm, filters]);
 
   const clearAllFilters = () => {
     setFilters({
@@ -153,6 +181,65 @@ const SourcedCandidates = ({ jobId }) => {
     if (filters.location) count++;
     return count;
   }, [filters]);
+
+  const handleViewProfile = (candidate) => {
+    setSelectedCandidate(candidate);
+    setIsModalVisible(true);
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    try {
+      if (!selectedCandidate) return;
+
+      await updateCandidateStatus({
+        candidateId: selectedCandidate._id,
+        status: newStatus,
+        jobId: jobId,
+      }).unwrap();
+
+      const statusMessages = {
+        selected: "Candidate moved to selected successfully",
+        screening: "Candidate moved to screening successfully",
+      };
+
+      message.success(
+        statusMessages[newStatus] || "Candidate status updated successfully"
+      );
+      refetch();
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error("Failed to update candidate status:", error);
+      message.error(error.data?.message || "Failed to update candidate status");
+    }
+  };
+
+  const getModalButtonText = () => {
+    if (!selectedCandidate) return "Update Status";
+
+    const currentStatus = selectedCandidate.candidateStatus;
+
+    if (!currentStatus || currentStatus === "sourced") {
+      return "Move to Selected";
+    } else if (currentStatus === "selected") {
+      return "Move to Screening";
+    }
+
+    return "Update Status";
+  };
+
+  const getNextStatus = () => {
+    if (!selectedCandidate) return "selected";
+
+    const currentStatus = selectedCandidate.candidateStatus;
+
+    if (!currentStatus || currentStatus === "sourced") {
+      return "selected";
+    } else if (currentStatus === "selected") {
+      return "screening";
+    }
+
+    return "selected";
+  };
 
   if (isLoading) {
     return (
@@ -182,30 +269,6 @@ const SourcedCandidates = ({ jobId }) => {
     );
   }
 
-  const sourcedUsers = filteredSource?.users || [];
-  const total = filteredSource?.total || 0;
-
-  if (!sourcedUsers || sourcedUsers.length === 0) {
-    return (
-      <div style={{ padding: "16px" }}>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <span style={{ fontSize: "14px", color: "#999" }}>
-              No sourced candidates found for this job
-            </span>
-          }
-        />
-      </div>
-    );
-  }
-
-  const handleViewProfile = (candidate) => {
-    console.log("View candidate:", candidate);
-    // Add your navigation logic here
-    // e.g., navigate to candidate detail page
-  };
-
   return (
     <div style={{ padding: "0", fontSize: "14px" }}>
       <div style={{ marginBottom: "16px" }}>
@@ -218,193 +281,335 @@ const SourcedCandidates = ({ jobId }) => {
             color: "#da2c46",
           }}
         >
-          Sourced Candidates ({filteredCandidates.length})
+          Candidates Management
         </Title>
-
-        <Text style={{ fontSize: "13px", color: "#666" }}>
-          Candidates sourced for this position
-        </Text>
       </div>
 
-      <div style={{ marginBottom: "16px" }}>
-        <Row gutter={16} align="middle">
-          <Col flex="auto">
-            <Search
-              placeholder="Search candidates by name, email or phone"
-              allowClear
-              enterButton={<SearchOutlined />}
-              size="middle"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: "100%" }}
-            />
-          </Col>
-          <Col flex="none">
-            <Space>
-              <Badge count={activeFiltersCount} size="small">
-                <Button
-                  icon={<FilterOutlined />}
-                  onClick={() => setShowFilters(!showFilters)}
-                  type={showFilters ? "primary" : "default"}
-                >
-                  Filters
-                </Button>
-              </Badge>
-              {activeFiltersCount > 0 && (
-                <Button
-                  icon={<ClearOutlined />}
-                  onClick={clearAllFilters}
-                  size="small"
-                  type="text"
-                >
-                  Clear All
-                </Button>
-              )}
-            </Space>
-          </Col>
-        </Row>
-      </div>
-
-      {showFilters && (
-        <Card
-          size="small"
-          style={{ marginBottom: "16px", backgroundColor: "#fafafa" }}
+      <Tabs activeKey={activeTab} onChange={setActiveTab}>
+        <TabPane
+          tab={
+            <span style={{ color: "#da2c46" }}>
+              <UserOutlined />
+              Sourced ({sourcedCandidates.length})
+            </span>
+          }
+          key="sourced"
         >
-          <Collapse ghost>
-            <Panel
-              header={
+          <div style={{ marginBottom: "16px" }}>
+            <Row gutter={16} align="middle">
+              <Col flex="auto">
+                <Search
+                  placeholder="Search candidates by name, email or phone"
+                  allowClear
+                  enterButton={<SearchOutlined />}
+                  size="middle"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: "100%" }}
+                />
+              </Col>
+              <Col flex="none">
                 <Space>
-                  <FilterOutlined />
-                  <Text strong>Advanced Filters</Text>
+                  <Badge count={activeFiltersCount} size="small">
+                    <Button
+                      icon={<FilterOutlined />}
+                      onClick={() => setShowFilters(!showFilters)}
+                      type={showFilters ? "primary" : "default"}
+                    >
+                      Filters
+                    </Button>
+                  </Badge>
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      icon={<ClearOutlined />}
+                      onClick={clearAllFilters}
+                      size="small"
+                      type="text"
+                    >
+                      Clear All
+                    </Button>
+                  )}
                 </Space>
-              }
-              key="1"
+              </Col>
+            </Row>
+          </div>
+
+          {showFilters && (
+            <Card
+              size="small"
+              style={{ marginBottom: "16px", backgroundColor: "#fafafa" }}
             >
-              <Row gutter={[16, 16]}>
-                <Col span={12}>
-                  <div>
-                    <Text
-                      strong
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <ToolOutlined /> Skills
+              <Collapse ghost>
+                <Panel
+                  header={
+                    <Space>
+                      <FilterOutlined />
+                      <Text strong>Advanced Filters</Text>
+                    </Space>
+                  }
+                  key="1"
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <div>
+                        <Text
+                          strong
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <ToolOutlined /> Skills
+                        </Text>
+                        <Select
+                          mode="multiple"
+                          placeholder="Select required skills"
+                          value={filters.skills}
+                          onChange={(value) =>
+                            setFilters((prev) => ({ ...prev, skills: value }))
+                          }
+                          style={{ width: "100%" }}
+                          allowClear
+                        >
+                          {filterOptions.skills.map((skill) => (
+                            <Option key={skill} value={skill}>
+                              {skill}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </Col>
+
+                    <Col span={12}>
+                      <div>
+                        <Text
+                          strong
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <BookOutlined /> Education
+                        </Text>
+                        <Select
+                          mode="multiple"
+                          placeholder="Select education requirements"
+                          value={filters.education}
+                          onChange={(value) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              education: value,
+                            }))
+                          }
+                          style={{ width: "100%" }}
+                          allowClear
+                        >
+                          {filterOptions.education.map((edu) => (
+                            <Option key={edu} value={edu}>
+                              {edu}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </Col>
+
+                    <Col span={12}>
+                      <div>
+                        <Text
+                          strong
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          Location
+                        </Text>
+                        <Input
+                          placeholder="Enter location"
+                          value={filters.location}
+                          onChange={(e) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              location: e.target.value,
+                            }))
+                          }
+                          allowClear
+                        />
+                      </div>
+                    </Col>
+                  </Row>
+                </Panel>
+              </Collapse>
+            </Card>
+          )}
+
+          <Divider style={{ margin: "12px 0" }} />
+
+          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+            {filteredCandidates.length > 0 ? (
+              filteredCandidates.map((candidate, index) => (
+                <CandidateCard
+                  key={candidate._id || index}
+                  candidate={candidate}
+                  index={index}
+                  onViewProfile={handleViewProfile}
+                  showExperience={true}
+                  showSkills={true}
+                  maxSkills={3}
+                />
+              ))
+            ) : (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span style={{ fontSize: "14px", color: "#999" }}>
+                    {searchTerm || activeFiltersCount > 0
+                      ? "No candidates match your search criteria"
+                      : "No sourced candidates found"}
+                  </span>
+                }
+              />
+            )}
+          </div>
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span style={{ color: "#da2c46" }}>
+              <CheckOutlined />
+              Selected ({selectedCandidates.length})
+            </span>
+          }
+          key="selected"
+        >
+          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+            {selectedCandidates.length > 0 ? (
+              selectedCandidates.map((candidate, index) => (
+                <CandidateCard
+                  key={candidate._id || index}
+                  candidate={candidate}
+                  index={index}
+                  onViewProfile={handleViewProfile}
+                  showExperience={true}
+                  showSkills={true}
+                  maxSkills={3}
+                />
+              ))
+            ) : (
+              <Empty
+                description={
+                  <span style={{ fontSize: "14px", color: "#999" }}>
+                    No selected candidates yet
+                  </span>
+                }
+              />
+            )}
+          </div>
+        </TabPane>
+      </Tabs>
+
+      <Modal
+        title="Candidate Details"
+        visible={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="back" onClick={() => setIsModalVisible(false)}>
+            Close
+          </Button>,
+          <Button
+            key="move"
+            type="primary"
+            onClick={() => handleStatusUpdate(getNextStatus())}
+            loading={isUpdatingStatus}
+            disabled={isUpdatingStatus}
+            style={{ background: "#da2c46" }}
+          >
+            {getModalButtonText()}
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedCandidate && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Full Name" span={2}>
+              {selectedCandidate.fullName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email">
+              {selectedCandidate.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phone">
+              {selectedCandidate.phone}
+            </Descriptions.Item>
+            <Descriptions.Item label="Location">
+              {selectedCandidate.location}
+            </Descriptions.Item>
+            <Descriptions.Item label="Title">
+              {selectedCandidate.title}
+            </Descriptions.Item>
+            <Descriptions.Item label="Current Status">
+              <Tag
+                color={
+                  selectedCandidate.candidateStatus === "selected"
+                    ? "green"
+                    : "blue"
+                }
+              >
+                {selectedCandidate.candidateStatus || "Sourced"}
+              </Tag>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Skills" span={2}>
+              <Space wrap>
+                {selectedCandidate.skills?.map((skill, index) => (
+                  <Tag key={index}>{skill}</Tag>
+                ))}
+              </Space>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Education" span={2}>
+              {selectedCandidate.education?.length > 0 ? (
+                selectedCandidate.education.map((edu, index) => (
+                  <div key={index} style={{ marginBottom: 8 }}>
+                    <Text strong>
+                      {edu.degree} in {edu.field}
                     </Text>
-                    <Select
-                      mode="multiple"
-                      placeholder="Select required skills"
-                      value={filters.skills}
-                      onChange={(value) =>
-                        setFilters((prev) => ({ ...prev, skills: value }))
-                      }
-                      style={{ width: "100%" }}
-                      allowClear
-                    >
-                      {filterOptions.skills.map((skill) => (
-                        <Option key={skill} value={skill}>
-                          {skill}
-                        </Option>
-                      ))}
-                    </Select>
-                  </div>
-                </Col>
-
-                <Col span={12}>
-                  <div>
-                    <Text
-                      strong
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <BookOutlined /> Education
+                    <br />
+                    <Text type="secondary">
+                      {edu.institution} ({edu.year})
                     </Text>
-                    <Select
-                      mode="multiple"
-                      placeholder="Select education requirements"
-                      value={filters.education}
-                      onChange={(value) =>
-                        setFilters((prev) => ({ ...prev, education: value }))
-                      }
-                      style={{ width: "100%" }}
-                      allowClear
-                    >
-                      {filterOptions.education.map((edu) => (
-                        <Option key={edu} value={edu}>
-                          {edu}
-                        </Option>
-                      ))}
-                    </Select>
                   </div>
-                </Col>
+                ))
+              ) : (
+                <Text type="secondary">No education information</Text>
+              )}
+            </Descriptions.Item>
 
-                <Col span={12}>
-                  <div>
-                    <Text
-                      strong
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      Location
+            <Descriptions.Item label="Work Experience" span={2}>
+              {selectedCandidate.workExperience?.length > 0 ? (
+                selectedCandidate.workExperience.map((exp, index) => (
+                  <div key={index} style={{ marginBottom: 8 }}>
+                    <Text strong>
+                      {exp.title} at {exp.company}
                     </Text>
-                    <Input
-                      placeholder="Enter location"
-                      value={filters.location}
-                      onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          location: e.target.value,
-                        }))
-                      }
-                      allowClear
-                    />
+                    <br />
+                    <Text type="secondary">{exp.duration}</Text>
+                    <br />
+                    <Text>{exp.description}</Text>
                   </div>
-                </Col>
-              </Row>
-            </Panel>
-          </Collapse>
-        </Card>
-      )}
-
-      <Divider style={{ margin: "12px 0" }} />
-
-      <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-        {filteredCandidates.length > 0 ? (
-          filteredCandidates.map((candidate, index) => (
-            <CandidateCard
-              key={candidate._id || index}
-              candidate={candidate}
-              index={index}
-              onViewProfile={handleViewProfile}
-              showExperience={true}
-              showSkills={true}
-              maxSkills={3}
-            />
-          ))
-        ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <span style={{ fontSize: "14px", color: "#999" }}>
-                {searchTerm || activeFiltersCount > 0
-                  ? "No candidates match your search criteria"
-                  : "No sourced candidates found"}
-              </span>
-            }
-          />
+                ))
+              ) : (
+                <Text type="secondary">No work experience</Text>
+              )}
+            </Descriptions.Item>
+          </Descriptions>
         )}
-      </div>
+      </Modal>
     </div>
   );
 };
