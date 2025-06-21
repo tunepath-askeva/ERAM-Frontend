@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSnackbar } from 'notistack';
 import {
   Button,
   Card,
@@ -92,6 +93,7 @@ const degreeOptions = [
 ];
 
 const CandidateSettings = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
@@ -180,15 +182,15 @@ const CandidateSettings = () => {
         title: candidateData.title || "",
         education: Array.isArray(candidateData.education)
           ? candidateData.education.map((edu) => ({
-              ...edu,
-              id: edu.id || Math.random().toString(36).substr(2, 9),
-            }))
+            ...edu,
+            id: edu.id || Math.random().toString(36).substr(2, 9),
+          }))
           : [],
         workExperience: Array.isArray(candidateData.workExperience)
           ? candidateData.workExperience.map((work) => ({
-              ...work,
-              id: work.id || Math.random().toString(36).substr(2, 9),
-            }))
+            ...work,
+            id: work.id || Math.random().toString(36).substr(2, 9),
+          }))
           : [],
         preferences: {
           emailNotifications:
@@ -256,9 +258,13 @@ const CandidateSettings = () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setUserData({ ...userData, preferences: values });
-      message.success("Preferences updated successfully!");
+      enqueueSnackbar("Preferences updated successfully!", {
+        variant: 'success',
+      });
     } catch (error) {
-      message.error("Failed to update preferences");
+      enqueueSnackbar("Failed to update preferences", {
+        variant: 'error',
+      });
     }
     setLoading(false);
   };
@@ -274,10 +280,14 @@ const CandidateSettings = () => {
       console.log("Password change payload:", payload);
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      message.success("Password changed successfully!");
+      enqueueSnackbar("Password changed successfully!", {
+        variant: 'success',
+      });
       passwordForm.resetFields();
     } catch (error) {
-      message.error("Failed to change password");
+      enqueueSnackbar("Failed to change password", {
+        variant: 'error',
+      });
     }
     setLoading(false);
   };
@@ -367,7 +377,9 @@ const CandidateSettings = () => {
         fullName: `${formValues.firstName} ${formValues.lastName}`.trim(),
       }));
 
-      message.success("Profile updated successfully!");
+      enqueueSnackbar("Profile updated successfully!", {
+        variant: 'success',
+      });
       setIsProfileEditable(false);
 
       // If email changed, show message about needing to relogin
@@ -378,8 +390,8 @@ const CandidateSettings = () => {
       console.error("Error updating profile:", error);
       message.error(
         error?.data?.message ||
-          error?.message ||
-          "Failed to update profile. Please try again."
+        error?.message ||
+        "Failed to update profile. Please try again."
       );
     } finally {
       setLoading(false);
@@ -762,20 +774,20 @@ const CandidateSettings = () => {
               actions={
                 isProfileEditable
                   ? [
-                      <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditEducation(edu)}
-                        key="edit"
-                      />,
-                      <Button
-                        type="link"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeEducation(edu.id)}
-                        key="delete"
-                      />,
-                    ]
+                    <Button
+                      type="link"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEditEducation(edu)}
+                      key="edit"
+                    />,
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeEducation(edu.id)}
+                      key="delete"
+                    />,
+                  ]
                   : []
               }
             >
@@ -827,20 +839,20 @@ const CandidateSettings = () => {
               actions={
                 isProfileEditable
                   ? [
-                      <Button
-                        type="link"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditWork(work)}
-                        key="edit"
-                      />,
-                      <Button
-                        type="link"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeWorkExperience(work.id)}
-                        key="delete"
-                      />,
-                    ]
+                    <Button
+                      type="link"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEditWork(work)}
+                      key="edit"
+                    />,
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeWorkExperience(work.id)}
+                      key="delete"
+                    />,
+                  ]
                   : []
               }
             >
@@ -1002,8 +1014,8 @@ const CandidateSettings = () => {
                     value && value.length <= 5
                       ? Promise.resolve()
                       : Promise.reject(
-                          new Error("Maximum 5 locations allowed")
-                        ),
+                        new Error("Maximum 5 locations allowed")
+                      ),
                 },
               ]}
             >
@@ -1058,13 +1070,13 @@ const CandidateSettings = () => {
                 {
                   validator: (_, value) =>
                     (value && value.includes("Full-time")) ||
-                    value.includes("Part-time")
+                      value.includes("Part-time")
                       ? Promise.resolve()
                       : Promise.reject(
-                          new Error(
-                            "Please select either Full-time or Part-time"
-                          )
-                        ),
+                        new Error(
+                          "Please select either Full-time or Part-time"
+                        )
+                      ),
                 },
               ]}
             >
@@ -1095,8 +1107,8 @@ const CandidateSettings = () => {
                     value && value.length >= 1 && value.length <= 3
                       ? Promise.resolve()
                       : Promise.reject(
-                          new Error("Please select 1-3 industries")
-                        ),
+                        new Error("Please select 1-3 industries")
+                      ),
                 },
               ]}
             >
