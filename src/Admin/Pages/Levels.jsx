@@ -36,56 +36,9 @@ import {
 import { useSnackbar } from "notistack";
 import CreateLevelModal from "../Components/CreateLevelModal";
 import "../../index.css";
+import { useGetApprovalQuery } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
-
-// Dummy data for levels
-const dummyLevels = [
-  {
-    _id: "1",
-    name: "Executive Level",
-    description: "Hiring process for executive positions",
-    levelStatus: "active",
-    stages: [
-      {
-        _id: "1-1",
-        name: "HR Screening",
-        order: 1,
-        description: "Initial screening with HR",
-        assignedTo: "HR Team",
-      },
-      {
-        _id: "1-2",
-        name: "Executive Interview",
-        order: 2,
-        description: "Interview with executive team",
-        assignedTo: "CEO",
-      },
-    ],
-  },
-  {
-    _id: "2",
-    name: "Manager Level",
-    description: "Hiring process for management positions",
-    levelStatus: "active",
-    stages: [
-      {
-        _id: "2-1",
-        name: "Technical Assessment",
-        order: 1,
-        description: "Technical skills evaluation",
-        assignedTo: "Tech Lead",
-      },
-      {
-        _id: "2-2",
-        name: "Culture Fit",
-        order: 2,
-        description: "Team culture compatibility",
-        assignedTo: "Team Members",
-      },
-    ],
-  },
-];
 
 const Levels = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -96,19 +49,22 @@ const Levels = () => {
   const [selectedLevelId, setSelectedLevelId] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [levelToToggle, setLevelToToggle] = useState(null);
-  const [levels, setLevels] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
   const { enqueueSnackbar } = useSnackbar();
 
-  // Load dummy data on component mount
-  useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setLevels(dummyLevels);
-      setIsLoading(false);
-    }, 500);
-  }, []);
+  const {
+    data: approvalData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetApprovalQuery();
+
+  const levels =
+    approvalData?.aprovals?.map((approval) => ({
+      ...approval,
+      name: approval.groupName, 
+      stages: approval.levels, 
+      levelStatus: "active",
+    })) || [];
 
   const isLevelActive = (level) => {
     return level?.levelStatus === "active";
@@ -128,21 +84,21 @@ const Levels = () => {
     if (!levelToDelete) return;
 
     try {
-      // Simulate API call with timeout
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // await deleteLevelApi(levelToDelete._id);
 
-      setLevels(levels.filter((level) => level._id !== levelToDelete._id));
-      enqueueSnackbar(`Level "${levelToDelete.name}" deleted successfully`, {
-        variant: "success",
-      });
+      await refetch();
+
+      enqueueSnackbar(
+        `Level "${levelToDelete.groupName}" deleted successfully`,
+        {
+          variant: "success",
+        }
+      );
       setDeleteModalVisible(false);
       setLevelToDelete(null);
     } catch (error) {
       enqueueSnackbar("Failed to delete level", { variant: "error" });
       console.error("Delete error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -160,23 +116,12 @@ const Levels = () => {
     if (!levelToToggle) return;
 
     try {
-      // Simulate API call with timeout
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // await toggleLevelStatusApi(levelToToggle._id, !isLevelActive(levelToToggle));
 
-      const updatedLevels = levels.map((level) => {
-        if (level._id === levelToToggle._id) {
-          return {
-            ...level,
-            levelStatus: isLevelActive(level) ? "inactive" : "active",
-          };
-        }
-        return level;
-      });
+      await refetch();
 
-      setLevels(updatedLevels);
       enqueueSnackbar(
-        `Level "${levelToToggle.name}" is now ${
+        `Level "${levelToToggle.groupName}" is now ${
           isLevelActive(levelToToggle) ? "inactive" : "active"
         }`,
         { variant: "success" }
@@ -186,8 +131,6 @@ const Levels = () => {
     } catch (error) {
       enqueueSnackbar("Failed to update level status", { variant: "error" });
       console.error("Status change error:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -203,24 +146,7 @@ const Levels = () => {
 
   const handleModalClose = (updatedLevel = null) => {
     if (updatedLevel) {
-      // Add or update level in the dummy data
-      if (editingLevel) {
-        // Update existing level
-        setLevels(
-          levels.map((level) =>
-            level._id === updatedLevel._id ? updatedLevel : level
-          )
-        );
-      } else {
-        // Add new level
-        setLevels([
-          ...levels,
-          {
-            ...updatedLevel,
-            _id: `new-${Date.now()}`,
-          },
-        ]);
-      }
+      refetch();
     }
     setIsModalVisible(false);
     setEditingLevel(null);
@@ -239,6 +165,20 @@ const Levels = () => {
   const getLevelDetails = (levelId) => {
     return levels.find((level) => level._id === levelId);
   };
+
+  if (isError) {
+    return (
+      <Card style={{ margin: 16 }}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Failed to load levels"
+        />
+        <Button onClick={refetch} style={{ marginTop: 16 }}>
+          Retry
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -358,9 +298,9 @@ const Levels = () => {
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
                           }}
-                          title={level.name}
+                          title={level.groupName}
                         >
-                          {level.name}
+                          {level.groupName}
                         </Text>
                       </div>
                       <div
@@ -374,7 +314,7 @@ const Levels = () => {
                           {isLevelActive(level) ? "Active" : "Inactive"}
                         </Tag>
                         <Badge
-                          count={level.stages.length}
+                          count={level.levels?.length || 0}
                           style={{
                             backgroundColor: "#52c41a",
                             flexShrink: 0,
@@ -412,8 +352,8 @@ const Levels = () => {
                           overflowX: "hidden",
                         }}
                       >
-                        {[...level.stages]
-                          .sort((a, b) => a.order - b.order)
+                        {[...(level.levels || [])]
+                          .sort((a, b) => a.levelOrder - b.levelOrder)
                           .map((stage) => (
                             <Tag
                               key={stage._id}
@@ -430,9 +370,9 @@ const Levels = () => {
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
                               }}
-                              title={` ${stage.name}`}
+                              title={` ${stage.levelName}`}
                             >
-                              {stage.name}
+                              {stage.levelName}
                             </Tag>
                           ))}
                       </div>
@@ -599,7 +539,7 @@ const Levels = () => {
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="Name">
                       <Text strong>
-                        {getLevelDetails(selectedLevelId).name}
+                        {getLevelDetails(selectedLevelId).groupName}
                       </Text>
                     </Descriptions.Item>
                     <Descriptions.Item label="Description">
@@ -611,7 +551,7 @@ const Levels = () => {
                     <Descriptions.Item label="Total Stages">
                       <Badge
                         count={
-                          getLevelDetails(selectedLevelId).stages?.length || 0
+                          getLevelDetails(selectedLevelId).levels?.length || 0
                         }
                         showZero
                         style={{ backgroundColor: "#52c41a" }}
@@ -620,14 +560,12 @@ const Levels = () => {
                     <Descriptions.Item label="Status">
                       <Tag
                         color={
-                          getLevelDetails(selectedLevelId).levelStatus ===
-                          "active"
+                          isLevelActive(getLevelDetails(selectedLevelId))
                             ? "green"
                             : "red"
                         }
                       >
-                        {getLevelDetails(selectedLevelId).levelStatus ===
-                        "active"
+                        {isLevelActive(getLevelDetails(selectedLevelId))
                           ? "Active"
                           : "Inactive"}
                       </Tag>
@@ -640,16 +578,16 @@ const Levels = () => {
                     <div>
                       <OrderedListOutlined style={{ marginRight: 8 }} />
                       Level Stages (
-                      {getLevelDetails(selectedLevelId).stages?.length || 0})
+                      {getLevelDetails(selectedLevelId).levels?.length || 0})
                     </div>
                   }
                   size="small"
                 >
-                  {getLevelDetails(selectedLevelId).stages?.length > 0 ? (
+                  {getLevelDetails(selectedLevelId).levels?.length > 0 ? (
                     <List
                       dataSource={[
-                        ...getLevelDetails(selectedLevelId).stages,
-                      ].sort((a, b) => a.order - b.order)}
+                        ...getLevelDetails(selectedLevelId).levels,
+                      ].sort((a, b) => a.levelOrder - b.levelOrder)}
                       renderItem={(stage, index) => (
                         <List.Item
                           style={{
@@ -684,13 +622,13 @@ const Levels = () => {
                                     borderRadius: "6px",
                                   }}
                                 >
-                                  Stage #{stage.order}
+                                  Stage #{stage.levelOrder}
                                 </Tag>
                                 <Text
                                   strong
                                   style={{ marginLeft: 12, fontSize: 16 }}
                                 >
-                                  {stage.name}
+                                  {stage.levelName}
                                 </Text>
                               </div>
                             </div>
@@ -721,7 +659,7 @@ const Levels = () => {
                               </div>
                             )}
 
-                            {stage.assignedTo && (
+                            {stage.approvers?.length > 0 && (
                               <div style={{ marginTop: 8 }}>
                                 <Text
                                   strong
@@ -730,11 +668,15 @@ const Levels = () => {
                                     color: "#666",
                                   }}
                                 >
-                                  Assigned To:
+                                  Approvers:
                                 </Text>
-                                <Text style={{ marginLeft: 8 }}>
-                                  {stage.assignedTo}
-                                </Text>
+                                <div style={{ marginTop: 4 }}>
+                                  {stage.approvers.map((approver, i) => (
+                                    <Tag key={i} style={{ marginBottom: 4 }}>
+                                      {approver.user}
+                                    </Tag>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -875,7 +817,7 @@ const Levels = () => {
                   {isLevelActive(levelToToggle) ? "disable" : "enable"} the
                   level{" "}
                   <Text strong style={{ color: "#2c3e50" }}>
-                    "{levelToToggle.name}"
+                    "{levelToToggle.groupName}"
                   </Text>
                   .
                 </Text>
@@ -970,14 +912,15 @@ const Levels = () => {
                 <Text>
                   You are about to delete the level{" "}
                   <Text strong style={{ color: "#2c3e50" }}>
-                    "{levelToDelete.name}"
+                    "{levelToDelete.groupName}"
                   </Text>
                   .
                 </Text>
                 <div style={{ marginTop: 12 }}>
                   <Text type="secondary">
                     This level contains{" "}
-                    <Text strong>{levelToDelete.stages.length}</Text> stages.
+                    <Text strong>{levelToDelete.levels?.length || 0}</Text>{" "}
+                    stages.
                   </Text>
                 </div>
                 <div style={{ marginTop: 8 }}>

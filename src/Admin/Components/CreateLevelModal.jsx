@@ -13,6 +13,7 @@ import {
   Tooltip,
   Avatar,
   Popconfirm,
+  Select,
 } from "antd";
 import {
   PlusOutlined,
@@ -26,11 +27,24 @@ import {
   OrderedListOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
+import {
+  useAddApprovalMutation,
+  useUpdateApprovalMutation,
+  useGetRecruitersQuery,
+} from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
-const LevelItem = ({ level, index, onEdit, onDelete, isEditMode }) => {
+const LevelItem = ({
+  level,
+  index,
+  onEdit,
+  onDelete,
+  isEditMode,
+  recruiters = [],
+}) => {
   return (
     <Col xs={24} sm={12} lg={8}>
       <Card
@@ -44,10 +58,10 @@ const LevelItem = ({ level, index, onEdit, onDelete, isEditMode }) => {
         title={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Tag color="blue" style={{ borderRadius: "8px", fontSize: "12px" }}>
-              #{index + 1}
+              #{level.levelOrder}
             </Tag>
             <Text strong style={{ fontSize: "14px" }}>
-              {level.title}
+              {level.levelName}
             </Text>
             {isEditMode && level._id && (
               <Tag color="green" style={{ fontSize: "10px" }}>
@@ -106,15 +120,33 @@ const LevelItem = ({ level, index, onEdit, onDelete, isEditMode }) => {
           </Paragraph>
         )}
 
-        {level.assignedTo && (
+        {level.approvers && level.approvers.length > 0 && (
           <div style={{ marginBottom: "8px" }}>
             <Text strong style={{ fontSize: "12px" }}>
               <UserOutlined style={{ marginRight: "4px" }} />
-              Assigned To:
+              Approvers:
             </Text>
-            <Text style={{ marginLeft: "8px", fontSize: "12px" }}>
-              {level.assignedTo}
-            </Text>
+            <div style={{ marginTop: "4px" }}>
+              {level.approvers.map((approver, i) => {
+                const recruiter = recruiters.find(
+                  (r) => r._id === approver.user
+                );
+                return (
+                  <Tooltip
+                    key={i}
+                    title={
+                      recruiter
+                        ? `${recruiter.fullName} (${recruiter.email})`
+                        : approver.user
+                    }
+                  >
+                    <Tag style={{ margin: "2px" }}>
+                      {recruiter ? recruiter.fullName : approver.user}
+                    </Tag>
+                  </Tooltip>
+                );
+              })}
+            </div>
           </div>
         )}
       </Card>
@@ -124,15 +156,23 @@ const LevelItem = ({ level, index, onEdit, onDelete, isEditMode }) => {
 
 const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   const [levels, setLevels] = useState([]);
+
+  const { data: recruitersData, isLoading: isRecruitersLoading } =
+    useGetRecruitersQuery();
+  const [addApproval] = useAddApprovalMutation();
+  const [updateApproval] = useUpdateApprovalMutation();
+
+  const recruiters = recruitersData?.recruiters || [];
+
   const [currentLevel, setCurrentLevel] = useState({
-    title: "",
+    levelName: "",
     description: "",
-    assignedTo: "",
+    approvers: [],
+    levelOrder: 1,
   });
   const [isEditingLevel, setIsEditingLevel] = useState(false);
   const [editingIndex, setEditingIndex] = useState(-1);
-  const [levelName, setLevelName] = useState("");
-  const [levelDescription, setLevelDescription] = useState("");
+  const [groupName, setGroupName] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
@@ -140,13 +180,13 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   useEffect(() => {
     if (editingLevel && visible) {
       setIsEditMode(true);
-      setLevelName(editingLevel.name);
-      setLevelDescription(editingLevel.description || "");
+      setGroupName(editingLevel.groupName);
       setLevels(editingLevel.levels || []);
       setCurrentLevel({
-        title: "",
+        levelName: "",
         description: "",
-        assignedTo: "",
+        approvers: [],
+        levelOrder: levels.length + 1,
       });
     } else if (visible) {
       setIsEditMode(false);
@@ -156,12 +196,12 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
 
   const resetForm = () => {
     setLevels([]);
-    setLevelName("");
-    setLevelDescription("");
+    setGroupName("");
     setCurrentLevel({
-      title: "",
+      levelName: "",
       description: "",
-      assignedTo: "",
+      approvers: [],
+      levelOrder: 1,
     });
     setIsEditingLevel(false);
     setEditingIndex(-1);
@@ -175,13 +215,14 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   };
 
   const addLevel = async () => {
-    if (!currentLevel.title.trim()) {
-      enqueueSnackbar("Level title is required", { variant: "error" });
+    if (!currentLevel.levelName.trim()) {
+      enqueueSnackbar("Level name is required", { variant: "error" });
       return;
     }
 
     const newLevel = {
       ...currentLevel,
+      levelOrder: isEditingLevel ? currentLevel.levelOrder : levels.length + 1,
     };
 
     if (isEditingLevel) {
@@ -197,9 +238,10 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     }
 
     setCurrentLevel({
-      title: "",
+      levelName: "",
       description: "",
-      assignedTo: "",
+      approvers: [],
+      levelOrder: levels.length + 2,
     });
   };
 
@@ -214,8 +256,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
 
     try {
       if (isEditMode && levelToDelete._id) {
-        // Simulate API call for deletion
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // If you need actual API deletion, you should add a delete endpoint to your API
         enqueueSnackbar("Level deleted successfully", { variant: "success" });
       }
 
@@ -232,8 +273,8 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    if (!levelName || !levelName.trim()) {
-      enqueueSnackbar("Level name is required", { variant: "error" });
+    if (!groupName || !groupName.trim()) {
+      enqueueSnackbar("Group name is required", { variant: "error" });
       return;
     }
 
@@ -243,35 +284,37 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     }
 
     const levelData = {
-      name: levelName.trim(),
-      description: levelDescription.trim(),
+      groupName: groupName.trim(),
       levels: levels,
-      levelStatus: "active",
     };
 
     try {
       setIsLoading(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const result = {
-        ...levelData,
-        _id: isEditMode ? editingLevel._id : `new-${Date.now()}`,
-      };
+      let result;
+      if (isEditMode) {
+        result = await updateApproval({
+          id: editingLevel._id,
+          ...levelData,
+        }).unwrap();
+      } else {
+        result = await addApproval(levelData).unwrap();
+      }
 
       enqueueSnackbar(
-        `Level ${isEditMode ? "updated" : "created"} successfully!`,
+        `Approval flow ${isEditMode ? "updated" : "created"} successfully!`,
         { variant: "success" }
       );
       resetForm();
       onClose(result);
     } catch (error) {
       enqueueSnackbar(
-        `Failed to ${isEditMode ? "update" : "create"} level`,
+        error.data?.message ||
+          `Failed to ${isEditMode ? "update" : "create"} approval flow`,
         { variant: "error" }
       );
       console.error(
-        `Level ${isEditMode ? "update" : "creation"} error:`,
+        `Approval flow ${isEditMode ? "update" : "creation"} error:`,
         error
       );
     } finally {
@@ -297,7 +340,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
             }}
             icon={isEditMode ? <EditOutlined /> : <SettingOutlined />}
           />
-          {isEditMode ? "Edit Level" : "Create New Level"}
+          {isEditMode ? "Edit Approval Flow" : "Create New Approval Flow"}
         </div>
       }
       open={visible}
@@ -322,18 +365,18 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
               <FolderOpenOutlined
                 style={{ marginRight: "8px", color: "#da2c46" }}
               />
-              Level Information
+              Approval Flow Information
             </Text>
           </div>
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ color: "#2c3e50" }}>
-              Level Name *
+              Group Name *
             </Text>
             <Input
-              placeholder="e.g., Executive Level, Manager Level"
+              placeholder="e.g., Executive Approval, Manager Approval"
               size="large"
-              value={levelName}
-              onChange={(e) => setLevelName(e.target.value)}
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
               style={{
                 marginTop: "8px",
                 borderRadius: "8px",
@@ -341,22 +384,6 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                 fontSize: "16px",
               }}
               prefix={<EditOutlined style={{ color: "#da2c46" }} />}
-            />
-          </div>
-          <div>
-            <Text strong style={{ color: "#2c3e50" }}>
-              Description (Optional)
-            </Text>
-            <TextArea
-              rows={3}
-              placeholder="Brief description of this level..."
-              value={levelDescription}
-              onChange={(e) => setLevelDescription(e.target.value)}
-              style={{
-                marginTop: "8px",
-                borderRadius: "8px",
-                border: "2px solid #e8f4fd",
-              }}
             />
           </div>
         </Card>
@@ -381,7 +408,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
             <div>
               <Text strong style={{ color: "white", fontSize: "18px" }}>
                 <OrderedListOutlined style={{ marginRight: "8px" }} />
-                Level Levels
+                Approval Levels
               </Text>
               <br />
               <Text
@@ -390,7 +417,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                   fontSize: "14px",
                 }}
               >
-                Add levels to this level
+                Add approval levels to this flow
               </Text>
             </div>
             <Tag
@@ -419,6 +446,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                   onEdit={editLevelHandler}
                   onDelete={deleteLevelHandler}
                   isEditMode={isEditMode}
+                  recruiters={recruiters}
                 />
               ))}
             </Row>
@@ -436,7 +464,9 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                 color: "#2c3e50",
               }}
             >
-              {isEditingLevel ? "Edit Level" : "Add New Level"}
+              {isEditingLevel
+                ? "Edit Approval Level"
+                : "Add New Approval Level"}
             </div>
           }
           style={{
@@ -450,15 +480,15 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
             <Col xs={24} sm={12}>
               <div style={{ marginBottom: "16px" }}>
                 <Text strong style={{ color: "#2c3e50" }}>
-                  Level Title *
+                  Level Name *
                 </Text>
                 <Input
-                  placeholder="e.g., Initial Review, Final Approval"
-                  value={currentLevel.title}
+                  placeholder="e.g., HR Review, Manager Approval"
+                  value={currentLevel.levelName}
                   onChange={(e) =>
                     setCurrentLevel((prev) => ({
                       ...prev,
-                      title: e.target.value,
+                      levelName: e.target.value,
                     }))
                   }
                   style={{
@@ -472,16 +502,16 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
             <Col xs={24} sm={12}>
               <div style={{ marginBottom: "16px" }}>
                 <Text strong style={{ color: "#2c3e50" }}>
-                  <UserOutlined style={{ marginRight: "4px" }} />
-                  Assigned To
+                  Level Order
                 </Text>
                 <Input
-                  placeholder="e.g., HR, Manager, Team Lead"
-                  value={currentLevel.assignedTo}
+                  type="number"
+                  min="1"
+                  value={currentLevel.levelOrder}
                   onChange={(e) =>
                     setCurrentLevel((prev) => ({
                       ...prev,
-                      assignedTo: e.target.value,
+                      levelOrder: parseInt(e.target.value) || 1,
                     }))
                   }
                   style={{
@@ -493,6 +523,60 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
               </div>
             </Col>
           </Row>
+
+          <div style={{ marginBottom: "16px" }}>
+            <Text strong style={{ color: "#2c3e50" }}>
+              Approvers
+            </Text>
+            <Select
+              mode="multiple"
+              placeholder="Select approvers"
+              loading={isRecruitersLoading}
+              value={currentLevel.approvers.map((a) => a.user)}
+              onChange={(values) =>
+                setCurrentLevel((prev) => ({
+                  ...prev,
+                  approvers: values.map((user) => ({ user })),
+                }))
+              }
+              style={{
+                width: "100%",
+                marginTop: "8px",
+              }}
+              optionFilterProp="label"
+              filterOption={(input, option) =>
+                option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {recruiters.map((recruiter) => (
+                <Option
+                  key={recruiter._id}
+                  value={recruiter._id}
+                  label={`${recruiter.fullName} (${recruiter.email})`}
+                >
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Avatar
+                      size="small"
+                      style={{
+                        backgroundColor: "#da2c46",
+                        marginRight: 8,
+                        fontSize: "12px",
+                      }}
+                    >
+                      {recruiter.fullName.charAt(0)}
+                    </Avatar>
+                    <div>
+                      <Text strong>{recruiter.fullName}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        {recruiter.email}
+                      </Text>
+                    </div>
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </div>
 
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ color: "#2c3e50" }}>
@@ -544,9 +628,10 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                   setIsEditingLevel(false);
                   setEditingIndex(-1);
                   setCurrentLevel({
-                    title: "",
+                    levelName: "",
                     description: "",
-                    assignedTo: "",
+                    approvers: [],
+                    levelOrder: levels.length + 1,
                   });
                 }}
               >
@@ -597,8 +682,8 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                 ? "Updating..."
                 : "Creating..."
               : isEditMode
-              ? "Update Level"
-              : "Create Level"}
+              ? "Update Flow"
+              : "Create Flow"}
           </Button>
         </div>
       </div>

@@ -241,6 +241,26 @@ export const adminApi = createApi({
         method: "PATCH",
       }),
     }),
+    getApproval: builder.query({
+      query: () => ({
+        url: "/approval",
+        method: "GET",
+      }),
+    }),
+    addApproval: builder.mutation({
+      query: (approvalData) => ({
+        url: "/approval",
+        method: "POST",
+        body: approvalData,
+      }),
+    }),
+    updateApproval: builder.mutation({
+      query: ({ id, ...approvalData }) => ({
+        url: `/approval/${id}`,
+        method: "PUT",
+        body: approvalData,
+      }),
+    }),
   }),
 });
 
@@ -293,4 +313,9 @@ export const {
   useGetCandidateByIdQuery,
   useEditCandidateMutation,
   useDisableCandidateStatusMutation,
+
+  //Level
+  useGetApprovalQuery,
+  useAddApprovalMutation,
+  useUpdateApprovalMutation,
 } = adminApi;
