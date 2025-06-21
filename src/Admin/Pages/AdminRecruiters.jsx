@@ -19,7 +19,7 @@ import {
   Input,
   Form,
   Select,
- 
+
 } from "antd";
 import {
   PlusOutlined,
@@ -41,6 +41,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
+import { useSnackbar } from 'notistack';
 
 import {
   useGetRecruitersQuery,
@@ -54,6 +55,7 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const AdminRecruiter = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [recruiterModalVisible, setRecruiterModalVisible] = useState(false);
   const [editingRecruiter, setEditingRecruiter] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
@@ -107,8 +109,8 @@ const AdminRecruiter = () => {
       message.error(
         `Failed to load recruiter details: ${
           recruiterDetailsError?.data?.message ||
-          recruiterDetailsError?.message ||
-          "Unknown error"
+        recruiterDetailsError?.message ||
+        "Unknown error"
         }`
       );
     }
@@ -128,8 +130,7 @@ const AdminRecruiter = () => {
     if (!recruiterToToggle) return;
 
     try {
-      const newStatus =
-        recruiterToToggle.accountStatus === "active" ? "inActive" : "active";
+      const newStatus = recruiterToToggle.accountStatus === "active" ? "inActive" : "active";
 
       await toggleRecruiterStatus({
         recruiterId: recruiterToToggle._id,
@@ -137,21 +138,23 @@ const AdminRecruiter = () => {
       }).unwrap();
 
       const action = newStatus === "active" ? "enabled" : "disabled";
-      message.success(
-        `Recruiter "${getRecruiterDisplayName(
-          recruiterToToggle
-        )}" ${action} successfully`
+      enqueueSnackbar(
+        `Recruiter "${getRecruiterDisplayName(recruiterToToggle)}" ${action} successfully`,
+        {
+          variant: 'success',
+        }
       );
 
       setDisableModalVisible(false);
       setRecruiterToToggle(null);
       refetch();
     } catch (error) {
-      message.error(
+      enqueueSnackbar(
         error?.data?.message ||
-          `Failed to ${
-            recruiterToToggle.accountStatus === "active" ? "disable" : "enable"
-          } recruiter`
+        `Failed to ${recruiterToToggle.accountStatus === "active" ? "disable" : "enable"} recruiter`,
+        {
+          variant: 'error',
+        }
       );
       console.error("Toggle status error:", error);
     }
@@ -174,17 +177,23 @@ const AdminRecruiter = () => {
     try {
       await deleteRecruiter(recruiterToDelete._id).unwrap();
 
-      message.success(
-        `Recruiter "${getRecruiterDisplayName(
-          recruiterToDelete
-        )}" deleted successfully`
+      enqueueSnackbar(
+        `Recruiter "${getRecruiterDisplayName(recruiterToDelete)}" deleted successfully`,
+        {
+          variant: 'success',
+        }
       );
 
       setDeleteModalVisible(false);
       setRecruiterToDelete(null);
       refetch();
     } catch (error) {
-      message.error(error?.data?.message || "Failed to delete recruiter");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to delete recruiter",
+        {
+          variant: 'error',
+        }
+      );
       console.error("Delete recruiter error:", error);
     }
   };

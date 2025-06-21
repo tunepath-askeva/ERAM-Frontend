@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSnackbar } from 'notistack';
 import {
   Form,
   Input,
@@ -60,6 +61,7 @@ const fieldTypes = [
 ];
 
 const AddWorkOrder = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [currentStep, setCurrentStep] = useState(0);
   const [jobForm] = Form.useForm();
   const [applicationForm] = Form.useForm();
@@ -457,11 +459,14 @@ const AddWorkOrder = () => {
       };
 
       const result = await createWorkOrder(workOrderData).unwrap();
-      message.success(
-        `Work order ${
-          status === "published" ? "published" : "saved as draft"
-        } successfully with approval settings!`
+      enqueueSnackbar(
+        `Work order ${status === "published" ? "published" : "saved as draft"
+        } successfully with approval settings!`,
+        {
+          variant: 'success',
+        }
       );
+
       jobForm.resetFields();
       setSelectedProject(null);
       setJobData(null);
@@ -472,7 +477,9 @@ const AddWorkOrder = () => {
       navigate("/admin/workorder");
     } catch (error) {
       console.error("Error creating work order:", error);
-      message.error("Failed to create work order. Please try again.");
+      enqueueSnackbar("Failed to create work order. Please try again.", {
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -485,6 +492,9 @@ const AddWorkOrder = () => {
     setApplicationFields([]);
     setCurrentStep(0);
     navigate("/admin/workorder");
+    enqueueSnackbar("Work order creation cancelled", {
+      variant: 'error',
+    });
   };
 
   const renderJobPreview = () => (
@@ -1028,7 +1038,7 @@ const AddWorkOrder = () => {
       <Modal
         title={`Set Stage Dates & Approvals for ${
           currentPipelineForDates?.name || "Pipeline"
-        }`}
+          }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[

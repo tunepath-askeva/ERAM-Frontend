@@ -8,7 +8,6 @@ import {
   Card,
   Typography,
   Space,
-  message,
   InputNumber,
   Select,
 } from "antd";
@@ -29,6 +28,7 @@ import {
   useCreateRecruiterMutation,
   useEditRecruiterMutation,
 } from "../../Slices/Admin/AdminApis.js";
+import { useSnackbar } from "notistack";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -46,6 +46,7 @@ const RecruiterForm = ({
   const [createRecruiter, { isLoading: isCreating }] =
     useCreateRecruiterMutation();
   const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
+  const { enqueueSnackbar } = useSnackbar();
 
   const isLoading = isCreating || isEditing;
 
@@ -93,10 +94,14 @@ const RecruiterForm = ({
           id: recruiterId,
           ...payload,
         }).unwrap();
-        message.success("Recruiter updated successfully!");
+        enqueueSnackbar("Recruiter updated successfully!", { 
+          variant: "success",
+        });
       } else {
         result = await createRecruiter(payload).unwrap();
-        message.success("Recruiter created successfully!");
+        enqueueSnackbar("Recruiter created successfully!", { 
+          variant: "success",
+        });
       }
 
       form.resetFields();
@@ -113,7 +118,9 @@ const RecruiterForm = ({
         (mode === "edit"
           ? "Failed to update recruiter"
           : "Failed to create recruiter");
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { 
+        variant: "error",
+      });
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSnackbar } from 'notistack';
 import {
   Form,
   Input,
@@ -65,6 +66,7 @@ const fieldTypes = [
 ];
 
 const EditWorkOrder = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
   const [currentStep, setCurrentStep] = useState(0);
   const [jobForm] = Form.useForm();
@@ -181,8 +183,8 @@ const EditWorkOrder = () => {
           alertDate: formatDate(workOrder.alertDate),
           assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
             ? workOrder.assignedRecruiters.map((recruiter) =>
-                typeof recruiter === "object" ? recruiter._id : recruiter
-              )
+              typeof recruiter === "object" ? recruiter._id : recruiter
+            )
             : [workOrder.assignedRecruiters],
           pipeline: Array.isArray(workOrder.pipeline)
             ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
@@ -590,7 +592,6 @@ const EditWorkOrder = () => {
           })) || []
         );
       });
-
       const workOrderPayload = {
         ...jobData,
         ...values,
@@ -607,12 +608,20 @@ const EditWorkOrder = () => {
       };
 
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
-      message.success(`Work order updated and published successfully!`);
+
+      enqueueSnackbar('Work order updated and published successfully!', {
+        variant: 'success',
+      });
+
       navigate("/admin/workorder");
     } catch (error) {
       console.error("Error updating work order:", error);
-      message.error(
-        error?.data?.message || "Failed to update work order. Please try again."
+
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update work order. Please try again.",
+        {
+          variant: 'error',
+        }
       );
     } finally {
       setLoading(false);
@@ -620,6 +629,9 @@ const EditWorkOrder = () => {
   };
 
   const handleCancel = () => {
+    enqueueSnackbar('Changes discarded', {
+      variant: 'info',
+    });
     navigate("/admin/workorder");
   };
 
@@ -1189,9 +1201,8 @@ const EditWorkOrder = () => {
 
     return (
       <Modal
-        title={`Set Stage Dates & Approvals for ${
-          currentPipelineForDates?.name || "Pipeline"
-        }`}
+        title={`Set Stage Dates & Approvals for ${currentPipelineForDates?.name || "Pipeline"
+          }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
@@ -2027,7 +2038,7 @@ const EditWorkOrder = () => {
               </Button>
             }
             style={{
-              height: "680px", 
+              height: "680px",
               display: "flex",
               flexDirection: "column",
             }}
