@@ -154,14 +154,14 @@ const SourcedCandidates = ({ jobId }) => {
 
   const { sourcedCandidates, selectedCandidates } = useMemo(() => {
     return {
-      // Show all candidates that are not selected or in screening (screening handled by separate component)
+      // Show only candidates with "sourced" status or no status (default sourced)
       sourcedCandidates: allCandidates.filter((candidate) => {
         const status = candidate.status;
+        // Only show truly sourced candidates - no status, "sourced", or "applied" but not moved to other stages
         return (
-          !status ||
-          status === "sourced" ||
-          status === "applied" ||
-          !["selected", "screening", "hired", "rejected"].includes(status)
+          !status || 
+          status === "sourced" || 
+          (status === "applied" && !candidate.isApplied) // Only show applied if they haven't actually applied to this job
         );
       }),
       selectedCandidates: allCandidates.filter(
