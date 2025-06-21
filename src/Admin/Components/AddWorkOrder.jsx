@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import {
   Form,
   Input,
@@ -460,10 +460,11 @@ const AddWorkOrder = () => {
 
       const result = await createWorkOrder(workOrderData).unwrap();
       enqueueSnackbar(
-        `Work order ${status === "published" ? "published" : "saved as draft"
+        `Work order ${
+          status === "published" ? "published" : "saved as draft"
         } successfully with approval settings!`,
         {
-          variant: 'success',
+          variant: "success",
         }
       );
 
@@ -478,7 +479,7 @@ const AddWorkOrder = () => {
     } catch (error) {
       console.error("Error creating work order:", error);
       enqueueSnackbar("Failed to create work order. Please try again.", {
-        variant: 'error',
+        variant: "error",
       });
     } finally {
       setLoading(false);
@@ -492,7 +493,6 @@ const AddWorkOrder = () => {
     setApplicationFields([]);
     setCurrentStep(0);
     navigate("/admin/workorder");
-   
   };
 
   const renderJobPreview = () => (
@@ -1036,17 +1036,10 @@ const AddWorkOrder = () => {
       <Modal
         title={`Set Stage Dates & Approvals for ${
           currentPipelineForDates?.name || "Pipeline"
-          }`}
+        }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
-          // <Button
-          //   key="add"
-          //   icon={<PlusOutlined />}
-          //   onClick={() => addCustomStage(currentPipelineForDates._id)}
-          // >
-          //   Add Stage
-          // </Button>,
           <Button
             key="back"
             onClick={() => setPipelineDatesModalVisible(false)}
@@ -1209,6 +1202,42 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
+                {/* Recruiter Assignment */}
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Assigned Recruiter"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Select recruiters"
+                      value={
+                        stageApprovers[currentPipelineForDates._id]?.[
+                          stageId
+                        ] || []
+                      }
+                      onChange={(value) =>
+                        handleApproverChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          value
+                        )
+                      }
+                      style={{ width: "100%" }}
+                      size="small"
+                    >
+                      {activeRecruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                {/* Approval Level */}
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Required Approval"
@@ -1218,6 +1247,15 @@ const AddWorkOrder = () => {
                   >
                     <Select
                       placeholder="Select approval level"
+                      value={dateEntry?.approvalLevel}
+                      onChange={(value) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "approvalLevel",
+                          value
+                        )
+                      }
                       style={{ width: "100%" }}
                       size="small"
                     >
@@ -1230,6 +1268,7 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
+                {/* Dependency Type */}
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Dependency Type"
@@ -1316,13 +1355,6 @@ const AddWorkOrder = () => {
               {pipelineStageDates[pipelineId]?.some(
                 (stage) => stage.startDate || stage.endDate
               ) && <span style={{ marginLeft: "4px" }}>(Dates set)</span>}
-              <EditOutlined
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingPipeline(pipeline);
-                  // setPipelineModalVisible(true);
-                }}
-              />
             </Tag>
           );
         })}
