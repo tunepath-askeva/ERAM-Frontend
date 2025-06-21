@@ -35,7 +35,7 @@ import {
 import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
-  useGetSourcedCandidateQuery
+  useGetSourcedCandidateQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 
@@ -64,10 +64,10 @@ const SourcedCandidates = ({ jobId }) => {
   });
 
   const {
-    data: filteredSource,
-    isLoading,
-    error,
-    refetch,
+    data: sourcedCandidatesData,
+    isLoading: isSourcedLoading,
+    error: sourcedError,
+    refetch: refetchSourced,
   } = useGetSourcedCandidateQuery({});
 
   const {
@@ -78,15 +78,35 @@ const SourcedCandidates = ({ jobId }) => {
   } = useGetJobApplicationsQuery(jobId);
 
   const allCandidates = useMemo(() => {
-    return (
+    // Get candidates from job applications
+    const jobAppCandidates =
       jobApplications?.formResponses?.map((response) => ({
         ...response.user,
         candidateStatus: response.status,
         applicationId: response._id,
         responses: response.responses,
-      })) || []
-    );
-  }, [jobApplications]);
+      })) || [];
+
+    const sourcedCandidates =
+      sourcedCandidatesData?.users?.map((user) => ({
+        ...user,
+        candidateStatus: user.candidateStatus || "sourced",
+        applicationId: user._id,
+      })) || [];
+
+    // Merge candidates, giving priority to job application candidates
+    const merged = [...jobAppCandidates];
+    const existingIds = new Set(jobAppCandidates.map((c) => c._id));
+
+    // Add sourced candidates that aren't already in job applications
+    for (const candidate of sourcedCandidates) {
+      if (!existingIds.has(candidate._id)) {
+        merged.push(candidate);
+      }
+    }
+
+    return merged;
+  }, [jobApplications, sourcedCandidatesData]);
 
   const filterOptions = useMemo(() => {
     const allSkills = new Set();
@@ -121,8 +141,8 @@ const SourcedCandidates = ({ jobId }) => {
     return {
       sourcedCandidates: allCandidates.filter(
         (candidate) =>
-          candidate.candidateStatus === "applied" ||
-          candidate.candidateStatus === "sourced"
+          candidate.candidateStatus === "sourced" ||
+          candidate.candidateStatus === "applied"
       ),
       selectedCandidates: allCandidates.filter(
         (candidate) => candidate.candidateStatus === "selected"
@@ -131,7 +151,8 @@ const SourcedCandidates = ({ jobId }) => {
   }, [allCandidates]);
 
   const filteredCandidates = useMemo(() => {
-    let candidates = sourcedCandidates;
+    let candidates =
+      activeTab === "sourced" ? sourcedCandidates : selectedCandidates;
 
     if (searchTerm) {
       candidates = candidates.filter(
@@ -176,7 +197,7 @@ const SourcedCandidates = ({ jobId }) => {
     }
 
     return candidates;
-  }, [sourcedCandidates, searchTerm, filters]);
+  }, [activeTab, sourcedCandidates, selectedCandidates, searchTerm, filters]);
 
   const clearAllFilters = () => {
     setFilters({
@@ -223,7 +244,11 @@ const SourcedCandidates = ({ jobId }) => {
       message.success(
         statusMessages[newStatus] || "Candidate status updated successfully"
       );
-      refetch();
+
+      // Refetch both data sources
+      refetchSourced();
+      jobRefetch();
+
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to update candidate status:", error);
@@ -236,7 +261,11 @@ const SourcedCandidates = ({ jobId }) => {
 
     const currentStatus = selectedCandidate.candidateStatus;
 
-    if (!currentStatus || currentStatus === "sourced") {
+    if (
+      !currentStatus ||
+      currentStatus === "sourced" ||
+      currentStatus === "applied"
+    ) {
       return "Move to Selected";
     } else if (currentStatus === "selected") {
       return "Move to Screening";
@@ -250,7 +279,11 @@ const SourcedCandidates = ({ jobId }) => {
 
     const currentStatus = selectedCandidate.candidateStatus;
 
-    if (!currentStatus || currentStatus === "sourced") {
+    if (
+      !currentStatus ||
+      currentStatus === "sourced" ||
+      currentStatus === "applied"
+    ) {
       return "selected";
     } else if (currentStatus === "selected") {
       return "screening";
@@ -259,7 +292,7 @@ const SourcedCandidates = ({ jobId }) => {
     return "selected";
   };
 
-  if (isLoading) {
+  if (isSourcedLoading || jobLoading) {
     return (
       <div
         style={{
@@ -274,12 +307,12 @@ const SourcedCandidates = ({ jobId }) => {
     );
   }
 
-  if (error) {
+  if (sourcedError || jobError) {
     return (
       <div style={{ padding: "16px" }}>
         <Alert
-          message="Failed to load sourced candidates"
-          description="Unable to fetch sourced candidates for this job."
+          message="Failed to load candidates"
+          description="Unable to fetch candidates data"
           type="error"
           showIcon
         />
@@ -517,6 +550,22 @@ const SourcedCandidates = ({ jobId }) => {
                   showExperience={true}
                   showSkills={true}
                   maxSkills={3}
+                  actions={[
+                    <Button
+                      key="view"
+                      icon={<EyeOutlined />}
+                      onClick={() => handleViewProfile(candidate)}
+                    >
+                      View Profile
+                    </Button>,
+                    <Button
+                      key="move"
+                      type="primary"
+                      onClick={() => handleStatusUpdate("screening")}
+                    >
+                      Move to Screening
+                    </Button>,
+                  ]}
                 />
               ))
             ) : (
