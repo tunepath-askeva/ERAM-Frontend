@@ -47,6 +47,7 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+
     
     updateCandidateStatus: builder.mutation({
       query: ({ Id, status,jobId }) => ({
