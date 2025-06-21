@@ -78,34 +78,49 @@ const SourcedCandidates = ({ jobId }) => {
   } = useGetJobApplicationsQuery(jobId);
 
   const allCandidates = useMemo(() => {
-    // Get candidates from job applications
     const jobAppCandidates =
       jobApplications?.formResponses?.map((response) => ({
         ...response.user,
-        candidateStatus: response.status,
+        status: response.status,
         applicationId: response._id,
         responses: response.responses,
+        isApplied: true, // Mark as applied to job
       })) || [];
 
     const sourcedCandidates =
       sourcedCandidatesData?.users?.map((user) => ({
         ...user,
-        candidateStatus: user.candidateStatus || "sourced",
+        status: user.status || "sourced", // Use status field, default to sourced
         applicationId: user._id,
+        isApplied: false, // Mark as not applied initially
       })) || [];
 
-    // Merge candidates, giving priority to job application candidates
-    const merged = [...jobAppCandidates];
-    const existingIds = new Set(jobAppCandidates.map((c) => c._id));
+    // Create a map of all candidates by ID
+    const candidatesMap = new Map();
 
-    // Add sourced candidates that aren't already in job applications
-    for (const candidate of sourcedCandidates) {
-      if (!existingIds.has(candidate._id)) {
-        merged.push(candidate);
+    // First add sourced candidates
+    sourcedCandidates.forEach((candidate) => {
+      candidatesMap.set(candidate._id, candidate);
+    });
+
+    // Then update with job application candidates (if they applied)
+    jobAppCandidates.forEach((candidate) => {
+      if (candidatesMap.has(candidate._id)) {
+        // Candidate exists in sourced, update their status and mark as applied
+        const existingCandidate = candidatesMap.get(candidate._id);
+        candidatesMap.set(candidate._id, {
+          ...existingCandidate,
+          ...candidate,
+          isApplied: true,
+          status: candidate.status || existingCandidate.status,
+        });
+      } else {
+        // New candidate from job applications
+        candidatesMap.set(candidate._id, candidate);
       }
-    }
+    });
 
-    return merged;
+    return Array.from(candidatesMap.values());
   }, [jobApplications, sourcedCandidatesData]);
 
   const filterOptions = useMemo(() => {
@@ -139,20 +154,34 @@ const SourcedCandidates = ({ jobId }) => {
 
   const { sourcedCandidates, selectedCandidates } = useMemo(() => {
     return {
-      sourcedCandidates: allCandidates.filter(
-        (candidate) =>
-          candidate.candidateStatus === "sourced" ||
-          candidate.candidateStatus === "applied"
-      ),
+      // Show all candidates that are not selected or in screening (screening handled by separate component)
+      sourcedCandidates: allCandidates.filter((candidate) => {
+        const status = candidate.status;
+        return (
+          !status ||
+          status === "sourced" ||
+          status === "applied" ||
+          !["selected", "screening", "hired", "rejected"].includes(status)
+        );
+      }),
       selectedCandidates: allCandidates.filter(
-        (candidate) => candidate.candidateStatus === "selected"
+        (candidate) => candidate.status === "selected"
       ),
     };
   }, [allCandidates]);
 
   const filteredCandidates = useMemo(() => {
-    let candidates =
-      activeTab === "sourced" ? sourcedCandidates : selectedCandidates;
+    let candidates;
+    switch (activeTab) {
+      case "sourced":
+        candidates = sourcedCandidates;
+        break;
+      case "selected":
+        candidates = selectedCandidates;
+        break;
+      default:
+        candidates = sourcedCandidates;
+    }
 
     if (searchTerm) {
       candidates = candidates.filter(
@@ -239,13 +268,14 @@ const SourcedCandidates = ({ jobId }) => {
       const statusMessages = {
         selected: "Candidate moved to selected successfully",
         screening: "Candidate moved to screening successfully",
+        hired: "Candidate marked as hired successfully",
+        rejected: "Candidate marked as rejected successfully",
       };
 
       message.success(
         statusMessages[newStatus] || "Candidate status updated successfully"
       );
 
-      // Refetch both data sources
       refetchSourced();
       jobRefetch();
 
@@ -259,7 +289,7 @@ const SourcedCandidates = ({ jobId }) => {
   const getModalButtonText = () => {
     if (!selectedCandidate) return "Update Status";
 
-    const currentStatus = selectedCandidate.candidateStatus;
+    const currentStatus = selectedCandidate.status;
 
     if (
       !currentStatus ||
@@ -277,7 +307,7 @@ const SourcedCandidates = ({ jobId }) => {
   const getNextStatus = () => {
     if (!selectedCandidate) return "selected";
 
-    const currentStatus = selectedCandidate.candidateStatus;
+    const currentStatus = selectedCandidate.status;
 
     if (
       !currentStatus ||
@@ -290,6 +320,30 @@ const SourcedCandidates = ({ jobId }) => {
     }
 
     return "selected";
+  };
+
+  const getCandidateStatusTag = (status, isApplied) => {
+    if (!status || status === "sourced") {
+      return isApplied ? (
+        <Tag color="blue">Applied</Tag>
+      ) : (
+        <Tag color="default">Sourced</Tag>
+      );
+    }
+
+    const statusColors = {
+      applied: "blue",
+      selected: "green",
+      screening: "orange",
+      hired: "purple",
+      rejected: "red",
+    };
+
+    return (
+      <Tag color={statusColors[status] || "default"}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Tag>
+    );
   };
 
   if (isSourcedLoading || jobLoading) {
@@ -620,15 +674,10 @@ const SourcedCandidates = ({ jobId }) => {
               {selectedCandidate.title}
             </Descriptions.Item>
             <Descriptions.Item label="Current Status">
-              <Tag
-                color={
-                  selectedCandidate.candidateStatus === "selected"
-                    ? "green"
-                    : "blue"
-                }
-              >
-                {selectedCandidate.candidateStatus || "Sourced"}
-              </Tag>
+              {getCandidateStatusTag(
+                selectedCandidate.status,
+                selectedCandidate.isApplied
+              )}
             </Descriptions.Item>
 
             <Descriptions.Item label="Skills" span={2}>
