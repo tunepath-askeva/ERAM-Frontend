@@ -15,7 +15,7 @@ import {
   Divider,
   Switch,
   Skeleton,
-  Input 
+  Input
 } from "antd";
 import {
   PlusOutlined,
@@ -42,12 +42,14 @@ import {
   usePublishWorkOrderMutation,
   useToggleWorkOrderStatusMutation,
 } from "../../Slices/Admin/AdminApis.js";
+import { useSnackbar } from 'notistack';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const WorkOrder = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [workOrderToDelete, setWorkOrderToDelete] = useState(null);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
@@ -109,14 +111,18 @@ const WorkOrder = () => {
 
     try {
       await deleteWorkOrder(workOrderToDelete._id).unwrap();
-      message.success(
-        `Work Order "${workOrderToDelete.title}" deleted successfully`
+      enqueueSnackbar(
+        `Work Order "${workOrderToDelete.title}" deleted successfully`,
+        { variant: 'success' }
       );
       refetch();
       setDeleteModalVisible(false);
       setWorkOrderToDelete(null);
     } catch (error) {
-      message.error(error?.data?.message || "Failed to delete work order");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to delete work order",
+        { variant: 'error' }
+      );
       console.error("Delete error:", error);
     }
   };
@@ -126,14 +132,18 @@ const WorkOrder = () => {
 
     try {
       await publishWorkOrder(workOrderToPublish._id).unwrap();
-      message.success(
-        `Work Order "${workOrderToPublish.title}" published successfully`
+      enqueueSnackbar(
+        `Work Order "${workOrderToPublish.title}" published successfully`,
+        { variant: 'success' }
       );
       refetch();
       setPublishModalVisible(false);
       setWorkOrderToPublish(null);
     } catch (error) {
-      message.error(error?.data?.message || "Failed to publish work order");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to publish work order",
+        { variant: 'error' }
+      );
       console.error("Publish error:", error);
     }
   };
@@ -143,14 +153,18 @@ const WorkOrder = () => {
 
     try {
       await toggleWorkOrderStatus(workOrderToDeactivate._id).unwrap();
-      message.success(
-        `Work Order "${workOrderToDeactivate.title}" deactivated successfully`
+      enqueueSnackbar(
+        `Work Order "${workOrderToDeactivate.title}" deactivated successfully`,
+        { variant: 'success' }
       );
       refetch();
       setDeactivateModalVisible(false);
       setWorkOrderToDeactivate(null);
     } catch (error) {
-      message.error(error?.data?.message || "Failed to deactivate work order");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to deactivate work order",
+        { variant: 'error' }
+      );
       console.error("Deactivate error:", error);
     }
   };
@@ -160,14 +174,18 @@ const WorkOrder = () => {
 
     try {
       await toggleWorkOrderStatus(workOrderToActivate._id).unwrap();
-      message.success(
-        `Work Order "${workOrderToActivate.title}" activated successfully`
+      enqueueSnackbar(
+        `Work Order "${workOrderToActivate.title}" activated successfully`,
+        { variant: 'success' }
       );
       refetch();
       setActivateModalVisible(false);
       setWorkOrderToActivate(null);
     } catch (error) {
-      message.error(error?.data?.message || "Failed to activate work order");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to activate work order",
+        { variant: 'error' }
+      );
       console.error("Activate error:", error);
     }
   };
