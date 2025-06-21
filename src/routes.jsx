@@ -47,6 +47,7 @@ import EmployeeDashboard from "./Employee/Pages/EmployeeDashboard";
 import EmployeeProfileSettings from "./Employee/Pages/EmployeeProfileSettings";
 import EmployeeLeaveRequest from "./Employee/Pages/EmployeeLeaveRequest";
 import EmployeeRaiseRequest from "./Employee/Pages/EmployeeRaiseRequest";
+import Levels from "./Admin/Pages/Levels";
 
 const AppRoutes = () => {
   return (
@@ -132,6 +133,10 @@ const AppRoutes = () => {
           element={<ProtectedAdmin element={<Pipeline />} />}
         />
         <Route
+          path="/admin/levels"
+          element={<ProtectedAdmin element={<Levels />} />}
+        />
+        <Route
           path="/admin/masters"
           element={<ProtectedAdmin element={<Master />} />}
         />
@@ -184,9 +189,18 @@ const AppRoutes = () => {
 
       <Route element={<EmployeeLayout />}>
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
-        <Route path="/employee/raise-request" element={<EmployeeRaiseRequest />} />
-        <Route path="/employee/leave-request" element={<EmployeeLeaveRequest />} />
-        <Route path="/employee/profile-settings" element={<EmployeeProfileSettings />} />
+        <Route
+          path="/employee/raise-request"
+          element={<EmployeeRaiseRequest />}
+        />
+        <Route
+          path="/employee/leave-request"
+          element={<EmployeeLeaveRequest />}
+        />
+        <Route
+          path="/employee/profile-settings"
+          element={<EmployeeProfileSettings />}
+        />
       </Route>
     </Routes>
   );

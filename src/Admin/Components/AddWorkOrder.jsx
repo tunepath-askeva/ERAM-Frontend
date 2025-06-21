@@ -492,9 +492,7 @@ const AddWorkOrder = () => {
     setApplicationFields([]);
     setCurrentStep(0);
     navigate("/admin/workorder");
-    enqueueSnackbar("Work order creation cancelled", {
-      variant: 'error',
-    });
+   
   };
 
   const renderJobPreview = () => (
@@ -1322,7 +1320,7 @@ const AddWorkOrder = () => {
                 onClick={(e) => {
                   e.stopPropagation();
                   setEditingPipeline(pipeline);
-                  setPipelineModalVisible(true);
+                  // setPipelineModalVisible(true);
                 }}
               />
             </Tag>

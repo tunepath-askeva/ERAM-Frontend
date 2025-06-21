@@ -9,6 +9,7 @@ import {
   UserOutlined,
   DeploymentUnitOutlined,
   UsergroupAddOutlined,
+  BorderOuterOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -78,6 +79,11 @@ const AdminSidebar = ({
       key: "/admin/pipeline",
       icon: <ApartmentOutlined />,
       label: "Pipeline",
+    },
+    {
+      key: "/admin/levels",
+      icon: <BorderOuterOutlined />,
+      label: "Level",
     },
     {
       key: "/admin/masters",

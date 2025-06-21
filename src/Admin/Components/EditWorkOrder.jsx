@@ -629,9 +629,7 @@ const EditWorkOrder = () => {
   };
 
   const handleCancel = () => {
-    enqueueSnackbar('Changes discarded', {
-      variant: 'info',
-    });
+  
     navigate("/admin/workorder");
   };
 
