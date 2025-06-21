@@ -159,8 +159,8 @@ const SourcedCandidates = ({ jobId }) => {
         const status = candidate.status;
         // Only show truly sourced candidates - no status, "sourced", or "applied" but not moved to other stages
         return (
-          !status || 
-          status === "sourced" || 
+          !status ||
+          status === "sourced" ||
           (status === "applied" && !candidate.isApplied) // Only show applied if they haven't actually applied to this job
         );
       }),
@@ -519,33 +519,6 @@ const SourcedCandidates = ({ jobId }) => {
                             </Option>
                           ))}
                         </Select>
-                      </div>
-                    </Col>
-
-                    <Col span={12}>
-                      <div>
-                        <Text
-                          strong
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          Location
-                        </Text>
-                        <Input
-                          placeholder="Enter location"
-                          value={filters.location}
-                          onChange={(e) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              location: e.target.value,
-                            }))
-                          }
-                          allowClear
-                        />
                       </div>
                     </Col>
                   </Row>
