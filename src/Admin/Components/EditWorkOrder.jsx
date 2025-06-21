@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import {
   Form,
   Input,
@@ -45,6 +45,7 @@ import {
   useEditWorkOrderMutation,
   useGetAdminBranchQuery,
   useGetWorkOrderByIdQuery,
+  useGetApprovalQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -88,6 +89,7 @@ const EditWorkOrder = () => {
   const [stageApprovers, setStageApprovers] = useState({});
   const navigate = useNavigate();
 
+  const { data: approvalData } = useGetApprovalQuery();
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
@@ -147,6 +149,8 @@ const EditWorkOrder = () => {
               startDate: timeline.startDate,
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
+              approvalId: timeline.approvalId?._id || null,
+              recruiterId: timeline.recruiterId?._id || null,
             });
 
             if (timeline.stageId.startsWith("temp-")) {
@@ -183,8 +187,8 @@ const EditWorkOrder = () => {
           alertDate: formatDate(workOrder.alertDate),
           assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
             ? workOrder.assignedRecruiters.map((recruiter) =>
-              typeof recruiter === "object" ? recruiter._id : recruiter
-            )
+                typeof recruiter === "object" ? recruiter._id : recruiter
+              )
             : [workOrder.assignedRecruiters],
           pipeline: Array.isArray(workOrder.pipeline)
             ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
@@ -361,10 +365,17 @@ const EditWorkOrder = () => {
         });
       }
 
-      newDates[pipelineId][stageIndex] = {
-        ...newDates[pipelineId][stageIndex],
-        [field]: value ? value.format("YYYY-MM-DD") : null,
-      };
+      if (field === "startDate" || field === "endDate") {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: value ? dayjs(value).format("YYYY-MM-DD") : null,
+        };
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: value,
+        };
+      }
 
       return newDates;
     });
@@ -583,9 +594,11 @@ const EditWorkOrder = () => {
             stageName: stages.find((s) => (s._id || s.id) === dateEntry.stageId)
               ?.name,
             stageOrder: index,
-            startDate: dateEntry.startDate,
-            endDate: dateEntry.endDate,
+            startDate: dateEntry.startDate, 
+            endDate: dateEntry.endDate, 
             dependencyType: dateEntry.dependencyType || "independent",
+            approvalId: dateEntry.approvalId || null,
+            recruiterId: dateEntry.recruiterId || null,
             isCustomStage: !!stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             )?.isCustom,
@@ -598,7 +611,7 @@ const EditWorkOrder = () => {
         customFields: applicationFields,
         workOrderStatus: "published",
         pipelineStageTimeline,
-        stageApprovers,
+
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -609,8 +622,8 @@ const EditWorkOrder = () => {
 
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
 
-      enqueueSnackbar('Work order updated and published successfully!', {
-        variant: 'success',
+      enqueueSnackbar("Work order updated and published successfully!", {
+        variant: "success",
       });
 
       navigate("/admin/workorder");
@@ -618,9 +631,10 @@ const EditWorkOrder = () => {
       console.error("Error updating work order:", error);
 
       enqueueSnackbar(
-        error?.data?.message || "Failed to update work order. Please try again.",
+        error?.data?.message ||
+          "Failed to update work order. Please try again.",
         {
-          variant: 'error',
+          variant: "error",
         }
       );
     } finally {
@@ -629,7 +643,6 @@ const EditWorkOrder = () => {
   };
 
   const handleCancel = () => {
-  
     navigate("/admin/workorder");
   };
 
@@ -1170,11 +1183,11 @@ const EditWorkOrder = () => {
   );
 
   const renderPipelineDatesModal = () => {
-    const approvalLevels = [
-      { id: "level1", name: "Level 1 - Initial Approval" },
-      { id: "level2", name: "Level 2 - Manager Approval" },
-      { id: "level3", name: "Level 3 - Final Approval" },
-    ];
+    const approvalLevels =
+      approvalData?.aprovals?.map((approval) => ({
+        id: approval._id,
+        name: approval.groupName,
+      })) || [];
     const dependencyTypes = [
       { id: "independent", name: "Independent" },
       { id: "dependent", name: "Dependent" },
@@ -1199,18 +1212,12 @@ const EditWorkOrder = () => {
 
     return (
       <Modal
-        title={`Set Stage Dates & Approvals for ${currentPipelineForDates?.name || "Pipeline"
-          }`}
+        title={`Set Stage Dates & Approvals for ${
+          currentPipelineForDates?.name || "Pipeline"
+        }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => setPipelineDatesModalVisible(false)}
         footer={[
-          // <Button
-          //   key="add"
-          //   icon={<PlusOutlined />}
-          //   onClick={() => addCustomStage(currentPipelineForDates._id)}
-          // >
-          //   Add Stage
-          // </Button>,
           <Button
             key="back"
             onClick={() => setPipelineDatesModalVisible(false)}
@@ -1278,9 +1285,9 @@ const EditWorkOrder = () => {
                         Custom
                       </Tag>
                     )}
-                    {stage.dependencyType && (
+                    {dateEntry?.dependencyType && (
                       <Tag color="green" size="small">
-                        {stage.dependencyType}
+                        {dateEntry.dependencyType}
                       </Tag>
                     )}
                   </div>
@@ -1312,7 +1319,7 @@ const EditWorkOrder = () => {
                 marginBottom: 16,
                 cursor: stage.isCustom ? "move" : "default",
               }}
-              draggable={true} // Enable for all stages
+              draggable={true}
               onDragStart={(e) => handleDragStart(e, stage)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, stage, currentPipelineForDates._id)}
@@ -1369,6 +1376,42 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
+                {/* Recruiter Assignment */}
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Assigned Recruiter"
+                    style={{ marginBottom: 0 }}
+                    labelCol={{ span: 24 }}
+                    wrapperCol={{ span: 24 }}
+                  >
+                    <Select
+                      placeholder="Select recruiter"
+                      value={
+                        pipelineStageDates[currentPipelineForDates._id]?.find(
+                          (d) => d.stageId === stageId
+                        )?.recruiterId || undefined
+                      }
+                      onChange={(value) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "recruiterId",
+                          value
+                        )
+                      }
+                      style={{ width: "100%" }}
+                      size="small"
+                    >
+                      {activeRecruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                {/* Approval Level */}
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Required Approval"
@@ -1378,6 +1421,19 @@ const EditWorkOrder = () => {
                   >
                     <Select
                       placeholder="Select approval level"
+                      value={
+                        pipelineStageDates[currentPipelineForDates._id]?.find(
+                          (d) => d.stageId === stageId
+                        )?.approvalId || undefined
+                      }
+                      onChange={(value) =>
+                        handleStageDateChange(
+                          currentPipelineForDates._id,
+                          stageId,
+                          "approvalId",
+                          value
+                        )
+                      }
                       style={{ width: "100%" }}
                       size="small"
                     >
@@ -1390,6 +1446,7 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
+                {/* Dependency Type */}
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
                     label="Dependency Type"

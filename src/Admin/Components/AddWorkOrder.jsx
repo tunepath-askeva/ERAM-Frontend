@@ -39,6 +39,7 @@ import {
   useGetProjectsQuery,
   useCreateWorkOrderMutation,
   useGetAdminBranchQuery,
+  useGetApprovalQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
 import { useNavigate } from "react-router-dom";
@@ -82,6 +83,7 @@ const AddWorkOrder = () => {
   const [stageApprovers, setStageApprovers] = useState({});
   const navigate = useNavigate();
 
+  const { data: approvalData } = useGetApprovalQuery();
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
@@ -116,14 +118,8 @@ const AddWorkOrder = () => {
     }
   };
 
-  const handleApproverChange = (pipelineId, stageId, approvers) => {
-    setStageApprovers((prev) => ({
-      ...prev,
-      [pipelineId]: {
-        ...prev[pipelineId],
-        [stageId]: approvers,
-      },
-    }));
+  const handleApproverChange = (pipelineId, stageId, recruiterId) => {
+    handleStageDateChange(pipelineId, stageId, "recruiterId", recruiterId);
   };
 
   const handlePipelineChange = (selectedPipelineIds) => {
@@ -200,14 +196,32 @@ const AddWorkOrder = () => {
           startDate: null,
           endDate: null,
           dependencyType: "independent",
+          approvalId: null,
+          recruiterId: null,
         });
       }
 
-      newDates[pipelineId][stageIndex] = {
-        ...newDates[pipelineId][stageIndex],
-        [field]: value ? value.format("YYYY-MM-DD") : null,
-      };
-
+      if ((field === "startDate" || field === "endDate") && value) {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: dayjs(value).format("YYYY-MM-DD"),
+        };
+      } else if (field === "approvalId") {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          approvalId: value,
+        };
+      } else if (field === "recruiterId") {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          recruiterId: value,
+        };
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: value,
+        };
+      }
       return newDates;
     });
   };
@@ -442,6 +456,8 @@ const AddWorkOrder = () => {
             startDate: dateEntry.startDate,
             endDate: dateEntry.endDate,
             dependencyType: dateEntry.dependencyType || "independent",
+            approvalId: dateEntry.approvalId || null,
+            recruiterId: dateEntry.recruiterId || null,
             isCustomStage: !!stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             )?.isCustom,
@@ -455,7 +471,6 @@ const AddWorkOrder = () => {
         WorkorderStatus: status,
         isActive: status === "published" ? "active" : "inactive",
         pipelineStageTimeline,
-        stageApprovers: stageApprovers,
       };
 
       const result = await createWorkOrder(workOrderData).unwrap();
@@ -1020,12 +1035,12 @@ const AddWorkOrder = () => {
   );
 
   const renderPipelineDatesModal = () => {
-    // Static approval levels
-    const approvalLevels = [
-      { id: "level1", name: "Level 1 - Initial Approval" },
-      { id: "level2", name: "Level 2 - Manager Approval" },
-      { id: "level3", name: "Level 3 - Final Approval" },
-    ];
+    const approvalLevels =
+      approvalData?.aprovals?.map((approval) => ({
+        id: approval._id,
+        name: approval.groupName,
+        // levels: approval.levels, // You can include levels if needed
+      })) || [];
 
     const dependencyTypes = [
       { id: "independent", name: "Independent" },
@@ -1211,17 +1226,17 @@ const AddWorkOrder = () => {
                     wrapperCol={{ span: 24 }}
                   >
                     <Select
-                      mode="multiple"
-                      placeholder="Select recruiters"
+                      placeholder="Select recruiter"
                       value={
-                        stageApprovers[currentPipelineForDates._id]?.[
-                          stageId
-                        ] || []
+                        pipelineStageDates[currentPipelineForDates._id]?.find(
+                          (d) => d.stageId === stageId
+                        )?.recruiterId || undefined
                       }
                       onChange={(value) =>
-                        handleApproverChange(
+                        handleStageDateChange(
                           currentPipelineForDates._id,
                           stageId,
+                          "recruiterId",
                           value
                         )
                       }
@@ -1247,12 +1262,16 @@ const AddWorkOrder = () => {
                   >
                     <Select
                       placeholder="Select approval level"
-                      value={dateEntry?.approvalLevel}
+                      value={
+                        pipelineStageDates[currentPipelineForDates._id]?.find(
+                          (d) => d.stageId === stageId
+                        )?.approvalId || undefined
+                      }
                       onChange={(value) =>
                         handleStageDateChange(
                           currentPipelineForDates._id,
                           stageId,
-                          "approvalLevel",
+                          "approvalId",
                           value
                         )
                       }

@@ -124,52 +124,56 @@ const CandidateJobs = () => {
   const transformJobData = (jobs) => {
     if (!jobs || !Array.isArray(jobs)) return [];
 
-    return jobs.map((job) => ({
-      _id: job._id || "",
-      title: job.title || "No title",
-      company: "Company Name",
-      companyLogo: "https://via.placeholder.com/40",
-      location: job.officeLocation || "Location not specified",
-      workType:
-        job.workplace === "on-site"
-          ? "On-site"
-          : job.workplace === "remote"
-          ? "Remote"
-          : "Hybrid",
-      employmentType:
-        job.EmploymentType === "full-time"
-          ? "Full-time"
-          : job.EmploymentType === "part-time"
-          ? "Part-time"
-          : job.EmploymentType === "contract"
-          ? "Contract"
-          : job.EmploymentType === "internship"
-          ? "Internship"
-          : "Full-time",
-      experience: job.Experience ? `${job.Experience}+ years` : "Not specified",
-      salary:
-        job.salaryType === "annual" && job.annualSalary
-          ? `₹${(job.annualSalary / 100000).toFixed(1)} LPA`
-          : job.salaryType === "monthly" && job.monthlySalary
-          ? `₹${job.monthlySalary}/month`
-          : "Salary not disclosed",
-      postedDate: job.createdAt,
-      skills: job.requiredSkills || [],
-      description: job.description || "No description available",
-      requirements: job.jobRequirements ? [job.jobRequirements] : [],
-      isRemote: job.workplace === "remote",
-      isSaved: false,
-      jobCode: job.jobCode,
-      startDate: job.startDate,
-      endDate: job.endDate,
-      deadlineDate: job.deadlineDate,
-      numberOfCandidate: job.numberOfCandidate,
-      benefits: job.benefits || [],
-      education: job.Education,
-      companyIndustry: job.companyIndustry,
-      workOrderStatus: job.workOrderStatus,
-      isActive: job.isActive,
-    }));
+    return jobs
+      .filter((job) => job.isActive === "active")
+      .map((job) => ({
+        _id: job._id || "",
+        title: job.title || "No title",
+        company: "Company Name",
+        companyLogo: "https://via.placeholder.com/40",
+        location: job.officeLocation || "Location not specified",
+        workType:
+          job.workplace === "on-site"
+            ? "On-site"
+            : job.workplace === "remote"
+            ? "Remote"
+            : "Hybrid",
+        employmentType:
+          job.EmploymentType === "full-time"
+            ? "Full-time"
+            : job.EmploymentType === "part-time"
+            ? "Part-time"
+            : job.EmploymentType === "contract"
+            ? "Contract"
+            : job.EmploymentType === "internship"
+            ? "Internship"
+            : "Full-time",
+        experience: job.Experience
+          ? `${job.Experience}+ years`
+          : "Not specified",
+        salary:
+          job.salaryType === "annual" && job.annualSalary
+            ? `₹${(job.annualSalary / 100000).toFixed(1)} LPA`
+            : job.salaryType === "monthly" && job.monthlySalary
+            ? `₹${job.monthlySalary}/month`
+            : "Salary not disclosed",
+        postedDate: job.createdAt,
+        skills: job.requiredSkills || [],
+        description: job.description || "No description available",
+        requirements: job.jobRequirements ? [job.jobRequirements] : [],
+        isRemote: job.workplace === "remote",
+        isSaved: false,
+        jobCode: job.jobCode,
+        startDate: job.startDate,
+        endDate: job.endDate,
+        deadlineDate: job.deadlineDate,
+        numberOfCandidate: job.numberOfCandidate,
+        benefits: job.benefits || [],
+        education: job.Education,
+        companyIndustry: job.companyIndustry,
+        workOrderStatus: job.workOrderStatus,
+        isActive: job.isActive,
+      }));
   };
 
   const handleFilterJobs = async () => {
@@ -478,14 +482,14 @@ const CandidateJobs = () => {
     </div>
   );
 
-const filterDropdownMenu = {
-  items: [
-    {
-      key: "filters",
-      label: <FilterForm />,
-    },
-  ],
-};
+  const filterDropdownMenu = {
+    items: [
+      {
+        key: "filters",
+        label: <FilterForm />,
+      },
+    ],
+  };
 
   const isLoading =
     initialLoading ||
