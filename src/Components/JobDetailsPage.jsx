@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSnackbar } from 'notistack';
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Typography,
@@ -57,6 +58,7 @@ const { TextArea } = Input;
 const { Step } = Steps;
 
 const JobDetailsPage = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [savedJobs, setSavedJobs] = useState(new Set());
@@ -174,10 +176,14 @@ const JobDetailsPage = () => {
     const newSavedJobs = new Set(savedJobs);
     if (savedJobs.has(job._id)) {
       newSavedJobs.delete(job._id);
-      message.success("Job removed from saved jobs");
+      enqueueSnackbar('Job removed from saved jobs', {
+        variant: 'error',
+      });
     } else {
       newSavedJobs.add(job._id);
-      message.success("Job saved successfully");
+      enqueueSnackbar('Job saved successfully', {
+        variant: 'success',
+      });
     }
     setSavedJobs(newSavedJobs);
   };
@@ -191,63 +197,75 @@ const JobDetailsPage = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      message.success("Job URL copied to clipboard!");
+      enqueueSnackbar('Job URL copied to clipboard!', {
+        variant: 'success',
+      });
     }
   };
 
- const handleSubmitApplication = async (values) => {
-  try {
-    if (currentStep === 0) {
-      setReviewData(values);
-      setCurrentStep(1);
-      return;
-    }
+  const handleSubmitApplication = async (values) => {
+    try {
+      if (currentStep === 0) {
+        setReviewData(values);
+        setCurrentStep(1);
+        return;
+      }
 
-    const formData = new FormData();
-    formData.append("workOrderId", jobId);
+      const formData = new FormData();
+      formData.append("workOrderId", jobId);
 
-    const responses = [];
+      const responses = [];
 
-    for (const field of job.customFields) {
-      const fieldId = field.id.toString();
-      const fieldValue = reviewData[fieldId];
-      const fieldLabel = field.label; 
+      for (const field of job.customFields) {
+        const fieldId = field.id.toString();
+        const fieldValue = reviewData[fieldId];
+        const fieldLabel = field.label;
 
-      if (field.type === "file") {
-        const files = fileList[field.id];
-        if (files && files[0]?.originFileObj) {
-          formData.append("files", files[0].originFileObj);
+        if (field.type === "file") {
+          const files = fileList[field.id];
+          if (files && files[0]?.originFileObj) {
+            formData.append("files", files[0].originFileObj);
+            responses.push({
+              fieldKey: fieldId,
+              label: fieldLabel,
+              value: files[0].name,
+            });
+          }
+        } else if (
+          fieldValue !== undefined &&
+          fieldValue !== null &&
+          fieldValue !== ""
+        ) {
           responses.push({
             fieldKey: fieldId,
-            label: fieldLabel, 
-            value: files[0].name,
+            label: fieldLabel,
+            value: fieldValue,
           });
         }
-      } else if (
-        fieldValue !== undefined &&
-        fieldValue !== null &&
-        fieldValue !== ""
-      ) {
-        responses.push({
-          fieldKey: fieldId,
-          label: fieldLabel, 
-          value: fieldValue,
-        });
       }
+
+      formData.append("responses", JSON.stringify(responses));
+
+      await submitJobApplication(formData).unwrap();
+
+      enqueueSnackbar('Application submitted successfully!', {
+        variant: 'success',
+      });
+
+      form.resetFields();
+      setFileList({});
+      setCurrentStep(2);
+    } catch (error) {
+      console.error("Submission error:", error);
+
+      enqueueSnackbar(
+        error?.data?.message || "Submission failed",
+        {
+          variant: 'error',
+        }
+      );
     }
-
-    formData.append("responses", JSON.stringify(responses));
-
-    await submitJobApplication(formData).unwrap();
-    message.success("Application submitted successfully!");
-    form.resetFields();
-    setFileList({});
-    setCurrentStep(2);
-  } catch (error) {
-    console.error("Submission error:", error);
-    message.error(error?.data?.message || "Submission failed");
-  }
-};
+  };
 
 
   const handleGoBack = () => {
@@ -467,7 +485,7 @@ const JobDetailsPage = () => {
                 onClick={handleSaveJob}
                 className={`action-btn ${
                   savedJobs.has(job._id) ? "saved" : ""
-                }`}
+                  }`}
                 size="large"
               />
               <Button

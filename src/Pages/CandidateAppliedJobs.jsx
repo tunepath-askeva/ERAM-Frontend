@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSnackbar } from 'notistack';
 import {
   Button,
   Card,
@@ -173,6 +174,7 @@ const APPLICATION_STATUSES = {
 };
 
 const CandidateAppliedJobs = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const { data: apiData, isLoading, isError } = useGetUserAppliedJobsQuery();
   const [applications, setApplications] = useState([]);
   const [filteredApplications, setFilteredApplications] = useState([]);
@@ -307,18 +309,22 @@ const CandidateAppliedJobs = () => {
           prev.map((app) =>
             app._id === selectedApplication._id
               ? {
-                  ...app,
-                  status: "withdrawn",
-                  withdrawnDate: new Date().toISOString().split("T")[0],
-                }
+                ...app,
+                status: "withdrawn",
+                withdrawnDate: new Date().toISOString().split("T")[0],
+              }
               : app
           )
         );
-        message.success("Application withdrawn successfully");
+        enqueueSnackbar("Application withdrawn successfully", {
+          variant: 'success',
+        });
         setWithdrawModalVisible(false);
         setSelectedApplication(null);
       } catch (error) {
-        message.error("Failed to withdraw application. Please try again.");
+        enqueueSnackbar("Failed to withdraw application. Please try again.", {
+          variant: 'error',
+        });
         console.error("Withdrawal error:", error);
       }
     }
@@ -795,17 +801,17 @@ const CandidateAppliedJobs = () => {
                         {!["rejected", "withdrawn"].includes(
                           application.status
                         ) && (
-                          <Progress
-                            percent={getStatusProgress(application.status)}
-                            strokeColor={{
-                              "0%": statusConfig.color,
-                              "100%": statusConfig.color,
-                            }}
-                            showInfo={false}
-                            strokeWidth={6}
-                            style={{ marginBottom: "8px" }}
-                          />
-                        )}
+                            <Progress
+                              percent={getStatusProgress(application.status)}
+                              strokeColor={{
+                                "0%": statusConfig.color,
+                                "100%": statusConfig.color,
+                              }}
+                              showInfo={false}
+                              strokeWidth={6}
+                              style={{ marginBottom: "8px" }}
+                            />
+                          )}
                       </div>
 
                       {/* Job Details */}
@@ -1045,23 +1051,23 @@ const CandidateAppliedJobs = () => {
               {!["hired", "rejected", "withdrawn"].includes(
                 selectedApplication.status
               ) && (
-                <Button
-                  key="withdraw"
-                  danger
-                  onClick={() => handleWithdrawApplication(selectedApplication)}
-                  style={{
-                    minWidth: "140px",
-                    height: "40px",
-                    flex: "1 1 auto",
-                    maxWidth: "180px",
-                    fontWeight: 500,
-                    borderColor: "#ff4d4f",
-                    color: "#ff4d4f",
-                  }}
-                >
-                  Withdraw Application
-                </Button>
-              )}
+                  <Button
+                    key="withdraw"
+                    danger
+                    onClick={() => handleWithdrawApplication(selectedApplication)}
+                    style={{
+                      minWidth: "140px",
+                      height: "40px",
+                      flex: "1 1 auto",
+                      maxWidth: "180px",
+                      fontWeight: 500,
+                      borderColor: "#ff4d4f",
+                      color: "#ff4d4f",
+                    }}
+                  >
+                    Withdraw Application
+                  </Button>
+                )}
             </div>
           }
         >
