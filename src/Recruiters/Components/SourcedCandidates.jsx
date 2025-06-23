@@ -97,15 +97,14 @@ const SourcedCandidates = ({ jobId }) => {
     const sourcedCandidates =
       sourcedCandidatesData?.users?.map((user) => ({
         ...user,
-        status: user.status || "sourced", // Use status field, default to sourced
+        status: user.status || "sourced", 
         applicationId: user._id,
-        isApplied: false, // Mark as not applied initially
+        isApplied: false, 
+        isSourced: true,
       })) || [];
 
-    // Create a map of all candidates by ID
     const candidatesMap = new Map();
 
-    // First add sourced candidates
     sourcedCandidates.forEach((candidate) => {
       candidatesMap.set(candidate._id, candidate);
     });
@@ -270,6 +269,7 @@ const SourcedCandidates = ({ jobId }) => {
         Id: selectedCandidate._id,
         status: newStatus,
         jobId: jobId,
+        isSourced: true,
       }).unwrap();
 
       const statusMessages = {
