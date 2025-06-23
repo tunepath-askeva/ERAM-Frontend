@@ -22,6 +22,7 @@ import {
   Descriptions,
   Divider,
   Skeleton,
+  Pagination 
 } from "antd";
 import {
   UserOutlined,
@@ -50,6 +51,11 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const [selectedResume, setSelectedResume] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   if (isLoading) {
     return (
@@ -470,8 +476,43 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
       {/* Candidates List */}
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-        {filteredCandidates.map((application, index) =>
-          renderCandidateCard(application, index)
+        {filteredCandidates.length > 0 ? (
+          <>
+            {filteredCandidates
+              .slice(
+                (pagination.current - 1) * pagination.pageSize,
+                pagination.current * pagination.pageSize
+              )
+              .map((application, index) =>
+                renderCandidateCard(application, index)
+              )}
+            <div style={{ marginTop: 16, textAlign: "right" }}>
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={filteredCandidates.length}
+                onChange={(page, pageSize) => {
+                  setPagination((prev) => ({
+                    ...prev,
+                    current: page,
+                    pageSize: pageSize,
+                  }));
+                }}
+                showSizeChanger={false}
+              />
+            </div>
+          </>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span style={{ fontSize: "14px", color: "#999" }}>
+                {searchTerm || activeFiltersCount > 0
+                  ? "No candidates match your search criteria"
+                  : "No applications found for this job"}
+              </span>
+            }
+          />
         )}
       </div>
 

@@ -23,6 +23,7 @@ import {
   Form,
   Skeleton,
   Steps,
+  Pagination,
 } from "antd";
 import {
   EyeOutlined,
@@ -37,6 +38,7 @@ import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
+  useGetRecruiterStagesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
@@ -54,6 +56,12 @@ const ScreeningCandidates = ({ jobId }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
   const [form] = Form.useForm();
 
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
@@ -79,6 +87,9 @@ const ScreeningCandidates = ({ jobId }) => {
     error,
     refetch,
   } = useGetSourcedCandidateQuery({});
+
+  const { data: recruiterStages, isLoading: recruiterStagesLoading } =
+    useGetRecruiterStagesQuery();
 
   console.log(filteredSource, "Filtered");
 
@@ -207,6 +218,16 @@ const ScreeningCandidates = ({ jobId }) => {
     return count;
   }, [filters]);
 
+  const assignedStages = useMemo(() => {
+    if (!recruiterStages?.results) return [];
+
+    const workOrder = recruiterStages.results.find(
+      (result) => result.workOrderId === jobId
+    );
+
+    return workOrder?.assignedStages || [];
+  }, [recruiterStages, jobId]);
+
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
     setIsModalVisible(true);
@@ -284,13 +305,14 @@ const ScreeningCandidates = ({ jobId }) => {
 
     if (stage.dependencyType === "independent") return true;
 
-    // For dependent stages, check if all previous stages are completed
+    // For dependent stages, check if all previous assigned stages are completed
     for (let i = 0; i < currentStageIndex; i++) {
       const prevStage = stageTimeline[i];
-      // You'll need to check if previous stages are completed
-      // This requires additional data about which stages the candidate has completed
-      // You might need to add this to your API response or maintain local state
-      if (!prevStage.isCompleted) return false;
+      // Check if this previous stage is one of the assigned stages
+      const isAssigned = assignedStages.some(
+        (assigned) => assigned.stageName === prevStage.name
+      );
+      if (isAssigned && !prevStage.isCompleted) return false;
     }
 
     return true;
@@ -313,7 +335,7 @@ const ScreeningCandidates = ({ jobId }) => {
 
       await updateCandidateStatus({
         applicationId: selectedCandidate.applicationId,
-        status: "in-progress", 
+        status: "in-progress",
         jobId: jobId,
         stageId: stage._id,
         stageName: stage.name,
@@ -329,7 +351,7 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || recruiterStagesLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
@@ -374,49 +396,71 @@ const ScreeningCandidates = ({ jobId }) => {
 
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
         {filteredCandidates.length > 0 ? (
-          filteredCandidates.map((candidate, index) => (
-            <CandidateCard
-              key={candidate._id || index}
-              candidate={candidate}
-              index={index}
-              onViewProfile={handleViewProfile}
-              showExperience={true}
-              showSkills={true}
-              maxSkills={3}
-              actions={[
-                <Button
-                  key="view"
-                  icon={<EyeOutlined />}
-                  onClick={() => handleViewProfile(candidate)}
-                >
-                  View Profile
-                </Button>,
-                <Button
-                  key="schedule"
-                  type="primary"
-                  icon={<CalendarOutlined />}
-                  onClick={() => handleScheduleInterview(candidate)}
-                >
-                  Schedule Interview
-                </Button>,
-                <Button
-                  key="shortlist"
-                  icon={<CheckOutlined />}
-                  onClick={() => handleStatusUpdate("shortlisted")}
-                >
-                  Shortlist
-                </Button>,
-                <Button
-                  key="reject"
-                  danger
-                  icon={<CloseOutlined />}
-                  onClick={() => handleStatusUpdate("rejected")}
-                >
-                  Reject
-                </Button>,
-              ]}
-            />
-          ))
+          <>
+            {filteredCandidates
+              .slice(
+                (pagination.current - 1) * pagination.pageSize,
+                pagination.current * pagination.pageSize
+              )
+              .map((candidate, index) => (
+                <CandidateCard
+                  key={candidate._id || index}
+                  candidate={candidate}
+                  index={index}
+                  onViewProfile={handleViewProfile}
+                  showExperience={true}
+                  showSkills={true}
+                  maxSkills={3}
+                  actions={[
+                    <Button
+                      key="view"
+                      icon={<EyeOutlined />}
+                      onClick={() => handleViewProfile(candidate)}
+                    >
+                      View Profile
+                    </Button>,
+                    <Button
+                      key="schedule"
+                      type="primary"
+                      icon={<CalendarOutlined />}
+                      onClick={() => handleScheduleInterview(candidate)}
+                    >
+                      Schedule Interview
+                    </Button>,
+                    <Button
+                      key="shortlist"
+                      icon={<CheckOutlined />}
+                      onClick={() => handleStatusUpdate("shortlisted")}
+                    >
+                      Shortlist
+                    </Button>,
+                    <Button
+                      key="reject"
+                      danger
+                      icon={<CloseOutlined />}
+                      onClick={() => handleStatusUpdate("rejected")}
+                    >
+                      Reject
+                    </Button>,
+                  ]}
+                />
+              ))}
+            <div style={{ marginTop: 16, textAlign: "right" }}>
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={filteredCandidates.length}
+                onChange={(page, pageSize) => {
+                  setPagination((prev) => ({
+                    ...prev,
+                    current: page,
+                    pageSize: pageSize,
+                  }));
+                }}
+                showSizeChanger={false}
+              />
+            </div>
+          </>
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -517,7 +561,7 @@ const ScreeningCandidates = ({ jobId }) => {
               Pipeline Progress
             </Divider>
 
-            {jobApplications?.workOrder?.pipeline?.[0]?.stages ? (
+            {assignedStages.length > 0 ? (
               <Form
                 layout="vertical"
                 onFinish={(values) => handleMoveToStage(values.targetStage)}
@@ -532,44 +576,47 @@ const ScreeningCandidates = ({ jobId }) => {
                     optionFilterProp="children"
                     showSearch
                   >
-                    {jobApplications.workOrder.pipeline[0].stages.map(
-                      (stage) => {
-                        // Check if stage is available based on dependencies
-                        const isAvailable = isStageAvailable(stage);
-                        return (
-                          <Select.Option
-                            key={stage._id}
-                            value={stage._id}
-                            disabled={!isAvailable}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <span>{stage.name}</span>
-                              <Tag
-                                color={
-                                  stage.dependencyType === "independent"
-                                    ? "green"
-                                    : "orange"
-                                }
-                              >
-                                {stage.dependencyType}
-                              </Tag>
-                            </div>
-                            {!isAvailable && (
-                              <div
-                                style={{ fontSize: "12px", color: "#ff4d4f" }}
-                              >
-                                Complete previous stages first
-                              </div>
-                            )}
-                          </Select.Option>
+                    {assignedStages.map((stage) => {
+                      // Find the full stage details from the jobApplications
+                      const fullStage =
+                        jobApplications?.workOrder?.pipeline?.[0]?.stages?.find(
+                          (s) => s.name === stage.stageName
                         );
-                      }
-                    )}
+
+                      if (!fullStage) return null;
+
+                      const isAvailable = isStageAvailable(fullStage);
+                      return (
+                        <Select.Option
+                          key={fullStage._id}
+                          value={fullStage._id}
+                          disabled={!isAvailable}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <span>{fullStage.name}</span>
+                            <Tag
+                              color={
+                                fullStage.dependencyType === "independent"
+                                  ? "green"
+                                  : "orange"
+                              }
+                            >
+                              {fullStage.dependencyType}
+                            </Tag>
+                          </div>
+                          {!isAvailable && (
+                            <div style={{ fontSize: "12px", color: "#ff4d4f" }}>
+                              Complete previous stages first
+                            </div>
+                          )}
+                        </Select.Option>
+                      );
+                    })}
                   </Select>
                 </Form.Item>
 
@@ -579,7 +626,7 @@ const ScreeningCandidates = ({ jobId }) => {
                     htmlType="submit"
                     icon={<ArrowRightOutlined />}
                     style={{
-                      background: "#da2c46"
+                      background: "#da2c46",
                     }}
                   >
                     Move Candidate
@@ -588,7 +635,7 @@ const ScreeningCandidates = ({ jobId }) => {
               </Form>
             ) : (
               <Alert
-                message="No pipeline stages configured for this job"
+                message="No assigned stages for this job"
                 type="warning"
                 showIcon
               />
@@ -669,11 +716,7 @@ const ScreeningCandidates = ({ jobId }) => {
             <TimePicker format="HH:mm" style={{ width: "100%" }} />
           </Form.Item>
 
-          <Form.Item
-            name="interviewLink"
-            label="Interview Link"
-           
-          >
+          <Form.Item name="interviewLink" label="Interview Link">
             <Input placeholder="Enter meeting link for phone/video interviews" />
           </Form.Item>
 

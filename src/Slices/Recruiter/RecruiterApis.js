@@ -48,12 +48,18 @@ export const recruiterApi = createApi({
       }),
     }),
 
-    
     updateCandidateStatus: builder.mutation({
-      query: ({ Id, status,jobId }) => ({
+      query: ({ Id, status, jobId }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status , jobId},
+        body: { status, jobId },
+      }),
+    }),
+
+    getRecruiterStages: builder.query({
+      query: () => ({
+        url: "/stages",
+        method: "GET",
       }),
     }),
   }),
@@ -67,4 +73,5 @@ export const {
   useGetJobApplicationsQuery,
   useGetSourcedCandidateQuery,
   useUpdateCandidateStatusMutation,
+  useGetRecruiterStagesQuery,
 } = recruiterApi;

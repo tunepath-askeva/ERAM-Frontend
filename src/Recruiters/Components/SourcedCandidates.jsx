@@ -20,7 +20,8 @@ import {
   Descriptions,
   Tag,
   message,
-  Skeleton
+  Skeleton,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
@@ -53,6 +54,11 @@ const SourcedCandidates = ({ jobId }) => {
   const [activeTab, setActiveTab] = useState("sourced");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
@@ -529,17 +535,39 @@ const SourcedCandidates = ({ jobId }) => {
 
           <div style={{ maxHeight: "600px", overflowY: "auto" }}>
             {filteredCandidates.length > 0 ? (
-              filteredCandidates.map((candidate, index) => (
-                <CandidateCard
-                  key={candidate._id || index}
-                  candidate={candidate}
-                  index={index}
-                  onViewProfile={handleViewProfile}
-                  showExperience={true}
-                  showSkills={true}
-                  maxSkills={3}
-                />
-              ))
+              <>
+                {filteredCandidates
+                  .slice(
+                    (pagination.current - 1) * pagination.pageSize,
+                    pagination.current * pagination.pageSize
+                  )
+                  .map((candidate, index) => (
+                    <CandidateCard
+                      key={candidate._id || index}
+                      candidate={candidate}
+                      index={index}
+                      onViewProfile={handleViewProfile}
+                      showExperience={true}
+                      showSkills={true}
+                      maxSkills={3}
+                    />
+                  ))}
+                <div style={{ marginTop: 16, textAlign: "right" }}>
+                  <Pagination
+                    current={pagination.current}
+                    pageSize={pagination.pageSize}
+                    total={filteredCandidates.length}
+                    onChange={(page, pageSize) => {
+                      setPagination((prev) => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize,
+                      }));
+                    }}
+                    showSizeChanger={false}
+                  />
+                </div>
+              </>
             ) : (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -566,33 +594,55 @@ const SourcedCandidates = ({ jobId }) => {
         >
           <div style={{ maxHeight: "600px", overflowY: "auto" }}>
             {selectedCandidates.length > 0 ? (
-              selectedCandidates.map((candidate, index) => (
-                <CandidateCard
-                  key={candidate._id || index}
-                  candidate={candidate}
-                  index={index}
-                  onViewProfile={handleViewProfile}
-                  showExperience={true}
-                  showSkills={true}
-                  maxSkills={3}
-                  actions={[
-                    <Button
-                      key="view"
-                      icon={<EyeOutlined />}
-                      onClick={() => handleViewProfile(candidate)}
-                    >
-                      View Profile
-                    </Button>,
-                    <Button
-                      key="move"
-                      type="primary"
-                      onClick={() => handleStatusUpdate("screening")}
-                    >
-                      Move to Screening
-                    </Button>,
-                  ]}
-                />
-              ))
+              <>
+                {selectedCandidates
+                  .slice(
+                    (pagination.current - 1) * pagination.pageSize,
+                    pagination.current * pagination.pageSize
+                  )
+                  .map((candidate, index) => (
+                    <CandidateCard
+                      key={candidate._id || index}
+                      candidate={candidate}
+                      index={index}
+                      onViewProfile={handleViewProfile}
+                      showExperience={true}
+                      showSkills={true}
+                      maxSkills={3}
+                      actions={[
+                        <Button
+                          key="view"
+                          icon={<EyeOutlined />}
+                          onClick={() => handleViewProfile(candidate)}
+                        >
+                          View Profile
+                        </Button>,
+                        <Button
+                          key="move"
+                          type="primary"
+                          onClick={() => handleStatusUpdate("screening")}
+                        >
+                          Move to Screening
+                        </Button>,
+                      ]}
+                    />
+                  ))}
+                <div style={{ marginTop: 16, textAlign: "right" }}>
+                  <Pagination
+                    current={pagination.current}
+                    pageSize={pagination.pageSize}
+                    total={selectedCandidates.length}
+                    onChange={(page, pageSize) => {
+                      setPagination((prev) => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize,
+                      }));
+                    }}
+                    showSizeChanger={false}
+                  />
+                </div>
+              </>
             ) : (
               <Empty
                 description={
