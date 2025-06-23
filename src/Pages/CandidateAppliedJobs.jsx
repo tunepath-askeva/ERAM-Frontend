@@ -183,7 +183,7 @@ const CandidateAppliedJobs = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(10);
   const [activeTab, setActiveTab] = useState("all");
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState("");
