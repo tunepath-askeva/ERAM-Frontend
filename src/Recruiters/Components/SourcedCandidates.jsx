@@ -20,6 +20,7 @@ import {
   Descriptions,
   Tag,
   message,
+  Skeleton
 } from "antd";
 import {
   SearchOutlined,
@@ -348,15 +349,12 @@ const SourcedCandidates = ({ jobId }) => {
 
   if (isSourcedLoading || jobLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "200px",
-        }}
-      >
-        <Spin size="large" />
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
+        </div>
       </div>
     );
   }

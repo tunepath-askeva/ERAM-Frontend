@@ -21,6 +21,7 @@ import {
   message,
   Descriptions,
   Divider,
+  Skeleton,
 } from "antd";
 import {
   UserOutlined,
@@ -42,7 +43,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const { data, error, isLoading, refetch } = useGetJobApplicationsQuery(jobId);
-  console.log(data, "jobs")
+  console.log(data, "jobs");
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
   const [resumeModalVisible, setResumeModalVisible] = useState(false);
@@ -52,15 +53,12 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "200px",
-        }}
-      >
-        <Spin size="large" />
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
+        </div>
       </div>
     );
   }
@@ -149,7 +147,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       await updateCandidateStatus({
         Id: candidateId,
         status: "screening",
-        jobId: jobId
+        jobId: jobId,
       }).unwrap();
 
       message.success("Candidate moved to screening successfully!");

@@ -17,7 +17,12 @@ import {
   InputNumber,
   Checkbox,
   Radio,
+  Skeleton,
+  Breadcrumb,
+  Button,
 } from "antd";
+import { LeftOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import SourcedCandidates from "./SourcedCandidates";
 import ScreeningCandidates from "./ScreeningCandidates";
 
@@ -28,20 +33,17 @@ const { TextArea } = Input;
 
 const RecruiterViewJob = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data, error, isLoading } = useGetRecruiterJobIdQuery(id);
-
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "50vh",
-        }}
-      >
-        <Spin size="large" />
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Skeleton active />
+          <Skeleton active />
+          <Skeleton active />
+        </div>
       </div>
     );
   }
@@ -570,6 +572,24 @@ const RecruiterViewJob = () => {
 
   return (
     <div>
+      <div style={{ marginBottom: "16px" }}>
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            <Button
+              type="link"
+              onClick={() => navigate(-1)}
+              icon={<LeftOutlined />}
+              style={{
+                paddingLeft: 0,
+                color: "#da2c46",
+              }}
+            >
+              Back
+            </Button>
+          </Breadcrumb.Item>
+        </Breadcrumb>
+      </div>
+
       {/* Mobile-like Container */}
       <div
         style={{
