@@ -89,7 +89,7 @@ const ScreeningCandidates = ({ jobId }) => {
   } = useGetSourcedCandidateQuery({});
 
   const { data: recruiterStages, isLoading: recruiterStagesLoading } =
-    useGetRecruiterStagesQuery();
+    useGetRecruiterStagesQuery(jobId);
 
   console.log(filteredSource, "Filtered");
 
@@ -219,14 +219,39 @@ const ScreeningCandidates = ({ jobId }) => {
   }, [filters]);
 
   const assignedStages = useMemo(() => {
-    if (!recruiterStages?.results) return [];
+    if (!recruiterStages) return [];
 
-    const workOrder = recruiterStages.results.find(
-      (result) => result.workOrderId === jobId
-    );
+    // Case 1: Super recruiter with full pipeline access
+    if (recruiterStages.pipeline && recruiterStages.pipeline.length > 0) {
+      return recruiterStages.pipeline[0].stages || [];
+    }
 
-    return workOrder?.assignedStages || [];
-  }, [recruiterStages, jobId]);
+    // Case 2: Regular recruiter with specific assigned stages
+    if (
+      recruiterStages.assignedStages &&
+      recruiterStages.assignedStages.length > 0
+    ) {
+      // If we have jobApplications data, try to match the assigned stages with full stage details
+      if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
+        return recruiterStages.assignedStages.map((assignedStage) => {
+          const fullStage = jobApplications.workOrder.pipeline[0].stages.find(
+            (stage) => stage.name === assignedStage.stageName
+          );
+          return fullStage || { name: assignedStage.stageName };
+        });
+      }
+      // If no jobApplications data, just return the assigned stage names
+      return recruiterStages.assignedStages.map((stage) => ({
+        name: stage.stageName,
+      }));
+    }
+
+    return [];
+  }, [recruiterStages, jobApplications]);
+
+  const isSuperRecruiter = useMemo(() => {
+    return recruiterStages?.pipeline && recruiterStages.pipeline.length > 0;
+  }, [recruiterStages]);
 
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
@@ -305,10 +330,8 @@ const ScreeningCandidates = ({ jobId }) => {
 
     if (stage.dependencyType === "independent") return true;
 
-    // For dependent stages, check if all previous assigned stages are completed
     for (let i = 0; i < currentStageIndex; i++) {
       const prevStage = stageTimeline[i];
-      // Check if this previous stage is one of the assigned stages
       const isAssigned = assignedStages.some(
         (assigned) => assigned.stageName === prevStage.name
       );
@@ -318,15 +341,35 @@ const ScreeningCandidates = ({ jobId }) => {
     return true;
   };
 
-  const handleMoveToStage = async (stageId) => {
+  const handleMoveToStage = async (stageIdOrName) => {
     try {
       if (!selectedCandidate) return;
 
-      const stage = jobApplications.workOrder.pipeline[0].stages.find(
-        (s) => s._id === stageId
-      );
+      let stage;
 
-      if (!stage) return;
+      if (isSuperRecruiter) {
+        stage = recruiterStages.pipeline[0].stages.find(
+          (s) => s._id === stageIdOrName
+        );
+      }
+      else if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
+        stage = jobApplications.workOrder.pipeline[0].stages.find(
+          (s) => s.name === stageIdOrName
+        );
+      }
+
+      if (!stage) {
+        await updateCandidateStatus({
+          applicationId: selectedCandidate.applicationId,
+          status: "in-progress",
+          jobId: jobId,
+          stageName: stageIdOrName, 
+        }).unwrap();
+        message.success(`Candidate moved to ${stageIdOrName} stage`);
+        jobRefetch();
+        setIsModalVisible(false);
+        return;
+      }
 
       if (stage.dependencyType === "dependent" && !isStageAvailable(stage)) {
         message.error("Please complete previous stages first");
@@ -577,43 +620,47 @@ const ScreeningCandidates = ({ jobId }) => {
                     showSearch
                   >
                     {assignedStages.map((stage) => {
-                      // Find the full stage details from the jobApplications
-                      const fullStage =
-                        jobApplications?.workOrder?.pipeline?.[0]?.stages?.find(
-                          (s) => s.name === stage.stageName
-                        );
-
-                      if (!fullStage) return null;
-
-                      const isAvailable = isStageAvailable(fullStage);
-                      return (
-                        <Select.Option
-                          key={fullStage._id}
-                          value={fullStage._id}
-                          disabled={!isAvailable}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
+                      // For super recruiter, we have full stage details
+                      if (isSuperRecruiter) {
+                        const isAvailable = isStageAvailable(stage);
+                        return (
+                          <Select.Option
+                            key={stage._id}
+                            value={stage._id}
+                            disabled={!isAvailable}
                           >
-                            <span>{fullStage.name}</span>
-                            <Tag
-                              color={
-                                fullStage.dependencyType === "independent"
-                                  ? "green"
-                                  : "orange"
-                              }
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                              }}
                             >
-                              {fullStage.dependencyType}
-                            </Tag>
-                          </div>
-                          {!isAvailable && (
-                            <div style={{ fontSize: "12px", color: "#ff4d4f" }}>
-                              Complete previous stages first
+                              <span>{stage.name}</span>
+                              <Tag
+                                color={
+                                  stage.dependencyType === "independent"
+                                    ? "green"
+                                    : "orange"
+                                }
+                              >
+                                {stage.dependencyType}
+                              </Tag>
                             </div>
-                          )}
+                            {!isAvailable && (
+                              <div
+                                style={{ fontSize: "12px", color: "#ff4d4f" }}
+                              >
+                                Complete previous stages first
+                              </div>
+                            )}
+                          </Select.Option>
+                        );
+                      }
+
+                      // For regular recruiter with assigned stages
+                      return (
+                        <Select.Option key={stage.name} value={stage.name}>
+                          {stage.name}
                         </Select.Option>
                       );
                     })}
@@ -625,9 +672,7 @@ const ScreeningCandidates = ({ jobId }) => {
                     type="primary"
                     htmlType="submit"
                     icon={<ArrowRightOutlined />}
-                    style={{
-                      background: "#da2c46",
-                    }}
+                    style={{ background: "#da2c46" }}
                   >
                     Move Candidate
                   </Button>

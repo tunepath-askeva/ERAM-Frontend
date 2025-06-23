@@ -57,8 +57,8 @@ export const recruiterApi = createApi({
     }),
 
     getRecruiterStages: builder.query({
-      query: () => ({
-        url: "/stages",
+      query: (Id) => ({
+        url: `/stages/${Id}`,
         method: "GET",
       }),
     }),
