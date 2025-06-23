@@ -672,12 +672,7 @@ const ScreeningCandidates = ({ jobId }) => {
           <Form.Item
             name="interviewLink"
             label="Interview Link"
-            rules={[
-              {
-                required: form.getFieldValue("interviewType") !== "in-person",
-                message: "Please provide interview link",
-              },
-            ]}
+           
           >
             <Input placeholder="Enter meeting link for phone/video interviews" />
           </Form.Item>
