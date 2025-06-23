@@ -21,19 +21,17 @@ import {
   DatePicker,
   TimePicker,
   Form,
+  Skeleton,
+  Steps,
 } from "antd";
 import {
-  SearchOutlined,
-  FilterOutlined,
-  BookOutlined,
-  ToolOutlined,
-  ClearOutlined,
   EyeOutlined,
   CalendarOutlined,
   PhoneOutlined,
   VideoCameraOutlined,
   CheckOutlined,
   CloseOutlined,
+  ArrowRightOutlined,
 } from "@ant-design/icons";
 import {
   useGetJobApplicationsQuery,
@@ -48,6 +46,7 @@ const { Search } = Input;
 const { Option } = Select;
 const { Panel } = Collapse;
 const { TextArea } = Input;
+const { Step } = Steps;
 
 const ScreeningCandidates = ({ jobId }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -273,9 +272,66 @@ const ScreeningCandidates = ({ jobId }) => {
     return colors[status] || "default";
   };
 
+  const isStageAvailable = (stage) => {
+    if (!jobApplications?.workOrder?.pipelineStageTimeline) return true;
+
+    const stageTimeline = jobApplications.workOrder.pipelineStageTimeline;
+    const currentStageIndex = stageTimeline.findIndex(
+      (s) => s.stageId === stage._id
+    );
+
+    if (currentStageIndex === 0) return true;
+
+    if (stage.dependencyType === "independent") return true;
+
+    // For dependent stages, check if all previous stages are completed
+    for (let i = 0; i < currentStageIndex; i++) {
+      const prevStage = stageTimeline[i];
+      // You'll need to check if previous stages are completed
+      // This requires additional data about which stages the candidate has completed
+      // You might need to add this to your API response or maintain local state
+      if (!prevStage.isCompleted) return false;
+    }
+
+    return true;
+  };
+
+  const handleMoveToStage = async (stageId) => {
+    try {
+      if (!selectedCandidate) return;
+
+      const stage = jobApplications.workOrder.pipeline[0].stages.find(
+        (s) => s._id === stageId
+      );
+
+      if (!stage) return;
+
+      if (stage.dependencyType === "dependent" && !isStageAvailable(stage)) {
+        message.error("Please complete previous stages first");
+        return;
+      }
+
+      await updateCandidateStatus({
+        applicationId: selectedCandidate.applicationId,
+        status: "in-progress", 
+        jobId: jobId,
+        stageId: stage._id,
+        stageName: stage.name,
+        requiredDocuments: stage.requiredDocuments,
+      }).unwrap();
+
+      message.success(`Candidate moved to ${stage.name} stage`);
+      jobRefetch();
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error("Failed to move candidate:", error);
+      message.error(error.data?.message || "Failed to move candidate");
+    }
+  };
+
   if (isLoading) {
     return (
-     <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
+      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
           <Skeleton active />
           <Skeleton active />
@@ -380,109 +436,187 @@ const ScreeningCandidates = ({ jobId }) => {
         title="Candidate Details"
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setIsModalVisible(false)}>
-            Close
-          </Button>,
-          <Button
-            key="shortlist"
-            type="primary"
-            onClick={() => handleStatusUpdate("shortlisted")}
-          >
-            <CheckOutlined /> Shortlist
-          </Button>,
-          <Button
-            key="schedule"
-            icon={<CalendarOutlined />}
-            onClick={() => {
-              setIsModalVisible(false);
-              handleScheduleInterview(selectedCandidate);
-            }}
-          >
-            Schedule Interview
-          </Button>,
-          <Button
-            key="reject"
-            danger
-            onClick={() => handleStatusUpdate("rejected")}
-          >
-            <CloseOutlined /> Reject
-          </Button>,
-        ]}
+        footer={null}
         width={800}
       >
         {selectedCandidate && (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Full Name" span={2}>
-              {selectedCandidate.fullName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email">
-              {selectedCandidate.email}
-            </Descriptions.Item>
-            <Descriptions.Item label="Phone">
-              {selectedCandidate.phone}
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag
-                color={getScreeningStatusColor(
-                  selectedCandidate.candidateStatus
+          <>
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Full Name" span={2}>
+                {selectedCandidate.fullName}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {selectedCandidate.email}
+              </Descriptions.Item>
+              <Descriptions.Item label="Phone">
+                {selectedCandidate.phone}
+              </Descriptions.Item>
+              <Descriptions.Item label="Status">
+                <Tag
+                  color={getScreeningStatusColor(
+                    selectedCandidate.candidateStatus
+                  )}
+                >
+                  {selectedCandidate.candidateStatus?.toUpperCase() ||
+                    "SCREENING"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Location">
+                {selectedCandidate.location}
+              </Descriptions.Item>
+              <Descriptions.Item label="Title">
+                {selectedCandidate.title}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Skills" span={2}>
+                <Space wrap>
+                  {selectedCandidate.skills?.map((skill, index) => (
+                    <Tag key={index}>{skill}</Tag>
+                  ))}
+                </Space>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Education" span={2}>
+                {selectedCandidate.education?.length > 0 ? (
+                  selectedCandidate.education.map((edu, index) => (
+                    <div key={index} style={{ marginBottom: 8 }}>
+                      <Text strong>
+                        {edu.degree} in {edu.field}
+                      </Text>
+                      <br />
+                      <Text type="secondary">
+                        {edu.institution} ({edu.year})
+                      </Text>
+                    </div>
+                  ))
+                ) : (
+                  <Text type="secondary">No education information</Text>
                 )}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Work Experience" span={2}>
+                {selectedCandidate.workExperience?.length > 0 ? (
+                  selectedCandidate.workExperience.map((exp, index) => (
+                    <div key={index} style={{ marginBottom: 8 }}>
+                      <Text strong>
+                        {exp.title} at {exp.company}
+                      </Text>
+                      <br />
+                      <Text type="secondary">{exp.duration}</Text>
+                      <br />
+                      <Text>{exp.description}</Text>
+                    </div>
+                  ))
+                ) : (
+                  <Text type="secondary">No work experience</Text>
+                )}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider orientation="left" style={{ margin: "16px 0" }}>
+              Pipeline Progress
+            </Divider>
+
+            {jobApplications?.workOrder?.pipeline?.[0]?.stages ? (
+              <Form
+                layout="vertical"
+                onFinish={(values) => handleMoveToStage(values.targetStage)}
               >
-                {selectedCandidate.candidateStatus?.toUpperCase() ||
-                  "SCREENING"}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Location">
-              {selectedCandidate.location}
-            </Descriptions.Item>
-            <Descriptions.Item label="Title">
-              {selectedCandidate.title}
-            </Descriptions.Item>
+                <Form.Item
+                  name="targetStage"
+                  label="Select Target Stage"
+                  rules={[{ required: true, message: "Please select a stage" }]}
+                >
+                  <Select
+                    placeholder="Select stage to move candidate"
+                    optionFilterProp="children"
+                    showSearch
+                  >
+                    {jobApplications.workOrder.pipeline[0].stages.map(
+                      (stage) => {
+                        // Check if stage is available based on dependencies
+                        const isAvailable = isStageAvailable(stage);
+                        return (
+                          <Select.Option
+                            key={stage._id}
+                            value={stage._id}
+                            disabled={!isAvailable}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <span>{stage.name}</span>
+                              <Tag
+                                color={
+                                  stage.dependencyType === "independent"
+                                    ? "green"
+                                    : "orange"
+                                }
+                              >
+                                {stage.dependencyType}
+                              </Tag>
+                            </div>
+                            {!isAvailable && (
+                              <div
+                                style={{ fontSize: "12px", color: "#ff4d4f" }}
+                              >
+                                Complete previous stages first
+                              </div>
+                            )}
+                          </Select.Option>
+                        );
+                      }
+                    )}
+                  </Select>
+                </Form.Item>
 
-            <Descriptions.Item label="Skills" span={2}>
-              <Space wrap>
-                {selectedCandidate.skills?.map((skill, index) => (
-                  <Tag key={index}>{skill}</Tag>
-                ))}
-              </Space>
-            </Descriptions.Item>
+                <Form.Item>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<ArrowRightOutlined />}
+                    style={{
+                      background: "#da2c46"
+                    }}
+                  >
+                    Move Candidate
+                  </Button>
+                </Form.Item>
+              </Form>
+            ) : (
+              <Alert
+                message="No pipeline stages configured for this job"
+                type="warning"
+                showIcon
+              />
+            )}
 
-            <Descriptions.Item label="Education" span={2}>
-              {selectedCandidate.education?.length > 0 ? (
-                selectedCandidate.education.map((edu, index) => (
-                  <div key={index} style={{ marginBottom: 8 }}>
-                    <Text strong>
-                      {edu.degree} in {edu.field}
-                    </Text>
-                    <br />
-                    <Text type="secondary">
-                      {edu.institution} ({edu.year})
-                    </Text>
-                  </div>
-                ))
-              ) : (
-                <Text type="secondary">No education information</Text>
-              )}
-            </Descriptions.Item>
+            <Divider />
 
-            <Descriptions.Item label="Work Experience" span={2}>
-              {selectedCandidate.workExperience?.length > 0 ? (
-                selectedCandidate.workExperience.map((exp, index) => (
-                  <div key={index} style={{ marginBottom: 8 }}>
-                    <Text strong>
-                      {exp.title} at {exp.company}
-                    </Text>
-                    <br />
-                    <Text type="secondary">{exp.duration}</Text>
-                    <br />
-                    <Text>{exp.description}</Text>
-                  </div>
-                ))
-              ) : (
-                <Text type="secondary">No work experience</Text>
-              )}
-            </Descriptions.Item>
-          </Descriptions>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={() => setIsModalVisible(false)}>Close</Button>
+
+              <div>
+                <Button
+                  style={{ marginRight: 8 }}
+                  onClick={() => {
+                    setIsModalVisible(false);
+                    handleScheduleInterview(selectedCandidate);
+                  }}
+                  icon={<CalendarOutlined />}
+                >
+                  Schedule Interview
+                </Button>
+
+                <Button danger onClick={() => handleStatusUpdate("rejected")}>
+                  <CloseOutlined /> Reject
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </Modal>
 

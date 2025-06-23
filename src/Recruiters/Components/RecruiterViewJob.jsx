@@ -584,7 +584,7 @@ const RecruiterViewJob = () => {
                 color: "#da2c46",
               }}
             >
-              Back
+              Back to Jobs
             </Button>
           </Breadcrumb.Item>
         </Breadcrumb>
