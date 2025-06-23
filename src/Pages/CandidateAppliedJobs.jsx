@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import {
   Button,
   Card,
@@ -82,6 +82,7 @@ import {
 import {
   useGetUserAppliedJobsQuery,
   useWithdrawJobApplicationMutation,
+  useGetSourcedJobsQuery,
 } from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -108,13 +109,21 @@ const APPLICATION_STATUSES = {
     icon: <CloseOutlined />,
     description: "You declined this offer",
   },
-  UNDER_REVIEW: {
-    key: "under_review",
-    label: "Under Review",
+  SCREENING: {
+    key: "screening",
+    label: "Screening",
     color: "#f59e0b",
     icon: <EyeOutlined />,
-    description: "HR team is reviewing your application",
+    description: "Your profile is being screened by the recruiter",
   },
+  SELECTED: {
+    key: "selected",
+    label: "Selected",
+    color: "#f59e0b",
+    icon: <CheckCircleOutlined />,
+    description: "Your profile is being selected by the recruiter",
+  },
+
   SHORTLISTED: {
     key: "shortlisted",
     label: "Shortlisted",
@@ -172,10 +181,10 @@ const APPLICATION_STATUSES = {
     description: "Application withdrawn by candidate",
   },
 };
-
 const CandidateAppliedJobs = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { data: apiData, isLoading, isError } = useGetUserAppliedJobsQuery();
+  const { data: sourcedData } = useGetSourcedJobsQuery();
   const [applications, setApplications] = useState([]);
   const [filteredApplications, setFilteredApplications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -184,7 +193,8 @@ const CandidateAppliedJobs = () => {
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeMainTab, setActiveMainTab] = useState("applied");
+  const [activeSubTab, setActiveSubTab] = useState("all");
   // Filter states
   const [searchKeyword, setSearchKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -194,10 +204,9 @@ const CandidateAppliedJobs = () => {
     useWithdrawJobApplicationMutation();
 
   useEffect(() => {
-    if (apiData?.appliedJobs) {
-      const formattedApplications = apiData.appliedJobs.map((app) => {
+    const formattedAppliedJobs =
+      apiData?.appliedJobs?.map((app) => {
         const workOrder = app.workOrder;
-
         return {
           _id: app._id,
           title: workOrder.title,
@@ -215,6 +224,7 @@ const CandidateAppliedJobs = () => {
           notes: workOrder.description,
           benefits: workOrder.benefits || [],
           priority: "medium",
+          applicationType: "applied",
           timeline: [
             {
               date: app.createdAt.split("T")[0],
@@ -223,11 +233,43 @@ const CandidateAppliedJobs = () => {
             },
           ],
         };
-      });
-      setApplications(formattedApplications);
-      setFilteredApplications(formattedApplications);
-    }
-  }, [apiData]);
+      }) || [];
+
+    const formattedSourcedJobs =
+      sourcedData?.jobs?.map((job) => {
+        const workOrder = job.workOrder;
+        return {
+          _id: job._id,
+          title: workOrder.title,
+          company: workOrder.companyIndustry || "Company Name",
+          companyLogo: "https://via.placeholder.com/40",
+          location: workOrder.officeLocation,
+          workType: workOrder.workplace === "on-site" ? "On-site" : "Remote",
+          employmentType: workOrder.employmentType || "Full-time",
+          experience: workOrder.experience || "Not specified",
+          salary: `₹${workOrder.annualSalary}`,
+          appliedDate: job.createdAt.split("T")[0],
+          status: job.status || "under_review", // Default status for sourced jobs
+          applicationId: workOrder.jobCode,
+          skills: workOrder.requiredSkills || [],
+          notes: workOrder.description,
+          benefits: workOrder.benefits || [],
+          priority: "medium",
+          applicationType: "sourced",
+          timeline: [
+            {
+              date: job.createdAt.split("T")[0],
+              status: "under_review",
+              note: "You were sourced for this position",
+            },
+          ],
+          responses: job.responses, // Include responses if needed for display
+        };
+      }) || [];
+
+    setApplications([...formattedAppliedJobs, ...formattedSourcedJobs]);
+    setFilteredApplications([...formattedAppliedJobs, ...formattedSourcedJobs]);
+  }, [apiData, sourcedData]);
 
   useEffect(() => {
     applyFilters();
@@ -236,7 +278,8 @@ const CandidateAppliedJobs = () => {
     statusFilter,
     priorityFilter,
     dateRangeFilter,
-    activeTab,
+    activeMainTab,
+    activeSubTab,
     applications,
   ]);
 
@@ -257,22 +300,31 @@ const CandidateAppliedJobs = () => {
         (new Date(app.appliedDate) >= dateRangeFilter[0] &&
           new Date(app.appliedDate) <= dateRangeFilter[1]);
 
-      // Tab-based filtering
-      let matchesTab = true;
-      if (activeTab === "active") {
-        matchesTab = !["rejected", "declined", "withdrawn", "hired"].includes(
-          app.status
-        );
-      } else if (activeTab === "interviews") {
-        matchesTab = [
+      let matchesMainTab = true;
+      if (activeMainTab === "applied") {
+        matchesMainTab = app.applicationType === "applied";
+      } else if (activeMainTab === "sourced") {
+        matchesMainTab = app.applicationType === "sourced";
+      }
+
+      let matchesSubTab = true;
+      if (activeSubTab === "active") {
+        matchesSubTab = ![
+          "rejected",
+          "declined",
+          "withdrawn",
+          "hired",
+        ].includes(app.status);
+      } else if (activeSubTab === "interviews") {
+        matchesSubTab = [
           "interview_scheduled",
           "interview_completed",
           "final_round",
         ].includes(app.status);
-      } else if (activeTab === "offers") {
-        matchesTab = ["offer_extended", "hired"].includes(app.status);
-      } else if (activeTab === "closed") {
-        matchesTab = ["rejected", "declined", "withdrawn", "hired"].includes(
+      } else if (activeSubTab === "offers") {
+        matchesSubTab = ["offer_extended", "hired"].includes(app.status);
+      } else if (activeSubTab === "closed") {
+        matchesSubTab = ["rejected", "declined", "withdrawn", "hired"].includes(
           app.status
         );
       }
@@ -282,7 +334,8 @@ const CandidateAppliedJobs = () => {
         matchesStatus &&
         matchesPriority &&
         matchesDateRange &&
-        matchesTab
+        matchesMainTab &&
+        matchesSubTab
       );
     });
 
@@ -309,21 +362,21 @@ const CandidateAppliedJobs = () => {
           prev.map((app) =>
             app._id === selectedApplication._id
               ? {
-                ...app,
-                status: "withdrawn",
-                withdrawnDate: new Date().toISOString().split("T")[0],
-              }
+                  ...app,
+                  status: "withdrawn",
+                  withdrawnDate: new Date().toISOString().split("T")[0],
+                }
               : app
           )
         );
         enqueueSnackbar("Application withdrawn successfully", {
-          variant: 'success',
+          variant: "success",
         });
         setWithdrawModalVisible(false);
         setSelectedApplication(null);
       } catch (error) {
         enqueueSnackbar("Failed to withdraw application. Please try again.", {
-          variant: 'error',
+          variant: "error",
         });
         console.error("Withdrawal error:", error);
       }
@@ -365,9 +418,54 @@ const CandidateAppliedJobs = () => {
     return filteredApplications.slice(startIndex, endIndex);
   };
 
+  const getMainTabCount = (mainTabKey) => {
+    return applications.filter((app) => {
+      if (mainTabKey === "applied") return app.applicationType === "applied";
+      if (mainTabKey === "sourced") return app.applicationType === "sourced";
+      return false;
+    }).length;
+  };
+
+  const getSubTabCount = (mainTabKey, subTabKey) => {
+    return applications.filter((app) => {
+      let matchesMainTab = true;
+      if (mainTabKey === "applied") {
+        matchesMainTab = app.applicationType === "applied";
+      } else if (mainTabKey === "sourced") {
+        matchesMainTab = app.applicationType === "sourced";
+      }
+
+      if (!matchesMainTab) return false;
+
+      if (subTabKey === "all") return true;
+      if (subTabKey === "active") {
+        return !["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
+      }
+      if (subTabKey === "interviews") {
+        return [
+          "interview_scheduled",
+          "interview_completed",
+          "final_round",
+        ].includes(app.status);
+      }
+      if (subTabKey === "offers") {
+        return ["offer_extended", "hired"].includes(app.status);
+      }
+      if (subTabKey === "closed") {
+        return ["rejected", "declined", "withdrawn", "hired"].includes(
+          app.status
+        );
+      }
+      return false;
+    }).length;
+  };
+
   const getTabCount = (tabKey) => {
     return applications.filter((app) => {
-      if (tabKey === "all") return true;
+      if (tabKey === "applied") return app.applicationType === "applied";
+      if (tabKey === "sourced") return app.applicationType === "sourced";
       if (tabKey === "active")
         return !["rejected", "declined", "withdrawn", "hired"].includes(
           app.status
@@ -380,31 +478,13 @@ const CandidateAppliedJobs = () => {
         ].includes(app.status);
       if (tabKey === "offers")
         return ["offer_extended", "hired"].includes(app.status);
-      if (tabKey === "closed")
-        return ["rejected", "declined", "withdrawn", "hired"].includes(
-          app.status
-        );
       return false;
     }).length;
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "high":
-        return "#ef4444";
-      case "medium":
-        return "#f59e0b";
-      case "low":
-        return "#10b981";
-      default:
-        return "#6b7280";
-    }
   };
 
   const clearFilters = () => {
     setSearchKeyword("");
     setStatusFilter("");
-    setPriorityFilter("");
     setDateRangeFilter([]);
   };
 
@@ -465,8 +545,10 @@ const CandidateAppliedJobs = () => {
           <Col xs={12} sm={6} md={6} lg={6}>
             <Card style={{ borderRadius: "12px", textAlign: "center" }}>
               <Statistic
-                title="Total Applications"
-                value={applications.length}
+                title={`Total ${
+                  activeMainTab === "applied" ? "Applied" : "Sourced"
+                }`}
+                value={getMainTabCount(activeMainTab)}
                 valueStyle={{ color: "#da2c46" }}
                 prefix={<FileTextOutlined />}
               />
@@ -476,7 +558,7 @@ const CandidateAppliedJobs = () => {
             <Card style={{ borderRadius: "12px", textAlign: "center" }}>
               <Statistic
                 title="Active Applications"
-                value={getTabCount("active")}
+                value={getSubTabCount(activeMainTab, "active")}
                 valueStyle={{ color: "#1890ff" }}
                 prefix={<SyncOutlined />}
               />
@@ -486,7 +568,7 @@ const CandidateAppliedJobs = () => {
             <Card style={{ borderRadius: "12px", textAlign: "center" }}>
               <Statistic
                 title="Interviews"
-                value={getTabCount("interviews")}
+                value={getSubTabCount(activeMainTab, "interviews")}
                 valueStyle={{ color: "#722ed1" }}
                 prefix={<CalendarOutlined />}
               />
@@ -496,7 +578,7 @@ const CandidateAppliedJobs = () => {
             <Card style={{ borderRadius: "12px", textAlign: "center" }}>
               <Statistic
                 title="Offers"
-                value={getTabCount("offers")}
+                value={getSubTabCount(activeMainTab, "offers")}
                 valueStyle={{ color: "#52c41a" }}
                 prefix={<TrophyOutlined />}
               />
@@ -614,8 +696,11 @@ const CandidateAppliedJobs = () => {
           }}
         >
           <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
+            activeKey={activeMainTab}
+            onChange={(key) => {
+              setActiveMainTab(key);
+              setActiveSubTab("all");
+            }}
             size="large"
             type="line"
             style={{
@@ -629,11 +714,79 @@ const CandidateAppliedJobs = () => {
               },
             }}
           >
-            <TabPane tab="All Applications" key="all" />
-            <TabPane tab="Active" key="active" />
-            <TabPane tab="Interviews" key="interviews" />
-            <TabPane tab="Offers" key="offers" />
-            <TabPane tab="Closed" key="closed" />
+            <TabPane
+              tab={`Applied (${getMainTabCount("applied")})`}
+              key="applied"
+            >
+              <Tabs
+                activeKey={activeSubTab}
+                onChange={setActiveSubTab}
+                size="default"
+                type="card"
+                style={{ marginTop: "16px" }}
+              >
+                <TabPane
+                  tab={`All (${getSubTabCount("applied", "all")})`}
+                  key="all"
+                />
+                <TabPane
+                  tab={`Active (${getSubTabCount("applied", "active")})`}
+                  key="active"
+                />
+                <TabPane
+                  tab={`Interviews (${getSubTabCount(
+                    "applied",
+                    "interviews"
+                  )})`}
+                  key="interviews"
+                />
+                <TabPane
+                  tab={`Offers (${getSubTabCount("applied", "offers")})`}
+                  key="offers"
+                />
+                <TabPane
+                  tab={`Closed (${getSubTabCount("applied", "closed")})`}
+                  key="closed"
+                />
+              </Tabs>
+            </TabPane>
+
+            <TabPane
+              tab={`Sourced (${getMainTabCount("sourced")})`}
+              key="sourced"
+            >
+              <Tabs
+                activeKey={activeSubTab}
+                onChange={setActiveSubTab}
+                size="default"
+                type="card"
+                style={{ marginTop: "16px" }}
+              >
+                <TabPane
+                  tab={`All (${getSubTabCount("sourced", "all")})`}
+                  key="all"
+                />
+                <TabPane
+                  tab={`Active (${getSubTabCount("sourced", "active")})`}
+                  key="active"
+                />
+                <TabPane
+                  tab={`Interviews (${getSubTabCount(
+                    "sourced",
+                    "interviews"
+                  )})`}
+                  key="interviews"
+                />
+                <TabPane
+                  tab={`Offers (${getSubTabCount("sourced", "offers")})`}
+                  key="offers"
+                />
+                <TabPane
+                  tab={`Closed (${getSubTabCount("sourced", "closed")})`}
+                  key="closed"
+                />
+              </Tabs>
+            </TabPane>
           </Tabs>
         </Card>
 
@@ -690,32 +843,6 @@ const CandidateAppliedJobs = () => {
                       }}
                       onClick={() => handleApplicationClick(application)}
                     >
-                      {/* Priority Badge */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "12px",
-                          right: "12px",
-                          zIndex: 1,
-                        }}
-                      >
-                        <Badge
-                          color={getPriorityColor(application.priority)}
-                          text={
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                fontWeight: 600,
-                                textTransform: "uppercase",
-                                color: getPriorityColor(application.priority),
-                              }}
-                            >
-                              {application.priority}
-                            </span>
-                          }
-                        />
-                      </div>
-
                       {/* Company Logo and Header */}
                       <div
                         style={{
@@ -801,17 +928,17 @@ const CandidateAppliedJobs = () => {
                         {!["rejected", "withdrawn"].includes(
                           application.status
                         ) && (
-                            <Progress
-                              percent={getStatusProgress(application.status)}
-                              strokeColor={{
-                                "0%": statusConfig.color,
-                                "100%": statusConfig.color,
-                              }}
-                              showInfo={false}
-                              strokeWidth={6}
-                              style={{ marginBottom: "8px" }}
-                            />
-                          )}
+                          <Progress
+                            percent={getStatusProgress(application.status)}
+                            strokeColor={{
+                              "0%": statusConfig.color,
+                              "100%": statusConfig.color,
+                            }}
+                            showInfo={false}
+                            strokeWidth={6}
+                            style={{ marginBottom: "8px" }}
+                          />
+                        )}
                       </div>
 
                       {/* Job Details */}
@@ -985,7 +1112,6 @@ const CandidateAppliedJobs = () => {
           </Card>
         )}
       </div>
-
       {/* Application Detail Modal */}
       {selectedApplication && (
         <Modal
@@ -1048,13 +1174,16 @@ const CandidateAppliedJobs = () => {
                 Close
               </Button>
 
-              {!["hired", "rejected", "withdrawn"].includes(
-                selectedApplication.status
-              ) && (
+              {selectedApplication?.applicationType === "applied" &&
+                !["hired", "rejected", "withdrawn"].includes(
+                  selectedApplication.status
+                ) && (
                   <Button
                     key="withdraw"
                     danger
-                    onClick={() => handleWithdrawApplication(selectedApplication)}
+                    onClick={() =>
+                      handleWithdrawApplication(selectedApplication)
+                    }
                     style={{
                       minWidth: "140px",
                       height: "40px",

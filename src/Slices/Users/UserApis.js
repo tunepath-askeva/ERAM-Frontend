@@ -11,7 +11,6 @@ export const userApi = createApi({
     baseUrl,
     credentials: "include",
     prepareHeaders: (headers) => {
-
       return headers;
     },
   }),
@@ -126,6 +125,13 @@ export const userApi = createApi({
         };
       },
     }),
+
+    getSourcedJobs: builder.query({
+      query: () => ({
+        url: "/sourced",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -138,6 +144,7 @@ export const {
 
   //Jobs for candidates
   useGetJobsByBranchQuery,
+  useGetSourcedJobsQuery,
   useGetJobsbyIdQuery,
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
