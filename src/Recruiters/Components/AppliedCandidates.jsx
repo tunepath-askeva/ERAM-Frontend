@@ -22,7 +22,7 @@ import {
   Descriptions,
   Divider,
   Skeleton,
-  Pagination 
+  Pagination,
 } from "antd";
 import {
   UserOutlined,
@@ -473,7 +473,6 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
             : "Applications received for this position"}
         </Text>
       </div>
-
       {/* Candidates List */}
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
         {filteredCandidates.length > 0 ? (
@@ -515,7 +514,6 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
           />
         )}
       </div>
-
       {/* Resume Modal */}
       <Modal
         title={`Resume - ${selectedResume?.name || "Candidate"}`}
@@ -575,9 +573,23 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
             </Button>
           ),
         ]}
-        width={800}
+        width="90%"
+        style={{ top: 20 }}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+          padding: "16px",
+        }}
+        responsive={true}
       >
-        {renderApplicationDetails()}
+        <div
+          style={{
+            maxWidth: "100%",
+            overflowX: "auto",
+          }}
+        >
+          {renderApplicationDetails()}
+        </div>
       </Modal>
     </div>
   );

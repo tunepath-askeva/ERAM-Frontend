@@ -231,7 +231,6 @@ const ScreeningCandidates = ({ jobId }) => {
       recruiterStages.assignedStages &&
       recruiterStages.assignedStages.length > 0
     ) {
-      // If we have jobApplications data, try to match the assigned stages with full stage details
       if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
         return recruiterStages.assignedStages.map((assignedStage) => {
           const fullStage = jobApplications.workOrder.pipeline[0].stages.find(
@@ -240,7 +239,6 @@ const ScreeningCandidates = ({ jobId }) => {
           return fullStage || { name: assignedStage.stageName };
         });
       }
-      // If no jobApplications data, just return the assigned stage names
       return recruiterStages.assignedStages.map((stage) => ({
         name: stage.stageName,
       }));
@@ -351,8 +349,7 @@ const ScreeningCandidates = ({ jobId }) => {
         stage = recruiterStages.pipeline[0].stages.find(
           (s) => s._id === stageIdOrName
         );
-      }
-      else if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
+      } else if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
         stage = jobApplications.workOrder.pipeline[0].stages.find(
           (s) => s.name === stageIdOrName
         );
@@ -363,7 +360,7 @@ const ScreeningCandidates = ({ jobId }) => {
           applicationId: selectedCandidate.applicationId,
           status: "in-progress",
           jobId: jobId,
-          stageName: stageIdOrName, 
+          stageName: stageIdOrName,
         }).unwrap();
         message.success(`Candidate moved to ${stageIdOrName} stage`);
         jobRefetch();
@@ -524,11 +521,21 @@ const ScreeningCandidates = ({ jobId }) => {
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
-        width={800}
+        width="90%"
+        style={{ top: 20 }}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+          padding: "16px",
+        }}
       >
         {selectedCandidate && (
           <>
-            <Descriptions bordered column={2}>
+            <Descriptions
+              bordered
+              column={window.innerWidth < 768 ? 1 : 2}
+              size="small"
+            >
               <Descriptions.Item label="Full Name" span={2}>
                 {selectedCandidate.fullName}
               </Descriptions.Item>
@@ -688,12 +695,25 @@ const ScreeningCandidates = ({ jobId }) => {
 
             <Divider />
 
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: window.innerWidth < 768 ? "column" : "row",
+                gap: "8px",
+                justifyContent: "space-between",
+                marginTop: "16px",
+              }}
+            >
               <Button onClick={() => setIsModalVisible(false)}>Close</Button>
-
-              <div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: window.innerWidth < 768 ? "column" : "row",
+                  gap: "8px",
+                }}
+              >
                 <Button
-                  style={{ marginRight: 8 }}
+                  style={{ marginRight: window.innerWidth < 768 ? 0 : 8 }}
                   onClick={() => {
                     setIsModalVisible(false);
                     handleScheduleInterview(selectedCandidate);
@@ -702,7 +722,6 @@ const ScreeningCandidates = ({ jobId }) => {
                 >
                   Schedule Interview
                 </Button>
-
                 <Button danger onClick={() => handleStatusUpdate("rejected")}>
                   <CloseOutlined /> Reject
                 </Button>

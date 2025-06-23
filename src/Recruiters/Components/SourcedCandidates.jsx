@@ -675,10 +675,20 @@ const SourcedCandidates = ({ jobId }) => {
             {getModalButtonText()}
           </Button>,
         ]}
-        width={800}
+        width="90%"
+        style={{ top: 20 }}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+          padding: "16px",
+        }}
       >
         {selectedCandidate && (
-          <Descriptions bordered column={2}>
+          <Descriptions
+            bordered
+            column={window.innerWidth < 768 ? 1 : 2}
+            size="small"
+          >
             <Descriptions.Item label="Full Name" span={2}>
               {selectedCandidate.fullName}
             </Descriptions.Item>
