@@ -123,6 +123,13 @@ const APPLICATION_STATUSES = {
     icon: <CheckCircleOutlined />,
     description: "Your profile is being selected by the recruiter",
   },
+  PIPELINE: {
+    key: "pipeline",
+    label: "In-Pipeline",
+    color: "#8b5cf6",
+    icon: <CalendarOutlined />,
+    description: "Moved to Pipeline",
+  },
 
   SHORTLISTED: {
     key: "shortlisted",

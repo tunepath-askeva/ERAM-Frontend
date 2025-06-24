@@ -70,6 +70,13 @@ export const recruiterApi = createApi({
         body: { jobId, userId },
       }),
     }),
+
+    getPipelineJobs: builder.query({
+      query: () => ({
+        url: "pipelineJobs",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -83,4 +90,5 @@ export const {
   useUpdateCandidateStatusMutation,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
+  useGetPipelineJobsQuery,
 } = recruiterApi;

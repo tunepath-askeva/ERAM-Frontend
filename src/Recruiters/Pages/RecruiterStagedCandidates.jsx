@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   Typography,
@@ -39,234 +39,19 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-
+import { useGetPipelineJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
-// Your complete dummy data
-const DUMMY_JOBS = [
-  {
-    _id: "job1",
-    title: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    location: "San Francisco, CA",
-    workType: "Remote",
-    salary: "$120,000/year",
-    applications: 24,
-    isActive: true,
-    postedDate: "2023-05-15",
-    jobCode: "TC-001",
-    deadline: "2023-06-30",
-    pipeline: {
-      _id: "pipeline1",
-      name: "Tech Hiring",
-      stages: [
-        { _id: "stage1", name: "Sourced", order: 1 },
-        { _id: "stage2", name: "Screening", order: 2 },
-        { _id: "stage3", name: "Technical Interview", order: 3 },
-        { _id: "stage4", name: "Final Interview", order: 4 },
-        { _id: "stage5", name: "Offer", order: 5 },
-      ],
-    },
-  },
-  {
-    _id: "job2",
-    title: "UX Designer",
-    company: "DesignStudio",
-    location: "New York, NY",
-    workType: "Hybrid",
-    salary: "$95,000/year",
-    applications: 15,
-    isActive: true,
-    postedDate: "2023-05-18",
-    jobCode: "DS-002",
-    deadline: "2023-07-15",
-    pipeline: {
-      _id: "pipeline2",
-      name: "Design Hiring",
-      stages: [
-        { _id: "stage6", name: "Application Review", order: 1 },
-        { _id: "stage7", name: "Portfolio Review", order: 2 },
-        { _id: "stage8", name: "Design Challenge", order: 3 },
-        { _id: "stage9", name: "Final Interview", order: 4 },
-      ],
-    },
-  },
-  {
-    _id: "job3",
-    title: "Backend Engineer",
-    company: "DataFlow Systems",
-    location: "Austin, TX",
-    workType: "On-site",
-    salary: "$110,000/year",
-    applications: 18,
-    isActive: false,
-    postedDate: "2023-05-10",
-    jobCode: "DF-003",
-    deadline: "2023-06-20",
-    pipeline: {
-      _id: "pipeline3",
-      name: "Engineering Pipeline",
-      stages: [
-        { _id: "stage10", name: "Initial Review", order: 1 },
-        { _id: "stage11", name: "Phone Screen", order: 2 },
-        { _id: "stage12", name: "Technical Test", order: 3 },
-        { _id: "stage13", name: "On-site Interview", order: 4 },
-        { _id: "stage14", name: "Reference Check", order: 5 },
-      ],
-    },
-  },
-  {
-    _id: "job4",
-    title: "Product Manager",
-    company: "InnovateTech",
-    location: "Seattle, WA",
-    workType: "Remote",
-    salary: "$130,000/year",
-    applications: 32,
-    isActive: true,
-    postedDate: "2023-05-08",
-    jobCode: "IT-004",
-    deadline: "2023-07-01",
-    pipeline: {
-      _id: "pipeline4",
-      name: "Product Pipeline",
-      stages: [
-        { _id: "stage15", name: "Application", order: 1 },
-        { _id: "stage16", name: "PM Screen", order: 2 },
-        { _id: "stage17", name: "Case Study", order: 3 },
-        { _id: "stage18", name: "Final Round", order: 4 },
-      ],
-    },
-  },
-  {
-    _id: "job5",
-    title: "DevOps Engineer",
-    company: "CloudScale",
-    location: "Denver, CO",
-    workType: "Hybrid",
-    salary: "$105,000/year",
-    applications: 21,
-    isActive: true,
-    postedDate: "2023-05-12",
-    jobCode: "CS-005",
-    deadline: "2023-06-25",
-    pipeline: {
-      _id: "pipeline5",
-      name: "DevOps Pipeline",
-      stages: [
-        { _id: "stage19", name: "Resume Review", order: 1 },
-        { _id: "stage20", name: "Technical Screen", order: 2 },
-        { _id: "stage21", name: "System Design", order: 3 },
-        { _id: "stage22", name: "Team Interview", order: 4 },
-      ],
-    },
-  },
-];
-
-const DUMMY_CANDIDATES = [
-  {
-    _id: "candidate1",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    phone: "(555) 123-4567",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    status: "Active",
-    currentStage: "stage1",
-    jobId: "job1",
-    appliedDate: "2023-05-15",
-  },
-  {
-    _id: "candidate2",
-    name: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    phone: "(555) 987-6543",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    status: "Active",
-    currentStage: "stage1",
-    jobId: "job1",
-    appliedDate: "2023-05-18",
-  },
-  {
-    _id: "candidate3",
-    name: "Michael Brown",
-    email: "michael.b@example.com",
-    phone: "(555) 456-7890",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    status: "Active",
-    currentStage: "stage2",
-    jobId: "job1",
-    appliedDate: "2023-05-10",
-  },
-  {
-    _id: "candidate4",
-    name: "Emily Davis",
-    email: "emily.d@example.com",
-    phone: "(555) 789-0123",
-    avatar: "https://randomuser.me/api/portraits/women/2.jpg",
-    status: "Active",
-    currentStage: "stage3",
-    jobId: "job1",
-    appliedDate: "2023-05-05",
-  },
-  {
-    _id: "candidate5",
-    name: "David Wilson",
-    email: "david.w@example.com",
-    phone: "(555) 234-5678",
-    avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-    status: "Active",
-    currentStage: "stage4",
-    jobId: "job1",
-    appliedDate: "2023-04-28",
-  },
-  {
-    _id: "candidate6",
-    name: "Jessica Lee",
-    email: "jessica.l@example.com",
-    phone: "(555) 345-6789",
-    avatar: "https://randomuser.me/api/portraits/women/3.jpg",
-    status: "On Hold",
-    currentStage: "stage6",
-    jobId: "job2",
-    appliedDate: "2023-05-12",
-  },
-  {
-    _id: "candidate7",
-    name: "Robert Taylor",
-    email: "robert.t@example.com",
-    phone: "(555) 456-7891",
-    avatar: "https://randomuser.me/api/portraits/men/4.jpg",
-    status: "Active",
-    currentStage: "stage7",
-    jobId: "job2",
-    appliedDate: "2023-05-08",
-  },
-  {
-    _id: "candidate8",
-    name: "Lisa Anderson",
-    email: "lisa.a@example.com",
-    phone: "(555) 567-8901",
-    avatar: "https://randomuser.me/api/portraits/women/4.jpg",
-    status: "Active",
-    currentStage: "stage10",
-    jobId: "job3",
-    appliedDate: "2023-05-20",
-  },
-];
-
 const RecruiterStagedCandidates = () => {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [candidates, setCandidates] = useState([]);
   const [activeStage, setActiveStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [targetStage, setTargetStage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const [searchText, setSearchText] = useState("");
@@ -275,32 +60,103 @@ const RecruiterStagedCandidates = () => {
 
   const primaryColor = "#da2c46";
 
-  // Load jobs data
-  useEffect(() => {
-    setIsLoading(true);
+  // Use RTK Query hook
+  const { data: apiData, isLoading, error } = useGetPipelineJobsQuery();
 
-    // Simulate API loading delay
-    const timer = setTimeout(() => {
-      setJobs(DUMMY_JOBS);
-      setFilteredJobs(DUMMY_JOBS);
-      setIsLoading(false);
-    }, 500);
+  // Process API data to match component structure
+  const processedData = useMemo(() => {
+    if (!apiData?.pipelineCandidates) return { jobs: [], allCandidates: [] };
 
-    return () => clearTimeout(timer);
-  }, []);
+    const jobsMap = new Map();
+    const allCandidates = [];
 
-  // Load candidates when a job is selected
-  useEffect(() => {
-    if (selectedJob) {
-      const jobCandidates = DUMMY_CANDIDATES.filter(
-        (c) => c.jobId === selectedJob._id
-      );
-      setCandidates(jobCandidates);
+    apiData.pipelineCandidates.forEach((candidateData) => {
+      const workOrder = candidateData.workOrder;
+      const user = candidateData.user;
+      const stageProgress = candidateData.stageProgress || [];
 
-      // Set first stage as active
-      if (selectedJob.pipeline?.stages?.length > 0) {
-        setActiveStage(selectedJob.pipeline.stages[0]._id);
+      // Create or get job entry
+      if (!jobsMap.has(workOrder._id)) {
+        // Extract unique stages from all candidates for this job
+        const allStagesForJob = apiData.pipelineCandidates
+          .filter((c) => c.workOrder._id === workOrder._id)
+          .flatMap((c) => c.stageProgress || [])
+          .reduce((stages, progress) => {
+            if (!stages.find((s) => s._id === progress.stageId)) {
+              stages.push({
+                _id: progress.stageId,
+                name: progress.stageName,
+                order: stages.length + 1,
+              });
+            }
+            return stages;
+          }, []);
+
+        jobsMap.set(workOrder._id, {
+          _id: workOrder._id,
+          title: workOrder.title,
+          company: workOrder.companyIndustry || "Company",
+          location: workOrder.officeLocation,
+          workType: "Remote", 
+          applications: 0, 
+          isActive: candidateData.status === "pipeline",
+          postedDate: new Date().toISOString(),
+          jobCode: workOrder.jobCode,
+          pipeline: {
+            _id: stageProgress[0]?.pipelineId || "default-pipeline",
+            name: "Hiring Pipeline",
+            stages: allStagesForJob,
+          },
+          candidates: [],
+        });
       }
+
+      const job = jobsMap.get(workOrder._id);
+
+      const currentStageProgress = stageProgress[0]; 
+      const processedCandidate = {
+        _id: candidateData._id,
+        name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        avatar: null, 
+        status: candidateData.status === "pipeline" ? "Active" : "Inactive",
+        currentStage: currentStageProgress?.stageId || null,
+        currentStageName: currentStageProgress?.stageName || "Unknown",
+        stageStatus: currentStageProgress?.stageStatus || "pending",
+        jobId: workOrder._id,
+        appliedDate: new Date().toISOString(),
+        stageProgress: stageProgress,
+      };
+
+      job.candidates.push(processedCandidate);
+      allCandidates.push(processedCandidate);
+    });
+
+    const jobs = Array.from(jobsMap.values()).map((job) => ({
+      ...job,
+      applications: job.candidates.length,
+    }));
+
+    return { jobs, allCandidates };
+  }, [apiData]);
+
+  const { jobs, allCandidates } = processedData;
+
+  useEffect(() => {
+    setFilteredJobs(jobs);
+  }, [jobs]);
+
+  const selectedJobCandidates = useMemo(() => {
+    if (!selectedJob) return [];
+    return allCandidates.filter(
+      (candidate) => candidate.jobId === selectedJob._id
+    );
+  }, [selectedJob, allCandidates]);
+
+  useEffect(() => {
+    if (selectedJob && selectedJob.pipeline?.stages?.length > 0) {
+      setActiveStage(selectedJob.pipeline.stages[0]._id);
     }
   }, [selectedJob]);
 
@@ -344,7 +200,6 @@ const RecruiterStagedCandidates = () => {
 
   const handleBackToJobs = () => {
     setSelectedJob(null);
-    setCandidates([]);
     setActiveStage(null);
   };
 
@@ -365,18 +220,14 @@ const RecruiterStagedCandidates = () => {
       return;
     }
 
-    // Update candidate's stage in local state
-    const updatedCandidates = candidates.map((candidate) =>
-      candidate._id === selectedCandidate._id
-        ? { ...candidate, currentStage: targetStage }
-        : candidate
-    );
-
-    setCandidates(updatedCandidates);
+ 
     message.success(
       `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
+
+  
+    // refetch();
   };
 
   const getStageName = (stageId) => {
@@ -386,22 +237,49 @@ const RecruiterStagedCandidates = () => {
   };
 
   const getCandidatesInStage = (stageId) => {
-    return candidates.filter((candidate) => candidate.currentStage === stageId);
+    return selectedJobCandidates.filter(
+      (candidate) => candidate.currentStage === stageId
+    );
   };
 
   const getCandidateCountForJob = (jobId) => {
-    return DUMMY_CANDIDATES.filter((c) => c.jobId === jobId).length;
+    return allCandidates.filter((c) => c.jobId === jobId).length;
   };
 
   if (isLoading) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
-        <Spin size="large" tip="Loading jobs..." />
+        <Spin size="large" tip="Loading pipeline data..." />
       </div>
     );
   }
 
-  // Show job selection view with list layout
+  if (error) {
+    return (
+      <div style={{ padding: "24px", textAlign: "center" }}>
+        <Card>
+          <Empty
+            description={
+              <div>
+                <Text type="danger">Failed to load pipeline data</Text>
+                <br />
+                <Text type="secondary">Please try refreshing the page</Text>
+              </div>
+            }
+          >
+            <Button
+              type="primary"
+              onClick={() => window.location.reload()}
+              style={{ background: primaryColor, border: "none" }}
+            >
+              Refresh Page
+            </Button>
+          </Empty>
+        </Card>
+      </div>
+    );
+  }
+
   if (!selectedJob) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -691,25 +569,7 @@ const RecruiterStagedCandidates = () => {
                           {job.location} • {job.workType}
                         </Text>
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <DollarOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          {job.salary}
-                        </Text>
-                      </div>
+                     
                       <div
                         style={{
                           display: "flex",
@@ -729,26 +589,7 @@ const RecruiterStagedCandidates = () => {
                           {getCandidateCountForJob(job._id)} candidates
                         </Text>
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <CalendarOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          Deadline:{" "}
-                          {new Date(job.deadline).toLocaleDateString()}
-                        </Text>
-                      </div>
+                      
                     </div>
                     <div
                       style={{
@@ -800,18 +641,7 @@ const RecruiterStagedCandidates = () => {
                         alignItems: "center",
                       }}
                     >
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: "11px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <CalendarOutlined />
-                        Posted {formatDate(job.postedDate)}
-                      </Text>
+                     
                       <Button
                         type="primary"
                         size="small"
@@ -932,7 +762,7 @@ const RecruiterStagedCandidates = () => {
                 >
                   {searchText || filterStatus !== "all"
                     ? "No jobs match your search criteria"
-                    : "No jobs assigned to you yet"}
+                    : "No pipeline jobs found"}
                 </Text>
               }
             >
@@ -1005,7 +835,7 @@ const RecruiterStagedCandidates = () => {
               type="secondary"
               style={{ display: "flex", alignItems: "center", gap: "4px" }}
             >
-              <TeamOutlined /> {candidates.length} candidates
+              <TeamOutlined /> {selectedJobCandidates.length} candidates
             </Text>
             <Text
               type="secondary"
@@ -1106,7 +936,11 @@ const RecruiterStagedCandidates = () => {
                       placement="bottomRight"
                       trigger={["click"]}
                     >
-                      <Button type="text" icon={<MoreOutlined />} />
+                      <Button
+                        type="text"
+                        icon={<MoreOutlined />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </Dropdown>,
                   ]}
                   style={{
@@ -1126,14 +960,42 @@ const RecruiterStagedCandidates = () => {
                     avatar={
                       <Avatar src={candidate.avatar} icon={<UserOutlined />} />
                     }
-                    title={<Text strong>{candidate.name}</Text>}
+                    title={
+                      <Text strong style={{ fontSize: "16px" }}>
+                        {candidate.name}
+                      </Text>
+                    }
                     description={
                       <Space direction="vertical" size={2}>
-                        <Text type="secondary">{candidate.email}</Text>
-                        <Text type="secondary">{candidate.phone}</Text>
-                        <Text type="secondary">
-                          Applied {formatDate(candidate.appliedDate)}
+                        <Text type="secondary" style={{ fontSize: "13px" }}>
+                          {candidate.email}
                         </Text>
+                        <Text type="secondary" style={{ fontSize: "13px" }}>
+                          {candidate.phone}
+                        </Text>
+                        <div>
+                          <Tag
+                            color={
+                              candidate.stageStatus === "completed"
+                                ? "green"
+                                : candidate.stageStatus === "rejected"
+                                ? "red"
+                                : "blue"
+                            }
+                            style={{ fontSize: "11px" }}
+                          >
+                            {candidate.stageStatus}
+                          </Tag>
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: "11px",
+                              marginLeft: "8px",
+                            }}
+                          >
+                            Applied {formatDate(candidate.appliedDate)}
+                          </Text>
+                        </div>
                       </Space>
                     }
                   />
@@ -1145,11 +1007,13 @@ const RecruiterStagedCandidates = () => {
               description={
                 <Text type="secondary">No candidates in this stage</Text>
               }
+              style={{ padding: "40px 0" }}
             />
           )}
         </Card>
       )}
 
+      {/* Move Candidate Modal */}
       <Modal
         title={`Move ${selectedCandidate?.name || "Candidate"}`}
         visible={isMoveModalVisible}
@@ -1157,22 +1021,28 @@ const RecruiterStagedCandidates = () => {
         onCancel={() => setIsMoveModalVisible(false)}
         okText="Confirm Move"
         okButtonProps={{
-          style: { background: primaryColor, borderColor: primaryColor },
+          style: { background: primaryColor, border: "none" },
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ marginBottom: "16px" }}>
           <Text>
-            Current stage:{" "}
-            <Text strong>{getStageName(selectedCandidate?.currentStage)}</Text>
+            Current Stage:{" "}
+            <Text strong>
+              {selectedCandidate?.currentStageName || "Unknown"}
+            </Text>
           </Text>
-
+        </div>
+        <div>
+          <Text style={{ display: "block", marginBottom: "8px" }}>
+            Select Target Stage:
+          </Text>
           <Select
-            placeholder="Select target stage"
+            style={{ width: "100%" }}
+            placeholder="Select stage"
             value={targetStage}
             onChange={setTargetStage}
-            style={{ width: "100%" }}
           >
-            {selectedJob.pipeline.stages
+            {selectedJob?.pipeline.stages
               .filter((stage) => stage._id !== selectedCandidate?.currentStage)
               .map((stage) => (
                 <Option key={stage._id} value={stage._id}>
