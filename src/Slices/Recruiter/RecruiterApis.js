@@ -77,6 +77,12 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    getPipelineJobsById: builder.query({
+      query: (id) => ({
+        url: `/pipelinejobs/${id}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -91,4 +97,5 @@ export const {
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
   useGetPipelineJobsQuery,
+  useGetPipelineJobsByIdQuery,
 } = recruiterApi;

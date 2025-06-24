@@ -49,6 +49,7 @@ import EmployeeLeaveRequest from "./Employee/Pages/EmployeeLeaveRequest";
 import EmployeeRaiseRequest from "./Employee/Pages/EmployeeRaiseRequest";
 import Levels from "./Admin/Pages/Levels";
 import RecruiterStagedCandidates from "./Recruiters/Pages/RecruiterStagedCandidates";
+import RecruiterJobPipeline from "./Recruiters/Components/RecruiterJobPipeline";
 
 const AppRoutes = () => {
   return (
@@ -189,6 +190,10 @@ const AppRoutes = () => {
           element={
             <ProtectedRecruiter element={<RecruiterStagedCandidates />} />
           }
+        />
+        <Route
+          path="/recruiter/pipeline/:id"
+          element={<ProtectedRecruiter element={<RecruiterJobPipeline />} />}
         />
       </Route>
 

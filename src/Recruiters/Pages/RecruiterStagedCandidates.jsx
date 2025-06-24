@@ -97,8 +97,8 @@ const RecruiterStagedCandidates = () => {
           title: workOrder.title,
           company: workOrder.companyIndustry || "Company",
           location: workOrder.officeLocation,
-          workType: "Remote", 
-          applications: 0, 
+          workType: "Remote",
+          applications: 0,
           isActive: candidateData.status === "pipeline",
           postedDate: new Date().toISOString(),
           jobCode: workOrder.jobCode,
@@ -113,13 +113,13 @@ const RecruiterStagedCandidates = () => {
 
       const job = jobsMap.get(workOrder._id);
 
-      const currentStageProgress = stageProgress[0]; 
+      const currentStageProgress = stageProgress[0];
       const processedCandidate = {
         _id: candidateData._id,
         name: user.fullName,
         email: user.email,
         phone: user.phone,
-        avatar: null, 
+        avatar: null,
         status: candidateData.status === "pipeline" ? "Active" : "Inactive",
         currentStage: currentStageProgress?.stageId || null,
         currentStageName: currentStageProgress?.stageName || "Unknown",
@@ -195,7 +195,7 @@ const RecruiterStagedCandidates = () => {
   };
 
   const handleJobSelect = (job) => {
-    setSelectedJob(job);
+    navigate(`/recruiter/pipeline/${job._id}`);
   };
 
   const handleBackToJobs = () => {
@@ -220,13 +220,11 @@ const RecruiterStagedCandidates = () => {
       return;
     }
 
- 
     message.success(
       `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
 
-  
     // refetch();
   };
 
@@ -569,7 +567,7 @@ const RecruiterStagedCandidates = () => {
                           {job.location} • {job.workType}
                         </Text>
                       </div>
-                     
+
                       <div
                         style={{
                           display: "flex",
@@ -589,7 +587,6 @@ const RecruiterStagedCandidates = () => {
                           {getCandidateCountForJob(job._id)} candidates
                         </Text>
                       </div>
-                      
                     </div>
                     <div
                       style={{
@@ -641,7 +638,6 @@ const RecruiterStagedCandidates = () => {
                         alignItems: "center",
                       }}
                     >
-                     
                       <Button
                         type="primary"
                         size="small"
