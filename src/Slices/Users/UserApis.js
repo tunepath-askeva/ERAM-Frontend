@@ -149,8 +149,11 @@ export const userApi = createApi({
         const formData = new FormData();
         formData.append("customFieldId", customFieldId);
         formData.append("stageId", stageId);
+
         files.forEach((file) => {
-          formData.append("files", file);
+          if (file) {
+            formData.append("files", file); 
+          }
         });
 
         return {

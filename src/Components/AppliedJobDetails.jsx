@@ -124,7 +124,6 @@ const AppliedJobDetails = () => {
     }).format(amount);
   };
 
-  // File upload handlers
   const removeFile = (stageId, fileIndex) => {
     setUploadedFiles((prev) => {
       const updatedFiles = { ...prev };
@@ -155,6 +154,7 @@ const AppliedJobDetails = () => {
               documentType: docType,
               lastModified: file.lastModified,
               preview: URL.createObjectURL(file.originFileObj),
+              originFileObj: file.originFileObj,
             },
           ],
         }));
@@ -176,7 +176,6 @@ const AppliedJobDetails = () => {
       return true;
     },
     customRequest: ({ file, onSuccess }) => {
-      // Simulate upload success after 1 second
       setTimeout(() => {
         onSuccess("ok");
       }, 1000);
@@ -186,6 +185,7 @@ const AppliedJobDetails = () => {
 
   const handleSubmitDocuments = async (stageId) => {
     const stageFiles = uploadedFiles[stageId] || [];
+
     if (stageFiles.length === 0) {
       message.warning("Please upload at least one document before submitting");
       return;
@@ -194,16 +194,10 @@ const AppliedJobDetails = () => {
     setIsSubmitting(true);
 
     try {
-      const filesToUpload = await Promise.all(
-        stageFiles.map(async (file) => {
-          const response = await fetch(file.preview);
-          const blob = await response.blob();
-          return new File([blob], file.name, { type: file.type });
-        })
-      );
+      const filesToUpload = stageFiles.map((file) => file.originFileObj);
 
       const response = await uploadStageDocuments({
-        customFieldId: appliedJob._id,
+        customFieldId: appliedJob._id, 
         stageId,
         files: filesToUpload,
       }).unwrap();
