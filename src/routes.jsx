@@ -52,6 +52,7 @@ import RecruiterStagedCandidates from "./Recruiters/Pages/RecruiterStagedCandida
 import RecruiterJobPipeline from "./Recruiters/Components/RecruiterJobPipeline";
 import SourcedJobDetails from "./Components/SourcedJobDetails";
 import RecruiterApprovals from "./Recruiters/Pages/RecruiterApprovals";
+import AppliedJobDetails from "./Components/AppliedJobDetails";
 
 const AppRoutes = () => {
   return (
@@ -158,6 +159,10 @@ const AppRoutes = () => {
         <Route
           path="/candidate-applied-jobs/sourced-jobs/:id"
           element={<SourcedJobDetails />}
+        />
+        <Route
+          path="/candidate-applied-jobs/applied-jobs/:id"
+          element={<AppliedJobDetails />}
         />
         <Route path="/candidate-settings" element={<CandidateSettings />} />
       </Route>

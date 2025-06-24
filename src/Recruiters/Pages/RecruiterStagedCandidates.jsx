@@ -37,25 +37,30 @@ import {
   BankOutlined,
   CalendarOutlined,
   DollarOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CodeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useGetPipelineJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
+
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const RecruiterStagedCandidates = () => {
   const navigate = useNavigate();
-  const [filteredJobs, setFilteredJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [filteredCandidates, setFilteredCandidates] = useState([]);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [activeStage, setActiveStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [movingCandidate, setMovingCandidate] = useState(null);
   const [targetStage, setTargetStage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(6);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterJob, setFilterJob] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
 
   const primaryColor = "#da2c46";
@@ -63,59 +68,33 @@ const RecruiterStagedCandidates = () => {
   // Use RTK Query hook
   const { data: apiData, isLoading, error } = useGetPipelineJobsQuery();
 
-  // Process API data to match component structure
+  // Process API data to extract candidates
   const processedData = useMemo(() => {
-    if (!apiData?.pipelineCandidates) return { jobs: [], allCandidates: [] };
+    if (!apiData?.pipelineCandidates) return { candidates: [], jobs: [] };
 
+    const candidates = [];
     const jobsMap = new Map();
-    const allCandidates = [];
 
     apiData.pipelineCandidates.forEach((candidateData) => {
       const workOrder = candidateData.workOrder;
       const user = candidateData.user;
       const stageProgress = candidateData.stageProgress || [];
 
-      // Create or get job entry
+      // Track unique jobs
       if (!jobsMap.has(workOrder._id)) {
-        // Extract unique stages from all candidates for this job
-        const allStagesForJob = apiData.pipelineCandidates
-          .filter((c) => c.workOrder._id === workOrder._id)
-          .flatMap((c) => c.stageProgress || [])
-          .reduce((stages, progress) => {
-            if (!stages.find((s) => s._id === progress.stageId)) {
-              stages.push({
-                _id: progress.stageId,
-                name: progress.stageName,
-                order: stages.length + 1,
-              });
-            }
-            return stages;
-          }, []);
-
         jobsMap.set(workOrder._id, {
           _id: workOrder._id,
           title: workOrder.title,
           company: workOrder.companyIndustry || "Company",
           location: workOrder.officeLocation,
-          workType: "Remote",
-          applications: 0,
-          isActive: candidateData.status === "pipeline",
-          postedDate: new Date().toISOString(),
           jobCode: workOrder.jobCode,
-          pipeline: {
-            _id: stageProgress[0]?.pipelineId || "default-pipeline",
-            name: "Hiring Pipeline",
-            stages: allStagesForJob,
-          },
-          candidates: [],
         });
       }
-
-      const job = jobsMap.get(workOrder._id);
 
       const currentStageProgress = stageProgress[0];
       const processedCandidate = {
         _id: candidateData._id,
+        candidateId: candidateData._id,
         name: user.fullName,
         email: user.email,
         phone: user.phone,
@@ -124,41 +103,40 @@ const RecruiterStagedCandidates = () => {
         currentStage: currentStageProgress?.stageId || null,
         currentStageName: currentStageProgress?.stageName || "Unknown",
         stageStatus: currentStageProgress?.stageStatus || "pending",
-        jobId: workOrder._id,
+        appliedJob: {
+          _id: workOrder._id,
+          title: workOrder.title,
+          company: workOrder.companyIndustry || "Company",
+          location: workOrder.officeLocation,
+          jobCode: workOrder.jobCode,
+        },
         appliedDate: new Date().toISOString(),
         stageProgress: stageProgress,
+        // Extract pipeline stages from this candidate's progress
+        pipeline: {
+          _id: stageProgress[0]?.pipelineId || "default-pipeline",
+          name: "Hiring Pipeline",
+          stages: stageProgress.map((progress, index) => ({
+            _id: progress.stageId,
+            name: progress.stageName,
+            order: index + 1,
+          })),
+        },
       };
 
-      job.candidates.push(processedCandidate);
-      allCandidates.push(processedCandidate);
+      candidates.push(processedCandidate);
     });
 
-    const jobs = Array.from(jobsMap.values()).map((job) => ({
-      ...job,
-      applications: job.candidates.length,
-    }));
+    const jobs = Array.from(jobsMap.values());
 
-    return { jobs, allCandidates };
+    return { candidates, jobs };
   }, [apiData]);
 
-  const { jobs, allCandidates } = processedData;
+  const { candidates, jobs } = processedData;
 
   useEffect(() => {
-    setFilteredJobs(jobs);
-  }, [jobs]);
-
-  const selectedJobCandidates = useMemo(() => {
-    if (!selectedJob) return [];
-    return allCandidates.filter(
-      (candidate) => candidate.jobId === selectedJob._id
-    );
-  }, [selectedJob, allCandidates]);
-
-  useEffect(() => {
-    if (selectedJob && selectedJob.pipeline?.stages?.length > 0) {
-      setActiveStage(selectedJob.pipeline.stages[0]._id);
-    }
-  }, [selectedJob]);
+    setFilteredCandidates(candidates);
+  }, [candidates]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -173,39 +151,38 @@ const RecruiterStagedCandidates = () => {
     return date.toLocaleDateString();
   };
 
-  const getCurrentPageJobs = () => {
+  const getCurrentPageCandidates = () => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return filteredJobs
-      .filter((job) => {
+    return filteredCandidates
+      .filter((candidate) => {
         const matchesSearch =
           searchText === "" ||
-          job.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchText.toLowerCase()) ||
-          job.location.toLowerCase().includes(searchText.toLowerCase());
+          candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
+          candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
+          candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
+          candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
 
         const matchesStatus =
           filterStatus === "all" ||
-          (filterStatus === "active" && job.isActive) ||
-          (filterStatus === "inactive" && !job.isActive);
+          (filterStatus === "active" && candidate.status === "Active") ||
+          (filterStatus === "inactive" && candidate.status === "Inactive");
 
-        return matchesSearch && matchesStatus;
+        const matchesJob =
+          filterJob === "all" ||
+          candidate.appliedJob._id === filterJob;
+
+        return matchesSearch && matchesStatus && matchesJob;
       })
       .slice(startIndex, endIndex);
   };
 
- const handleJobSelect = (job) => {
-  const pipelineCandidate = apiData.pipelineCandidates.find(
-    (candidate) => candidate.workOrder._id === job._id
-  );
-  
-  if (pipelineCandidate) {
-    navigate(`/recruiter/pipeline/${pipelineCandidate._id}`);
-  } 
-};
+  const handleCandidateSelect = (candidate) => {
+    navigate(`/recruiter/pipeline/${candidate.candidateId}`);
+  };
 
-  const handleBackToJobs = () => {
-    setSelectedJob(null);
+  const handleBackToCandidates = () => {
+    setSelectedCandidate(null);
     setActiveStage(null);
   };
 
@@ -215,45 +192,40 @@ const RecruiterStagedCandidates = () => {
 
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
-    setSelectedCandidate(candidate);
+    setMovingCandidate(candidate);
     setTargetStage(null);
     setIsMoveModalVisible(true);
   };
 
   const confirmMoveCandidate = () => {
-    if (!selectedCandidate || !targetStage) {
+    if (!movingCandidate || !targetStage) {
       message.warning("Please select a target stage");
       return;
     }
 
     message.success(
-      `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
+      `Moved ${movingCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
-
-    // refetch();
   };
 
   const getStageName = (stageId) => {
-    if (!selectedJob) return "";
-    const stage = selectedJob.pipeline.stages.find((s) => s._id === stageId);
+    if (!selectedCandidate) return "";
+    const stage = selectedCandidate.pipeline.stages.find((s) => s._id === stageId);
     return stage ? stage.name : "";
   };
 
   const getCandidatesInStage = (stageId) => {
-    return selectedJobCandidates.filter(
-      (candidate) => candidate.currentStage === stageId
-    );
-  };
-
-  const getCandidateCountForJob = (jobId) => {
-    return allCandidates.filter((c) => c.jobId === jobId).length;
+    if (!selectedCandidate) return [];
+    // For the detailed view, we'd need to get all candidates for the same job
+    // For now, return empty array as this view shows individual candidate details
+    return [];
   };
 
   if (isLoading) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
-        <Spin size="large" tip="Loading pipeline data..." />
+        <Spin size="large" tip="Loading candidates..." />
       </div>
     );
   }
@@ -265,7 +237,7 @@ const RecruiterStagedCandidates = () => {
           <Empty
             description={
               <div>
-                <Text type="danger">Failed to load pipeline data</Text>
+                <Text type="danger">Failed to load candidates data</Text>
                 <br />
                 <Text type="secondary">Please try refreshing the page</Text>
               </div>
@@ -284,7 +256,7 @@ const RecruiterStagedCandidates = () => {
     );
   }
 
-  if (!selectedJob) {
+  if (!selectedCandidate) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ marginBottom: "16px", textAlign: "center" }}>
@@ -297,7 +269,7 @@ const RecruiterStagedCandidates = () => {
               lineHeight: "1.2",
             }}
           >
-            Candidate Pipeline Management
+            Pipeline Candidates
           </Title>
           <Text
             type="secondary"
@@ -308,8 +280,7 @@ const RecruiterStagedCandidates = () => {
               padding: "0 16px",
             }}
           >
-            Select a job to view and manage candidates through hiring pipeline
-            stages
+            View and manage candidates in the hiring pipeline
           </Text>
         </div>
 
@@ -321,9 +292,9 @@ const RecruiterStagedCandidates = () => {
           }}
         >
           <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} sm={16} md={16} lg={16} xl={16}>
+            <Col xs={24} sm={12} md={12} lg={12} xl={12}>
               <Input
-                placeholder="Search jobs by title, company or location"
+                placeholder="Search by name, email, or job title"
                 size="large"
                 prefix={<SearchOutlined style={{ color: primaryColor }} />}
                 value={searchText}
@@ -332,7 +303,24 @@ const RecruiterStagedCandidates = () => {
               />
             </Col>
 
-            <Col xs={12} sm={4} md={4} lg={4} xl={4}>
+            <Col xs={12} sm={6} md={6} lg={6} xl={6}>
+              <Select
+                placeholder="Filter by Job"
+                style={{ width: "100%" }}
+                value={filterJob}
+                onChange={setFilterJob}
+                size="large"
+              >
+                <Option value="all">All Jobs</Option>
+                {jobs.map((job) => (
+                  <Option key={job._id} value={job._id}>
+                    {job.title}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={12} sm={6} md={6} lg={6} xl={6}>
               <Button
                 type="primary"
                 size="large"
@@ -351,7 +339,7 @@ const RecruiterStagedCandidates = () => {
         </Card>
 
         <Drawer
-          title="Filter Jobs"
+          title="Filter Candidates"
           placement="bottom"
           closable={true}
           onClose={() => setMobileFiltersVisible(false)}
@@ -364,7 +352,7 @@ const RecruiterStagedCandidates = () => {
           >
             <div>
               <Text strong style={{ display: "block", marginBottom: "8px" }}>
-                Job Status
+                Candidate Status
               </Text>
               <Select
                 placeholder="Select status"
@@ -379,11 +367,32 @@ const RecruiterStagedCandidates = () => {
               </Select>
             </div>
 
+            <div>
+              <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                Applied Job
+              </Text>
+              <Select
+                placeholder="Select job"
+                style={{ width: "100%" }}
+                value={filterJob}
+                onChange={setFilterJob}
+                allowClear
+              >
+                <Option value="all">All Jobs</Option>
+                {jobs.map((job) => (
+                  <Option key={job._id} value={job._id}>
+                    {job.title} - {job.company}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+
             <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
               <Button
                 type="link"
                 onClick={() => {
                   setFilterStatus("all");
+                  setFilterJob("all");
                   setSearchText("");
                 }}
                 style={{ flex: 1 }}
@@ -414,29 +423,32 @@ const RecruiterStagedCandidates = () => {
             }}
           >
             {
-              filteredJobs.filter((job) => {
+              filteredCandidates.filter((candidate) => {
                 const matchesSearch =
                   searchText === "" ||
-                  job.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                  job.company
-                    .toLowerCase()
-                    .includes(searchText.toLowerCase()) ||
-                  job.location.toLowerCase().includes(searchText.toLowerCase());
+                  candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                  candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
+                  candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                  candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
 
                 const matchesStatus =
                   filterStatus === "all" ||
-                  (filterStatus === "active" && job.isActive) ||
-                  (filterStatus === "inactive" && !job.isActive);
+                  (filterStatus === "active" && candidate.status === "Active") ||
+                  (filterStatus === "inactive" && candidate.status === "Inactive");
 
-                return matchesSearch && matchesStatus;
+                const matchesJob =
+                  filterJob === "all" ||
+                  candidate.appliedJob._id === filterJob;
+
+                return matchesSearch && matchesStatus && matchesJob;
               }).length
             }{" "}
-            jobs found
+            candidates found
             {filterStatus !== "all" && ` (${filterStatus})`}
           </Text>
         </div>
 
-        {getCurrentPageJobs().length > 0 ? (
+        {getCurrentPageCandidates().length > 0 ? (
           <>
             <div
               style={{
@@ -445,19 +457,19 @@ const RecruiterStagedCandidates = () => {
                 boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
               }}
             >
-              {getCurrentPageJobs().map((job, index) => (
+              {getCurrentPageCandidates().map((candidate, index) => (
                 <div
-                  key={job._id}
+                  key={candidate._id}
                   style={{
                     padding: "16px",
                     borderBottom:
-                      index === getCurrentPageJobs().length - 1
+                      index === getCurrentPageCandidates().length - 1
                         ? "none"
                         : "1px solid #f0f0f0",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                   }}
-                  onClick={() => handleJobSelect(job)}
+                  onClick={() => handleCandidateSelect(candidate)}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.backgroundColor = "#f8f9fa")
                   }
@@ -465,7 +477,7 @@ const RecruiterStagedCandidates = () => {
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  <div className="mobile-job-card" style={{ display: "block" }}>
+                  <div className="mobile-candidate-card" style={{ display: "block" }}>
                     <div
                       style={{
                         display: "flex",
@@ -485,10 +497,10 @@ const RecruiterStagedCandidates = () => {
                         }}
                       >
                         <Avatar
-                          src={job.companyLogo}
-                          size={40}
+                          src={candidate.avatar}
+                          size={48}
                           style={{ backgroundColor: "#f0f0f0", flexShrink: 0 }}
-                          icon={<BankOutlined />}
+                          icon={<UserOutlined />}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <Title
@@ -500,30 +512,48 @@ const RecruiterStagedCandidates = () => {
                               color: "#1a1a1a",
                             }}
                           >
-                            {job.title}
+                            {candidate.name}
                           </Title>
-                          <Text
+                          <div
                             style={{
-                              fontSize: "clamp(12px, 2.5vw, 14px)",
-                              color: "#666",
-                              display: "block",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
                               marginTop: "2px",
                             }}
                           >
-                            {job.company}
-                          </Text>
-                          {job.jobCode && (
+                            <MailOutlined
+                              style={{ fontSize: "12px", color: "#666" }}
+                            />
                             <Text
-                              type="secondary"
                               style={{
-                                fontSize: "11px",
-                                display: "block",
-                                marginTop: "2px",
+                                fontSize: "clamp(12px, 2.5vw, 13px)",
+                                color: "#666",
                               }}
                             >
-                              Code: {job.jobCode}
+                              {candidate.email}
                             </Text>
-                          )}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              marginTop: "2px",
+                            }}
+                          >
+                            <PhoneOutlined
+                              style={{ fontSize: "12px", color: "#666" }}
+                            />
+                            <Text
+                              style={{
+                                fontSize: "clamp(12px, 2.5vw, 13px)",
+                                color: "#666",
+                              }}
+                            >
+                              {candidate.phone}
+                            </Text>
+                          </div>
                         </div>
                       </div>
                       <div
@@ -535,17 +565,115 @@ const RecruiterStagedCandidates = () => {
                         }}
                       >
                         <Tag
-                          color={job.isActive ? "green" : "red"}
+                          color={candidate.status === "Active" ? "green" : "red"}
                           style={{
                             fontSize: "10px",
                             textTransform: "uppercase",
                             fontWeight: 500,
                           }}
                         >
-                          {job.isActive ? "Active" : "Inactive"}
+                          {candidate.status}
                         </Tag>
                       </div>
                     </div>
+
+                    {/* Applied Job Information */}
+                    <Card
+                      size="small"
+                      style={{
+                        marginBottom: "12px",
+                        backgroundColor: "#f8f9fa",
+                        border: "1px solid #e9ecef",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <BankOutlined
+                          style={{ fontSize: "14px", color: primaryColor }}
+                        />
+                        <Text
+                          strong
+                          style={{
+                            fontSize: "14px",
+                            color: "#1a1a1a",
+                          }}
+                        >
+                          Applied for: {candidate.appliedJob.title}
+                        </Text>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "8px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: "12px",
+                              color: "#666",
+                            }}
+                          >
+                            {candidate.appliedJob.company}
+                          </Text>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <EnvironmentOutlined
+                            style={{ fontSize: "11px", color: "#666" }}
+                          />
+                          <Text
+                            style={{
+                              fontSize: "12px",
+                              color: "#666",
+                            }}
+                          >
+                            {candidate.appliedJob.location}
+                          </Text>
+                        </div>
+                        {candidate.appliedJob.jobCode && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <CodeOutlined
+                              style={{ fontSize: "11px", color: "#666" }}
+                            />
+                            <Text
+                              style={{
+                                fontSize: "12px",
+                                color: "#666",
+                              }}
+                            >
+                              {candidate.appliedJob.jobCode}
+                            </Text>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+
                     <div
                       style={{
                         display: "flex",
@@ -554,89 +682,32 @@ const RecruiterStagedCandidates = () => {
                         marginBottom: "12px",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
+                      <Tag
+                        color={
+                          candidate.stageStatus === "completed"
+                            ? "green"
+                            : candidate.stageStatus === "rejected"
+                            ? "red"
+                            : "blue"
+                        }
+                        style={{ fontSize: "11px" }}
                       >
-                        <EnvironmentOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          {job.location} • {job.workType}
-                        </Text>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <TeamOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          {getCandidateCountForJob(job._id)} candidates
-                        </Text>
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <Tag color="blue" style={{ fontSize: "10px" }}>
-                        Pipeline: {job.pipeline.name}
+                        Current: {candidate.currentStageName}
                       </Tag>
-                      {job.pipeline.stages.slice(0, 2).map((stage, index) => (
-                        <Tag
-                          key={index}
-                          style={{
-                            fontSize: "10px",
-                            padding: "0 6px",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {stage.name}
-                        </Tag>
-                      ))}
-                      {job.pipeline.stages.length > 2 && (
-                        <Tooltip
-                          title={job.pipeline.stages
-                            .slice(2)
-                            .map((s) => s.name)
-                            .join(", ")}
-                          placement="top"
-                        >
-                          <Tag
-                            style={{
-                              fontSize: "10px",
-                              padding: "0 6px",
-                              borderRadius: "4px",
-                            }}
-                          >
-                            +{job.pipeline.stages.length - 2} more
-                          </Tag>
-                        </Tooltip>
-                      )}
+                      <Tag
+                        color={
+                          candidate.stageStatus === "completed"
+                            ? "green"
+                            : candidate.stageStatus === "rejected"
+                            ? "red"
+                            : "orange"
+                        }
+                        style={{ fontSize: "11px" }}
+                      >
+                        Status: {candidate.stageStatus}
+                      </Tag>
                     </div>
+
                     <div
                       style={{
                         display: "flex",
@@ -644,6 +715,14 @@ const RecruiterStagedCandidates = () => {
                         alignItems: "center",
                       }}
                     >
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "11px",
+                        }}
+                      >
+                        Applied {formatDate(candidate.appliedDate)}
+                      </Text>
                       <Button
                         type="primary"
                         size="small"
@@ -653,10 +732,10 @@ const RecruiterStagedCandidates = () => {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleJobSelect(job);
+                          handleCandidateSelect(candidate);
                         }}
                       >
-                        View Pipeline
+                        View Details
                       </Button>
                     </div>
                   </div>
@@ -674,25 +753,24 @@ const RecruiterStagedCandidates = () => {
                 current={currentPage}
                 pageSize={pageSize}
                 total={
-                  filteredJobs.filter((job) => {
+                  filteredCandidates.filter((candidate) => {
                     const matchesSearch =
                       searchText === "" ||
-                      job.title
-                        .toLowerCase()
-                        .includes(searchText.toLowerCase()) ||
-                      job.company
-                        .toLowerCase()
-                        .includes(searchText.toLowerCase()) ||
-                      job.location
-                        .toLowerCase()
-                        .includes(searchText.toLowerCase());
+                      candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                      candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
+                      candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                      candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
 
                     const matchesStatus =
                       filterStatus === "all" ||
-                      (filterStatus === "active" && job.isActive) ||
-                      (filterStatus === "inactive" && !job.isActive);
+                      (filterStatus === "active" && candidate.status === "Active") ||
+                      (filterStatus === "inactive" && candidate.status === "Inactive");
 
-                    return matchesSearch && matchesStatus;
+                    const matchesJob =
+                      filterJob === "all" ||
+                      candidate.appliedJob._id === filterJob;
+
+                    return matchesSearch && matchesStatus && matchesJob;
                   }).length
                 }
                 onChange={(page) => setCurrentPage(page)}
@@ -762,18 +840,19 @@ const RecruiterStagedCandidates = () => {
                     color: "#666",
                   }}
                 >
-                  {searchText || filterStatus !== "all"
-                    ? "No jobs match your search criteria"
-                    : "No pipeline jobs found"}
+                  {searchText || filterStatus !== "all" || filterJob !== "all"
+                    ? "No candidates match your search criteria"
+                    : "No candidates found"}
                 </Text>
               }
             >
-              {searchText || filterStatus !== "all" ? (
+              {searchText || filterStatus !== "all" || filterJob !== "all" ? (
                 <Button
                   type="primary"
                   onClick={() => {
                     setSearchText("");
                     setFilterStatus("all");
+                    setFilterJob("all");
                   }}
                   style={{
                     background: primaryColor,
@@ -790,270 +869,25 @@ const RecruiterStagedCandidates = () => {
     );
   }
 
-  // Show candidate pipeline view for selected job
+  // Individual candidate detailed view (this part can remain similar to your original pipeline view)
   return (
     <div style={{ padding: "16px", minHeight: "100vh" }}>
       <div style={{ marginBottom: "16px" }}>
         <Button
           type="text"
           icon={<LeftOutlined />}
-          onClick={handleBackToJobs}
+          onClick={handleBackToCandidates}
           style={{ color: primaryColor }}
         >
-          Back to Jobs
+          Back to Candidates
         </Button>
       </div>
 
-      <Card
-        style={{
-          marginBottom: "24px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <div>
-              <Title level={3} style={{ margin: 0 }}>
-                {selectedJob.title}
-              </Title>
-              <Text strong style={{ display: "block", marginTop: "4px" }}>
-                {selectedJob.company} • {selectedJob.location}
-              </Text>
-            </div>
-            <Tag color={selectedJob.isActive ? "green" : "red"}>
-              {selectedJob.isActive ? "Active" : "Inactive"}
-            </Tag>
-          </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <TeamOutlined /> {selectedJobCandidates.length} candidates
-            </Text>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <EnvironmentOutlined /> {selectedJob.workType}
-            </Text>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <DollarOutlined /> {selectedJob.salary}
-            </Text>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <CalendarOutlined /> Deadline:{" "}
-              {new Date(selectedJob.deadline).toLocaleDateString()}
-            </Text>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Text strong>Pipeline:</Text>
-            <Tag color="blue">{selectedJob.pipeline.name}</Tag>
-          </div>
-        </div>
+      {/* Individual candidate details view would go here */}
+      <Card>
+        <Title level={3}>Individual Candidate Pipeline View</Title>
+        <Text>This would show the detailed pipeline view for the selected candidate.</Text>
       </Card>
-
-      <div style={{ overflowX: "auto", marginBottom: "16px" }}>
-        <Tabs
-          activeKey={activeStage}
-          onChange={handleStageChange}
-          tabPosition="top"
-          type="card"
-          style={{ minWidth: "max-content" }}
-        >
-          {selectedJob.pipeline.stages.map((stage) => (
-            <TabPane
-              key={stage._id}
-              tab={
-                <Badge
-                  count={getCandidatesInStage(stage._id).length}
-                  offset={[10, -5]}
-                  style={{
-                    backgroundColor:
-                      activeStage === stage._id ? primaryColor : "#d9d9d9",
-                  }}
-                >
-                  <span style={{ padding: "0 8px" }}>{stage.name}</span>
-                </Badge>
-              }
-            />
-          ))}
-        </Tabs>
-      </div>
-
-      {activeStage && (
-        <Card
-          style={{
-            borderRadius: "12px",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-          }}
-        >
-          <Title level={4} style={{ marginBottom: "16px" }}>
-            {getStageName(activeStage)} Candidates (
-            {getCandidatesInStage(activeStage).length})
-          </Title>
-
-          {getCandidatesInStage(activeStage).length > 0 ? (
-            <List
-              itemLayout="horizontal"
-              dataSource={getCandidatesInStage(activeStage)}
-              renderItem={(candidate) => (
-                <List.Item
-                  actions={[
-                    <Dropdown
-                      overlay={
-                        <Menu>
-                          {selectedJob.pipeline.stages
-                            .filter(
-                              (stage) => stage._id !== candidate.currentStage
-                            )
-                            .map((stage) => (
-                              <Menu.Item
-                                key={stage._id}
-                                onClick={() => {
-                                  setSelectedCandidate(candidate);
-                                  setTargetStage(stage._id);
-                                  confirmMoveCandidate();
-                                }}
-                              >
-                                Move to {stage.name}
-                              </Menu.Item>
-                            ))}
-                        </Menu>
-                      }
-                      placement="bottomRight"
-                      trigger={["click"]}
-                    >
-                      <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Dropdown>,
-                  ]}
-                  style={{
-                    padding: "12px 16px",
-                    borderBottom: "1px solid #f0f0f0",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f8f9fa")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar src={candidate.avatar} icon={<UserOutlined />} />
-                    }
-                    title={
-                      <Text strong style={{ fontSize: "16px" }}>
-                        {candidate.name}
-                      </Text>
-                    }
-                    description={
-                      <Space direction="vertical" size={2}>
-                        <Text type="secondary" style={{ fontSize: "13px" }}>
-                          {candidate.email}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: "13px" }}>
-                          {candidate.phone}
-                        </Text>
-                        <div>
-                          <Tag
-                            color={
-                              candidate.stageStatus === "completed"
-                                ? "green"
-                                : candidate.stageStatus === "rejected"
-                                ? "red"
-                                : "blue"
-                            }
-                            style={{ fontSize: "11px" }}
-                          >
-                            {candidate.stageStatus}
-                          </Tag>
-                          <Text
-                            type="secondary"
-                            style={{
-                              fontSize: "11px",
-                              marginLeft: "8px",
-                            }}
-                          >
-                            Applied {formatDate(candidate.appliedDate)}
-                          </Text>
-                        </div>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          ) : (
-            <Empty
-              description={
-                <Text type="secondary">No candidates in this stage</Text>
-              }
-              style={{ padding: "40px 0" }}
-            />
-          )}
-        </Card>
-      )}
-
-      {/* Move Candidate Modal */}
-      <Modal
-        title={`Move ${selectedCandidate?.name || "Candidate"}`}
-        visible={isMoveModalVisible}
-        onOk={confirmMoveCandidate}
-        onCancel={() => setIsMoveModalVisible(false)}
-        okText="Confirm Move"
-        okButtonProps={{
-          style: { background: primaryColor, border: "none" },
-        }}
-      >
-        <div style={{ marginBottom: "16px" }}>
-          <Text>
-            Current Stage:{" "}
-            <Text strong>
-              {selectedCandidate?.currentStageName || "Unknown"}
-            </Text>
-          </Text>
-        </div>
-        <div>
-          <Text style={{ display: "block", marginBottom: "8px" }}>
-            Select Target Stage:
-          </Text>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Select stage"
-            value={targetStage}
-            onChange={setTargetStage}
-          >
-            {selectedJob?.pipeline.stages
-              .filter((stage) => stage._id !== selectedCandidate?.currentStage)
-              .map((stage) => (
-                <Option key={stage._id} value={stage._id}>
-                  {stage.name}
-                </Option>
-              ))}
-          </Select>
-        </div>
-      </Modal>
     </div>
   );
 };

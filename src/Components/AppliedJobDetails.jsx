@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useGetSourcedJobByIdQuery } from "../Slices/Users/UserApis";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Spin,
   Descriptions,
@@ -11,33 +10,53 @@ import {
   Button,
   Tabs,
   Timeline,
+  Badge,
+  Divider,
+  List,
+  Collapse,
   Upload,
   message,
   Space,
-  Divider,
-  Badge,
-  Tooltip,
 } from "antd";
 import {
   ArrowLeftOutlined,
-  InboxOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
+  UserOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
-import { useNavigate } from "react-router-dom";
+import {
+  useUploadStageDocumentsMutation,
+  useGetAppliedJobByIdQuery,
+} from "../Slices/Users/UserApis";
 
 const { Title, Text } = Typography;
-const { Dragger } = Upload;
+const { Panel } = Collapse;
 
-const SourcedJobDetails = () => {
+const AppliedJobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const { data: response, isLoading, isError } = useGetSourcedJobByIdQuery(id);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: response, isLoading, isError } = useGetAppliedJobByIdQuery(id);
+  const [uploadStageDocuments] = useUploadStageDocumentsMutation();
+
+  useEffect(() => {
+    return () => {
+      // Clean up object URLs to avoid memory leaks
+      Object.values(uploadedFiles).forEach((files) => {
+        files.forEach((file) => {
+          if (file.preview) {
+            URL.revokeObjectURL(file.preview);
+          }
+        });
+      });
+    };
+  }, [uploadedFiles]);
 
   if (isLoading) {
     return (
@@ -58,7 +77,8 @@ const SourcedJobDetails = () => {
     );
   }
 
-  if (!response?.sourcedJob) {
+  // Updated to handle the correct data structure
+  if (!response?.appliedJob) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
         <Title level={4}>Job not found</Title>
@@ -66,47 +86,141 @@ const SourcedJobDetails = () => {
     );
   }
 
-  const { sourcedJob } = response;
-  const { workOrder } = sourcedJob;
-
-  // File upload handlers
-  const handleFileUpload = (info, stageId) => {
-    const { status } = info.file;
-    if (status !== "uploading") {
-      console.log(info.file, info.fileList);
-    }
-    if (status === "done") {
-      message.success(`${info.file.name} file uploaded successfully.`);
-    } else if (status === "error") {
-      message.error(`${info.file.name} file upload failed.`);
-    }
-  };
-
-  const uploadProps = (stageId) => ({
-    name: "file",
-    multiple: true,
-    action: "/api/upload",
-    onChange: (info) => handleFileUpload(info, stageId),
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
-  });
+  const appliedJob = response.appliedJob;
+  const { workOrder, stageProgress } = appliedJob;
 
   // Get status icon and color
   const getStatusInfo = (status) => {
     switch (status) {
+      case "hired":
+        return { icon: <CheckCircleOutlined />, color: "green" };
+      case "pipeline":
+        return { icon: <ClockCircleOutlined />, color: "blue" };
+      case "shortlisted":
+        return { icon: <CheckCircleOutlined />, color: "cyan" };
+      case "interview_scheduled":
+        return { icon: <ClockCircleOutlined />, color: "purple" };
+      case "rejected":
+        return { icon: <ExclamationCircleOutlined />, color: "red" };
+      case "withdrawn":
+        return { icon: <ExclamationCircleOutlined />, color: "orange" };
       case "completed":
         return { icon: <CheckCircleOutlined />, color: "green" };
       case "pending":
         return { icon: <ClockCircleOutlined />, color: "orange" };
-      case "rejected":
-        return { icon: <ExclamationCircleOutlined />, color: "red" };
       default:
         return { icon: <ClockCircleOutlined />, color: "blue" };
     }
   };
 
-  // Overview Tab Content
+  // Format currency
+  const formatCurrency = (amount) => {
+    if (!amount) return "Not specified";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // File upload handlers
+  const removeFile = (stageId, fileIndex) => {
+    setUploadedFiles((prev) => {
+      const updatedFiles = { ...prev };
+      if (updatedFiles[stageId]) {
+        updatedFiles[stageId] = updatedFiles[stageId].filter(
+          (_, index) => index !== fileIndex
+        );
+        if (updatedFiles[stageId].length === 0) {
+          delete updatedFiles[stageId];
+        }
+      }
+      return updatedFiles;
+    });
+  };
+
+  const handleFileUpload = (stageId, docType) => {
+    return (info) => {
+      const { file } = info;
+      if (file.status === "done") {
+        setUploadedFiles((prev) => ({
+          ...prev,
+          [stageId]: [
+            ...(prev[stageId] || []),
+            {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              documentType: docType,
+              lastModified: file.lastModified,
+              preview: URL.createObjectURL(file.originFileObj),
+            },
+          ],
+        }));
+        message.success(`${file.name} file uploaded successfully.`);
+      }
+    };
+  };
+
+  const uploadProps = (stageId, docType) => ({
+    name: "file",
+    multiple: false,
+    showUploadList: false,
+    beforeUpload: (file) => {
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        message.error("File must be smaller than 5MB!");
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+    customRequest: ({ file, onSuccess }) => {
+      // Simulate upload success after 1 second
+      setTimeout(() => {
+        onSuccess("ok");
+      }, 1000);
+    },
+    onChange: handleFileUpload(stageId, docType),
+  });
+
+  const handleSubmitDocuments = async (stageId) => {
+    const stageFiles = uploadedFiles[stageId] || [];
+    if (stageFiles.length === 0) {
+      message.warning("Please upload at least one document before submitting");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const filesToUpload = await Promise.all(
+        stageFiles.map(async (file) => {
+          const response = await fetch(file.preview);
+          const blob = await response.blob();
+          return new File([blob], file.name, { type: file.type });
+        })
+      );
+
+      const response = await uploadStageDocuments({
+        customFieldId: appliedJob._id,
+        stageId,
+        files: filesToUpload,
+      }).unwrap();
+
+      message.success(response.message || "Documents submitted successfully!");
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [stageId]: [],
+      }));
+    } catch (error) {
+      console.error("Failed to upload documents:", error);
+      message.error(error?.data?.message || "Failed to submit documents");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const OverviewContent = () => (
     <Card>
       <div
@@ -118,19 +232,19 @@ const SourcedJobDetails = () => {
         }}
       >
         <Avatar
-          src={workOrder.companyLogo || "https://via.placeholder.com/64"}
+          src={"https://via.placeholder.com/64"}
           size={64}
           style={{ backgroundColor: "#f0f2f5" }}
         >
-          {workOrder.company?.[0]?.toUpperCase() || "C"}
+          {workOrder.companyIndustry?.[0]?.toUpperCase() || "C"}
         </Avatar>
         <div>
           <Title level={3} style={{ marginBottom: "4px" }}>
             {workOrder.title}
           </Title>
-          {/* <Text strong style={{ fontSize: "16px" }}>
-            {workOrder.company || "Company Name"}
-          </Text> */}
+          <Text strong style={{ fontSize: "16px" }}>
+            {workOrder.companyIndustry || "Company"}
+          </Text>
         </div>
       </div>
 
@@ -140,36 +254,61 @@ const SourcedJobDetails = () => {
         labelStyle={{ fontWeight: "600", width: "200px" }}
       >
         <Descriptions.Item label="Job Code">
-          {workOrder.jobCode}
+          {workOrder.jobCode || "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Location">
-          {workOrder.officeLocation}
+          {workOrder.officeLocation || "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Work Type">
-          {workOrder.workplace === "remote" ? "Remote" : "On-site"}
+          <Tag color={workOrder.workplace === "remote" ? "green" : "blue"}>
+            {workOrder.workplace === "remote" ? "Remote" : "On-site"}
+          </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Company Industry">
-          {workOrder.companyIndustry}
+          {workOrder.companyIndustry || "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Annual Salary">
-          ₹{workOrder.annualSalary}
+          {formatCurrency(workOrder.annualSalary)}
         </Descriptions.Item>
         <Descriptions.Item label="Start Date">
-          {new Date(workOrder.startDate).toLocaleDateString()}
+          {workOrder.startDate
+            ? new Date(workOrder.startDate).toLocaleDateString()
+            : "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="End Date">
-          {new Date(workOrder.endDate).toLocaleDateString()}
+          {workOrder.endDate
+            ? new Date(workOrder.endDate).toLocaleDateString()
+            : "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Application Status">
-          <Tag color={getStatusInfo(sourcedJob.status).color}>
-            {sourcedJob.status?.toUpperCase()}
+          <Tag
+            color={getStatusInfo(appliedJob.status).color}
+            icon={getStatusInfo(appliedJob.status).icon}
+          >
+            {appliedJob.status?.replace("_", " ").toUpperCase() || "PENDING"}
           </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Applied Date">
+          {appliedJob.createdAt
+            ? new Date(appliedJob.createdAt).toLocaleDateString()
+            : "Not available"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Last Updated">
+          {appliedJob.updatedAt
+            ? new Date(appliedJob.updatedAt).toLocaleDateString()
+            : "Not available"}
         </Descriptions.Item>
         <Descriptions.Item label="Skills Required">
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {workOrder.requiredSkills?.map((skill, index) => (
-              <Tag key={index}>{skill}</Tag>
-            ))}
+            {workOrder.requiredSkills?.length > 0 ? (
+              workOrder.requiredSkills.map((skill, index) => (
+                <Tag key={index} color="blue">
+                  {skill}
+                </Tag>
+              ))
+            ) : (
+              <Text type="secondary">No specific skills mentioned</Text>
+            )}
           </div>
         </Descriptions.Item>
         <Descriptions.Item label="Job Description">
@@ -177,7 +316,7 @@ const SourcedJobDetails = () => {
         </Descriptions.Item>
         {workOrder.benefits?.length > 0 && (
           <Descriptions.Item label="Benefits">
-            <ul style={{ margin: 0 }}>
+            <ul style={{ margin: 0, paddingLeft: "20px" }}>
               {workOrder.benefits.map((benefit, index) => (
                 <li key={index}>{benefit}</li>
               ))}
@@ -188,7 +327,7 @@ const SourcedJobDetails = () => {
     </Card>
   );
 
-  // Timeline Tab Content
+  // Enhanced Timeline Tab Content
   const TimelineContent = () => (
     <Card>
       <Title level={4} style={{ marginBottom: "24px" }}>
@@ -204,16 +343,16 @@ const SourcedJobDetails = () => {
             <Text strong>Application Submitted</Text>
             <br />
             <Text type="secondary">
-              {new Date(sourcedJob.createdAt).toLocaleString()}
+              {new Date(appliedJob.createdAt).toLocaleString()}
             </Text>
           </div>
         </Timeline.Item>
 
-        {sourcedJob.stageProgress?.map((stage, index) => {
+        {stageProgress?.map((stage, index) => {
           const statusInfo = getStatusInfo(stage.stageStatus);
           return (
             <Timeline.Item
-              key={stage._id}
+              key={stage._id || index}
               dot={React.cloneElement(statusInfo.icon, {
                 style: { color: statusInfo.color },
               })}
@@ -224,7 +363,7 @@ const SourcedJobDetails = () => {
                 <br />
                 <Badge
                   color={statusInfo.color}
-                  text={stage.stageStatus?.toUpperCase()}
+                  text={stage.stageStatus?.toUpperCase() || "PENDING"}
                 />
                 <br />
 
@@ -233,21 +372,33 @@ const SourcedJobDetails = () => {
                     <Text type="secondary">Reviewer Status:</Text>
                     {stage.recruiterReviews.map((review, reviewIndex) => (
                       <div
-                        key={review._id}
+                        key={review._id || reviewIndex}
                         style={{ marginLeft: "16px", marginTop: "4px" }}
                       >
                         <Tag
                           color={
-                            review.status === "pending" ? "orange" : "green"
+                            review.status === "approved"
+                              ? "green"
+                              : review.status === "pending"
+                              ? "orange"
+                              : "red"
                           }
                         >
-                          {review.status}
+                          {review.status?.toUpperCase()}
                         </Tag>
                         {review.reviewComments && (
                           <Text type="secondary">
                             {" "}
                             - {review.reviewComments}
                           </Text>
+                        )}
+                        {review.reviewedAt && (
+                          <div style={{ marginTop: "4px" }}>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              Reviewed:{" "}
+                              {new Date(review.reviewedAt).toLocaleString()}
+                            </Text>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -272,101 +423,34 @@ const SourcedJobDetails = () => {
             </Timeline.Item>
           );
         })}
+
+        <Timeline.Item
+          dot={React.cloneElement(getStatusInfo(appliedJob.status).icon, {
+            style: { color: getStatusInfo(appliedJob.status).color },
+          })}
+          color={getStatusInfo(appliedJob.status).color}
+        >
+          <div>
+            <Text strong>Current Status</Text>
+            <br />
+            <Badge
+              color={getStatusInfo(appliedJob.status).color}
+              text={
+                appliedJob.status?.replace("_", " ").toUpperCase() || "PENDING"
+              }
+            />
+          </div>
+        </Timeline.Item>
       </Timeline>
     </Card>
   );
 
+  // Enhanced Documents Tab Content
   const DocumentsContent = () => {
-    const [uploadedFiles, setUploadedFiles] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const removeFile = (stageId, fileIndex) => {
-      setUploadedFiles((prev) => {
-        const updatedFiles = { ...prev };
-        if (updatedFiles[stageId]) {
-          updatedFiles[stageId] = updatedFiles[stageId].filter(
-            (_, index) => index !== fileIndex
-          );
-          if (updatedFiles[stageId].length === 0) {
-            delete updatedFiles[stageId];
-          }
-        }
-        return updatedFiles;
-      });
-    };
-
-    const handleFileUpload = (stageId, docType) => {
-      return (info) => {
-        const { file } = info;
-        if (file.status === "done") {
-          setUploadedFiles((prev) => ({
-            ...prev,
-            [stageId]: [
-              ...(prev[stageId] || []),
-              {
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                documentType: docType,
-                lastModified: file.lastModified,
-                preview: URL.createObjectURL(file.originFileObj),
-              },
-            ],
-          }));
-          message.success(`${file.name} file uploaded successfully.`);
-        }
-      };
-    };
-
-    const uploadProps = (stageId, docType) => ({
-      name: "file",
-      multiple: false,
-      showUploadList: false,
-      beforeUpload: (file) => {
-        const isLt5M = file.size / 1024 / 1024 < 5;
-        if (!isLt5M) {
-          message.error("File must be smaller than 5MB!");
-          return Upload.LIST_IGNORE;
-        }
-        return true;
-      },
-      customRequest: ({ file, onSuccess }) => {
-        // Simulate upload success after 1 second
-        setTimeout(() => {
-          onSuccess("ok");
-        }, 1000);
-      },
-      onChange: handleFileUpload(stageId, docType),
-    });
-
-    const handleSubmitDocuments = (stageId) => {
-      const stageFiles = uploadedFiles[stageId] || [];
-      if (stageFiles.length === 0) {
-        message.warning(
-          "Please upload at least one document before submitting"
-        );
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      // Simulate submission
-      setTimeout(() => {
-        message.success(
-          `${stageFiles.length} document(s) submitted successfully!`
-        );
-        setIsSubmitting(false);
-        setUploadedFiles((prev) => ({
-          ...prev,
-          [stageId]: [],
-        }));
-      }, 2000);
-    };
-
     return (
       <div>
-        {sourcedJob.stageProgress?.map((stage, index) => (
-          <Card key={stage._id} style={{ marginBottom: "16px" }}>
+        {stageProgress?.map((stage, index) => (
+          <Card key={stage._id || index} style={{ marginBottom: "16px" }}>
             <Title level={5} style={{ marginBottom: "16px" }}>
               <FileTextOutlined style={{ marginRight: "8px" }} />
               {stage.stageName} - Documents
@@ -379,7 +463,7 @@ const SourcedJobDetails = () => {
                   color={getStatusInfo(stage.stageStatus).color}
                   style={{ marginLeft: "8px" }}
                 >
-                  {stage.stageStatus?.toUpperCase()}
+                  {stage.stageStatus?.toUpperCase() || "PENDING"}
                 </Tag>
               </Text>
             </div>
@@ -500,7 +584,13 @@ const SourcedJobDetails = () => {
                           </Tag>
                         )}
                       </div>
-                      <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
                         <Button
                           type="link"
                           size="small"
@@ -666,7 +756,7 @@ const SourcedJobDetails = () => {
 
             {/* Submit Button */}
             {uploadedFiles[stage._id]?.length > 0 && (
-              <div>
+              <div style={{ marginTop: "16px" }}>
                 <div style={{ marginBottom: "12px" }}>
                   <Text type="secondary">
                     {uploadedFiles[stage._id].length} file(s) ready to submit
@@ -701,7 +791,7 @@ const SourcedJobDetails = () => {
           </Card>
         ))}
 
-        {!sourcedJob.stageProgress?.length && (
+        {!stageProgress?.length && (
           <Card>
             <div style={{ textAlign: "center", padding: "40px" }}>
               <FileTextOutlined
@@ -721,59 +811,221 @@ const SourcedJobDetails = () => {
     );
   };
 
-  const tabItems = [
-    {
-      key: "overview",
-      label: "Overview",
-      children: <OverviewContent />,
-    },
-    {
-      key: "timeline",
-      label: "Timeline",
-      children: <TimelineContent />,
-    },
-    {
-      key: "documents",
-      label: "Documents",
-      children: <DocumentsContent />,
-    },
-  ];
+  // Pipeline Tab Content (existing implementation)
+  const PipelineContent = () => (
+    <Card>
+      <Title level={4} style={{ marginBottom: "24px" }}>
+        Pipeline Stages
+      </Title>
+
+      {stageProgress?.length > 0 ? (
+        stageProgress.map((stage, index) => (
+          <div key={index} style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Title level={5} style={{ marginBottom: 0 }}>
+                {stage.stageName}
+              </Title>
+              <Tag
+                color={
+                  stage.stageStatus === "completed"
+                    ? "green"
+                    : stage.stageStatus === "pending"
+                    ? "orange"
+                    : "blue"
+                }
+              >
+                {stage.stageStatus?.toUpperCase() || "PENDING"}
+              </Tag>
+            </div>
+
+            {stage.fullStage?.description && (
+              <Text
+                style={{
+                  display: "block",
+                  marginTop: "8px",
+                  marginBottom: "16px",
+                }}
+              >
+                {stage.fullStage.description}
+              </Text>
+            )}
+
+            <Divider />
+
+            <Title level={5} style={{ marginBottom: "16px" }}>
+              Pipeline Information
+            </Title>
+
+            <Descriptions size="small" column={1}>
+              <Descriptions.Item label="Pipeline Name">
+                {stage.pipelineId?.name || "Not specified"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Stage ID">
+                {stage.stageId}
+              </Descriptions.Item>
+              <Descriptions.Item label="Recruiter ID">
+                {stage.recruiterId}
+              </Descriptions.Item>
+              <Descriptions.Item label="Dependency Type">
+                <Tag color="blue">
+                  {stage.fullStage?.dependencyType || "Not specified"}
+                </Tag>
+              </Descriptions.Item>
+            </Descriptions>
+
+            {stage.recruiterReviews?.length > 0 && (
+              <>
+                <Divider />
+                <Title level={5} style={{ marginBottom: "16px" }}>
+                  Recruiter Reviews
+                </Title>
+                <List
+                  dataSource={stage.recruiterReviews}
+                  renderItem={(review) => (
+                    <List.Item>
+                      <Card size="small" style={{ width: "100%" }}>
+                        <div>
+                          <Text strong>Status: </Text>
+                          <Tag
+                            color={
+                              review.status === "approved"
+                                ? "green"
+                                : review.status === "pending"
+                                ? "orange"
+                                : "red"
+                            }
+                          >
+                            {review.status?.toUpperCase()}
+                          </Tag>
+                          <br />
+                          {review.reviewComments && (
+                            <>
+                              <Text strong>Comments: </Text>
+                              <Text>{review.reviewComments}</Text>
+                              <br />
+                            </>
+                          )}
+                          {review.reviewedAt && (
+                            <>
+                              <Text strong>Reviewed At: </Text>
+                              <Text>
+                                {new Date(review.reviewedAt).toLocaleString()}
+                              </Text>
+                            </>
+                          )}
+                        </div>
+                      </Card>
+                    </List.Item>
+                  )}
+                />
+              </>
+            )}
+
+            {stage.uploadedDocuments?.length > 0 && (
+              <>
+                <Divider />
+                <Title level={5} style={{ marginBottom: "16px" }}>
+                  Uploaded Documents
+                </Title>
+                <List
+                  dataSource={stage.uploadedDocuments}
+                  renderItem={(doc) => (
+                    <List.Item>
+                      <FileTextOutlined style={{ marginRight: "8px" }} />
+                      <Text>{doc.name || "Document"}</Text>
+                    </List.Item>
+                  )}
+                />
+              </>
+            )}
+
+            {stage.fullStage?.requiredDocuments?.length > 0 && (
+              <>
+                <Divider />
+                <Title level={5} style={{ marginBottom: "16px" }}>
+                  Required Documents
+                </Title>
+                <List
+                  dataSource={stage.fullStage.requiredDocuments}
+                  renderItem={(doc) => (
+                    <List.Item>
+                      <FileTextOutlined style={{ marginRight: "8px" }} />
+                      <Text>{doc}</Text>
+                    </List.Item>
+                  )}
+                />
+              </>
+            )}
+
+            {index < stageProgress.length - 1 && <Divider dashed />}
+          </div>
+        ))
+      ) : (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <ClockCircleOutlined style={{ fontSize: "48px", color: "#d9d9d9" }} />
+          <Title level={4} style={{ marginTop: "16px", color: "#999" }}>
+            No pipeline stages available
+          </Title>
+          <Text type="secondary">
+            Pipeline information will appear as your application progresses.
+          </Text>
+        </div>
+      )}
+    </Card>
+  );
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-      <Button
-        type="text"
-        icon={<ArrowLeftOutlined />}
-        onClick={() => navigate(-1)}
-        style={{ marginBottom: "16px", color: "#da2c46" }}
-      >
-        Back to Applications
-      </Button>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#da2c46",
+        },
+      }}
+    >
+      <div style={{ padding: "24px" }}>
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(-1)}
+          style={{ marginBottom: "16px", color: "#da2c46" }}
+        >
+          Back to Applications
+        </Button>
 
-      <Title level={2} style={{ marginBottom: "24px" }}>
-        {workOrder.title} - Application Details
-      </Title>
-      <ConfigProvider
-        theme={{
-          components: {
-            Tabs: {
-              itemActiveColor: "#da2c46",
-              itemSelectedColor: "#da2c46",
-              itemHoverColor: "#da2c46",
-              inkBarColor: "#da2c46",
-            },
-          },
-        }}
-      >
+        <Title level={2} style={{ marginBottom: "24px" }}>
+          {workOrder.title} - Application Details
+        </Title>
+
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
-          items={tabItems}
-          size="large"
+          items={[
+            {
+              label: <span>Overview</span>,
+              key: "overview",
+              children: <OverviewContent />,
+            },
+            {
+              label: <span>Timeline</span>,
+              key: "timeline",
+              children: <TimelineContent />,
+            },
+            {
+              label: <span>Documents</span>,
+              key: "documents",
+              children: <DocumentsContent />,
+            },
+          ]}
         />
-      </ConfigProvider>
-    </div>
+      </div>
+    </ConfigProvider>
   );
 };
 
-export default SourcedJobDetails;
+export default AppliedJobDetails;

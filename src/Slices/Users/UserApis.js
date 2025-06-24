@@ -133,7 +133,32 @@ export const userApi = createApi({
       }),
     }),
     getSourcedJobById: builder.query({
-      query: (id) => `/sourcedJobs/${id}`,
+      query: (id) => ({
+        url: `/sourcedJobs/${id}`,
+        method: "GET",
+      }),
+    }),
+    getAppliedJobById: builder.query({
+      query: (id) => ({
+        url: `/jobs/${id}`,
+        method: "GET",
+      }),
+    }),
+    uploadStageDocuments: builder.mutation({
+      query: ({ customFieldId, stageId, files }) => {
+        const formData = new FormData();
+        formData.append("customFieldId", customFieldId);
+        formData.append("stageId", stageId);
+        files.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        return {
+          url: "/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
     }),
   }),
 });
@@ -157,4 +182,6 @@ export const {
   useLazySearchJobsQuery,
   useLazyFilterJobsQuery,
   useGetSourcedJobByIdQuery,
+  useGetAppliedJobByIdQuery,
+  useUploadStageDocumentsMutation,
 } = userApi;

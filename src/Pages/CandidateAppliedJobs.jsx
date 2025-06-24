@@ -356,8 +356,7 @@ const CandidateAppliedJobs = () => {
     if (application.applicationType === "sourced") {
       navigate(`/candidate-applied-jobs/sourced-jobs/${application._id}`);
     } else {
-      setSelectedApplication(application);
-      setDetailModalVisible(true);
+      navigate(`/candidate-applied-jobs/applied-jobs/${application._id}`);
     }
   };
 
