@@ -9,6 +9,7 @@ import {
   TranslationOutlined,
   UsergroupDeleteOutlined,
   UsergroupAddOutlined,
+  CheckOutlined
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -73,6 +74,11 @@ const RecruiterSidebar = ({
       key: "/recruiter/staged-candidates",
       icon: <UsergroupAddOutlined />,
       label: "Staged Candidates",
+    },
+     {
+      key: "/recruiter/approvals",
+      icon:<CheckOutlined />,
+      label: "Approvals",
     },
     {
       key: "/recruiter/employees",
