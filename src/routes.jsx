@@ -50,6 +50,7 @@ import EmployeeRaiseRequest from "./Employee/Pages/EmployeeRaiseRequest";
 import Levels from "./Admin/Pages/Levels";
 import RecruiterStagedCandidates from "./Recruiters/Pages/RecruiterStagedCandidates";
 import RecruiterJobPipeline from "./Recruiters/Components/RecruiterJobPipeline";
+import SourcedJobDetails from "./Components/SourcedJobDetails";
 
 const AppRoutes = () => {
   return (
@@ -152,6 +153,10 @@ const AppRoutes = () => {
         <Route
           path="/candidate-applied-jobs"
           element={<CandidateAppliedJobs />}
+        />
+        <Route
+          path="/candidate-applied-jobs/sourced-jobs/:id"
+          element={<SourcedJobDetails />}
         />
         <Route path="/candidate-settings" element={<CandidateSettings />} />
       </Route>

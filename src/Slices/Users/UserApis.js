@@ -132,6 +132,9 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getSourcedJobById: builder.query({
+      query: (id) => `/sourcedJobs/${id}`,
+    }),
   }),
 });
 
@@ -153,4 +156,5 @@ export const {
   useProfileCompletionMutation,
   useLazySearchJobsQuery,
   useLazyFilterJobsQuery,
+  useGetSourcedJobByIdQuery,
 } = userApi;

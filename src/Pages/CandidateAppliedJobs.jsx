@@ -84,6 +84,7 @@ import {
   useWithdrawJobApplicationMutation,
   useGetSourcedJobsQuery,
 } from "../Slices/Users/UserApis";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -189,6 +190,7 @@ const APPLICATION_STATUSES = {
   },
 };
 const CandidateAppliedJobs = () => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { data: apiData, isLoading, isError } = useGetUserAppliedJobsQuery();
   const { data: sourcedData } = useGetSourcedJobsQuery();
@@ -351,8 +353,12 @@ const CandidateAppliedJobs = () => {
   };
 
   const handleApplicationClick = (application) => {
-    setSelectedApplication(application);
-    setDetailModalVisible(true);
+    if (application.applicationType === "sourced") {
+      navigate(`/candidate-applied-jobs/sourced-jobs/${application._id}`);
+    } else {
+      setSelectedApplication(application);
+      setDetailModalVisible(true);
+    }
   };
 
   const handleWithdrawApplication = (application) => {
