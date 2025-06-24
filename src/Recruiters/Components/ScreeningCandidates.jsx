@@ -39,6 +39,7 @@ import {
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
   useGetRecruiterStagesQuery,
+  useMoveToPipelineMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
@@ -66,6 +67,9 @@ const ScreeningCandidates = ({ jobId }) => {
 
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
+
+  const [moveToPipeline, { isLoading: isMovingToPipeline }] =
+    useMoveToPipelineMutation();
 
   const [filters, setFilters] = useState({
     skills: [],
@@ -218,48 +222,9 @@ const ScreeningCandidates = ({ jobId }) => {
     return count;
   }, [filters]);
 
-  const assignedStages = useMemo(() => {
-    if (!recruiterStages) return [];
-
-    // Case 1: Super recruiter with full pipeline access
-    if (recruiterStages.pipeline && recruiterStages.pipeline.length > 0) {
-      return recruiterStages.pipeline[0].stages || [];
-    }
-
-    // Case 2: Regular recruiter with specific assigned stages
-    if (
-      recruiterStages.assignedStages &&
-      recruiterStages.assignedStages.length > 0
-    ) {
-      if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
-        return recruiterStages.assignedStages.map((assignedStage) => {
-          const fullStage = jobApplications.workOrder.pipeline[0].stages.find(
-            (stage) => stage.name === assignedStage.stageName
-          );
-          return fullStage || { name: assignedStage.stageName };
-        });
-      }
-      return recruiterStages.assignedStages.map((stage) => ({
-        name: stage.stageName,
-      }));
-    }
-
-    return [];
-  }, [recruiterStages, jobApplications]);
-
-  const isSuperRecruiter = useMemo(() => {
-    return recruiterStages?.pipeline && recruiterStages.pipeline.length > 0;
-  }, [recruiterStages]);
-
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
     setIsModalVisible(true);
-  };
-
-  const handleScheduleInterview = (candidate) => {
-    setSelectedCandidate(candidate);
-    setIsScheduleModalVisible(true);
-    form.resetFields();
   };
 
   const handleStatusUpdate = async (newStatus, additionalData = {}) => {
@@ -316,78 +281,24 @@ const ScreeningCandidates = ({ jobId }) => {
     return colors[status] || "default";
   };
 
-  const isStageAvailable = (stage) => {
-    if (!jobApplications?.workOrder?.pipelineStageTimeline) return true;
-
-    const stageTimeline = jobApplications.workOrder.pipelineStageTimeline;
-    const currentStageIndex = stageTimeline.findIndex(
-      (s) => s.stageId === stage._id
-    );
-
-    if (currentStageIndex === 0) return true;
-
-    if (stage.dependencyType === "independent") return true;
-
-    for (let i = 0; i < currentStageIndex; i++) {
-      const prevStage = stageTimeline[i];
-      const isAssigned = assignedStages.some(
-        (assigned) => assigned.stageName === prevStage.name
-      );
-      if (isAssigned && !prevStage.isCompleted) return false;
-    }
-
-    return true;
-  };
-
-  const handleMoveToStage = async (stageIdOrName) => {
+  const handleMoveToPipeline = async () => {
     try {
       if (!selectedCandidate) return;
 
-      let stage;
-
-      if (isSuperRecruiter) {
-        stage = recruiterStages.pipeline[0].stages.find(
-          (s) => s._id === stageIdOrName
-        );
-      } else if (jobApplications?.workOrder?.pipeline?.[0]?.stages) {
-        stage = jobApplications.workOrder.pipeline[0].stages.find(
-          (s) => s.name === stageIdOrName
-        );
-      }
-
-      if (!stage) {
-        await updateCandidateStatus({
-          applicationId: selectedCandidate.applicationId,
-          status: "in-progress",
-          jobId: jobId,
-          stageName: stageIdOrName,
-        }).unwrap();
-        message.success(`Candidate moved to ${stageIdOrName} stage`);
-        jobRefetch();
-        setIsModalVisible(false);
-        return;
-      }
-
-      if (stage.dependencyType === "dependent" && !isStageAvailable(stage)) {
-        message.error("Please complete previous stages first");
-        return;
-      }
-
-      await updateCandidateStatus({
+      await moveToPipeline({
         applicationId: selectedCandidate.applicationId,
-        status: "in-progress",
         jobId: jobId,
-        stageId: stage._id,
-        stageName: stage.name,
-        requiredDocuments: stage.requiredDocuments,
+        userId: selectedCandidate._id,
       }).unwrap();
 
-      message.success(`Candidate moved to ${stage.name} stage`);
+      message.success("Candidate moved to pipeline successfully");
       jobRefetch();
       setIsModalVisible(false);
     } catch (error) {
-      console.error("Failed to move candidate:", error);
-      message.error(error.data?.message || "Failed to move candidate");
+      console.error("Failed to move candidate to pipeline:", error);
+      message.error(
+        error.data?.message || "Failed to move candidate to pipeline"
+      );
     }
   };
 
@@ -459,14 +370,7 @@ const ScreeningCandidates = ({ jobId }) => {
                     >
                       View Profile
                     </Button>,
-                    <Button
-                      key="schedule"
-                      type="primary"
-                      icon={<CalendarOutlined />}
-                      onClick={() => handleScheduleInterview(candidate)}
-                    >
-                      Schedule Interview
-                    </Button>,
+
                     <Button
                       key="shortlist"
                       icon={<CheckOutlined />}
@@ -608,90 +512,21 @@ const ScreeningCandidates = ({ jobId }) => {
             </Descriptions>
 
             <Divider orientation="left" style={{ margin: "16px 0" }}>
-              Pipeline Progress
+              Move to Pipeline
             </Divider>
 
-            {assignedStages.length > 0 ? (
-              <Form
-                layout="vertical"
-                onFinish={(values) => handleMoveToStage(values.targetStage)}
+            <div style={{ marginBottom: "16px" }}>
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                onClick={handleMoveToPipeline}
+                loading={isMovingToPipeline}
+                style={{ background: "#da2c46" }}
               >
-                <Form.Item
-                  name="targetStage"
-                  label="Select Target Stage"
-                  rules={[{ required: true, message: "Please select a stage" }]}
-                >
-                  <Select
-                    placeholder="Select stage to move candidate"
-                    optionFilterProp="children"
-                    showSearch
-                  >
-                    {assignedStages.map((stage) => {
-                      // For super recruiter, we have full stage details
-                      if (isSuperRecruiter) {
-                        const isAvailable = isStageAvailable(stage);
-                        return (
-                          <Select.Option
-                            key={stage._id}
-                            value={stage._id}
-                            disabled={!isAvailable}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <span>{stage.name}</span>
-                              <Tag
-                                color={
-                                  stage.dependencyType === "independent"
-                                    ? "green"
-                                    : "orange"
-                                }
-                              >
-                                {stage.dependencyType}
-                              </Tag>
-                            </div>
-                            {!isAvailable && (
-                              <div
-                                style={{ fontSize: "12px", color: "#ff4d4f" }}
-                              >
-                                Complete previous stages first
-                              </div>
-                            )}
-                          </Select.Option>
-                        );
-                      }
-
-                      // For regular recruiter with assigned stages
-                      return (
-                        <Select.Option key={stage.name} value={stage.name}>
-                          {stage.name}
-                        </Select.Option>
-                      );
-                    })}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<ArrowRightOutlined />}
-                    style={{ background: "#da2c46" }}
-                  >
-                    Move Candidate
-                  </Button>
-                </Form.Item>
-              </Form>
-            ) : (
-              <Alert
-                message="No assigned stages for this job"
-                type="warning"
-                showIcon
-              />
-            )}
+                Move to Pipeline
+              </Button>
+            
+            </div>
 
             <Divider />
 
@@ -712,16 +547,6 @@ const ScreeningCandidates = ({ jobId }) => {
                   gap: "8px",
                 }}
               >
-                <Button
-                  style={{ marginRight: window.innerWidth < 768 ? 0 : 8 }}
-                  onClick={() => {
-                    setIsModalVisible(false);
-                    handleScheduleInterview(selectedCandidate);
-                  }}
-                  icon={<CalendarOutlined />}
-                >
-                  Schedule Interview
-                </Button>
                 <Button danger onClick={() => handleStatusUpdate("rejected")}>
                   <CloseOutlined /> Reject
                 </Button>
@@ -729,68 +554,6 @@ const ScreeningCandidates = ({ jobId }) => {
             </div>
           </>
         )}
-      </Modal>
-
-      {/* Schedule Interview Modal */}
-      <Modal
-        title="Schedule Interview"
-        visible={isScheduleModalVisible}
-        onCancel={() => setIsScheduleModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setIsScheduleModalVisible(false)}>
-            Cancel
-          </Button>,
-          <Button key="submit" type="primary" onClick={() => form.submit()}>
-            Schedule Interview
-          </Button>,
-        ]}
-      >
-        <Form form={form} layout="vertical" onFinish={handleScheduleSubmit}>
-          <Form.Item
-            name="interviewType"
-            label="Interview Type"
-            rules={[
-              { required: true, message: "Please select interview type" },
-            ]}
-          >
-            <Select placeholder="Select interview type">
-              <Option value="phone">
-                <PhoneOutlined /> Phone Interview
-              </Option>
-              <Option value="video">
-                <VideoCameraOutlined /> Video Interview
-              </Option>
-              <Option value="in-person">In-Person Interview</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="date"
-            label="Date"
-            rules={[{ required: true, message: "Please select date" }]}
-          >
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-
-          <Form.Item
-            name="time"
-            label="Time"
-            rules={[{ required: true, message: "Please select time" }]}
-          >
-            <TimePicker format="HH:mm" style={{ width: "100%" }} />
-          </Form.Item>
-
-          <Form.Item name="interviewLink" label="Interview Link">
-            <Input placeholder="Enter meeting link for phone/video interviews" />
-          </Form.Item>
-
-          <Form.Item name="notes" label="Notes">
-            <TextArea
-              rows={4}
-              placeholder="Any additional notes for the candidate"
-            />
-          </Form.Item>
-        </Form>
       </Modal>
     </div>
   );
