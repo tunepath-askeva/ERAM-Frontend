@@ -194,9 +194,15 @@ const RecruiterStagedCandidates = () => {
       .slice(startIndex, endIndex);
   };
 
-  const handleJobSelect = (job) => {
-    navigate(`/recruiter/pipeline/${job._id}`);
-  };
+ const handleJobSelect = (job) => {
+  const pipelineCandidate = apiData.pipelineCandidates.find(
+    (candidate) => candidate.workOrder._id === job._id
+  );
+  
+  if (pipelineCandidate) {
+    navigate(`/recruiter/pipeline/${pipelineCandidate._id}`);
+  } 
+};
 
   const handleBackToJobs = () => {
     setSelectedJob(null);

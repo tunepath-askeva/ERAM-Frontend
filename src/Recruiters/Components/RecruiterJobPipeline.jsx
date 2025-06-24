@@ -17,6 +17,8 @@ import {
   Modal,
   message,
   Tooltip,
+  Select,
+  Empty,
 } from "antd";
 import {
   TeamOutlined,
@@ -31,28 +33,82 @@ import {
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
+const { Option } = Select;
 
 const RecruiterJobPipeline = () => {
-  const { id } = useParams();
+  const { id } = useParams(); 
   const navigate = useNavigate();
   const [activeStage, setActiveStage] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [targetStage, setTargetStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
+  const [processedJobData, setProcessedJobData] = useState(null);
 
   const primaryColor = "#da2c46";
 
-  const {
-    data: jobData,
-    isLoading,
-    error,
-  } = useGetPipelineJobsByIdQuery(id);
+  const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
+
+useEffect(() => {
+  if (apiData?.data) {
+    const pipelineData = apiData.data;
+    const workOrder = pipelineData.workOrder;
+    const user = pipelineData.user;
+    const stageProgress = pipelineData.stageProgress || [];
+    const fullPipeline = pipelineData.fullPipeline;
+
+    const currentStageProgress = stageProgress[0];
+
+    const processedCandidate = {
+      _id: pipelineData._id,
+      pipelineCandidateId: pipelineData._id,
+      name: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      skills: user.skills || [],
+      avatar: null,
+      status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
+      currentStage: currentStageProgress?.stageId || null,
+      currentStageName: currentStageProgress?.stageName || "Unknown",
+      stageStatus: currentStageProgress?.stageStatus || "pending",
+      appliedDate: pipelineData.createdAt,
+      stageProgress: stageProgress,
+      isSourced: pipelineData.isSourced === "true",
+      responses: pipelineData.responses || [],
+    };
+
+    const jobData = {
+      _id: workOrder._id,
+      title: workOrder.title,
+      company: workOrder.companyIndustry || "Company",
+      location: workOrder.officeLocation,
+      jobCode: workOrder.jobCode,
+      description: workOrder.description,
+      startDate: workOrder.startDate,
+      endDate: workOrder.endDate,
+      isActive: pipelineData.status === "pipeline",
+      pipeline: {
+        _id: fullPipeline._id,
+        name: fullPipeline.name,
+        stages: fullPipeline.stages || [],
+      },
+      candidates: [processedCandidate], 
+      deadline: workOrder.endDate, 
+    };
+
+    setProcessedJobData(jobData);
+  }
+}, [apiData, id]);
 
   useEffect(() => {
-    if (jobData?.pipeline?.stages?.length > 0) {
-      setActiveStage(jobData.pipeline.stages[0]._id);
+    if (processedJobData?.pipeline?.stages?.length > 0) {
+      const currentCandidate = processedJobData.candidates[0];
+      if (currentCandidate?.currentStage) {
+        setActiveStage(currentCandidate.currentStage);
+      } else {
+        setActiveStage(processedJobData.pipeline.stages[0]._id);
+      }
     }
-  }, [jobData]);
+  }, [processedJobData]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -61,21 +117,24 @@ const RecruiterJobPipeline = () => {
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) return "today";
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "1 day ago";
     if (diffDays < 30) return `${diffDays} days ago`;
     if (diffDays < 90) return `${Math.ceil(diffDays / 30)} months ago`;
     return date.toLocaleDateString();
   };
 
   const getStageName = (stageId) => {
-    if (!jobData) return "";
-    const stage = jobData.pipeline.stages.find((s) => s._id === stageId);
+    if (!processedJobData) return "";
+    const stage = processedJobData.pipeline.stages.find(
+      (s) => s._id === stageId
+    );
     return stage ? stage.name : "";
   };
 
   const getCandidatesInStage = (stageId) => {
     return (
-      jobData?.candidates?.filter(
+      processedJobData?.candidates?.filter(
         (candidate) => candidate.currentStage === stageId
       ) || []
     );
@@ -93,12 +152,23 @@ const RecruiterJobPipeline = () => {
       message.warning("Please select a target stage");
       return;
     }
+    console.log(
+      "Moving candidate with ID:",
+      selectedCandidate.pipelineCandidateId
+    );
+    console.log("To stage:", targetStage);
 
     message.success(
       `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
-    // Here you would typically make an API call to update the candidate's stage
+
+    // Make your API call here with selectedCandidate.pipelineCandidateId
+    // Example:
+    // moveCandidateToStage({
+    //   candidateId: selectedCandidate.pipelineCandidateId,
+    //   stageId: targetStage
+    // });
   };
 
   if (isLoading) {
@@ -135,7 +205,7 @@ const RecruiterJobPipeline = () => {
     );
   }
 
-  if (!jobData) {
+  if (!processedJobData) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
         <Empty description={<Text>No job data found</Text>} />
@@ -149,7 +219,7 @@ const RecruiterJobPipeline = () => {
         <Button
           type="text"
           icon={<LeftOutlined />}
-          onClick={() => navigate("/recruiter/pipeline")}
+          onClick={() => navigate("/recruiter/staged-candidates")}
           style={{ color: primaryColor }}
         >
           Back to Jobs
@@ -173,14 +243,30 @@ const RecruiterJobPipeline = () => {
           >
             <div>
               <Title level={3} style={{ margin: 0 }}>
-                {jobData.title}
+                {processedJobData.title}
               </Title>
               <Text strong style={{ display: "block", marginTop: "4px" }}>
-                {jobData.company} • {jobData.location}
+                {processedJobData.company} • {processedJobData.location}
               </Text>
+              {processedJobData.jobCode && (
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginTop: "2px" }}
+                >
+                  Code: {processedJobData.jobCode}
+                </Text>
+              )}
+              {processedJobData.description && (
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginTop: "4px" }}
+                >
+                  {processedJobData.description}
+                </Text>
+              )}
             </div>
-            <Tag color={jobData.isActive ? "green" : "red"}>
-              {jobData.isActive ? "Active" : "Inactive"}
+            <Tag color={processedJobData.isActive ? "green" : "red"}>
+              {processedJobData.isActive ? "Active" : "Inactive"}
             </Tag>
           </div>
 
@@ -189,36 +275,33 @@ const RecruiterJobPipeline = () => {
               type="secondary"
               style={{ display: "flex", alignItems: "center", gap: "4px" }}
             >
-              <TeamOutlined /> {jobData.candidates?.length || 0} candidates
+              <TeamOutlined /> {processedJobData.candidates?.length || 0}{" "}
+              candidates
             </Text>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <EnvironmentOutlined /> {jobData.workType}
-            </Text>
-            {jobData.salary && (
+           
+            {processedJobData.startDate && (
               <Text
                 type="secondary"
                 style={{ display: "flex", alignItems: "center", gap: "4px" }}
               >
-                <DollarOutlined /> {jobData.salary}
+                <CalendarOutlined /> Start:{" "}
+                {new Date(processedJobData.startDate).toLocaleDateString()}
               </Text>
             )}
-            {jobData.deadline && (
+            {processedJobData.endDate && (
               <Text
                 type="secondary"
                 style={{ display: "flex", alignItems: "center", gap: "4px" }}
               >
-                <CalendarOutlined /> Deadline:{" "}
-                {new Date(jobData.deadline).toLocaleDateString()}
+                <CalendarOutlined /> End:{" "}
+                {new Date(processedJobData.endDate).toLocaleDateString()}
               </Text>
             )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Text strong>Pipeline:</Text>
-            <Tag color="blue">{jobData.pipeline.name}</Tag>
+            <Tag color="blue">{processedJobData.pipeline.name}</Tag>
           </div>
         </div>
       </Card>
@@ -231,7 +314,7 @@ const RecruiterJobPipeline = () => {
           type="card"
           style={{ minWidth: "max-content" }}
         >
-          {jobData.pipeline.stages.map((stage) => (
+          {processedJobData.pipeline.stages.map((stage) => (
             <TabPane
               key={stage._id}
               tab={
@@ -273,7 +356,7 @@ const RecruiterJobPipeline = () => {
                     <Dropdown
                       overlay={
                         <Menu>
-                          {jobData.pipeline.stages
+                          {processedJobData.pipeline.stages
                             .filter(
                               (stage) => stage._id !== candidate.currentStage
                             )
@@ -319,9 +402,22 @@ const RecruiterJobPipeline = () => {
                       <Avatar src={candidate.avatar} icon={<UserOutlined />} />
                     }
                     title={
-                      <Text strong style={{ fontSize: "16px" }}>
-                        {candidate.name}
-                      </Text>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Text strong style={{ fontSize: "16px" }}>
+                          {candidate.name}
+                        </Text>
+                        {candidate.isSourced && (
+                          <Tag color="orange" size="small">
+                            Sourced
+                          </Tag>
+                        )}
+                      </div>
                     }
                     description={
                       <Space direction="vertical" size={2}>
@@ -331,6 +427,29 @@ const RecruiterJobPipeline = () => {
                         <Text type="secondary" style={{ fontSize: "13px" }}>
                           {candidate.phone}
                         </Text>
+                        {candidate.skills && candidate.skills.length > 0 && (
+                          <div style={{ marginTop: "4px" }}>
+                            {candidate.skills
+                              .slice(0, 3)
+                              .map((skill, index) => (
+                                <Tag
+                                  key={index}
+                                  size="small"
+                                  style={{ fontSize: "10px", margin: "1px" }}
+                                >
+                                  {skill}
+                                </Tag>
+                              ))}
+                            {candidate.skills.length > 3 && (
+                              <Tag
+                                size="small"
+                                style={{ fontSize: "10px", margin: "1px" }}
+                              >
+                                +{candidate.skills.length - 3} more
+                              </Tag>
+                            )}
+                          </div>
+                        )}
                         <div>
                           <Tag
                             color={
@@ -400,7 +519,7 @@ const RecruiterJobPipeline = () => {
             value={targetStage}
             onChange={setTargetStage}
           >
-            {jobData?.pipeline.stages
+            {processedJobData?.pipeline.stages
               .filter((stage) => stage._id !== selectedCandidate?.currentStage)
               .map((stage) => (
                 <Option key={stage._id} value={stage._id}>
