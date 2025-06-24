@@ -42,7 +42,7 @@ const RecruiterSidebar = ({
   const [recruiterInfo, setRecruiterInfo] = useState({
     name: "Recruiter",
     email: "",
-    roles: "", 
+    roles: "",
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -70,6 +70,11 @@ const RecruiterSidebar = ({
       label: "Candidates",
     },
     {
+      key: "/recruiter/staged-candidates",
+      icon: <UsergroupAddOutlined />,
+      label: "Staged Candidates",
+    },
+    {
       key: "/recruiter/employees",
       icon: <UsergroupDeleteOutlined />,
       label: "Employees",
@@ -79,15 +84,13 @@ const RecruiterSidebar = ({
       icon: <TranslationOutlined />,
       label: "Payroll",
     },
-    
   ];
 
   // Fetch admin info from localStorage
   useEffect(() => {
     const fetchRecruiterInfo = () => {
       try {
-        const recruiterData =
-          localStorage.getItem("recruiterInfo")
+        const recruiterData = localStorage.getItem("recruiterInfo");
 
         if (recruiterData) {
           const parsedData = JSON.parse(recruiterData);
@@ -104,10 +107,7 @@ const RecruiterSidebar = ({
 
           // Handle different data structures for roles
           const roles =
-            parsedData.roles ||
-            parsedData.role ||
-            parsedData.userRole ||
-            "";
+            parsedData.roles || parsedData.role || parsedData.userRole || "";
 
           setRecruiterInfo({
             name: name,

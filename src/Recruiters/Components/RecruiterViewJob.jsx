@@ -659,16 +659,6 @@ const RecruiterViewJob = () => {
             <TabPane
               tab={
                 <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Applied Candidates
-                </span>
-              }
-              key="candidates"
-            >
-              <AppliedCandidates jobId={id} candidateType="applied" />
-            </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
                   Source Candidates
                 </span>
               }
@@ -676,6 +666,17 @@ const RecruiterViewJob = () => {
             >
               <SourcedCandidates jobId={id} candidateType="source" />
             </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Applied Candidates
+                </span>
+              }
+              key="candidates"
+            >
+              <AppliedCandidates jobId={id} candidateType="applied" />
+            </TabPane>
+
             <TabPane
               tab={
                 <span style={{ fontSize: "13px", color: " #da2c46" }}>
