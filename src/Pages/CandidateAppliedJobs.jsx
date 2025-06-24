@@ -243,7 +243,8 @@ const CandidateAppliedJobs = () => {
       }) || [];
 
     const formattedSourcedJobs =
-      sourcedData?.jobs?.map((job) => {
+      sourcedData?.sourcedJobs?.map((job) => {
+        // Changed from sourcedData?.jobs to sourcedData?.sourcedJobs
         const workOrder = job.workOrder;
         return {
           _id: job._id,
@@ -266,11 +267,10 @@ const CandidateAppliedJobs = () => {
           timeline: [
             {
               date: job.createdAt.split("T")[0],
-              status: "under_review",
+              status: job.status || "under_review", // Use the actual status if available
               note: "You were sourced for this position",
             },
           ],
-          responses: job.responses, // Include responses if needed for display
         };
       }) || [];
 

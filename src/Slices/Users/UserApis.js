@@ -128,7 +128,7 @@ export const userApi = createApi({
 
     getSourcedJobs: builder.query({
       query: () => ({
-        url: "/sourced",
+        url: "/sourcedJobs",
         method: "GET",
       }),
     }),
