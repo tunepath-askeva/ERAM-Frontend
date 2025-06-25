@@ -1189,498 +1189,720 @@ const RecruiterEditJob = () => {
     </Card>
   );
 
-  const renderPipelineDatesModal = () => {
-    if (!currentPipelineForDates) return null;
+ const renderPipelineDatesModal = () => {
+  if (!currentPipelineForDates) return null;
 
-    const pipelineId = currentPipelineForDates._id;
-    const allStages = [
-      ...(customStages[pipelineId] || []),
-      ...(currentPipelineForDates.stages || []),
-    ];
+  const pipelineId = currentPipelineForDates._id;
+  const allStages = [
+    ...(customStages[pipelineId] || []),
+    ...(currentPipelineForDates.stages || []),
+  ];
 
-    const sortedStages = allStages.sort((a, b) => {
-      const aIndex = pipelineStageDates[pipelineId]?.findIndex(
-        (d) => d.stageId === (a._id || a.id)
-      );
-      const bIndex = pipelineStageDates[pipelineId]?.findIndex(
-        (d) => d.stageId === (b._id || b.id)
-      );
-      return (aIndex || 0) - (bIndex || 0);
-    });
+  const sortedStages = allStages.sort((a, b) => {
+    const aIndex = pipelineStageDates[pipelineId]?.findIndex(
+      (d) => d.stageId === (a._id || a.id)
+    );
+    const bIndex = pipelineStageDates[pipelineId]?.findIndex(
+      (d) => d.stageId === (b._id || b.id)
+    );
+    return (aIndex || 0) - (bIndex || 0);
+  });
 
+  // Helper function to render field type specific controls
+  const renderFieldTypeControls = (field, pipelineId, stageId) => {
+    const needsOptions = ['dropdown', 'select', 'radio', 'checkbox'].includes(field.type);
+    const isFileUpload = field.type === 'file';
+    
     return (
-      <Modal
-        title={`Set Stage Dates & Approvals for ${
-          currentPipelineForDates?.name || "Pipeline"
-        }`}
-        visible={pipelineDatesModalVisible}
-        onCancel={() => setPipelineDatesModalVisible(false)}
-        footer={[
-          <Button
-            key="back"
-            onClick={() => setPipelineDatesModalVisible(false)}
-          >
-            Close
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={() => setPipelineDatesModalVisible(false)}
-            style={{
-              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-            }}
-          >
-            Save Dates & Approvals
-          </Button>,
-        ]}
-        width={800}
-      >
-        {sortedStages.map((stage) => {
-          const stageId = stage._id || stage.id;
-          const dateEntry = pipelineStageDates[pipelineId]?.find(
-            (d) => d.stageId === stageId
+      <div style={{ marginTop: 12 }}>
+        {needsOptions && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontWeight: 500 }}>Options:</span>
+              <Button
+                type="link"
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const currentOptions = field.options || [];
+                  const newOptions = [...currentOptions, `Option ${currentOptions.length + 1}`];
+                  updateStageCustomField(pipelineId, stageId, field.id, { 
+                    options: newOptions 
+                  });
+                }}
+              >
+                Add Option
+              </Button>
+            </div>
+            {(field.options || []).length === 0 && (
+              <div style={{ 
+                padding: '8px 12px', 
+                backgroundColor: '#f5f5f5', 
+                borderRadius: '4px', 
+                fontSize: '12px', 
+                color: '#666',
+                marginBottom: 8
+              }}>
+                No options added yet. Click "Add Option" to add choices.
+              </div>
+            )}
+            {(field.options || []).map((option, index) => (
+              <div key={index} style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                <Input
+                  value={option}
+                  onChange={(e) => {
+                    const newOptions = [...(field.options || [])];
+                    newOptions[index] = e.target.value;
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      options: newOptions 
+                    });
+                  }}
+                  placeholder={`Option ${index + 1}`}
+                  size="small"
+                />
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const newOptions = [...(field.options || [])];
+                    newOptions.splice(index, 1);
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      options: newOptions 
+                    });
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {isFileUpload && (
+          <div style={{ marginBottom: 8 }}>
+            <Row gutter={8}>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Max File Size (MB):</span>
+                </div>
+                <InputNumber
+                  value={field.maxFileSize || 10}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      maxFileSize: value 
+                    })
+                  }
+                  min={1}
+                  max={100}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Accepted Formats:</span>
+                </div>
+                <Select
+                  mode="multiple"
+                  value={field.acceptedFormats || []}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      acceptedFormats: value 
+                    })
+                  }
+                  placeholder="Select formats"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
+                  <Option value=".pdf">PDF</Option>
+                  <Option value=".doc">DOC</Option>
+                  <Option value=".docx">DOCX</Option>
+                  <Option value=".txt">TXT</Option>
+                  <Option value=".jpg">JPG</Option>
+                  <Option value=".jpeg">JPEG</Option>
+                  <Option value=".png">PNG</Option>
+                  <Option value=".gif">GIF</Option>
+                  <Option value=".xlsx">XLSX</Option>
+                  <Option value=".xls">XLS</Option>
+                  <Option value=".csv">CSV</Option>
+                </Select>
+              </Col>
+            </Row>
+          </div>
+        )}
+        
+        {field.type === 'text' && (
+          <div style={{ marginBottom: 8 }}>
+            <Row gutter={8}>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Min Length:</span>
+                </div>
+                <InputNumber
+                  value={field.minLength || 0}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      minLength: value 
+                    })
+                  }
+                  min={0}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Max Length:</span>
+                </div>
+                <InputNumber
+                  value={field.maxLength || 255}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      maxLength: value 
+                    })
+                  }
+                  min={1}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
+        
+        {field.type === 'textarea' && (
+          <div style={{ marginBottom: 8 }}>
+            <Row gutter={8}>
+              <Col span={8}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Rows:</span>
+                </div>
+                <InputNumber
+                  value={field.rows || 3}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      rows: value 
+                    })
+                  }
+                  min={2}
+                  max={10}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={8}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Min Length:</span>
+                </div>
+                <InputNumber
+                  value={field.minLength || 0}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      minLength: value 
+                    })
+                  }
+                  min={0}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={8}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Max Length:</span>
+                </div>
+                <InputNumber
+                  value={field.maxLength || 1000}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      maxLength: value 
+                    })
+                  }
+                  min={1}
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
+        
+        {field.type === 'number' && (
+          <div style={{ marginBottom: 8 }}>
+            <Row gutter={8}>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Min Value:</span>
+                </div>
+                <InputNumber
+                  value={field.minValue}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      minValue: value 
+                    })
+                  }
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 500, fontSize: 12 }}>Max Value:</span>
+                </div>
+                <InputNumber
+                  value={field.maxValue}
+                  onChange={(value) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      maxValue: value 
+                    })
+                  }
+                  size="small"
+                  style={{ width: '100%' }}
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
+        
+        {field.type === 'date' && (
+          <div style={{ marginBottom: 8 }}>
+            <Row gutter={8}>
+              <Col span={12}>
+                <Checkbox
+                  checked={field.allowPastDates}
+                  onChange={(e) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      allowPastDates: e.target.checked 
+                    })
+                  }
+                >
+                  Allow Past Dates
+                </Checkbox>
+              </Col>
+              <Col span={12}>
+                <Checkbox
+                  checked={field.allowFutureDates}
+                  onChange={(e) =>
+                    updateStageCustomField(pipelineId, stageId, field.id, { 
+                      allowFutureDates: e.target.checked 
+                    })
+                  }
+                >
+                  Allow Future Dates
+                </Checkbox>
+              </Col>
+            </Row>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <Modal
+      title={`Set Stage Dates & Approvals for ${
+        currentPipelineForDates?.name || "Pipeline"
+      }`}
+      visible={pipelineDatesModalVisible}
+      onCancel={() => setPipelineDatesModalVisible(false)}
+      footer={[
+        <Button
+          key="back"
+          onClick={() => setPipelineDatesModalVisible(false)}
+        >
+          Close
+        </Button>,
+        <Button
+          key="submit"
+          type="primary"
+          onClick={() => setPipelineDatesModalVisible(false)}
+          style={{
+            background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+          }}
+        >
+          Save Dates & Approvals
+        </Button>,
+      ]}
+      width={900}
+    >
+      {sortedStages.map((stage) => {
+        const stageId = stage._id || stage.id;
+        const dateEntry = pipelineStageDates[pipelineId]?.find(
+          (d) => d.stageId === stageId
+        );
+        const stageDetails =
+          fetchedJobData?.workOrder?.pipelineStageTimeline?.find(
+            (timeline) =>
+              timeline.pipelineId === pipelineId &&
+              timeline.stageId === stageId
           );
-          const stageDetails =
-            fetchedJobData?.workOrder?.pipelineStageTimeline?.find(
-              (timeline) =>
-                timeline.pipelineId === pipelineId &&
-                timeline.stageId === stageId
-            );
 
-          const stageFields = stageCustomFields[pipelineId]?.[stageId] || [];
-          const stageDocs = stageRequiredDocuments[pipelineId]?.[stageId] || [];
+        // Get custom fields and required documents for this stage
+        const stageFields = stageCustomFields[pipelineId]?.[stageId] || [];
+        const stageDocs = stageRequiredDocuments[pipelineId]?.[stageId] || [];
 
-          return (
-            <Card
-              key={stageId}
-              title={
+        return (
+          <Card
+            key={stageId}
+            title={
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    justifyContent: "space-between",
-                    width: "100%",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
+                  <span style={{ cursor: "grab" }}>⋮⋮</span>
+                  {stage.isCustom ? (
+                    <Input
+                      value={stage.name}
+                      onChange={(e) =>
+                        updateCustomStage(pipelineId, stageId, {
+                          name: e.target.value,
+                        })
+                      }
+                      style={{ maxWidth: "200px" }}
+                      size="small"
+                    />
+                  ) : (
+                    <span>{stage.name}</span>
+                  )}
+                  {stage.isCustom && (
+                    <Tag color="orange" size="small">
+                      Custom
+                    </Tag>
+                  )}
+                  {dateEntry?.dependencyType && (
+                    <Tag color="green" size="small">
+                      {dateEntry.dependencyType}
+                    </Tag>
+                  )}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {stage.isCustom && (
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeCustomStage(pipelineId, stageId)}
+                    />
+                  )}
+                </div>
+              </div>
+            }
+            style={{
+              marginBottom: 16,
+              cursor: stage.isCustom ? "move" : "default",
+            }}
+            draggable={true}
+            onDragStart={(e) => handleDragStart(e, stage)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, stage, pipelineId)}
+          >
+            <Row gutter={[16, 16]} align="bottom">
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Form.Item
+                  label="Start Date"
+                  style={{ marginBottom: 0 }}
+                  labelCol={{ span: 24 }}
+                  wrapperCol={{ span: 24 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={
+                      dateEntry?.startDate ? dayjs(dateEntry.startDate) : null
+                    }
+                    onChange={(date) =>
+                      handleStageDateChange(
+                        pipelineId,
+                        stageId,
+                        "startDate",
+                        date
+                      )
+                    }
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Form.Item
+                  label="End Date"
+                  style={{ marginBottom: 0 }}
+                  labelCol={{ span: 24 }}
+                  wrapperCol={{ span: 24 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={
+                      dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                    }
+                    onChange={(date) =>
+                      handleStageDateChange(
+                        pipelineId,
+                        stageId,
+                        "endDate",
+                        date
+                      )
+                    }
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Form.Item
+                  label="Assigned Recruiter"
+                  style={{ marginBottom: 0 }}
+                  labelCol={{ span: 24 }}
+                  wrapperCol={{ span: 24 }}
+                >
+                  <Select
+                    value={
+                      stageDetails?.recruiterId?.fullName || "Not assigned"
+                    }
+                    disabled
+                  ></Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Form.Item
+                  label="Required Approval"
+                  style={{ marginBottom: 0 }}
+                  labelCol={{ span: 24 }}
+                  wrapperCol={{ span: 24 }}
+                >
+                  <Select
+                    value={
+                      stageDetails?.approvalId?.groupName ||
+                      "No approval required"
+                    }
+                    disabled
+                  ></Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Form.Item
+                  label="Dependency Type"
+                  style={{ marginBottom: 0 }}
+                  labelCol={{ span: 24 }}
+                  wrapperCol={{ span: 24 }}
+                >
+                  <Select
+                    value={dateEntry?.dependencyType || "independent"}
+                    onChange={(value) =>
+                      handleDependencyTypeChange(pipelineId, stageId, value)
+                    }
+                    style={{ width: "100%" }}
+                    size="small"
                   >
-                    <span style={{ cursor: "grab" }}>⋮⋮</span>
-                    {stage.isCustom ? (
-                      <Input
-                        value={stage.name}
-                        onChange={(e) =>
-                          updateCustomStage(pipelineId, stageId, {
-                            name: e.target.value,
-                          })
-                        }
-                        style={{ maxWidth: "200px" }}
-                        size="small"
-                      />
-                    ) : (
-                      <span>{stage.name}</span>
-                    )}
-                    {stage.isCustom && (
-                      <Tag color="orange" size="small">
-                        Custom
-                      </Tag>
-                    )}
-                    {dateEntry?.dependencyType && (
-                      <Tag color="green" size="small">
-                        {dateEntry.dependencyType}
-                      </Tag>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {stage.isCustom && (
+                    <Option value="independent">Independent</Option>
+                    <Option value="dependent">Dependent</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider orientation="left" plain style={{ margin: "16px 0" }}>
+              Stage Requirements
+            </Divider>
+
+            <Row gutter={16} style={{ marginBottom: 16 }}>
+              <Col span={12}>
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  block
+                  onClick={() => addStageCustomField(pipelineId, stageId)}
+                >
+                  Add Custom Field
+                </Button>
+              </Col>
+              <Col span={12}>
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  block
+                  onClick={() =>
+                    addStageRequiredDocument(pipelineId, stageId)
+                  }
+                >
+                  Add Required Document
+                </Button>
+              </Col>
+            </Row>
+
+            {stageFields.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h4>Custom Fields:</h4>
+                {stageFields.map((field) => (
+                  <Card
+                    key={field.id}
+                    size="small"
+                    style={{ marginBottom: 8 }}
+                    extra={
                       <Button
                         type="text"
                         danger
-                        size="small"
                         icon={<DeleteOutlined />}
-                        onClick={() => removeCustomStage(pipelineId, stageId)}
+                        size="small"
+                        onClick={() =>
+                          removeStageCustomField(
+                            pipelineId,
+                            stageId,
+                            field.id
+                          )
+                        }
                       />
-                    )}
-                  </div>
-                </div>
-              }
-              style={{
-                marginBottom: 16,
-                cursor: stage.isCustom ? "move" : "default",
-              }}
-              draggable={true}
-              onDragStart={(e) => handleDragStart(e, stage)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, stage, pipelineId)}
-            >
-              <Row gutter={[16, 16]} align="bottom">
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Start Date"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <DatePicker
-                      style={{ width: "100%" }}
-                      size="small"
-                      value={
-                        dateEntry?.startDate ? dayjs(dateEntry.startDate) : null
-                      }
-                      onChange={(date) =>
-                        handleStageDateChange(
-                          pipelineId,
-                          stageId,
-                          "startDate",
-                          date
-                        )
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="End Date"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <DatePicker
-                      style={{ width: "100%" }}
-                      size="small"
-                      value={
-                        dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
-                      }
-                      onChange={(date) =>
-                        handleStageDateChange(
-                          pipelineId,
-                          stageId,
-                          "endDate",
-                          date
-                        )
-                      }
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Assigned Recruiter"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <Select
-                      value={
-                        stageDetails?.recruiterId?.fullName || "Not assigned"
-                      }
-                      disabled
-                    ></Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Required Approval"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <Select
-                      value={
-                        stageDetails?.approvalId?.groupName ||
-                        "No approval required"
-                      }
-                      disabled
-                    ></Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Dependency Type"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <Select
-                      value={dateEntry?.dependencyType || "independent"}
-                      onChange={(value) =>
-                        handleDependencyTypeChange(pipelineId, stageId, value)
-                      }
-                      style={{ width: "100%" }}
-                      size="small"
-                    >
-                      <Option value="independent">Independent</Option>
-                      <Option value="dependent">Dependent</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider orientation="left" plain style={{ margin: "16px 0" }}>
-                Stage Requirements
-              </Divider>
-
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={12}>
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    block
-                    onClick={() => addStageCustomField(pipelineId, stageId)}
-                  >
-                    Add Custom Field
-                  </Button>
-                </Col>
-                <Col span={12}>
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    block
-                    onClick={() =>
-                      addStageRequiredDocument(pipelineId, stageId)
                     }
                   >
-                    Add Required Document
-                  </Button>
-                </Col>
-              </Row>
-
-              {stageFields.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <h4>Custom Fields:</h4>
-                  {stageFields.map((field) => (
-                    <Card
-                      key={field.id}
-                      size="small"
-                      style={{ marginBottom: 16 }}
-                      extra={
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          size="small"
-                          onClick={() =>
-                            removeStageCustomField(
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Input
+                          value={field.label}
+                          onChange={(e) =>
+                            updateStageCustomField(
                               pipelineId,
                               stageId,
-                              field.id
+                              field.id,
+                              { label: e.target.value }
                             )
                           }
+                          placeholder="Field Label"
                         />
-                      }
-                    >
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Input
-                            value={field.label}
-                            onChange={(e) =>
-                              updateStageCustomField(
-                                pipelineId,
-                                stageId,
-                                field.id,
-                                { label: e.target.value }
-                              )
-                            }
-                            placeholder="Field Label"
-                          />
-                        </Col>
-                        <Col span={12}>
-                          <Select
-                            value={field.type}
-                            onChange={(value) =>
-                              updateStageCustomField(
-                                pipelineId,
-                                stageId,
-                                field.id,
-                                {
-                                  type: value,
-                                  // Reset options when changing to a non-option field type
-                                  options: [
-                                    "select",
-                                    "checkbox",
-                                    "radio",
-                                  ].includes(value)
-                                    ? field.options || [""]
-                                    : [],
-                                }
-                              )
-                            }
-                            style={{ width: "100%" }}
-                          >
-                            {fieldTypes.map((type) => (
-                              <Option key={type.value} value={type.value}>
-                                {type.label}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Col>
-                      </Row>
-                      <Checkbox
-                        checked={field.required}
-                        onChange={(e) =>
-                          updateStageCustomField(
-                            pipelineId,
-                            stageId,
-                            field.id,
-                            { required: e.target.checked }
-                          )
-                        }
-                        style={{ marginTop: 8 }}
-                      >
-                        Required
-                      </Checkbox>
-
-                      {/* Options for select/checkbox/radio fields */}
-                      {["select", "checkbox", "radio"].includes(field.type) && (
-                        <div style={{ marginTop: 16 }}>
-                          <h4>Options:</h4>
-                          {(field.options || []).map((option, index) => (
-                            <div
-                              key={index}
-                              style={{
-                                display: "flex",
-                                marginBottom: "8px",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
-                              <Input
-                                value={option}
-                                onChange={(e) => {
-                                  const newOptions = [...(field.options || [])];
-                                  newOptions[index] = e.target.value;
-                                  updateStageCustomField(
-                                    pipelineId,
-                                    stageId,
-                                    field.id,
-                                    { options: newOptions }
-                                  );
-                                }}
-                                placeholder={`Option ${index + 1}`}
-                                style={{ flex: 1 }}
-                              />
-                              <Button
-                                type="text"
-                                danger
-                                icon={<MinusCircleOutlined />}
-                                onClick={() => {
-                                  const newOptions = [...(field.options || [])];
-                                  newOptions.splice(index, 1);
-                                  updateStageCustomField(
-                                    pipelineId,
-                                    stageId,
-                                    field.id,
-                                    { options: newOptions }
-                                  );
-                                }}
-                              />
-                            </div>
+                      </Col>
+                      <Col span={12}>
+                        <Select
+                          value={field.type}
+                          onChange={(value) =>
+                            updateStageCustomField(
+                              pipelineId,
+                              stageId,
+                              field.id,
+                              { type: value }
+                            )
+                          }
+                          style={{ width: "100%" }}
+                        >
+                          {fieldTypes.map((type) => (
+                            <Option key={type.value} value={type.value}>
+                              {type.label}
+                            </Option>
                           ))}
-                          <Button
-                            type="dashed"
-                            onClick={() => {
-                              const newOptions = [...(field.options || []), ""];
-                              updateStageCustomField(
-                                pipelineId,
-                                stageId,
-                                field.id,
-                                { options: newOptions }
-                              );
-                            }}
-                            icon={<PlusOutlined />}
-                            size="small"
-                          >
-                            Add Option
-                          </Button>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {stageDocs.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <h4>Required Documents:</h4>
-                  {stageDocs.map((doc) => (
-                    <Card
-                      key={doc.id}
-                      size="small"
-                      style={{ marginBottom: 8 }}
-                      extra={
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          size="small"
-                          onClick={() =>
-                            removeStageRequiredDocument(
-                              pipelineId,
-                              stageId,
-                              doc.id
-                            )
-                          }
-                        />
+                        </Select>
+                      </Col>
+                    </Row>
+                    <Checkbox
+                      checked={field.required}
+                      onChange={(e) =>
+                        updateStageCustomField(
+                          pipelineId,
+                          stageId,
+                          field.id,
+                          { required: e.target.checked }
+                        )
                       }
+                      style={{ marginTop: 8 }}
                     >
-                      <Input
-                        value={doc.title}
-                        onChange={(e) =>
-                          updateStageRequiredDocument(
+                      Required
+                    </Checkbox>
+                    
+                    {/* Render field type specific controls */}
+                    {renderFieldTypeControls(field, pipelineId, stageId)}
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {stageDocs.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h4>Required Documents:</h4>
+                {stageDocs.map((doc) => (
+                  <Card
+                    key={doc.id}
+                    size="small"
+                    style={{ marginBottom: 8 }}
+                    extra={
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        size="small"
+                        onClick={() =>
+                          removeStageRequiredDocument(
                             pipelineId,
                             stageId,
-                            doc.id,
-                            { title: e.target.value }
+                            doc.id
                           )
                         }
-                        placeholder="Document Title"
                       />
-                      <TextArea
-                        value={doc.description}
-                        onChange={(e) =>
-                          updateStageRequiredDocument(
-                            pipelineId,
-                            stageId,
-                            doc.id,
-                            { description: e.target.value }
-                          )
-                        }
-                        placeholder="Document Description"
-                        style={{ marginTop: 8 }}
-                        rows={2}
-                      />
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </Card>
-          );
-        })}
-        <Button
-          type="dashed"
-          onClick={() => addCustomStage(pipelineId)}
-          icon={<PlusOutlined />}
-          style={{ width: "100%" }}
-        >
-          Add Custom Stage
-        </Button>
-      </Modal>
-    );
-  };
+                    }
+                  >
+                    <Input
+                      value={doc.title}
+                      onChange={(e) =>
+                        updateStageRequiredDocument(
+                          pipelineId,
+                          stageId,
+                          doc.id,
+                          { title: e.target.value }
+                        )
+                      }
+                      placeholder="Document Title"
+                    />
+                    <TextArea
+                      value={doc.description}
+                      onChange={(e) =>
+                        updateStageRequiredDocument(
+                          pipelineId,
+                          stageId,
+                          doc.id,
+                          { description: e.target.value }
+                        )
+                      }
+                      placeholder="Document Description"
+                      style={{ marginTop: 8 }}
+                      rows={2}
+                    />
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        );
+      })}
+      <Button
+        type="dashed"
+        onClick={() => addCustomStage(pipelineId)}
+        icon={<PlusOutlined />}
+        style={{ width: "100%" }}
+      >
+        Add Custom Stage
+      </Button>
+    </Modal>
+  );
+};
 
   const renderSelectedPipelines = () => (
     <div style={{ marginBottom: "16px" }}>
