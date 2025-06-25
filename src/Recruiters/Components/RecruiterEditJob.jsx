@@ -660,7 +660,6 @@ const RecruiterEditJob = () => {
               })),
               requiredDocuments: requiredDocuments.map((doc) => ({
                 title: doc.title,
-                description: doc.description,
               })),
             };
           }) || []
@@ -1608,11 +1607,11 @@ const RecruiterEditJob = () => {
           </Button>,
         ]}
         width={900}
-        style={{ top: 20 }} 
+        style={{ top: 20 }}
         bodyStyle={{
           maxHeight: "calc(100vh - 200px)",
-          overflowY: "auto", 
-          padding: "16px 24px", 
+          overflowY: "auto",
+          padding: "16px 24px",
         }}
       >
         {sortedStages.map((stage) => {
@@ -1957,20 +1956,6 @@ const RecruiterEditJob = () => {
                         }
                         placeholder="Document Title"
                       />
-                      <TextArea
-                        value={doc.description}
-                        onChange={(e) =>
-                          updateStageRequiredDocument(
-                            pipelineId,
-                            stageId,
-                            doc.id,
-                            { description: e.target.value }
-                          )
-                        }
-                        placeholder="Document Description"
-                        style={{ marginTop: 8 }}
-                        rows={2}
-                      />
                     </Card>
                   ))}
                 </div>
@@ -1978,14 +1963,14 @@ const RecruiterEditJob = () => {
             </Card>
           );
         })}
-        <Button
+        {/* <Button
           type="dashed"
           onClick={() => addCustomStage(pipelineId)}
           icon={<PlusOutlined />}
           style={{ width: "100%" }}
         >
           Add Custom Stage
-        </Button>
+        </Button> */}
       </Modal>
     );
   };
