@@ -413,12 +413,10 @@ const RecruiterEditJob = () => {
     }));
   };
 
-  // Example handler for adding a required document
   const addStageRequiredDocument = (pipelineId, stageId) => {
     const newDoc = {
       id: `doc_${Date.now()}`,
       title: "New Document",
-      description: "",
     };
 
     setStageRequiredDocuments((prev) => ({
@@ -1629,7 +1627,6 @@ const RecruiterEditJob = () => {
                 timeline.stageId === stageId
             );
 
-          // Get custom fields and required documents for this stage
           const stageFields = stageCustomFields[pipelineId]?.[stageId] || [];
           const stageDocs = stageRequiredDocuments[pipelineId]?.[stageId] || [];
 
