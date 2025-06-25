@@ -2518,14 +2518,6 @@ const RecruiterEditJob = () => {
               {selectedPipelines.length > 0 && renderSelectedPipelines()}
             </Card>
 
-            <Form.Item
-              name="isActive"
-              label="Job Status"
-              valuePropName="checked"
-            >
-              <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-            </Form.Item>
-
             <div
               style={{
                 textAlign: "right",
