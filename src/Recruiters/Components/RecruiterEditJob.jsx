@@ -605,7 +605,6 @@ const RecruiterEditJob = () => {
 
         return (
           pipelineStageDates[pipeId]?.map((dateEntry, index) => {
-            // Find the original stage data to get recruiterId and approvalId
             const originalStage =
               fetchedJobData?.workOrder?.pipelineStageTimeline?.find(
                 (timeline) =>
@@ -613,11 +612,9 @@ const RecruiterEditJob = () => {
                   timeline.stageId === dateEntry.stageId
               );
 
-            // Get custom fields for this stage
             const customFields =
               stageCustomFields[pipeId]?.[dateEntry.stageId] || [];
 
-            // Get required documents for this stage
             const requiredDocuments =
               stageRequiredDocuments[pipeId]?.[dateEntry.stageId] || [];
 
@@ -641,7 +638,6 @@ const RecruiterEditJob = () => {
                 type: field.type,
                 required: field.required,
                 options: field.options || [],
-                // Add any additional field-specific properties
                 ...(field.type === "file" && {
                   maxFileSize: field.maxFileSize,
                   acceptedFormats: field.acceptedFormats,
@@ -676,16 +672,15 @@ const RecruiterEditJob = () => {
       const updatePayload = {
         ...jobData,
         ...values,
-        customFields: applicationFields, // Application form fields
+        customFields: applicationFields, 
         pipelineStageTimeline,
-        stageApprovers,
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
         alertDate: values.alertDate?.format("YYYY-MM-DD"),
         isActive:  "active",
-        recruiterId: fetchedJobData?.workOrder?.recruiterId?._id || null,
-        approvalId: fetchedJobData?.workOrder?.approvalId?._id || null,
+        // recruiterId: fetchedJobData?.workOrder?.recruiterId?._id || null,
+        // approvalId: fetchedJobData?.workOrder?.approvalId?._id || null,
       };
 
       const result = await updateJob({
