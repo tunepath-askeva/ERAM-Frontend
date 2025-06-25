@@ -185,6 +185,7 @@ const AppliedJobDetails = () => {
 
   const handleSubmitDocuments = async (stageId) => {
     const stageFiles = uploadedFiles[stageId] || [];
+    const stage = appliedJob.stageProgress.find((s) => s._id === stageId);
 
     if (stageFiles.length === 0) {
       message.warning("Please upload at least one document before submitting");
@@ -197,8 +198,8 @@ const AppliedJobDetails = () => {
       const filesToUpload = stageFiles.map((file) => file.originFileObj);
 
       const response = await uploadStageDocuments({
-        customFieldId: appliedJob._id, 
-        stageId,
+        customFieldId: appliedJob._id,
+        stageId: stage.fullStage._id,
         files: filesToUpload,
       }).unwrap();
 

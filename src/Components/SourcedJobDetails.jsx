@@ -185,6 +185,7 @@ const SourcedJobDetails = () => {
 
   const handleSubmitDocuments = async (stageId) => {
     const stageFiles = uploadedFiles[stageId] || [];
+    const stage = sourcedJob.stageProgress.find((s) => s._id === stageId);
 
     if (stageFiles.length === 0) {
       message.warning("Please upload at least one document before submitting");
@@ -197,15 +198,15 @@ const SourcedJobDetails = () => {
       const filesToUpload = stageFiles.map((file) => file.originFileObj);
 
       const response = await uploadStageDocuments({
-        customFieldId: sourcedJob._id, // Using sourcedJob._id instead of appliedJob._id
-        stageId,
+        customFieldId: sourcedJob._id,
+        stageId: stage.fullStage._id, 
         files: filesToUpload,
       }).unwrap();
 
       message.success(response.message || "Documents submitted successfully!");
       setUploadedFiles((prev) => ({
         ...prev,
-        [stageId]: [],
+        [stageId]: [], 
       }));
     } catch (error) {
       console.error("Failed to upload documents:", error);
@@ -215,7 +216,6 @@ const SourcedJobDetails = () => {
     }
   };
 
-  // Overview Tab Content
   const OverviewContent = () => (
     <Card>
       <div

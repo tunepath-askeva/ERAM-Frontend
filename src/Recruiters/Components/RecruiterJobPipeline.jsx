@@ -36,7 +36,7 @@ const { TabPane } = Tabs;
 const { Option } = Select;
 
 const RecruiterJobPipeline = () => {
-  const { id } = useParams(); 
+  const { id } = useParams();
   const navigate = useNavigate();
   const [activeStage, setActiveStage] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -48,56 +48,56 @@ const RecruiterJobPipeline = () => {
 
   const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
 
-useEffect(() => {
-  if (apiData?.data) {
-    const pipelineData = apiData.data;
-    const workOrder = pipelineData.workOrder;
-    const user = pipelineData.user;
-    const stageProgress = pipelineData.stageProgress || [];
-    const fullPipeline = pipelineData.fullPipeline;
+  useEffect(() => {
+    if (apiData?.data) {
+      const pipelineData = apiData.data;
+      const workOrder = pipelineData.workOrder;
+      const user = pipelineData.user;
+      const stageProgress = pipelineData.stageProgress || [];
+      const fullPipeline = pipelineData.fullPipeline;
 
-    const currentStageProgress = stageProgress[0];
+      const currentStageProgress = stageProgress[0];
 
-    const processedCandidate = {
-      _id: pipelineData._id,
-      pipelineCandidateId: pipelineData._id,
-      name: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      skills: user.skills || [],
-      avatar: null,
-      status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
-      currentStage: currentStageProgress?.stageId || null,
-      currentStageName: currentStageProgress?.stageName || "Unknown",
-      stageStatus: currentStageProgress?.stageStatus || "pending",
-      appliedDate: pipelineData.createdAt,
-      stageProgress: stageProgress,
-      isSourced: pipelineData.isSourced === "true",
-      responses: pipelineData.responses || [],
-    };
+      const processedCandidate = {
+        _id: pipelineData._id,
+        pipelineCandidateId: pipelineData._id,
+        name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        skills: user.skills || [],
+        avatar: null,
+        status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
+        currentStage: currentStageProgress?.stageId || null,
+        currentStageName: currentStageProgress?.stageName || "Unknown",
+        stageStatus: currentStageProgress?.stageStatus || "pending",
+        appliedDate: pipelineData.createdAt,
+        stageProgress: stageProgress,
+        isSourced: pipelineData.isSourced === "true",
+        responses: pipelineData.responses || [],
+      };
 
-    const jobData = {
-      _id: workOrder._id,
-      title: workOrder.title,
-      company: workOrder.companyIndustry || "Company",
-      location: workOrder.officeLocation,
-      jobCode: workOrder.jobCode,
-      description: workOrder.description,
-      startDate: workOrder.startDate,
-      endDate: workOrder.endDate,
-      isActive: pipelineData.status === "pipeline",
-      pipeline: {
-        _id: fullPipeline._id,
-        name: fullPipeline.name,
-        stages: fullPipeline.stages || [],
-      },
-      candidates: [processedCandidate], 
-      deadline: workOrder.endDate, 
-    };
+      const jobData = {
+        _id: workOrder._id,
+        title: workOrder.title,
+        company: workOrder.companyIndustry || "Company",
+        location: workOrder.officeLocation,
+        jobCode: workOrder.jobCode,
+        description: workOrder.description,
+        startDate: workOrder.startDate,
+        endDate: workOrder.endDate,
+        isActive: pipelineData.status === "pipeline",
+        pipeline: {
+          _id: fullPipeline._id,
+          name: fullPipeline.name,
+          stages: fullPipeline.stages || [],
+        },
+        candidates: [processedCandidate],
+        deadline: workOrder.endDate,
+      };
 
-    setProcessedJobData(jobData);
-  }
-}, [apiData, id]);
+      setProcessedJobData(jobData);
+    }
+  }, [apiData, id]);
 
   useEffect(() => {
     if (processedJobData?.pipeline?.stages?.length > 0) {
@@ -271,7 +271,6 @@ useEffect(() => {
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-           
             {processedJobData.startDate && (
               <Text
                 type="secondary"
