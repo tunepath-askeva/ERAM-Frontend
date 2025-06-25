@@ -107,8 +107,10 @@ const RecruiterEditJob = () => {
 
         const job = fetchedJobData.workOrder;
 
-        // Initialize pipeline stage dates
         const initialStageDates = {};
+        const initialStageCustomFields = {};
+        const initialStageRequiredDocuments = {};
+
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
             const pipelineId = job.pipeline[0]?._id;
@@ -131,6 +133,43 @@ const RecruiterEditJob = () => {
         // Set selected pipelines
         const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
         setSelectedPipelines(selectedPipeIds);
+
+        if (fetchedJobData.workOrder.pipelineStageTimeline) {
+          fetchedJobData.workOrder.pipelineStageTimeline.forEach((timeline) => {
+            const pipelineId = timeline.pipelineId;
+            const stageId = timeline.stageId;
+
+            if (!initialStageCustomFields[pipelineId]) {
+              initialStageCustomFields[pipelineId] = {};
+            }
+            if (!initialStageRequiredDocuments[pipelineId]) {
+              initialStageRequiredDocuments[pipelineId] = {};
+            }
+
+            initialStageCustomFields[pipelineId][stageId] =
+              timeline.customFields?.map((field) => ({
+                ...field,
+                id:
+                  field._id ||
+                  `field_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+              })) || [];
+
+            initialStageRequiredDocuments[pipelineId][stageId] =
+              timeline.requiredDocuments?.map((doc) => ({
+                ...doc,
+                id:
+                  doc._id ||
+                  `doc_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+              })) || [];
+          });
+        }
+
+        setStageCustomFields(initialStageCustomFields);
+        setStageRequiredDocuments(initialStageRequiredDocuments);
 
         // Prepare form data
         const formData = {
@@ -632,6 +671,7 @@ const RecruiterEditJob = () => {
               recruiterId: originalStage?.recruiterId?._id || null,
               approvalId: originalStage?.approvalId?._id || null,
               customFields: customFields.map((field) => ({
+                _id: field._id, // Include the original _id if it exists
                 label: field.label,
                 type: field.type,
                 required: field.required,
@@ -659,6 +699,7 @@ const RecruiterEditJob = () => {
                 }),
               })),
               requiredDocuments: requiredDocuments.map((doc) => ({
+                _id: doc._id, // Include the original _id if it exists
                 title: doc.title,
               })),
             };
@@ -676,8 +717,6 @@ const RecruiterEditJob = () => {
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
         alertDate: values.alertDate?.format("YYYY-MM-DD"),
         isActive: "active",
-        // recruiterId: fetchedJobData?.workOrder?.recruiterId?._id || null,
-        // approvalId: fetchedJobData?.workOrder?.approvalId?._id || null,
       };
 
       const result = await updateJob({
@@ -1912,8 +1951,6 @@ const RecruiterEditJob = () => {
                       >
                         Required
                       </Checkbox>
-
-                      {/* Render field type specific controls */}
                       {renderFieldTypeControls(field, pipelineId, stageId)}
                     </Card>
                   ))}
