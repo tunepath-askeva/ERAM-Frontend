@@ -34,6 +34,7 @@ import {
   SendOutlined,
   CommentOutlined,
 } from "@ant-design/icons";
+import { useGetApprovalInfoQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -50,6 +51,8 @@ const RecruiterApprovals = () => {
     useState(false);
   const [activeTab, setActiveTab] = useState("pending");
   const screens = useBreakpoint();
+
+  const { data } = useGetApprovalInfoQuery();
 
   // Mock data - replace with actual API calls
   useEffect(() => {

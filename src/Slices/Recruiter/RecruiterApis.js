@@ -83,6 +83,12 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    getApprovalInfo: builder.query({
+      query: () => ({
+        url: `/approval-info`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -98,4 +104,5 @@ export const {
   useMoveToPipelineMutation,
   useGetPipelineJobsQuery,
   useGetPipelineJobsByIdQuery,
+  useGetApprovalInfoQuery
 } = recruiterApi;

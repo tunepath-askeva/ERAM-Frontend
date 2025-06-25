@@ -56,7 +56,6 @@ const RecruiterJobPipeline = () => {
   const [targetStage, setTargetStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
-  const [approvalStatus, setApprovalStatus] = useState({});
   const screens = useBreakpoint();
 
   const primaryColor = "#da2c46";
@@ -95,6 +94,8 @@ const RecruiterJobPipeline = () => {
           fullPipeline.stages.find(
             (s) => s._id === currentStageProgress?.stageId
           )?.requiredDocuments || [],
+        // Get approval status from backend data
+        documentApprovalStatus: currentStageProgress?.documentApprovalStatus || "pending", // pending, approved, rejected
       };
 
       const jobData = {
@@ -117,12 +118,6 @@ const RecruiterJobPipeline = () => {
       };
 
       setProcessedJobData(jobData);
-
-      const candidateKey = `${processedCandidate.pipelineCandidateId}_${processedCandidate.currentStage}`;
-      setApprovalStatus((prev) => ({
-        ...prev,
-        [candidateKey]: false,
-      }));
     }
   }, [apiData, id]);
 
@@ -180,10 +175,10 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
-    const candidateKey = `${selectedCandidate.pipelineCandidateId}_${selectedCandidate.currentStage}`;
-    if (!approvalStatus[candidateKey]) {
+    // Check if documents are approved
+    if (selectedCandidate.documentApprovalStatus !== "approved") {
       message.warning(
-        "Please approve the candidate's documents before moving to next stage"
+        "Cannot move candidate until documents are approved by the approver"
       );
       return;
     }
@@ -192,15 +187,6 @@ const RecruiterJobPipeline = () => {
       `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
-  };
-
-  const handleSendForApproval = (candidate) => {
-    const candidateKey = `${candidate.pipelineCandidateId}_${candidate.currentStage}`;
-    setApprovalStatus((prev) => ({
-      ...prev,
-      [candidateKey]: true,
-    }));
-    message.success(`${candidate.name}'s documents sent for approval`);
   };
 
   const handleViewDocument = (fileUrl, fileName) => {
@@ -292,8 +278,41 @@ const RecruiterJobPipeline = () => {
   };
 
   const renderApprovalSection = (candidate) => {
-    const candidateKey = `${candidate.pipelineCandidateId}_${candidate.currentStage}`;
-    const isApproved = approvalStatus[candidateKey];
+    const isApproved = candidate.documentApprovalStatus === "approved";
+    const isRejected = candidate.documentApprovalStatus === "rejected";
+    const isPending = candidate.documentApprovalStatus === "pending";
+
+    const getStatusTag = () => {
+      if (isApproved) {
+        return (
+          <Tag icon={<CheckCircleOutlined />} color="success">
+            Approved
+          </Tag>
+        );
+      } else if (isRejected) {
+        return (
+          <Tag icon={<ExclamationCircleOutlined />} color="error">
+            Rejected
+          </Tag>
+        );
+      } else {
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="warning">
+            Pending Approval
+          </Tag>
+        );
+      }
+    };
+
+    const getStatusMessage = () => {
+      if (isApproved) {
+        return "Documents have been approved. You can now move the candidate to the next stage.";
+      } else if (isRejected) {
+        return "Documents have been rejected by the approver. Please request the candidate to resubmit.";
+      } else {
+        return "Documents are with the approver for review. You cannot move the candidate until approval is received.";
+      }
+    };
 
     return (
       <div
@@ -317,15 +336,7 @@ const RecruiterJobPipeline = () => {
           <div>
             <Text strong>Document Review Status:</Text>
             <div style={{ marginTop: "4px" }}>
-              {isApproved ? (
-                <Tag icon={<CheckCircleOutlined />} color="success">
-                  Approved
-                </Tag>
-              ) : (
-                <Tag icon={<ClockCircleOutlined />} color="warning">
-                  Pending Review
-                </Tag>
-              )}
+              {getStatusTag()}
             </div>
           </div>
 
@@ -333,22 +344,6 @@ const RecruiterJobPipeline = () => {
             direction={screens.xs ? "vertical" : "horizontal"}
             style={{ width: screens.xs ? "100%" : "auto" }}
           >
-            {!isApproved && candidate.uploadedDocuments?.length > 0 && (
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleSendForApproval(candidate)}
-                style={{
-                  backgroundColor: "#da2c46",
-                  borderColor: "#da2c46",
-                  width: screens.xs ? "100%" : "auto",
-                }}
-                block={screens.xs}
-              >
-                Send for Approval
-              </Button>
-            )}
-
             <Button
               type="primary"
               icon={<ArrowRightOutlined />}
@@ -366,14 +361,15 @@ const RecruiterJobPipeline = () => {
           </Space>
         </div>
 
-        {!isApproved && (
-          <div style={{ marginTop: "12px" }}>
-            <Text type="secondary" style={{ fontSize: "12px" }}>
-              <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
-              Documents must be approved before moving to the next stage
-            </Text>
-          </div>
-        )}
+        <div style={{ marginTop: "12px" }}>
+          <Text 
+            type={isApproved ? "success" : isRejected ? "danger" : "secondary"} 
+            style={{ fontSize: "12px" }}
+          >
+            <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
+            {getStatusMessage()}
+          </Text>
+        </div>
       </div>
     );
   };
@@ -767,7 +763,7 @@ const RecruiterJobPipeline = () => {
           </Select>
         </div>
 
-        {selectedCandidate && (
+        {selectedCandidate && selectedCandidate.documentApprovalStatus === "approved" && (
           <div
             style={{
               marginTop: "16px",
@@ -781,6 +777,24 @@ const RecruiterJobPipeline = () => {
                 style={{ color: "#52c41a", marginRight: "4px" }}
               />
               Documents have been approved for this candidate
+            </Text>
+          </div>
+        )}
+
+        {selectedCandidate && selectedCandidate.documentApprovalStatus !== "approved" && (
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff2e8",
+              borderRadius: "6px",
+            }}
+          >
+            <Text type="warning" style={{ fontSize: "12px" }}>
+              <ClockCircleOutlined
+                style={{ color: "#fa8c16", marginRight: "4px" }}
+              />
+              Documents are still pending approval. Cannot move candidate until approved.
             </Text>
           </div>
         )}
