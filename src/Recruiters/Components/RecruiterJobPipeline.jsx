@@ -271,13 +271,6 @@ useEffect(() => {
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            <Text
-              type="secondary"
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
-              <TeamOutlined /> {processedJobData.candidates?.length || 0}{" "}
-              candidates
-            </Text>
            
             {processedJobData.startDate && (
               <Text
