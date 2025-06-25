@@ -672,13 +672,13 @@ const RecruiterEditJob = () => {
       const updatePayload = {
         ...jobData,
         ...values,
-        customFields: applicationFields, 
+        customFields: applicationFields,
         pipelineStageTimeline,
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
         alertDate: values.alertDate?.format("YYYY-MM-DD"),
-        isActive:  "active",
+        isActive: "active",
         // recruiterId: fetchedJobData?.workOrder?.recruiterId?._id || null,
         // approvalId: fetchedJobData?.workOrder?.approvalId?._id || null,
       };
@@ -1610,6 +1610,12 @@ const RecruiterEditJob = () => {
           </Button>,
         ]}
         width={900}
+        style={{ top: 20 }} 
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto", 
+          padding: "16px 24px", 
+        }}
       >
         {sortedStages.map((stage) => {
           const stageId = stage._id || stage.id;
