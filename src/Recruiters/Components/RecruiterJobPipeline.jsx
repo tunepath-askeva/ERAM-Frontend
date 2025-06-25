@@ -23,6 +23,7 @@ import {
   Divider,
   Row,
   Col,
+  Grid,
 } from "antd";
 import {
   TeamOutlined,
@@ -45,6 +46,7 @@ const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { Panel } = Collapse;
+const { useBreakpoint } = Grid;
 
 const RecruiterJobPipeline = () => {
   const { id } = useParams();
@@ -54,7 +56,8 @@ const RecruiterJobPipeline = () => {
   const [targetStage, setTargetStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
-  const [approvalStatus, setApprovalStatus] = useState({}); // Track approval status for each candidate's stage
+  const [approvalStatus, setApprovalStatus] = useState({});
+  const screens = useBreakpoint();
 
   const primaryColor = "#da2c46";
 
@@ -115,11 +118,10 @@ const RecruiterJobPipeline = () => {
 
       setProcessedJobData(jobData);
 
-      // Initialize approval status
       const candidateKey = `${processedCandidate.pipelineCandidateId}_${processedCandidate.currentStage}`;
       setApprovalStatus((prev) => ({
         ...prev,
-        [candidateKey]: false, // Default to not approved
+        [candidateKey]: false,
       }));
     }
   }, [apiData, id]);
@@ -186,46 +188,22 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
-    console.log(
-      "Moving candidate with ID:",
-      selectedCandidate.pipelineCandidateId
-    );
-    console.log("To stage:", targetStage);
-
     message.success(
       `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
     );
     setIsMoveModalVisible(false);
-
-    // Make your API call here with selectedCandidate.pipelineCandidateId
-    // Example:
-    // moveCandidateToStage({
-    //   candidateId: selectedCandidate.pipelineCandidateId,
-    //   stageId: targetStage
-    // });
   };
 
   const handleSendForApproval = (candidate) => {
     const candidateKey = `${candidate.pipelineCandidateId}_${candidate.currentStage}`;
-
-    // Here you would make an API call to send for approval
-    // For now, we'll just update the local state
     setApprovalStatus((prev) => ({
       ...prev,
       [candidateKey]: true,
     }));
-
     message.success(`${candidate.name}'s documents sent for approval`);
-
-    // API call example:
-    // sendForApproval({
-    //   candidateId: candidate.pipelineCandidateId,
-    //   stageId: candidate.currentStage
-    // });
   };
 
   const handleViewDocument = (fileUrl, fileName) => {
-    // Open document in new tab
     window.open(fileUrl, "_blank");
   };
 
@@ -265,7 +243,7 @@ const RecruiterJobPipeline = () => {
 
         <Row gutter={[16, 16]}>
           {candidate.uploadedDocuments.map((doc, index) => (
-            <Col xs={24} sm={12} md={8} key={doc._id || index}>
+            <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
               <Card
                 size="small"
                 hoverable
@@ -294,10 +272,8 @@ const RecruiterJobPipeline = () => {
                   }
                   title={
                     <Tooltip title={doc.fileName}>
-                      <Text style={{ fontSize: "12px" }}>
-                        {doc.fileName.length > 20
-                          ? `${doc.fileName.substring(0, 20)}...`
-                          : doc.fileName}
+                      <Text style={{ fontSize: "12px" }} ellipsis>
+                        {doc.fileName}
                       </Text>
                     </Tooltip>
                   }
@@ -332,8 +308,10 @@ const RecruiterJobPipeline = () => {
         <div
           style={{
             display: "flex",
+            flexDirection: screens.xs ? "column" : "row",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: screens.xs ? "flex-start" : "center",
+            gap: screens.xs ? "12px" : "0",
           }}
         >
           <div>
@@ -351,13 +329,21 @@ const RecruiterJobPipeline = () => {
             </div>
           </div>
 
-          <Space>
+          <Space
+            direction={screens.xs ? "vertical" : "horizontal"}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
             {!isApproved && candidate.uploadedDocuments?.length > 0 && (
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleSendForApproval(candidate)}
-                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+                style={{
+                  backgroundColor: "#da2c46",
+                  borderColor: "#da2c46",
+                  width: screens.xs ? "100%" : "auto",
+                }}
+                block={screens.xs}
               >
                 Send for Approval
               </Button>
@@ -371,7 +357,9 @@ const RecruiterJobPipeline = () => {
               style={{
                 backgroundColor: isApproved ? primaryColor : "#d9d9d9",
                 borderColor: isApproved ? primaryColor : "#d9d9d9",
+                width: screens.xs ? "100%" : "auto",
               }}
+              block={screens.xs}
             >
               Move to Next Stage
             </Button>
@@ -433,7 +421,14 @@ const RecruiterJobPipeline = () => {
   }
 
   return (
-    <div style={{ padding: "16px", minHeight: "100vh" }}>
+    <div
+      style={{
+        padding: screens.xs ? "8px" : "16px",
+        minHeight: "100vh",
+        maxWidth: "100vw",
+        overflowX: "hidden",
+      }}
+    >
       <div style={{ marginBottom: "16px" }}>
         <Button
           type="text"
@@ -456,12 +451,14 @@ const RecruiterJobPipeline = () => {
           <div
             style={{
               display: "flex",
+              flexDirection: screens.xs ? "column" : "row",
               justifyContent: "space-between",
-              alignItems: "flex-start",
+              alignItems: screens.xs ? "flex-start" : "flex-start",
+              gap: screens.xs ? "8px" : "0",
             }}
           >
             <div>
-              <Title level={3} style={{ margin: 0 }}>
+              <Title level={screens.xs ? 4 : 3} style={{ margin: 0 }}>
                 {processedJobData.title}
               </Title>
               <Text strong style={{ display: "block", marginTop: "4px" }}>
@@ -478,13 +475,20 @@ const RecruiterJobPipeline = () => {
               {processedJobData.description && (
                 <Text
                   type="secondary"
-                  style={{ display: "block", marginTop: "4px" }}
+                  style={{
+                    display: "block",
+                    marginTop: "4px",
+                    fontSize: screens.xs ? "12px" : "14px",
+                  }}
                 >
                   {processedJobData.description}
                 </Text>
               )}
             </div>
-            <Tag color={processedJobData.isActive ? "green" : "red"}>
+            <Tag
+              color={processedJobData.isActive ? "green" : "red"}
+              style={{ marginTop: screens.xs ? "8px" : "0" }}
+            >
               {processedJobData.isActive ? "Active" : "Inactive"}
             </Tag>
           </div>
@@ -493,7 +497,12 @@ const RecruiterJobPipeline = () => {
             {processedJobData.startDate && (
               <Text
                 type="secondary"
-                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: screens.xs ? "12px" : "14px",
+                }}
               >
                 <CalendarOutlined /> Start:{" "}
                 {new Date(processedJobData.startDate).toLocaleDateString()}
@@ -502,7 +511,12 @@ const RecruiterJobPipeline = () => {
             {processedJobData.endDate && (
               <Text
                 type="secondary"
-                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontSize: screens.xs ? "12px" : "14px",
+                }}
               >
                 <CalendarOutlined /> End:{" "}
                 {new Date(processedJobData.endDate).toLocaleDateString()}
@@ -517,13 +531,22 @@ const RecruiterJobPipeline = () => {
         </div>
       </Card>
 
-      <div style={{ overflowX: "auto", marginBottom: "16px" }}>
+      <div
+        style={{
+          overflowX: "auto",
+          marginBottom: "16px",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         <Tabs
           activeKey={activeStage}
           onChange={setActiveStage}
           tabPosition="top"
-          type="card"
-          style={{ minWidth: "max-content" }}
+          type={screens.xs ? "line" : "card"}
+          style={{
+            minWidth: screens.xs ? "100%" : "max-content",
+            width: screens.xs ? "100%" : "auto",
+          }}
         >
           {processedJobData.pipeline.stages.map((stage) => (
             <TabPane
@@ -537,7 +560,14 @@ const RecruiterJobPipeline = () => {
                       activeStage === stage._id ? primaryColor : "#d9d9d9",
                   }}
                 >
-                  <span style={{ padding: "0 8px" }}>{stage.name}</span>
+                  <span
+                    style={{
+                      padding: screens.xs ? "0 4px" : "0 8px",
+                      fontSize: screens.xs ? "12px" : "14px",
+                    }}
+                  >
+                    {stage.name}
+                  </span>
                 </Badge>
               }
             />
@@ -563,43 +593,63 @@ const RecruiterJobPipeline = () => {
               dataSource={getCandidatesInStage(activeStage)}
               renderItem={(candidate) => (
                 <List.Item
-                  style={{ padding: "20px", borderBottom: "1px solid #f0f0f0" }}
+                  style={{
+                    padding: screens.xs ? "12px" : "20px",
+                    borderBottom: "1px solid #f0f0f0",
+                  }}
                 >
                   <List.Item.Meta
                     avatar={
                       <Avatar
                         src={candidate.avatar}
                         icon={<UserOutlined />}
-                        size="large"
+                        size={screens.xs ? "default" : "large"}
                       />
                     }
                     title={
                       <div
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
+                          flexDirection: screens.xs ? "column" : "row",
+                          alignItems: screens.xs ? "flex-start" : "center",
+                          gap: screens.xs ? "4px" : "8px",
                         }}
                       >
-                        <Text strong style={{ fontSize: "18px" }}>
+                        <Text
+                          strong
+                          style={{
+                            fontSize: screens.xs ? "16px" : "18px",
+                            lineHeight: screens.xs ? "1.2" : "1.5",
+                          }}
+                        >
                           {candidate.name}
                         </Text>
-                        {candidate.isSourced && (
-                          <Tag color="orange" size="small">
-                            Sourced
-                          </Tag>
-                        )}
-                        <Tag
-                          color={
-                            candidate.stageStatus === "completed"
-                              ? "green"
-                              : candidate.stageStatus === "rejected"
-                              ? "red"
-                              : "blue"
-                          }
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                            marginTop: screens.xs ? "4px" : "0",
+                          }}
                         >
-                          {candidate.stageStatus}
-                        </Tag>
+                          {candidate.isSourced && (
+                            <Tag color="orange" size="small">
+                              Sourced
+                            </Tag>
+                          )}
+                          <Tag
+                            color={
+                              candidate.stageStatus === "completed"
+                                ? "green"
+                                : candidate.stageStatus === "rejected"
+                                ? "red"
+                                : "blue"
+                            }
+                            size={screens.xs ? "small" : "default"}
+                          >
+                            {candidate.stageStatus}
+                          </Tag>
+                        </div>
                       </div>
                     }
                     description={
@@ -609,7 +659,7 @@ const RecruiterJobPipeline = () => {
                         {candidate.skills && candidate.skills.length > 0 && (
                           <div>
                             {candidate.skills
-                              .slice(0, 5)
+                              .slice(0, screens.xs ? 3 : 5)
                               .map((skill, index) => (
                                 <Tag
                                   key={index}
@@ -619,14 +669,21 @@ const RecruiterJobPipeline = () => {
                                   {skill}
                                 </Tag>
                               ))}
-                            {candidate.skills.length > 5 && (
+                            {candidate.skills.length > (screens.xs ? 3 : 5) && (
                               <Tag size="small" style={{ margin: "1px" }}>
-                                +{candidate.skills.length - 5} more
+                                +
+                                {candidate.skills.length - (screens.xs ? 3 : 5)}{" "}
+                                more
                               </Tag>
                             )}
                           </div>
                         )}
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: screens.xs ? "11px" : "12px",
+                          }}
+                        >
                           Applied {formatDate(candidate.appliedDate)}
                         </Text>
                       </Space>
@@ -680,6 +737,7 @@ const RecruiterJobPipeline = () => {
         okButtonProps={{
           style: { background: primaryColor, border: "none" },
         }}
+        width={screens.xs ? "90vw" : "520px"}
       >
         <div style={{ marginBottom: "16px" }}>
           <Text>
