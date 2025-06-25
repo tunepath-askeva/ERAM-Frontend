@@ -19,6 +19,10 @@ import {
   Tooltip,
   Select,
   Empty,
+  Collapse,
+  Divider,
+  Row,
+  Col,
 } from "antd";
 import {
   TeamOutlined,
@@ -29,11 +33,18 @@ import {
   DollarOutlined,
   CalendarOutlined,
   BankOutlined,
+  FileOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  ArrowRightOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 const RecruiterJobPipeline = () => {
   const { id } = useParams();
@@ -43,6 +54,7 @@ const RecruiterJobPipeline = () => {
   const [targetStage, setTargetStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
+  const [approvalStatus, setApprovalStatus] = useState({}); // Track approval status for each candidate's stage
 
   const primaryColor = "#da2c46";
 
@@ -74,6 +86,12 @@ const RecruiterJobPipeline = () => {
         stageProgress: stageProgress,
         isSourced: pipelineData.isSourced === "true",
         responses: pipelineData.responses || [],
+        uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
+        recruiterReviews: currentStageProgress?.recruiterReviews || [],
+        requiredDocuments:
+          fullPipeline.stages.find(
+            (s) => s._id === currentStageProgress?.stageId
+          )?.requiredDocuments || [],
       };
 
       const jobData = {
@@ -96,6 +114,13 @@ const RecruiterJobPipeline = () => {
       };
 
       setProcessedJobData(jobData);
+
+      // Initialize approval status
+      const candidateKey = `${processedCandidate.pipelineCandidateId}_${processedCandidate.currentStage}`;
+      setApprovalStatus((prev) => ({
+        ...prev,
+        [candidateKey]: false, // Default to not approved
+      }));
     }
   }, [apiData, id]);
 
@@ -152,6 +177,15 @@ const RecruiterJobPipeline = () => {
       message.warning("Please select a target stage");
       return;
     }
+
+    const candidateKey = `${selectedCandidate.pipelineCandidateId}_${selectedCandidate.currentStage}`;
+    if (!approvalStatus[candidateKey]) {
+      message.warning(
+        "Please approve the candidate's documents before moving to next stage"
+      );
+      return;
+    }
+
     console.log(
       "Moving candidate with ID:",
       selectedCandidate.pipelineCandidateId
@@ -169,6 +203,191 @@ const RecruiterJobPipeline = () => {
     //   candidateId: selectedCandidate.pipelineCandidateId,
     //   stageId: targetStage
     // });
+  };
+
+  const handleSendForApproval = (candidate) => {
+    const candidateKey = `${candidate.pipelineCandidateId}_${candidate.currentStage}`;
+
+    // Here you would make an API call to send for approval
+    // For now, we'll just update the local state
+    setApprovalStatus((prev) => ({
+      ...prev,
+      [candidateKey]: true,
+    }));
+
+    message.success(`${candidate.name}'s documents sent for approval`);
+
+    // API call example:
+    // sendForApproval({
+    //   candidateId: candidate.pipelineCandidateId,
+    //   stageId: candidate.currentStage
+    // });
+  };
+
+  const handleViewDocument = (fileUrl, fileName) => {
+    // Open document in new tab
+    window.open(fileUrl, "_blank");
+  };
+
+  const renderDocuments = (candidate) => {
+    if (
+      !candidate.uploadedDocuments ||
+      candidate.uploadedDocuments.length === 0
+    ) {
+      return (
+        <Empty
+          description="No documents uploaded"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          style={{ margin: "20px 0" }}
+        />
+      );
+    }
+
+    return (
+      <div style={{ marginTop: "16px" }}>
+        <Title level={5} style={{ marginBottom: "12px" }}>
+          <FileOutlined style={{ marginRight: "8px" }} />
+          Uploaded Documents ({candidate.uploadedDocuments.length})
+        </Title>
+
+        <div style={{ marginBottom: "16px" }}>
+          <Text strong>Required Documents: </Text>
+          {candidate.requiredDocuments.length > 0 ? (
+            candidate.requiredDocuments.map((doc, index) => (
+              <Tag key={index} color="blue" style={{ margin: "2px" }}>
+                {doc}
+              </Tag>
+            ))
+          ) : (
+            <Text type="secondary">None specified</Text>
+          )}
+        </div>
+
+        <Row gutter={[16, 16]}>
+          {candidate.uploadedDocuments.map((doc, index) => (
+            <Col xs={24} sm={12} md={8} key={doc._id || index}>
+              <Card
+                size="small"
+                hoverable
+                style={{
+                  borderRadius: "8px",
+                  border: "1px solid #f0f0f0",
+                }}
+                actions={[
+                  <Button
+                    type="text"
+                    icon={<EyeOutlined />}
+                    onClick={() =>
+                      handleViewDocument(doc.fileUrl, doc.fileName)
+                    }
+                    style={{ color: primaryColor }}
+                  >
+                    View
+                  </Button>,
+                ]}
+              >
+                <Card.Meta
+                  avatar={
+                    <FileOutlined
+                      style={{ fontSize: "24px", color: primaryColor }}
+                    />
+                  }
+                  title={
+                    <Tooltip title={doc.fileName}>
+                      <Text style={{ fontSize: "12px" }}>
+                        {doc.fileName.length > 20
+                          ? `${doc.fileName.substring(0, 20)}...`
+                          : doc.fileName}
+                      </Text>
+                    </Tooltip>
+                  }
+                  description={
+                    <Text type="secondary" style={{ fontSize: "11px" }}>
+                      Uploaded: {formatDate(doc.uploadedAt)}
+                    </Text>
+                  }
+                />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </div>
+    );
+  };
+
+  const renderApprovalSection = (candidate) => {
+    const candidateKey = `${candidate.pipelineCandidateId}_${candidate.currentStage}`;
+    const isApproved = approvalStatus[candidateKey];
+
+    return (
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "16px",
+          backgroundColor: "#fafafa",
+          borderRadius: "8px",
+          border: "1px solid #f0f0f0",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <Text strong>Document Review Status:</Text>
+            <div style={{ marginTop: "4px" }}>
+              {isApproved ? (
+                <Tag icon={<CheckCircleOutlined />} color="success">
+                  Approved
+                </Tag>
+              ) : (
+                <Tag icon={<ClockCircleOutlined />} color="warning">
+                  Pending Review
+                </Tag>
+              )}
+            </div>
+          </div>
+
+          <Space>
+            {!isApproved && candidate.uploadedDocuments?.length > 0 && (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleSendForApproval(candidate)}
+                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+              >
+                Send for Approval
+              </Button>
+            )}
+
+            <Button
+              type="primary"
+              icon={<ArrowRightOutlined />}
+              disabled={!isApproved}
+              onClick={(e) => handleMoveCandidate(candidate, e)}
+              style={{
+                backgroundColor: isApproved ? primaryColor : "#d9d9d9",
+                borderColor: isApproved ? primaryColor : "#d9d9d9",
+              }}
+            >
+              Move to Next Stage
+            </Button>
+          </Space>
+        </div>
+
+        {!isApproved && (
+          <div style={{ marginTop: "12px" }}>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
+              Documents must be approved before moving to the next stage
+            </Text>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -340,58 +559,19 @@ const RecruiterJobPipeline = () => {
 
           {getCandidatesInStage(activeStage).length > 0 ? (
             <List
-              itemLayout="horizontal"
+              itemLayout="vertical"
               dataSource={getCandidatesInStage(activeStage)}
               renderItem={(candidate) => (
                 <List.Item
-                  actions={[
-                    <Dropdown
-                      overlay={
-                        <Menu>
-                          {processedJobData.pipeline.stages
-                            .filter(
-                              (stage) => stage._id !== candidate.currentStage
-                            )
-                            .map((stage) => (
-                              <Menu.Item
-                                key={stage._id}
-                                onClick={() => {
-                                  setSelectedCandidate(candidate);
-                                  setTargetStage(stage._id);
-                                  confirmMoveCandidate();
-                                }}
-                              >
-                                Move to {stage.name}
-                              </Menu.Item>
-                            ))}
-                        </Menu>
-                      }
-                      placement="bottomRight"
-                      trigger={["click"]}
-                    >
-                      <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Dropdown>,
-                  ]}
-                  style={{
-                    padding: "12px 16px",
-                    borderBottom: "1px solid #f0f0f0",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f8f9fa")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
+                  style={{ padding: "20px", borderBottom: "1px solid #f0f0f0" }}
                 >
                   <List.Item.Meta
                     avatar={
-                      <Avatar src={candidate.avatar} icon={<UserOutlined />} />
+                      <Avatar
+                        src={candidate.avatar}
+                        icon={<UserOutlined />}
+                        size="large"
+                      />
                     }
                     title={
                       <div
@@ -401,7 +581,7 @@ const RecruiterJobPipeline = () => {
                           gap: "8px",
                         }}
                       >
-                        <Text strong style={{ fontSize: "16px" }}>
+                        <Text strong style={{ fontSize: "18px" }}>
                           {candidate.name}
                         </Text>
                         {candidate.isSourced && (
@@ -409,64 +589,72 @@ const RecruiterJobPipeline = () => {
                             Sourced
                           </Tag>
                         )}
+                        <Tag
+                          color={
+                            candidate.stageStatus === "completed"
+                              ? "green"
+                              : candidate.stageStatus === "rejected"
+                              ? "red"
+                              : "blue"
+                          }
+                        >
+                          {candidate.stageStatus}
+                        </Tag>
                       </div>
                     }
                     description={
-                      <Space direction="vertical" size={2}>
-                        <Text type="secondary" style={{ fontSize: "13px" }}>
-                          {candidate.email}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: "13px" }}>
-                          {candidate.phone}
-                        </Text>
+                      <Space direction="vertical" size={4}>
+                        <Text type="secondary">{candidate.email}</Text>
+                        <Text type="secondary">{candidate.phone}</Text>
                         {candidate.skills && candidate.skills.length > 0 && (
-                          <div style={{ marginTop: "4px" }}>
+                          <div>
                             {candidate.skills
-                              .slice(0, 3)
+                              .slice(0, 5)
                               .map((skill, index) => (
                                 <Tag
                                   key={index}
                                   size="small"
-                                  style={{ fontSize: "10px", margin: "1px" }}
+                                  style={{ margin: "1px" }}
                                 >
                                   {skill}
                                 </Tag>
                               ))}
-                            {candidate.skills.length > 3 && (
-                              <Tag
-                                size="small"
-                                style={{ fontSize: "10px", margin: "1px" }}
-                              >
-                                +{candidate.skills.length - 3} more
+                            {candidate.skills.length > 5 && (
+                              <Tag size="small" style={{ margin: "1px" }}>
+                                +{candidate.skills.length - 5} more
                               </Tag>
                             )}
                           </div>
                         )}
-                        <div>
-                          <Tag
-                            color={
-                              candidate.stageStatus === "completed"
-                                ? "green"
-                                : candidate.stageStatus === "rejected"
-                                ? "red"
-                                : "blue"
-                            }
-                            style={{ fontSize: "11px" }}
-                          >
-                            {candidate.stageStatus}
-                          </Tag>
-                          <Text
-                            type="secondary"
-                            style={{
-                              fontSize: "11px",
-                              marginLeft: "8px",
-                            }}
-                          >
-                            Applied {formatDate(candidate.appliedDate)}
-                          </Text>
-                        </div>
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          Applied {formatDate(candidate.appliedDate)}
+                        </Text>
                       </Space>
                     }
+                  />
+
+                  {/* Documents Section */}
+                  <Collapse
+                    ghost
+                    style={{ marginTop: "16px" }}
+                    items={[
+                      {
+                        key: "1",
+                        label: (
+                          <Text strong>
+                            <FileOutlined style={{ marginRight: "8px" }} />
+                            Documents & Approval (
+                            {candidate.uploadedDocuments?.length || 0})
+                          </Text>
+                        ),
+                        children: (
+                          <div>
+                            {renderDocuments(candidate)}
+                            {renderApprovalSection(candidate)}
+                          </div>
+                        ),
+                      },
+                    ]}
                   />
                 </List.Item>
               )}
@@ -520,6 +708,24 @@ const RecruiterJobPipeline = () => {
               ))}
           </Select>
         </div>
+
+        {selectedCandidate && (
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#f6ffed",
+              borderRadius: "6px",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              <CheckCircleOutlined
+                style={{ color: "#52c41a", marginRight: "4px" }}
+              />
+              Documents have been approved for this candidate
+            </Text>
+          </div>
+        )}
       </Modal>
     </div>
   );
