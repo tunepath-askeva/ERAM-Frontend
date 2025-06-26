@@ -18,6 +18,7 @@ import {
   message,
   Tooltip,
   Select,
+  Input,
   Empty,
   Collapse,
   Divider,
@@ -62,64 +63,65 @@ const RecruiterJobPipeline = () => {
 
   const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
 
-  useEffect(() => {
-    if (apiData?.data) {
-      const pipelineData = apiData.data;
-      const workOrder = pipelineData.workOrder;
-      const user = pipelineData.user;
-      const stageProgress = pipelineData.stageProgress || [];
-      const fullPipeline = pipelineData.fullPipeline;
+useEffect(() => {
+  if (apiData?.data) {
+    const pipelineData = apiData.data;
+    const workOrder = pipelineData.workOrder;
+    const user = pipelineData.user;
+    const stageProgress = pipelineData.stageProgress || [];
+    
+    // Get pipeline data from stageProgress[0].pipelineId
+    const fullPipeline = stageProgress[0]?.pipelineId || {};
+    const currentStageProgress = stageProgress[0];
 
-      const currentStageProgress = stageProgress[0];
+    const processedCandidate = {
+      _id: pipelineData._id,
+      pipelineCandidateId: pipelineData._id,
+      name: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      skills: user.skills || [],
+      avatar: null,
+      status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
+      currentStage: currentStageProgress?.stageId || null,
+      currentStageName: currentStageProgress?.stageName || "Unknown",
+      stageStatus: currentStageProgress?.stageStatus || "pending",
+      appliedDate: pipelineData.createdAt,
+      stageProgress: stageProgress,
+      isSourced: pipelineData.isSourced === "true",
+      responses: pipelineData.responses || [],
+      uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
+      recruiterReviews: currentStageProgress?.recruiterReviews || [],
+      requiredDocuments: 
+        fullPipeline.stages?.find(
+          (s) => s._id === currentStageProgress?.stageId
+        )?.requiredDocuments || [],
+      documentApprovalStatus: currentStageProgress?.documentApprovalStatus || "pending",
+    };
 
-      const processedCandidate = {
-        _id: pipelineData._id,
-        pipelineCandidateId: pipelineData._id,
-        name: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        skills: user.skills || [],
-        avatar: null,
-        status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
-        currentStage: currentStageProgress?.stageId || null,
-        currentStageName: currentStageProgress?.stageName || "Unknown",
-        stageStatus: currentStageProgress?.stageStatus || "pending",
-        appliedDate: pipelineData.createdAt,
-        stageProgress: stageProgress,
-        isSourced: pipelineData.isSourced === "true",
-        responses: pipelineData.responses || [],
-        uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
-        recruiterReviews: currentStageProgress?.recruiterReviews || [],
-        requiredDocuments:
-          fullPipeline.stages.find(
-            (s) => s._id === currentStageProgress?.stageId
-          )?.requiredDocuments || [],
-        // Get approval status from backend data
-        documentApprovalStatus: currentStageProgress?.documentApprovalStatus || "pending", // pending, approved, rejected
-      };
+    const jobData = {
+      _id: workOrder._id,
+      title: workOrder.title,
+      company: workOrder.companyIndustry || "Company",
+      location: workOrder.officeLocation,
+      jobCode: workOrder.jobCode,
+      description: workOrder.description,
+      startDate: workOrder.startDate,
+      endDate: workOrder.endDate,
+      isActive: pipelineData.status === "pipeline",
+      workOrder: workOrder, 
+      pipeline: {
+        _id: fullPipeline._id,
+        name: fullPipeline.name,
+        stages: fullPipeline.stages || [],
+      },
+      candidates: [processedCandidate],
+      deadline: workOrder.endDate,
+    };
 
-      const jobData = {
-        _id: workOrder._id,
-        title: workOrder.title,
-        company: workOrder.companyIndustry || "Company",
-        location: workOrder.officeLocation,
-        jobCode: workOrder.jobCode,
-        description: workOrder.description,
-        startDate: workOrder.startDate,
-        endDate: workOrder.endDate,
-        isActive: pipelineData.status === "pipeline",
-        pipeline: {
-          _id: fullPipeline._id,
-          name: fullPipeline.name,
-          stages: fullPipeline.stages || [],
-        },
-        candidates: [processedCandidate],
-        deadline: workOrder.endDate,
-      };
-
-      setProcessedJobData(jobData);
-    }
-  }, [apiData, id]);
+    setProcessedJobData(jobData);
+  }
+}, [apiData, id]);
 
   useEffect(() => {
     if (processedJobData?.pipeline?.stages?.length > 0) {
@@ -147,7 +149,12 @@ const RecruiterJobPipeline = () => {
   };
 
   const getStageName = (stageId) => {
-    if (!processedJobData) return "";
+    if (
+      !processedJobData ||
+      !processedJobData.pipeline ||
+      !processedJobData.pipeline.stages
+    )
+      return "";
     const stage = processedJobData.pipeline.stages.find(
       (s) => s._id === stageId
     );
@@ -155,10 +162,9 @@ const RecruiterJobPipeline = () => {
   };
 
   const getCandidatesInStage = (stageId) => {
-    return (
-      processedJobData?.candidates?.filter(
-        (candidate) => candidate.currentStage === stageId
-      ) || []
+    if (!processedJobData || !processedJobData.candidates) return [];
+    return processedJobData.candidates.filter(
+      (candidate) => candidate.currentStage === stageId
     );
   };
 
@@ -195,6 +201,32 @@ const RecruiterJobPipeline = () => {
 
   const renderDocuments = (candidate) => {
     if (
+      !processedJobData ||
+      !processedJobData.pipeline ||
+      !processedJobData.pipeline.stages
+    ) {
+      return null;
+    }
+
+    const currentStage = processedJobData.pipeline.stages.find(
+      (stage) => stage._id === candidate.currentStage
+    );
+
+    const stageTimeline =
+      processedJobData.workOrder?.pipelineStageTimeline?.find(
+        (timeline) => timeline.stageId === candidate.currentStage
+      );
+
+    // Combine required documents from both sources
+    const allRequiredDocuments = [
+      ...(currentStage?.requiredDocuments || []),
+      ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
+    ];
+
+    // Remove duplicates
+    const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+
+    if (
       !candidate.uploadedDocuments ||
       candidate.uploadedDocuments.length === 0
     ) {
@@ -216,8 +248,8 @@ const RecruiterJobPipeline = () => {
 
         <div style={{ marginBottom: "16px" }}>
           <Text strong>Required Documents: </Text>
-          {candidate.requiredDocuments.length > 0 ? (
-            candidate.requiredDocuments.map((doc, index) => (
+          {uniqueRequiredDocuments.length > 0 ? (
+            uniqueRequiredDocuments.map((doc, index) => (
               <Tag key={index} color="blue" style={{ margin: "2px" }}>
                 {doc}
               </Tag>
@@ -335,9 +367,7 @@ const RecruiterJobPipeline = () => {
         >
           <div>
             <Text strong>Document Review Status:</Text>
-            <div style={{ marginTop: "4px" }}>
-              {getStatusTag()}
-            </div>
+            <div style={{ marginTop: "4px" }}>{getStatusTag()}</div>
           </div>
 
           <Space
@@ -362,14 +392,69 @@ const RecruiterJobPipeline = () => {
         </div>
 
         <div style={{ marginTop: "12px" }}>
-          <Text 
-            type={isApproved ? "success" : isRejected ? "danger" : "secondary"} 
+          <Text
+            type={isApproved ? "success" : isRejected ? "danger" : "secondary"}
             style={{ fontSize: "12px" }}
           >
             <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
             {getStatusMessage()}
           </Text>
         </div>
+      </div>
+    );
+  };
+
+  const renderCustomFields = (candidate) => {
+    if (
+      !processedJobData ||
+      !processedJobData.pipeline ||
+      !processedJobData.pipeline.stages
+    ) {
+      return null;
+    }
+
+    const currentStage = processedJobData.pipeline.stages.find(
+      (stage) => stage._id === candidate.currentStage
+    );
+
+    const stageTimeline =
+      processedJobData.workOrder?.pipelineStageTimeline?.find(
+        (timeline) => timeline.stageId === candidate.currentStage
+      );
+
+    if (
+      !stageTimeline?.customFields ||
+      stageTimeline.customFields.length === 0
+    ) {
+      return null;
+    }
+
+    return (
+      <div style={{ marginTop: "16px" }}>
+        <Title level={5} style={{ marginBottom: "12px" }}>
+          Custom Fields
+        </Title>
+
+        {stageTimeline.customFields.map((field, index) => (
+          <div key={index} style={{ marginBottom: "12px" }}>
+            <Text strong>{field.label}:</Text>
+            {field.type === "select" ? (
+              <Select
+                style={{ width: "100%", marginTop: "8px" }}
+                placeholder={`Select ${field.label}`}
+                options={field.options.map((option) => ({
+                  value: option,
+                  label: option,
+                }))}
+              />
+            ) : (
+              <Input
+                style={{ width: "100%", marginTop: "8px" }}
+                placeholder={`Enter ${field.label}`}
+              />
+            )}
+          </div>
+        ))}
       </div>
     );
   };
@@ -703,6 +788,7 @@ const RecruiterJobPipeline = () => {
                         children: (
                           <div>
                             {renderDocuments(candidate)}
+                            {renderCustomFields(candidate)}
                             {renderApprovalSection(candidate)}
                           </div>
                         ),
@@ -763,41 +849,44 @@ const RecruiterJobPipeline = () => {
           </Select>
         </div>
 
-        {selectedCandidate && selectedCandidate.documentApprovalStatus === "approved" && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "12px",
-              backgroundColor: "#f6ffed",
-              borderRadius: "6px",
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: "12px" }}>
-              <CheckCircleOutlined
-                style={{ color: "#52c41a", marginRight: "4px" }}
-              />
-              Documents have been approved for this candidate
-            </Text>
-          </div>
-        )}
+        {selectedCandidate &&
+          selectedCandidate.documentApprovalStatus === "approved" && (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px",
+                backgroundColor: "#f6ffed",
+                borderRadius: "6px",
+              }}
+            >
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                <CheckCircleOutlined
+                  style={{ color: "#52c41a", marginRight: "4px" }}
+                />
+                Documents have been approved for this candidate
+              </Text>
+            </div>
+          )}
 
-        {selectedCandidate && selectedCandidate.documentApprovalStatus !== "approved" && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "12px",
-              backgroundColor: "#fff2e8",
-              borderRadius: "6px",
-            }}
-          >
-            <Text type="warning" style={{ fontSize: "12px" }}>
-              <ClockCircleOutlined
-                style={{ color: "#fa8c16", marginRight: "4px" }}
-              />
-              Documents are still pending approval. Cannot move candidate until approved.
-            </Text>
-          </div>
-        )}
+        {selectedCandidate &&
+          selectedCandidate.documentApprovalStatus !== "approved" && (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px",
+                backgroundColor: "#fff2e8",
+                borderRadius: "6px",
+              }}
+            >
+              <Text type="warning" style={{ fontSize: "12px" }}>
+                <ClockCircleOutlined
+                  style={{ color: "#fa8c16", marginRight: "4px" }}
+                />
+                Documents are still pending approval. Cannot move candidate
+                until approved.
+              </Text>
+            </div>
+          )}
       </Modal>
     </div>
   );
