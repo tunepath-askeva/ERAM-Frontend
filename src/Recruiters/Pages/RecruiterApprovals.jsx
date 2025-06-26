@@ -538,8 +538,7 @@ const RecruiterApprovals = () => {
         dataSource={tableData}
         loading={loading}
         pagination={{
-          pageSize: isMobile ? 5 : isTablet ? 8 : 10,
-
+          pageSize: isMobile ? 10 : isTablet ? 10 : 10,
           showQuickJumper: isDesktop,
           size: isMobile ? "small" : "default",
           style: {
