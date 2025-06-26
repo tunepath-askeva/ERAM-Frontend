@@ -444,7 +444,6 @@ const RecruiterJobs = () => {
                           >
                             Code: {job.jobCode}
                           </Text>
-                          
                         )}
                       </div>
                     </div>
@@ -542,25 +541,7 @@ const RecruiterJobs = () => {
                         {job.salary}
                       </Text>
                     </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <TeamOutlined
-                        style={{ fontSize: "12px", color: "#666" }}
-                      />
-                      <Text
-                        style={{
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        {job.applications} candidates
-                      </Text>
-                    </div>
+
                     <div
                       style={{
                         display: "flex",

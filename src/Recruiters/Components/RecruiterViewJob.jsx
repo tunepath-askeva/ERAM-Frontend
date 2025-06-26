@@ -525,7 +525,12 @@ const RecruiterViewJob = () => {
                     <Text strong style={{ fontSize: "12px", display: "block" }}>
                       Stage {index + 1}
                     </Text>
-                    <Text style={{ fontSize: "12px" }}>{stage.stageName}</Text>
+                    <Text style={{ fontSize: "12px", display: "block" }}>
+                      Stage Name : {stage.stageName}
+                    </Text>
+                    <Text style={{ fontSize: "12px" }}>
+                      Assigned Recruiter : {stage.recruiterId.fullName}
+                    </Text>
                   </div>
                 </Col>
                 <Col xs={12} sm={8}>

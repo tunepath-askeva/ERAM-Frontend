@@ -519,7 +519,14 @@ const ViewWorkOrder = () => {
                     <Text strong style={{ fontSize: "12px", display: "block" }}>
                       Stage {index + 1}
                     </Text>
-                    <Text style={{ fontSize: "12px" }}>{stage.stageName}</Text>
+
+                    <Text style={{ fontSize: "12px", display: "block" }}>
+                      Stage Name : {stage.stageName}
+                    </Text>
+
+                    <Text style={{ fontSize: "12px" }}>
+                      Assigned Recruiter : {stage.recruiterId.fullName}
+                    </Text>
                   </div>
                 </Col>
                 <Col xs={12} sm={8}>
@@ -599,24 +606,35 @@ const ViewWorkOrder = () => {
             style={{
               "& .ant-tabs-content-holder": {
                 padding: "8px 0",
-                
               },
             }}
           >
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Overview</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Overview
+                </span>
+              }
               key="overview"
             >
               {renderJobOverview()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Application Form</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Application Form
+                </span>
+              }
               key="application"
             >
               {renderApplicationForm()}
             </TabPane>
             <TabPane
-              tab={<span style={{ fontSize: "13px", color: " #da2c46" }}>Pipeline Stages</span>}
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Pipeline Stages
+                </span>
+              }
               key="pipeline"
             >
               {renderPipelineStages()}
