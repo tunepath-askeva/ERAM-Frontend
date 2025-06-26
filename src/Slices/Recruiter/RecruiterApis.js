@@ -90,13 +90,15 @@ export const recruiterApi = createApi({
       }),
     }),
     approveCandidateDocuments: builder.mutation({
-      query: ({ approvalId, levelId, status, comments }) => ({
+      query: ({ approvalId, levelId, status, comments, workOrderid, userId }) => ({
         url: `/approval/${approvalId}`,
         method: "POST",
         body: {
           levelId,
           status,
           comments,
+          workOrderid,
+          userId
         },
       }),
     }),

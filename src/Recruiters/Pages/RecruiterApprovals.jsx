@@ -150,7 +150,6 @@ const RecruiterApprovals = () => {
     return texts[status] || status;
   };
 
-  // Actions dropdown for mobile
   const getActionsMenu = (record) => ({
     items: [
       {
@@ -379,24 +378,26 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
+          // Use the levelStatus if available, otherwise fall back to the status
           const displayStatus = record.levelStatus || status;
+          const statusText = getStatusText(displayStatus);
+          const statusColor = getStatusColor(displayStatus);
+
           return (
-            <Badge
-              status={getStatusColor(displayStatus)}
-              text={
-                <span
-                  style={{
-                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
-                    fontWeight: 500,
-                  }}
-                >
-                  {isMobile
-                    ? displayStatus.split("_")[0].charAt(0).toUpperCase() +
-                      displayStatus.split("_")[0].slice(1)
-                    : getStatusText(displayStatus)}
-                </span>
-              }
-            />
+            <Space>
+              <Badge status={statusColor} />
+              <span
+                style={{
+                  fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                  fontWeight: 500,
+                  color: statusColor === "default" ? undefined : statusColor,
+                }}
+              >
+                {isMobile
+                  ? statusText.split(" ")[0] // Show just first word on mobile
+                  : statusText}
+              </span>
+            </Space>
           );
         },
       },
@@ -461,7 +462,7 @@ const RecruiterApprovals = () => {
 
   const handleApprovalSubmit = async () => {
     try {
-      if (!selectedWorkOrder) return;
+      if (!selectedWorkOrder || !selectedCandidate) return;
 
       const approvalId = selectedWorkOrder.stage?.approvalId;
       const levelId = selectedWorkOrder.stage?.levelInfo?.levelId;
@@ -472,6 +473,8 @@ const RecruiterApprovals = () => {
       }
 
       await approveCandidateDocuments({
+        workOrderid: selectedWorkOrder.workOrderId, // Changed from workOrders._id
+        userId: selectedCandidate.candidateId, // Changed from candidateId
         approvalId,
         levelId,
         status: "approved",
@@ -479,14 +482,14 @@ const RecruiterApprovals = () => {
       }).unwrap();
 
       message.success(
-        `Documents approved for ${selectedCandidate?.candidateName}!`
+        `Documents approved for ${selectedCandidate.candidateName}!`
       );
       setApproveModalVisible(false);
       setApprovalComments("");
-
       refetch();
     } catch (error) {
       message.error(error.data?.message || "Failed to approve documents");
+      console.error("Approval error:", error);
     }
   };
 
@@ -642,7 +645,7 @@ const RecruiterApprovals = () => {
             <Button key="close" onClick={() => setDetailsModalVisible(false)}>
               Close
             </Button>,
-            selectedWorkOrder?.status === "pending_review" && (
+            selectedWorkOrder?.status === "pending" && (
               <Button
                 key="approve"
                 type="primary"
