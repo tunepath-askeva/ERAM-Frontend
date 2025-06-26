@@ -183,71 +183,42 @@ const AppliedJobDetails = () => {
     onChange: handleFileUpload(stageId, docType),
   });
 
- const handleSubmitDocuments = async (stageId) => {
-  const stageFiles = uploadedFiles[stageId] || [];
-  const stage = appliedJob.stageProgress.find((s) => s._id === stageId);
+  const handleSubmitDocuments = async (stageId) => {
+    const stageFiles = uploadedFiles[stageId] || [];
+    const stage = appliedJob.stageProgress.find((s) => s._id === stageId);
 
-  if (stageFiles.length === 0) {
-    message.warning("Please upload at least one document before submitting");
-    return;
-  }
+    if (stageFiles.length === 0) {
+      message.warning("Please upload at least one document before submitting");
+      return;
+    }
 
-  setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  try {
-    // Create FormData to send files with metadata
-    const formData = new FormData();
-    
-    // Add basic fields
-    formData.append('customFieldId', appliedJob._id);
-    formData.append('stageId', stage.stageId);
-    
-    // Add files with their metadata
-    stageFiles.forEach((file, index) => {
-      // Append the actual file
-      formData.append('files', file.originFileObj);
-      
-      // Append metadata for each file
-      formData.append(`fileMetadata[${index}][fileName]`, file.name);
-      formData.append(`fileMetadata[${index}][documentName]`, file.documentType);
-      formData.append(`fileMetadata[${index}][fileSize]`, file.size);
-      formData.append(`fileMetadata[${index}][fileType]`, file.type);
-    });
+    try {
+      const response = await uploadStageDocuments({
+        customFieldId: appliedJob._id,
+        stageId: stage.stageId,
+        files: stageFiles.map((file) => file.originFileObj),
+        filesMetadata: stageFiles.map((file) => ({
+          fileName: file.name,
+          documentName: file.documentType,
+          fileSize: file.size,
+          fileType: file.type,
+        })),
+      }).unwrap();
 
-    // Alternative approach: If your API expects a different structure, use this instead
-    const filesWithMetadata = stageFiles.map(file => ({
-      file: file.originFileObj,
-      fileName: file.name,
-      documentName: file.documentType,
-      fileSize: file.size,
-      fileType: file.type
-    }));
-
-    // If using the alternative approach, send like this:
- const response = await uploadStageDocuments({
-      customFieldId: appliedJob._id,
-      stageId: stage.stageId,
-      files: stageFiles.map(file => file.originFileObj),
-      filesMetadata: stageFiles.map(file => ({
-        fileName: file.name,
-        documentName: file.documentType,
-        fileSize: file.size,
-        fileType: file.type
-      }))
-    }).unwrap();
-
-    message.success(response.message || "Documents submitted successfully!");
-    setUploadedFiles((prev) => ({
-      ...prev,
-      [stageId]: [],
-    }));
-  } catch (error) {
-    console.error("Failed to upload documents:", error);
-    message.error(error?.data?.message || "Failed to submit documents");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      message.success(response.message || "Documents submitted successfully!");
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [stageId]: [],
+      }));
+    } catch (error) {
+      console.error("Failed to upload documents:", error);
+      message.error(error?.data?.message || "Failed to submit documents");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const OverviewContent = () => (
     <Card>
@@ -775,10 +746,8 @@ const AppliedJobDetails = () => {
 
               {pendingDocs.length > 0 && (
                 <div style={{ marginBottom: "24px" }}>
-                  <Title
-                    level={3}
-                  >
-                     Pending Documents ({pendingDocs.length})
+                  <Title level={3}>
+                    Pending Documents ({pendingDocs.length})
                   </Title>
                   <div
                     style={{
@@ -854,7 +823,6 @@ const AppliedJobDetails = () => {
                             gap: "8px",
                           }}
                         >
-                         
                           <Button
                             type="text"
                             size="small"
@@ -1092,8 +1060,8 @@ const AppliedJobDetails = () => {
                   }}
                 >
                   <div style={{ marginBottom: "12px" }}>
-                    <Text >
-                       Ready to Submit: {pendingDocs.length} document(s)
+                    <Text>
+                      Ready to Submit: {pendingDocs.length} document(s)
                     </Text>
                     <div style={{ marginTop: "8px" }}>
                       {pendingDocs.map((file, index) => (
@@ -1120,9 +1088,7 @@ const AppliedJobDetails = () => {
                       }}
                       icon={!isSubmitting ? <CheckCircleOutlined /> : null}
                     >
-                      {isSubmitting
-                        ? "Submitting..."
-                        : `Submit`}
+                      {isSubmitting ? "Submitting..." : `Submit`}
                     </Button>
                     <Button
                       size="large"
