@@ -40,7 +40,10 @@ import {
   MenuOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import { useGetApprovalInfoQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetApprovalInfoQuery,
+  useApproveCandidateDocumentsMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -56,19 +59,20 @@ const RecruiterApprovals = () => {
   const [approvalComments, setApprovalComments] = useState("");
   const screens = useBreakpoint();
 
-  // API call
   const {
     data: workOrders = [],
     isLoading: loading,
     error,
+    refetch,
   } = useGetApprovalInfoQuery();
 
-  // Determine screen size
+  const [approveCandidateDocuments, { isLoading: isApproving }] =
+    useApproveCandidateDocumentsMutation();
+
   const isMobile = screens.xs;
   const isTablet = screens.sm || screens.md;
   const isDesktop = screens.lg || screens.xl;
 
-  // Transform API data for table display
   const getTableData = () => {
     const tableData = [];
 
@@ -93,10 +97,12 @@ const RecruiterApprovals = () => {
             stageDetails: stage.stageDetails,
             customFields: stage.customFields,
             requiredDocuments: stage.requiredDocuments,
-            status: "pending_review",
+            status: stage.levelInfo?.levelStatus || "pending",
             workOrder: workOrder,
             stage: stage,
             candidate: candidate,
+            levelStatus: stage.levelInfo?.levelStatus,
+            levelName: stage.levelInfo?.levelName,
           });
         });
       });
@@ -125,6 +131,9 @@ const RecruiterApprovals = () => {
       pending_review: "orange",
       approved: "green",
       rejected: "red",
+      pending: "orange",
+      in_review: "blue",
+      completed: "green",
     };
     return colors[status] || "default";
   };
@@ -134,6 +143,9 @@ const RecruiterApprovals = () => {
       pending_review: "Pending Review",
       approved: "Approved",
       rejected: "Rejected",
+      pending: "Pending",
+      in_review: "In Review",
+      completed: "Completed",
     };
     return texts[status] || status;
   };
@@ -147,16 +159,6 @@ const RecruiterApprovals = () => {
         label: "View Details",
         onClick: () => handleViewDetails(record),
       },
-      ...(record.status === "pending_review"
-        ? [
-            {
-              key: "approve",
-              icon: <CheckCircleOutlined />,
-              label: "Approve",
-              onClick: () => handleApprove(record),
-            },
-          ]
-        : []),
     ],
   });
 
@@ -249,33 +251,54 @@ const RecruiterApprovals = () => {
         ),
       },
       {
-        title: "Stage",
+        title: "Stage & Level",
         dataIndex: "stageName",
         key: "stageName",
-        width: isMobile ? 120 : isTablet ? 140 : 160,
-        render: (text, record) => (
-          <Tooltip title={`${text} (Level ${record.stageOrder + 1})`}>
-            <Tag
-              color="blue"
-              size={isMobile ? "small" : "default"}
-              style={{
-                fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
-                maxWidth: "100%",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isMobile
-                ? `L${record.stageOrder + 1}`
-                : isTablet
-                ? `${text.length > 8 ? text.substring(0, 8) + "..." : text} L${
-                    record.stageOrder + 1
-                  }`
-                : `${text} (L${record.stageOrder + 1})`}
-            </Tag>
-          </Tooltip>
-        ),
+        width: isMobile ? 140 : isTablet ? 160 : 200,
+        render: (text, record) => {
+          const levelName =
+            record.workOrder?.pipelineStageTimeline[0]?.levelInfo?.levelName ||
+            "N/A";
+
+          return (
+            <Space direction="vertical" size={0}>
+              <Tooltip title={`Stage: ${text}`}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                    lineHeight: 1.3,
+                    display: "block",
+                  }}
+                >
+                  Stage:{" "}
+                  {isMobile
+                    ? text.length > 8
+                      ? `${text.substring(0, 8)}...`
+                      : text
+                    : text}
+                </Text>
+              </Tooltip>
+              <Tooltip title={`Level: ${levelName}`}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                    lineHeight: 1.2,
+                    display: "block",
+                  }}
+                >
+                  Level:{" "}
+                  {isMobile
+                    ? levelName.length > 8
+                      ? `${levelName.substring(0, 8)}...`
+                      : levelName
+                    : levelName}
+                </Text>
+              </Tooltip>
+            </Space>
+          );
+        },
       },
       {
         title: "Recruiter",
@@ -355,24 +378,27 @@ const RecruiterApprovals = () => {
         dataIndex: "status",
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
-        render: (status) => (
-          <Badge
-            status={getStatusColor(status)}
-            text={
-              <span
-                style={{
-                  fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
-                  fontWeight: 500,
-                }}
-              >
-                {isMobile
-                  ? status.split("_")[0].charAt(0).toUpperCase() +
-                    status.split("_")[0].slice(1)
-                  : getStatusText(status)}
-              </span>
-            }
-          />
-        ),
+        render: (status, record) => {
+          const displayStatus = record.levelStatus || status;
+          return (
+            <Badge
+              status={getStatusColor(displayStatus)}
+              text={
+                <span
+                  style={{
+                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {isMobile
+                    ? displayStatus.split("_")[0].charAt(0).toUpperCase() +
+                      displayStatus.split("_")[0].slice(1)
+                    : getStatusText(displayStatus)}
+                </span>
+              }
+            />
+          );
+        },
       },
       {
         title: "Actions",
@@ -411,21 +437,6 @@ const RecruiterApprovals = () => {
                 >
                   {isTablet ? "View" : "View Details"}
                 </Button>
-                {record.status === "pending_review" && (
-                  <Button
-                    type="default"
-                    icon={<CheckCircleOutlined />}
-                    onClick={() => handleApprove(record)}
-                    size={isTablet ? "small" : "default"}
-                    style={{
-                      color: "#da2c46",
-                      borderColor: "#da2c46",
-                      fontSize: isTablet ? "11px" : "12px",
-                    }}
-                  >
-                    {isTablet ? "Approve" : "Approve"}
-                  </Button>
-                )}
               </Space>
             )}
           </div>
@@ -448,12 +459,35 @@ const RecruiterApprovals = () => {
     setApproveModalVisible(true);
   };
 
-  const handleApprovalSubmit = () => {
-    message.success(
-      `Documents approved for ${selectedCandidate?.candidateName}!`
-    );
-    setApproveModalVisible(false);
-    setApprovalComments("");
+  const handleApprovalSubmit = async () => {
+    try {
+      if (!selectedWorkOrder) return;
+
+      const approvalId = selectedWorkOrder.stage?.approvalId;
+      const levelId = selectedWorkOrder.stage?.levelInfo?.levelId;
+
+      if (!approvalId || !levelId) {
+        message.error("Missing required approval information");
+        return;
+      }
+
+      await approveCandidateDocuments({
+        approvalId,
+        levelId,
+        status: "approved",
+        comments: approvalComments,
+      }).unwrap();
+
+      message.success(
+        `Documents approved for ${selectedCandidate?.candidateName}!`
+      );
+      setApproveModalVisible(false);
+      setApprovalComments("");
+
+      refetch();
+    } catch (error) {
+      message.error(error.data?.message || "Failed to approve documents");
+    }
   };
 
   const handleDownloadDocument = (document) => {
@@ -657,6 +691,7 @@ const RecruiterApprovals = () => {
           setApprovalComments("");
         }}
         onOk={handleApprovalSubmit}
+        confirmLoading={isApproving}
         okText="Approve"
         okButtonProps={{
           type: "primary",
