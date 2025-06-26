@@ -504,11 +504,7 @@ const RecruiterApprovals = () => {
   };
 
   return (
-    <div
-      style={{
-        padding: isMobile ? "8px" : isTablet ? "16px" : "24px",
-      }}
-    >
+    <div>
       {/* Header */}
       <Row
         justify="space-between"
@@ -536,37 +532,26 @@ const RecruiterApprovals = () => {
       </Row>
 
       {/* Content */}
-      <Card
-        style={{
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          border: "1px solid #f0f0f0",
+
+      <Table
+        columns={getColumns()}
+        dataSource={tableData}
+        loading={loading}
+        pagination={{
+          pageSize: isMobile ? 5 : isTablet ? 8 : 10,
+
+          showQuickJumper: isDesktop,
+          size: isMobile ? "small" : "default",
+          style: {
+            marginTop: "16px",
+            textAlign: "center",
+          },
         }}
-        bodyStyle={{ padding: isMobile ? "8px" : isTablet ? "16px" : "24px" }}
-      >
-        <Table
-          columns={getColumns()}
-          dataSource={tableData}
-          loading={loading}
-          pagination={{
-            pageSize: isMobile ? 5 : isTablet ? 8 : 10,
-            showSizeChanger: !isMobile,
-            showQuickJumper: isDesktop,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
-            size: isMobile ? "small" : "default",
-            position: ["bottomCenter"],
-            style: {
-              marginTop: "16px",
-              textAlign: "center",
-            },
-          }}
-          scroll={getTableScrollConfig()}
-          size={isMobile ? "small" : isTablet ? "small" : "default"}
-          rowClassName="table-row-hover"
-          className="responsive-table"
-        />
-      </Card>
+        scroll={getTableScrollConfig()}
+        size={isMobile ? "small" : isTablet ? "small" : "default"}
+        rowClassName="table-row-hover"
+        className="responsive-table"
+      />
 
       {/* Details Modal/Drawer */}
       {isMobile ? (
