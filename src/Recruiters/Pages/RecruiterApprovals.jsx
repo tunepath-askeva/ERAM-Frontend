@@ -460,38 +460,39 @@ const RecruiterApprovals = () => {
     setApproveModalVisible(true);
   };
 
-  const handleApprovalSubmit = async () => {
-    try {
-      if (!selectedWorkOrder || !selectedCandidate) return;
+const handleApprovalSubmit = async () => {
+  try {
+    if (!selectedWorkOrder || !selectedCandidate) return;
 
-      const approvalId = selectedWorkOrder.stage?.approvalId;
-      const levelId = selectedWorkOrder.stage?.levelInfo?.levelId;
+    const approvalId = selectedWorkOrder.stage?.approvalId;
+    
+    const levelId = selectedWorkOrder.stage?.levelInfo?.levelId || null;
 
-      if (!approvalId || !levelId) {
-        message.error("Missing required approval information");
-        return;
-      }
-
-      await approveCandidateDocuments({
-        workOrderid: selectedWorkOrder.workOrderId, // Changed from workOrders._id
-        userId: selectedCandidate.candidateId, // Changed from candidateId
-        approvalId,
-        levelId,
-        status: "approved",
-        comments: approvalComments,
-      }).unwrap();
-
-      message.success(
-        `Documents approved for ${selectedCandidate.candidateName}!`
-      );
-      setApproveModalVisible(false);
-      setApprovalComments("");
-      refetch();
-    } catch (error) {
-      message.error(error.data?.message || "Failed to approve documents");
-      console.error("Approval error:", error);
+    if (!approvalId) {
+      message.error("Missing required approval information");
+      return;
     }
-  };
+
+    await approveCandidateDocuments({
+      workOrderId: selectedWorkOrder.workOrderId,
+      userId: selectedCandidate.candidateId,
+      approvalId,
+      levelId,
+      status: "approved",
+      comments: approvalComments,
+    }).unwrap();
+
+    message.success(
+      `Documents approved for ${selectedCandidate.candidateName}!`
+    );
+    setApproveModalVisible(false);
+    setApprovalComments("");
+    refetch();
+  } catch (error) {
+    message.error(error.data?.message || "Failed to approve documents");
+    console.error("Approval error:", error);
+  }
+};
 
   const handleDownloadDocument = (document) => {
     window.open(document.fileUrl, "_blank");
@@ -603,7 +604,7 @@ const RecruiterApprovals = () => {
           onClose={() => setDetailsModalVisible(false)}
           height="90%"
           extra={
-            selectedWorkOrder?.status === "pending_review" && (
+            selectedWorkOrder?.status === "pending" && (
               <Button
                 type="primary"
                 size="small"
