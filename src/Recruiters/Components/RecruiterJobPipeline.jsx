@@ -63,65 +63,64 @@ const RecruiterJobPipeline = () => {
 
   const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
 
-useEffect(() => {
-  if (apiData?.data) {
-    const pipelineData = apiData.data;
-    const workOrder = pipelineData.workOrder;
-    const user = pipelineData.user;
-    const stageProgress = pipelineData.stageProgress || [];
-    
-    // Get pipeline data from stageProgress[0].pipelineId
-    const fullPipeline = stageProgress[0]?.pipelineId || {};
-    const currentStageProgress = stageProgress[0];
+  useEffect(() => {
+    if (apiData?.data) {
+      const pipelineData = apiData.data;
+      const workOrder = pipelineData.workOrder;
+      const user = pipelineData.user;
+      const stageProgress = pipelineData.stageProgress || [];
 
-    const processedCandidate = {
-      _id: pipelineData._id,
-      pipelineCandidateId: pipelineData._id,
-      name: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      skills: user.skills || [],
-      avatar: null,
-      status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
-      currentStage: currentStageProgress?.stageId || null,
-      currentStageName: currentStageProgress?.stageName || "Unknown",
-      stageStatus: currentStageProgress?.stageStatus || "pending",
-      appliedDate: pipelineData.createdAt,
-      stageProgress: stageProgress,
-      isSourced: pipelineData.isSourced === "true",
-      responses: pipelineData.responses || [],
-      uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
-      recruiterReviews: currentStageProgress?.recruiterReviews || [],
-      requiredDocuments: 
-        fullPipeline.stages?.find(
-          (s) => s._id === currentStageProgress?.stageId
-        )?.requiredDocuments || [],
-      documentApprovalStatus: currentStageProgress?.documentApprovalStatus || "pending",
-    };
+      // Get pipeline data from stageProgress[0].pipelineId
+      const fullPipeline = stageProgress[0]?.pipelineId || {};
+      const currentStageProgress = stageProgress[0];
 
-    const jobData = {
-      _id: workOrder._id,
-      title: workOrder.title,
-      company: workOrder.companyIndustry || "Company",
-      location: workOrder.officeLocation,
-      jobCode: workOrder.jobCode,
-      description: workOrder.description,
-      startDate: workOrder.startDate,
-      endDate: workOrder.endDate,
-      isActive: pipelineData.status === "pipeline",
-      workOrder: workOrder, 
-      pipeline: {
-        _id: fullPipeline._id,
-        name: fullPipeline.name,
-        stages: fullPipeline.stages || [],
-      },
-      candidates: [processedCandidate],
-      deadline: workOrder.endDate,
-    };
+      const processedCandidate = {
+        _id: pipelineData._id,
+        pipelineCandidateId: pipelineData._id,
+        name: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        skills: user.skills || [],
+        avatar: null,
+        status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
+        currentStage: currentStageProgress?.stageId || null,
+        currentStageName: currentStageProgress?.stageName || "Unknown",
+        stageStatus: currentStageProgress?.stageStatus || "pending", // This comes from your API
+        appliedDate: pipelineData.createdAt,
+        stageProgress: stageProgress, // Keep the full stageProgress for reference
+        isSourced: pipelineData.isSourced === "true",
+        responses: pipelineData.responses || [],
+        uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
+        recruiterReviews: currentStageProgress?.recruiterReviews || [],
+        requiredDocuments:
+          fullPipeline.stages?.find(
+            (s) => s._id === currentStageProgress?.stageId
+          )?.requiredDocuments || [],
+        // Remove documentApprovalStatus since it doesn't exist in your API
+      };
+      const jobData = {
+        _id: workOrder._id,
+        title: workOrder.title,
+        company: workOrder.companyIndustry || "Company",
+        location: workOrder.officeLocation,
+        jobCode: workOrder.jobCode,
+        description: workOrder.description,
+        startDate: workOrder.startDate,
+        endDate: workOrder.endDate,
+        isActive: pipelineData.status === "pipeline",
+        workOrder: workOrder,
+        pipeline: {
+          _id: fullPipeline._id,
+          name: fullPipeline.name,
+          stages: fullPipeline.stages || [],
+        },
+        candidates: [processedCandidate],
+        deadline: workOrder.endDate,
+      };
 
-    setProcessedJobData(jobData);
-  }
-}, [apiData, id]);
+      setProcessedJobData(jobData);
+    }
+  }, [apiData, id]);
 
   useEffect(() => {
     if (processedJobData?.pipeline?.stages?.length > 0) {
@@ -181,11 +180,11 @@ useEffect(() => {
       return;
     }
 
-    // Check if documents are approved
-    if (selectedCandidate.documentApprovalStatus !== "approved") {
-      message.warning(
-        "Cannot move candidate until documents are approved by the approver"
-      );
+    // Check if stage is approved (this matches your API structure)
+    const canMove = selectedCandidate.stageStatus === "approved";
+
+    if (!canMove) {
+      message.warning("Cannot move candidate until stage is approved");
       return;
     }
 
@@ -310,39 +309,65 @@ useEffect(() => {
   };
 
   const renderApprovalSection = (candidate) => {
-    const isApproved = candidate.documentApprovalStatus === "approved";
-    const isRejected = candidate.documentApprovalStatus === "rejected";
-    const isPending = candidate.documentApprovalStatus === "pending";
+    // Check stage approval status from API
+    const isStageApproved = candidate.stageStatus === "approved";
 
-    const getStatusTag = () => {
-      if (isApproved) {
+    // Check if there are any reviewer approvals pending
+    const hasReviewerApprovals =
+      candidate.recruiterReviews && candidate.recruiterReviews.length > 0;
+    const allReviewersApproved = hasReviewerApprovals
+      ? candidate.recruiterReviews.every(
+          (review) => review.status === "approved"
+        )
+      : true;
+
+    // Check if approval object exists and is approved
+    const hasApprovalObject =
+      candidate.stageProgress && candidate.stageProgress.length > 0;
+    const isApprovalApproved = hasApprovalObject
+      ? candidate.stageProgress[0]?.approval?.isApproved === true
+      : false;
+
+    // Button should be enabled when stage is approved
+    const canMoveToNextStage = isStageApproved;
+
+    const getStageStatusTag = () => {
+      if (isStageApproved) {
         return (
           <Tag icon={<CheckCircleOutlined />} color="success">
-            Approved
-          </Tag>
-        );
-      } else if (isRejected) {
-        return (
-          <Tag icon={<ExclamationCircleOutlined />} color="error">
-            Rejected
+            Stage Approved
           </Tag>
         );
       } else {
         return (
           <Tag icon={<ClockCircleOutlined />} color="warning">
-            Pending Approval
+            Stage Pending
+          </Tag>
+        );
+      }
+    };
+
+    const getApprovalStatusTag = () => {
+      if (isApprovalApproved) {
+        return (
+          <Tag icon={<CheckCircleOutlined />} color="success">
+            Approval Granted
+          </Tag>
+        );
+      } else {
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="warning">
+            Approval Pending
           </Tag>
         );
       }
     };
 
     const getStatusMessage = () => {
-      if (isApproved) {
-        return "Documents have been approved. You can now move the candidate to the next stage.";
-      } else if (isRejected) {
-        return "Documents have been rejected by the approver. Please request the candidate to resubmit.";
+      if (canMoveToNextStage) {
+        return "Stage has been approved. You can now move the candidate to the next stage.";
       } else {
-        return "Documents are with the approver for review. You cannot move the candidate until approval is received.";
+        return "Stage approval is still pending. You cannot move the candidate until the stage is approved.";
       }
     };
 
@@ -366,8 +391,18 @@ useEffect(() => {
           }}
         >
           <div>
-            <Text strong>Document Review Status:</Text>
-            <div style={{ marginTop: "4px" }}>{getStatusTag()}</div>
+            <Text strong>Approval Status:</Text>
+            <div
+              style={{
+                marginTop: "4px",
+                display: "flex",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              {getStageStatusTag()}
+              {hasApprovalObject && getApprovalStatusTag()}
+            </div>
           </div>
 
           <Space
@@ -377,11 +412,11 @@ useEffect(() => {
             <Button
               type="primary"
               icon={<ArrowRightOutlined />}
-              disabled={!isApproved}
+              disabled={!canMoveToNextStage}
               onClick={(e) => handleMoveCandidate(candidate, e)}
               style={{
-                backgroundColor: isApproved ? primaryColor : "#d9d9d9",
-                borderColor: isApproved ? primaryColor : "#d9d9d9",
+                backgroundColor: canMoveToNextStage ? primaryColor : "#d9d9d9",
+                borderColor: canMoveToNextStage ? primaryColor : "#d9d9d9",
                 width: screens.xs ? "100%" : "auto",
               }}
               block={screens.xs}
@@ -393,7 +428,7 @@ useEffect(() => {
 
         <div style={{ marginTop: "12px" }}>
           <Text
-            type={isApproved ? "success" : isRejected ? "danger" : "secondary"}
+            type={canMoveToNextStage ? "success" : "secondary"}
             style={{ fontSize: "12px" }}
           >
             <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
