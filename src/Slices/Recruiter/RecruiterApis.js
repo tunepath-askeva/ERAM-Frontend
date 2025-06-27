@@ -90,7 +90,14 @@ export const recruiterApi = createApi({
       }),
     }),
     approveCandidateDocuments: builder.mutation({
-      query: ({ approvalId, levelId, status, comments, workOrderid, userId }) => ({
+      query: ({
+        approvalId,
+        levelId,
+        status,
+        comments,
+        workOrderid,
+        userId,
+      }) => ({
         url: `/approval/${approvalId}`,
         method: "POST",
         body: {
@@ -98,8 +105,16 @@ export const recruiterApi = createApi({
           status,
           comments,
           workOrderid,
-          userId
+          userId,
         },
+      }),
+    }),
+
+    moveToNextStage: builder.mutation({
+      query: (payload) => ({
+        url: "/nextstage",
+        method: "POST",
+        body: payload,
       }),
     }),
   }),
@@ -118,5 +133,6 @@ export const {
   useGetPipelineJobsQuery,
   useGetPipelineJobsByIdQuery,
   useGetApprovalInfoQuery,
-  useApproveCandidateDocumentsMutation
+  useApproveCandidateDocumentsMutation,
+  useMoveToNextStageMutation,
 } = recruiterApi;

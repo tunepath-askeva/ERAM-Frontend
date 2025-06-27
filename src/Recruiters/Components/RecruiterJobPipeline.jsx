@@ -85,9 +85,9 @@ const RecruiterJobPipeline = () => {
         status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
         currentStage: currentStageProgress?.stageId || null,
         currentStageName: currentStageProgress?.stageName || "Unknown",
-        stageStatus: currentStageProgress?.stageStatus || "pending", // This comes from your API
+        stageStatus: currentStageProgress?.stageStatus || "pending", 
         appliedDate: pipelineData.createdAt,
-        stageProgress: stageProgress, // Keep the full stageProgress for reference
+        stageProgress: stageProgress, 
         isSourced: pipelineData.isSourced === "true",
         responses: pipelineData.responses || [],
         uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
@@ -96,7 +96,7 @@ const RecruiterJobPipeline = () => {
           fullPipeline.stages?.find(
             (s) => s._id === currentStageProgress?.stageId
           )?.requiredDocuments || [],
-        // Remove documentApprovalStatus since it doesn't exist in your API
+
       };
       const jobData = {
         _id: workOrder._id,
@@ -903,25 +903,7 @@ const RecruiterJobPipeline = () => {
             </div>
           )}
 
-        {selectedCandidate &&
-          selectedCandidate.documentApprovalStatus !== "approved" && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px",
-                backgroundColor: "#fff2e8",
-                borderRadius: "6px",
-              }}
-            >
-              <Text type="warning" style={{ fontSize: "12px" }}>
-                <ClockCircleOutlined
-                  style={{ color: "#fa8c16", marginRight: "4px" }}
-                />
-                Documents are still pending approval. Cannot move candidate
-                until approved.
-              </Text>
-            </div>
-          )}
+       
       </Modal>
     </div>
   );
