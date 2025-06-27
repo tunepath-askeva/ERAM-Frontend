@@ -61,8 +61,8 @@ const Levels = () => {
   const levels =
     approvalData?.aprovals?.map((approval) => ({
       ...approval,
-      name: approval.groupName, 
-      stages: approval.levels, 
+      name: approval.groupName,
+      stages: approval.levels,
       levelStatus: "active",
     })) || [];
 
@@ -378,21 +378,6 @@ const Levels = () => {
                       </div>
                     </div>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "12px" }}
-                      >
-                        <FileTextOutlined style={{ marginRight: 4 }} />
-                        Description:
-                      </Text>
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: "11px" }}>
-                          {level.description || "No description provided"}
-                        </Text>
-                      </div>
-                    </div>
-
                     <div style={{ marginTop: "auto" }}>
                       <Space
                         size="small"
@@ -633,33 +618,7 @@ const Levels = () => {
                               </div>
                             </div>
 
-                            {stage.description && (
-                              <div style={{ marginBottom: 12 }}>
-                                <Text
-                                  strong
-                                  style={{ fontSize: 13, color: "#666" }}
-                                >
-                                  Description:
-                                </Text>
-                                <Paragraph
-                                  style={{
-                                    margin: "4px 0 0 0",
-                                    color: "#333",
-                                    fontSize: 14,
-                                    lineHeight: 1.5,
-                                    paddingLeft: 12,
-                                    borderLeft: "3px solid #e6f7ff",
-                                    backgroundColor: "#f9f9f9",
-                                    padding: "8px 12px",
-                                    borderRadius: "4px",
-                                  }}
-                                >
-                                  {stage.description}
-                                </Paragraph>
-                              </div>
-                            )}
-
-                            {stage.approvers?.length > 0 && (
+                            {stage.assignedRecruiters?.length > 0 && (
                               <div style={{ marginTop: 8 }}>
                                 <Text
                                   strong
@@ -668,14 +627,16 @@ const Levels = () => {
                                     color: "#666",
                                   }}
                                 >
-                                  Approvers:
+                                  Assigned Recruiters:
                                 </Text>
                                 <div style={{ marginTop: 4 }}>
-                                  {stage.approvers.map((approver, i) => (
-                                    <Tag key={i} style={{ marginBottom: 4 }}>
-                                      {approver.user}
-                                    </Tag>
-                                  ))}
+                                  {stage.assignedRecruiters.map(
+                                    (recruiter, i) => (
+                                      <Tag key={i} style={{ marginBottom: 4 }}>
+                                        {recruiter.fullName} ({recruiter.email})
+                                      </Tag>
+                                    )
+                                  )}
                                 </div>
                               </div>
                             )}

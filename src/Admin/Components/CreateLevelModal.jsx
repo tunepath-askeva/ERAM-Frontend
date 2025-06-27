@@ -45,6 +45,14 @@ const LevelItem = ({
   isEditMode,
   recruiters = [],
 }) => {
+  const approversList =
+    level.assignedRecruiters ||
+    level.approvers?.map((a) => {
+      const recruiter = recruiters.find((r) => r._id === a.user);
+      return recruiter ? recruiter : { _id: a.user, fullName: a.user };
+    }) ||
+    [];
+
   return (
     <Col xs={24} sm={12} lg={8}>
       <Card
@@ -120,32 +128,23 @@ const LevelItem = ({
           </Paragraph>
         )}
 
-        {level.approvers && level.approvers.length > 0 && (
+        {approversList.length > 0 && (
           <div style={{ marginBottom: "8px" }}>
             <Text strong style={{ fontSize: "12px" }}>
               <UserOutlined style={{ marginRight: "4px" }} />
               Approvers:
             </Text>
             <div style={{ marginTop: "4px" }}>
-              {level.approvers.map((approver, i) => {
-                const recruiter = recruiters.find(
-                  (r) => r._id === approver.user
-                );
-                return (
-                  <Tooltip
-                    key={i}
-                    title={
-                      recruiter
-                        ? `${recruiter.fullName} (${recruiter.email})`
-                        : approver.user
-                    }
-                  >
-                    <Tag style={{ margin: "2px" }}>
-                      {recruiter ? recruiter.fullName : approver.user}
-                    </Tag>
-                  </Tooltip>
-                );
-              })}
+              {approversList.map((approver, i) => (
+                <Tooltip
+                  key={i}
+                  title={`${approver.fullName} (${
+                    approver.email || "No email"
+                  })`}
+                >
+                  <Tag style={{ margin: "2px" }}>{approver.fullName}</Tag>
+                </Tooltip>
+              ))}
             </div>
           </div>
         )}
@@ -181,12 +180,21 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     if (editingLevel && visible) {
       setIsEditMode(true);
       setGroupName(editingLevel.groupName);
-      setLevels(editingLevel.levels || []);
+
+      const formattedLevels = editingLevel.levels.map((level) => ({
+        ...level,
+        approvers:
+          level.assignedRecruiters?.map((recruiter) => ({
+            user: recruiter._id,
+          })) || [],
+      }));
+
+      setLevels(formattedLevels);
       setCurrentLevel({
         levelName: "",
         description: "",
         approvers: [],
-        levelOrder: levels.length + 1,
+        levelOrder: formattedLevels.length + 1,
       });
     } else if (visible) {
       setIsEditMode(false);
@@ -283,14 +291,23 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
       return;
     }
 
+    // Format the levels data to match your API expectations
     const levelData = {
       groupName: groupName.trim(),
-      levels: levels,
+      levels: levels.map((level) => ({
+        ...level,
+        // Include assignedRecruiters if your API expects it
+        assignedRecruiters: level.approvers.map((a) => ({
+          _id: a.user,
+          // You might need to add additional fields here if required by your API
+        })),
+        // Remove approvers if your API doesn't use them
+        approvers: undefined,
+      })),
     };
 
     try {
       setIsLoading(true);
-
       let result;
       if (isEditMode) {
         result = await updateApproval({
