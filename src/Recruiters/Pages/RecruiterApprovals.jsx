@@ -586,6 +586,7 @@ const RecruiterApprovals = () => {
         scroll={getTableScrollConfig()}
         size={isMobile ? "small" : isTablet ? "small" : "default"}
         rowClassName="table-row-hover"
+        
         className="responsive-table"
       />
 
