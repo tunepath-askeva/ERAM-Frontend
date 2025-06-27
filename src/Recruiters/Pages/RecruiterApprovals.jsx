@@ -474,7 +474,7 @@ const handleApprovalSubmit = async () => {
     }
 
     await approveCandidateDocuments({
-      workOrderId: selectedWorkOrder.workOrderId,
+      workOrderid: selectedWorkOrder.workOrderId,
       userId: selectedCandidate.candidateId,
       approvalId,
       levelId,
