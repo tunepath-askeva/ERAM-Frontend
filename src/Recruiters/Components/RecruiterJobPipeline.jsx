@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetPipelineJobsByIdQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetPipelineJobsByIdQuery,
+  useMoveToNextStageMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 import {
   Card,
   Typography,
@@ -12,8 +15,6 @@ import {
   Avatar,
   Button,
   Tabs,
-  Dropdown,
-  Menu,
   Modal,
   message,
   Tooltip,
@@ -25,6 +26,7 @@ import {
   Row,
   Col,
   Grid,
+  Form,
 } from "antd";
 import {
   TeamOutlined,
@@ -41,6 +43,7 @@ import {
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   ArrowRightOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -48,20 +51,25 @@ const { TabPane } = Tabs;
 const { Option } = Select;
 const { Panel } = Collapse;
 const { useBreakpoint } = Grid;
+const { TextArea } = Input;
 
 const RecruiterJobPipeline = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   const [activeStage, setActiveStage] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [targetStage, setTargetStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
+  const [reviewerComments, setReviewerComments] = useState("");
   const screens = useBreakpoint();
 
   const primaryColor = "#da2c46";
 
   const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
+  const [moveToNextStage, { isLoading: isMoving }] =
+    useMoveToNextStageMutation();
 
   useEffect(() => {
     if (apiData?.data) {
@@ -85,9 +93,9 @@ const RecruiterJobPipeline = () => {
         status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
         currentStage: currentStageProgress?.stageId || null,
         currentStageName: currentStageProgress?.stageName || "Unknown",
-        stageStatus: currentStageProgress?.stageStatus || "pending", 
+        stageStatus: currentStageProgress?.stageStatus || "pending",
         appliedDate: pipelineData.createdAt,
-        stageProgress: stageProgress, 
+        stageProgress: stageProgress,
         isSourced: pipelineData.isSourced === "true",
         responses: pipelineData.responses || [],
         uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
@@ -96,8 +104,12 @@ const RecruiterJobPipeline = () => {
           fullPipeline.stages?.find(
             (s) => s._id === currentStageProgress?.stageId
           )?.requiredDocuments || [],
-
+        // Additional data needed for API call
+        userId: user._id,
+        workOrderId: workOrder._id,
+        currentStageId: currentStageProgress?.stageId,
       };
+
       const jobData = {
         _id: workOrder._id,
         title: workOrder.title,
@@ -132,6 +144,31 @@ const RecruiterJobPipeline = () => {
       }
     }
   }, [processedJobData]);
+
+  const getNextStageId = (currentStageId) => {
+    if (!processedJobData?.pipeline?.stages) return null;
+
+    const stages = processedJobData.pipeline.stages;
+    const currentIndex = stages.findIndex(
+      (stage) => stage._id === currentStageId
+    );
+
+    if (currentIndex >= 0 && currentIndex < stages.length - 1) {
+      return stages[currentIndex + 1]._id;
+    }
+
+    return null; 
+  };
+
+  const getReviewerIdForStage = (stageId) => {
+    if (!processedJobData?.workOrder?.pipelineStageTimeline) return null;
+
+    const stageTimeline = processedJobData.workOrder.pipelineStageTimeline.find(
+      (timeline) => timeline.stageId === stageId
+    );
+
+    return stageTimeline?.recruiterId || null;
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -170,28 +207,73 @@ const RecruiterJobPipeline = () => {
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
     setSelectedCandidate(candidate);
-    setTargetStage(null);
+    setReviewerComments("");
+    form.resetFields();
+
+    const nextStageId = getNextStageId(candidate.currentStage);
+    setTargetStage(nextStageId);
+
     setIsMoveModalVisible(true);
   };
 
-  const confirmMoveCandidate = () => {
-    if (!selectedCandidate || !targetStage) {
-      message.warning("Please select a target stage");
+  const confirmMoveCandidate = async () => {
+    if (!selectedCandidate) {
+      message.error("No candidate selected");
       return;
     }
 
-    // Check if stage is approved (this matches your API structure)
     const canMove = selectedCandidate.stageStatus === "approved";
-
     if (!canMove) {
-      message.warning("Cannot move candidate until stage is approved");
+      message.warning("Cannot move candidate until current stage is approved");
       return;
     }
 
-    message.success(
-      `Moved ${selectedCandidate.name} to ${getStageName(targetStage)}`
-    );
-    setIsMoveModalVisible(false);
+    const nextStageId = getNextStageId(selectedCandidate.currentStage);
+    if (!nextStageId) {
+      message.info("Candidate is already at the final stage");
+      return;
+    }
+
+    const reviewerId = getReviewerIdForStage(nextStageId);
+    if (!reviewerId) {
+      message.error("No reviewer assigned to the next stage");
+      return;
+    }
+
+    try {
+      const payload = {
+        userId: selectedCandidate.userId,
+        workOrderId: selectedCandidate.workOrderId,
+        stageId: selectedCandidate.currentStageId,
+        reviewerId: reviewerId,
+        reviewerComments: reviewerComments || "Moved to next stage",
+      };
+
+      console.log("Moving candidate with payload:", payload);
+
+      const result = await moveToNextStage(payload).unwrap();
+
+      message.success(
+        `Successfully moved ${selectedCandidate.name} to ${getStageName(
+          nextStageId
+        )}`
+      );
+
+      setIsMoveModalVisible(false);
+      setSelectedCandidate(null);
+      setReviewerComments("");
+      form.resetFields();
+
+      // Refresh the data
+      // The invalidatesTags in the mutation should automatically refetch the data
+    } catch (error) {
+      console.error("Error moving candidate:", error);
+      message.error(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to move candidate to next stage"
+      );
+    }
   };
 
   const handleViewDocument = (fileUrl, fileName) => {
@@ -331,6 +413,10 @@ const RecruiterJobPipeline = () => {
     // Button should be enabled when stage is approved
     const canMoveToNextStage = isStageApproved;
 
+    // Check if there's a next stage
+    const nextStageId = getNextStageId(candidate.currentStage);
+    const isLastStage = !nextStageId;
+
     const getStageStatusTag = () => {
       if (isStageApproved) {
         return (
@@ -364,7 +450,9 @@ const RecruiterJobPipeline = () => {
     };
 
     const getStatusMessage = () => {
-      if (canMoveToNextStage) {
+      if (isLastStage) {
+        return "Candidate has reached the final stage of the pipeline.";
+      } else if (canMoveToNextStage) {
         return "Stage has been approved. You can now move the candidate to the next stage.";
       } else {
         return "Stage approval is still pending. You cannot move the candidate until the stage is approved.";
@@ -412,23 +500,26 @@ const RecruiterJobPipeline = () => {
             <Button
               type="primary"
               icon={<ArrowRightOutlined />}
-              disabled={!canMoveToNextStage}
+              disabled={!canMoveToNextStage || isLastStage}
               onClick={(e) => handleMoveCandidate(candidate, e)}
+              loading={isMoving}
               style={{
-                backgroundColor: canMoveToNextStage ? primaryColor : "#d9d9d9",
-                borderColor: canMoveToNextStage ? primaryColor : "#d9d9d9",
+                backgroundColor:
+                  canMoveToNextStage && !isLastStage ? primaryColor : "#d9d9d9",
+                borderColor:
+                  canMoveToNextStage && !isLastStage ? primaryColor : "#d9d9d9",
                 width: screens.xs ? "100%" : "auto",
               }}
               block={screens.xs}
             >
-              Move to Next Stage
+              {isLastStage ? "Final Stage Reached" : "Move to Next Stage"}
             </Button>
           </Space>
         </div>
 
         <div style={{ marginTop: "12px" }}>
           <Text
-            type={canMoveToNextStage ? "success" : "secondary"}
+            type={canMoveToNextStage && !isLastStage ? "success" : "secondary"}
             style={{ fontSize: "12px" }}
           >
             <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
@@ -755,7 +846,7 @@ const RecruiterJobPipeline = () => {
                           )}
                           <Tag
                             color={
-                              candidate.stageStatus === "completed"
+                              candidate.stageStatus === "approved"
                                 ? "green"
                                 : candidate.stageStatus === "rejected"
                                 ? "red"
@@ -770,75 +861,67 @@ const RecruiterJobPipeline = () => {
                     }
                     description={
                       <Space direction="vertical" size={4}>
-                        <Text type="secondary">{candidate.email}</Text>
-                        <Text type="secondary">{candidate.phone}</Text>
-                        {candidate.skills && candidate.skills.length > 0 && (
-                          <div>
-                            {candidate.skills
-                              .slice(0, screens.xs ? 3 : 5)
-                              .map((skill, index) => (
-                                <Tag
-                                  key={index}
-                                  size="small"
-                                  style={{ margin: "1px" }}
-                                >
-                                  {skill}
-                                </Tag>
-                              ))}
-                            {candidate.skills.length > (screens.xs ? 3 : 5) && (
-                              <Tag size="small" style={{ margin: "1px" }}>
-                                +
-                                {candidate.skills.length - (screens.xs ? 3 : 5)}{" "}
-                                more
-                              </Tag>
-                            )}
-                          </div>
-                        )}
-                        <Text
-                          type="secondary"
-                          style={{
-                            fontSize: screens.xs ? "11px" : "12px",
-                          }}
-                        >
-                          Applied {formatDate(candidate.appliedDate)}
+                        <Text type="secondary">
+                          {candidate.email} • {candidate.phone}
+                        </Text>
+                        <Text type="secondary">
+                          Applied: {formatDate(candidate.appliedDate)}
                         </Text>
                       </Space>
                     }
                   />
 
+                  <Divider />
+
+                  {/* Candidate Skills */}
+                  {candidate.skills && candidate.skills.length > 0 && (
+                    <div style={{ marginTop: "12px" }}>
+                      <Text strong>Skills:</Text>
+                      <div style={{ marginTop: "8px" }}>
+                        {candidate.skills.map((skill, index) => (
+                          <Tag key={index}>{skill}</Tag>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Fields */}
+                  {renderCustomFields(candidate)}
+
                   {/* Documents Section */}
-                  <Collapse
-                    ghost
-                    style={{ marginTop: "16px" }}
-                    items={[
-                      {
-                        key: "1",
-                        label: (
-                          <Text strong>
-                            <FileOutlined style={{ marginRight: "8px" }} />
-                            Documents & Approval (
-                            {candidate.uploadedDocuments?.length || 0})
-                          </Text>
-                        ),
-                        children: (
-                          <div>
-                            {renderDocuments(candidate)}
-                            {renderCustomFields(candidate)}
-                            {renderApprovalSection(candidate)}
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
+                  {renderDocuments(candidate)}
+
+                  {/* Approval Section */}
+                  {renderApprovalSection(candidate)}
+
+                  {/* Responses Section */}
+                  {candidate.responses && candidate.responses.length > 0 && (
+                    <div style={{ marginTop: "16px" }}>
+                      <Title level={5} style={{ marginBottom: "12px" }}>
+                        <CommentOutlined style={{ marginRight: "8px" }} />
+                        Responses
+                      </Title>
+                      <Collapse bordered={false}>
+                        {candidate.responses.map((response, index) => (
+                          <Panel
+                            header={`Response ${index + 1}`}
+                            key={index}
+                            style={{ border: "none" }}
+                          >
+                            <Text>{response.answer}</Text>
+                          </Panel>
+                        ))}
+                      </Collapse>
+                    </div>
+                  )}
                 </List.Item>
               )}
             />
           ) : (
             <Empty
-              description={
-                <Text type="secondary">No candidates in this stage</Text>
-              }
-              style={{ padding: "40px 0" }}
+              description="No candidates in this stage"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ margin: "40px 0" }}
             />
           )}
         </Card>
@@ -846,64 +929,50 @@ const RecruiterJobPipeline = () => {
 
       {/* Move Candidate Modal */}
       <Modal
-        title={`Move ${selectedCandidate?.name || "Candidate"}`}
+        title={`Move Candidate to Next Stage`}
         visible={isMoveModalVisible}
         onOk={confirmMoveCandidate}
         onCancel={() => setIsMoveModalVisible(false)}
         okText="Confirm Move"
+        cancelText="Cancel"
+        confirmLoading={isMoving}
         okButtonProps={{
-          style: { background: primaryColor, border: "none" },
+          style: { backgroundColor: primaryColor, borderColor: primaryColor },
         }}
-        width={screens.xs ? "90vw" : "520px"}
       >
-        <div style={{ marginBottom: "16px" }}>
-          <Text>
-            Current Stage:{" "}
-            <Text strong>
-              {selectedCandidate?.currentStageName || "Unknown"}
-            </Text>
-          </Text>
-        </div>
-        <div>
-          <Text style={{ display: "block", marginBottom: "8px" }}>
-            Select Target Stage:
-          </Text>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Select stage"
-            value={targetStage}
-            onChange={setTargetStage}
-          >
-            {processedJobData?.pipeline.stages
-              .filter((stage) => stage._id !== selectedCandidate?.currentStage)
-              .map((stage) => (
-                <Option key={stage._id} value={stage._id}>
-                  {stage.name}
-                </Option>
-              ))}
-          </Select>
-        </div>
-
-        {selectedCandidate &&
-          selectedCandidate.documentApprovalStatus === "approved" && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px",
-                backgroundColor: "#f6ffed",
-                borderRadius: "6px",
-              }}
+        {selectedCandidate && (
+          <Form form={form} layout="vertical">
+            <Form.Item label="Candidate">
+              <Input value={selectedCandidate.name} disabled />
+            </Form.Item>
+            <Form.Item label="Current Stage">
+              <Input
+                value={getStageName(selectedCandidate.currentStage)}
+                disabled
+              />
+            </Form.Item>
+            <Form.Item label="Next Stage">
+              <Input value={getStageName(targetStage)} disabled />
+            </Form.Item>
+            <Form.Item
+              label="Comments"
+              name="reviewerComments"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter comments for the move",
+                },
+              ]}
             >
-              <Text type="secondary" style={{ fontSize: "12px" }}>
-                <CheckCircleOutlined
-                  style={{ color: "#52c41a", marginRight: "4px" }}
-                />
-                Documents have been approved for this candidate
-              </Text>
-            </div>
-          )}
-
-       
+              <TextArea
+                rows={4}
+                placeholder="Enter any comments for the next stage reviewer"
+                value={reviewerComments}
+                onChange={(e) => setReviewerComments(e.target.value)}
+              />
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </div>
   );
