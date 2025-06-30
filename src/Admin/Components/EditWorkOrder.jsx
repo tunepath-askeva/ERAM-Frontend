@@ -37,7 +37,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import CreatePipelineModal from "./CreatePipelineModal.jsx";
-
+import { ObjectId } from "mongodb";
 import {
   useGetRecruitersQuery,
   useGetPipelinesQuery,
@@ -153,7 +153,7 @@ const EditWorkOrder = () => {
               recruiterId: timeline.recruiterId?._id || null,
             });
 
-            if (timeline.stageId.startsWith("temp-")) {
+            if (timeline.isCustomStage) {
               if (!initialCustomStages[timeline.pipelineId]) {
                 initialCustomStages[timeline.pipelineId] = [];
               }
@@ -414,7 +414,7 @@ const EditWorkOrder = () => {
 
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: `temp-${Date.now()}`,
+      id: new ObjectId().toString(), // Generate a valid ObjectId string
       name: `New Stage`,
       description: "",
       isCustom: true,
@@ -579,7 +579,6 @@ const EditWorkOrder = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      
       const values = jobForm.getFieldsValue();
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
@@ -595,8 +594,8 @@ const EditWorkOrder = () => {
             stageName: stages.find((s) => (s._id || s.id) === dateEntry.stageId)
               ?.name,
             stageOrder: index,
-            startDate: dateEntry.startDate, 
-            endDate: dateEntry.endDate, 
+            startDate: dateEntry.startDate,
+            endDate: dateEntry.endDate,
             dependencyType: dateEntry.dependencyType || "independent",
             approvalId: dateEntry.approvalId || null,
             recruiterId: dateEntry.recruiterId || null,

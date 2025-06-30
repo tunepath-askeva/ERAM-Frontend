@@ -33,6 +33,7 @@ import {
   EditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { ObjectId } from "mongodb";
 import {
   useGetRecruitersQuery,
   useGetPipelinesQuery,
@@ -159,24 +160,30 @@ const AddWorkOrder = () => {
       if (!customStages[pipelineId]) {
         setCustomStages((prev) => ({
           ...prev,
-          [pipelineId]: [...pipeline.stages],
+          [pipelineId]: [],
         }));
       }
 
       if (!pipelineStageDates[pipelineId]) {
         setPipelineStageDates((prev) => ({
           ...prev,
-          [pipelineId]: (customStages[pipelineId] || pipeline.stages).map(
-            (stage) => ({
-              stageId: stage._id || stage.id || `temp-${Date.now()}`,
+          [pipelineId]: [
+            ...(pipeline.stages || []).map((stage) => ({
+              stageId: stage._id,
               startDate: null,
               endDate: null,
-            })
-          ),
+            })),
+            ...(customStages[pipelineId] || []).map((stage) => ({
+              stageId: stage.id,
+              startDate: null,
+              endDate: null,
+            })),
+          ],
         }));
       }
     }
   };
+  
   const handleStageDateChange = (pipelineId, stageId, field, value) => {
     setPipelineStageDates((prev) => {
       const newDates = { ...prev };
@@ -259,7 +266,7 @@ const AddWorkOrder = () => {
 
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: `temp-${Date.now()}`,
+      id: new ObjectId().toString(), // Generate a valid ObjectId string
       name: `New Stage`,
       description: "",
       isCustom: true,
