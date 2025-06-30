@@ -146,18 +146,18 @@ const RecruiterJobPipeline = () => {
   }, [processedJobData]);
 
   const getNextStageId = (currentStageId) => {
-    if (!processedJobData?.pipeline?.stages) return null;
+    if (!processedJobData?.workOrder?.pipelineStageTimeline) return null;
 
-    const stages = processedJobData.pipeline.stages;
+    const stages = processedJobData.workOrder.pipelineStageTimeline;
     const currentIndex = stages.findIndex(
-      (stage) => stage._id === currentStageId
+      (stage) => stage.stageId === currentStageId
     );
 
     if (currentIndex >= 0 && currentIndex < stages.length - 1) {
-      return stages[currentIndex + 1]._id;
+      return stages[currentIndex + 1].stageId;
     }
 
-    return null; 
+    return null;
   };
 
   const getReviewerIdForStage = (stageId) => {
@@ -185,16 +185,11 @@ const RecruiterJobPipeline = () => {
   };
 
   const getStageName = (stageId) => {
-    if (
-      !processedJobData ||
-      !processedJobData.pipeline ||
-      !processedJobData.pipeline.stages
-    )
-      return "";
-    const stage = processedJobData.pipeline.stages.find(
-      (s) => s._id === stageId
+    if (!processedJobData?.workOrder?.pipelineStageTimeline) return "";
+    const stage = processedJobData.workOrder.pipelineStageTimeline.find(
+      (s) => s.stageId === stageId
     );
-    return stage ? stage.name : "";
+    return stage ? stage.stageName : "";
   };
 
   const getCandidatesInStage = (stageId) => {
@@ -203,7 +198,6 @@ const RecruiterJobPipeline = () => {
       (candidate) => candidate.currentStage === stageId
     );
   };
-
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
     setSelectedCandidate(candidate);
@@ -391,8 +385,12 @@ const RecruiterJobPipeline = () => {
   };
 
   const renderApprovalSection = (candidate) => {
-    // Check stage approval status from API
     const isStageApproved = candidate.stageStatus === "approved";
+    const stages = processedJobData.workOrder.pipelineStageTimeline;
+    const currentIndex = stages.findIndex(
+      (stage) => stage.stageId === candidate.currentStage
+    );
+    const isLastStage = currentIndex === stages.length - 1;
 
     // Check if there are any reviewer approvals pending
     const hasReviewerApprovals =
@@ -415,7 +413,6 @@ const RecruiterJobPipeline = () => {
 
     // Check if there's a next stage
     const nextStageId = getNextStageId(candidate.currentStage);
-    const isLastStage = !nextStageId;
 
     const getStageStatusTag = () => {
       if (isStageApproved) {
@@ -512,7 +509,7 @@ const RecruiterJobPipeline = () => {
               }}
               block={screens.xs}
             >
-              {isLastStage ? "Final Stage Reached" : "Move to Next Stage"}
+              {isLastStage ? "Finish Process" : "Move to Next Stage"}
             </Button>
           </Space>
         </div>
@@ -646,7 +643,6 @@ const RecruiterJobPipeline = () => {
           Back to Jobs
         </Button>
       </div>
-
       <Card
         style={{
           marginBottom: "24px",
@@ -737,7 +733,6 @@ const RecruiterJobPipeline = () => {
           </div>
         </div>
       </Card>
-
       <div
         style={{
           overflowX: "auto",
@@ -755,16 +750,16 @@ const RecruiterJobPipeline = () => {
             width: screens.xs ? "100%" : "auto",
           }}
         >
-          {processedJobData.pipeline.stages.map((stage) => (
+          {processedJobData.workOrder.pipelineStageTimeline.map((stage) => (
             <TabPane
-              key={stage._id}
+              key={stage.stageId}
               tab={
                 <Badge
-                  count={getCandidatesInStage(stage._id).length}
+                  count={getCandidatesInStage(stage.stageId).length}
                   offset={[10, -5]}
                   style={{
                     backgroundColor:
-                      activeStage === stage._id ? primaryColor : "#d9d9d9",
+                      activeStage === stage.stageId ? primaryColor : "#d9d9d9",
                   }}
                 >
                   <span
@@ -773,7 +768,7 @@ const RecruiterJobPipeline = () => {
                       fontSize: screens.xs ? "12px" : "14px",
                     }}
                   >
-                    {stage.name}
+                    {stage.stageName}
                   </span>
                 </Badge>
               }
@@ -781,7 +776,6 @@ const RecruiterJobPipeline = () => {
           ))}
         </Tabs>
       </div>
-
       {activeStage && (
         <Card
           style={{
@@ -926,7 +920,6 @@ const RecruiterJobPipeline = () => {
           )}
         </Card>
       )}
-
       {/* Move Candidate Modal */}
       <Modal
         title={`Move Candidate to Next Stage`}
