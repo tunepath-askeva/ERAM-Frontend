@@ -468,7 +468,7 @@ const RecruiterApprovals = () => {
 
       const levelId = selectedWorkOrder.stage?.levelInfo?.levelId || null;
 
-      const stageId = selectedWorkOrder.stage?._id || null;
+      const stageId = selectedWorkOrder.stage?.stageId || null;
 
       if (!approvalId) {
         message.error("Missing required approval information");
