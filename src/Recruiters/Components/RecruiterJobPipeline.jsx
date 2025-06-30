@@ -228,18 +228,19 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
-    const reviewerId = getReviewerIdForStage(nextStageId);
-    if (!reviewerId) {
-      message.error("No reviewer assigned to the next stage");
+    const currentStageRecruiterId = getReviewerIdForStage(
+      selectedCandidate.currentStage
+    );
+    if (!currentStageRecruiterId) {
+      message.error("No recruiter assigned to the current stage");
       return;
     }
-
     try {
       const payload = {
         userId: selectedCandidate.userId,
         workOrderId: selectedCandidate.workOrderId,
         stageId: selectedCandidate.currentStageId,
-        reviewerId: reviewerId,
+        reviewerId: currentStageRecruiterId,
         reviewerComments: reviewerComments || "Moved to next stage",
       };
 
@@ -257,9 +258,6 @@ const RecruiterJobPipeline = () => {
       setSelectedCandidate(null);
       setReviewerComments("");
       form.resetFields();
-
-      // Refresh the data
-      // The invalidatesTags in the mutation should automatically refetch the data
     } catch (error) {
       console.error("Error moving candidate:", error);
       message.error(
