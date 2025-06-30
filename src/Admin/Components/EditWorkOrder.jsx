@@ -37,7 +37,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import CreatePipelineModal from "./CreatePipelineModal.jsx";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "bson";
 import {
   useGetRecruitersQuery,
   useGetPipelinesQuery,
