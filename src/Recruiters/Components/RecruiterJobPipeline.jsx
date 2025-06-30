@@ -406,12 +406,13 @@ const RecruiterJobPipeline = () => {
       ? candidate.stageProgress[0]?.approval?.isApproved === true
       : false;
 
+    const canFinishProcess =
+      isLastStage && isStageApproved && isApprovalApproved;
+
     // Button should be enabled when stage is approved
     const canMoveToNextStage = isStageApproved;
-
     // Check if there's a next stage
     const nextStageId = getNextStageId(candidate.currentStage);
-
     const getStageStatusTag = () => {
       if (isStageApproved) {
         return (
@@ -446,7 +447,9 @@ const RecruiterJobPipeline = () => {
 
     const getStatusMessage = () => {
       if (isLastStage) {
-        return "Candidate has reached the final stage of the pipeline.";
+        return canFinishProcess
+          ? "Candidate has completed all stages and is ready to finish the process."
+          : "Candidate has reached the final stage but requires approval to finish.";
       } else if (canMoveToNextStage) {
         return "Stage has been approved. You can now move the candidate to the next stage.";
       } else {
@@ -495,14 +498,20 @@ const RecruiterJobPipeline = () => {
             <Button
               type="primary"
               icon={<ArrowRightOutlined />}
-              disabled={!canMoveToNextStage || isLastStage}
+              disabled={isLastStage ? !canFinishProcess : !canMoveToNextStage}
               onClick={(e) => handleMoveCandidate(candidate, e)}
               loading={isMoving}
               style={{
                 backgroundColor:
-                  canMoveToNextStage && !isLastStage ? primaryColor : "#d9d9d9",
+                  (isLastStage && canFinishProcess) ||
+                  (!isLastStage && canMoveToNextStage)
+                    ? primaryColor
+                    : "#d9d9d9",
                 borderColor:
-                  canMoveToNextStage && !isLastStage ? primaryColor : "#d9d9d9",
+                  (isLastStage && canFinishProcess) ||
+                  (!isLastStage && canMoveToNextStage)
+                    ? primaryColor
+                    : "#d9d9d9",
                 width: screens.xs ? "100%" : "auto",
               }}
               block={screens.xs}
@@ -514,7 +523,12 @@ const RecruiterJobPipeline = () => {
 
         <div style={{ marginTop: "12px" }}>
           <Text
-            type={canMoveToNextStage && !isLastStage ? "success" : "secondary"}
+            type={
+              (isLastStage && canFinishProcess) ||
+              (!isLastStage && canMoveToNextStage)
+                ? "success"
+                : "secondary"
+            }
             style={{ fontSize: "12px" }}
           >
             <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
