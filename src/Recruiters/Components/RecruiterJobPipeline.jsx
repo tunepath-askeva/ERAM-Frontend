@@ -198,6 +198,7 @@ const RecruiterJobPipeline = () => {
       (candidate) => candidate.currentStage === stageId
     );
   };
+
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
     setSelectedCandidate(candidate);
@@ -216,18 +217,25 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
+    const isLastStage = !getNextStageId(selectedCandidate.currentStage);
     const canMove = selectedCandidate.stageStatus === "approved";
+
     if (!canMove) {
       message.warning("Cannot move candidate until current stage is approved");
       return;
     }
 
     const nextStageId = getNextStageId(selectedCandidate.currentStage);
-    if (!nextStageId) {
-      message.info("Candidate is already at the final stage");
+
+    if (
+      isLastStage &&
+      !selectedCandidate.stageProgress[0]?.approval?.isApproved
+    ) {
+      message.warning("Cannot finish process until approval is granted");
       return;
     }
 
+    // Fix: Changed from getReviewerForStage to getReviewerIdForStage
     const currentStageRecruiterId = getReviewerIdForStage(
       selectedCandidate.currentStage
     );
@@ -235,23 +243,29 @@ const RecruiterJobPipeline = () => {
       message.error("No recruiter assigned to the current stage");
       return;
     }
+
     try {
       const payload = {
         userId: selectedCandidate.userId,
         workOrderId: selectedCandidate.workOrderId,
         stageId: selectedCandidate.currentStageId,
         reviewerId: currentStageRecruiterId,
-        reviewerComments: reviewerComments || "Moved to next stage",
+        reviewerComments:
+          reviewerComments ||
+          (isLastStage ? "Process completed" : "Moved to next stage"),
+        isFinished: isLastStage, // Add this flag for the finish case
       };
 
-      console.log("Moving candidate with payload:", payload);
+      console.log("Moving/finishing candidate with payload:", payload);
 
       const result = await moveToNextStage(payload).unwrap();
 
       message.success(
-        `Successfully moved ${selectedCandidate.name} to ${getStageName(
-          nextStageId
-        )}`
+        isLastStage
+          ? `Successfully completed process for ${selectedCandidate.name}`
+          : `Successfully moved ${selectedCandidate.name} to ${getStageName(
+              nextStageId
+            )}`
       );
 
       setIsMoveModalVisible(false);
@@ -259,11 +273,13 @@ const RecruiterJobPipeline = () => {
       setReviewerComments("");
       form.resetFields();
     } catch (error) {
-      console.error("Error moving candidate:", error);
+      console.error("Error moving/finishing candidate:", error);
       message.error(
         error?.data?.message ||
           error?.message ||
-          "Failed to move candidate to next stage"
+          (isLastStage
+            ? "Failed to finish process"
+            : "Failed to move candidate to next stage")
       );
     }
   };
@@ -934,11 +950,19 @@ const RecruiterJobPipeline = () => {
       )}
       {/* Move Candidate Modal */}
       <Modal
-        title={`Move Candidate to Next Stage`}
+        title={
+          !getNextStageId(selectedCandidate?.currentStage)
+            ? "Finish Candidate Process"
+            : "Move Candidate to Next Stage"
+        }
         visible={isMoveModalVisible}
         onOk={confirmMoveCandidate}
         onCancel={() => setIsMoveModalVisible(false)}
-        okText="Confirm Move"
+        okText={
+          !getNextStageId(selectedCandidate?.currentStage)
+            ? "Confirm Finish"
+            : "Confirm Move"
+        }
         cancelText="Cancel"
         confirmLoading={isMoving}
         okButtonProps={{
@@ -956,22 +980,38 @@ const RecruiterJobPipeline = () => {
                 disabled
               />
             </Form.Item>
-            <Form.Item label="Next Stage">
-              <Input value={getStageName(targetStage)} disabled />
-            </Form.Item>
+            {!getNextStageId(selectedCandidate.currentStage) ? (
+              <Form.Item label="Action">
+                <Input value="Finish Process" disabled />
+              </Form.Item>
+            ) : (
+              <Form.Item label="Next Stage">
+                <Input value={getStageName(targetStage)} disabled />
+              </Form.Item>
+            )}
             <Form.Item
-              label="Comments"
+              label={
+                !getNextStageId(selectedCandidate.currentStage)
+                  ? "Completion Comments"
+                  : "Move Comments"
+              }
               name="reviewerComments"
               rules={[
                 {
                   required: true,
-                  message: "Please enter comments for the move",
+                  message: !getNextStageId(selectedCandidate.currentStage)
+                    ? "Please enter completion comments"
+                    : "Please enter comments for the move",
                 },
               ]}
             >
               <TextArea
                 rows={4}
-                placeholder="Enter any comments for the next stage reviewer"
+                placeholder={
+                  !getNextStageId(selectedCandidate.currentStage)
+                    ? "Enter any final comments about this candidate"
+                    : "Enter any comments for the next stage reviewer"
+                }
                 value={reviewerComments}
                 onChange={(e) => setReviewerComments(e.target.value)}
               />
