@@ -108,12 +108,13 @@ const RecruiterEditJob = () => {
         const job = fetchedJobData.workOrder;
 
         const initialStageDates = {};
+        const initialCustomStages = {};
         const initialStageCustomFields = {};
         const initialStageRequiredDocuments = {};
 
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = job.pipeline[0]?._id;
+            const pipelineId = timeline.pipelineId;
 
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
@@ -125,12 +126,52 @@ const RecruiterEditJob = () => {
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
             });
+
+            if (timeline.stageId.startsWith("temp-")) {
+              if (!initialCustomStages[pipelineId]) {
+                initialCustomStages[pipelineId] = [];
+              }
+
+              initialCustomStages[pipelineId].push({
+                id: timeline.stageId,
+                name: timeline.stageName,
+                description: "",
+                isCustom: true,
+              });
+            }
+
+            if (!initialStageCustomFields[pipelineId]) {
+              initialStageCustomFields[pipelineId] = {};
+            }
+            if (!initialStageRequiredDocuments[pipelineId]) {
+              initialStageRequiredDocuments[pipelineId] = {};
+            }
+
+            initialStageCustomFields[pipelineId][timeline.stageId] =
+              timeline.customFields?.map((field) => ({
+                ...field,
+                id:
+                  field._id ||
+                  `field_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+              })) || [];
+
+            initialStageRequiredDocuments[pipelineId][timeline.stageId] =
+              timeline.requiredDocuments?.map((doc) => ({
+                ...doc,
+                id:
+                  doc._id ||
+                  `doc_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
+              })) || [];
           });
         }
 
         setPipelineStageDates(initialStageDates);
+        setCustomStages(initialCustomStages);
 
-        // Set selected pipelines
         const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
         setSelectedPipelines(selectedPipeIds);
 
@@ -275,8 +316,8 @@ const RecruiterEditJob = () => {
       if (!pipelineStageDates[pipelineId]) {
         const initialDates = [];
 
-        if (fetchedJobData?.pipelineStageTimeline) {
-          fetchedJobData.pipelineStageTimeline
+        if (fetchedJobData?.workOrder?.pipelineStageTimeline) {
+          fetchedJobData.workOrder.pipelineStageTimeline
             .filter((t) => t.pipelineId === pipelineId)
             .forEach((timeline) => {
               initialDates.push({
@@ -648,6 +689,13 @@ const RecruiterEditJob = () => {
                   timeline.pipelineId === pipeId &&
                   timeline.stageId === dateEntry.stageId
               );
+
+            const stage = stages.find(
+              (s) => (s._id || s.id) === dateEntry.stageId
+            );
+            const isCustom = !!(
+              stage?.isCustom || dateEntry.stageId.startsWith("temp-")
+            );
 
             const customFields =
               stageCustomFields[pipeId]?.[dateEntry.stageId] || [];
@@ -1280,8 +1328,8 @@ const RecruiterEditJob = () => {
 
     const pipelineId = currentPipelineForDates._id;
     const allStages = [
-      ...(customStages[pipelineId] || []),
       ...(currentPipelineForDates.stages || []),
+      ...(customStages[pipelineId] || []),
     ];
 
     const sortedStages = allStages.sort((a, b) => {
@@ -1294,7 +1342,6 @@ const RecruiterEditJob = () => {
       return (aIndex || 0) - (bIndex || 0);
     });
 
-    // Helper function to render field type specific controls
     const renderFieldTypeControls = (field, pipelineId, stageId) => {
       const needsOptions = ["dropdown", "select", "radio", "checkbox"].includes(
         field.type
