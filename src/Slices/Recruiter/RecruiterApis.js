@@ -92,6 +92,7 @@ export const recruiterApi = createApi({
     approveCandidateDocuments: builder.mutation({
       query: ({
         approvalId,
+        stageId,
         levelId,
         status,
         comments,
@@ -102,6 +103,7 @@ export const recruiterApi = createApi({
         method: "POST",
         body: {
           levelId,
+          stageId,
           status,
           comments,
           workOrderid,

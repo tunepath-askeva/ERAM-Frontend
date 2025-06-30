@@ -53,6 +53,9 @@ import RecruiterJobPipeline from "./Recruiters/Components/RecruiterJobPipeline";
 import SourcedJobDetails from "./Components/SourcedJobDetails";
 import RecruiterApprovals from "./Recruiters/Pages/RecruiterApprovals";
 import AppliedJobDetails from "./Components/AppliedJobDetails";
+import HrDashboard from "./HR/Pages/HrDashboard";
+import HrPayroll from "./HR/Pages/HrPayroll";
+import HrEmployees from "./HR/Pages/HrEmployees";
 
 const AppRoutes = () => {
   return (
@@ -167,6 +170,7 @@ const AppRoutes = () => {
         <Route path="/candidate-settings" element={<CandidateSettings />} />
       </Route>
 
+      {/* Recruiter */}
       <Route element={<RecruiterLayout />}>
         <Route
           path="/recruiter/dashboard"
@@ -229,6 +233,11 @@ const AppRoutes = () => {
           element={<EmployeeProfileSettings />}
         />
       </Route>
+
+      {/* Hr */}
+      <Route path="/hr/dashboard" element={<HrDashboard />} />
+      <Route path="/hr/pay-roll" element={<HrPayroll />} />
+      <Route path="/hr/employees" element={<HrEmployees />} />
     </Routes>
   );
 };

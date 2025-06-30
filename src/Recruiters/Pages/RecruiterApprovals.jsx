@@ -460,39 +460,40 @@ const RecruiterApprovals = () => {
     setApproveModalVisible(true);
   };
 
-const handleApprovalSubmit = async () => {
-  try {
-    if (!selectedWorkOrder || !selectedCandidate) return;
+  const handleApprovalSubmit = async () => {
+    try {
+      if (!selectedWorkOrder || !selectedCandidate) return;
 
-    const approvalId = selectedWorkOrder.stage?.approvalId;
-    
-    const levelId = selectedWorkOrder.stage?.levelInfo?.levelId || null;
+      const approvalId = selectedWorkOrder.stage?.approvalId;
 
-    if (!approvalId) {
-      message.error("Missing required approval information");
-      return;
+      const levelId = selectedWorkOrder.stage?.levelInfo?.levelId || null;
+
+      if (!approvalId) {
+        message.error("Missing required approval information");
+        return;
+      }
+
+      await approveCandidateDocuments({
+        workOrderid: selectedWorkOrder.workOrderId,
+        userId: selectedCandidate.candidateId,
+        approvalId,
+        levelId,
+        stageId,
+        status: "approved",
+        comments: approvalComments,
+      }).unwrap();
+
+      message.success(
+        `Documents approved for ${selectedCandidate.candidateName}!`
+      );
+      setApproveModalVisible(false);
+      setApprovalComments("");
+      refetch();
+    } catch (error) {
+      message.error(error.data?.message || "Failed to approve documents");
+      console.error("Approval error:", error);
     }
-
-    await approveCandidateDocuments({
-      workOrderid: selectedWorkOrder.workOrderId,
-      userId: selectedCandidate.candidateId,
-      approvalId,
-      levelId,
-      status: "approved",
-      comments: approvalComments,
-    }).unwrap();
-
-    message.success(
-      `Documents approved for ${selectedCandidate.candidateName}!`
-    );
-    setApproveModalVisible(false);
-    setApprovalComments("");
-    refetch();
-  } catch (error) {
-    message.error(error.data?.message || "Failed to approve documents");
-    console.error("Approval error:", error);
-  }
-};
+  };
 
   const handleDownloadDocument = (document) => {
     window.open(document.fileUrl, "_blank");
@@ -587,7 +588,6 @@ const handleApprovalSubmit = async () => {
         scroll={getTableScrollConfig()}
         size={isMobile ? "small" : isTablet ? "small" : "default"}
         rowClassName="table-row-hover"
-        
         className="responsive-table"
       />
 
