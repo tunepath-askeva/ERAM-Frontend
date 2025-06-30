@@ -127,13 +127,19 @@ const RecruiterEditJob = () => {
               dependencyType: timeline.dependencyType || "independent",
             });
 
-            if (timeline.stageId.startsWith("temp-")) {
+            const pipeline = activePipelines.find((p) => p._id === pipelineId);
+            const isCustom =
+              pipeline &&
+              !pipeline.stages.some((s) => s._id === timeline.stageId);
+
+            if (isCustom) {
               if (!initialCustomStages[pipelineId]) {
                 initialCustomStages[pipelineId] = [];
               }
 
               initialCustomStages[pipelineId].push({
                 id: timeline.stageId,
+                _id: timeline.stageId, // Add _id for consistency
                 name: timeline.stageName,
                 description: "",
                 isCustom: true,
@@ -693,10 +699,9 @@ const RecruiterEditJob = () => {
             const stage = stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             );
-            const isCustom = !!(
-              stage?.isCustom || dateEntry.stageId.startsWith("temp-")
+            const isCustom = !pipeline?.stages?.some(
+              (s) => s._id === dateEntry.stageId
             );
-
             const customFields =
               stageCustomFields[pipeId]?.[dateEntry.stageId] || [];
 
@@ -713,13 +718,11 @@ const RecruiterEditJob = () => {
               startDate: dateEntry.startDate,
               endDate: dateEntry.endDate,
               dependencyType: dateEntry.dependencyType || "independent",
-              isCustomStage: !!stages.find(
-                (s) => (s._id || s.id) === dateEntry.stageId
-              )?.isCustom,
+              isCustomStage: isCustom,
               recruiterId: originalStage?.recruiterId?._id || null,
               approvalId: originalStage?.approvalId?._id || null,
               customFields: customFields.map((field) => ({
-                _id: field._id, // Include the original _id if it exists
+                _id: field._id, 
                 label: field.label,
                 type: field.type,
                 required: field.required,
