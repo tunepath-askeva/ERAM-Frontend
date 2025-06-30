@@ -89,6 +89,7 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    
     approveCandidateDocuments: builder.mutation({
       query: ({
         approvalId,
