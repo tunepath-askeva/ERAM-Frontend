@@ -5,7 +5,6 @@ import {
   Button,
   Tag,
   Avatar,
-  Rate,
   Space,
   Dropdown,
   Modal,
@@ -24,6 +23,7 @@ import {
   List,
   Divider,
   Upload,
+  Collapse,
 } from "antd";
 import {
   SearchOutlined,
@@ -43,6 +43,9 @@ import {
   CloseOutlined,
   UploadOutlined,
   InboxOutlined,
+  CheckOutlined,
+  ClockCircleOutlined,
+  FileOutlined,
 } from "@ant-design/icons";
 import { useGetPipelineCompletedCandidatesQuery } from "../../Slices/Recruiter/RecruiterApis";
 
@@ -50,6 +53,7 @@ const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 const { Dragger } = Upload;
+const { Panel } = Collapse;
 
 const RecruiterCandidates = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +69,24 @@ const RecruiterCandidates = () => {
   const [messageForm] = Form.useForm();
   const [addCandidateForm] = Form.useForm();
 
-  const { data } = useGetPipelineCompletedCandidatesQuery();
+  const { data: apiData, isLoading } = useGetPipelineCompletedCandidatesQuery();
+
+  // Transform API data to match our component's expected format
+  const candidates =
+    apiData?.data?.map((candidate) => ({
+      id: candidate._id,
+      name: candidate.user.fullName,
+      email: candidate.user.email,
+      position: candidate.workOrder.title,
+      jobCode: candidate.workOrder.jobCode,
+      status: "completed", // or map based on candidate.status
+      stageProgress: candidate.stageProgress,
+      updatedAt: candidate.updatedAt,
+      avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${candidate.user.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")}`,
+    })) || [];
 
   // Custom styles
   const buttonStyle = {
@@ -78,116 +99,13 @@ const RecruiterCandidates = () => {
     color: "#da2c46",
   };
 
-  // Mock candidate data
-  const [candidates, setCandidates] = useState([
-    {
-      id: 1,
-      name: "Sarah Chen",
-      email: "sarah.chen@email.com",
-      phone: "+1 (555) 123-4567",
-      position: "Senior Frontend Developer",
-      location: "San Francisco, CA",
-      status: "interview",
-      stage: "Technical Interview",
-      rating: 4,
-      experience: "5 years",
-      skills: ["React", "TypeScript", "Node.js"],
-      avatar: "https://via.placeholder.com/40x40/1890ff/ffffff?text=SC",
-      appliedDate: "2024-06-10",
-      lastActivity: "2 hours ago",
-      starred: true,
-      resumeUrl: "#",
-      summary:
-        "Experienced frontend developer with strong React expertise and leadership experience.",
-    },
-    {
-      id: 2,
-      name: "Marcus Johnson",
-      email: "marcus.j@email.com",
-      phone: "+1 (555) 987-6543",
-      position: "Product Manager",
-      location: "New York, NY",
-      status: "new",
-      stage: "Application Review",
-      rating: 0,
-      experience: "8 years",
-      skills: ["Product Strategy", "Analytics", "Agile"],
-      avatar: "https://via.placeholder.com/40x40/52c41a/ffffff?text=MJ",
-      appliedDate: "2024-06-15",
-      lastActivity: "1 day ago",
-      starred: false,
-      resumeUrl: "#",
-      summary:
-        "Senior product manager with extensive experience in B2B SaaS products.",
-    },
-    {
-      id: 3,
-      name: "Emma Rodriguez",
-      email: "emma.rodriguez@email.com",
-      phone: "+1 (555) 456-7890",
-      position: "UX Designer",
-      location: "Austin, TX",
-      status: "offer",
-      stage: "Offer Extended",
-      rating: 5,
-      experience: "4 years",
-      skills: ["Figma", "User Research", "Prototyping"],
-      avatar: "https://via.placeholder.com/40x40/722ed1/ffffff?text=ER",
-      appliedDate: "2024-06-05",
-      lastActivity: "30 minutes ago",
-      starred: true,
-      resumeUrl: "#",
-      summary:
-        "Creative UX designer with strong user research background and design system experience.",
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      email: "david.kim@email.com",
-      phone: "+1 (555) 321-0987",
-      position: "Backend Engineer",
-      location: "Seattle, WA",
-      status: "rejected",
-      stage: "Not a Fit",
-      rating: 2,
-      experience: "3 years",
-      skills: ["Python", "Django", "PostgreSQL"],
-      avatar: "https://via.placeholder.com/40x40/fa8c16/ffffff?text=DK",
-      appliedDate: "2024-06-08",
-      lastActivity: "3 days ago",
-      starred: false,
-      resumeUrl: "#",
-      summary:
-        "Backend developer with Python expertise, though lacking senior-level experience.",
-    },
-    {
-      id: 5,
-      name: "Lisa Thompson",
-      email: "lisa.thompson@email.com",
-      phone: "+1 (555) 654-3210",
-      position: "Data Scientist",
-      location: "Boston, MA",
-      status: "screening",
-      stage: "Phone Screening",
-      rating: 3,
-      experience: "6 years",
-      skills: ["Python", "Machine Learning", "SQL"],
-      avatar: "https://via.placeholder.com/40x40/eb2f96/ffffff?text=LT",
-      appliedDate: "2024-06-12",
-      lastActivity: "5 hours ago",
-      starred: false,
-      resumeUrl: "#",
-      summary:
-        "Data scientist with strong ML background and experience in healthcare analytics.",
-    },
-  ]);
-
   const statusConfig = {
     new: { color: "blue", label: "New" },
     screening: { color: "orange", label: "Screening" },
     interview: { color: "purple", label: "Interview" },
     offer: { color: "green", label: "Offer" },
     rejected: { color: "red", label: "Rejected" },
+    completed: { color: "green", label: "Completed" },
   };
 
   const filterCounts = {
@@ -197,6 +115,7 @@ const RecruiterCandidates = () => {
     interview: candidates.filter((c) => c.status === "interview").length,
     offer: candidates.filter((c) => c.status === "offer").length,
     rejected: candidates.filter((c) => c.status === "rejected").length,
+    completed: candidates.filter((c) => c.status === "completed").length,
   };
 
   const filteredCandidates = candidates.filter((candidate) => {
@@ -205,32 +124,13 @@ const RecruiterCandidates = () => {
     const matchesSearch =
       candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.skills.some((skill) =>
-        skill.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      (candidate.jobCode &&
+        candidate.jobCode.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesFilter && matchesSearch;
   });
 
   const toggleStar = (candidateId) => {
-    setCandidates(
-      candidates.map((candidate) =>
-        candidate.id === candidateId
-          ? { ...candidate, starred: !candidate.starred }
-          : candidate
-      )
-    );
     message.success("Candidate starred status updated!");
-  };
-
-  const updateCandidateStatus = (candidateId, newStatus, newStage) => {
-    setCandidates(
-      candidates.map((candidate) =>
-        candidate.id === candidateId
-          ? { ...candidate, status: newStatus, stage: newStage }
-          : candidate
-      )
-    );
-    message.success(`Candidate status updated to ${newStatus}`);
   };
 
   const handleViewProfile = (candidate) => {
@@ -247,142 +147,6 @@ const RecruiterCandidates = () => {
     // Simulate download
     message.success(`Downloading ${candidate.name}'s resume...`);
   };
-
-  const handleScheduleInterview = (values) => {
-    updateCandidateStatus(
-      selectedCandidate?.id,
-      "interview",
-      "Technical Interview"
-    );
-    setScheduleModalVisible(false);
-    form.resetFields();
-    message.success("Interview scheduled successfully!");
-  };
-
-  const handleSendMessageSubmit = (values) => {
-    setMessageModalVisible(false);
-    messageForm.resetFields();
-    message.success(`Message sent to ${selectedCandidate?.name}!`);
-  };
-
-  const handleAddCandidate = (values) => {
-    const newCandidate = {
-      id: candidates.length + 1,
-      name: values.name,
-      email: values.email,
-      phone: values.phone,
-      position: values.position,
-      location: values.location,
-      status: values.status || "new",
-      stage: "Application Review",
-      rating: 0,
-      experience: values.experience,
-      skills: values.skills || [],
-      avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${values.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")}`,
-      appliedDate: new Date().toISOString().split("T")[0],
-      lastActivity: "Just now",
-      starred: false,
-      resumeUrl: "#",
-      summary: values.summary || "No summary provided.",
-    };
-
-    setCandidates([newCandidate, ...candidates]);
-    setAddCandidateModalVisible(false);
-    addCandidateForm.resetFields();
-    message.success(`${values.name} has been added successfully!`);
-  };
-
-  const handleBulkUpload = (info) => {
-    const { status } = info.file;
-
-    if (status === "done") {
-      message.success(`${info.file.name} file uploaded successfully.`);
-      // Here you would typically process the uploaded file
-      // For demo purposes, we'll just show a success message
-      setBulkUploadModalVisible(false);
-      message.info(
-        "Bulk upload processing completed. Check your candidate list for new entries."
-      );
-    } else if (status === "error") {
-      message.error(`${info.file.name} file upload failed.`);
-    }
-  };
-
-  const uploadProps = {
-    name: "file",
-    multiple: false,
-    accept: ".csv,.xlsx,.xls",
-    action: "/api/upload", // This would be your actual upload endpoint
-    onChange: handleBulkUpload,
-    beforeUpload: (file) => {
-      const isValidType =
-        file.type === "text/csv" ||
-        file.type ===
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-        file.type === "application/vnd.ms-excel";
-      if (!isValidType) {
-        message.error("You can only upload CSV or Excel files!");
-      }
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isLt10M) {
-        message.error("File must smaller than 10MB!");
-      }
-      return isValidType && isLt10M;
-    },
-  };
-
-  const getActionMenuItems = (candidate) => [
-    {
-      key: "view",
-      label: "View Profile",
-      icon: <EyeOutlined style={iconTextStyle} />,
-      onClick: () => handleViewProfile(candidate),
-    },
-    {
-      key: "message",
-      label: "Send Message",
-      icon: <MessageOutlined style={iconTextStyle} />,
-      onClick: () => handleSendMessage(candidate),
-    },
-    {
-      key: "download",
-      label: "Download Resume",
-      icon: <DownloadOutlined style={iconTextStyle} />,
-      onClick: () => handleDownloadResume(candidate),
-    },
-    { type: "divider" },
-    {
-      key: "screening",
-      label: "Move to Screening",
-      onClick: () =>
-        updateCandidateStatus(candidate.id, "screening", "Phone Screening"),
-    },
-    {
-      key: "interview",
-      label: "Schedule Interview",
-      onClick: () => {
-        setSelectedCandidate(candidate);
-        setScheduleModalVisible(true);
-      },
-    },
-    {
-      key: "offer",
-      label: "Make Offer",
-      onClick: () =>
-        updateCandidateStatus(candidate.id, "offer", "Offer Extended"),
-    },
-    { type: "divider" },
-    {
-      key: "reject",
-      label: "Reject",
-      danger: true,
-      onClick: () =>
-        updateCandidateStatus(candidate.id, "rejected", "Not a Fit"),
-    },
-  ];
 
   const columns = [
     {
@@ -404,22 +168,13 @@ const RecruiterCandidates = () => {
               <Button
                 type="text"
                 size="small"
-                icon={
-                  record.starred ? (
-                    <StarFilled style={{ color: "#faad14" }} />
-                  ) : (
-                    <StarOutlined />
-                  )
-                }
+                icon={<StarOutlined />}
                 onClick={() => toggleStar(record.id)}
               />
             </div>
             <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 <MailOutlined style={iconTextStyle} /> {record.email}
-              </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                <EnvironmentOutlined style={iconTextStyle} /> {record.location}
               </Text>
             </div>
           </div>
@@ -434,17 +189,14 @@ const RecruiterCandidates = () => {
       render: (text, record) => (
         <div>
           <Text strong>{record.position}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.experience} experience
-          </Text>
-          <div style={{ marginTop: 8 }}>
-            {record.skills.slice(0, 3).map((skill) => (
-              <Tag key={skill} size="small" style={{ marginBottom: 4 }}>
-                {skill}
-              </Tag>
-            ))}
-          </div>
+          {record.jobCode && (
+            <>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {record.jobCode}
+              </Text>
+            </>
+          )}
         </div>
       ),
     },
@@ -459,34 +211,17 @@ const RecruiterCandidates = () => {
           </Tag>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.stage}
+            {record.stageProgress?.length || 0} stages completed
           </Text>
         </div>
       ),
     },
     {
-      title: "Rating",
-      dataIndex: "rating",
-      key: "rating",
-      responsive: ["lg"],
-      render: (rating) => (
-        <Rate disabled value={rating} style={{ fontSize: 14 }} />
-      ),
-    },
-    {
-      title: "Applied",
-      dataIndex: "appliedDate",
-      key: "appliedDate",
+      title: "Last Updated",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
       responsive: ["md"],
-      render: (date, record) => (
-        <div>
-          <Text>{date}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.lastActivity}
-          </Text>
-        </div>
-      ),
+      render: (date) => <Text>{new Date(date).toLocaleDateString()}</Text>,
     },
     {
       title: "Actions",
@@ -509,19 +244,29 @@ const RecruiterCandidates = () => {
               onClick={() => handleSendMessage(record)}
             />
           </Tooltip>
-          <Tooltip title="Schedule Interview">
-            <Button
-              type="text"
-              icon={<CalendarOutlined style={iconTextStyle} />}
-              size="small"
-              onClick={() => {
-                setSelectedCandidate(record);
-                setScheduleModalVisible(true);
-              }}
-            />
-          </Tooltip>
           <Dropdown
-            menu={{ items: getActionMenuItems(record) }}
+            menu={{
+              items: [
+                {
+                  key: "view",
+                  label: "View Profile",
+                  icon: <EyeOutlined style={iconTextStyle} />,
+                  onClick: () => handleViewProfile(record),
+                },
+                {
+                  key: "message",
+                  label: "Send Message",
+                  icon: <MessageOutlined style={iconTextStyle} />,
+                  onClick: () => handleSendMessage(record),
+                },
+                {
+                  key: "download",
+                  label: "Download Documents",
+                  icon: <DownloadOutlined style={iconTextStyle} />,
+                  onClick: () => handleDownloadResume(record),
+                },
+              ],
+            }}
             trigger={["click"]}
             placement="bottomRight"
           >
@@ -561,16 +306,29 @@ const RecruiterCandidates = () => {
           style={iconTextStyle}
           onClick={() => handleSendMessage(candidate)}
         />,
-        <CalendarOutlined
-          key="schedule"
-          style={iconTextStyle}
-          onClick={() => {
-            setSelectedCandidate(candidate);
-            setScheduleModalVisible(true);
-          }}
-        />,
         <Dropdown
-          menu={{ items: getActionMenuItems(candidate) }}
+          menu={{
+            items: [
+              {
+                key: "view",
+                label: "View Profile",
+                icon: <EyeOutlined style={iconTextStyle} />,
+                onClick: () => handleViewProfile(candidate),
+              },
+              {
+                key: "message",
+                label: "Send Message",
+                icon: <MessageOutlined style={iconTextStyle} />,
+                onClick: () => handleSendMessage(candidate),
+              },
+              {
+                key: "download",
+                label: "Download Documents",
+                icon: <DownloadOutlined style={iconTextStyle} />,
+                onClick: () => handleDownloadResume(candidate),
+              },
+            ],
+          }}
           trigger={["click"]}
           placement="bottomRight"
         >
@@ -595,51 +353,136 @@ const RecruiterCandidates = () => {
             }}
           >
             <Text strong>{candidate.name}</Text>
-            <Button
-              type="text"
-              size="small"
-              icon={
-                candidate.starred ? (
-                  <StarFilled style={{ color: "#faad14" }} />
-                ) : (
-                  <StarOutlined />
-                )
-              }
-              onClick={() => toggleStar(candidate.id)}
-            />
           </div>
           <Text style={{ display: "block", marginBottom: 4 }}>
             {candidate.position}
           </Text>
+          {candidate.jobCode && (
+            <Text
+              type="secondary"
+              style={{ display: "block", marginBottom: 4 }}
+            >
+              {candidate.jobCode}
+            </Text>
+          )}
           <div style={{ marginBottom: 8 }}>
             <Tag color={statusConfig[candidate.status].color} size="small">
               {statusConfig[candidate.status].label}
             </Tag>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {candidate.skills.slice(0, 3).map((skill) => (
-              <Tag key={skill} size="small">
-                {skill}
-              </Tag>
-            ))}
-          </div>
-          <Rate
-            disabled
-            value={candidate.rating}
-            style={{ fontSize: 12, marginTop: 8 }}
-          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Last updated: {new Date(candidate.updatedAt).toLocaleDateString()}
+          </Text>
         </div>
       </div>
     </Card>
   );
 
+  // Helper to render stage reviews
+  const renderStageReviews = (stage) => {
+    return (
+      <Collapse>
+        {stage.recruiterReviews?.map((review, index) => (
+          <Panel
+            header={`Review by ${review.reviewerName}`}
+            key={`review-${index}`}
+            extra={
+              <Tag
+                color={review.status === "approved" ? "green" : "orange"}
+                icon={
+                  review.status === "approved" ? (
+                    <CheckOutlined />
+                  ) : (
+                    <ClockCircleOutlined />
+                  )
+                }
+              >
+                {review.status}
+              </Tag>
+            }
+          >
+            <Text strong>Comments:</Text>
+            <Text style={{ display: "block", marginBottom: 8 }}>
+              {review.reviewComments}
+            </Text>
+            <Text type="secondary">
+              Reviewed at: {new Date(review.reviewedAt).toLocaleString()}
+            </Text>
+          </Panel>
+        ))}
+      </Collapse>
+    );
+  };
+
+  // Helper to render activity timeline
+  const renderActivityTimeline = (stageProgress) => {
+    return stageProgress?.map((stage) => ({
+      title: stage.stageName,
+      description:
+        stage.recruiterReviews?.[0]?.reviewComments || "Stage completed",
+      date: new Date(
+        stage.stageCompletedAt || stage.recruiterReviews?.[0]?.reviewedAt
+      ).toLocaleString(),
+      icon: <CheckOutlined />,
+      stage,
+    }));
+  };
+
+  // Helper to render documents
+  const renderDocuments = (stageProgress) => {
+    const allDocuments = [];
+    stageProgress?.forEach((stage) => {
+      if (stage.uploadedDocuments?.length) {
+        allDocuments.push({
+          stageName: stage.stageName,
+          documents: stage.uploadedDocuments,
+        });
+      }
+    });
+
+    return (
+      <div>
+        {allDocuments.length > 0 ? (
+          allDocuments.map((docGroup, index) => (
+            <div key={`doc-group-${index}`} style={{ marginBottom: 16 }}>
+              <Text strong>{docGroup.stageName}</Text>
+              <List
+                dataSource={docGroup.documents}
+                renderItem={(doc) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      avatar={<FileOutlined />}
+                      title={
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {doc.fileName}
+                        </a>
+                      }
+                      description={`Uploaded at: ${new Date(
+                        doc.uploadedAt
+                      ).toLocaleString()}`}
+                    />
+                    <Button
+                      icon={<DownloadOutlined />}
+                      onClick={() => window.open(doc.fileUrl, "_blank")}
+                    />
+                  </List.Item>
+                )}
+              />
+            </div>
+          ))
+        ) : (
+          <Text type="secondary">No documents uploaded yet.</Text>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div
-      style={{
-        padding: "12px",
-        minHeight: "100vh",
-      }}
-    >
+    <div style={{ padding: "12px", minHeight: "100vh" }}>
       {/* Header */}
       <Card style={{ marginBottom: 16 }}>
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
@@ -684,7 +527,7 @@ const RecruiterCandidates = () => {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} md={18}>
             <Input
-              placeholder="Search candidates, positions, or skills..."
+              placeholder="Search candidates, positions, or job codes..."
               prefix={<SearchOutlined style={iconTextStyle} />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -731,6 +574,7 @@ const RecruiterCandidates = () => {
             columns={columns}
             dataSource={filteredCandidates}
             rowKey="id"
+            loading={isLoading}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
@@ -783,6 +627,127 @@ const RecruiterCandidates = () => {
         </div>
       </Card>
 
+      {/* Candidate Profile Drawer */}
+      <Drawer
+        title={selectedCandidate?.name}
+        placement="right"
+        width={window.innerWidth < 768 ? "100%" : 600}
+        onClose={() => setCandidateDrawerVisible(false)}
+        open={candidateDrawerVisible}
+        extra={
+          <Space>
+            <Button
+              icon={<MessageOutlined />}
+              onClick={() => {
+                setCandidateDrawerVisible(false);
+                handleSendMessage(selectedCandidate);
+              }}
+            >
+              Message
+            </Button>
+          </Space>
+        }
+      >
+        {selectedCandidate && (
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <Avatar src={selectedCandidate.avatar} size={64}>
+                {selectedCandidate.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </Avatar>
+              <div style={{ marginLeft: 16 }}>
+                <Title level={4} style={{ marginBottom: 0 }}>
+                  {selectedCandidate.name}
+                </Title>
+                <Text type="secondary">{selectedCandidate.position}</Text>
+                {selectedCandidate.jobCode && (
+                  <Text type="secondary" style={{ display: "block" }}>
+                    {selectedCandidate.jobCode}
+                  </Text>
+                )}
+                <div style={{ marginTop: 8 }}>
+                  <Tag color={statusConfig[selectedCandidate.status].color}>
+                    {statusConfig[selectedCandidate.status].label}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            <Tabs defaultActiveKey="1">
+              <TabPane tab="Overview" key="1">
+                <div style={{ marginBottom: 24 }}>
+                  <Title level={5}>Contact Information</Title>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    <Text>
+                      <MailOutlined
+                        style={{ marginRight: 8, ...iconTextStyle }}
+                      />
+                      {selectedCandidate.email}
+                    </Text>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <Title level={5}>Stage Reviews</Title>
+                  {selectedCandidate.stageProgress?.map((stage, index) => (
+                    <div key={`stage-${index}`} style={{ marginBottom: 16 }}>
+                      <Text strong>{stage.stageName}</Text>
+                      {renderStageReviews(stage)}
+                    </div>
+                  ))}
+                </div>
+              </TabPane>
+
+              <TabPane tab="Activity" key="2">
+                <List
+                  itemLayout="horizontal"
+                  dataSource={renderActivityTimeline(
+                    selectedCandidate.stageProgress
+                  )}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        avatar={
+                          <Avatar
+                            icon={item.icon}
+                            style={{
+                              backgroundColor: "#f0f0f0",
+                              color: "#da2c46",
+                            }}
+                          />
+                        }
+                        title={<Text strong>{item.title}</Text>}
+                        description={
+                          <>
+                            <Text>{item.description}</Text>
+                            <br />
+                            <Text type="secondary">{item.date}</Text>
+                          </>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </TabPane>
+
+              <TabPane tab="Documents" key="3">
+                {renderDocuments(selectedCandidate.stageProgress)}
+              </TabPane>
+            </Tabs>
+          </div>
+        )}
+      </Drawer>
+
       {/* Add Candidate Modal */}
       <Modal
         title="Add New Candidate"
@@ -797,7 +762,6 @@ const RecruiterCandidates = () => {
         <Form
           form={addCandidateForm}
           layout="vertical"
-          onFinish={handleAddCandidate}
           initialValues={{
             status: "new",
           }}
@@ -967,7 +931,7 @@ const RecruiterCandidates = () => {
           </div>
         </div>
 
-        <Dragger {...uploadProps}>
+        <Dragger>
           <p className="ant-upload-drag-icon">
             <InboxOutlined style={{ fontSize: 48, color: "#da2c46" }} />
           </p>
@@ -995,7 +959,6 @@ const RecruiterCandidates = () => {
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleScheduleInterview}
           initialValues={{
             interviewType: "technical",
             duration: 60,
@@ -1105,7 +1068,6 @@ const RecruiterCandidates = () => {
         <Form
           form={messageForm}
           layout="vertical"
-          onFinish={handleSendMessageSubmit}
         >
           <Form.Item
             label="Subject"
@@ -1146,227 +1108,6 @@ const RecruiterCandidates = () => {
           </Form.Item>
         </Form>
       </Modal>
-
-      {/* Candidate Profile Drawer */}
-      <Drawer
-        title={selectedCandidate?.name}
-        placement="right"
-        width={window.innerWidth < 768 ? "100%" : 600}
-        onClose={() => setCandidateDrawerVisible(false)}
-        open={candidateDrawerVisible}
-        extra={
-          <Space>
-            <Button
-              icon={<MessageOutlined />}
-              onClick={() => {
-                setCandidateDrawerVisible(false);
-                handleSendMessage(selectedCandidate);
-              }}
-            >
-              Message
-            </Button>
-            <Button
-              type="primary"
-              style={buttonStyle}
-              icon={<CalendarOutlined />}
-              onClick={() => {
-                setCandidateDrawerVisible(false);
-                setSelectedCandidate(selectedCandidate);
-                setScheduleModalVisible(true);
-              }}
-            >
-              Schedule
-            </Button>
-          </Space>
-        }
-      >
-        {selectedCandidate && (
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 24,
-              }}
-            >
-              <Avatar src={selectedCandidate.avatar} size={64}>
-                {selectedCandidate.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </Avatar>
-              <div style={{ marginLeft: 16 }}>
-                <Title level={4} style={{ marginBottom: 0 }}>
-                  {selectedCandidate.name}
-                  <Button
-                    type="text"
-                    icon={
-                      selectedCandidate.starred ? (
-                        <StarFilled style={{ color: "#faad14" }} />
-                      ) : (
-                        <StarOutlined />
-                      )
-                    }
-                    onClick={() => toggleStar(selectedCandidate.id)}
-                  />
-                </Title>
-                <Text type="secondary">{selectedCandidate.position}</Text>
-                <div style={{ marginTop: 8 }}>
-                  <Tag color={statusConfig[selectedCandidate.status].color}>
-                    {statusConfig[selectedCandidate.status].label}
-                  </Tag>
-                  <Text type="secondary" style={{ marginLeft: 8 }}>
-                    {selectedCandidate.stage}
-                  </Text>
-                </div>
-              </div>
-            </div>
-
-            <Tabs defaultActiveKey="1">
-              <TabPane tab="Overview" key="1">
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Contact Information</Title>
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <Text>
-                      <MailOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedCandidate.email}
-                    </Text>
-                    <Text>
-                      <PhoneOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedCandidate.phone}
-                    </Text>
-                    <Text>
-                      <EnvironmentOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedCandidate.location}
-                    </Text>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Professional Details</Title>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Text strong>Experience</Text>
-                      <br />
-                      <Text>{selectedCandidate.experience}</Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Applied Date</Text>
-                      <br />
-                      <Text>{selectedCandidate.appliedDate}</Text>
-                    </Col>
-                  </Row>
-                  <Row gutter={16} style={{ marginTop: 12 }}>
-                    <Col span={24}>
-                      <Text strong>Rating</Text>
-                      <br />
-                      <Rate disabled value={selectedCandidate.rating} />
-                    </Col>
-                  </Row>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Skills</Title>
-                  <Space size={[8, 8]} wrap>
-                    {selectedCandidate.skills.map((skill) => (
-                      <Tag key={skill}>{skill}</Tag>
-                    ))}
-                  </Space>
-                </div>
-
-                <div>
-                  <Title level={5}>Summary</Title>
-                  <Text>{selectedCandidate.summary}</Text>
-                </div>
-              </TabPane>
-
-              <TabPane tab="Activity" key="2">
-                <List
-                  itemLayout="horizontal"
-                  dataSource={[
-                    {
-                      title: "Application Submitted",
-                      description: "Candidate applied for the position",
-                      date: selectedCandidate.appliedDate,
-                      icon: <UserOutlined />,
-                    },
-                    {
-                      title: "Resume Reviewed",
-                      description: "Resume was reviewed by the hiring team",
-                      date: "2024-06-11",
-                      icon: <EyeOutlined />,
-                    },
-                    {
-                      title: "Initial Screening",
-                      description: "Phone screening scheduled",
-                      date: "2024-06-15",
-                      icon: <PhoneOutlined />,
-                    },
-                  ]}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar
-                            icon={item.icon}
-                            style={{
-                              backgroundColor: "#f0f0f0",
-                              color: "#da2c46",
-                            }}
-                          />
-                        }
-                        title={<Text strong>{item.title}</Text>}
-                        description={
-                          <>
-                            <Text>{item.description}</Text>
-                            <br />
-                            <Text type="secondary">{item.date}</Text>
-                          </>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </TabPane>
-
-              <TabPane tab="Documents" key="3">
-                <Card>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text strong>Resume.pdf</Text>
-                    <Button
-                      type="text"
-                      icon={<DownloadOutlined style={iconTextStyle} />}
-                      onClick={() => handleDownloadResume(selectedCandidate)}
-                    />
-                  </div>
-                  <Divider />
-                  <div style={{ textAlign: "center", padding: "24px 0" }}>
-                    <Upload>
-                      <Button icon={<UploadOutlined />}>
-                        Upload Additional Documents
-                      </Button>
-                    </Upload>
-                  </div>
-                </Card>
-              </TabPane>
-            </Tabs>
-          </div>
-        )}
-      </Drawer>
     </div>
   );
 };
