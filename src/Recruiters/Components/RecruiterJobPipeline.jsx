@@ -399,36 +399,46 @@ const RecruiterJobPipeline = () => {
   };
 
   const renderApprovalSection = (candidate) => {
-    const isStageApproved = candidate.stageStatus === "approved";
+    // Get the current stage's approval status from stageProgress
+    const currentStageProgress = candidate.stageProgress.find(
+      (progress) => progress.stageId === candidate.currentStage
+    );
+
+    // Check if the stage itself is approved (from approval.isApproved)
+    const isStageApproved = currentStageProgress?.approval?.isApproved === true;
+
+    // Get the current stage's recruiter ID (the current user/recruiter)
+    const currentStageRecruiterId = getReviewerIdForStage(
+      candidate.currentStage
+    );
+
+    // Get reviewer comments for the current stage
+    const reviewerComments = currentStageProgress?.recruiterReviews || [];
+
+    // Check if THIS recruiter (current user) has already given their review
+    const currentRecruiterReview = reviewerComments.find(
+      (review) => review.recruiterId === currentStageRecruiterId
+    );
+
+    // Check if current recruiter's review status is "approved"
+    const currentRecruiterHasApproved =
+      currentRecruiterReview?.status === "approved";
+
+    // Get stage information
     const stages = processedJobData.workOrder.pipelineStageTimeline;
     const currentIndex = stages.findIndex(
       (stage) => stage.stageId === candidate.currentStage
     );
     const isLastStage = currentIndex === stages.length - 1;
 
-    // Check if there are any reviewer approvals pending
-    const hasReviewerApprovals =
-      candidate.recruiterReviews && candidate.recruiterReviews.length > 0;
-    const allReviewersApproved = hasReviewerApprovals
-      ? candidate.recruiterReviews.every(
-          (review) => review.status === "approved"
-        )
-      : true;
+    // Button logic:
+    // 1. Show button if: stage is approved AND current recruiter hasn't approved yet
+    // 2. Hide button if: current recruiter has already approved
+    // 3. Enable button if: stage is approved (recruiter can give review)
 
-    // Check if approval object exists and is approved
-    const hasApprovalObject =
-      candidate.stageProgress && candidate.stageProgress.length > 0;
-    const isApprovalApproved = hasApprovalObject
-      ? candidate.stageProgress[0]?.approval?.isApproved === true
-      : false;
+    const shouldHideButton = currentRecruiterHasApproved;
+    const canMoveCandidate = isStageApproved && !currentRecruiterHasApproved;
 
-    const canFinishProcess =
-      isLastStage && isStageApproved && isApprovalApproved;
-
-    // Button should be enabled when stage is approved
-    const canMoveToNextStage = isStageApproved;
-    // Check if there's a next stage
-    const nextStageId = getNextStageId(candidate.currentStage);
     const getStageStatusTag = () => {
       if (isStageApproved) {
         return (
@@ -439,38 +449,54 @@ const RecruiterJobPipeline = () => {
       } else {
         return (
           <Tag icon={<ClockCircleOutlined />} color="warning">
-            Stage Pending
+            Stage Pending Approval
           </Tag>
         );
       }
     };
 
-    const getApprovalStatusTag = () => {
-      if (isApprovalApproved) {
+    const getReviewStatusTag = () => {
+      if (!currentRecruiterReview) {
+        return isStageApproved ? (
+          <Tag icon={<ClockCircleOutlined />} color="orange">
+            Review Required
+          </Tag>
+        ) : null;
+      }
+
+      if (currentRecruiterHasApproved) {
         return (
           <Tag icon={<CheckCircleOutlined />} color="success">
-            Approval Granted
-          </Tag>
-        );
-      } else {
-        return (
-          <Tag icon={<ClockCircleOutlined />} color="warning">
-            Approval Pending
+            Review Completed
           </Tag>
         );
       }
+
+      return (
+        <Tag icon={<ClockCircleOutlined />} color="warning">
+          Review Pending
+        </Tag>
+      );
     };
 
     const getStatusMessage = () => {
-      if (isLastStage) {
-        return canFinishProcess
-          ? "Candidate has completed all stages and is ready to finish the process."
-          : "Candidate has reached the final stage but requires approval to finish.";
-      } else if (canMoveToNextStage) {
-        return "Stage has been approved. You can now move the candidate to the next stage.";
-      } else {
-        return "Stage approval is still pending. You cannot move the candidate until the stage is approved.";
+      if (!isStageApproved) {
+        return "Stage approval is required before you can review this candidate.";
       }
+
+      if (currentRecruiterHasApproved) {
+        return "You have already reviewed and approved this candidate. They are ready for the next stage.";
+      }
+
+      if (isStageApproved && !currentRecruiterReview) {
+        return "Stage is approved. You can now review this candidate and move them to the next stage.";
+      }
+
+      if (currentRecruiterReview?.status === "pending") {
+        return "Your review is pending. Click the button to complete your review and move the candidate.";
+      }
+
+      return "Ready for your review.";
     };
 
     return (
@@ -503,45 +529,40 @@ const RecruiterJobPipeline = () => {
               }}
             >
               {getStageStatusTag()}
-              {hasApprovalObject && getApprovalStatusTag()}
+              {getReviewStatusTag()}
             </div>
           </div>
 
-          <Space
-            direction={screens.xs ? "vertical" : "horizontal"}
-            style={{ width: screens.xs ? "100%" : "auto" }}
-          >
-            <Button
-              type="primary"
-              icon={<ArrowRightOutlined />}
-              disabled={isLastStage ? !canFinishProcess : !canMoveToNextStage}
-              onClick={(e) => handleMoveCandidate(candidate, e)}
-              loading={isMoving}
-              style={{
-                backgroundColor:
-                  (isLastStage && canFinishProcess) ||
-                  (!isLastStage && canMoveToNextStage)
-                    ? primaryColor
-                    : "#d9d9d9",
-                borderColor:
-                  (isLastStage && canFinishProcess) ||
-                  (!isLastStage && canMoveToNextStage)
-                    ? primaryColor
-                    : "#d9d9d9",
-                width: screens.xs ? "100%" : "auto",
-              }}
-              block={screens.xs}
+          {!shouldHideButton && (
+            <Space
+              direction={screens.xs ? "vertical" : "horizontal"}
+              style={{ width: screens.xs ? "100%" : "auto" }}
             >
-              {isLastStage ? "Finish Process" : "Move to Next Stage"}
-            </Button>
-          </Space>
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                disabled={!canMoveCandidate}
+                onClick={(e) => handleMoveCandidate(candidate, e)}
+                loading={isMoving}
+                style={{
+                  backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                  borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                  width: screens.xs ? "100%" : "auto",
+                }}
+                block={screens.xs}
+              >
+                {isLastStage ? "Finish Process" : "Move to Next Stage"}
+              </Button>
+            </Space>
+          )}
         </div>
 
         <div style={{ marginTop: "12px" }}>
           <Text
             type={
-              (isLastStage && canFinishProcess) ||
-              (!isLastStage && canMoveToNextStage)
+              currentRecruiterHasApproved
+                ? "success"
+                : canMoveCandidate
                 ? "success"
                 : "secondary"
             }
