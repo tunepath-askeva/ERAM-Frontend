@@ -1351,7 +1351,6 @@ const RecruiterCandidates = () => {
                   label="Meeting Link"
                   name="meetingLink"
                   rules={[
-                    { required: true, message: "Please enter meeting link" },
                     {
                       type: "url",
                       message: "Please enter a valid URL",
