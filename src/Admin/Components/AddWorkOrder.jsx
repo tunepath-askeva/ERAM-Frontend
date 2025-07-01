@@ -1046,12 +1046,19 @@ const AddWorkOrder = () => {
       approvalData?.aprovals?.map((approval) => ({
         id: approval._id,
         name: approval.groupName,
-        // levels: approval.levels, // You can include levels if needed
       })) || [];
 
     const dependencyTypes = [
       { id: "independent", name: "Independent" },
       { id: "dependent", name: "Dependent" },
+    ];
+
+    if (!currentPipelineForDates) return null;
+
+    // Combine existing stages with custom stages
+    const allStages = [
+      ...(currentPipelineForDates.stages || []),
+      ...(customStages[currentPipelineForDates._id] || []),
     ];
 
     return (
@@ -1087,11 +1094,7 @@ const AddWorkOrder = () => {
         }}
       >
         <div style={{ padding: "16px 0" }}>
-          {(
-            customStages[currentPipelineForDates?._id] ||
-            currentPipelineForDates?.stages ||
-            []
-          ).map((stage, index) => {
+          {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
             const dateEntry = pipelineStageDates[
               currentPipelineForDates._id
@@ -1117,7 +1120,11 @@ const AddWorkOrder = () => {
                         gap: "8px",
                       }}
                     >
-                      <span style={{ cursor: "grab" }}>⋮⋮</span>
+                      <span
+                        style={{ cursor: stage.isCustom ? "grab" : "default" }}
+                      >
+                        ⋮⋮
+                      </span>
                       {stage.isCustom ? (
                         <Input
                           value={stage.name}
@@ -1173,13 +1180,15 @@ const AddWorkOrder = () => {
                   marginBottom: 16,
                   cursor: stage.isCustom ? "move" : "default",
                 }}
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, stage)}
+                draggable={stage.isCustom}
+                onDragStart={(e) => stage.isCustom && handleDragStart(e, stage)}
                 onDragOver={handleDragOver}
                 onDrop={(e) =>
+                  stage.isCustom &&
                   handleDrop(e, stage, currentPipelineForDates._id)
                 }
               >
+                {/* Rest of your card content remains the same */}
                 <Row gutter={[16, 16]} align="bottom">
                   {/* Date Section */}
                   <Col xs={24} sm={12} md={12} lg={8}>
@@ -1316,7 +1325,11 @@ const AddWorkOrder = () => {
                         placeholder="Select dependency type"
                         style={{ width: "100%" }}
                         size="small"
-                        value={dateEntry?.dependencyType || "independent"}
+                        value={
+                          dateEntry?.dependencyType ||
+                          stage.dependencyType ||
+                          "independent"
+                        }
                         onChange={(value) =>
                           handleDependencyTypeChange(
                             currentPipelineForDates._id,

@@ -24,6 +24,7 @@ import {
   Divider,
   Upload,
   Collapse,
+  Popconfirm,
 } from "antd";
 import {
   SearchOutlined,
@@ -46,8 +47,14 @@ import {
   CheckOutlined,
   ClockCircleOutlined,
   FileOutlined,
+  ArrowRightOutlined,
+  GiftOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
-import { useGetPipelineCompletedCandidatesQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetPipelineCompletedCandidatesQuery,
+  useMoveCandidateStatusMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -69,27 +76,29 @@ const RecruiterCandidates = () => {
   const [messageForm] = Form.useForm();
   const [addCandidateForm] = Form.useForm();
 
-  const { data: apiData, isLoading } = useGetPipelineCompletedCandidatesQuery();
+  const {
+    data: apiData,
+    isLoading,
+    refetch,
+  } = useGetPipelineCompletedCandidatesQuery();
+  const [moveToNextStage, { isLoading: isMovingStage }] =
+    useMoveCandidateStatusMutation();
 
-  const candidates =
-    apiData?.data?.map((candidate) => {
-      let mappedStatus = candidate.status;
-      if (candidate.status === "completed") {
-        mappedStatus = "completed";
-      }
-
-      return {
-        id: candidate._id,
-        name: candidate.user.fullName,
-        email: candidate.user.email,
-        position: candidate.workOrder.title,
-        jobCode: candidate.workOrder.jobCode,
-        status: mappedStatus,
-        stageProgress: candidate.stageProgress,
-        updatedAt: candidate.updatedAt,
-        avatar: candidate.user.image,
-      };
-    }) || [];
+ const candidates =
+  apiData?.data?.map((candidate) => {
+    return {
+      id: candidate._id, 
+      _id: candidate._id, 
+      name: candidate.user.fullName,
+      email: candidate.user.email,
+      position: candidate.workOrder.title,
+      jobCode: candidate.workOrder.jobCode,
+      status: candidate.status,
+      stageProgress: candidate.stageProgress,
+      updatedAt: candidate.updatedAt,
+      avatar: candidate.user.image,
+    };
+  }) || [];
 
   // Custom styles
   const buttonStyle = {
@@ -101,6 +110,7 @@ const RecruiterCandidates = () => {
   const iconTextStyle = {
     color: "#da2c46",
   };
+
   const statusConfig = {
     interview: { color: "purple", label: "Interview" },
     offer: { color: "green", label: "Offer" },
@@ -113,10 +123,10 @@ const RecruiterCandidates = () => {
     all: candidates.length,
     completed: candidates.filter((c) => c.status === "completed").length,
     interview: candidates.filter((c) => c.status === "interview").length,
-
     offer: candidates.filter((c) => c.status === "offer").length,
     rejected: candidates.filter((c) => c.status === "rejected").length,
   };
+
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesFilter =
       selectedStatus === "all" || candidate.status === selectedStatus;
@@ -127,6 +137,93 @@ const RecruiterCandidates = () => {
         candidate.jobCode.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesFilter && matchesSearch;
   });
+
+ const handleMoveToInterview = async (candidate) => {
+  try {
+    const response = await moveToNextStage({
+      id: candidate._id, 
+      status: "interview"
+    }).unwrap();
+    
+    message.success(`${candidate.name} moved to interview stage successfully!`);
+    refetch();
+  } catch (error) {
+    message.error(`Failed to move ${candidate.name} to interview stage. Please try again.`);
+    console.error("Move to interview error:", error);
+  }
+};
+
+ const handleMakeOffer = async (candidate) => {
+  try {
+    const response = await moveToNextStage({
+      candidateId: candidate._id,
+      newStatus: "offer"
+    }).unwrap();
+    
+    message.success(`Offer sent to ${candidate.name} successfully!`);
+    refetch();
+  } catch (error) {
+    message.error(`Failed to send offer to ${candidate.name}. Please try again.`);
+    console.error("Make offer error:", error);
+  }
+};
+
+  const handleRejectCandidate = async (candidate) => {
+  try {
+    const response = await moveToNextStage({
+      candidateId: candidate._id,
+      newStatus: "rejected"
+    }).unwrap();
+    
+    message.success(`${candidate.name} has been rejected.`);
+    refetch();
+  } catch (error) {
+    message.error(`Failed to reject ${candidate.name}. Please try again.`);
+    console.error("Reject candidate error:", error);
+  }
+};
+
+  const getAvailableActions = (candidate) => {
+    const actions = [];
+
+    switch (candidate.status) {
+      case "completed":
+        actions.push({
+          key: "interview",
+          label: "Move to Interview",
+          icon: <ArrowRightOutlined style={iconTextStyle} />,
+          onClick: () => handleMoveToInterview(candidate),
+          style: { color: "#722ed1" },
+        });
+        break;
+      case "interview":
+        actions.push({
+          key: "offer",
+          label: "Make Offer",
+          icon: <GiftOutlined style={iconTextStyle} />,
+          onClick: () => handleMakeOffer(candidate),
+          style: { color: "#52c41a" },
+        });
+        break;
+      default:
+        break;
+    }
+
+    if (candidate.status !== "rejected") {
+      actions.push({
+        key: "reject",
+        label: "Reject",
+        icon: <StopOutlined style={iconTextStyle} />,
+        onClick: () => handleRejectCandidate(candidate),
+        style: { color: "#f5222d" },
+        confirm: true,
+        confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+        confirmDescription: "This action cannot be undone.",
+      });
+    }
+
+    return actions;
+  };
 
   const toggleStar = (candidateId) => {
     message.success("Candidate starred status updated!");
@@ -142,8 +239,65 @@ const RecruiterCandidates = () => {
     setMessageModalVisible(true);
   };
 
-  const handleDownloadResume = (candidate) => {
-    message.success(`Downloading ${candidate.name}'s resume...`);
+const handleDownloadResume = (candidate) => {
+  if (candidate.stageProgress?.length > 0) {
+    const firstStage = candidate.stageProgress[0];
+    if (firstStage.uploadedDocuments?.length > 0) {
+      const document = firstStage.uploadedDocuments[0];
+      window.open(document.fileUrl, "_blank");
+      message.success(`Downloading ${document.fileName}...`);
+      return;
+    }
+  }
+  message.warning("No documents available for download");
+};
+
+  const renderStageActions = (candidate) => {
+    const actions = getAvailableActions(candidate);
+
+    if (actions.length === 0) return null;
+
+    return (
+      <Space size="small" wrap>
+        {actions.map((action) => {
+          if (action.confirm) {
+            return (
+              <Popconfirm
+                key={action.key}
+                title={action.confirmTitle}
+                description={action.confirmDescription}
+                onConfirm={action.onClick}
+                okText="Yes"
+                cancelText="No"
+                okButtonProps={{ danger: action.key === "reject" }}
+              >
+                <Button
+                  size="small"
+                  icon={action.icon}
+                  style={action.style}
+                  loading={isMovingStage}
+                >
+                  {action.label}
+                </Button>
+              </Popconfirm>
+            );
+          }
+
+          return (
+            <Button
+              key={action.key}
+              size="small"
+              icon={action.icon}
+              onClick={action.onClick}
+              style={action.style}
+              loading={isMovingStage}
+            >
+              {action.label}
+            </Button>
+          );
+        })}
+      </Space>
+    );
   };
 
   const columns = [
@@ -216,6 +370,7 @@ const RecruiterCandidates = () => {
         );
       },
     },
+
     {
       title: "Last Updated",
       dataIndex: "updatedAt",
@@ -265,6 +420,16 @@ const RecruiterCandidates = () => {
                   icon: <DownloadOutlined style={iconTextStyle} />,
                   onClick: () => handleDownloadResume(record),
                 },
+                {
+                  type: "divider",
+                },
+                ...getAvailableActions(record).map((action) => ({
+                  key: action.key,
+                  label: action.label,
+                  icon: action.icon,
+                  onClick: action.onClick,
+                  style: action.style,
+                })),
               ],
             }}
             trigger={["click"]}
@@ -327,6 +492,16 @@ const RecruiterCandidates = () => {
                 icon: <DownloadOutlined style={iconTextStyle} />,
                 onClick: () => handleDownloadResume(candidate),
               },
+              {
+                type: "divider",
+              },
+              ...getAvailableActions(candidate).map((action) => ({
+                key: action.key,
+                label: action.label,
+                icon: action.icon,
+                onClick: action.onClick,
+                style: action.style,
+              })),
             ],
           }}
           trigger={["click"]}
@@ -370,6 +545,10 @@ const RecruiterCandidates = () => {
               {statusConfig[candidate.status].label}
             </Tag>
           </div>
+
+          {/* Stage Actions for Mobile */}
+          <div style={{ marginBottom: 8 }}>{renderStageActions(candidate)}</div>
+
           <Text type="secondary" style={{ fontSize: 12 }}>
             Last updated: {new Date(candidate.updatedAt).toLocaleDateString()}
           </Text>
@@ -582,7 +761,7 @@ const RecruiterCandidates = () => {
                 `${range[0]}-${range[1]} of ${total} candidates`,
               responsive: true,
             }}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1400 }}
             locale={{
               emptyText: (
                 <div style={{ textAlign: "center", padding: "48px 0" }}>
@@ -644,6 +823,7 @@ const RecruiterCandidates = () => {
             >
               Message
             </Button>
+            {selectedCandidate && renderStageActions(selectedCandidate)}
           </Space>
         }
       >
@@ -797,7 +977,14 @@ const RecruiterCandidates = () => {
                 label="Phone"
                 name="phone"
                 rules={[
-                  { required: true, message: "Please enter phone number" },
+                  {
+                    required: true,
+                    message: "Please enter phone number",
+                  },
+                  {
+                    pattern: /^[0-9+\- ]+$/,
+                    message: "Please enter a valid phone number",
+                  },
                 ]}
               >
                 <Input placeholder="Enter phone number" />
@@ -805,72 +992,78 @@ const RecruiterCandidates = () => {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
-                label="Location"
-                name="location"
-                rules={[{ required: true, message: "Please enter location" }]}
-              >
-                <Input placeholder="Enter location" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
                 label="Position"
                 name="position"
-                rules={[{ required: true, message: "Please enter position" }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a position",
+                  },
+                ]}
               >
-                <Input placeholder="Enter position/role" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Experience"
-                name="experience"
-                rules={[{ required: true, message: "Please enter experience" }]}
-              >
-                <Input placeholder="e.g., 5 years" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Skills" name="skills">
-                <Select
-                  mode="tags"
-                  placeholder="Enter skills (press Enter to add)"
-                  style={{ width: "100%" }}
-                >
-                  <Option value="React">React</Option>
-                  <Option value="JavaScript">JavaScript</Option>
-                  <Option value="Python">Python</Option>
-                  <Option value="Node.js">Node.js</Option>
-                  <Option value="SQL">SQL</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Status" name="status">
-                <Select>
-                  <Option value="interview">Interview</Option>
-                  <Option value="offer">Offer</Option>
-                  <Option value="rejected">Rejected</Option>
+                <Select placeholder="Select position">
+                  <Option value="frontend">Frontend Developer</Option>
+                  <Option value="backend">Backend Developer</Option>
+                  <Option value="fullstack">Full Stack Developer</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item label="Summary" name="summary">
-            <Input.TextArea
-              rows={3}
-              placeholder="Brief summary about the candidate..."
-            />
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea rows={4} placeholder="Add any additional notes" />
           </Form.Item>
 
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+          <Form.Item
+            label="Resume"
+            name="resume"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) {
+                return e;
+              }
+              return e?.fileList;
+            }}
+          >
+            <Upload.Dragger
+              name="resume"
+              multiple={false}
+              action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+              beforeUpload={(file) => {
+                const isPDF = file.type === "application/pdf";
+                const isDOC =
+                  file.type === "application/msword" ||
+                  file.type ===
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+                if (!isPDF && !isDOC) {
+                  message.error("You can only upload PDF/DOC files!");
+                  return Upload.LIST_IGNORE;
+                }
+
+                const isLt2M = file.size / 1024 / 1024 < 2;
+                if (!isLt2M) {
+                  message.error("File must smaller than 2MB!");
+                  return Upload.LIST_IGNORE;
+                }
+
+                return isPDF || isDOC;
+              }}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Click or drag file to this area to upload
+              </p>
+              <p className="ant-upload-hint">
+                Support for a single PDF or DOC file upload (max 2MB)
+              </p>
+            </Upload.Dragger>
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right", marginTop: 24 }}>
+            <Space>
               <Button
                 onClick={() => {
                   setAddCandidateModalVisible(false);
@@ -879,7 +1072,24 @@ const RecruiterCandidates = () => {
               >
                 Cancel
               </Button>
-              <Button style={buttonStyle} htmlType="submit">
+              <Button
+                type="primary"
+                style={buttonStyle}
+                onClick={() => {
+                  addCandidateForm
+                    .validateFields()
+                    .then((values) => {
+                      // Handle form submission
+                      message.success("Candidate added successfully!");
+                      setAddCandidateModalVisible(false);
+                      addCandidateForm.resetFields();
+                      refetch(); // Refresh the candidate list
+                    })
+                    .catch((info) => {
+                      console.log("Validate Failed:", info);
+                    });
+                }}
+              >
                 Add Candidate
               </Button>
             </Space>
@@ -892,166 +1102,77 @@ const RecruiterCandidates = () => {
         title="Bulk Upload Candidates"
         open={bulkUploadModalVisible}
         onCancel={() => setBulkUploadModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setBulkUploadModalVisible(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="download"
-            onClick={() => {
-              // Simulate template download
-              message.success("Template downloaded successfully!");
-            }}
-          >
-            Download Template
-          </Button>,
-        ]}
-        width={window.innerWidth < 768 ? "95%" : 600}
+        footer={null}
+        width={window.innerWidth < 768 ? "95%" : 700}
       >
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 24 }}>
           <Text>
-            Upload a CSV or Excel file with candidate information. Make sure
-            your file includes the following columns:
+            Upload an Excel file with candidate details. Download our template
+            file to ensure proper formatting.
           </Text>
-          <div
-            style={{
-              marginTop: 12,
-              padding: 12,
-              background: "#f5f5f5",
-              borderRadius: 6,
-            }}
-          >
-            <Text code>
-              Name, Email, Phone, Position, Location, Experience, Skills,
-              Summary
-            </Text>
-          </div>
         </div>
 
-        <Dragger>
+        <Dragger
+          name="file"
+          multiple={false}
+          action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+          accept=".xlsx,.xls"
+          beforeUpload={(file) => {
+            const isExcel =
+              file.type ===
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+              file.type === "application/vnd.ms-excel";
+
+            if (!isExcel) {
+              message.error("You can only upload Excel files!");
+              return Upload.LIST_IGNORE;
+            }
+
+            const isLt5M = file.size / 1024 / 1024 < 5;
+            if (!isLt5M) {
+              message.error("File must smaller than 5MB!");
+              return Upload.LIST_IGNORE;
+            }
+
+            return isExcel;
+          }}
+          onChange={(info) => {
+            const { status } = info.file;
+            if (status === "done") {
+              message.success(`${info.file.name} file uploaded successfully.`);
+              setBulkUploadModalVisible(false);
+              refetch(); // Refresh the candidate list
+            } else if (status === "error") {
+              message.error(`${info.file.name} file upload failed.`);
+            }
+          }}
+        >
           <p className="ant-upload-drag-icon">
-            <InboxOutlined style={{ fontSize: 48, color: "#da2c46" }} />
+            <UploadOutlined />
           </p>
           <p className="ant-upload-text">
             Click or drag file to this area to upload
           </p>
           <p className="ant-upload-hint">
-            Support for a single CSV or Excel file upload. Maximum file size:
-            10MB.
+            Support for a single Excel file upload (max 5MB)
           </p>
         </Dragger>
+
+        <div style={{ marginTop: 24, textAlign: "center" }}>
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              // Handle template download
+              message.info("Downloading template file...");
+            }}
+          >
+            Download Template File
+          </Button>
+        </div>
       </Modal>
 
-      {/* Schedule Interview Modal */}
-      <Modal
-        title={`Schedule Interview with ${selectedCandidate?.name}`}
-        open={scheduleModalVisible}
-        onCancel={() => {
-          setScheduleModalVisible(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            interviewType: "technical",
-            duration: 60,
-          }}
-        >
-          <Form.Item
-            label="Interview Type"
-            name="interviewType"
-            rules={[
-              { required: true, message: "Please select interview type" },
-            ]}
-          >
-            <Select>
-              <Option value="phone">Phone Screening</Option>
-              <Option value="technical">Technical Interview</Option>
-              <Option value="behavioral">Behavioral Interview</Option>
-              <Option value="onsite">Onsite Interview</Option>
-              <Option value="hr">HR Interview</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Interview Date & Time"
-            name="interviewTime"
-            rules={[{ required: true, message: "Please select date and time" }]}
-          >
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              style={{ width: "100%" }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Duration (minutes)"
-            name="duration"
-            rules={[{ required: true, message: "Please enter duration" }]}
-          >
-            <Input type="number" min={15} max={240} />
-          </Form.Item>
-
-          <Form.Item
-            label="Interviewers"
-            name="interviewers"
-            rules={[
-              {
-                required: true,
-                message: "Please select at least one interviewer",
-              },
-            ]}
-          >
-            <Select mode="multiple" placeholder="Select interviewers">
-              <Option value="john@company.com">John Smith (Tech Lead)</Option>
-              <Option value="sarah@company.com">
-                Sarah Johnson (Engineering Manager)
-              </Option>
-              <Option value="mike@company.com">Mike Brown (HR)</Option>
-              <Option value="lisa@company.com">
-                Lisa Wong (Product Manager)
-              </Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Meeting Link/Details" name="meetingDetails">
-            <Input.TextArea
-              rows={3}
-              placeholder="Zoom link, Google Meet, or location details"
-            />
-          </Form.Item>
-
-          <Form.Item label="Notes for Candidate" name="notes">
-            <Input.TextArea
-              rows={3}
-              placeholder="Any special instructions for the candidate"
-            />
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button
-                onClick={() => {
-                  setScheduleModalVisible(false);
-                  form.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button style={buttonStyle} htmlType="submit">
-                Schedule Interview
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Send Message Modal */}
+      {/* Message Modal */}
       <Modal
         title={`Message ${selectedCandidate?.name}`}
         open={messageModalVisible}
@@ -1060,15 +1181,21 @@ const RecruiterCandidates = () => {
           messageForm.resetFields();
         }}
         footer={null}
-        width={window.innerWidth < 768 ? "95%" : 600}
+        width={window.innerWidth < 768 ? "95%" : 700}
       >
-        <Form form={messageForm} layout="vertical">
+        <Form
+          form={messageForm}
+          layout="vertical"
+          initialValues={{
+            subject: `Regarding your application for ${selectedCandidate?.position}`,
+          }}
+        >
           <Form.Item
             label="Subject"
             name="subject"
-            rules={[{ required: true, message: "Please enter subject" }]}
+            rules={[{ required: true, message: "Please enter a subject" }]}
           >
-            <Input placeholder="Enter message subject" />
+            <Input placeholder="Enter subject" />
           </Form.Item>
 
           <Form.Item
@@ -1076,17 +1203,11 @@ const RecruiterCandidates = () => {
             name="message"
             rules={[{ required: true, message: "Please enter your message" }]}
           >
-            <Input.TextArea rows={6} placeholder="Write your message here..." />
+            <Input.TextArea rows={6} placeholder="Type your message here" />
           </Form.Item>
 
-          <Form.Item label="Attachment" name="attachment">
-            <Upload>
-              <Button icon={<UploadOutlined />}>Add Attachment</Button>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+          <Form.Item style={{ textAlign: "right" }}>
+            <Space>
               <Button
                 onClick={() => {
                   setMessageModalVisible(false);
@@ -1095,7 +1216,23 @@ const RecruiterCandidates = () => {
               >
                 Cancel
               </Button>
-              <Button style={buttonStyle} htmlType="submit">
+              <Button
+                type="primary"
+                style={buttonStyle}
+                onClick={() => {
+                  messageForm
+                    .validateFields()
+                    .then((values) => {
+                      // Handle message sending
+                      message.success("Message sent successfully!");
+                      setMessageModalVisible(false);
+                      messageForm.resetFields();
+                    })
+                    .catch((info) => {
+                      console.log("Validate Failed:", info);
+                    });
+                }}
+              >
                 Send Message
               </Button>
             </Space>

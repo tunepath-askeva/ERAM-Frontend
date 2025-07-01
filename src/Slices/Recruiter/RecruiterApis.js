@@ -127,6 +127,13 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    moveCandidateStatus: builder.mutation({
+      query: ({ id, ...payload }) => ({
+        url: `/stage/${id}`,
+        method: "PATCH",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -146,4 +153,5 @@ export const {
   useApproveCandidateDocumentsMutation,
   useMoveToNextStageMutation,
   useGetPipelineCompletedCandidatesQuery,
+  useMoveCandidateStatusMutation,
 } = recruiterApi;
