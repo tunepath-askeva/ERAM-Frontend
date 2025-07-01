@@ -131,13 +131,20 @@ const APPLICATION_STATUSES = {
     icon: <CalendarOutlined />,
     description: "Moved to Pipeline",
   },
-
   SHORTLISTED: {
     key: "shortlisted",
     label: "Shortlisted",
     color: "#3b82f6",
     icon: <StarOutlined />,
     description: "Congratulations! You have been shortlisted",
+  },
+  // Add the 'interview' status that's coming from your API
+  INTERVIEW: {
+    key: "interview",
+    label: "Interview Scheduled",
+    color: "#8b5cf6",
+    icon: <CalendarOutlined />,
+    description: "Interview has been scheduled",
   },
   INTERVIEW_SCHEDULED: {
     key: "interview_scheduled",
@@ -246,8 +253,8 @@ const CandidateAppliedJobs = () => {
 
     const formattedSourcedJobs =
       sourcedData?.sourcedJobs?.map((job) => {
-        // Changed from sourcedData?.jobs to sourcedData?.sourcedJobs
         const workOrder = job.workOrder;
+        console.log(job.status, "SOURCED JOB STATUS"); 
         return {
           _id: job._id,
           title: workOrder.title,
@@ -259,7 +266,7 @@ const CandidateAppliedJobs = () => {
           experience: workOrder.experience || "Not specified",
           salary: `₹${workOrder.annualSalary}`,
           appliedDate: job.createdAt.split("T")[0],
-          status: job.status || "under_review", // Default status for sourced jobs
+          status: job.status, 
           applicationId: workOrder.jobCode,
           skills: workOrder.requiredSkills || [],
           notes: workOrder.description,
@@ -269,7 +276,7 @@ const CandidateAppliedJobs = () => {
           timeline: [
             {
               date: job.createdAt.split("T")[0],
-              status: job.status || "under_review", // Use the actual status if available
+              status: job.status,
               note: "You were sourced for this position",
             },
           ],
@@ -395,8 +402,10 @@ const CandidateAppliedJobs = () => {
     }
   };
 
-  const getStatusConfig = (status) =>
-    APPLICATION_STATUSES[status.toUpperCase()] || APPLICATION_STATUSES.APPLIED;
+  const getStatusConfig = (status) => {
+    const statusKey = status?.toUpperCase();
+    return APPLICATION_STATUSES[statusKey] || APPLICATION_STATUSES.APPLIED;
+  };
 
   const getStatusProgress = (status) => {
     const statusOrder = [

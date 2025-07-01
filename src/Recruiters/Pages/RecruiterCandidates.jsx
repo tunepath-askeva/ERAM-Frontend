@@ -887,7 +887,7 @@ const RecruiterCandidates = () => {
             >
               Message
             </Button>
-            {selectedCandidate && renderStageActions(selectedCandidate)}
+            {/* {selectedCandidate && renderStageActions(selectedCandidate)} */}
           </Space>
         }
       >

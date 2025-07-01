@@ -95,7 +95,7 @@ const SourcedJobDetails = () => {
         return { icon: <ClockCircleOutlined />, color: "blue" };
       case "shortlisted":
         return { icon: <CheckCircleOutlined />, color: "cyan" };
-      case "interview_scheduled":
+      case "interview":
         return { icon: <ClockCircleOutlined />, color: "purple" };
       case "rejected":
         return { icon: <ExclamationCircleOutlined />, color: "red" };
