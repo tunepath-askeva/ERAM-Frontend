@@ -44,6 +44,7 @@ import {
   UploadOutlined,
   InboxOutlined,
 } from "@ant-design/icons";
+import { useGetPipelineCompletedCandidatesQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -63,6 +64,8 @@ const RecruiterCandidates = () => {
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
   const [addCandidateForm] = Form.useForm();
+
+  const { data } = useGetPipelineCompletedCandidatesQuery();
 
   // Custom styles
   const buttonStyle = {

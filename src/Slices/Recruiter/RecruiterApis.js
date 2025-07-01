@@ -89,7 +89,7 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
-    
+
     approveCandidateDocuments: builder.mutation({
       query: ({
         approvalId,
@@ -120,6 +120,13 @@ export const recruiterApi = createApi({
         body: payload,
       }),
     }),
+
+    getPipelineCompletedCandidates: builder.query({
+      query: () => ({
+        url: `/candidate`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -138,4 +145,5 @@ export const {
   useGetApprovalInfoQuery,
   useApproveCandidateDocumentsMutation,
   useMoveToNextStageMutation,
+  useGetPipelineCompletedCandidatesQuery,
 } = recruiterApi;
