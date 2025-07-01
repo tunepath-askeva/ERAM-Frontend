@@ -71,22 +71,25 @@ const RecruiterCandidates = () => {
 
   const { data: apiData, isLoading } = useGetPipelineCompletedCandidatesQuery();
 
-  // Transform API data to match our component's expected format
   const candidates =
-    apiData?.data?.map((candidate) => ({
-      id: candidate._id,
-      name: candidate.user.fullName,
-      email: candidate.user.email,
-      position: candidate.workOrder.title,
-      jobCode: candidate.workOrder.jobCode,
-      status: "completed", // or map based on candidate.status
-      stageProgress: candidate.stageProgress,
-      updatedAt: candidate.updatedAt,
-      avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${candidate.user.fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")}`,
-    })) || [];
+    apiData?.data?.map((candidate) => {
+      let mappedStatus = candidate.status;
+      if (candidate.status === "completed") {
+        mappedStatus = "completed";
+      }
+
+      return {
+        id: candidate._id,
+        name: candidate.user.fullName,
+        email: candidate.user.email,
+        position: candidate.workOrder.title,
+        jobCode: candidate.workOrder.jobCode,
+        status: mappedStatus,
+        stageProgress: candidate.stageProgress,
+        updatedAt: candidate.updatedAt,
+        avatar: candidate.user.image,
+      };
+    }) || [];
 
   // Custom styles
   const buttonStyle = {
@@ -98,26 +101,22 @@ const RecruiterCandidates = () => {
   const iconTextStyle = {
     color: "#da2c46",
   };
-
   const statusConfig = {
-    new: { color: "blue", label: "New" },
-    screening: { color: "orange", label: "Screening" },
     interview: { color: "purple", label: "Interview" },
     offer: { color: "green", label: "Offer" },
     rejected: { color: "red", label: "Rejected" },
     completed: { color: "green", label: "Completed" },
+    default: { color: "gray", label: "Unknown" },
   };
 
   const filterCounts = {
     all: candidates.length,
-    new: candidates.filter((c) => c.status === "new").length,
-    screening: candidates.filter((c) => c.status === "screening").length,
+    completed: candidates.filter((c) => c.status === "completed").length,
     interview: candidates.filter((c) => c.status === "interview").length,
+
     offer: candidates.filter((c) => c.status === "offer").length,
     rejected: candidates.filter((c) => c.status === "rejected").length,
-    completed: candidates.filter((c) => c.status === "completed").length,
   };
-
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesFilter =
       selectedStatus === "all" || candidate.status === selectedStatus;
@@ -144,7 +143,6 @@ const RecruiterCandidates = () => {
   };
 
   const handleDownloadResume = (candidate) => {
-    // Simulate download
     message.success(`Downloading ${candidate.name}'s resume...`);
   };
 
@@ -157,6 +155,7 @@ const RecruiterCandidates = () => {
       render: (text, record) => (
         <Space>
           <Avatar src={record.avatar} size={40}>
+            {" "}
             {record.name
               .split(" ")
               .map((n) => n[0])
@@ -204,17 +203,18 @@ const RecruiterCandidates = () => {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status, record) => (
-        <div>
-          <Tag color={statusConfig[status].color}>
-            {statusConfig[status].label}
-          </Tag>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.stageProgress?.length || 0} stages completed
-          </Text>
-        </div>
-      ),
+      render: (status, record) => {
+        const statusInfo = statusConfig[status] || statusConfig.default;
+        return (
+          <div>
+            <Tag color={statusInfo.color}>{statusInfo.label}</Tag>
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.stageProgress?.length || 0} stages completed
+            </Text>
+          </div>
+        );
+      },
     },
     {
       title: "Last Updated",
@@ -428,7 +428,6 @@ const RecruiterCandidates = () => {
     }));
   };
 
-  // Helper to render documents
   const renderDocuments = (stageProgress) => {
     const allDocuments = [];
     stageProgress?.forEach((stage) => {
@@ -855,8 +854,6 @@ const RecruiterCandidates = () => {
             <Col xs={24} md={12}>
               <Form.Item label="Status" name="status">
                 <Select>
-                  <Option value="new">New</Option>
-                  <Option value="screening">Screening</Option>
                   <Option value="interview">Interview</Option>
                   <Option value="offer">Offer</Option>
                   <Option value="rejected">Rejected</Option>
@@ -1065,10 +1062,7 @@ const RecruiterCandidates = () => {
         footer={null}
         width={window.innerWidth < 768 ? "95%" : 600}
       >
-        <Form
-          form={messageForm}
-          layout="vertical"
-        >
+        <Form form={messageForm} layout="vertical">
           <Form.Item
             label="Subject"
             name="subject"
