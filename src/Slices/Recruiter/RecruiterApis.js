@@ -19,6 +19,12 @@ export const recruiterApi = createApi({
     getPipelines: builder.query({
       query: () => "/Pipeline",
     }),
+    getAllRecruiters: builder.query({
+      query: () => ({
+        url: "/allrecruiter",
+        methid: "GET",
+      }),
+    }),
     getRecruiterJobs: builder.query({
       query: () => ({
         url: "/recruiter",
@@ -134,6 +140,13 @@ export const recruiterApi = createApi({
         body: payload,
       }),
     }),
+    addInterviewDetails: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/interview/${id}`,
+        method: "PUT",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -154,4 +167,6 @@ export const {
   useMoveToNextStageMutation,
   useGetPipelineCompletedCandidatesQuery,
   useMoveCandidateStatusMutation,
+  useGetAllRecruitersQuery,
+  useAddInterviewDetailsMutation,
 } = recruiterApi;

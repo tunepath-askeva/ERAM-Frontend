@@ -54,6 +54,8 @@ import {
 import {
   useGetPipelineCompletedCandidatesQuery,
   useMoveCandidateStatusMutation,
+  useGetAllRecruitersQuery,
+  useAddInterviewDetailsMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
@@ -72,6 +74,8 @@ const RecruiterCandidates = () => {
   const [addCandidateModalVisible, setAddCandidateModalVisible] =
     useState(false);
   const [bulkUploadModalVisible, setBulkUploadModalVisible] = useState(false);
+  const [scheduleInterviewModalVisible, setScheduleInterviewModalVisible] =
+    useState(false);
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
   const [addCandidateForm] = Form.useForm();
@@ -83,28 +87,37 @@ const RecruiterCandidates = () => {
   } = useGetPipelineCompletedCandidatesQuery();
   const [moveToNextStage, { isLoading: isMovingStage }] =
     useMoveCandidateStatusMutation();
+  const [addInterviewDetails, { isLoading: isSchedulingInterview }] =
+    useAddInterviewDetailsMutation();
+  const { data: allRecruiters } = useGetAllRecruitersQuery();
 
- const candidates =
-  apiData?.data?.map((candidate) => {
-    return {
-      id: candidate._id, 
-      _id: candidate._id, 
-      name: candidate.user.fullName,
-      email: candidate.user.email,
-      position: candidate.workOrder.title,
-      jobCode: candidate.workOrder.jobCode,
-      status: candidate.status,
-      stageProgress: candidate.stageProgress,
-      updatedAt: candidate.updatedAt,
-      avatar: candidate.user.image,
-    };
-  }) || [];
+  const candidates =
+    apiData?.data?.map((candidate) => {
+      return {
+        id: candidate._id,
+        _id: candidate._id,
+        name: candidate.user.fullName,
+        email: candidate.user.email,
+        position: candidate.workOrder.title,
+        jobCode: candidate.workOrder.jobCode,
+        status: candidate.status,
+        stageProgress: candidate.stageProgress,
+        updatedAt: candidate.updatedAt,
+        avatar: candidate.user.image,
+      };
+    }) || [];
 
   // Custom styles
   const buttonStyle = {
     background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
     border: "none",
     color: "white",
+  };
+
+  const recruiterOptionStyle = {
+    display: "flex",
+    alignItems: "center",
+    padding: "8px 0",
   };
 
   const iconTextStyle = {
@@ -138,50 +151,100 @@ const RecruiterCandidates = () => {
     return matchesFilter && matchesSearch;
   });
 
- const handleMoveToInterview = async (candidate) => {
-  try {
-    const response = await moveToNextStage({
-      id: candidate._id, 
-      status: "interview"
-    }).unwrap();
-    
-    message.success(`${candidate.name} moved to interview stage successfully!`);
-    refetch();
-  } catch (error) {
-    message.error(`Failed to move ${candidate.name} to interview stage. Please try again.`);
-    console.error("Move to interview error:", error);
-  }
-};
+  const handleMoveToInterview = async (candidate) => {
+    try {
+      const response = await moveToNextStage({
+        id: candidate._id,
+        status: "interview",
+      }).unwrap();
 
- const handleMakeOffer = async (candidate) => {
-  try {
-    const response = await moveToNextStage({
-      candidateId: candidate._id,
-      newStatus: "offer"
-    }).unwrap();
-    
-    message.success(`Offer sent to ${candidate.name} successfully!`);
-    refetch();
-  } catch (error) {
-    message.error(`Failed to send offer to ${candidate.name}. Please try again.`);
-    console.error("Make offer error:", error);
-  }
-};
+      message.success(
+        `${candidate.name} moved to interview stage successfully!`
+      );
+      refetch();
+    } catch (error) {
+      message.error(
+        `Failed to move ${candidate.name} to interview stage. Please try again.`
+      );
+      console.error("Move to interview error:", error);
+    }
+  };
+
+  const handleMakeOffer = async (candidate) => {
+    try {
+      const response = await moveToNextStage({
+        candidateId: candidate._id,
+        newStatus: "offer",
+      }).unwrap();
+
+      message.success(`Offer sent to ${candidate.name} successfully!`);
+      refetch();
+    } catch (error) {
+      message.error(
+        `Failed to send offer to ${candidate.name}. Please try again.`
+      );
+      console.error("Make offer error:", error);
+    }
+  };
 
   const handleRejectCandidate = async (candidate) => {
-  try {
-    const response = await moveToNextStage({
-      candidateId: candidate._id,
-      newStatus: "rejected"
-    }).unwrap();
-    
-    message.success(`${candidate.name} has been rejected.`);
-    refetch();
-  } catch (error) {
-    message.error(`Failed to reject ${candidate.name}. Please try again.`);
-    console.error("Reject candidate error:", error);
-  }
-};
+    try {
+      const response = await moveToNextStage({
+        candidateId: candidate._id,
+        newStatus: "rejected",
+      }).unwrap();
+
+      message.success(`${candidate.name} has been rejected.`);
+      refetch();
+    } catch (error) {
+      message.error(`Failed to reject ${candidate.name}. Please try again.`);
+      console.error("Reject candidate error:", error);
+    }
+  };
+
+  const handleScheduleInterview = (candidate) => {
+    setSelectedCandidate(candidate);
+    setScheduleInterviewModalVisible(true);
+  };
+
+  const handleScheduleInterviewSubmit = async (values, candidateId) => {
+    if (!values.datetime || !values.interviewers?.length) {
+      message.error("Please fill all required fields");
+      return false;
+    }
+
+    try {
+      const payload = {
+        id: candidateId,
+        scheduledAt: values.datetime.format(),
+        platform: values.type,
+        status: "scheduled",
+        recruiterId: values.interviewers[0],
+        notes: values.notes,
+      };
+
+      if (values.type === "online") {
+        payload.link = values.meetingLink;
+      } else if (values.type === "in-person") {
+        payload.location = values.location;
+      }
+
+      await addInterviewDetails(payload).unwrap();
+
+      message.success("Interview scheduled successfully!");
+      return true;
+    } catch (error) {
+      console.error("Interview scheduling error:", error);
+      const errorMessage =
+        error.data?.message || error.message || "Failed to schedule interview";
+      message.error(errorMessage);
+      return false;
+    } finally {
+      setScheduleInterviewModalVisible(false);
+      form.resetFields();
+      refetch();
+    }
+  };
 
   const getAvailableActions = (candidate) => {
     const actions = [];
@@ -197,14 +260,24 @@ const RecruiterCandidates = () => {
         });
         break;
       case "interview":
-        actions.push({
-          key: "offer",
-          label: "Make Offer",
-          icon: <GiftOutlined style={iconTextStyle} />,
-          onClick: () => handleMakeOffer(candidate),
-          style: { color: "#52c41a" },
-        });
+        actions.push(
+          {
+            key: "schedule",
+            label: "Schedule Interview",
+            icon: <CalendarOutlined style={iconTextStyle} />,
+            onClick: () => handleScheduleInterview(candidate),
+            style: { color: "#722ed1" },
+          },
+          {
+            key: "offer",
+            label: "Make Offer",
+            icon: <GiftOutlined style={iconTextStyle} />,
+            onClick: () => handleMakeOffer(candidate),
+            style: { color: "#52c41a" },
+          }
+        );
         break;
+
       default:
         break;
     }
@@ -225,10 +298,6 @@ const RecruiterCandidates = () => {
     return actions;
   };
 
-  const toggleStar = (candidateId) => {
-    message.success("Candidate starred status updated!");
-  };
-
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
     setCandidateDrawerVisible(true);
@@ -239,18 +308,18 @@ const RecruiterCandidates = () => {
     setMessageModalVisible(true);
   };
 
-const handleDownloadResume = (candidate) => {
-  if (candidate.stageProgress?.length > 0) {
-    const firstStage = candidate.stageProgress[0];
-    if (firstStage.uploadedDocuments?.length > 0) {
-      const document = firstStage.uploadedDocuments[0];
-      window.open(document.fileUrl, "_blank");
-      message.success(`Downloading ${document.fileName}...`);
-      return;
+  const handleDownloadResume = (candidate) => {
+    if (candidate.stageProgress?.length > 0) {
+      const firstStage = candidate.stageProgress[0];
+      if (firstStage.uploadedDocuments?.length > 0) {
+        const document = firstStage.uploadedDocuments[0];
+        window.open(document.fileUrl, "_blank");
+        message.success(`Downloading ${document.fileName}...`);
+        return;
+      }
     }
-  }
-  message.warning("No documents available for download");
-};
+    message.warning("No documents available for download");
+  };
 
   const renderStageActions = (candidate) => {
     const actions = getAvailableActions(candidate);
@@ -318,12 +387,7 @@ const handleDownloadResume = (candidate) => {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Text strong>{record.name}</Text>
-              <Button
-                type="text"
-                size="small"
-                icon={<StarOutlined />}
-                onClick={() => toggleStar(record.id)}
-              />
+              <Button type="text" size="small" />
             </div>
             <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1234,6 +1298,164 @@ const handleDownloadResume = (candidate) => {
                 }}
               >
                 Send Message
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Schedule Interview Modal */}
+      <Modal
+        title={`Schedule Interview with ${selectedCandidate?.name}`}
+        open={scheduleInterviewModalVisible}
+        onCancel={() => {
+          setScheduleInterviewModalVisible(false);
+          form.resetFields();
+        }}
+        footer={null}
+        width={window.innerWidth < 768 ? "95%" : 700}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            type: "online",
+          }}
+          onFinish={async (values) => {
+            await handleScheduleInterviewSubmit(values, selectedCandidate._id);
+          }}
+        >
+          <Form.Item
+            label="Interview Type"
+            name="type"
+            rules={[
+              { required: true, message: "Please select interview type" },
+            ]}
+          >
+            <Select placeholder="Select interview type">
+              <Option value="online">Online (Video Call)</Option>
+              <Option value="telephonic">Telephonic</Option>
+              <Option value="in-person">In Person</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.type !== currentValues.type
+            }
+          >
+            {({ getFieldValue }) =>
+              getFieldValue("type") === "online" ? (
+                <Form.Item
+                  label="Meeting Link"
+                  name="meetingLink"
+                  rules={[
+                    { required: true, message: "Please enter meeting link" },
+                    {
+                      type: "url",
+                      message: "Please enter a valid URL",
+                    },
+                  ]}
+                >
+                  <Input placeholder="Enter Google Meet or Zoom link" />
+                </Form.Item>
+              ) : getFieldValue("type") === "in-person" ? (
+                <Form.Item
+                  label="Location"
+                  name="location"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter interview location",
+                    },
+                  ]}
+                >
+                  <Input placeholder="Enter office address or location" />
+                </Form.Item>
+              ) : null
+            }
+          </Form.Item>
+
+          <Form.Item
+            label="Interview Date & Time"
+            name="datetime"
+            rules={[{ required: true, message: "Please select date and time" }]}
+          >
+            <DatePicker showTime format="YYYY-MM-DD HH:mm" />
+          </Form.Item>
+
+          <Form.Item
+            label="Interviewers"
+            name="interviewers"
+            rules={[
+              {
+                required: true,
+                message: "Please select at least one interviewer",
+              },
+            ]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select interviewers"
+              loading={!allRecruiters}
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            >
+              {allRecruiters?.otherRecruiters?.map((recruiter) => (
+                <Option
+                  key={recruiter._id}
+                  value={recruiter._id}
+                  label={`${recruiter.fullName} (${recruiter.specialization})`}
+                >
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <Avatar
+                      size="small"
+                      style={{ marginRight: 8, backgroundColor: "#f56a00" }}
+                    >
+                      {recruiter.fullName.charAt(0)}
+                    </Avatar>
+                    <div>
+                      <Text strong>{recruiter.fullName}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {recruiter.specialization} • {recruiter.email}
+                      </Text>
+                    </div>
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item label="Additional Notes" name="notes">
+            <Input.TextArea
+              rows={4}
+              placeholder="Add any additional notes or instructions"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right", marginTop: 24 }}>
+            <Space>
+              <Button
+                onClick={() => {
+                  setScheduleInterviewModalVisible(false);
+                  form.resetFields();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                style={buttonStyle}
+                htmlType="submit"
+                loading={isSchedulingInterview}
+              >
+                Schedule Interview
               </Button>
             </Space>
           </Form.Item>
