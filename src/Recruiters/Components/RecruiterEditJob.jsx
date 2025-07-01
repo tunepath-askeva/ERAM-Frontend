@@ -127,23 +127,25 @@ const RecruiterEditJob = () => {
               dependencyType: timeline.dependencyType || "independent",
             });
 
-            const pipeline = activePipelines.find((p) => p._id === pipelineId);
-            const isCustom =
-              pipeline &&
-              !pipeline.stages.some((s) => s._id === timeline.stageId);
-
-            if (isCustom) {
+            if (timeline.isCustomStage) {
               if (!initialCustomStages[pipelineId]) {
                 initialCustomStages[pipelineId] = [];
               }
 
-              initialCustomStages[pipelineId].push({
-                id: timeline.stageId,
-                _id: timeline.stageId, // Add _id for consistency
-                name: timeline.stageName,
-                description: "",
-                isCustom: true,
-              });
+              // Check if we already have this custom stage to avoid duplicates
+              const existingCustomStage = initialCustomStages[pipelineId].find(
+                (s) => (s._id || s.id) === timeline.stageId
+              );
+
+              if (!existingCustomStage) {
+                initialCustomStages[pipelineId].push({
+                  id: timeline.stageId,
+                  _id: timeline.stageId,
+                  name: timeline.stageName,
+                  description: "",
+                  isCustom: true,
+                });
+              }
             }
 
             if (!initialStageCustomFields[pipelineId]) {
@@ -321,43 +323,35 @@ const RecruiterEditJob = () => {
 
       if (!pipelineStageDates[pipelineId]) {
         const initialDates = [];
+        const existingStageIds = new Set();
 
         if (fetchedJobData?.workOrder?.pipelineStageTimeline) {
           fetchedJobData.workOrder.pipelineStageTimeline
             .filter((t) => t.pipelineId === pipelineId)
             .forEach((timeline) => {
-              initialDates.push({
-                stageId: timeline.stageId,
-                startDate: timeline.startDate,
-                endDate: timeline.endDate,
-                dependencyType: timeline.dependencyType || "independent",
-              });
+              if (!existingStageIds.has(timeline.stageId)) {
+                initialDates.push({
+                  stageId: timeline.stageId,
+                  startDate: timeline.startDate,
+                  endDate: timeline.endDate,
+                  dependencyType: timeline.dependencyType || "independent",
+                });
+                existingStageIds.add(timeline.stageId);
+              }
             });
         }
 
         pipeline.stages.forEach((stage) => {
-          if (!initialDates.some((d) => d.stageId === stage._id)) {
+          if (!existingStageIds.has(stage._id)) {
             initialDates.push({
               stageId: stage._id,
               startDate: null,
               endDate: null,
               dependencyType: "independent",
             });
+            existingStageIds.add(stage._id);
           }
         });
-
-        if (customStages[pipelineId]) {
-          customStages[pipelineId].forEach((customStage) => {
-            if (!initialDates.some((d) => d.stageId === customStage.id)) {
-              initialDates.push({
-                stageId: customStage.id,
-                startDate: null,
-                endDate: null,
-                dependencyType: "independent",
-              });
-            }
-          });
-        }
 
         setPipelineStageDates((prev) => ({
           ...prev,
@@ -722,7 +716,7 @@ const RecruiterEditJob = () => {
               recruiterId: originalStage?.recruiterId?._id || null,
               approvalId: originalStage?.approvalId?._id || null,
               customFields: customFields.map((field) => ({
-                _id: field._id, 
+                _id: field._id,
                 label: field.label,
                 type: field.type,
                 required: field.required,
@@ -1330,9 +1324,13 @@ const RecruiterEditJob = () => {
     if (!currentPipelineForDates) return null;
 
     const pipelineId = currentPipelineForDates._id;
+    const pipelineStages = currentPipelineForDates.stages || [];
+
+    const pipelineCustomStages = customStages[pipelineId] || [];
+
     const allStages = [
-      ...(currentPipelineForDates.stages || []),
-      ...(customStages[pipelineId] || []),
+      ...pipelineStages.map((stage) => ({ ...stage, isCustom: false })),
+      ...pipelineCustomStages.map((stage) => ({ ...stage, isCustom: true })),
     ];
 
     const sortedStages = allStages.sort((a, b) => {
@@ -1344,7 +1342,6 @@ const RecruiterEditJob = () => {
       );
       return (aIndex || 0) - (bIndex || 0);
     });
-
     const renderFieldTypeControls = (field, pipelineId, stageId) => {
       const needsOptions = ["dropdown", "select", "radio", "checkbox"].includes(
         field.type
