@@ -617,7 +617,7 @@ const SourcedJobDetails = () => {
                                 marginTop: "4px",
                               }}
                             >
-                              ID: {docId}
+                              {" "}
                             </Text>
                           )}
                         </div>

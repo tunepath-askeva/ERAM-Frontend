@@ -619,9 +619,7 @@ const AppliedJobDetails = () => {
                                 display: "block",
                                 marginTop: "4px",
                               }}
-                            >
-                              ID: {docId}
-                            </Text>
+                            ></Text>
                           )}
                         </div>
                       );
