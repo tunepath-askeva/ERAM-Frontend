@@ -26,6 +26,7 @@ import {
   ExclamationCircleOutlined,
   UserOutlined,
   UploadOutlined,
+  VideoCameraOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import {
@@ -60,7 +61,9 @@ const SourcedJobDetails = () => {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+      <div
+        style={{ display: "flex", justifyContent: "center", padding: "40px" }}
+      >
         <Spin size="large" />
       </div>
     );
@@ -195,13 +198,13 @@ const SourcedJobDetails = () => {
       const response = await uploadStageDocuments({
         customFieldId: sourcedJob._id,
         stageId: stage.stageId,
-        files: stageFiles.map(file => file.originFileObj),
-        filesMetadata: stageFiles.map(file => ({
+        files: stageFiles.map((file) => file.originFileObj),
+        filesMetadata: stageFiles.map((file) => ({
           fileName: file.name,
           documentName: file.documentType,
           fileSize: file.size,
-          fileType: file.type
-        }))
+          fileType: file.type,
+        })),
       }).unwrap();
 
       message.success(response.message || "Documents submitted successfully!");
@@ -509,18 +512,24 @@ const SourcedJobDetails = () => {
               {/* Required Documents Section */}
               {requiredDocs.length > 0 && (
                 <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>Required Documents ({requiredDocs.length})</Title>
+                  <Title level={3}>
+                    Required Documents ({requiredDocs.length})
+                  </Title>
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(300px, 1fr))",
                       gap: "12px",
                     }}
                   >
                     {requiredDocs.map((doc, docIndex) => {
                       const docName = getDocumentName(doc);
                       const docId = getDocumentId(doc);
-                      const isUploaded = isDocumentUploaded(uploadedDocs, docName);
+                      const isUploaded = isDocumentUploaded(
+                        uploadedDocs,
+                        docName
+                      );
                       const isPending = pendingDocs.some(
                         (pendingDoc) => pendingDoc.documentType === docName
                       );
@@ -854,7 +863,8 @@ const SourcedJobDetails = () => {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(280px, 1fr))",
                       gap: "16px",
                       marginBottom: "16px",
                     }}
@@ -862,7 +872,10 @@ const SourcedJobDetails = () => {
                     {requiredDocs.map((doc, docIndex) => {
                       const docName = getDocumentName(doc);
                       const docId = getDocumentId(doc);
-                      const isUploaded = isDocumentUploaded(uploadedDocs, docName);
+                      const isUploaded = isDocumentUploaded(
+                        uploadedDocs,
+                        docName
+                      );
 
                       return (
                         <div
@@ -1070,9 +1083,7 @@ const SourcedJobDetails = () => {
                       }}
                       icon={!isSubmitting ? <CheckCircleOutlined /> : null}
                     >
-                      {isSubmitting
-                        ? "Submitting..."
-                        : `Submit`}
+                      {isSubmitting ? "Submitting..." : `Submit`}
                     </Button>
                     <Button
                       size="large"
@@ -1109,6 +1120,108 @@ const SourcedJobDetails = () => {
           </Card>
         )}
       </div>
+    );
+  };
+
+  const InterviewContent = () => {
+    if (!sourcedJob.interviewDetails) {
+      return (
+        <Card>
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <ClockCircleOutlined
+              style={{ fontSize: "48px", color: "#d9d9d9" }}
+            />
+            <Title level={4} style={{ marginTop: "16px", color: "#999" }}>
+              No interview scheduled yet
+            </Title>
+            <Text type="secondary">
+              Interview details will appear here once scheduled.
+            </Text>
+          </div>
+        </Card>
+      );
+    }
+
+    const interview = sourcedJob.interviewDetails;
+    const interviewDate = new Date(interview.date);
+
+    return (
+      <Card>
+        <Title level={4} style={{ marginBottom: "24px" }}>
+          Interview Details
+        </Title>
+
+        <Descriptions
+          bordered
+          column={1}
+          labelStyle={{ fontWeight: "600", width: "200px" }}
+        >
+          <Descriptions.Item label="Status">
+            <Tag
+              color={
+                interview.status === "scheduled"
+                  ? "blue"
+                  : interview.status === "completed"
+                  ? "green"
+                  : interview.status === "cancelled"
+                  ? "red"
+                  : "orange"
+              }
+            >
+              {interview.status?.toUpperCase() || "PENDING"}
+            </Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Date">
+            {interviewDate.toLocaleDateString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Time">
+            {interviewDate.toLocaleTimeString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Mode">
+            <Tag color={interview.mode === "online" ? "blue" : "green"}>
+              {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
+            </Tag>
+          </Descriptions.Item>
+
+          {interview.mode === "online" && interview.meetingLink && (
+            <Descriptions.Item label="Meeting Link">
+              <Button
+                type="link"
+                href={interview.meetingLink}
+                target="_blank"
+                icon={<UserOutlined />}
+              >
+                Join Meeting
+              </Button>
+            </Descriptions.Item>
+          )}
+
+          {interview.mode === "in-person" && interview.location && (
+            <Descriptions.Item label="Location">
+              {interview.location}
+            </Descriptions.Item>
+          )}
+
+          {interview.notes && (
+            <Descriptions.Item label="Notes">
+              <Text>{interview.notes}</Text>
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+
+        <Divider />
+
+        <Title level={5} style={{ marginBottom: "16px" }}>
+          Preparation Tips
+        </Title>
+        <ul>
+          <li>Join 5 minutes before the scheduled time</li>
+          <li>Have your resume and portfolio ready</li>
+          {interview.mode === "online" && (
+            <li>Test your audio and video beforehand</li>
+          )}
+        </ul>
+      </Card>
     );
   };
 
@@ -1152,6 +1265,12 @@ const SourcedJobDetails = () => {
               label: <span>Documents</span>,
               key: "documents",
               children: <DocumentsContent />,
+            },
+            {
+              label: <span>Interview</span>,
+              key: "interview",
+              children: <InterviewContent />,
+              disabled: !sourcedJob.interviewDetails,
             },
           ]}
         />
