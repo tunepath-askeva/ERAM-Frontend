@@ -145,14 +145,15 @@ export const userApi = createApi({
       }),
     }),
     uploadStageDocuments: builder.mutation({
-      query: ({ customFieldId, stageId, files }) => {
+      query: ({ customFieldId, stageId, files, filesMetadata }) => {
         const formData = new FormData();
         formData.append("customFieldId", customFieldId);
         formData.append("stageId", stageId);
+        formData.append("filesMetadata", JSON.stringify(filesMetadata));
 
         files.forEach((file) => {
           if (file) {
-            formData.append("files", file); 
+            formData.append("files", file);
           }
         });
 
