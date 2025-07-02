@@ -57,6 +57,7 @@ import {
   useMoveCandidateStatusMutation,
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
+  useChangeInterviewStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 
@@ -91,6 +92,9 @@ const RecruiterCandidates = () => {
     useMoveCandidateStatusMutation();
   const [addInterviewDetails, { isLoading: isSchedulingInterview }] =
     useAddInterviewDetailsMutation();
+  const [changeInterviewStatus, { isLoading: isChangingStatus }] =
+    useChangeInterviewStatusMutation();
+
   const { data: allRecruiters } = useGetAllRecruitersQuery();
 
   const candidates =
@@ -125,6 +129,16 @@ const RecruiterCandidates = () => {
 
   const iconTextStyle = {
     color: "#da2c46",
+  };
+
+  const mobileButtonGroupStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    width: "100%",
+    "& > button": {
+      width: "100%",
+    },
   };
 
   const statusConfig = {
@@ -217,6 +231,38 @@ const RecruiterCandidates = () => {
         notes: candidate.interviewDetails.notes,
       });
     }
+    setScheduleInterviewModalVisible(true);
+  };
+
+  const handleChangeInterviewStatus = async (status) => {
+    if (!selectedCandidate) return;
+
+    try {
+      await changeInterviewStatus({
+        id: selectedCandidate._id,
+        status,
+      }).unwrap();
+
+      message.success(`Interview ${status.replace("_", " ")} successfully!`);
+      refetch();
+    } catch (error) {
+      message.error(`Failed to update interview status: ${error.message}`);
+      console.error("Interview status change error:", error);
+    }
+  };
+
+  const handleRescheduleInterview = () => {
+    if (!selectedCandidate?.interviewDetails) return;
+
+    const interview = selectedCandidate.interviewDetails;
+    form.setFieldsValue({
+      type: interview.mode,
+      meetingLink: interview.meetingLink,
+      location: interview.location,
+      datetime: dayjs(interview.date),
+      interviewers: interview.interviewerIds,
+      notes: interview.notes,
+    });
     setScheduleInterviewModalVisible(true);
   };
 
@@ -1097,6 +1143,44 @@ const RecruiterCandidates = () => {
                         )}
                       />
                     )}
+
+                    {selectedCandidate.interviewDetails.status ===
+                      "scheduled" && (
+                      <div
+                        style={
+                          window.innerWidth < 768
+                            ? mobileButtonGroupStyle
+                            : { display: "flex", gap: 8, marginTop: 16 }
+                        }
+                      >
+                        <Button
+                          type="primary"
+                          onClick={() =>
+                            handleChangeInterviewStatus("interview_completed")
+                          }
+                          loading={isChangingStatus}
+                          block={window.innerWidth < 768}
+                        >
+                          Mark as Completed
+                        </Button>
+                        <Button
+                          danger
+                          onClick={() =>
+                            handleChangeInterviewStatus("interview_cancelled")
+                          }
+                          loading={isChangingStatus}
+                          block={window.innerWidth < 768}
+                        >
+                          Cancel Interview
+                        </Button>
+                        <Button
+                          onClick={handleRescheduleInterview}
+                          block={window.innerWidth < 768}
+                        >
+                          Reschedule Interview
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <Text type="secondary">No interview scheduled yet.</Text>
@@ -1422,13 +1506,56 @@ const RecruiterCandidates = () => {
 
       {/* Schedule Interview Modal */}
       <Modal
-        title={`Schedule Interview with ${selectedCandidate?.name}`}
+        title={`${
+          selectedCandidate?.interviewDetails ? "Reschedule" : "Schedule"
+        } Interview with ${selectedCandidate?.name}`}
         open={scheduleInterviewModalVisible}
         onCancel={() => {
           setScheduleInterviewModalVisible(false);
           form.resetFields();
         }}
-        footer={null}
+        footer={[
+          selectedCandidate?.interviewDetails && (
+            <Space key="actions" style={{ float: "left" }}>
+              <Button
+                onClick={() =>
+                  handleChangeInterviewStatus("interview_completed")
+                }
+                loading={isChangingStatus}
+              >
+                Mark as Completed
+              </Button>
+              <Button
+                danger
+                onClick={() =>
+                  handleChangeInterviewStatus("interview_cancelled")
+                }
+                loading={isChangingStatus}
+              >
+                Cancel Interview
+              </Button>
+            </Space>
+          ),
+          <Button
+            key="cancel"
+            onClick={() => {
+              setScheduleInterviewModalVisible(false);
+              form.resetFields();
+            }}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            style={buttonStyle}
+            onClick={() => form.submit()}
+            loading={isSchedulingInterview}
+          >
+            {selectedCandidate?.interviewDetails ? "Reschedule" : "Schedule"}{" "}
+            Interview
+          </Button>,
+        ]}
         width={window.innerWidth < 768 ? "95%" : 700}
       >
         <Form

@@ -147,6 +147,13 @@ export const recruiterApi = createApi({
         body,
       }),
     }),
+    changeInterviewStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/interviewStatus/${id}`,
+        method: "PUT",
+        body: { status },
+      }),
+    }),
   }),
 });
 
@@ -169,4 +176,5 @@ export const {
   useMoveCandidateStatusMutation,
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
+  useChangeInterviewStatusMutation
 } = recruiterApi;
