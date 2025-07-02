@@ -190,8 +190,8 @@ const RecruiterCandidates = () => {
   const handleMakeOffer = async (candidate) => {
     try {
       const response = await moveToNextStage({
-        candidateId: candidate._id,
-        newStatus: "offer",
+        id: candidate._id,
+        status: "offer",
       }).unwrap();
 
       message.success(`Offer sent to ${candidate.name} successfully!`);
@@ -207,8 +207,8 @@ const RecruiterCandidates = () => {
   const handleRejectCandidate = async (candidate) => {
     try {
       const response = await moveToNextStage({
-        candidateId: candidate._id,
-        newStatus: "rejected",
+        id: candidate._id,
+        status: "rejected",
       }).unwrap();
 
       message.success(`${candidate.name} has been rejected.`);
@@ -245,6 +245,13 @@ const RecruiterCandidates = () => {
 
       message.success(`Interview ${status.replace("_", " ")} successfully!`);
       refetch();
+
+      if (
+        status === "interview_completed" ||
+        status === "interview_cancelled"
+      ) {
+        setScheduleInterviewModalVisible(false);
+      }
     } catch (error) {
       message.error(`Failed to update interview status: ${error.message}`);
       console.error("Interview status change error:", error);
@@ -319,24 +326,28 @@ const RecruiterCandidates = () => {
         });
         break;
       case "interview":
-        actions.push(
-          {
+        if (
+          !candidate.interviewDetails ||
+          candidate.interviewDetails.status !== "interview_completed"
+        ) {
+          actions.push({
             key: "schedule",
-            label: "Schedule Interview",
+            label: candidate.interviewDetails
+              ? "Reschedule Interview"
+              : "Schedule Interview",
             icon: <CalendarOutlined style={iconTextStyle} />,
             onClick: () => handleScheduleInterview(candidate),
             style: { color: "#722ed1" },
-          },
-          {
-            key: "offer",
-            label: "Make Offer",
-            icon: <GiftOutlined style={iconTextStyle} />,
-            onClick: () => handleMakeOffer(candidate),
-            style: { color: "#52c41a" },
-          }
-        );
+          });
+        }
+        actions.push({
+          key: "offer",
+          label: "Make Offer",
+          icon: <GiftOutlined style={iconTextStyle} />,
+          onClick: () => handleMakeOffer(candidate),
+          style: { color: "#52c41a" },
+        });
         break;
-
       default:
         break;
     }
@@ -1144,7 +1155,7 @@ const RecruiterCandidates = () => {
                       />
                     )}
 
-                    {selectedCandidate.interviewDetails.status ===
+                    {selectedCandidate?.interviewDetails?.status ===
                       "scheduled" && (
                       <div
                         style={
@@ -1160,6 +1171,7 @@ const RecruiterCandidates = () => {
                           }
                           loading={isChangingStatus}
                           block={window.innerWidth < 768}
+                          style={{ background: "#da2c46" }}
                         >
                           Mark as Completed
                         </Button>
@@ -1174,6 +1186,26 @@ const RecruiterCandidates = () => {
                           Cancel Interview
                         </Button>
                         <Button
+                          type="primary"
+                          onClick={handleRescheduleInterview}
+                          block={window.innerWidth < 768}
+                          style={{ background: "#da2c46" }}
+                        >
+                          Reschedule Interview
+                        </Button>
+                      </div>
+                    )}
+                    {selectedCandidate?.interviewDetails?.status ===
+                      "cancelled" && (
+                      <div
+                        style={
+                          window.innerWidth < 768
+                            ? mobileButtonGroupStyle
+                            : { display: "flex", gap: 8, marginTop: 16 }
+                        }
+                      >
+                        <Button
+                          type="primary"
                           onClick={handleRescheduleInterview}
                           block={window.innerWidth < 768}
                         >
@@ -1515,13 +1547,15 @@ const RecruiterCandidates = () => {
           form.resetFields();
         }}
         footer={[
-          selectedCandidate?.interviewDetails && (
+          selectedCandidate?.interviewDetails?.status === "scheduled" && (
             <Space key="actions" style={{ float: "left" }}>
               <Button
+                type="primary"
                 onClick={() =>
                   handleChangeInterviewStatus("interview_completed")
                 }
                 loading={isChangingStatus}
+                style={{ background: "#da2c46" }}
               >
                 Mark as Completed
               </Button>
@@ -1545,16 +1579,21 @@ const RecruiterCandidates = () => {
           >
             Cancel
           </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            style={buttonStyle}
-            onClick={() => form.submit()}
-            loading={isSchedulingInterview}
-          >
-            {selectedCandidate?.interviewDetails ? "Reschedule" : "Schedule"}{" "}
-            Interview
-          </Button>,
+          selectedCandidate?.interviewDetails?.status !== "completed" &&
+            selectedCandidate?.interviewDetails?.status !== "cancelled" && (
+              <Button
+                key="submit"
+                type="primary"
+                style={buttonStyle}
+                onClick={() => form.submit()}
+                loading={isSchedulingInterview}
+              >
+                {selectedCandidate?.interviewDetails
+                  ? "Reschedule"
+                  : "Schedule"}{" "}
+                Interview
+              </Button>
+            ),
         ]}
         width={window.innerWidth < 768 ? "95%" : 700}
       >
@@ -1679,27 +1718,6 @@ const RecruiterCandidates = () => {
               rows={4}
               placeholder="Add any additional notes or instructions"
             />
-          </Form.Item>
-
-          <Form.Item style={{ textAlign: "right", marginTop: 24 }}>
-            <Space>
-              <Button
-                onClick={() => {
-                  setScheduleInterviewModalVisible(false);
-                  form.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                style={buttonStyle}
-                htmlType="submit"
-                loading={isSchedulingInterview}
-              >
-                Schedule Interview
-              </Button>
-            </Space>
           </Form.Item>
         </Form>
       </Modal>
