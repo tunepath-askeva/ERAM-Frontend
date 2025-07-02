@@ -444,271 +444,138 @@ const AppliedJobDetails = () => {
     </Card>
   );
 
-  const DocumentsContent = () => {
-    // Helper function to extract document name from mixed array
-    const getDocumentName = (doc) => {
-      if (typeof doc === "string") {
-        return doc;
-      }
-      if (typeof doc === "object" && doc.title) {
-        return doc.title;
-      }
-      return "Unknown Document";
-    };
+const DocumentsContent = () => {
 
-    // Helper function to get document ID
-    const getDocumentId = (doc) => {
-      if (typeof doc === "object" && doc._id) {
-        return doc._id;
-      }
-      return null;
-    };
+  const getDocumentName = (doc) => {
+    if (typeof doc === "string") {
+      return doc;
+    }
+    if (typeof doc === "object" && doc.title) {
+      return doc.title;
+    }
+    return "Unknown Document";
+  };
 
-    // Helper function to check if a required document has been uploaded
-    const isDocumentUploaded = (stageDocuments, requiredDocName) => {
-      return stageDocuments?.some(
-        (doc) =>
-          doc.documentType === requiredDocName ||
-          doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase()) ||
-          doc.name?.toLowerCase().includes(requiredDocName.toLowerCase())
-      );
-    };
+  const getDocumentId = (doc) => {
+    if (typeof doc === "object" && doc._id) {
+      return doc._id;
+    }
+    return null;
+  };
 
-    // Helper function to get uploaded document for a required document
-    const getUploadedDocument = (stageDocuments, requiredDocName) => {
-      return stageDocuments?.find(
-        (doc) =>
-          doc.documentType === requiredDocName ||
-          doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase()) ||
-          doc.name?.toLowerCase().includes(requiredDocName.toLowerCase())
-      );
-    };
+  const isDocumentUploaded = (stageDocuments, requiredDocName) => {
+    return stageDocuments?.some(
+      (doc) => 
+        doc.documentName === requiredDocName || 
+        doc.documentName?.toLowerCase() === requiredDocName.toLowerCase() || 
+        doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase()) 
+    );
+  };
 
-    return (
-      <div>
-        {stageProgress?.map((stage, index) => {
-          // Get the full stage details from the stage object
-          const fullStage = stage.fullStage || stage;
-          const requiredDocs = fullStage.requiredDocuments || [];
-          const uploadedDocs = stage.uploadedDocuments || [];
-          const pendingDocs = uploadedFiles[stage._id] || [];
+  const getUploadedDocument = (stageDocuments, requiredDocName) => {
+    return stageDocuments?.find(
+      (doc) =>
+        doc.documentName === requiredDocName ||
+        doc.documentName?.toLowerCase() === requiredDocName.toLowerCase() ||
+        doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase())
+    );
+  };
 
-          return (
-            <Card key={stage._id || index} style={{ marginBottom: "16px" }}>
-              <Title level={5} style={{ marginBottom: "16px" }}>
-                <FileTextOutlined style={{ marginRight: "8px" }} />
-                {stage.stageName} - Documents
-              </Title>
+  const getPendingRequiredDocuments = (requiredDocs, uploadedDocs) => {
+    return requiredDocs.filter(doc => {
+      const docName = getDocumentName(doc);
+      return !isDocumentUploaded(uploadedDocs, docName);
+    });
+  };
 
-              <div style={{ marginBottom: "16px" }}>
-                <Text type="secondary">
-                  Stage Status:
-                  <Tag
-                    color={getStatusInfo(stage.stageStatus).color}
-                    style={{ marginLeft: "8px" }}
-                  >
-                    {stage.stageStatus?.toUpperCase() || "PENDING"}
-                  </Tag>
-                </Text>
-              </div>
+  return (
+    <div>
+      {stageProgress?.map((stage, index) => {
+        const fullStage = stage.fullStage || stage;
+        const requiredDocs = fullStage.requiredDocuments || [];
+        const uploadedDocs = stage.uploadedDocuments || [];
+        const pendingDocs = uploadedFiles[stage._id] || [];
+        
+        const pendingRequiredDocs = getPendingRequiredDocuments(requiredDocs, uploadedDocs);
+        
+        const allRequiredDocsUploaded = requiredDocs.length > 0 && pendingRequiredDocs.length === 0;
 
-              {/* Required Documents Section */}
+        return (
+          <Card key={stage._id || index} style={{ marginBottom: "16px" }}>
+            <Title level={5} style={{ marginBottom: "16px" }}>
+              <FileTextOutlined style={{ marginRight: "8px" }} />
+              {stage.stageName} - Documents
+            </Title>
+
+            <div style={{ marginBottom: "16px" }}>
+              <Text type="secondary">
+                Stage Status:
+                <Tag
+                  color={getStatusInfo(stage.stageStatus).color}
+                  style={{ marginLeft: "8px" }}
+                >
+                  {stage.stageStatus?.toUpperCase() || "PENDING"}
+                </Tag>
+              </Text>
+              {/* Add completion status */}
               {requiredDocs.length > 0 && (
-                <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>
-                    Required Documents ({requiredDocs.length})
-                  </Title>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(300px, 1fr))",
-                      gap: "12px",
-                    }}
-                  >
-                    {requiredDocs.map((doc, docIndex) => {
-                      const docName = getDocumentName(doc);
-                      const docId = getDocumentId(doc);
-                      const isUploaded = isDocumentUploaded(
-                        uploadedDocs,
-                        docName
-                      );
-                      const isPending = pendingDocs.some(
-                        (pendingDoc) => pendingDoc.documentType === docName
-                      );
-
-                      return (
-                        <div
-                          key={docId || docIndex}
-                          style={{
-                            padding: "12px",
-                            border: `2px solid ${
-                              isUploaded
-                                ? "#52c41a"
-                                : isPending
-                                ? "#faad14"
-                                : "#d9d9d9"
-                            }`,
-                            borderRadius: "8px",
-                            backgroundColor: isUploaded
-                              ? "#f6ffed"
-                              : isPending
-                              ? "#fffbf0"
-                              : "#fafafa",
-                            position: "relative",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            <FileTextOutlined
-                              style={{
-                                color: isUploaded
-                                  ? "#52c41a"
-                                  : isPending
-                                  ? "#faad14"
-                                  : "#8c8c8c",
-                                fontSize: "16px",
-                              }}
-                            />
-                            <Text strong style={{ fontSize: "14px" }}>
-                              {docName}
-                            </Text>
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: "8px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            {isUploaded ? (
-                              <Tag
-                                color="success"
-                                size="small"
-                                icon={<CheckCircleOutlined />}
-                              >
-                                Uploaded
-                              </Tag>
-                            ) : isPending ? (
-                              <Tag
-                                color="warning"
-                                size="small"
-                                icon={<ClockCircleOutlined />}
-                              >
-                                Pending Submit
-                              </Tag>
-                            ) : (
-                              <Tag color="default" size="small">
-                                Not Uploaded
-                              </Tag>
-                            )}
-                          </div>
-
-                          {docId && (
-                            <Text
-                              type="secondary"
-                              style={{
-                                fontSize: "11px",
-                                display: "block",
-                                marginTop: "4px",
-                              }}
-                            ></Text>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div style={{ marginTop: "8px" }}>
+                  <Text type="secondary">
+                    Document Status: 
+                    <Tag 
+                      color={allRequiredDocsUploaded ? "success" : "warning"}
+                      style={{ marginLeft: "8px" }}
+                    >
+                      {uploadedDocs.length}/{requiredDocs.length} Uploaded
+                    </Tag>
+                  </Text>
                 </div>
               )}
+            </div>
 
-              {/* Uploaded Documents Section */}
-              {uploadedDocs.length > 0 && (
-                <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>
-                    Uploaded Documents ({uploadedDocs.length})
-                  </Title>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                    }}
-                  >
-                    {uploadedDocs.map((doc, docIndex) => (
+            {/* Required Documents Section */}
+            {requiredDocs.length > 0 && (
+              <div style={{ marginBottom: "24px" }}>
+                <Title level={3}>
+                  Required Documents ({requiredDocs.length})
+                </Title>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(300px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  {requiredDocs.map((doc, docIndex) => {
+                    const docName = getDocumentName(doc);
+                    const docId = getDocumentId(doc);
+                    const isUploaded = isDocumentUploaded(uploadedDocs, docName);
+                    const isPending = pendingDocs.some(
+                      (pendingDoc) => pendingDoc.documentType === docName
+                    );
+
+                    return (
                       <div
-                        key={`uploaded-${docIndex}`}
+                        key={docId || docIndex}
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
                           padding: "12px",
-                          border: "1px solid #b7eb8f",
-                          borderRadius: "6px",
-                          backgroundColor: "#f6ffed",
+                          border: `2px solid ${
+                            isUploaded
+                              ? "#52c41a"
+                              : isPending
+                              ? "#faad14"
+                              : "#d9d9d9"
+                          }`,
+                          borderRadius: "8px",
+                          backgroundColor: isUploaded
+                            ? "#f6ffed"
+                            : isPending
+                            ? "#fffbf0"
+                            : "#fafafa",
+                          position: "relative",
                         }}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            flex: 1,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "50%",
-                              backgroundColor: "#52c41a",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <FileTextOutlined
-                              style={{ color: "white", fontSize: "14px" }}
-                            />
-                          </div>
-
-                          <div style={{ flex: 1 }}>
-                            <Text strong style={{ display: "block" }}>
-                              {doc.fileName ||
-                                doc.name ||
-                                `Document ${docIndex + 1}`}
-                            </Text>
-                            {doc.documentType && (
-                              <Tag
-                                color="green"
-                                size="small"
-                                style={{ marginTop: "4px" }}
-                              >
-                                {doc.documentType}
-                              </Tag>
-                            )}
-                            {doc.uploadedAt && (
-                              <Text
-                                type="secondary"
-                                style={{
-                                  fontSize: "12px",
-                                  display: "block",
-                                  marginTop: "2px",
-                                }}
-                              >
-                                Uploaded:{" "}
-                                {new Date(doc.uploadedAt).toLocaleDateString()}{" "}
-                              </Text>
-                            )}
-                          </div>
-                        </div>
-
                         <div
                           style={{
                             display: "flex",
@@ -716,89 +583,122 @@ const AppliedJobDetails = () => {
                             gap: "8px",
                           }}
                         >
-                          <Tag color="success" icon={<CheckCircleOutlined />}>
-                            Submitted
-                          </Tag>
-                          <Button
-                            type="primary"
-                            size="small"
-                            ghost
-                            onClick={() => {
-                              if (doc.fileUrl) {
-                                window.open(doc.fileUrl, "_blank");
-                              } else {
-                                message.info("File preview not available");
-                              }
+                          <FileTextOutlined
+                            style={{
+                              color: isUploaded
+                                ? "#52c41a"
+                                : isPending
+                                ? "#faad14"
+                                : "#8c8c8c",
+                              fontSize: "16px",
                             }}
-                          >
-                            View
-                          </Button>
+                          />
+                          <Text strong style={{ fontSize: "14px" }}>
+                            {docName}
+                          </Text>
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          {isUploaded ? (
+                            <Tag
+                              color="success"
+                              size="small"
+                              icon={<CheckCircleOutlined />}
+                            >
+                              Uploaded
+                            </Tag>
+                          ) : isPending ? (
+                            <Tag
+                              color="warning"
+                              size="small"
+                              icon={<ClockCircleOutlined />}
+                            >
+                              Pending Submit
+                            </Tag>
+                          ) : (
+                            <Tag color="default" size="small">
+                              Not Uploaded
+                            </Tag>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            )}
 
-              {pendingDocs.length > 0 && (
-                <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>
-                    Pending Documents ({pendingDocs.length})
-                  </Title>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                    }}
-                  >
-                    {pendingDocs.map((file, fileIndex) => (
+            {/* Uploaded Documents Section */}
+            {uploadedDocs.length > 0 && (
+              <div style={{ marginBottom: "24px" }}>
+                <Title level={3}>
+                  Uploaded Documents ({uploadedDocs.length})
+                </Title>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {uploadedDocs.map((doc, docIndex) => (
+                    <div
+                      key={`uploaded-${docIndex}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px",
+                        border: "1px solid #b7eb8f",
+                        borderRadius: "6px",
+                        backgroundColor: "#f6ffed",
+                      }}
+                    >
                       <div
-                        key={`pending-${fileIndex}`}
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px",
+                          gap: "12px",
+                          flex: 1,
                         }}
                       >
                         <div
                           style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#52c41a",
                             display: "flex",
                             alignItems: "center",
-                            gap: "12px",
-                            flex: 1,
+                            justifyContent: "center",
                           }}
                         >
-                          <div
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "50%",
-                              backgroundColor: "#faad14",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <FileTextOutlined
-                              style={{ color: "white", fontSize: "14px" }}
-                            />
-                          </div>
+                          <FileTextOutlined
+                            style={{ color: "white", fontSize: "14px" }}
+                          />
+                        </div>
 
-                          <div style={{ flex: 1 }}>
-                            <Text strong style={{ display: "block" }}>
-                              {file.name}
-                            </Text>
-                            {file.documentType && (
-                              <Tag
-                                color="orange"
-                                size="small"
-                                style={{ marginTop: "4px" }}
-                              >
-                                {file.documentType}
-                              </Tag>
-                            )}
+                        <div style={{ flex: 1 }}>
+                          <Text strong style={{ display: "block" }}>
+                            {doc.fileName || doc.name || `Document ${docIndex + 1}`}
+                          </Text>
+                          {doc.documentName && (
+                            <Tag
+                              color="green"
+                              size="small"
+                              style={{ marginTop: "4px" }}
+                            >
+                              {doc.documentName}
+                            </Tag>
+                          )}
+                          {doc.uploadedAt && (
                             <Text
                               type="secondary"
                               style={{
@@ -807,183 +707,230 @@ const AppliedJobDetails = () => {
                                 marginTop: "2px",
                               }}
                             >
-                              Size: {(file.size / 1024 / 1024).toFixed(2)} MB
+                              Uploaded:{" "}
+                              {new Date(doc.uploadedAt).toLocaleDateString()}{" "}
                             </Text>
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <Button
-                            type="text"
-                            size="small"
-                            danger
-                            onClick={() => removeFile(stage._id, fileIndex)}
-                          >
-                            Remove
-                          </Button>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* No Documents Message */}
-              {requiredDocs.length === 0 &&
-                uploadedDocs.length === 0 &&
-                pendingDocs.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "40px" }}>
-                    <FileTextOutlined
-                      style={{ fontSize: "48px", color: "#d9d9d9" }}
-                    />
-                    <Title
-                      level={5}
-                      style={{ marginTop: "16px", color: "#999" }}
-                    >
-                      No documents required or uploaded
-                    </Title>
-                    <Text type="secondary">
-                      This stage doesn't require any documents at the moment.
-                    </Text>
-                  </div>
-                )}
-
-              <Divider />
-
-              {/* Upload Section */}
-              <div>
-                <Title level={3}>Upload New Documents</Title>
-
-                {requiredDocs.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(280px, 1fr))",
-                      gap: "16px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    {requiredDocs.map((doc, docIndex) => {
-                      const docName = getDocumentName(doc);
-                      const docId = getDocumentId(doc);
-                      const isUploaded = isDocumentUploaded(
-                        uploadedDocs,
-                        docName
-                      );
-
-                      return (
-                        <div
-                          key={docId || docIndex}
-                          style={{
-                            border: `2px dashed ${
-                              isUploaded ? "#52c41a" : "#d9d9d9"
-                            }`,
-                            borderRadius: "12px",
-                            padding: "20px",
-                            textAlign: "center",
-                            backgroundColor: isUploaded ? "#f6ffed" : "#fafafa",
-                            transition: "all 0.3s ease",
-                            cursor: isUploaded ? "not-allowed" : "pointer",
-                            opacity: isUploaded ? 0.6 : 1,
-                            position: "relative",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isUploaded) {
-                              e.currentTarget.style.borderColor = "#da2c46";
-                              e.currentTarget.style.backgroundColor = "#fff";
-                              e.currentTarget.style.transform =
-                                "translateY(-2px)";
-                              e.currentTarget.style.boxShadow =
-                                "0 4px 12px rgba(218, 44, 70, 0.15)";
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Tag color="success" icon={<CheckCircleOutlined />}>
+                          Submitted
+                        </Tag>
+                        <Button
+                          type="primary"
+                          size="small"
+                          ghost
+                          onClick={() => {
+                            if (doc.fileUrl) {
+                              window.open(doc.fileUrl, "_blank");
+                            } else {
+                              message.info("File preview not available");
                             }
                           }}
-                          onMouseLeave={(e) => {
-                            if (!isUploaded) {
+                        >
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pendingDocs.length > 0 && (
+              <div style={{ marginBottom: "24px" }}>
+                <Title level={3}>
+                  Pending Documents ({pendingDocs.length})
+                </Title>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {pendingDocs.map((file, fileIndex) => (
+                    <div
+                      key={`pending-${fileIndex}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px",
+                        border: "1px solid #faad14",
+                        borderRadius: "6px",
+                        backgroundColor: "#fffbf0",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          flex: 1,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#faad14",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <FileTextOutlined
+                            style={{ color: "white", fontSize: "14px" }}
+                          />
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          <Text strong style={{ display: "block" }}>
+                            {file.name}
+                          </Text>
+                          {file.documentType && (
+                            <Tag
+                              color="orange"
+                              size="small"
+                              style={{ marginTop: "4px" }}
+                            >
+                              {file.documentType}
+                            </Tag>
+                          )}
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: "12px",
+                              display: "block",
+                              marginTop: "2px",
+                            }}
+                          >
+                            Size: {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </Text>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          onClick={() => removeFile(stage._id, fileIndex)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(pendingRequiredDocs.length > 0 || requiredDocs.length === 0) && (
+              <>
+                <Divider />
+                <div>
+                  <Title level={3}>
+                    {pendingRequiredDocs.length > 0 
+                      ? `Upload Missing Documents (${pendingRequiredDocs.length} remaining)`
+                      : "Upload Documents"
+                    }
+                  </Title>
+
+                  {pendingRequiredDocs.length > 0 ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "16px",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      {pendingRequiredDocs.map((doc, docIndex) => {
+                        const docName = getDocumentName(doc);
+                        const docId = getDocumentId(doc);
+
+                        return (
+                          <div
+                            key={docId || docIndex}
+                            style={{
+                              border: "2px dashed #d9d9d9",
+                              borderRadius: "12px",
+                              padding: "20px",
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              transition: "all 0.3s ease",
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = "#da2c46";
+                              e.currentTarget.style.backgroundColor = "#fff";
+                              e.currentTarget.style.transform = "translateY(-2px)";
+                              e.currentTarget.style.boxShadow =
+                                "0 4px 12px rgba(218, 44, 70, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
                               e.currentTarget.style.borderColor = "#d9d9d9";
                               e.currentTarget.style.backgroundColor = "#fafafa";
                               e.currentTarget.style.transform = "translateY(0)";
                               e.currentTarget.style.boxShadow = "none";
-                            }
-                          }}
-                        >
-                          {isUploaded && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "8px",
-                                right: "8px",
-                                backgroundColor: "#52c41a",
-                                borderRadius: "50%",
-                                width: "24px",
-                                height: "24px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <CheckCircleOutlined
-                                style={{ color: "white", fontSize: "12px" }}
-                              />
-                            </div>
-                          )}
-
-                          <Upload
-                            {...uploadProps(stage._id, docName)}
-                            disabled={isUploaded}
-                            style={{ width: "100%" }}
+                            }}
                           >
-                            <div>
-                              <div
-                                style={{
-                                  width: "50px",
-                                  height: "50px",
-                                  borderRadius: "50%",
-                                  backgroundColor: isUploaded
-                                    ? "#52c41a"
-                                    : "#da2c46",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  margin: "0 auto 12px",
-                                  transition: "transform 0.3s ease",
-                                }}
-                              >
-                                {isUploaded ? (
-                                  <CheckCircleOutlined
-                                    style={{ fontSize: "20px", color: "white" }}
-                                  />
-                                ) : (
+                            <Upload
+                              {...uploadProps(stage._id, docName)}
+                              style={{ width: "100%" }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    width: "50px",
+                                    height: "50px",
+                                    borderRadius: "50%",
+                                    backgroundColor: "#da2c46",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    margin: "0 auto 12px",
+                                    transition: "transform 0.3s ease",
+                                  }}
+                                >
                                   <UploadOutlined
                                     style={{ fontSize: "20px", color: "white" }}
                                   />
-                                )}
-                              </div>
-                              <Text
-                                strong
-                                style={{
-                                  display: "block",
-                                  marginBottom: "4px",
-                                  fontSize: "16px",
-                                }}
-                              >
-                                {docName}
-                              </Text>
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                {isUploaded
-                                  ? "Already uploaded"
-                                  : "Click to upload or drag & drop"}
-                              </Text>
-                              {!isUploaded && (
+                                </div>
+                                <Text
+                                  strong
+                                  style={{
+                                    display: "block",
+                                    marginBottom: "4px",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  {docName}
+                                </Text>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  Click to upload or drag & drop
+                                </Text>
                                 <div
                                   style={{
                                     marginTop: "8px",
@@ -993,140 +940,155 @@ const AppliedJobDetails = () => {
                                 >
                                   PDF, DOC, JPG, PNG (Max 5MB)
                                 </div>
-                              )}
-                            </div>
-                          </Upload>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      border: "2px dashed #d9d9d9",
-                      borderRadius: "12px",
-                      padding: "40px",
-                      textAlign: "center",
-                      backgroundColor: "#fafafa",
-                      maxWidth: "400px",
-                    }}
-                  >
-                    <Upload
-                      {...uploadProps(stage._id, docName)}
-                      disabled={isUploaded}
-                      style={{ width: "100%" }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            width: "60px",
-                            height: "60px",
-                            borderRadius: "50%",
-                            backgroundColor: "#da2c46",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 16px",
-                          }}
-                        >
-                          <UploadOutlined
-                            style={{ fontSize: "24px", color: "white" }}
-                          />
-                        </div>
-                        <Text
-                          strong
-                          style={{
-                            display: "block",
-                            marginBottom: "8px",
-                            fontSize: "18px",
-                          }}
-                        >
-                          Upload Documents
-                        </Text>
-                        <Text type="secondary">
-                          Click to upload or drag & drop your files
-                        </Text>
-                      </div>
-                    </Upload>
-                  </div>
-                )}
-              </div>
-
-              {pendingDocs.length > 0 && (
-                <div
-                  style={{
-                    marginTop: "24px",
-                    padding: "16px",
-                  }}
-                >
-                  <div style={{ marginBottom: "12px" }}>
-                    <Text>
-                      Ready to Submit: {pendingDocs.length} document(s)
-                    </Text>
-                    <div style={{ marginTop: "8px" }}>
-                      {pendingDocs.map((file, index) => (
-                        <Tag
-                          key={index}
-                          color="blue"
-                          style={{ marginBottom: "4px" }}
-                        >
-                          {file.name}
-                        </Tag>
-                      ))}
+                              </div>
+                            </Upload>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <Space>
-                    <Button
-                      type="primary"
-                      size="large"
-                      loading={isSubmitting}
-                      onClick={() => handleSubmitDocuments(stage._id)}
+                  ) : requiredDocs.length === 0 ? (
+                    <div
                       style={{
-                        backgroundColor: "#da2c46",
-                        borderColor: "#da2c46",
-                        minWidth: "140px",
+                        border: "2px dashed #d9d9d9",
+                        borderRadius: "12px",
+                        padding: "40px",
+                        textAlign: "center",
+                        backgroundColor: "#fafafa",
+                        maxWidth: "400px",
                       }}
-                      icon={!isSubmitting ? <CheckCircleOutlined /> : null}
                     >
-                      {isSubmitting ? "Submitting..." : `Submit`}
-                    </Button>
-                    <Button
-                      size="large"
-                      onClick={() =>
-                        setUploadedFiles((prev) => ({
-                          ...prev,
-                          [stage._id]: [],
-                        }))
-                      }
-                    >
-                      Clear All ({pendingDocs.length})
-                    </Button>
-                  </Space>
+                      <Upload
+                        {...uploadProps(stage._id, "General Document")}
+                        style={{ width: "100%" }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              borderRadius: "50%",
+                              backgroundColor: "#da2c46",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              margin: "0 auto 16px",
+                            }}
+                          >
+                            <UploadOutlined
+                              style={{ fontSize: "24px", color: "white" }}
+                            />
+                          </div>
+                          <Text
+                            strong
+                            style={{
+                              display: "block",
+                              marginBottom: "8px",
+                              fontSize: "18px",
+                            }}
+                          >
+                            Upload Documents
+                          </Text>
+                          <Text type="secondary">
+                            Click to upload or drag & drop your files
+                          </Text>
+                        </div>
+                      </Upload>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "20px" }}>
+                      <CheckCircleOutlined 
+                        style={{ fontSize: "48px", color: "#52c41a" }} 
+                      />
+                      <Title level={5} style={{ marginTop: "16px", color: "#52c41a" }}>
+                        All Required Documents Uploaded
+                      </Title>
+                      <Text type="secondary">
+                        You have successfully uploaded all required documents for this stage.
+                      </Text>
+                    </div>
+                  )}
                 </div>
-              )}
-            </Card>
-          );
-        })}
+              </>
+            )}
 
-        {!stageProgress?.length && (
-          <Card>
-            <div style={{ textAlign: "center", padding: "40px" }}>
-              <FileTextOutlined
-                style={{ fontSize: "48px", color: "#d9d9d9" }}
-              />
-              <Title level={4} style={{ marginTop: "16px", color: "#999" }}>
-                No stages available
-              </Title>
-              <Text type="secondary">
-                Document upload will be available once the application
-                progresses through stages.
-              </Text>
-            </div>
+            {/* Submit Button Section */}
+            {pendingDocs.length > 0 && (
+              <div
+                style={{
+                  marginTop: "24px",
+                  padding: "16px",
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: "8px",
+                }}
+              >
+                <div style={{ marginBottom: "12px" }}>
+                  <Text>
+                    Ready to Submit: {pendingDocs.length} document(s)
+                  </Text>
+                  <div style={{ marginTop: "8px" }}>
+                    {pendingDocs.map((file, index) => (
+                      <Tag
+                        key={index}
+                        color="blue"
+                        style={{ marginBottom: "4px" }}
+                      >
+                        {file.name}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+                <Space>
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={isSubmitting}
+                    onClick={() => handleSubmitDocuments(stage._id)}
+                    style={{
+                      backgroundColor: "#da2c46",
+                      borderColor: "#da2c46",
+                      minWidth: "140px",
+                    }}
+                    icon={!isSubmitting ? <CheckCircleOutlined /> : null}
+                  >
+                    {isSubmitting ? "Submitting..." : `Submit`}
+                  </Button>
+                  <Button
+                    size="large"
+                    onClick={() =>
+                      setUploadedFiles((prev) => ({
+                        ...prev,
+                        [stage._id]: [],
+                      }))
+                    }
+                  >
+                    Clear All ({pendingDocs.length})
+                  </Button>
+                </Space>
+              </div>
+            )}
           </Card>
-        )}
-      </div>
-    );
-  };
+        );
+      })}
+
+      {!stageProgress?.length && (
+        <Card>
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <FileTextOutlined
+              style={{ fontSize: "48px", color: "#d9d9d9" }}
+            />
+            <Title level={4} style={{ marginTop: "16px", color: "#999" }}>
+              No stages available
+            </Title>
+            <Text type="secondary">
+              Document upload will be available once the application
+              progresses through stages.
+            </Text>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
 
   const InterviewContent = () => {
     if (!appliedJob.interviewDetails) {

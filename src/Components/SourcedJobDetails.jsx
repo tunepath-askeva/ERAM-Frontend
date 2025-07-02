@@ -444,7 +444,6 @@ const SourcedJobDetails = () => {
   );
 
   const DocumentsContent = () => {
-    // Helper function to extract document name from mixed array
     const getDocumentName = (doc) => {
       if (typeof doc === "string") {
         return doc;
@@ -455,7 +454,6 @@ const SourcedJobDetails = () => {
       return "Unknown Document";
     };
 
-    // Helper function to get document ID
     const getDocumentId = (doc) => {
       if (typeof doc === "object" && doc._id) {
         return doc._id;
@@ -463,17 +461,12 @@ const SourcedJobDetails = () => {
       return null;
     };
 
-    // Helper function to check if a required document has been uploaded
     const isDocumentUploaded = (stageDocuments, requiredDocName) => {
       return stageDocuments?.some(
-        (doc) =>
-          doc.documentType === requiredDocName ||
-          doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase()) ||
-          doc.name?.toLowerCase().includes(requiredDocName.toLowerCase())
+        (doc) => doc.documentName === requiredDocName
       );
     };
 
-    // Helper function to get uploaded document for a required document
     const getUploadedDocument = (stageDocuments, requiredDocName) => {
       return stageDocuments?.find(
         (doc) =>
@@ -481,6 +474,13 @@ const SourcedJobDetails = () => {
           doc.fileName?.toLowerCase().includes(requiredDocName.toLowerCase()) ||
           doc.name?.toLowerCase().includes(requiredDocName.toLowerCase())
       );
+    };
+
+    const getPendingRequiredDocuments = (requiredDocs, uploadedDocs) => {
+      return requiredDocs.filter((doc) => {
+        const docName = getDocumentName(doc);
+        return !isDocumentUploaded(uploadedDocs, docName);
+      });
     };
 
     return (
@@ -591,7 +591,7 @@ const SourcedJobDetails = () => {
                                 size="small"
                                 icon={<CheckCircleOutlined />}
                               >
-                                Uploaded
+                                Uploaded & Submitted
                               </Tag>
                             ) : isPending ? (
                               <Tag
@@ -599,27 +599,37 @@ const SourcedJobDetails = () => {
                                 size="small"
                                 icon={<ClockCircleOutlined />}
                               >
-                                Pending Submit
+                                Ready to Submit
                               </Tag>
                             ) : (
-                              <Tag color="default" size="small">
+                              <Tag color="error" size="small">
                                 Not Uploaded
                               </Tag>
                             )}
                           </div>
 
-                          {docId && (
-                            <Text
-                              type="secondary"
-                              style={{
-                                fontSize: "11px",
-                                display: "block",
-                                marginTop: "4px",
-                              }}
-                            >
-                              {" "}
-                            </Text>
-                          )}
+                          {/* Show uploaded document details if available */}
+                          {isUploaded &&
+                            (() => {
+                              const uploadedDoc = uploadedDocs.find(
+                                (doc) => doc.documentName === docName
+                              );
+                              return uploadedDoc ? (
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: "11px",
+                                    display: "block",
+                                    marginTop: "4px",
+                                  }}
+                                >
+                                  Uploaded:{" "}
+                                  {new Date(
+                                    uploadedDoc.uploadedAt
+                                  ).toLocaleDateString()}
+                                </Text>
+                              ) : null;
+                            })()}
                         </div>
                       );
                     })}
@@ -859,130 +869,109 @@ const SourcedJobDetails = () => {
               <div>
                 <Title level={3}>Upload New Documents</Title>
 
-                {requiredDocs.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(280px, 1fr))",
-                      gap: "16px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    {requiredDocs.map((doc, docIndex) => {
-                      const docName = getDocumentName(doc);
-                      const docId = getDocumentId(doc);
-                      const isUploaded = isDocumentUploaded(
-                        uploadedDocs,
-                        docName
-                      );
+                {(() => {
+                  const pendingRequired = getPendingRequiredDocuments(
+                    requiredDocs,
+                    uploadedDocs
+                  );
 
-                      return (
-                        <div
-                          key={docId || docIndex}
-                          style={{
-                            border: `2px dashed ${
-                              isUploaded ? "#52c41a" : "#d9d9d9"
-                            }`,
-                            borderRadius: "12px",
-                            padding: "20px",
-                            textAlign: "center",
-                            backgroundColor: isUploaded ? "#f6ffed" : "#fafafa",
-                            transition: "all 0.3s ease",
-                            cursor: isUploaded ? "not-allowed" : "pointer",
-                            opacity: isUploaded ? 0.6 : 1,
-                            position: "relative",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isUploaded) {
+                  if (pendingRequired.length === 0) {
+                    return (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "20px",
+                          borderRadius: "8px",
+                        }}
+                      >
+                       
+                        <Text style={{  fontWeight: "500" }}>
+                          All required documents have been uploaded for this
+                          stage
+                        </Text>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(280px, 1fr))",
+                        gap: "16px",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      {pendingRequired.map((doc, docIndex) => {
+                        const docName = getDocumentName(doc);
+                        const docId = getDocumentId(doc);
+
+                        return (
+                          <div
+                            key={docId || docIndex}
+                            style={{
+                              border: "2px dashed #d9d9d9",
+                              borderRadius: "12px",
+                              padding: "20px",
+                              textAlign: "center",
+                              backgroundColor: "#fafafa",
+                              transition: "all 0.3s ease",
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => {
                               e.currentTarget.style.borderColor = "#da2c46";
                               e.currentTarget.style.backgroundColor = "#fff";
                               e.currentTarget.style.transform =
                                 "translateY(-2px)";
                               e.currentTarget.style.boxShadow =
                                 "0 4px 12px rgba(218, 44, 70, 0.15)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isUploaded) {
+                            }}
+                            onMouseLeave={(e) => {
                               e.currentTarget.style.borderColor = "#d9d9d9";
                               e.currentTarget.style.backgroundColor = "#fafafa";
                               e.currentTarget.style.transform = "translateY(0)";
                               e.currentTarget.style.boxShadow = "none";
-                            }
-                          }}
-                        >
-                          {isUploaded && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "8px",
-                                right: "8px",
-                                backgroundColor: "#52c41a",
-                                borderRadius: "50%",
-                                width: "24px",
-                                height: "24px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <CheckCircleOutlined
-                                style={{ color: "white", fontSize: "12px" }}
-                              />
-                            </div>
-                          )}
-
-                          <Upload
-                            {...uploadProps(stage._id, docName)}
-                            disabled={isUploaded}
-                            style={{ width: "100%" }}
+                            }}
                           >
-                            <div>
-                              <div
-                                style={{
-                                  width: "50px",
-                                  height: "50px",
-                                  borderRadius: "50%",
-                                  backgroundColor: isUploaded
-                                    ? "#52c41a"
-                                    : "#da2c46",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  margin: "0 auto 12px",
-                                  transition: "transform 0.3s ease",
-                                }}
-                              >
-                                {isUploaded ? (
-                                  <CheckCircleOutlined
-                                    style={{ fontSize: "20px", color: "white" }}
-                                  />
-                                ) : (
+                            <Upload
+                              {...uploadProps(stage._id, docName)}
+                              style={{ width: "100%" }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    width: "50px",
+                                    height: "50px",
+                                    borderRadius: "50%",
+                                    backgroundColor: "#da2c46",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    margin: "0 auto 12px",
+                                    transition: "transform 0.3s ease",
+                                  }}
+                                >
                                   <UploadOutlined
                                     style={{ fontSize: "20px", color: "white" }}
                                   />
-                                )}
-                              </div>
-                              <Text
-                                strong
-                                style={{
-                                  display: "block",
-                                  marginBottom: "4px",
-                                  fontSize: "16px",
-                                }}
-                              >
-                                {docName}
-                              </Text>
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "12px" }}
-                              >
-                                {isUploaded
-                                  ? "Already uploaded"
-                                  : "Click to upload or drag & drop"}
-                              </Text>
-                              {!isUploaded && (
+                                </div>
+                                <Text
+                                  strong
+                                  style={{
+                                    display: "block",
+                                    marginBottom: "4px",
+                                    fontSize: "16px",
+                                  }}
+                                >
+                                  {docName}
+                                </Text>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  Click to upload or drag & drop
+                                </Text>
                                 <div
                                   style={{
                                     marginTop: "8px",
@@ -992,63 +981,14 @@ const SourcedJobDetails = () => {
                                 >
                                   PDF, DOC, JPG, PNG (Max 5MB)
                                 </div>
-                              )}
-                            </div>
-                          </Upload>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      border: "2px dashed #d9d9d9",
-                      borderRadius: "12px",
-                      padding: "40px",
-                      textAlign: "center",
-                      backgroundColor: "#fafafa",
-                      maxWidth: "400px",
-                    }}
-                  >
-                    <Upload
-                      {...uploadProps(stage._id, docName)}
-                      disabled={isUploaded}
-                      style={{ width: "100%" }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            width: "60px",
-                            height: "60px",
-                            borderRadius: "50%",
-                            backgroundColor: "#da2c46",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 16px",
-                          }}
-                        >
-                          <UploadOutlined
-                            style={{ fontSize: "24px", color: "white" }}
-                          />
-                        </div>
-                        <Text
-                          strong
-                          style={{
-                            display: "block",
-                            marginBottom: "8px",
-                            fontSize: "18px",
-                          }}
-                        >
-                          Upload Documents
-                        </Text>
-                        <Text type="secondary">
-                          Click to upload or drag & drop your files
-                        </Text>
-                      </div>
-                    </Upload>
-                  </div>
-                )}
+                              </div>
+                            </Upload>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {pendingDocs.length > 0 && (
