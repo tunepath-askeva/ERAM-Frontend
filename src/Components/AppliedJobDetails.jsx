@@ -26,6 +26,7 @@ import {
   ExclamationCircleOutlined,
   UserOutlined,
   UploadOutlined,
+  VideoCameraOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import {
@@ -326,7 +327,6 @@ const AppliedJobDetails = () => {
     </Card>
   );
 
-  // Enhanced Timeline Tab Content
   const TimelineContent = () => (
     <Card>
       <Title level={4} style={{ marginBottom: "24px" }}>
@@ -444,8 +444,6 @@ const AppliedJobDetails = () => {
     </Card>
   );
 
-  // Enhanced Documents Tab Content
-  // Enhanced Documents Tab Content
   const DocumentsContent = () => {
     // Helper function to extract document name from mixed array
     const getDocumentName = (doc) => {
@@ -1128,7 +1126,124 @@ const AppliedJobDetails = () => {
     );
   };
 
-  // Pipeline Tab Content (existing implementation)
+  const InterviewContent = () => {
+    if (!appliedJob.interviewDetails) {
+      return (
+        <Card>
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <ClockCircleOutlined
+              style={{ fontSize: "48px", color: "#d9d9d9" }}
+            />
+            <Title level={4} style={{ marginTop: "16px", color: "#999" }}>
+              No interview scheduled yet
+            </Title>
+            <Text type="secondary">
+              Interview details will appear here once scheduled.
+            </Text>
+          </div>
+        </Card>
+      );
+    }
+
+    const interview = appliedJob.interviewDetails;
+    const interviewDate = new Date(interview.date);
+    const interviewers = interview.interviewerIds || [];
+
+    return (
+      <Card>
+        <Title level={4} style={{ marginBottom: "24px" }}>
+          Interview Details
+        </Title>
+
+        <Descriptions
+          bordered
+          column={1}
+          labelStyle={{ fontWeight: "600", width: "200px" }}
+        >
+          <Descriptions.Item label="Status">
+            <Tag
+              color={
+                interview.status === "scheduled"
+                  ? "blue"
+                  : interview.status === "completed"
+                  ? "green"
+                  : interview.status === "cancelled"
+                  ? "red"
+                  : "orange"
+              }
+            >
+              {interview.status?.toUpperCase() || "PENDING"}
+            </Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Date">
+            {interviewDate.toLocaleDateString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Time">
+            {interviewDate.toLocaleTimeString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Mode">
+            <Tag color={interview.mode === "online" ? "blue" : "green"}>
+              {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
+            </Tag>
+          </Descriptions.Item>
+
+          {interview.mode === "online" && interview.meetingLink && (
+            <Descriptions.Item label="Meeting Link">
+              <Button
+                type="link"
+                href={interview.meetingLink}
+                target="_blank"
+                icon={<UserOutlined />}
+              >
+                Join Meeting
+              </Button>
+            </Descriptions.Item>
+          )}
+
+          {interview.mode === "in-person" && interview.location && (
+            <Descriptions.Item label="Location">
+              {interview.location}
+            </Descriptions.Item>
+          )}
+
+          {interviewers.length > 0 && (
+            <Descriptions.Item label="Interviewers">
+              <List
+                size="small"
+                dataSource={interviewers}
+                renderItem={(interviewer) => (
+                  <List.Item>
+                    <Text>{interviewer}</Text>
+                  </List.Item>
+                )}
+              />
+            </Descriptions.Item>
+          )}
+
+          {interview.notes && (
+            <Descriptions.Item label="Notes">
+              <Text>{interview.notes}</Text>
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+
+        <Divider />
+
+        <Title level={5} style={{ marginBottom: "16px" }}>
+          Preparation Tips
+        </Title>
+        <ul>
+          <li>Join 5 minutes before the scheduled time</li>
+          <li>Have your resume and portfolio ready</li>
+          {interview.mode === "online" && (
+            <li>Test your audio and video beforehand</li>
+          )}
+          <li>Prepare questions to ask the interviewer</li>
+        </ul>
+      </Card>
+    );
+  };
+
   const PipelineContent = () => (
     <Card>
       <Title level={4} style={{ marginBottom: "24px" }}>
@@ -1337,6 +1452,12 @@ const AppliedJobDetails = () => {
               label: <span>Documents</span>,
               key: "documents",
               children: <DocumentsContent />,
+            },
+            {
+              label: <span>Interview</span>,
+              key: "interview",
+              children: <InterviewContent />,
+              disabled: !appliedJob.interviewDetails,
             },
           ]}
         />
