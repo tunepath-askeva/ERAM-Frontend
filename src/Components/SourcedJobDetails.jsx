@@ -1010,7 +1010,11 @@ const SourcedJobDetails = () => {
                       maxWidth: "400px",
                     }}
                   >
-                    <Upload {...uploadProps(stage._id)}>
+                    <Upload
+                      {...uploadProps(stage._id, docName)}
+                      disabled={isUploaded}
+                      style={{ width: "100%" }}
+                    >
                       <div>
                         <div
                           style={{

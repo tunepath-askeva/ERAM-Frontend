@@ -56,6 +56,7 @@ import AppliedJobDetails from "./Components/AppliedJobDetails";
 import HrDashboard from "./HR/Pages/HrDashboard";
 import HrPayroll from "./HR/Pages/HrPayroll";
 import HrEmployees from "./HR/Pages/HrEmployees";
+import ProtectedCandidate from "./Auth/ProtectedCandidate";
 
 const AppRoutes = () => {
   return (
@@ -153,21 +154,30 @@ const AppRoutes = () => {
       {/* Candidate */}
 
       <Route element={<CandidateLayout />}>
-        <Route path="/candidate-jobs" element={<CandidateJobs />} />
-        <Route path="/candidate-jobs/:jobId" element={<JobDetailsPage />} />
+        <Route
+          path="/candidate-jobs"
+          element={<ProtectedCandidate element={<CandidateJobs />} />}
+        />
+        <Route
+          path="/candidate-jobs/:jobId"
+          element={<ProtectedCandidate element={<JobDetailsPage />} />}
+        />
         <Route
           path="/candidate-applied-jobs"
-          element={<CandidateAppliedJobs />}
+          element={<ProtectedCandidate element={<CandidateAppliedJobs />} />}
         />
         <Route
           path="/candidate-applied-jobs/sourced-jobs/:id"
-          element={<SourcedJobDetails />}
+          element={<ProtectedCandidate element={<SourcedJobDetails />} />}
         />
         <Route
           path="/candidate-applied-jobs/applied-jobs/:id"
-          element={<AppliedJobDetails />}
+          element={<ProtectedCandidate element={<AppliedJobDetails />} />}
         />
-        <Route path="/candidate-settings" element={<CandidateSettings />} />
+        <Route
+          path="/candidate-settings"
+          element={<ProtectedCandidate element={<CandidateSettings />} />}
+        />
       </Route>
 
       {/* Recruiter */}
