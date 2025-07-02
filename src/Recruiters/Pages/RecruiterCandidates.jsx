@@ -25,6 +25,7 @@ import {
   Upload,
   Collapse,
   Popconfirm,
+  Descriptions,
 } from "antd";
 import {
   SearchOutlined,
@@ -57,6 +58,7 @@ import {
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -104,6 +106,7 @@ const RecruiterCandidates = () => {
         stageProgress: candidate.stageProgress,
         updatedAt: candidate.updatedAt,
         avatar: candidate.user.image,
+        interviewDetails: candidate.interviewDetails,
       };
     }) || [];
 
@@ -204,6 +207,16 @@ const RecruiterCandidates = () => {
 
   const handleScheduleInterview = (candidate) => {
     setSelectedCandidate(candidate);
+    if (candidate.interviewDetails) {
+      form.setFieldsValue({
+        type: candidate.interviewDetails.mode,
+        meetingLink: candidate.interviewDetails.meetingLink,
+        location: candidate.interviewDetails.location,
+        datetime: dayjs(candidate.interviewDetails.date),
+        interviewers: candidate.interviewDetails.interviewerIds,
+        notes: candidate.interviewDetails.notes,
+      });
+    }
     setScheduleInterviewModalVisible(true);
   };
 
@@ -985,6 +998,109 @@ const RecruiterCandidates = () => {
 
               <TabPane tab="Documents" key="3">
                 {renderDocuments(selectedCandidate.stageProgress)}
+              </TabPane>
+
+              <TabPane tab="Interview Details" key="4">
+                {selectedCandidate.interviewDetails ? (
+                  <div>
+                    <Divider orientation="left">Interview Information</Divider>
+                    <Descriptions column={1} bordered size="small">
+                      <Descriptions.Item label="Mode">
+                        {selectedCandidate.interviewDetails.mode === "online"
+                          ? "Online"
+                          : selectedCandidate.interviewDetails.mode ===
+                            "in-person"
+                          ? "In Person"
+                          : "Telephonic"}
+                      </Descriptions.Item>
+                      {selectedCandidate.interviewDetails.mode === "online" && (
+                        <Descriptions.Item label="Meeting Link">
+                          <a
+                            href={
+                              selectedCandidate.interviewDetails.meetingLink
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Join Meeting
+                          </a>
+                        </Descriptions.Item>
+                      )}
+                      {selectedCandidate.interviewDetails.mode ===
+                        "in-person" && (
+                        <Descriptions.Item label="Location">
+                          {selectedCandidate.interviewDetails.location}
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="Scheduled Date">
+                        {new Date(
+                          selectedCandidate.interviewDetails.date
+                        ).toLocaleString()}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Status">
+                        <Tag
+                          color={
+                            selectedCandidate.interviewDetails.status ===
+                            "scheduled"
+                              ? "blue"
+                              : selectedCandidate.interviewDetails.status ===
+                                "completed"
+                              ? "green"
+                              : "orange"
+                          }
+                        >
+                          {selectedCandidate.interviewDetails.status
+                            .charAt(0)
+                            .toUpperCase() +
+                            selectedCandidate.interviewDetails.status.slice(1)}
+                        </Tag>
+                      </Descriptions.Item>
+                      {selectedCandidate.interviewDetails.notes && (
+                        <Descriptions.Item label="Notes">
+                          {selectedCandidate.interviewDetails.notes}
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+
+                    <Divider orientation="left">Interviewers</Divider>
+                    {allRecruiters && (
+                      <List
+                        dataSource={selectedCandidate.interviewDetails.interviewerIds.map(
+                          (id) =>
+                            allRecruiters.otherRecruiters.find(
+                              (r) => r._id === id
+                            )
+                        )}
+                        renderItem={(recruiter) => (
+                          <List.Item>
+                            <List.Item.Meta
+                              avatar={
+                                <Avatar
+                                  src={recruiter?.image}
+                                  style={{ backgroundColor: "#f56a00" }}
+                                >
+                                  {recruiter?.fullName?.charAt(0)}
+                                </Avatar>
+                              }
+                              title={<Text strong>{recruiter?.fullName}</Text>}
+                              description={
+                                <>
+                                  <Text>{recruiter?.specialization}</Text>
+                                  <br />
+                                  <Text type="secondary">
+                                    {recruiter?.email}
+                                  </Text>
+                                </>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <Text type="secondary">No interview scheduled yet.</Text>
+                )}
               </TabPane>
             </Tabs>
           </div>
