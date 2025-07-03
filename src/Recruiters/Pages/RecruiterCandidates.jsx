@@ -109,8 +109,8 @@ const RecruiterCandidates = () => {
         status: candidate.status,
         stageProgress: candidate.stageProgress,
         updatedAt: candidate.updatedAt,
-        avatar: candidate.user.image,
-        interviewDetails: candidate.interviewDetails,
+        avatar: candidate.user.image || null,
+        interviewDetails: candidate.interviewDetails?.[0] || null, // Take first element or null
       };
     }) || [];
 
@@ -448,7 +448,6 @@ const RecruiterCandidates = () => {
       render: (text, record) => (
         <Space>
           <Avatar src={record.avatar} size={40}>
-            {" "}
             {record.name
               .split(" ")
               .map((n) => n[0])
@@ -1691,20 +1690,23 @@ const RecruiterCandidates = () => {
                 <Option
                   key={recruiter._id}
                   value={recruiter._id}
-                  label={`${recruiter.fullName} (${recruiter.specialization})`}
+                  label={`${recruiter.fullName || ""} (${
+                    recruiter.specialization || ""
+                  })`}
                 >
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <Avatar
                       size="small"
                       style={{ marginRight: 8, backgroundColor: "#f56a00" }}
                     >
-                      {recruiter.fullName.charAt(0)}
+                      {recruiter.fullName?.charAt(0) || "?"}
                     </Avatar>
                     <div>
-                      <Text strong>{recruiter.fullName}</Text>
+                      <Text strong>{recruiter.fullName || "Unknown"}</Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {recruiter.specialization} • {recruiter.email}
+                        {recruiter.specialization || "No specialization"} •{" "}
+                        {recruiter.email || "No email"}
                       </Text>
                     </div>
                   </div>
