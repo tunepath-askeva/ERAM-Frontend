@@ -51,13 +51,12 @@ const SourcedCandidates = ({ jobId }) => {
     total: 0,
   });
 
-  // Search related states - Added company field
   const [searchFilters, setSearchFilters] = useState({
     experience: "",
     qualification: "",
     skills: [],
     location: "",
-    company: "", // Added company filter
+    company: "", 
   });
   const [shouldFetch, setShouldFetch] = useState(false);
   const [skillInput, setSkillInput] = useState("");
@@ -66,9 +65,11 @@ const SourcedCandidates = ({ jobId }) => {
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
-  // Build query params for API call - Added company parameter
   const buildQueryParams = () => {
     const params = new URLSearchParams();
+
+    params.append("page", pagination.current.toString());
+    params.append("limit", pagination.pageSize.toString());
 
     if (searchFilters.experience) {
       params.append("experience", searchFilters.experience);
@@ -91,6 +92,13 @@ const SourcedCandidates = ({ jobId }) => {
     return params.toString();
   };
 
+  useEffect(() => {
+    if (shouldFetch) {
+      const params = buildQueryParams();
+      setQueryParams(params);
+    }
+  }, [pagination.current, pagination.pageSize, shouldFetch]);
+
   const {
     data: sourcedCandidatesData,
     isLoading: isSourcedLoading,
@@ -106,6 +114,18 @@ const SourcedCandidates = ({ jobId }) => {
     error: jobError,
     refetch: jobRefetch,
   } = useGetJobApplicationsQuery(jobId);
+
+  useEffect(() => {
+    if (sourcedCandidatesData) {
+      setPagination((prev) => ({
+        ...prev,
+        total:
+          sourcedCandidatesData.total ||
+          sourcedCandidatesData.users?.length ||
+          0,
+      }));
+    }
+  }, [sourcedCandidatesData]);
 
   const allCandidates = useMemo(() => {
     const jobAppCandidates =
@@ -175,18 +195,18 @@ const SourcedCandidates = ({ jobId }) => {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  // Updated to clear company filter as well
   const handleClearSearch = () => {
     setSearchFilters({
       experience: "",
       qualification: "",
       skills: [],
       location: "",
-      company: "", // Clear company filter
+      company: "", 
     });
     setSkillInput("");
     setShouldFetch(false);
     setQueryParams("");
+    setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
   };
 
   const handleSkillAdd = () => {
@@ -243,6 +263,14 @@ const SourcedCandidates = ({ jobId }) => {
       console.error("Failed to update candidate status:", error);
       message.error(error.data?.message || "Failed to update candidate status");
     }
+  };
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination((prev) => ({
+      ...prev,
+      current: page,
+      pageSize: pageSize,
+    }));
   };
 
   const getModalButtonText = () => {
@@ -372,7 +400,6 @@ const SourcedCandidates = ({ jobId }) => {
           }
           key="sourced"
         >
-          {/* Universal Search Section - Updated with Company field */}
           <Card
             size="small"
             style={{
@@ -556,35 +583,30 @@ const SourcedCandidates = ({ jobId }) => {
               />
             ) : shouldFetch && sourcedCandidates.length > 0 ? (
               <>
-                {sourcedCandidates
-                  .slice(
-                    (pagination.current - 1) * pagination.pageSize,
-                    pagination.current * pagination.pageSize
-                  )
-                  .map((candidate, index) => (
-                    <CandidateCard
-                      key={candidate._id || index}
-                      candidate={candidate}
-                      index={index}
-                      onViewProfile={handleViewProfile}
-                      showExperience={true}
-                      showSkills={true}
-                      maxSkills={3}
-                    />
-                  ))}
+                {sourcedCandidates.map((candidate, index) => (
+                  <CandidateCard
+                    key={candidate._id || index}
+                    candidate={candidate}
+                    index={index}
+                    onViewProfile={handleViewProfile}
+                    showExperience={true}
+                    showSkills={true}
+                    maxSkills={3}
+                  />
+                ))}
+
                 <div style={{ marginTop: 16, textAlign: "center" }}>
                   <Pagination
                     current={pagination.current}
                     pageSize={pagination.pageSize}
-                    total={sourcedCandidates.length}
-                    onChange={(page, pageSize) => {
-                      setPagination((prev) => ({
-                        ...prev,
-                        current: page,
-                        pageSize: pageSize,
-                      }));
-                    }}
-                    showSizeChanger={false}
+                    total={pagination.total}
+                    onChange={handlePaginationChange}
+                    showSizeChanger={true}
+                    showQuickJumper={true}
+                    showTotal={(total, range) =>
+                      `${range[0]}-${range[1]} of ${total} candidates`
+                    }
+                    pageSizeOptions={["10", "20", "50"]}
                     simple={window.innerWidth < 768}
                     size={window.innerWidth < 768 ? "small" : "default"}
                   />

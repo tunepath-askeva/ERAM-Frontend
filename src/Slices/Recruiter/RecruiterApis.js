@@ -52,6 +52,15 @@ export const recruiterApi = createApi({
         url: `/sourced${searchParams ? `?${searchParams}` : ""}`,
         method: "GET",
       }),
+      transformResponse: (response) => {
+        return {
+          users: response.users || [],
+          total: response.total || 0,
+          page: response.page || 1,
+          totalPages: response.totalPages || 1,
+          message: response.message || "",
+        };
+      },
     }),
 
     updateCandidateStatus: builder.mutation({
