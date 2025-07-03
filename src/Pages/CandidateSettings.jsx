@@ -249,10 +249,26 @@ const CandidateSettings = () => {
             }))
           : [],
         workExperience: Array.isArray(candidateData.workExperience)
-          ? candidateData.workExperience.map((work) => ({
-              ...work,
-              id: work.id || Math.random().toString(36).substr(2, 9),
-            }))
+          ? candidateData.workExperience.map((work) => {
+              let startDate = null;
+              let endDate = null;
+
+              if (work.duration) {
+                const [start, end] = work.duration.split("-");
+                startDate = start;
+                endDate = end === "present" ? "Present" : end;
+              }
+
+              return {
+                ...work,
+                startDate: work.startDate || startDate,
+                endDate: work.endDate || endDate,
+                id:
+                  work.id ||
+                  work._id ||
+                  Math.random().toString(36).substr(2, 9),
+              };
+            })
           : [],
         // Personal Information
         nationality: candidateData.nationality || "",
@@ -608,6 +624,7 @@ const CandidateSettings = () => {
       // Format dates with dayjs
       const formattedValues = {
         ...values,
+        jobTitle: values.jobTitle || values.title,
         startDate: values.startDate
           ? dayjs(values.startDate).format("YYYY-MM-DD")
           : null,
@@ -618,6 +635,7 @@ const CandidateSettings = () => {
           : null,
         id: editingWorkId || Math.random().toString(36).substr(2, 9),
       };
+      delete formattedValues.duration;
 
       if (editingWorkId) {
         setUserData((prev) => ({
@@ -649,11 +667,27 @@ const CandidateSettings = () => {
     setEditingWorkId(work.id);
     setEditingWorkData(work);
 
-    setIsCurrentJob(work.endDate === "Present" || work.endDate === null);
+    const isCurrent =
+      work.endDate === "Present" ||
+      (work.duration && work.duration.includes("present"));
+
+    setIsCurrentJob(isCurrent);
 
     workForm.setFieldsValue({
-      ...work,
-      endDate: work.endDate === "Present" ? null : work.endDate,
+      jobTitle: work.jobTitle || work.title,
+      company: work.company,
+      startDate:
+        work.startDate ||
+        (work.duration ? dayjs(work.duration.split("-")[0]) : null),
+      endDate: isCurrent
+        ? null
+        : work.endDate === "Present"
+        ? null
+        : work.endDate ||
+          (work.duration && !work.duration.includes("present")
+            ? dayjs(work.duration.split("-")[1])
+            : null),
+      description: work.description,
     });
     setIsWorkModalVisible(true);
   };
@@ -1160,19 +1194,23 @@ const CandidateSettings = () => {
                     }
                   >
                     <List.Item.Meta
-                      title={<Text strong>{item.jobTitle}</Text>}
+                      title={<Text strong>{item.jobTitle || item.title}</Text>}
                       description={
                         <div>
                           <Text>{item.company}</Text>
                           <br />
                           <Text type="secondary">
-                            {item.startDate
-                              ? dayjs(item.startDate).format("MMM YYYY")
-                              : ""}{" "}
-                            -{" "}
-                            {item.endDate
-                              ? dayjs(item.endDate).format("MMM YYYY")
-                              : "Present"}
+                            {item.duration ||
+                              (item.startDate
+                                ? dayjs(item.startDate).format("MMM YYYY")
+                                : "")}{" "}
+                            {!item.duration && "- "}
+                            {!item.duration &&
+                              (item.endDate === "Present"
+                                ? "Present"
+                                : item.endDate
+                                ? dayjs(item.endDate).format("MMM YYYY")
+                                : "")}
                           </Text>
                           <br />
                           {item.description && (
