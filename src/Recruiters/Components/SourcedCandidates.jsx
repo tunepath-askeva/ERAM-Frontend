@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Spin,
@@ -13,7 +13,6 @@ import {
   Select,
   Divider,
   InputNumber,
-  Collapse,
   Badge,
   Tabs,
   Modal,
@@ -22,17 +21,14 @@ import {
   message,
   Skeleton,
   Pagination,
+  AutoComplete,
 } from "antd";
 import {
   SearchOutlined,
-  FilterOutlined,
-  BookOutlined,
-  TrophyOutlined,
-  ToolOutlined,
-  ClearOutlined,
   UserOutlined,
   CheckOutlined,
   EyeOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import {
   useGetJobApplicationsQuery,
@@ -41,16 +37,11 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 
-const { Title, Text, Paragraph } = Typography;
-const { Search } = Input;
-const { Option } = Select;
-const { Panel } = Collapse;
+const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
 const SourcedCandidates = ({ jobId }) => {
   console.log(jobId, "JOB");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("sourced");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -59,23 +50,55 @@ const SourcedCandidates = ({ jobId }) => {
     pageSize: 10,
     total: 0,
   });
+
+  // Search related states - Added company field
+  const [searchFilters, setSearchFilters] = useState({
+    experience: "",
+    qualification: "",
+    skills: [],
+    location: "",
+    company: "", // Added company filter
+  });
+  const [shouldFetch, setShouldFetch] = useState(false);
+  const [skillInput, setSkillInput] = useState("");
+  const [queryParams, setQueryParams] = useState("");
+
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
-  const [filters, setFilters] = useState({
-    skills: [],
-    minExperience: null,
-    maxExperience: null,
-    education: [],
-    location: "",
-  });
+  // Build query params for API call - Added company parameter
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+
+    if (searchFilters.experience) {
+      params.append("experience", searchFilters.experience);
+    }
+    if (searchFilters.qualification) {
+      params.append("qualification", searchFilters.qualification);
+    }
+    if (searchFilters.skills && searchFilters.skills.length > 0) {
+      params.append("skills", searchFilters.skills.join(","));
+    }
+    if (searchFilters.location) {
+      params.append("location", searchFilters.location);
+    }
+    if (searchFilters.company) {
+      params.append("company", searchFilters.company);
+    }
+
+    console.log("Search Filters:", searchFilters);
+    console.log("Query Params:", params.toString());
+    return params.toString();
+  };
 
   const {
     data: sourcedCandidatesData,
     isLoading: isSourcedLoading,
     error: sourcedError,
     refetch: refetchSourced,
-  } = useGetSourcedCandidateQuery({});
+  } = useGetSourcedCandidateQuery(queryParams, {
+    skip: !shouldFetch || !queryParams,
+  });
 
   const {
     data: jobApplications,
@@ -91,15 +114,15 @@ const SourcedCandidates = ({ jobId }) => {
         status: response.status,
         applicationId: response._id,
         responses: response.responses,
-        isApplied: true, // Mark as applied to job
+        isApplied: true,
       })) || [];
 
     const sourcedCandidates =
       sourcedCandidatesData?.users?.map((user) => ({
         ...user,
-        status: user.status || "sourced", 
+        status: user.status || "sourced",
         applicationId: user._id,
-        isApplied: false, 
+        isApplied: false,
         isSourced: true,
       })) || [];
 
@@ -109,10 +132,8 @@ const SourcedCandidates = ({ jobId }) => {
       candidatesMap.set(candidate._id, candidate);
     });
 
-    // Then update with job application candidates (if they applied)
     jobAppCandidates.forEach((candidate) => {
       if (candidatesMap.has(candidate._id)) {
-        // Candidate exists in sourced, update their status and mark as applied
         const existingCandidate = candidatesMap.get(candidate._id);
         candidatesMap.set(candidate._id, {
           ...existingCandidate,
@@ -121,7 +142,6 @@ const SourcedCandidates = ({ jobId }) => {
           status: candidate.status || existingCandidate.status,
         });
       } else {
-        // New candidate from job applications
         candidatesMap.set(candidate._id, candidate);
       }
     });
@@ -129,45 +149,14 @@ const SourcedCandidates = ({ jobId }) => {
     return Array.from(candidatesMap.values());
   }, [jobApplications, sourcedCandidatesData]);
 
-  const filterOptions = useMemo(() => {
-    const allSkills = new Set();
-    const allEducation = new Set();
-    const allLocations = new Set();
-
-    allCandidates.forEach((user) => {
-      if (user.skills && Array.isArray(user.skills)) {
-        user.skills.forEach((skill) => allSkills.add(skill.toLowerCase()));
-      }
-
-      if (user.education && Array.isArray(user.education)) {
-        user.education.forEach((edu) => {
-          if (edu.degree) allEducation.add(edu.degree);
-          if (edu.field) allEducation.add(edu.field);
-        });
-      }
-
-      if (user.location) {
-        allLocations.add(user.location);
-      }
-    });
-
-    return {
-      skills: Array.from(allSkills).sort(),
-      education: Array.from(allEducation).sort(),
-      locations: Array.from(allLocations).sort(),
-    };
-  }, [allCandidates]);
-
   const { sourcedCandidates, selectedCandidates } = useMemo(() => {
     return {
-      // Show only candidates with "sourced" status or no status (default sourced)
       sourcedCandidates: allCandidates.filter((candidate) => {
         const status = candidate.status;
-        // Only show truly sourced candidates - no status, "sourced", or "applied" but not moved to other stages
         return (
           !status ||
           status === "sourced" ||
-          (status === "applied" && !candidate.isApplied) // Only show applied if they haven't actually applied to this job
+          (status === "applied" && !candidate.isApplied)
         );
       }),
       selectedCandidates: allCandidates.filter(
@@ -176,84 +165,48 @@ const SourcedCandidates = ({ jobId }) => {
     };
   }, [allCandidates]);
 
-  const filteredCandidates = useMemo(() => {
-    let candidates;
-    switch (activeTab) {
-      case "sourced":
-        candidates = sourcedCandidates;
-        break;
-      case "selected":
-        candidates = selectedCandidates;
-        break;
-      default:
-        candidates = sourcedCandidates;
-    }
+  const handleSearch = () => {
+    const params = buildQueryParams();
+    console.log("Triggering search with filters:", searchFilters);
+    console.log("Final query params:", params);
 
-    if (searchTerm) {
-      candidates = candidates.filter(
-        (candidate) =>
-          candidate.fullName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          candidate.phone?.includes(searchTerm)
-      );
-    }
-
-    if (filters.skills.length > 0) {
-      candidates = candidates.filter((candidate) => {
-        const candidateSkills =
-          candidate.skills?.map((skill) => skill.toLowerCase()) || [];
-        return filters.skills.some((filterSkill) =>
-          candidateSkills.includes(filterSkill.toLowerCase())
-        );
-      });
-    }
-
-    if (filters.education.length > 0) {
-      candidates = candidates.filter((candidate) => {
-        const candidateEducation = candidate.education || [];
-        return candidateEducation.some((edu) =>
-          filters.education.some(
-            (filterEdu) =>
-              edu.degree?.toLowerCase().includes(filterEdu.toLowerCase()) ||
-              edu.field?.toLowerCase().includes(filterEdu.toLowerCase())
-          )
-        );
-      });
-    }
-
-    if (filters.location) {
-      candidates = candidates.filter((candidate) =>
-        candidate.location
-          ?.toLowerCase()
-          .includes(filters.location.toLowerCase())
-      );
-    }
-
-    return candidates;
-  }, [activeTab, sourcedCandidates, selectedCandidates, searchTerm, filters]);
-
-  const clearAllFilters = () => {
-    setFilters({
-      skills: [],
-      minExperience: null,
-      maxExperience: null,
-      education: [],
-      location: "",
-    });
-    setSearchTerm("");
+    setQueryParams(params);
+    setShouldFetch(true);
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.skills.length > 0) count++;
-    if (filters.minExperience !== null || filters.maxExperience !== null)
-      count++;
-    if (filters.education.length > 0) count++;
-    if (filters.location) count++;
-    return count;
-  }, [filters]);
+  // Updated to clear company filter as well
+  const handleClearSearch = () => {
+    setSearchFilters({
+      experience: "",
+      qualification: "",
+      skills: [],
+      location: "",
+      company: "", // Clear company filter
+    });
+    setSkillInput("");
+    setShouldFetch(false);
+    setQueryParams("");
+  };
+
+  const handleSkillAdd = () => {
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !searchFilters.skills.includes(trimmedSkill)) {
+      setSearchFilters((prev) => ({
+        ...prev,
+        skills: [...prev.skills, trimmedSkill],
+      }));
+      setSkillInput("");
+      console.log("Added skill:", trimmedSkill);
+    }
+  };
+
+  const handleSkillRemove = (skillToRemove) => {
+    setSearchFilters((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((skill) => skill !== skillToRemove),
+    }));
+  };
 
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
@@ -285,7 +238,6 @@ const SourcedCandidates = ({ jobId }) => {
 
       refetchSourced();
       jobRefetch();
-
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to update candidate status:", error);
@@ -295,7 +247,6 @@ const SourcedCandidates = ({ jobId }) => {
 
   const getModalButtonText = () => {
     if (!selectedCandidate) return "Update Status";
-
     const currentStatus = selectedCandidate.status;
 
     if (
@@ -313,7 +264,6 @@ const SourcedCandidates = ({ jobId }) => {
 
   const getNextStatus = () => {
     if (!selectedCandidate) return "selected";
-
     const currentStatus = selectedCandidate.status;
 
     if (
@@ -353,7 +303,13 @@ const SourcedCandidates = ({ jobId }) => {
     );
   };
 
-  if (isSourcedLoading || jobLoading) {
+  const hasActiveFilters = () => {
+    return Object.values(searchFilters).some((value) =>
+      Array.isArray(value) ? value.length > 0 : value !== ""
+    );
+  };
+
+  if (jobLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
@@ -365,7 +321,7 @@ const SourcedCandidates = ({ jobId }) => {
     );
   }
 
-  if (sourcedError || jobError) {
+  if (jobError) {
     return (
       <div style={{ padding: "16px" }}>
         <Alert
@@ -379,13 +335,18 @@ const SourcedCandidates = ({ jobId }) => {
   }
 
   return (
-    <div style={{ padding: "0", fontSize: "14px" }}>
+    <div
+      style={{
+        padding: window.innerWidth < 768 ? "8px" : "0",
+        fontSize: "14px",
+      }}
+    >
       <div style={{ marginBottom: "16px" }}>
         <Title
           level={4}
           style={{
             margin: "0 0 8px 0",
-            fontSize: "18px",
+            fontSize: window.innerWidth < 768 ? "16px" : "18px",
             fontWeight: "600",
             color: "#da2c46",
           }}
@@ -394,7 +355,14 @@ const SourcedCandidates = ({ jobId }) => {
         </Title>
       </div>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        size={window.innerWidth < 768 ? "small" : "default"}
+        tabBarStyle={{
+          marginBottom: window.innerWidth < 768 ? "8px" : "16px",
+        }}
+      >
         <TabPane
           tab={
             <span style={{ color: "#da2c46" }}>
@@ -404,139 +372,191 @@ const SourcedCandidates = ({ jobId }) => {
           }
           key="sourced"
         >
-          <div style={{ marginBottom: "16px" }}>
-            <Row gutter={16} align="middle">
-              <Col flex="auto">
-                <Search
-                  placeholder="Search candidates by name, email or phone"
-                  allowClear
-                  enterButton={<SearchOutlined />}
-                  size="middle"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+          {/* Universal Search Section - Updated with Company field */}
+          <Card
+            size="small"
+            style={{
+              marginBottom: window.innerWidth < 768 ? "8px" : "16px",
+              backgroundColor: "#fafafa",
+            }}
+          >
+            <div
+              style={{ marginBottom: window.innerWidth < 768 ? "8px" : "16px" }}
+            >
+              <Text
+                strong
+                style={{
+                  marginBottom: "8px",
+                  display: "block",
+                  fontSize: window.innerWidth < 768 ? "14px" : "16px",
+                }}
+              >
+                Search Candidates
+              </Text>
+            </div>
+
+            <Row gutter={[window.innerWidth < 768 ? 8 : 16, 16]}>
+              <Col xs={24} sm={12} md={6} lg={6}>
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Experience (years)
+                </Text>
+                <InputNumber
+                  placeholder="Min years"
+                  value={searchFilters.experience}
+                  onChange={(value) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      experience: value || "",
+                    }))
+                  }
                   style={{ width: "100%" }}
+                  min={0}
                 />
               </Col>
-              <Col flex="none">
-                <Space>
-                  <Badge count={activeFiltersCount} size="small">
-                    <Button
-                      icon={<FilterOutlined />}
-                      onClick={() => setShowFilters(!showFilters)}
-                      type={showFilters ? "primary" : "default"}
-                    >
-                      Filters
-                    </Button>
-                  </Badge>
-                  {activeFiltersCount > 0 && (
-                    <Button
-                      icon={<ClearOutlined />}
-                      onClick={clearAllFilters}
-                      size="small"
-                      type="text"
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </Space>
+
+              <Col xs={24} sm={12} md={6} lg={6}>
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Qualification
+                </Text>
+                <Input
+                  placeholder="e.g., computer science, MBA"
+                  value={searchFilters.qualification}
+                  onChange={(e) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      qualification: e.target.value,
+                    }))
+                  }
+                />
+              </Col>
+
+              <Col xs={24} sm={12} md={6} lg={6}>
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Location
+                </Text>
+                <Input
+                  placeholder="e.g., bangalore, mumbai"
+                  value={searchFilters.location}
+                  onChange={(e) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
+                  }
+                />
+              </Col>
+
+              <Col xs={24} sm={12} md={6} lg={6}>
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Company
+                </Text>
+                <Input
+                  placeholder="e.g., google, microsoft, tcs"
+                  value={searchFilters.company}
+                  onChange={(e) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      company: e.target.value,
+                    }))
+                  }
+                />
               </Col>
             </Row>
-          </div>
 
-          {showFilters && (
-            <Card
-              size="small"
-              style={{ marginBottom: "16px", backgroundColor: "#fafafa" }}
+            <Row
+              gutter={[window.innerWidth < 768 ? 8 : 16, 16]}
+              style={{ marginTop: "16px" }}
             >
-              <Collapse ghost>
-                <Panel
-                  header={
-                    <Space>
-                      <FilterOutlined />
-                      <Text strong>Advanced Filters</Text>
-                    </Space>
-                  }
-                  key="1"
+              <Col span={24}>
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Skills
+                </Text>
+                <div
+                  style={{ display: "flex", gap: "8px", marginBottom: "8px" }}
                 >
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <div>
-                        <Text
-                          strong
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <ToolOutlined /> Skills
-                        </Text>
-                        <Select
-                          mode="multiple"
-                          placeholder="Select required skills"
-                          value={filters.skills}
-                          onChange={(value) =>
-                            setFilters((prev) => ({ ...prev, skills: value }))
-                          }
-                          style={{ width: "100%" }}
-                          allowClear
-                        >
-                          {filterOptions.skills.map((skill) => (
-                            <Option key={skill} value={skill}>
-                              {skill}
-                            </Option>
-                          ))}
-                        </Select>
-                      </div>
-                    </Col>
+                  <Input
+                    placeholder="Add skill"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onPressEnter={handleSkillAdd}
+                    style={{ flex: 1 }}
+                  />
+                  <Button onClick={handleSkillAdd} size="small">
+                    Add
+                  </Button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                  {searchFilters.skills.map((skill, index) => (
+                    <Tag
+                      key={index}
+                      closable
+                      onClose={() => handleSkillRemove(skill)}
+                      style={{ marginBottom: "4px" }}
+                    >
+                      {skill}
+                    </Tag>
+                  ))}
+                </div>
+              </Col>
+            </Row>
 
-                    <Col span={12}>
-                      <div>
-                        <Text
-                          strong
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <BookOutlined /> Education
-                        </Text>
-                        <Select
-                          mode="multiple"
-                          placeholder="Select education requirements"
-                          value={filters.education}
-                          onChange={(value) =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              education: value,
-                            }))
-                          }
-                          style={{ width: "100%" }}
-                          allowClear
-                        >
-                          {filterOptions.education.map((edu) => (
-                            <Option key={edu} value={edu}>
-                              {edu}
-                            </Option>
-                          ))}
-                        </Select>
-                      </div>
-                    </Col>
-                  </Row>
-                </Panel>
-              </Collapse>
-            </Card>
-          )}
+            <div style={{ marginTop: "16px", textAlign: "right" }}>
+              <Space
+                wrap
+                style={{
+                  width: "100%",
+                  justifyContent:
+                    window.innerWidth < 768 ? "center" : "flex-end",
+                }}
+              >
+                {hasActiveFilters() && (
+                  <Button
+                    icon={<CloseOutlined />}
+                    onClick={handleClearSearch}
+                    size="small"
+                  >
+                    Clear All
+                  </Button>
+                )}
+                <Button
+                  type="primary"
+                  icon={<SearchOutlined />}
+                  onClick={handleSearch}
+                  style={{ background: "#da2c46" }}
+                  disabled={!hasActiveFilters()}
+                >
+                  Search Candidates
+                </Button>
+              </Space>
+            </div>
+          </Card>
 
-          <Divider style={{ margin: "12px 0" }} />
+          <Divider
+            style={{ margin: window.innerWidth < 768 ? "8px 0" : "12px 0" }}
+          />
 
-          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-            {filteredCandidates.length > 0 ? (
+          <div
+            style={{
+              maxHeight: window.innerWidth < 768 ? "400px" : "600px",
+              overflowY: "auto",
+            }}
+          >
+            {isSourcedLoading ? (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <Skeleton active />
+                <Skeleton active />
+                <Skeleton active />
+              </div>
+            ) : sourcedError ? (
+              <Alert
+                message="Failed to load sourced candidates"
+                description="Unable to fetch sourced candidates data"
+                type="error"
+                showIcon
+              />
+            ) : shouldFetch && sourcedCandidates.length > 0 ? (
               <>
-                {filteredCandidates
+                {sourcedCandidates
                   .slice(
                     (pagination.current - 1) * pagination.pageSize,
                     pagination.current * pagination.pageSize
@@ -552,11 +572,11 @@ const SourcedCandidates = ({ jobId }) => {
                       maxSkills={3}
                     />
                   ))}
-                <div style={{ marginTop: 16, textAlign: "right" }}>
+                <div style={{ marginTop: 16, textAlign: "center" }}>
                   <Pagination
                     current={pagination.current}
                     pageSize={pagination.pageSize}
-                    total={filteredCandidates.length}
+                    total={sourcedCandidates.length}
                     onChange={(page, pageSize) => {
                       setPagination((prev) => ({
                         ...prev,
@@ -565,17 +585,26 @@ const SourcedCandidates = ({ jobId }) => {
                       }));
                     }}
                     showSizeChanger={false}
+                    simple={window.innerWidth < 768}
+                    size={window.innerWidth < 768 ? "small" : "default"}
                   />
                 </div>
               </>
+            ) : shouldFetch && sourcedCandidates.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span style={{ fontSize: "14px", color: "#999" }}>
+                    No candidates found matching your search criteria
+                  </span>
+                }
+              />
             ) : (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <span style={{ fontSize: "14px", color: "#999" }}>
-                    {searchTerm || activeFiltersCount > 0
-                      ? "No candidates match your search criteria"
-                      : "No sourced candidates found"}
+                    Use the search filters above to find candidates
                   </span>
                 }
               />
@@ -592,7 +621,12 @@ const SourcedCandidates = ({ jobId }) => {
           }
           key="selected"
         >
-          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+          <div
+            style={{
+              maxHeight: window.innerWidth < 768 ? "400px" : "600px",
+              overflowY: "auto",
+            }}
+          >
             {selectedCandidates.length > 0 ? (
               <>
                 {selectedCandidates
@@ -614,20 +648,24 @@ const SourcedCandidates = ({ jobId }) => {
                           key="view"
                           icon={<EyeOutlined />}
                           onClick={() => handleViewProfile(candidate)}
+                          size={window.innerWidth < 768 ? "small" : "default"}
                         >
-                          View Profile
+                          {window.innerWidth < 768 ? "View" : "View Profile"}
                         </Button>,
                         <Button
                           key="move"
                           type="primary"
                           onClick={() => handleStatusUpdate("screening")}
+                          size={window.innerWidth < 768 ? "small" : "default"}
                         >
-                          Move to Screening
+                          {window.innerWidth < 768
+                            ? "Screening"
+                            : "Move to Screening"}
                         </Button>,
                       ]}
                     />
                   ))}
-                <div style={{ marginTop: 16, textAlign: "right" }}>
+                <div style={{ marginTop: 16, textAlign: "center" }}>
                   <Pagination
                     current={pagination.current}
                     pageSize={pagination.pageSize}
@@ -640,6 +678,8 @@ const SourcedCandidates = ({ jobId }) => {
                       }));
                     }}
                     showSizeChanger={false}
+                    simple={window.innerWidth < 768}
+                    size={window.innerWidth < 768 ? "small" : "default"}
                   />
                 </div>
               </>
@@ -675,12 +715,15 @@ const SourcedCandidates = ({ jobId }) => {
             {getModalButtonText()}
           </Button>,
         ]}
-        width="90%"
-        style={{ top: 20 }}
+        width={window.innerWidth < 768 ? "95%" : "90%"}
+        style={{ top: window.innerWidth < 768 ? 10 : 20 }}
         bodyStyle={{
-          maxHeight: "calc(100vh - 200px)",
+          maxHeight:
+            window.innerWidth < 768
+              ? "calc(100vh - 150px)"
+              : "calc(100vh - 200px)",
           overflowY: "auto",
-          padding: "16px",
+          padding: window.innerWidth < 768 ? "8px" : "16px",
         }}
       >
         {selectedCandidate && (

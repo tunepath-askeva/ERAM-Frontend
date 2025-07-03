@@ -48,8 +48,8 @@ export const recruiterApi = createApi({
       }),
     }),
     getSourcedCandidate: builder.query({
-      query: () => ({
-        url: `/sourced`,
+      query: (searchParams = "") => ({
+        url: `/sourced${searchParams ? `?${searchParams}` : ""}`,
         method: "GET",
       }),
     }),
@@ -176,5 +176,5 @@ export const {
   useMoveCandidateStatusMutation,
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
-  useChangeInterviewStatusMutation
+  useChangeInterviewStatusMutation,
 } = recruiterApi;

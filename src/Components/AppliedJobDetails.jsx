@@ -1170,19 +1170,7 @@ const DocumentsContent = () => {
             </Descriptions.Item>
           )}
 
-          {interviewers.length > 0 && (
-            <Descriptions.Item label="Interviewers">
-              <List
-                size="small"
-                dataSource={interviewers}
-                renderItem={(interviewer) => (
-                  <List.Item>
-                    <Text>{interviewer}</Text>
-                  </List.Item>
-                )}
-              />
-            </Descriptions.Item>
-          )}
+         
 
           {interview.notes && (
             <Descriptions.Item label="Notes">
