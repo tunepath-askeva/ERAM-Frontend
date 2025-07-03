@@ -404,7 +404,6 @@ const SourcedCandidates = ({ jobId }) => {
             size="small"
             style={{
               marginBottom: window.innerWidth < 768 ? "8px" : "16px",
-              backgroundColor: "#fafafa",
             }}
           >
             <div
