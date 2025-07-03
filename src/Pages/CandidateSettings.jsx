@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import {
   Button,
   Card,
@@ -67,6 +67,14 @@ import {
   DollarOutlined,
   InfoCircleOutlined,
   FileAddOutlined,
+  IdcardOutlined,
+  ContactsOutlined,
+  HomeOutlined,
+  SafetyOutlined,
+  FlagOutlined,
+  WarningOutlined,
+  FireOutlined,
+  CrownOutlined,
 } from "@ant-design/icons";
 import {
   useGetCandidateQuery,
@@ -74,6 +82,7 @@ import {
 } from "../Slices/Users/UserApis";
 import { useDispatch } from "react-redux";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
+import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -92,11 +101,26 @@ const degreeOptions = [
   "Professional Degree",
 ];
 
+const maritalStatusOptions = ["Single", "Married"];
+const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const religionOptions = [
+  "Christianity",
+  "Islam",
+  "Hinduism",
+  "Buddhism",
+  "Judaism",
+  "Sikhism",
+  "Jainism",
+  "Other",
+  "Prefer not to say",
+];
+
 const CandidateSettings = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
+    middleName: "",
     fullName: "",
     email: "",
     phone: "",
@@ -112,6 +136,38 @@ const CandidateSettings = () => {
     title: "",
     education: [],
     workExperience: [],
+    // Personal Information
+    nationality: "",
+    countryOfBirth: "",
+    maritalStatus: "",
+    bloodGroup: "",
+    religion: "",
+    totalExperienceYears: "",
+    emergencyContactNo: "",
+    noticePeriod: "",
+    // Passport Information
+    passportNo: "",
+    passportPlaceOfIssue: "",
+    passportIssueDate: null,
+    passportExpiryDate: null,
+    iqamaNo: "",
+    // Address Information
+    region: "",
+    streetNo: "",
+    streetName: "",
+    block: "",
+    building: "",
+    zipCode: "",
+    city: "",
+    state: "",
+    country: "",
+    // Emergency Contact
+    contactPersonName: "",
+    contactPersonMobile: "",
+    contactPersonHomeNo: "",
+    // Nominee Information
+    nomineeName: "",
+    nomineeRelationship: "",
     preferences: {
       emailNotifications: false,
       smsNotifications: false,
@@ -129,12 +185,14 @@ const CandidateSettings = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [isProfileEditable, setIsProfileEditable] = useState(false);
-  const [profileCompletion, setProfileCompletion] = useState(75);
+  const [profileCompletion, setProfileCompletion] = useState(0);
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [imageFile, setImageFile] = useState(null);
+  const [isCurrentJob, setIsCurrentJob] = useState(false);
+
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
     degree: "",
@@ -149,6 +207,9 @@ const CandidateSettings = () => {
   const [profileComplete] = useProfileCompletionMutation();
 
   const [profileForm] = Form.useForm();
+  const [personalForm] = Form.useForm();
+  const [addressForm] = Form.useForm();
+  const [contactForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
   const [privacyForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -166,6 +227,7 @@ const CandidateSettings = () => {
       const mappedData = {
         firstName: candidateData.firstName || "",
         lastName: candidateData.lastName || "",
+        middleName: candidateData.middleName || "",
         fullName: candidateData.fullName || "",
         email: candidateData.email || "",
         phone: candidateData.phone || "",
@@ -182,16 +244,52 @@ const CandidateSettings = () => {
         title: candidateData.title || "",
         education: Array.isArray(candidateData.education)
           ? candidateData.education.map((edu) => ({
-            ...edu,
-            id: edu.id || Math.random().toString(36).substr(2, 9),
-          }))
+              ...edu,
+              id: edu.id || Math.random().toString(36).substr(2, 9),
+            }))
           : [],
         workExperience: Array.isArray(candidateData.workExperience)
           ? candidateData.workExperience.map((work) => ({
-            ...work,
-            id: work.id || Math.random().toString(36).substr(2, 9),
-          }))
+              ...work,
+              id: work.id || Math.random().toString(36).substr(2, 9),
+            }))
           : [],
+        // Personal Information
+        nationality: candidateData.nationality || "",
+        countryOfBirth: candidateData.countryOfBirth || "",
+        maritalStatus: candidateData.maritalStatus || "",
+        bloodGroup: candidateData.bloodGroup || "",
+        religion: candidateData.religion || "",
+        totalExperienceYears: candidateData.totalExperienceYears || "",
+        emergencyContactNo: candidateData.emergencyContactNo || "",
+        noticePeriod: candidateData.noticePeriod || "",
+        // Passport Information
+        passportNo: candidateData.passportNo || "",
+        passportPlaceOfIssue: candidateData.passportPlaceOfIssue || "",
+        passportIssueDate: candidateData.passportIssueDate
+          ? dayjs(candidateData.passportIssueDate)
+          : null,
+        passportExpiryDate: candidateData.passportExpiryDate
+          ? dayjs(candidateData.passportExpiryDate)
+          : null,
+        iqamaNo: candidateData.iqamaNo || "",
+        // Address Information
+        region: candidateData.region || "",
+        streetNo: candidateData.streetNo || "",
+        streetName: candidateData.streetName || "",
+        block: candidateData.block || "",
+        building: candidateData.building || "",
+        zipCode: candidateData.zipCode || "",
+        city: candidateData.city || "",
+        state: candidateData.state || "",
+        country: candidateData.country || "",
+        // Emergency Contact
+        contactPersonName: candidateData.contactPersonName || "",
+        contactPersonMobile: candidateData.contactPersonMobile || "",
+        contactPersonHomeNo: candidateData.contactPersonHomeNo || "",
+        // Nominee Information
+        nomineeName: candidateData.nomineeName || "",
+        nomineeRelationship: candidateData.nomineeRelationship || "",
         preferences: {
           emailNotifications:
             candidateData.preferences?.emailNotifications || false,
@@ -211,38 +309,63 @@ const CandidateSettings = () => {
       setUserData(mappedData);
 
       profileForm.setFieldsValue(mappedData);
+      personalForm.setFieldsValue(mappedData);
+      addressForm.setFieldsValue(mappedData);
+      contactForm.setFieldsValue(mappedData);
       preferencesForm.setFieldsValue(mappedData.preferences);
       privacyForm.setFieldsValue(mappedData.privacy);
 
       calculateProfileCompletion(mappedData);
-    } else if (
-      getCandidate === null ||
-      (getCandidate &&
-        (!getCandidate.user || Object.keys(getCandidate.user).length === 0))
-    ) {
-      console.log("No candidate data available or empty user object");
     }
   }, [getCandidate]);
 
-  const calculateProfileCompletion = () => {
-    let completion = 0;
-    const fields = [
-      userData.firstName,
-      userData.lastName,
-      userData.email,
-      userData.phone,
-      userData.location,
-      userData.title,
-      userData.skills?.length > 0,
-      userData.education?.length > 0,
-      userData.workExperience?.length > 0,
+  const calculateProfileCompletion = (data = userData) => {
+    const requiredFields = [
+      // Basic Information (30%)
+      data.firstName,
+      data.lastName,
+      data.email,
+      data.phone,
+      data.location,
+      data.title,
+
+      // Skills & Experience (20%)
+      data.skills?.length > 0,
+      data.education?.length > 0,
+      data.workExperience?.length > 0,
+      data.totalExperienceYears,
+
+      // Personal Information (20%)
+      data.nationality,
+      data.maritalStatus,
+      data.bloodGroup,
+      data.countryOfBirth,
+
+      // Address Information (15%)
+      data.city,
+      data.state,
+      data.country,
+      data.zipCode,
+
+      // Contact Information (10%)
+      data.emergencyContactNo,
+      data.contactPersonName,
+
+      // Professional Information (5%)
+      data.noticePeriod,
+      data.passportNo,
     ];
 
-    fields.forEach((field) => {
-      if (field) completion += 10;
-    });
+    const completedFields = requiredFields.filter((field) => {
+      if (typeof field === "boolean") return field;
+      if (typeof field === "string") return field.trim() !== "";
+      return field !== null && field !== undefined;
+    }).length;
 
-    setProfileCompletion(Math.min(completion, 100));
+    const completion = Math.round(
+      (completedFields / requiredFields.length) * 100
+    );
+    setProfileCompletion(completion);
   };
 
   const handlePreferencesUpdate = async (values) => {
@@ -253,17 +376,15 @@ const CandidateSettings = () => {
         preferences: values,
       };
 
-      console.log("Preferences payload:", payload);
-
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setUserData({ ...userData, preferences: values });
       enqueueSnackbar("Preferences updated successfully!", {
-        variant: 'success',
+        variant: "success",
       });
     } catch (error) {
       enqueueSnackbar("Failed to update preferences", {
-        variant: 'error',
+        variant: "error",
       });
     }
     setLoading(false);
@@ -277,16 +398,14 @@ const CandidateSettings = () => {
         newPassword: values.newPassword,
       };
 
-      console.log("Password change payload:", payload);
-
       await new Promise((resolve) => setTimeout(resolve, 1000));
       enqueueSnackbar("Password changed successfully!", {
-        variant: 'success',
+        variant: "success",
       });
       passwordForm.resetFields();
     } catch (error) {
       enqueueSnackbar("Failed to change password", {
-        variant: 'error',
+        variant: "error",
       });
     }
     setLoading(false);
@@ -326,24 +445,46 @@ const CandidateSettings = () => {
   const toggleProfileEdit = () => {
     if (isProfileEditable) {
       profileForm.setFieldsValue(userData);
+      personalForm.setFieldsValue(userData);
+      addressForm.setFieldsValue(userData);
+      contactForm.setFieldsValue(userData);
     }
     setIsProfileEditable(!isProfileEditable);
   };
 
   const handleProfileSave = async () => {
     try {
-      const formValues = await profileForm.validateFields();
+      const profileValues = await profileForm.validateFields();
+      const personalValues = await personalForm.validateFields();
+      const addressValues = await addressForm.validateFields();
+      const contactValues = await contactForm.validateFields();
+
+      const allValues = {
+        ...profileValues,
+        ...personalValues,
+        ...addressValues,
+        ...contactValues,
+      };
+
       setLoading(true);
 
       const formData = new FormData();
 
-      Object.entries(formValues).forEach(([key, value]) => {
-        formData.append(key, value);
+      Object.entries(allValues).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          // Replace moment.isMoment with dayjs.isDayjs
+          if (dayjs.isDayjs(value)) {
+            formData.append(key, value.format("YYYY-MM-DD"));
+          } else {
+            formData.append(key, value);
+          }
+        }
       });
 
       if (imageFile) {
         formData.append("image", imageFile);
       }
+
       formData.append("skills", JSON.stringify(userData.skills));
       formData.append("education", JSON.stringify(userData.education));
       formData.append(
@@ -352,13 +493,14 @@ const CandidateSettings = () => {
       );
       formData.append("preferences", JSON.stringify(userData.preferences));
       formData.append("privacy", JSON.stringify(userData.privacy));
+
       const res = await profileComplete(formData).unwrap();
-      console.log("Profile update response:", res);
-      const emailChanged = formValues.email !== userData.email;
+
+      const emailChanged = allValues.email !== userData.email;
 
       const updatedUserInfo = {
-        email: formValues.email,
-        name: `${formValues.firstName} ${formValues.lastName}`.trim(),
+        email: allValues.email,
+        name: `${allValues.firstName} ${allValues.lastName}`.trim(),
         roles: "candidate",
       };
 
@@ -369,20 +511,21 @@ const CandidateSettings = () => {
         })
       );
 
-      // Update local state
-      setUserData((prev) => ({
-        ...prev,
-        ...formValues,
+      const updatedData = {
+        ...userData,
+        ...allValues,
         imageFile: null,
-        fullName: `${formValues.firstName} ${formValues.lastName}`.trim(),
-      }));
+        fullName: `${allValues.firstName} ${allValues.lastName}`.trim(),
+      };
+
+      setUserData(updatedData);
+      calculateProfileCompletion(updatedData);
 
       enqueueSnackbar("Profile updated successfully!", {
-        variant: 'success',
+        variant: "success",
       });
       setIsProfileEditable(false);
 
-      // If email changed, show message about needing to relogin
       if (emailChanged) {
         message.info("Email changed. Please login again with your new email.");
       }
@@ -390,14 +533,15 @@ const CandidateSettings = () => {
       console.error("Error updating profile:", error);
       message.error(
         error?.data?.message ||
-        error?.message ||
-        "Failed to update profile. Please try again."
+          error?.message ||
+          "Failed to update profile. Please try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // Education and Work Experience handlers remain the same...
   const addEducation = () => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to add education");
@@ -460,8 +604,18 @@ const CandidateSettings = () => {
   const handleWorkSubmit = async () => {
     try {
       const values = await workForm.validateFields();
-      const newWork = {
+
+      // Format dates with dayjs
+      const formattedValues = {
         ...values,
+        startDate: values.startDate
+          ? dayjs(values.startDate).format("YYYY-MM-DD")
+          : null,
+        endDate: isCurrentJob
+          ? "Present"
+          : values.endDate
+          ? dayjs(values.endDate).format("YYYY-MM-DD")
+          : null,
         id: editingWorkId || Math.random().toString(36).substr(2, 9),
       };
 
@@ -469,18 +623,19 @@ const CandidateSettings = () => {
         setUserData((prev) => ({
           ...prev,
           workExperience: prev.workExperience.map((work) =>
-            work.id === editingWorkId ? newWork : work
+            work.id === editingWorkId ? formattedValues : work
           ),
         }));
       } else {
         setUserData((prev) => ({
           ...prev,
-          workExperience: [...prev.workExperience, newWork],
+          workExperience: [...prev.workExperience, formattedValues],
         }));
       }
 
       setIsWorkModalVisible(false);
       setEditingWorkId(null);
+      setIsCurrentJob(false);
     } catch (error) {
       console.log("Validation failed:", error);
     }
@@ -493,7 +648,13 @@ const CandidateSettings = () => {
     }
     setEditingWorkId(work.id);
     setEditingWorkData(work);
-    workForm.setFieldsValue(work);
+
+    setIsCurrentJob(work.endDate === "Present" || work.endDate === null);
+
+    workForm.setFieldsValue({
+      ...work,
+      endDate: work.endDate === "Present" ? null : work.endDate,
+    });
     setIsWorkModalVisible(true);
   };
 
@@ -519,10 +680,94 @@ const CandidateSettings = () => {
     });
   };
 
+  // Profile Completion Alert Component
+  const ProfileCompletionAlert = () => {
+    if (profileCompletion >= 100) return null;
+
+    return (
+      <Alert
+        message={
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <FireOutlined
+                style={{ color: "#ff4d4f", marginRight: 8, fontSize: 16 }}
+              />
+              <span style={{ fontWeight: "bold" }}>
+                Complete your profile to get recruiters' attention!
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Progress
+                percent={profileCompletion}
+                size="small"
+                strokeColor={{
+                  "0%": "#ff4d4f",
+                  "50%": "#faad14",
+                  "100%": "#52c41a",
+                }}
+                style={{ width: 100, marginRight: 8 }}
+              />
+              <Text strong style={{ color: "#da2c46" }}>
+                {profileCompletion}%
+              </Text>
+            </div>
+          </div>
+        }
+        description={
+          <div style={{ marginTop: 8 }}>
+            <Text type="secondary">
+              🎯 Profiles with 100% completion get{" "}
+              <Text strong style={{ color: "#da2c46" }}>
+                5x more views
+              </Text>{" "}
+              from recruiters!
+            </Text>
+            <div style={{ marginTop: 4 }}>
+              <Text type="secondary">
+                Missing: {profileCompletion < 50 ? "Basic info, " : ""}
+                {!userData.nationality ? "Nationality, " : ""}
+                {!userData.totalExperienceYears ? "Experience, " : ""}
+                {!userData.passportNo ? "Passport details, " : ""}
+                {!userData.emergencyContactNo ? "Emergency contact" : ""}
+              </Text>
+            </div>
+          </div>
+        }
+        type="warning"
+        showIcon
+        style={{
+          marginBottom: 24,
+          background: "linear-gradient(135deg, #fff2e8 0%, #fff1f0 100%)",
+          border: "1px solid #ffb8b8",
+          borderRadius: 12,
+        }}
+        action={
+          <Button
+            size="small"
+            type="primary"
+            onClick={toggleProfileEdit}
+            style={{ background: "#da2c46", border: "none" }}
+            icon={<EditOutlined />}
+          >
+            Complete Now
+          </Button>
+        }
+      />
+    );
+  };
+
   const ProfileContent = () => (
-    <div>
+    <div style={{ padding: 24 }}>
+      <ProfileCompletionAlert />
+
       <div style={{ textAlign: "right", marginBottom: 16 }}>
-        <Space style={{ marginTop: "8px" }}>
+        <Space>
           {isProfileEditable && (
             <Button onClick={toggleProfileEdit}>Cancel</Button>
           )}
@@ -548,362 +793,1009 @@ const CandidateSettings = () => {
         </Space>
       </div>
 
-      <Card
-        title={
-          <span>
-            <UserOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Basic Information
-          </span>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        <Form form={profileForm} layout="vertical" initialValues={userData}>
-          <Row gutter={24}>
-            <Col span={24} style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <Avatar
-                  size={100}
-                  src={userData.image}
-                  icon={<UserOutlined />}
-                  style={{ border: "4px solid #da2c46" }}
-                />
-                {isProfileEditable && (
-                  <div style={{ marginTop: 16 }}>
-                    <Upload
-                      accept="image/*"
-                      fileList={fileList}
-                      onChange={handleAvatarUpload}
-                      beforeUpload={() => false}
-                      maxCount={1}
-                    >
-                      <Button
-                        type="primary"
-                        icon={<CameraOutlined />}
-                        style={{
-                          marginRight: 8,
-                          background: "#da2c46",
-                          border: "none",
-                        }}
-                      >
-                        Upload
-                      </Button>
-                    </Upload>
-                    {userData.image && (
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                          setUserData({
-                            ...userData,
-                            image: "",
-                            imageFile: null,
-                          });
-                        }}
-                      >
-                        Remove
-                      </Button>
+      <Tabs defaultActiveKey="basic" type="card">
+        <TabPane
+          tab={
+            <span>
+              <UserOutlined />
+              Basic Information
+            </span>
+          }
+          key="basic"
+        >
+          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+            <Form form={profileForm} layout="vertical" initialValues={userData}>
+              <Row gutter={24}>
+                <Col
+                  span={24}
+                  style={{ textAlign: "center", marginBottom: 24 }}
+                >
+                  <div
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
+                    <Avatar
+                      size={100}
+                      src={userData.image}
+                      icon={<UserOutlined />}
+                      style={{ border: "4px solid #da2c46" }}
+                    />
+                    {isProfileEditable && (
+                      <div style={{ marginTop: 16 }}>
+                        <Upload
+                          accept="image/*"
+                          fileList={fileList}
+                          onChange={handleAvatarUpload}
+                          beforeUpload={() => false}
+                          maxCount={1}
+                        >
+                          <Button
+                            type="primary"
+                            icon={<CameraOutlined />}
+                            style={{
+                              marginRight: 8,
+                              background: "#da2c46",
+                              border: "none",
+                            }}
+                          >
+                            Upload
+                          </Button>
+                        </Upload>
+                        {userData.image && (
+                          <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              setUserData({
+                                ...userData,
+                                image: "",
+                                imageFile: null,
+                              });
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="First Name"
+                    name="firstName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your first name",
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter first name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Middle Name" name="middleName">
+                    <Input
+                      placeholder="Enter middle name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Last Name"
+                    name="lastName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your last name",
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter last name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Email"
+                    name="email"
+                    rules={[
+                      { required: true, message: "Please enter your email" },
+                      { type: "email", message: "Please enter a valid email" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<MailOutlined />}
+                      placeholder="Enter email"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Phone"
+                    name="phone"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your phone number",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Enter phone number"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Professional Title"
+                    name="title"
+                    rules={[
+                      { required: true, message: "Please enter your title" },
+                    ]}
+                  >
+                    <Input
+                      placeholder="e.g. Full Stack Developer"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Total Experience (Years)"
+                    name="totalExperienceYears"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your total experience",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Select experience"
+                      disabled={!isProfileEditable}
+                    >
+                      <Option value="0-1">0-1 Years</Option>
+                      <Option value="1-2">1-2 Years</Option>
+                      <Option value="2-3">2-3 Years</Option>
+                      <Option value="3-5">3-5 Years</Option>
+                      <Option value="5-7">5-7 Years</Option>
+                      <Option value="7-10">7-10 Years</Option>
+                      <Option value="10+">10+ Years</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Notice Period" name="noticePeriod">
+                    <Select
+                      placeholder="Select notice period"
+                      disabled={!isProfileEditable}
+                    >
+                      <Option value="Immediate">Immediate</Option>
+                      <Option value="15 days">15 days</Option>
+                      <Option value="1 month">1 month</Option>
+                      <Option value="2 months">2 months</Option>
+                      <Option value="3 months">3 months</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Current Location"
+                    name="location"
+                    rules={[
+                      { required: true, message: "Please enter your location" },
+                    ]}
+                  >
+                    <Input
+                      prefix={<EnvironmentOutlined />}
+                      placeholder="Enter location"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Card>
+
+          <Card
+            title={
+              <span>
+                <StarOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+                <span style={{ color: "#da2c46" }}>Skills</span>
+              </span>
+            }
+            style={{ marginBottom: 24, borderRadius: "12px" }}
+          >
+            <Form.Item>
+              <Select
+                mode="tags"
+                style={{ width: "100%" }}
+                placeholder="Add your skills"
+                value={userData.skills}
+                onChange={(value) =>
+                  setUserData({ ...userData, skills: value })
+                }
+                disabled={!isProfileEditable}
+              />
+            </Form.Item>
+          </Card>
+
+          <Card
+            title={
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>
+                  <BookOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+                  <span style={{ color: "#da2c46" }}>Education</span>
+                </span>
+                {isProfileEditable && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={addEducation}
+                    style={{ background: "#da2c46", border: "none" }}
+                  >
+                    Add Education
+                  </Button>
                 )}
               </div>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="First Name"
-                name="firstName"
-                rules={[
-                  { required: true, message: "Please enter your first name" },
-                ]}
-              >
-                <Input
-                  placeholder="Enter first name"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Last Name"
-                name="lastName"
-                rules={[
-                  { required: true, message: "Please enter your last name" },
-                ]}
-              >
-                <Input
-                  placeholder="Enter last name"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: "Please enter your email" },
-                  { type: "email", message: "Please enter a valid email" },
-                ]}
-              >
-                <Input
-                  prefix={<MailOutlined />}
-                  placeholder="Enter email"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Phone"
-                name="phone"
-                rules={[
-                  { required: true, message: "Please enter your phone number" },
-                ]}
-              >
-                <Input
-                  prefix={<PhoneOutlined />}
-                  placeholder="Enter phone number"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Location"
-                name="location"
-                rules={[
-                  { required: true, message: "Please enter your location" },
-                ]}
-              >
-                <Input
-                  prefix={<EnvironmentOutlined />}
-                  placeholder="Enter location"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Professional Title"
-                name="title"
-                rules={[{ required: true, message: "Please enter your title" }]}
-              >
-                <Input
-                  placeholder="e.g. Full Stack Developer"
-                  disabled={!isProfileEditable}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
-
-      <Card
-        title={
-          <span>
-            <StarOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Skills & Expertise
-          </span>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        {isProfileEditable ? (
-          <Select
-            mode="tags"
-            style={{ width: "100%" }}
-            placeholder="Add your skills"
-            value={userData.skills}
-            onChange={(skills) => setUserData({ ...userData, skills })}
-            tokenSeparators={[","]}
-          />
-        ) : (
-          <Space wrap>
-            {userData.skills.map((skill, index) => (
-              <Tag
-                key={index}
-                style={{
-                  padding: "4px 12px",
-                  fontSize: "14px",
-                  border: "1px solid #da2c46",
-                  color: "#da2c46",
-                  background: "rgba(218, 44, 70, 0.05)",
-                }}
-              >
-                {skill}
-              </Tag>
-            ))}
-          </Space>
-        )}
-      </Card>
-
-      <Card
-        title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            }
+            style={{ marginBottom: 24, borderRadius: "12px" }}
           >
-            <span>
-              <BookOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-              Education
-            </span>
-            {isProfileEditable && (
-              <Button
-                type="link"
-                icon={<PlusOutlined />}
-                onClick={addEducation}
-              >
-                Add Education
-              </Button>
-            )}
-          </div>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        <List
-          dataSource={userData.education}
-          renderItem={(edu) => (
-            <List.Item
-              actions={
-                isProfileEditable
-                  ? [
-                    <Button
-                      type="link"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEditEducation(edu)}
-                      key="edit"
-                    />,
-                    <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeEducation(edu.id)}
-                      key="delete"
-                    />,
-                  ]
-                  : []
-              }
-            >
-              <List.Item.Meta
-                title={`${edu.title} (${edu.degree})`}
-                description={
-                  <div>
-                    <Text type="secondary">
-                      {edu.field} • {edu.institution} • {edu.year}
-                    </Text>
-                  </div>
-                }
+            {userData.education.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 16 }}>
+                <Text type="secondary">No education added yet</Text>
+              </div>
+            ) : (
+              <List
+                dataSource={userData.education}
+                renderItem={(item) => (
+                  <List.Item
+                    actions={
+                      isProfileEditable
+                        ? [
+                            <Button
+                              type="text"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEditEducation(item)}
+                            />,
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => removeEducation(item.id)}
+                            />,
+                          ]
+                        : null
+                    }
+                  >
+                    <List.Item.Meta
+                      title={
+                        <Text strong>
+                          {item.degree} in {item.field}
+                        </Text>
+                      }
+                      description={
+                        <div>
+                          <Text>{item.institution}</Text>
+                          <br />
+                          <Text type="secondary">{item.year}</Text>
+                        </div>
+                      }
+                    />
+                  </List.Item>
+                )}
               />
-            </List.Item>
-          )}
-        />
-      </Card>
+            )}
+          </Card>
 
-      <Card
-        title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+          <Card
+            title={
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>
+                  <TrophyOutlined
+                    style={{ marginRight: 8, color: "#da2c46" }}
+                  />
+                  <span style={{ color: "#da2c46" }}>Work Experience</span>
+                </span>
+                {isProfileEditable && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={addWorkExperience}
+                    style={{ background: "#da2c46", border: "none" }}
+                  >
+                    Add Experience
+                  </Button>
+                )}
+              </div>
+            }
+            style={{ marginBottom: 24, borderRadius: "12px" }}
           >
-            <span>
-              <BankOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-              Work Experience
-            </span>
-            {isProfileEditable && (
-              <Button
-                type="link"
-                icon={<PlusOutlined />}
-                onClick={addWorkExperience}
-              >
-                Add Experience
-              </Button>
-            )}
-          </div>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        <List
-          dataSource={userData.workExperience}
-          renderItem={(work) => (
-            <List.Item
-              actions={
-                isProfileEditable
-                  ? [
-                    <Button
-                      type="link"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEditWork(work)}
-                      key="edit"
-                    />,
-                    <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeWorkExperience(work.id)}
-                      key="delete"
-                    />,
-                  ]
-                  : []
-              }
-            >
-              <List.Item.Meta
-                title={work.title}
-                description={
-                  <div>
-                    <Text type="secondary">
-                      {work.company} • {work.duration}
-                    </Text>
-                    <Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
-                      {work.description}
-                    </Paragraph>
-                  </div>
-                }
+            {userData.workExperience.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 16 }}>
+                <Text type="secondary">No work experience added yet</Text>
+              </div>
+            ) : (
+              <List
+                dataSource={userData.workExperience}
+                renderItem={(item) => (
+                  <List.Item
+                    actions={
+                      isProfileEditable
+                        ? [
+                            <Button
+                              type="text"
+                              icon={<EditOutlined />}
+                              onClick={() => handleEditWork(item)}
+                            />,
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => removeWorkExperience(item.id)}
+                            />,
+                          ]
+                        : null
+                    }
+                  >
+                    <List.Item.Meta
+                      title={<Text strong>{item.jobTitle}</Text>}
+                      description={
+                        <div>
+                          <Text>{item.company}</Text>
+                          <br />
+                          <Text type="secondary">
+                            {item.startDate
+                              ? dayjs(item.startDate).format("MMM YYYY")
+                              : ""}{" "}
+                            -{" "}
+                            {item.endDate
+                              ? dayjs(item.endDate).format("MMM YYYY")
+                              : "Present"}
+                          </Text>
+                          <br />
+                          {item.description && (
+                            <Paragraph ellipsis={{ rows: 2, expandable: true }}>
+                              {item.description}
+                            </Paragraph>
+                          )}
+                        </div>
+                      }
+                    />
+                  </List.Item>
+                )}
               />
-            </List.Item>
-          )}
-        />
-      </Card>
+            )}
+          </Card>
+        </TabPane>
 
+        <TabPane
+          tab={
+            <span>
+              <IdcardOutlined />
+              Personal Information
+            </span>
+          }
+          key="personal"
+        >
+          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+            <Form
+              form={personalForm}
+              layout="vertical"
+              initialValues={userData}
+            >
+              <Row gutter={24}>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Nationality"
+                    name="nationality"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your nationality",
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter nationality"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Country of Birth"
+                    name="countryOfBirth"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter country of birth",
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter country of birth"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Marital Status" name="maritalStatus">
+                    <Select
+                      placeholder="Select marital status"
+                      disabled={!isProfileEditable}
+                    >
+                      {maritalStatusOptions.map((status) => (
+                        <Option key={status} value={status}>
+                          {status}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Blood Group" name="bloodGroup">
+                    <Select
+                      placeholder="Select blood group"
+                      disabled={!isProfileEditable}
+                    >
+                      {bloodGroupOptions.map((group) => (
+                        <Option key={group} value={group}>
+                          {group}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Religion" name="religion">
+                    <Select
+                      placeholder="Select religion"
+                      disabled={!isProfileEditable}
+                    >
+                      {religionOptions.map((religion) => (
+                        <Option key={religion} value={religion}>
+                          {religion}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Emergency Contact No"
+                    name="emergencyContactNo"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter emergency contact",
+                      },
+                    ]}
+                  >
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Enter emergency contact"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Card>
+
+          <Card
+            title={
+              <span>
+                <FileTextOutlined
+                  style={{ marginRight: 8, color: "#da2c46" }}
+                />
+                <span style={{ color: "#da2c46" }}>Passport Information</span>
+              </span>
+            }
+            style={{ marginBottom: 24, borderRadius: "12px" }}
+          >
+            <Form form={personalForm} layout="vertical">
+              <Row gutter={24}>
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Passport Number" name="passportNo">
+                    <Input
+                      placeholder="Enter passport number"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Place of Issue" name="passportPlaceOfIssue">
+                    <Input
+                      placeholder="Enter place of issue"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Iqama Number" name="iqamaNo">
+                    <Input
+                      placeholder="Enter Iqama number"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Issue Date" name="passportIssueDate">
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Expiry Date" name="passportExpiryDate">
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Card>
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <HomeOutlined />
+              Address Information
+            </span>
+          }
+          key="address"
+        >
+          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+            <Form form={addressForm} layout="vertical" initialValues={userData}>
+              <Row gutter={24}>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Country"
+                    name="country"
+                    rules={[
+                      { required: true, message: "Please enter country" },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter country"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="State/Province"
+                    name="state"
+                    rules={[{ required: true, message: "Please enter state" }]}
+                  >
+                    <Input
+                      placeholder="Enter state/province"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="City"
+                    name="city"
+                    rules={[{ required: true, message: "Please enter city" }]}
+                  >
+                    <Input
+                      placeholder="Enter city"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Street Name" name="streetName">
+                    <Input
+                      placeholder="Enter street name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Zip/Postal Code" name="zipCode">
+                    <Input
+                      placeholder="Enter zip/postal code"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Form.Item label="Full Address" name="region">
+                    <TextArea
+                      rows={3}
+                      placeholder="Enter full address"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Card>
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <ContactsOutlined />
+              Contact Information
+            </span>
+          }
+          key="contact"
+        >
+          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+            <Form form={contactForm} layout="vertical" initialValues={userData}>
+              <Row gutter={24}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Emergency Contact Person Name"
+                    name="contactPersonName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter contact person name",
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Emergency Contact Mobile"
+                    name="contactPersonMobile"
+                  >
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Enter mobile number"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Emergency Contact Home No"
+                    name="contactPersonHomeNo"
+                  >
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder="Enter home number"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Nominee Name" name="nomineeName">
+                    <Input
+                      placeholder="Enter nominee name"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Nominee Relationship"
+                    name="nomineeRelationship"
+                  >
+                    <Input
+                      placeholder="Enter relationship"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Card>
+        </TabPane>
+      </Tabs>
+    </div>
+  );
+
+  return (
+    <div className="container">
+      <Row gutter={[24, 24]}>
+        <Col span={24}>
+          <Card
+            title={
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <SettingOutlined style={{ marginRight: 12, fontSize: 20 }} />
+                <Title level={4} style={{ margin: 0 }}>
+                  Candidate Settings
+                </Title>
+              </div>
+            }
+            bordered={false}
+            style={{ borderRadius: "12px" }}
+          >
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              tabPosition="left"
+              style={{ minHeight: "80vh" }}
+            >
+              <TabPane
+                tab={
+                  <span>
+                    <UserOutlined />
+                    Profile
+                  </span>
+                }
+                key="profile"
+              >
+                <ProfileContent />
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <BellOutlined />
+                    Preferences
+                  </span>
+                }
+                key="preferences"
+              >
+                <Card
+                  title="Notification Preferences"
+                  style={{ marginBottom: 24, borderRadius: "12px" }}
+                >
+                  <Form
+                    form={preferencesForm}
+                    layout="vertical"
+                    initialValues={userData.preferences}
+                    onFinish={handlePreferencesUpdate}
+                  >
+                    <Form.Item
+                      name="emailNotifications"
+                      valuePropName="checked"
+                      label="Email Notifications"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="smsNotifications"
+                      valuePropName="checked"
+                      label="SMS Notifications"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="jobAlerts"
+                      valuePropName="checked"
+                      label="Job Alerts"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="newsletter"
+                      valuePropName="checked"
+                      label="Newsletter"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        style={{ background: "#da2c46", border: "none" }}
+                      >
+                        Save Preferences
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </Card>
+
+                <Card
+                  title="Privacy Settings"
+                  style={{ marginBottom: 24, borderRadius: "12px" }}
+                >
+                  <Form
+                    form={privacyForm}
+                    layout="vertical"
+                    initialValues={userData.privacy}
+                  >
+                    <Form.Item
+                      name="profileVisibility"
+                      label="Profile Visibility"
+                    >
+                      <Radio.Group>
+                        <Radio value="public">Public</Radio>
+                        <Radio value="private">Private</Radio>
+                        <Radio value="recruiters">Only Recruiters</Radio>
+                      </Radio.Group>
+                    </Form.Item>
+
+                    <Form.Item
+                      name="showEmail"
+                      valuePropName="checked"
+                      label="Show Email to Recruiters"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="showPhone"
+                      valuePropName="checked"
+                      label="Show Phone to Recruiters"
+                    >
+                      <Switch />
+                    </Form.Item>
+
+                    <Form.Item>
+                      <Button
+                        type="primary"
+                        loading={loading}
+                        style={{ background: "#da2c46", border: "none" }}
+                      >
+                        Save Privacy Settings
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </Card>
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <LockOutlined />
+                    Security
+                  </span>
+                }
+                key="security"
+              >
+                <Card
+                  title="Change Password"
+                  style={{ marginBottom: 24, borderRadius: "12px" }}
+                >
+                  <Form
+                    form={passwordForm}
+                    layout="vertical"
+                    onFinish={handlePasswordChange}
+                  >
+                    <Form.Item
+                      name="currentPassword"
+                      label="Current Password"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please enter your current password",
+                        },
+                      ]}
+                    >
+                      <Input.Password placeholder="Enter current password" />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="newPassword"
+                      label="New Password"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please enter your new password",
+                        },
+                        {
+                          min: 8,
+                          message: "Password must be at least 8 characters",
+                        },
+                      ]}
+                    >
+                      <Input.Password placeholder="Enter new password" />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="confirmPassword"
+                      label="Confirm New Password"
+                      dependencies={["newPassword"]}
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please confirm your new password",
+                        },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            if (
+                              !value ||
+                              getFieldValue("newPassword") === value
+                            ) {
+                              return Promise.resolve();
+                            }
+                            return Promise.reject(
+                              new Error("The two passwords do not match!")
+                            );
+                          },
+                        }),
+                      ]}
+                    >
+                      <Input.Password placeholder="Confirm new password" />
+                    </Form.Item>
+
+                    <Form.Item>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        style={{ background: "#da2c46", border: "none" }}
+                      >
+                        Change Password
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </Card>
+              </TabPane>
+            </Tabs>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Education Modal */}
       <Modal
+        title={`${editingEducationId ? "Edit" : "Add"} Education`}
         visible={isEduModalVisible}
-        title={editingEducationId ? "Edit Education" : "Add Education"}
         onOk={handleEducationSubmit}
-        onCancel={() => {
-          setIsEduModalVisible(false);
-          setEditingEducationId(null);
-        }}
-        okText={editingEducationId ? "Update" : "Add"}
+        onCancel={() => setIsEduModalVisible(false)}
+        okText="Save"
+        cancelText="Cancel"
       >
-        <Form layout="vertical" form={educationForm}>
-          <Form.Item
-            name="title"
-            label="Education Title"
-            rules={[
-              {
-                required: true,
-                message: "Please enter a title for this education",
-              },
-            ]}
-          >
-            <Input placeholder="e.g. Computer Science Degree" />
-          </Form.Item>
-
+        <Form form={educationForm} layout="vertical">
           <Form.Item
             name="degree"
-            label="Degree Type"
-            rules={[{ required: true, message: "Please select a degree type" }]}
+            label="Degree"
+            rules={[{ required: true, message: "Please select degree" }]}
           >
-            <Select placeholder="Select degree type">
+            <Select placeholder="Select degree">
               {degreeOptions.map((degree) => (
                 <Option key={degree} value={degree}>
                   {degree}
@@ -923,409 +1815,94 @@ const CandidateSettings = () => {
           <Form.Item
             name="institution"
             label="Institution"
-            rules={[
-              { required: true, message: "Please enter institution name" },
-            ]}
+            rules={[{ required: true, message: "Please enter institution" }]}
           >
-            <Input placeholder="e.g. University of California" />
+            <Input placeholder="e.g. Harvard University" />
           </Form.Item>
 
           <Form.Item
             name="year"
-            label="Year"
+            label="Year of Completion"
             rules={[{ required: true, message: "Please enter year" }]}
           >
-            <Input placeholder="e.g. 2015-2019" />
+            <Input placeholder="e.g. 2015" />
           </Form.Item>
         </Form>
       </Modal>
 
+      {/* Work Experience Modal */}
       <Modal
+        title={`${editingWorkId ? "Edit" : "Add"} Work Experience`}
         visible={isWorkModalVisible}
-        title={editingWorkId ? "Edit Work Experience" : "Add Work Experience"}
         onOk={handleWorkSubmit}
-        onCancel={() => {
-          setIsWorkModalVisible(false);
-          setEditingWorkId(null);
-        }}
-        okText={editingWorkId ? "Update" : "Add"}
+        onCancel={() => setIsWorkModalVisible(false)}
+        okText="Save"
+        cancelText="Cancel"
+        width={700}
       >
         <Form form={workForm} layout="vertical">
-          <Form.Item
-            label="Job Title"
-            name="title"
-            rules={[{ required: true, message: "Please enter job title" }]}
-          >
-            <Input placeholder="e.g. Software Engineer" />
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="jobTitle"
+                label="Job Title"
+                rules={[{ required: true, message: "Please enter job title" }]}
+              >
+                <Input placeholder="e.g. Software Engineer" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="company"
+                label="Company"
+                rules={[{ required: true, message: "Please enter company" }]}
+              >
+                <Input placeholder="e.g. Google" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="startDate"
+                label="Start Date"
+                rules={[
+                  { required: true, message: "Please select start date" },
+                ]}
+              >
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="endDate" label="End Date">
+                <DatePicker style={{ width: "100%" }} disabled={isCurrentJob} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item>
+            <Checkbox
+              checked={isCurrentJob}
+              onChange={(e) => {
+                setIsCurrentJob(e.target.checked);
+                if (e.target.checked) {
+                  workForm.setFieldsValue({ endDate: null });
+                }
+              }}
+            >
+              I currently work here
+            </Checkbox>
           </Form.Item>
 
-          <Form.Item
-            label="Company"
-            name="company"
-            rules={[{ required: true, message: "Please enter company name" }]}
-          >
-            <Input placeholder="e.g. ABC Tech Pvt Ltd" />
-          </Form.Item>
-
-          <Form.Item
-            label="Duration"
-            name="duration"
-            rules={[{ required: true, message: "Please enter duration" }]}
-          >
-            <Input placeholder="e.g. 2021 - Present" />
-          </Form.Item>
-
-          <Form.Item label="Description" name="description">
-            <Input.TextArea rows={4} placeholder="Describe your role..." />
+          <Form.Item name="description" label="Job Description">
+            <TextArea
+              rows={4}
+              placeholder="Describe your responsibilities and achievements"
+            />
           </Form.Item>
         </Form>
       </Modal>
-    </div>
-  );
-
-  // Preferences Tab Content
-  const PreferencesContent = () => (
-    <Form
-      form={preferencesForm}
-      layout="vertical"
-      onFinish={handlePreferencesUpdate}
-    >
-      <Card
-        title={
-          <span>
-            <HeartOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Job Preferences
-          </span>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        <Row gutter={24}>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Preferred Locations"
-              name="preferredLocations"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select at least one preferred location",
-                },
-                {
-                  validator: (_, value) =>
-                    value && value.length <= 5
-                      ? Promise.resolve()
-                      : Promise.reject(
-                        new Error("Maximum 5 locations allowed")
-                      ),
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select preferred locations"
-                style={{ width: "100%" }}
-              >
-                <Option value="Bengaluru">Bengaluru</Option>
-                <Option value="Mumbai">Mumbai</Option>
-                <Option value="Pune">Pune</Option>
-                <Option value="Delhi">Delhi</Option>
-                <Option value="Hyderabad">Hyderabad</Option>
-                <Option value="Chennai">Chennai</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Work Type"
-              name="workType"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select at least one work type",
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select work type"
-                style={{ width: "100%" }}
-                maxTagCount={3}
-              >
-                <Option value="Remote">Remote</Option>
-                <Option value="On-site">On-site</Option>
-                <Option value="Hybrid">Hybrid</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Employment Type"
-              name="employmentType"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select at least one employment type",
-                },
-                {
-                  validator: (_, value) =>
-                    (value && value.includes("Full-time")) ||
-                      value.includes("Part-time")
-                      ? Promise.resolve()
-                      : Promise.reject(
-                        new Error(
-                          "Please select either Full-time or Part-time"
-                        )
-                      ),
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select employment type"
-                style={{ width: "100%" }}
-              >
-                <Option value="Full-time">Full-time</Option>
-                <Option value="Part-time">Part-time</Option>
-                <Option value="Contract">Contract</Option>
-                <Option value="Internship">Internship</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Preferred Industries"
-              name="industries"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select at least one industry",
-                },
-                {
-                  validator: (_, value) =>
-                    value && value.length >= 1 && value.length <= 3
-                      ? Promise.resolve()
-                      : Promise.reject(
-                        new Error("Please select 1-3 industries")
-                      ),
-                },
-              ]}
-            >
-              <Select
-                mode="multiple"
-                placeholder="Select industries"
-                style={{ width: "100%" }}
-              >
-                <Option value="Technology">Technology</Option>
-                <Option value="Startups">Startups</Option>
-                <Option value="Finance">Finance</Option>
-                <Option value="Healthcare">Healthcare</Option>
-                <Option value="E-commerce">E-commerce</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-      </Card>
-
-      <div style={{ textAlign: "right" }}>
-        <Space>
-          <Button>Cancel</Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            style={{ background: "#da2c46", border: "none" }}
-          >
-            Save Preferences
-          </Button>
-        </Space>
-      </div>
-    </Form>
-  );
-
-  // Security Tab Content
-  const SecurityContent = () => (
-    <div>
-      <Card
-        title={
-          <span>
-            <LockOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Password & Security
-          </span>
-        }
-        style={{ marginBottom: 24, borderRadius: "12px" }}
-      >
-        <Form
-          form={passwordForm}
-          layout="vertical"
-          onFinish={handlePasswordChange}
-        >
-          <Row gutter={24}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Current Password"
-                name="currentPassword"
-                rules={[
-                  { required: true, message: "Please enter current password" },
-                ]}
-              >
-                <Input.Password placeholder="Enter current password" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="New Password"
-                name="newPassword"
-                rules={[
-                  { required: true, message: "Please enter new password" },
-                  {
-                    min: 8,
-                    message: "Password must be at least 8 characters",
-                  },
-                ]}
-                hasFeedback
-              >
-                <Input.Password placeholder="Enter new password" />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Confirm New Password"
-                name="confirmPassword"
-                dependencies={["newPassword"]}
-                hasFeedback
-                rules={[
-                  {
-                    required: true,
-                    message: "Please confirm your new password",
-                  },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("newPassword") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error("The two passwords do not match!")
-                      );
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password placeholder="Confirm new password" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <div style={{ textAlign: "right" }}>
-            <Space>
-              <Button onClick={() => passwordForm.resetFields()}>Cancel</Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                style={{ background: "#da2c46", border: "none" }}
-              >
-                Change Password
-              </Button>
-            </Space>
-          </div>
-        </Form>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={24}>
-        <Col xs={24} lg={6}>
-          <Card
-            style={{
-              borderRadius: "12px",
-              textAlign: "center",
-              marginBottom: 24,
-            }}
-          >
-            <div style={{ marginBottom: 24 }}>
-              <Avatar
-                size={100}
-                src={userData.image}
-                icon={<UserOutlined />}
-                style={{ border: "4px solid #da2c46" }}
-              />
-              <Title level={4} style={{ marginTop: 16, marginBottom: 0 }}>
-                {userData.fullName}
-              </Title>
-              <Text type="secondary">{userData.title}</Text>
-            </div>
-
-            <Divider />
-
-            <div style={{ marginBottom: 24 }}>
-              <Title level={5} style={{ marginBottom: 16 }}>
-                Profile Completion
-              </Title>
-              <Progress
-                percent={profileCompletion}
-                strokeColor="#da2c46"
-                status="active"
-              />
-              {profileCompletion < 100 && (
-                <Text
-                  type="secondary"
-                  style={{ display: "block", marginTop: 8 }}
-                >
-                  Complete your profile to increase your visibility
-                </Text>
-              )}
-            </div>
-
-            <Divider />
-
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Button
-                type="text"
-                icon={<FileTextOutlined />}
-                block
-                onClick={() => setActiveTab("profile")}
-                style={activeTab === "profile" ? { color: "#da2c46" } : {}}
-              >
-                Profile
-              </Button>
-              <Button
-                type="text"
-                icon={<HeartOutlined />}
-                block
-                onClick={() => setActiveTab("preferences")}
-                style={activeTab === "preferences" ? { color: "#da2c46" } : {}}
-              >
-                Preferences
-              </Button>
-              <Button
-                type="text"
-                icon={<LockOutlined />}
-                block
-                onClick={() => setActiveTab("security")}
-                style={activeTab === "security" ? { color: "#da2c46" } : {}}
-              >
-                Security
-              </Button>
-            </Space>
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={18}>
-          <Card style={{ borderRadius: "12px" }} bodyStyle={{ padding: 0 }}>
-            {activeTab === "profile" && <ProfileContent />}
-            {activeTab === "preferences" && <PreferencesContent />}
-            {activeTab === "security" && <SecurityContent />}
-          </Card>
-        </Col>
-      </Row>
     </div>
   );
 };
