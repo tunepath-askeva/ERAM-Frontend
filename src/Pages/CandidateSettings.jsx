@@ -390,11 +390,19 @@ const CandidateSettings = () => {
     try {
       const payload = {
         ...userData,
+        jobPreferences: values,
       };
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const formData = new FormData();
+      formData.append("jobPreferences", JSON.stringify(values));
 
-      setUserData({ ...userData, preferences: values });
+      await profileComplete(formData).unwrap();
+
+      setUserData((prev) => ({
+        ...prev,
+        jobPreferences: values,
+      }));
+
       enqueueSnackbar("Preferences updated successfully!", {
         variant: "success",
       });
@@ -493,11 +501,29 @@ const CandidateSettings = () => {
         if (value !== null && value !== undefined) {
           if (dayjs.isDayjs(value)) {
             formData.append(key, value.format("YYYY-MM-DD"));
-          } else {
+          }  else {
             formData.append(key, value);
           }
         }
       });
+
+      if (allValues.socialLinks) {
+        formData.append("socialLinks", JSON.stringify(allValues.socialLinks));
+      }
+
+      if (allValues.jobPreferences) {
+        formData.append(
+          "jobPreferences",
+          JSON.stringify(allValues.jobPreferences)
+        );
+      }
+
+      formData.append("skills", JSON.stringify(userData.skills));
+      formData.append("education", JSON.stringify(userData.education));
+      formData.append(
+        "workExperience",
+        JSON.stringify(userData.workExperience)
+      );
 
       if (imageFile) {
         formData.append("image", imageFile);
@@ -506,17 +532,6 @@ const CandidateSettings = () => {
         formData.append("resume", userData.resumeFile);
       }
 
-      formData.append("skills", JSON.stringify(userData.skills));
-      formData.append(
-        "jobPreferences",
-        JSON.stringify(userData.jobPreferences)
-      );
-      formData.append("socialLinks", JSON.stringify(userData.socialLinks));
-      formData.append("education", JSON.stringify(userData.education));
-      formData.append(
-        "workExperience",
-        JSON.stringify(userData.workExperience)
-      );
       const res = await profileComplete(formData).unwrap();
 
       const emailChanged = allValues.email !== userData.email;
