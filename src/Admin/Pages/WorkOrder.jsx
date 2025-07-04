@@ -351,52 +351,73 @@ const WorkOrder = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              flexWrap: "wrap",
+              gap: "16px",
             }}
           >
-            <UnorderedListOutlined
-              size={24}
-              style={{ marginRight: "8px", color: "#2c3e50" }}
-            />
-            <Title
-              level={2}
-              className="work-order-title"
-              style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
+            {/* Title Section */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                minWidth: "200px",
+              }}
             >
-              Work Order Management
-            </Title>
+              <UnorderedListOutlined
+                size={24}
+                style={{ marginRight: "8px", color: "#2c3e50" }}
+              />
+              <Title
+                level={2}
+                className="workorder-title"
+                style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
+              >
+                Work Order Management
+              </Title>
+            </div>
+
+            {/* Search and Button Section */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                flex: 1,
+                justifyContent: "flex-end",
+                minWidth: "300px",
+              }}
+            >
+              <Input.Search
+                placeholder="Search Work Orders"
+                allowClear
+                style={{
+                  maxWidth: "300px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  height: "35px", // Increased height to match button
+                }}
+                size="large" // Added size prop
+                className="custom-search-input"
+              />
+
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={handleCreateWorkOrder}
+                className="workorder-button"
+                style={{
+                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  height: "48px", // Explicit height
+                  minWidth: "200px", // Minimum width to prevent shrinking
+                }}
+              >
+                Create New Work Order
+              </Button>
+            </div>
           </div>
-
-          {/* Search Bar */}
-          <Input.Search
-            placeholder="Search Work orders"
-            allowClear
-            style={{
-              maxWidth: "300px",
-              width: "100%",
-              borderRadius: "8px",
-              height: "44px",
-            }}
-          />
-
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={handleCreateWorkOrder}
-            className="workorder-button"
-            style={{
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              width: "100%",
-              height: "44px",
-            }}
-            block
-          >
-            Create New Work Order
-          </Button>
         </div>
 
         {isLoading ? (

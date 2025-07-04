@@ -343,6 +343,12 @@ const AdminCandidates = () => {
         style={{
           padding: "16px",
           minHeight: "100vh",
+          "@media (min-width: 576px)": {
+            padding: "24px",
+          },
+          "@media (min-width: 768px)": {
+            padding: "32px",
+          },
         }}
       >
         <div className="candidate-header">
@@ -350,69 +356,88 @@ const AdminCandidates = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              flexWrap: "wrap",
+              gap: "16px",
             }}
           >
-            <UserOutlined
-              size={24}
-              style={{ marginRight: "8px", color: "#2c3e50" }}
-            />
-            <Title
-              level={2}
-              className="candidate-title"
-              style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
-            >
-              Candidate Management
-            </Title>
-          </div>
-
-          {/* Search Bar */}
-          <Input.Search
-            placeholder="Search candidates"
-            allowClear
-            style={{
-              maxWidth: "300px",
-              width: "100%",
-              borderRadius: "8px",
-              height: "44px",
-            }}
-          />
-
-          {/* Action Buttons */}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Button
-              type="default"
-              size="large"
-              icon={<UploadOutlined />}
-              onClick={handleBulkImport}
+            {/* Title Section */}
+            <div
               style={{
-                borderRadius: "8px",
-                fontSize: "14px",
-                height: "44px",
-                flex: 1,
-                border: "1px solid #da2c46",
-                color: "#da2c46",
+                display: "flex",
+                alignItems: "center",
+                minWidth: "200px",
               }}
             >
-              Bulk Import
-            </Button>
-            <Button
-              type="primary"
-              size="large"
-              icon={<PlusOutlined />}
-              onClick={showCreateModal}
+              <UserOutlined
+                size={24}
+                style={{ marginRight: "8px", color: "#2c3e50" }}
+              />
+              <Title
+                level={2}
+                className="candidate-title"
+                style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
+              >
+                Candidate Management
+              </Title>
+            </div>
+
+            {/* Search and Button Section */}
+            <div
               style={{
-                background:
-                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                height: "44px",
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
                 flex: 1,
+                justifyContent: "flex-end",
+                minWidth: "300px",
               }}
             >
-              Add New Candidate
-            </Button>
+              <Input.Search
+                placeholder="Search candidates"
+                allowClear
+                style={{
+                  maxWidth: "300px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  height: "35px",
+                }}
+                size="large"
+                className="custom-search-input"
+              />
+
+              <Button
+                type="default"
+                size="large"
+                icon={<UploadOutlined />}
+                onClick={handleBulkImport}
+                className="candidate-button bulk-import-btn"
+                style={{
+                  border: "1px solid #da2c46",
+                  color: "#da2c46",
+                  height: "48px",
+                  minWidth: "150px",
+                }}
+              >
+                Bulk Import
+              </Button>
+
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={showCreateModal}
+                className="candidate-button add-candidate-btn"
+                style={{
+                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  height: "48px",
+                  minWidth: "200px",
+                }}
+              >
+                Add New Candidate
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -686,17 +711,17 @@ const AdminCandidates = () => {
             </Empty>
           </Card>
         )}
-      </div>
+      </div >
 
       {/* Candidate Form Modal */}
-      <CandidateFormModal
+      < CandidateFormModal
         visible={candidateModalVisible}
         onCancel={handleCandidateModalClose}
         form={form}
         editingCandidate={editingCandidate}
       />
       {/* Candidate View Modal */}
-      <CandidateViewModal
+      < CandidateViewModal
         visible={viewModalVisible}
         onCancel={handleViewModalClose}
         candidateId={selectedCandidateId}

@@ -231,51 +231,73 @@ const Pipeline = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              flexWrap: "wrap",
+              gap: "16px",
             }}
           >
-            <ApartmentOutlined
-              size={24}
-              style={{ marginRight: "8px", color: "#2c3e50" }}
-            />
-            <Title
-              level={2}
-              className="pipeline-title"
-              style={{ margin: 0, color: "#2c3e50", fontSize: "20px" }}
+            {/* Title Section */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                minWidth: "200px",
+              }}
             >
-              Pipeline Management
-            </Title>
+              <ApartmentOutlined
+                size={24}
+                style={{ marginRight: "8px", color: "#2c3e50" }}
+              />
+              <Title
+                level={2}
+                className="pipeline-title"
+                style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
+              >
+                Pipeline Management
+              </Title>
+            </div>
+
+            {/* Search and Button Section */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                flex: 1,
+                justifyContent: "flex-end",
+                minWidth: "300px",
+              }}
+            >
+              <Input.Search
+                placeholder="Search Pipelines"
+                allowClear
+                style={{
+                  maxWidth: "300px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  height: "35px", // Increased height to match button
+                }}
+                size="large" // Added size prop
+                className="custom-search-input"
+              />
+
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={showCreateModal}
+                className="pipeline-button"
+                style={{
+                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  height: "48px", // Explicit height
+                  minWidth: "190px", // Minimum width to prevent shrinking
+                }}
+              >
+                Create New Pipeline
+              </Button>
+            </div>
           </div>
-
-          <Input.Search
-            placeholder="Search Pipelines"
-            allowClear
-            style={{
-              maxWidth: "300px",
-              width: "100%",
-              borderRadius: "8px",
-              height: "44px",
-            }}
-          />
-
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={showCreateModal}
-            className="pipeline-button"
-            style={{
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              width: "100%",
-              height: "44px",
-            }}
-            block
-          >
-            Create New Pipeline
-          </Button>
         </div>
 
         {isLoading ? (
@@ -656,13 +678,13 @@ const Pipeline = () => {
                   <Tag
                     color={
                       pipelineDetails.getPipelineByIds.pipelineStatus ===
-                      "active"
+                        "active"
                         ? "green"
                         : "red"
                     }
                   >
                     {pipelineDetails.getPipelineByIds.pipelineStatus ===
-                    "active"
+                      "active"
                       ? "Active"
                       : "Inactive"}
                   </Tag>
