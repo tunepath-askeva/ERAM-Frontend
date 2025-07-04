@@ -179,6 +179,26 @@ const CandidateSettings = () => {
       showEmail: false,
       showPhone: false,
     },
+    profileSummary: "",
+    currentSalary: "",
+    expectedSalary: "",
+    resume: "",
+    resumeFile: null,
+    lastUpdated: "",
+    socialLinks: {
+      linkedin: "",
+      github: "",
+      twitter: "",
+      facebook: "",
+    },
+    jobPreferences: {
+      roles: [],
+      locations: [],
+      salaryRange: "",
+      workType: "",
+      employmentType: "",
+    },
+    workMode: "",
   });
   const dispatch = useDispatch();
 
@@ -217,11 +237,7 @@ const CandidateSettings = () => {
   const [workForm] = Form.useForm();
 
   useEffect(() => {
-    if (
-      getCandidate &&
-      getCandidate.user &&
-      Object.keys(getCandidate.user).length > 0
-    ) {
+    if (getCandidate && getCandidate.user) {
       const candidateData = getCandidate.user;
 
       const mappedData = {
@@ -270,7 +286,6 @@ const CandidateSettings = () => {
               };
             })
           : [],
-        // Personal Information
         nationality: candidateData.nationality || "",
         countryOfBirth: candidateData.countryOfBirth || "",
         maritalStatus: candidateData.maritalStatus || "",
@@ -279,17 +294,20 @@ const CandidateSettings = () => {
         totalExperienceYears: candidateData.totalExperienceYears || "",
         emergencyContactNo: candidateData.emergencyContactNo || "",
         noticePeriod: candidateData.noticePeriod || "",
-        // Passport Information
         passportNo: candidateData.passportNo || "",
         passportPlaceOfIssue: candidateData.passportPlaceOfIssue || "",
         passportIssueDate: candidateData.passportIssueDate
-          ? dayjs(candidateData.passportIssueDate)
+          ? dayjs.isDayjs(candidateData.passportIssueDate)
+            ? candidateData.passportIssueDate
+            : dayjs(candidateData.passportIssueDate)
           : null,
         passportExpiryDate: candidateData.passportExpiryDate
-          ? dayjs(candidateData.passportExpiryDate)
+          ? dayjs.isDayjs(candidateData.passportExpiryDate)
+            ? candidateData.passportExpiryDate
+            : dayjs(candidateData.passportExpiryDate)
           : null,
+
         iqamaNo: candidateData.iqamaNo || "",
-        // Address Information
         region: candidateData.region || "",
         streetNo: candidateData.streetNo || "",
         streetName: candidateData.streetName || "",
@@ -299,11 +317,9 @@ const CandidateSettings = () => {
         city: candidateData.city || "",
         state: candidateData.state || "",
         country: candidateData.country || "",
-        // Emergency Contact
         contactPersonName: candidateData.contactPersonName || "",
         contactPersonMobile: candidateData.contactPersonMobile || "",
         contactPersonHomeNo: candidateData.contactPersonHomeNo || "",
-        // Nominee Information
         nomineeName: candidateData.nomineeName || "",
         nomineeRelationship: candidateData.nomineeRelationship || "",
         preferences: {
@@ -320,6 +336,25 @@ const CandidateSettings = () => {
           showEmail: candidateData.privacy?.showEmail || false,
           showPhone: candidateData.privacy?.showPhone || false,
         },
+        profileSummary: candidateData.profileSummary || "",
+        currentSalary: candidateData.currentSalary || "",
+        expectedSalary: candidateData.expectedSalary || "",
+        resume: candidateData.resume || "",
+        lastUpdated: candidateData.lastUpdated || "",
+        socialLinks: candidateData.socialLinks || {
+          linkedin: "",
+          github: "",
+          twitter: "",
+          facebook: "",
+        },
+        jobPreferences: candidateData.jobPreferences || {
+          roles: [],
+          locations: [],
+          salaryRange: "",
+          workType: "",
+          employmentType: "",
+        },
+        workMode: candidateData.workMode || "",
       };
 
       setUserData(mappedData);
@@ -337,7 +372,6 @@ const CandidateSettings = () => {
 
   const calculateProfileCompletion = (data = userData) => {
     const requiredFields = [
-      // Basic Information (30%)
       data.firstName,
       data.lastName,
       data.email,
@@ -345,29 +379,24 @@ const CandidateSettings = () => {
       data.location,
       data.title,
 
-      // Skills & Experience (20%)
       data.skills?.length > 0,
       data.education?.length > 0,
       data.workExperience?.length > 0,
       data.totalExperienceYears,
 
-      // Personal Information (20%)
       data.nationality,
       data.maritalStatus,
       data.bloodGroup,
       data.countryOfBirth,
 
-      // Address Information (15%)
       data.city,
       data.state,
       data.country,
       data.zipCode,
 
-      // Contact Information (10%)
       data.emergencyContactNo,
       data.contactPersonName,
 
-      // Professional Information (5%)
       data.noticePeriod,
       data.passportNo,
     ];
@@ -474,12 +503,15 @@ const CandidateSettings = () => {
       const personalValues = await personalForm.validateFields();
       const addressValues = await addressForm.validateFields();
       const contactValues = await contactForm.validateFields();
+      const preferencesValues = await preferencesForm.validateFields();
 
       const allValues = {
         ...profileValues,
         ...personalValues,
         ...addressValues,
         ...contactValues,
+        jobPreferences: preferencesValues,
+        lastUpdated: new Date().toISOString(),
       };
 
       setLoading(true);
@@ -488,7 +520,6 @@ const CandidateSettings = () => {
 
       Object.entries(allValues).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          // Replace moment.isMoment with dayjs.isDayjs
           if (dayjs.isDayjs(value)) {
             formData.append(key, value.format("YYYY-MM-DD"));
           } else {
@@ -557,7 +588,6 @@ const CandidateSettings = () => {
     }
   };
 
-  // Education and Work Experience handlers remain the same...
   const addEducation = () => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to add education");
@@ -621,20 +651,24 @@ const CandidateSettings = () => {
     try {
       const values = await workForm.validateFields();
 
-      // Format dates with dayjs
       const formattedValues = {
         ...values,
         jobTitle: values.jobTitle || values.title,
-        startDate: values.startDate
+        startDate: dayjs.isDayjs(values.startDate)
+          ? values.startDate.format("YYYY-MM-DD")
+          : values.startDate
           ? dayjs(values.startDate).format("YYYY-MM-DD")
           : null,
         endDate: isCurrentJob
           ? "Present"
+          : dayjs.isDayjs(values.endDate)
+          ? values.endDate.format("YYYY-MM-DD")
           : values.endDate
           ? dayjs(values.endDate).format("YYYY-MM-DD")
           : null,
         id: editingWorkId || Math.random().toString(36).substr(2, 9),
       };
+
       delete formattedValues.duration;
 
       if (editingWorkId) {
@@ -676,17 +710,24 @@ const CandidateSettings = () => {
     workForm.setFieldsValue({
       jobTitle: work.jobTitle || work.title,
       company: work.company,
-      startDate:
-        work.startDate ||
-        (work.duration ? dayjs(work.duration.split("-")[0]) : null),
+      startDate: dayjs.isDayjs(work.startDate)
+        ? work.startDate
+        : work.startDate
+        ? dayjs(work.startDate)
+        : work.duration
+        ? dayjs(work.duration.split("-")[0])
+        : null,
       endDate: isCurrent
         ? null
         : work.endDate === "Present"
         ? null
-        : work.endDate ||
-          (work.duration && !work.duration.includes("present")
-            ? dayjs(work.duration.split("-")[1])
-            : null),
+        : dayjs.isDayjs(work.endDate)
+        ? work.endDate
+        : work.endDate
+        ? dayjs(work.endDate)
+        : work.duration && !work.duration.includes("present")
+        ? dayjs(work.duration.split("-")[1])
+        : null,
       description: work.description,
     });
     setIsWorkModalVisible(true);
@@ -714,7 +755,6 @@ const CandidateSettings = () => {
     });
   };
 
-  // Profile Completion Alert Component
   const ProfileCompletionAlert = () => {
     if (profileCompletion >= 100) return null;
 
@@ -832,10 +872,10 @@ const CandidateSettings = () => {
           tab={
             <span>
               <UserOutlined />
-              Basic Information
+              Profile Summary
             </span>
           }
-          key="basic"
+          key="summary"
         >
           <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
             <Form form={profileForm} layout="vertical" initialValues={userData}>
@@ -892,6 +932,18 @@ const CandidateSettings = () => {
                       </div>
                     )}
                   </div>
+                </Col>
+
+                <Col span={24}>
+                  <Form.Item label="Profile Summary" name="profileSummary">
+                    <TextArea
+                      rows={6}
+                      placeholder="Write a brief summary of your profile (max 500 characters)"
+                      maxLength={500}
+                      disabled={!isProfileEditable}
+                      showCount
+                    />
+                  </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
@@ -1045,6 +1097,151 @@ const CandidateSettings = () => {
                       disabled={!isProfileEditable}
                     />
                   </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Current Salary (Annual)"
+                    name="currentSalary"
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      placeholder="Enter current salary"
+                      disabled={!isProfileEditable}
+                      formatter={(value) =>
+                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
+                      parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Expected Salary (Annual)"
+                    name="expectedSalary"
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      placeholder="Enter expected salary"
+                      disabled={!isProfileEditable}
+                      formatter={(value) =>
+                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
+                      parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Divider orientation="left">Social Media Links</Divider>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="LinkedIn"
+                    name={["socialLinks", "linkedin"]}
+                  >
+                    <Input
+                      prefix={<LinkedinOutlined />}
+                      placeholder="LinkedIn profile URL"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="GitHub" name={["socialLinks", "github"]}>
+                    <Input
+                      prefix={<GithubOutlined />}
+                      placeholder="GitHub profile URL"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Twitter" name={["socialLinks", "twitter"]}>
+                    <Input
+                      prefix={<TwitterOutlined />}
+                      placeholder="Twitter profile URL"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Facebook"
+                    name={["socialLinks", "facebook"]}
+                  >
+                    <Input
+                      prefix={<FacebookOutlined />}
+                      placeholder="Facebook profile URL"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Divider orientation="left">Resume</Divider>
+                  <Form.Item>
+                    <Upload
+                      accept=".pdf,.doc,.docx"
+                      fileList={
+                        userData.resume
+                          ? [
+                              {
+                                uid: "-1",
+                                name: "Current Resume",
+                                status: "done",
+                                url: userData.resume,
+                              },
+                            ]
+                          : []
+                      }
+                      beforeUpload={(file) => {
+                        const isLt5M = file.size / 1024 / 1024 < 5;
+                        if (!isLt5M) {
+                          message.error("Resume must be smaller than 5MB!");
+                          return false;
+                        }
+                        return true;
+                      }}
+                      onChange={({ fileList }) => {
+                        if (fileList.length > 0 && fileList[0].originFileObj) {
+                          setUserData({
+                            ...userData,
+                            resumeFile: fileList[0].originFileObj,
+                          });
+                        }
+                      }}
+                    >
+                      <Button
+                        icon={<UploadOutlined />}
+                        disabled={!isProfileEditable}
+                      >
+                        Upload Resume
+                      </Button>
+                    </Upload>
+                    {userData.resume && (
+                      <Button
+                        type="link"
+                        href={userData.resume}
+                        target="_blank"
+                        icon={<EyeOutlined />}
+                        style={{ marginLeft: 8 }}
+                      >
+                        View Resume
+                      </Button>
+                    )}
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Text type="secondary">
+                    Last updated: {userData.lastUpdated || "Not available"}
+                  </Text>
                 </Col>
               </Row>
             </Form>
@@ -1391,6 +1588,13 @@ const CandidateSettings = () => {
                   <Form.Item label="Issue Date" name="passportIssueDate">
                     <DatePicker
                       style={{ width: "100%" }}
+                      value={
+                        dayjs.isDayjs(userData.passportIssueDate)
+                          ? userData.passportIssueDate
+                          : userData.passportIssueDate
+                          ? dayjs(userData.passportIssueDate)
+                          : null
+                      }
                       disabled={!isProfileEditable}
                     />
                   </Form.Item>
@@ -1400,6 +1604,13 @@ const CandidateSettings = () => {
                   <Form.Item label="Expiry Date" name="passportExpiryDate">
                     <DatePicker
                       style={{ width: "100%" }}
+                      value={
+                        dayjs.isDayjs(userData.passportExpiryDate)
+                          ? userData.passportExpiryDate
+                          : userData.passportExpiryDate
+                          ? dayjs(userData.passportExpiryDate)
+                          : null
+                      }
                       disabled={!isProfileEditable}
                     />
                   </Form.Item>
@@ -1616,109 +1827,104 @@ const CandidateSettings = () => {
                 tab={
                   <span>
                     <BellOutlined />
-                    Preferences
+                    Job Preferences
                   </span>
                 }
                 key="preferences"
               >
                 <Card
-                  title="Notification Preferences"
+                  title="Job Preferences"
                   style={{ marginBottom: 24, borderRadius: "12px" }}
                 >
                   <Form
                     form={preferencesForm}
                     layout="vertical"
-                    initialValues={userData.preferences}
-                    onFinish={handlePreferencesUpdate}
+                    initialValues={userData.jobPreferences}
                   >
                     <Form.Item
-                      name="emailNotifications"
-                      valuePropName="checked"
-                      label="Email Notifications"
+                      name="roles"
+                      label="Roles Interested In"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please select at least one role",
+                        },
+                      ]}
                     >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="smsNotifications"
-                      valuePropName="checked"
-                      label="SMS Notifications"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="jobAlerts"
-                      valuePropName="checked"
-                      label="Job Alerts"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="newsletter"
-                      valuePropName="checked"
-                      label="Newsletter"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        loading={loading}
-                        style={{ background: "#da2c46", border: "none" }}
+                      <Select
+                        mode="tags"
+                        placeholder="Select roles you're interested in"
+                        disabled={!isProfileEditable}
                       >
-                        Save Preferences
-                      </Button>
+                        {/* You can populate this with actual job roles */}
+                        <Option value="Software Engineer">
+                          Software Engineer
+                        </Option>
+                        <Option value="Frontend Developer">
+                          Frontend Developer
+                        </Option>
+                        <Option value="Backend Developer">
+                          Backend Developer
+                        </Option>
+                        <Option value="Full Stack Developer">
+                          Full Stack Developer
+                        </Option>
+                        <Option value="DevOps Engineer">DevOps Engineer</Option>
+                      </Select>
                     </Form.Item>
-                  </Form>
-                </Card>
 
-                <Card
-                  title="Privacy Settings"
-                  style={{ marginBottom: 24, borderRadius: "12px" }}
-                >
-                  <Form
-                    form={privacyForm}
-                    layout="vertical"
-                    initialValues={userData.privacy}
-                  >
-                    <Form.Item
-                      name="profileVisibility"
-                      label="Profile Visibility"
-                    >
-                      <Radio.Group>
-                        <Radio value="public">Public</Radio>
-                        <Radio value="private">Private</Radio>
-                        <Radio value="recruiters">Only Recruiters</Radio>
+                    <Form.Item name="locations" label="Preferred Locations">
+                      <Select
+                        mode="tags"
+                        placeholder="Select preferred locations"
+                        disabled={!isProfileEditable}
+                      >
+                        {/* You can populate this with actual locations */}
+                        <Option value="Bangalore">Bangalore</Option>
+                        <Option value="Hyderabad">Hyderabad</Option>
+                        <Option value="Pune">Pune</Option>
+                        <Option value="Mumbai">Mumbai</Option>
+                        <Option value="Delhi NCR">Delhi NCR</Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item name="salaryRange" label="Expected Salary Range">
+                      <Select
+                        placeholder="Select salary range"
+                        disabled={!isProfileEditable}
+                      >
+                        <Option value="0-5 LPA">0-5 LPA</Option>
+                        <Option value="5-10 LPA">5-10 LPA</Option>
+                        <Option value="10-15 LPA">10-15 LPA</Option>
+                        <Option value="15-20 LPA">15-20 LPA</Option>
+                        <Option value="20+ LPA">20+ LPA</Option>
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item name="workType" label="Work Type Preference">
+                      <Radio.Group disabled={!isProfileEditable}>
+                        <Radio value="remote">Remote</Radio>
+                        <Radio value="hybrid">Hybrid</Radio>
+                        <Radio value="onsite">Onsite</Radio>
                       </Radio.Group>
                     </Form.Item>
 
-                    <Form.Item
-                      name="showEmail"
-                      valuePropName="checked"
-                      label="Show Email to Recruiters"
-                    >
-                      <Switch />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="showPhone"
-                      valuePropName="checked"
-                      label="Show Phone to Recruiters"
-                    >
-                      <Switch />
+                    <Form.Item name="employmentType" label="Employment Type">
+                      <Radio.Group disabled={!isProfileEditable}>
+                        <Radio value="full-time">Full-time</Radio>
+                        <Radio value="part-time">Part-time</Radio>
+                        <Radio value="contract">Contract</Radio>
+                      </Radio.Group>
                     </Form.Item>
 
                     <Form.Item>
                       <Button
                         type="primary"
                         loading={loading}
+                        onClick={handlePreferencesUpdate}
                         style={{ background: "#da2c46", border: "none" }}
                       >
-                        Save Privacy Settings
+                        Save Preferences
                       </Button>
                     </Form.Item>
                   </Form>
@@ -1931,6 +2137,18 @@ const CandidateSettings = () => {
             >
               I currently work here
             </Checkbox>
+          </Form.Item>
+
+          <Form.Item
+            name="workMode"
+            label="Work Mode"
+            rules={[{ required: true, message: "Please select work mode" }]}
+          >
+            <Radio.Group>
+              <Radio value="WFH">Work From Home</Radio>
+              <Radio value="WFO">Work From Office</Radio>
+              <Radio value="Hybrid">Hybrid</Radio>
+            </Radio.Group>
           </Form.Item>
 
           <Form.Item name="description" label="Job Description">
