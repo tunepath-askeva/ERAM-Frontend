@@ -388,11 +388,6 @@ const CandidateSettings = () => {
   const handlePreferencesUpdate = async (values) => {
     setLoading(true);
     try {
-      const payload = {
-        ...userData,
-        jobPreferences: values,
-      };
-
       const formData = new FormData();
       formData.append("jobPreferences", JSON.stringify(values));
 
@@ -414,6 +409,7 @@ const CandidateSettings = () => {
     setLoading(false);
   };
 
+  
   const handlePasswordChange = async (values) => {
     setLoading(true);
     try {
@@ -490,6 +486,7 @@ const CandidateSettings = () => {
         ...addressValues,
         ...contactValues,
         jobPreferences: preferencesValues,
+        socialLinks: profileValues.socialLinks || userData.socialLinks,
         lastUpdated: new Date().toISOString(),
       };
 
@@ -501,28 +498,26 @@ const CandidateSettings = () => {
         if (value !== null && value !== undefined) {
           if (dayjs.isDayjs(value)) {
             formData.append(key, value.format("YYYY-MM-DD"));
-          }  else {
+          } else {
             formData.append(key, value);
           }
         }
       });
+      formData.append(
+        "jobPreferences",
+        JSON.stringify(allValues.jobPreferences || {})
+      );
+      formData.append(
+        "socialLinks",
+        JSON.stringify(allValues.socialLinks || {})
+      );
 
-      if (allValues.socialLinks) {
-        formData.append("socialLinks", JSON.stringify(allValues.socialLinks));
-      }
-
-      if (allValues.jobPreferences) {
-        formData.append(
-          "jobPreferences",
-          JSON.stringify(allValues.jobPreferences)
-        );
-      }
-
-      formData.append("skills", JSON.stringify(userData.skills));
-      formData.append("education", JSON.stringify(userData.education));
+      // Handle arrays
+      formData.append("skills", JSON.stringify(userData.skills || []));
+      formData.append("education", JSON.stringify(userData.education || []));
       formData.append(
         "workExperience",
-        JSON.stringify(userData.workExperience)
+        JSON.stringify(userData.workExperience || [])
       );
 
       if (imageFile) {
