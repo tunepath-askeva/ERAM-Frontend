@@ -54,15 +54,81 @@ const { Panel } = Collapse;
 const { Option } = Select;
 
 const initialFilters = {
+  keywords: "",
   experience: [0, 20],
-  qualification: "",
+  qualifications: [],
   skills: [],
   location: "",
   company: "",
-  salary: [0, 100000],
-  jobRole: "",
-  industry: "",
+  salary: [0, 2000000],
+  jobRoles: [],
+  industries: [],
+  gender: null,
+  nationality: null,
+  ageRange: [18, 70],
+  noticePeriod: null,
+  profileUpdated: null,
+  visaStatus: null,
+  languages: [],
 };
+
+const locationOptions = [
+  { value: "Dubai" },
+  { value: "Abu Dhabi" },
+  { value: "Sharjah" },
+  { value: "Riyadh" },
+  { value: "Jeddah" },
+  { value: "Doha" },
+  { value: "Manama" },
+  { value: "Kuwait City" },
+  { value: "Muscat" },
+];
+
+const industryOptions = [
+  { value: "IT", label: "Information Technology" },
+  { value: "Banking", label: "Banking & Finance" },
+  { value: "Construction", label: "Construction" },
+  { value: "Healthcare", label: "Healthcare" },
+  { value: "Education", label: "Education" },
+  { value: "Hospitality", label: "Hospitality" },
+  { value: "Retail", label: "Retail" },
+  { value: "Oil & Gas", label: "Oil & Gas" },
+];
+
+const jobRoleOptions = [
+  { value: "Software Engineer", label: "Software Engineer" },
+  { value: "Project Manager", label: "Project Manager" },
+  { value: "Accountant", label: "Accountant" },
+  { value: "HR Manager", label: "HR Manager" },
+  { value: "Sales Executive", label: "Sales Executive" },
+  { value: "Marketing Manager", label: "Marketing Manager" },
+];
+
+const qualificationOptions = [
+  { value: "B.Tech", label: "Bachelor of Technology" },
+  { value: "MBA", label: "Master of Business Administration" },
+  { value: "B.Com", label: "Bachelor of Commerce" },
+  { value: "M.Tech", label: "Master of Technology" },
+  { value: "PhD", label: "Doctor of Philosophy" },
+];
+
+const nationalityOptions = [
+  { value: "Indian", label: "Indian" },
+  { value: "Pakistani", label: "Pakistani" },
+  { value: "Bangladeshi", label: "Bangladeshi" },
+  { value: "Filipino", label: "Filipino" },
+  { value: "Emirati", label: "Emirati" },
+  { value: "Saudi", label: "Saudi" },
+];
+
+const languageOptions = [
+  { value: "English", label: "English" },
+  { value: "Arabic", label: "Arabic" },
+  { value: "Hindi", label: "Hindi" },
+  { value: "Urdu", label: "Urdu" },
+  { value: "Malayalam", label: "Malayalam" },
+  { value: "Tagalog", label: "Tagalog" },
+];
 
 const SourcedCandidates = ({ jobId }) => {
   const [activeTab, setActiveTab] = useState("sourced");
@@ -93,12 +159,15 @@ const SourcedCandidates = ({ jobId }) => {
     params.append("page", pagination.current.toString());
     params.append("limit", pagination.pageSize.toString());
 
-    if (filters.experience[0] > 0 || filters.experience[1] < 20) {
+    if (filters.keywords) {
+      params.append("keywords", filters.keywords);
+    }
+    if (filters.experience[0] > 0 || filters.experience[1] < 30) {
       params.append("minExperience", filters.experience[0].toString());
       params.append("maxExperience", filters.experience[1].toString());
     }
-    if (filters.qualification) {
-      params.append("qualification", filters.qualification);
+    if (filters.qualifications?.length > 0) {
+      params.append("qualifications", filters.qualifications.join(","));
     }
     if (filters.skills?.length > 0) {
       params.append("skills", filters.skills.join(","));
@@ -109,12 +178,38 @@ const SourcedCandidates = ({ jobId }) => {
     if (filters.company) {
       params.append("company", filters.company);
     }
-    if (filters.jobRole) {
-      params.append("jobRole", filters.jobRole);
+    if (filters.jobRoles?.length > 0) {
+      params.append("jobRoles", filters.jobRoles.join(","));
     }
-    if (filters.salary[0] > 0 || filters.salary[1] < 100000) {
+    if (filters.industries?.length > 0) {
+      params.append("industries", filters.industries.join(","));
+    }
+    if (filters.salary[0] > 0 || filters.salary[1] < 2000000) {
       params.append("minSalary", filters.salary[0].toString());
       params.append("maxSalary", filters.salary[1].toString());
+    }
+    if (filters.gender) {
+      params.append("gender", filters.gender);
+    }
+    if (filters.nationality) {
+      params.append("nationality", filters.nationality);
+    }
+    if (filters.ageRange[0] > 18 || filters.ageRange[1] < 70) {
+      params.append("minAge", filters.ageRange[0].toString());
+      params.append("maxAge", filters.ageRange[1].toString());
+    }
+    if (filters.noticePeriod) {
+      params.append("noticePeriod", filters.noticePeriod);
+    }
+    if (filters.profileUpdated) {
+      params.append("profileUpdated", filters.profileUpdated);
+    }
+
+    if (filters.visaStatus) {
+      params.append("visaStatus", filters.visaStatus);
+    }
+    if (filters.languages?.length > 0) {
+      params.append("languages", filters.languages.join(","));
     }
 
     return params.toString();
@@ -836,6 +931,7 @@ const SourcedCandidates = ({ jobId }) => {
       </Tabs>
 
       {/* Advanced Filter Modal */}
+      {/* Advanced Filter Modal */}
       <Modal
         title="Advanced Candidate Filters"
         open={isFilterModalVisible}
@@ -847,6 +943,43 @@ const SourcedCandidates = ({ jobId }) => {
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
         <Form layout="vertical">
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <Form.Item label="Keywords">
+                <Input
+                  placeholder="Job title, skills, companies, etc."
+                  value={tempFilters.keywords}
+                  onChange={(e) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      keywords: e.target.value,
+                    }))
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Current Location">
+                <AutoComplete
+                  options={locationOptions}
+                  placeholder="Search location"
+                  value={tempFilters.location}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      location: value,
+                    }))
+                  }
+                  filterOption={(inputValue, option) =>
+                    option.value
+                      .toUpperCase()
+                      .indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item label="Skills">
             <Space.Compact style={{ width: "100%" }}>
               <Input
@@ -876,13 +1009,14 @@ const SourcedCandidates = ({ jobId }) => {
               ))}
             </div>
           </Form.Item>
+
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Form.Item label="Experience (Years)">
                 <Slider
                   range
                   min={0}
-                  max={20}
+                  max={30}
                   value={tempFilters.experience}
                   onChange={(value) =>
                     setTempFilters((prev) => ({ ...prev, experience: value }))
@@ -892,29 +1026,35 @@ const SourcedCandidates = ({ jobId }) => {
                     5: "5",
                     10: "10",
                     15: "15",
-                    20: "20+",
+                    20: "20",
+                    25: "25",
+                    30: "30+",
                   }}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Salary Range (₹)">
+              <Form.Item
+                label="Annual Salary Range (₹)"
+                extra="Annual salary in rupees (L = lakhs)"
+              >
                 <Slider
                   range
                   min={0}
-                  max={100000}
-                  step={5000}
+                  max={2000000}
+                  step={50000}
                   value={tempFilters.salary}
                   onChange={(value) =>
                     setTempFilters((prev) => ({ ...prev, salary: value }))
                   }
                   marks={{
                     0: "0",
-                    25000: "25K",
-                    50000: "50K",
-                    75000: "75K",
-                    100000: "100K+",
+                    500000: "5L",
+                    1000000: "10L",
+                    1500000: "15L",
+                    2000000: "20L+",
                   }}
+                  tipFormatter={(value) => `${value / 100000}L`}
                 />
               </Form.Item>
             </Col>
@@ -922,23 +1062,9 @@ const SourcedCandidates = ({ jobId }) => {
 
           <Row gutter={[16, 16]}>
             <Col span={12}>
-              <Form.Item label="Location">
+              <Form.Item label="Current Company">
                 <Input
-                  placeholder="Enter location (e.g., bangalore, mumbai)"
-                  value={tempFilters.location}
-                  onChange={(e) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      location: e.target.value,
-                    }))
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Company">
-                <Input
-                  placeholder="Enter company name (e.g., google, microsoft)"
+                  placeholder="Current or past companies"
                   value={tempFilters.company}
                   onChange={(e) =>
                     setTempFilters((prev) => ({
@@ -949,38 +1075,236 @@ const SourcedCandidates = ({ jobId }) => {
                 />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item label="Industry">
+                <Select
+                  mode="tags"
+                  placeholder="Select industries"
+                  value={tempFilters.industries}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      industries: value,
+                    }))
+                  }
+                  tokenSeparators={[","]}
+                  style={{ width: "100%" }}
+                >
+                  {industryOptions.map((industry) => (
+                    <Option key={industry.value} value={industry.value}>
+                      {industry.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
           </Row>
 
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Form.Item label="Job Role">
-                <Input
-                  placeholder="Enter job role (e.g., software engineer)"
-                  value={tempFilters.jobRole}
-                  onChange={(e) =>
+                <Select
+                  mode="tags"
+                  placeholder="Select job roles"
+                  value={tempFilters.jobRoles}
+                  onChange={(value) =>
                     setTempFilters((prev) => ({
                       ...prev,
-                      jobRole: e.target.value,
+                      jobRoles: value,
                     }))
                   }
-                />
+                  tokenSeparators={[","]}
+                  style={{ width: "100%" }}
+                >
+                  {jobRoleOptions.map((role) => (
+                    <Option key={role.value} value={role.value}>
+                      {role.label}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Qualification">
-                <Input
-                  placeholder="Enter qualification (e.g., computer science, MBA)"
-                  value={tempFilters.qualification}
-                  onChange={(e) =>
+                <Select
+                  mode="tags"
+                  placeholder="Select qualifications"
+                  value={tempFilters.qualifications}
+                  onChange={(value) =>
                     setTempFilters((prev) => ({
                       ...prev,
-                      qualification: e.target.value,
+                      qualifications: value,
                     }))
                   }
+                  tokenSeparators={[","]}
+                  style={{ width: "100%" }}
+                >
+                  {qualificationOptions.map((qual) => (
+                    <Option key={qual.value} value={qual.value}>
+                      {qual.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            <Col span={8}>
+              <Form.Item label="Gender">
+                <Select
+                  placeholder="Select gender"
+                  value={tempFilters.gender}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      gender: value,
+                    }))
+                  }
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  <Option value="male">Male</Option>
+                  <Option value="female">Female</Option>
+                  <Option value="other">Other</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Nationality">
+                <Select
+                  placeholder="Select nationality"
+                  value={tempFilters.nationality}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      nationality: value,
+                    }))
+                  }
+                  showSearch
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  {nationalityOptions.map((country) => (
+                    <Option key={country.value} value={country.value}>
+                      {country.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Age Range">
+                <Slider
+                  range
+                  min={18}
+                  max={70}
+                  value={tempFilters.ageRange}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({ ...prev, ageRange: value }))
+                  }
+                  marks={{
+                    18: "18",
+                    25: "25",
+                    35: "35",
+                    45: "45",
+                    55: "55",
+                    70: "70+",
+                  }}
                 />
               </Form.Item>
             </Col>
           </Row>
+
+          <Row gutter={[16, 16]}>
+            <Col span={8}>
+              <Form.Item label="Notice Period">
+                <Select
+                  placeholder="Select notice period"
+                  value={tempFilters.noticePeriod}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      noticePeriod: value,
+                    }))
+                  }
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  <Option value="immediate">Immediate</Option>
+                  <Option value="1">1 month</Option>
+                  <Option value="2">2 months</Option>
+                  <Option value="3">3 months</Option>
+                  <Option value="3+">More than 3 months</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Profile Updated">
+                <Select
+                  placeholder="When profile was updated"
+                  value={tempFilters.profileUpdated}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      profileUpdated: value,
+                    }))
+                  }
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  <Option value="7">Last 7 days</Option>
+                  <Option value="15">Last 15 days</Option>
+                  <Option value="30">Last 30 days</Option>
+                  <Option value="60">Last 60 days</Option>
+                  <Option value="90">Last 90 days</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Visa Status">
+                <Select
+                  placeholder="Select visa status"
+                  value={tempFilters.visaStatus}
+                  onChange={(value) =>
+                    setTempFilters((prev) => ({
+                      ...prev,
+                      visaStatus: value,
+                    }))
+                  }
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  <Option value="visit">Visit Visa</Option>
+                  <Option value="employment">Employment Visa</Option>
+                  <Option value="resident">Residence Visa</Option>
+                  <Option value="citizen">Citizen</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Languages Known">
+            <Select
+              mode="tags"
+              placeholder="Select languages"
+              value={tempFilters.languages}
+              onChange={(value) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  languages: value,
+                }))
+              }
+              tokenSeparators={[","]}
+              style={{ width: "100%" }}
+            >
+              {languageOptions.map((lang) => (
+                <Option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
 

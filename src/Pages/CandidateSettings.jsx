@@ -321,6 +321,8 @@ const CandidateSettings = () => {
         currentSalary: candidateData.currentSalary || "",
         expectedSalary: candidateData.expectedSalary || "",
         resume: candidateData.resume || "",
+        resumeUrl: candidateData.resumeUrl || "",
+        resumeFile: null,
         lastUpdated: candidateData.lastUpdated || "",
         socialLinks: candidateData.socialLinks || {
           linkedin: "",
@@ -553,7 +555,9 @@ const CandidateSettings = () => {
         formData.append("image", imageFile);
       }
       if (userData.resumeFile) {
-        formData.append("resume", userData.resumeFile);
+        formData.append("resume", userData.resumeFile); 
+      } else if (!userData.resumeFile && userData.resumeUrl === "") {
+        formData.append("resume", ""); 
       }
 
       const res = await profileComplete(formData).unwrap();
@@ -1203,24 +1207,14 @@ const CandidateSettings = () => {
                   <Form.Item>
                     <Upload
                       accept=".pdf,.doc,.docx"
-                      fileList={
-                        userData.resumeFile || userData.resume
-                          ? [
-                              {
-                                uid: "-1",
-                                name:
-                                  userData.resumeFile?.name || "Current Resume",
-                                status: "done",
-                              },
-                            ]
-                          : []
-                      }
+                      showUploadList={false}
                       beforeUpload={(file) => {
                         const isLt5M = file.size / 1024 / 1024 < 5;
                         if (!isLt5M) {
                           message.error("Resume must be smaller than 5MB!");
                           return false;
                         }
+
                         const allowedTypes = [
                           "application/pdf",
                           "application/msword",
@@ -1232,26 +1226,15 @@ const CandidateSettings = () => {
                           );
                           return false;
                         }
-                        return false; // Prevent auto upload
+
+                        setUserData({
+                          ...userData,
+                          resumeFile: file,
+                          resumeUrl: URL.createObjectURL(file), // for preview
+                        });
+                        return false; // prevent auto upload
                       }}
-                      onChange={({ fileList }) => {
-                        if (fileList.length > 0 && fileList[0].originFileObj) {
-                          setUserData({
-                            ...userData,
-                            resumeFile: fileList[0].originFileObj,
-                            resume: URL.createObjectURL(
-                              fileList[0].originFileObj
-                            ),
-                          });
-                        } else {
-                          setUserData({
-                            ...userData,
-                            resumeFile: null,
-                            resume: userData.resume,
-                          });
-                        }
-                      }}
-                      showUploadList={false} // This hides the file name display
+                      disabled={!isProfileEditable}
                     >
                       <Button
                         icon={<UploadOutlined />}
@@ -1261,12 +1244,12 @@ const CandidateSettings = () => {
                       </Button>
                     </Upload>
 
-                    {userData.resume && (
+                    {userData.resumeUrl && (
                       <div style={{ marginTop: 8 }}>
                         <Text type="secondary">Current resume: </Text>
                         <Button
                           type="link"
-                          href={userData.resume}
+                          href={userData.resumeUrl}
                           target="_blank"
                           icon={<EyeOutlined />}
                           size="small"
@@ -1281,7 +1264,7 @@ const CandidateSettings = () => {
                           onClick={() => {
                             setUserData({
                               ...userData,
-                              resume: null,
+                              resumeUrl: "",
                               resumeFile: null,
                             });
                           }}
