@@ -847,6 +847,35 @@ const SourcedCandidates = ({ jobId }) => {
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
         <Form layout="vertical">
+          <Form.Item label="Skills">
+            <Space.Compact style={{ width: "100%" }}>
+              <Input
+                placeholder="Add skills (e.g., JavaScript, React)"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onPressEnter={handleSkillAdd}
+              />
+              <Button
+                type="primary"
+                onClick={handleSkillAdd}
+                style={{ backgroundColor: "#da2c46" }}
+              >
+                Add
+              </Button>
+            </Space.Compact>
+            <div style={{ marginTop: 8 }}>
+              {tempFilters.skills.map((skill) => (
+                <Tag
+                  key={skill}
+                  closable
+                  onClose={() => handleSkillRemove(skill)}
+                  style={{ marginBottom: 4 }}
+                >
+                  {skill}
+                </Tag>
+              ))}
+            </div>
+          </Form.Item>
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Form.Item label="Experience (Years)">
@@ -952,36 +981,6 @@ const SourcedCandidates = ({ jobId }) => {
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item label="Skills">
-            <Space.Compact style={{ width: "100%" }}>
-              <Input
-                placeholder="Add skills (e.g., JavaScript, React)"
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                onPressEnter={handleSkillAdd}
-              />
-              <Button
-                type="primary"
-                onClick={handleSkillAdd}
-                style={{ backgroundColor: "#da2c46" }}
-              >
-                Add
-              </Button>
-            </Space.Compact>
-            <div style={{ marginTop: 8 }}>
-              {tempFilters.skills.map((skill) => (
-                <Tag
-                  key={skill}
-                  closable
-                  onClose={() => handleSkillRemove(skill)}
-                  style={{ marginBottom: 4 }}
-                >
-                  {skill}
-                </Tag>
-              ))}
-            </div>
-          </Form.Item>
         </Form>
       </Modal>
 

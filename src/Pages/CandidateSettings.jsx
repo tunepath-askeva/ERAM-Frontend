@@ -509,9 +509,6 @@ const CandidateSettings = () => {
         "workExperience",
         JSON.stringify(userData.workExperience)
       );
-      formData.append("preferences", JSON.stringify(userData.preferences));
-      formData.append("privacy", JSON.stringify(userData.privacy));
-
       const res = await profileComplete(formData).unwrap();
 
       const emailChanged = allValues.email !== userData.email;
