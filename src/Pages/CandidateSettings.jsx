@@ -385,31 +385,42 @@ const CandidateSettings = () => {
     setProfileCompletion(completion);
   };
 
-  const handlePreferencesUpdate = async (values) => {
+const handlePreferencesUpdate = async () => {
+  try {
+    const values = await preferencesForm.validateFields(); // <-- Add this
     setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("jobPreferences", JSON.stringify(values));
 
-      await profileComplete(formData).unwrap();
+    const payload = {
+      jobPreferences: {
+        roles: values.roles || [],
+        locations: values.locations || [],
+        salaryRange: values.salaryRange || "",
+        workType: values.workType || "",
+        employmentType: values.employmentType || "",
+      },
+    };
 
-      setUserData((prev) => ({
-        ...prev,
-        jobPreferences: values,
-      }));
+    await profileComplete(payload).unwrap();
 
-      enqueueSnackbar("Preferences updated successfully!", {
-        variant: "success",
-      });
-    } catch (error) {
-      enqueueSnackbar("Failed to update preferences", {
-        variant: "error",
-      });
-    }
+    setUserData((prev) => ({
+      ...prev,
+      jobPreferences: payload.jobPreferences,
+    }));
+
+    enqueueSnackbar("Preferences updated successfully!", {
+      variant: "success",
+    });
+  } catch (error) {
+    console.error("Update error:", error);
+    enqueueSnackbar(error?.data?.message || "Failed to update preferences", {
+      variant: "error",
+    });
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
-  
+
   const handlePasswordChange = async (values) => {
     setLoading(true);
     try {
@@ -494,22 +505,27 @@ const CandidateSettings = () => {
 
       const formData = new FormData();
 
+      // Handle regular fields
       Object.entries(allValues).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (dayjs.isDayjs(value)) {
             formData.append(key, value.format("YYYY-MM-DD"));
+          } else if (key === "socialLinks" || key === "jobPreferences") {
+            // Skip these as we'll handle them separately
           } else {
             formData.append(key, value);
           }
         }
       });
-      formData.append(
-        "jobPreferences",
-        JSON.stringify(allValues.jobPreferences || {})
-      );
+
+      // Handle nested objects properly
       formData.append(
         "socialLinks",
         JSON.stringify(allValues.socialLinks || {})
+      );
+      formData.append(
+        "jobPreferences",
+        JSON.stringify(allValues.jobPreferences || {})
       );
 
       // Handle arrays
@@ -1866,7 +1882,14 @@ const CandidateSettings = () => {
                   <Form
                     form={preferencesForm}
                     layout="vertical"
-                    initialValues={userData.jobPreferences}
+                    initialValues={{
+                      roles: userData.jobPreferences?.roles || [],
+                      locations: userData.jobPreferences?.locations || [],
+                      salaryRange: userData.jobPreferences?.salaryRange || "",
+                      workType: userData.jobPreferences?.workType || "",
+                      employmentType:
+                        userData.jobPreferences?.employmentType || "",
+                    }}
                   >
                     <Form.Item
                       name="roles"
