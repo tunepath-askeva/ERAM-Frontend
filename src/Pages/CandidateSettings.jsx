@@ -520,7 +520,6 @@ const CandidateSettings = () => {
 
       const formData = new FormData();
 
-      // Handle regular fields
       Object.entries(allValues).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (dayjs.isDayjs(value)) {
@@ -533,7 +532,6 @@ const CandidateSettings = () => {
         }
       });
 
-      // Handle nested objects properly
       formData.append(
         "socialLinks",
         JSON.stringify(allValues.socialLinks || {})
@@ -543,8 +541,8 @@ const CandidateSettings = () => {
         JSON.stringify(allValues.jobPreferences || {})
       );
 
-      // Handle arrays
       formData.append("skills", JSON.stringify(userData.skills || []));
+      formData.append("languages", JSON.stringify(userData.languages || []));
       formData.append("education", JSON.stringify(userData.education || []));
       formData.append(
         "workExperience",
