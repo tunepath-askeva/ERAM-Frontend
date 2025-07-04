@@ -502,8 +502,16 @@ const CandidateSettings = () => {
       if (imageFile) {
         formData.append("image", imageFile);
       }
+      if (userData.resumeFile) {
+        formData.append("resume", userData.resumeFile);
+      }
 
       formData.append("skills", JSON.stringify(userData.skills));
+      formData.append(
+        "jobPreferences",
+        JSON.stringify(userData.jobPreferences)
+      );
+      formData.append("socialLinks", JSON.stringify(userData.socialLinks));
       formData.append("education", JSON.stringify(userData.education));
       formData.append(
         "workExperience",
@@ -1157,13 +1165,13 @@ const CandidateSettings = () => {
                     <Upload
                       accept=".pdf,.doc,.docx"
                       fileList={
-                        userData.resume
+                        userData.resumeFile || userData.resume
                           ? [
                               {
                                 uid: "-1",
-                                name: "Current Resume",
+                                name:
+                                  userData.resumeFile?.name || "Current Resume",
                                 status: "done",
-                                url: userData.resume,
                               },
                             ]
                           : []
@@ -1174,16 +1182,37 @@ const CandidateSettings = () => {
                           message.error("Resume must be smaller than 5MB!");
                           return false;
                         }
-                        return true;
+                        const allowedTypes = [
+                          "application/pdf",
+                          "application/msword",
+                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        ];
+                        if (!allowedTypes.includes(file.type)) {
+                          message.error(
+                            "Only PDF, DOC, and DOCX files are allowed!"
+                          );
+                          return false;
+                        }
+                        return false; // Prevent auto upload
                       }}
                       onChange={({ fileList }) => {
                         if (fileList.length > 0 && fileList[0].originFileObj) {
                           setUserData({
                             ...userData,
                             resumeFile: fileList[0].originFileObj,
+                            resume: URL.createObjectURL(
+                              fileList[0].originFileObj
+                            ),
+                          });
+                        } else {
+                          setUserData({
+                            ...userData,
+                            resumeFile: null,
+                            resume: userData.resume,
                           });
                         }
                       }}
+                      showUploadList={false} // This hides the file name display
                     >
                       <Button
                         icon={<UploadOutlined />}
@@ -1192,16 +1221,36 @@ const CandidateSettings = () => {
                         Upload Resume
                       </Button>
                     </Upload>
+
                     {userData.resume && (
-                      <Button
-                        type="link"
-                        href={userData.resume}
-                        target="_blank"
-                        icon={<EyeOutlined />}
-                        style={{ marginLeft: 8 }}
-                      >
-                        View Resume
-                      </Button>
+                      <div style={{ marginTop: 8 }}>
+                        <Text type="secondary">Current resume: </Text>
+                        <Button
+                          type="link"
+                          href={userData.resume}
+                          target="_blank"
+                          icon={<EyeOutlined />}
+                          size="small"
+                        >
+                          View
+                        </Button>
+                        <Button
+                          type="link"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          onClick={() => {
+                            setUserData({
+                              ...userData,
+                              resume: null,
+                              resumeFile: null,
+                            });
+                          }}
+                          disabled={!isProfileEditable}
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     )}
                   </Form.Item>
                 </Col>
