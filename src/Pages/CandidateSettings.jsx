@@ -100,7 +100,7 @@ const degreeOptions = [
   "Certificate",
   "Professional Degree",
 ];
-
+const genderOptions = ["Male", "Female", "Prefer not to say", "Others"];
 const maritalStatusOptions = ["Single", "Married"];
 const bloodGroupOptions = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const religionOptions = [
@@ -125,6 +125,7 @@ const CandidateSettings = () => {
     email: "",
     phone: "",
     skills: [],
+    languages: [],
     qualifications: [],
     accountStatus: "",
     isActive: false,
@@ -140,6 +141,7 @@ const CandidateSettings = () => {
     nationality: "",
     countryOfBirth: "",
     maritalStatus: "",
+    gender: "",
     bloodGroup: "",
     religion: "",
     totalExperienceYears: "",
@@ -239,6 +241,9 @@ const CandidateSettings = () => {
         qualifications: Array.isArray(candidateData.qualifications)
           ? candidateData.qualifications
           : [],
+        languages: Array.isArray(candidateData.languages)
+          ? candidateData.languages
+          : [],
         accountStatus: candidateData.accountStatus || "",
         isActive: candidateData.isActive || false,
         role: candidateData.role || "",
@@ -277,6 +282,8 @@ const CandidateSettings = () => {
         nationality: candidateData.nationality || "",
         countryOfBirth: candidateData.countryOfBirth || "",
         maritalStatus: candidateData.maritalStatus || "",
+        gender: candidateData.gender || "",
+
         bloodGroup: candidateData.bloodGroup || "",
         religion: candidateData.religion || "",
         totalExperienceYears: candidateData.totalExperienceYears || "",
@@ -352,12 +359,14 @@ const CandidateSettings = () => {
       data.title,
 
       data.skills?.length > 0,
+      data.languages?.length > 0,
       data.education?.length > 0,
       data.workExperience?.length > 0,
       data.totalExperienceYears,
 
       data.nationality,
       data.maritalStatus,
+      data.gender,
       data.bloodGroup,
       data.countryOfBirth,
 
@@ -385,41 +394,40 @@ const CandidateSettings = () => {
     setProfileCompletion(completion);
   };
 
-const handlePreferencesUpdate = async () => {
-  try {
-    const values = await preferencesForm.validateFields(); // <-- Add this
-    setLoading(true);
+  const handlePreferencesUpdate = async () => {
+    try {
+      const values = await preferencesForm.validateFields();
+      setLoading(true);
 
-    const payload = {
-      jobPreferences: {
-        roles: values.roles || [],
-        locations: values.locations || [],
-        salaryRange: values.salaryRange || "",
-        workType: values.workType || "",
-        employmentType: values.employmentType || "",
-      },
-    };
+      const payload = {
+        jobPreferences: {
+          roles: values.roles || [],
+          locations: values.locations || [],
+          salaryRange: values.salaryRange || "",
+          workType: values.workType || "",
+          employmentType: values.employmentType || "",
+        },
+      };
 
-    await profileComplete(payload).unwrap();
+      await profileComplete(payload).unwrap();
 
-    setUserData((prev) => ({
-      ...prev,
-      jobPreferences: payload.jobPreferences,
-    }));
+      setUserData((prev) => ({
+        ...prev,
+        jobPreferences: payload.jobPreferences,
+      }));
 
-    enqueueSnackbar("Preferences updated successfully!", {
-      variant: "success",
-    });
-  } catch (error) {
-    console.error("Update error:", error);
-    enqueueSnackbar(error?.data?.message || "Failed to update preferences", {
-      variant: "error",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-
+      enqueueSnackbar("Preferences updated successfully!", {
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Update error:", error);
+      enqueueSnackbar(error?.data?.message || "Failed to update preferences", {
+        variant: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePasswordChange = async (values) => {
     setLoading(true);
@@ -1315,6 +1323,29 @@ const handlePreferencesUpdate = async () => {
 
           <Card
             title={
+              <span>
+                <StarOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+                <span style={{ color: "#da2c46" }}>Languages Known</span>
+              </span>
+            }
+            style={{ marginBottom: 24, borderRadius: "12px" }}
+          >
+            <Form.Item>
+              <Select
+                mode="tags"
+                style={{ width: "100%" }}
+                placeholder="Add your languages"
+                value={userData.languages}
+                onChange={(value) =>
+                  setUserData({ ...userData, languages: value })
+                }
+                disabled={!isProfileEditable}
+              />
+            </Form.Item>
+          </Card>
+
+          <Card
+            title={
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>
                   <BookOutlined style={{ marginRight: 8, color: "#da2c46" }} />
@@ -1527,6 +1558,21 @@ const handlePreferencesUpdate = async () => {
                       disabled={!isProfileEditable}
                     >
                       {maritalStatusOptions.map((status) => (
+                        <Option key={status} value={status}>
+                          {status}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item label="Gender" name="gender">
+                    <Select
+                      placeholder="Select gender"
+                      disabled={!isProfileEditable}
+                    >
+                      {genderOptions.map((status) => (
                         <Option key={status} value={status}>
                           {status}
                         </Option>
