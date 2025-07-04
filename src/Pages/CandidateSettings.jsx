@@ -115,6 +115,44 @@ const religionOptions = [
   "Prefer not to say",
 ];
 
+const defaultIndustryOptions = [
+  "Information Technology",
+  "Healthcare",
+  "Finance",
+  "Education",
+  "Manufacturing",
+  "Retail",
+  "Construction",
+  "Hospitality",
+  "Transportation",
+  "Media & Entertainment",
+  "Telecommunications",
+  "Energy",
+  "Agriculture",
+  "Government",
+  "Non-profit",
+  "Other",
+].map((item) => ({ value: item, label: item }));
+
+const defaultVisaStatusOptions = [
+  "Citizen",
+  "Permanent Resident",
+  "Work Visa",
+  "Student Visa",
+  "Tourist Visa",
+  "H-1B Visa",
+  "L-1 Visa",
+  "F-1 Visa",
+  "J-1 Visa",
+  "O-1 Visa",
+  "TN Visa",
+  "E-3 Visa",
+  "Green Card",
+  "Asylum/Refugee",
+  "No Visa/Illegal",
+  "Other",
+].map((item) => ({ value: item, label: item }));
+
 const CandidateSettings = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [userData, setUserData] = useState({
@@ -190,7 +228,11 @@ const CandidateSettings = () => {
       employmentType: "",
     },
     workMode: "",
+    age: "",
+    industry: [],
+    visaStatus: [],
   });
+
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
@@ -283,7 +325,17 @@ const CandidateSettings = () => {
         countryOfBirth: candidateData.countryOfBirth || "",
         maritalStatus: candidateData.maritalStatus || "",
         gender: candidateData.gender || "",
-
+        age: candidateData.age || "",
+        industry: Array.isArray(candidateData.industry)
+          ? candidateData.industry
+          : candidateData.industry
+          ? [candidateData.industry]
+          : [],
+        visaStatus: Array.isArray(candidateData.visaStatus)
+          ? candidateData.visaStatus
+          : candidateData.visaStatus
+          ? [candidateData.visaStatus]
+          : [],
         bloodGroup: candidateData.bloodGroup || "",
         religion: candidateData.religion || "",
         totalExperienceYears: candidateData.totalExperienceYears || "",
@@ -366,12 +418,15 @@ const CandidateSettings = () => {
       data.phone,
       data.location,
       data.title,
+      data.age,
 
       data.skills?.length > 0,
       data.languages?.length > 0,
       data.education?.length > 0,
       data.workExperience?.length > 0,
       data.totalExperienceYears,
+      data.industry?.length > 0,
+      data.visaStatus?.length > 0,
 
       data.nationality,
       data.maritalStatus,
@@ -555,9 +610,9 @@ const CandidateSettings = () => {
         formData.append("image", imageFile);
       }
       if (userData.resumeFile) {
-        formData.append("resume", userData.resumeFile); 
+        formData.append("resume", userData.resumeFile);
       } else if (!userData.resumeFile && userData.resumeUrl === "") {
-        formData.append("resume", ""); 
+        formData.append("resume", "");
       }
 
       const res = await profileComplete(formData).unwrap();
@@ -1614,6 +1669,79 @@ const CandidateSettings = () => {
                       prefix={<PhoneOutlined />}
                       placeholder="Enter emergency contact"
                       disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Age"
+                    name="age"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter your age",
+                      },
+                    ]}
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={18}
+                      max={100}
+                      placeholder="Enter your age"
+                      disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Form.Item
+                    label="Industry"
+                    name="industry"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please add at least one industry",
+                      },
+                    ]}
+                  >
+                    <Select
+                      mode="tags"
+                      style={{ width: "100%" }}
+                      placeholder="Add industries (type to add custom values)"
+                      value={userData.industry}
+                      onChange={(value) =>
+                        setUserData({ ...userData, industry: value })
+                      }
+                      disabled={!isProfileEditable}
+                      options={defaultIndustryOptions}
+                      tokenSeparators={[","]}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col span={24}>
+                  <Form.Item
+                    label="Visa Status"
+                    name="visaStatus"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please add at least one visa status",
+                      },
+                    ]}
+                  >
+                    <Select
+                      mode="tags"
+                      style={{ width: "100%" }}
+                      placeholder="Add visa statuses (type to add custom values)"
+                      value={userData.visaStatus}
+                      onChange={(value) =>
+                        setUserData({ ...userData, visaStatus: value })
+                      }
+                      disabled={!isProfileEditable}
+                      options={defaultVisaStatusOptions}
+                      tokenSeparators={[","]}
                     />
                   </Form.Item>
                 </Col>
