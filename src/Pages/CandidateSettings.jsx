@@ -542,7 +542,7 @@ const CandidateSettings = () => {
       );
 
       formData.append("skills", JSON.stringify(userData.skills || []));
-      formData.append("languages", JSON.stringify(userData.languages || []));
+      formData.append("languages", userData.languages || []);
       formData.append("education", JSON.stringify(userData.education || []));
       formData.append(
         "workExperience",
