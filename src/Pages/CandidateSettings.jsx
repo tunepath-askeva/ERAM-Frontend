@@ -168,17 +168,6 @@ const CandidateSettings = () => {
     // Nominee Information
     nomineeName: "",
     nomineeRelationship: "",
-    preferences: {
-      emailNotifications: false,
-      smsNotifications: false,
-      jobAlerts: false,
-      newsletter: false,
-    },
-    privacy: {
-      profileVisibility: "public",
-      showEmail: false,
-      showPhone: false,
-    },
     profileSummary: "",
     currentSalary: "",
     expectedSalary: "",
@@ -231,7 +220,6 @@ const CandidateSettings = () => {
   const [addressForm] = Form.useForm();
   const [contactForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
-  const [privacyForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [educationForm] = Form.useForm();
   const [workForm] = Form.useForm();
@@ -322,20 +310,6 @@ const CandidateSettings = () => {
         contactPersonHomeNo: candidateData.contactPersonHomeNo || "",
         nomineeName: candidateData.nomineeName || "",
         nomineeRelationship: candidateData.nomineeRelationship || "",
-        preferences: {
-          emailNotifications:
-            candidateData.preferences?.emailNotifications || false,
-          smsNotifications:
-            candidateData.preferences?.smsNotifications || false,
-          jobAlerts: candidateData.preferences?.jobAlerts || false,
-          newsletter: candidateData.preferences?.newsletter || false,
-        },
-        privacy: {
-          profileVisibility:
-            candidateData.privacy?.profileVisibility || "public",
-          showEmail: candidateData.privacy?.showEmail || false,
-          showPhone: candidateData.privacy?.showPhone || false,
-        },
         profileSummary: candidateData.profileSummary || "",
         currentSalary: candidateData.currentSalary || "",
         expectedSalary: candidateData.expectedSalary || "",
@@ -363,8 +337,6 @@ const CandidateSettings = () => {
       personalForm.setFieldsValue(mappedData);
       addressForm.setFieldsValue(mappedData);
       contactForm.setFieldsValue(mappedData);
-      preferencesForm.setFieldsValue(mappedData.preferences);
-      privacyForm.setFieldsValue(mappedData.privacy);
 
       calculateProfileCompletion(mappedData);
     }
@@ -418,7 +390,6 @@ const CandidateSettings = () => {
     try {
       const payload = {
         ...userData,
-        preferences: values,
       };
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
