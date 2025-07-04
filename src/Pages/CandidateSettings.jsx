@@ -344,6 +344,13 @@ const CandidateSettings = () => {
       personalForm.setFieldsValue(mappedData);
       addressForm.setFieldsValue(mappedData);
       contactForm.setFieldsValue(mappedData);
+      preferencesForm.setFieldsValue({
+        roles: mappedData.jobPreferences?.roles || [],
+        locations: mappedData.jobPreferences?.locations || [],
+        salaryRange: mappedData.jobPreferences?.salaryRange || "",
+        workType: mappedData.jobPreferences?.workType || "",
+        employmentType: mappedData.jobPreferences?.employmentType || "",
+      });
 
       calculateProfileCompletion(mappedData);
     }
@@ -1943,45 +1950,41 @@ const CandidateSettings = () => {
                       rules={[
                         {
                           required: true,
-                          message: "Please select at least one role",
+                          message: "Please add at least one role",
                         },
                       ]}
                     >
                       <Select
                         mode="tags"
-                        placeholder="Select roles you're interested in"
+                        placeholder="Add roles you're interested in"
                         disabled={!isProfileEditable}
-                      >
-                        {/* You can populate this with actual job roles */}
-                        <Option value="Software Engineer">
-                          Software Engineer
-                        </Option>
-                        <Option value="Frontend Developer">
-                          Frontend Developer
-                        </Option>
-                        <Option value="Backend Developer">
-                          Backend Developer
-                        </Option>
-                        <Option value="Full Stack Developer">
-                          Full Stack Developer
-                        </Option>
-                        <Option value="DevOps Engineer">DevOps Engineer</Option>
-                      </Select>
+                        onChange={(value) =>
+                          setUserData((prev) => ({
+                            ...prev,
+                            jobPreferences: {
+                              ...prev.jobPreferences,
+                              roles: value,
+                            },
+                          }))
+                        }
+                      />
                     </Form.Item>
 
                     <Form.Item name="locations" label="Preferred Locations">
                       <Select
                         mode="tags"
-                        placeholder="Select preferred locations"
+                        placeholder="Add preferred locations"
                         disabled={!isProfileEditable}
-                      >
-                        {/* You can populate this with actual locations */}
-                        <Option value="Bangalore">Bangalore</Option>
-                        <Option value="Hyderabad">Hyderabad</Option>
-                        <Option value="Pune">Pune</Option>
-                        <Option value="Mumbai">Mumbai</Option>
-                        <Option value="Delhi NCR">Delhi NCR</Option>
-                      </Select>
+                        onChange={(value) =>
+                          setUserData((prev) => ({
+                            ...prev,
+                            jobPreferences: {
+                              ...prev.jobPreferences,
+                              locations: value,
+                            },
+                          }))
+                        }
+                      />
                     </Form.Item>
 
                     <Form.Item name="salaryRange" label="Expected Salary Range">
