@@ -64,6 +64,7 @@ const AdminRecruiter = () => {
   const [selectedRecruiterId, setSelectedRecruiterId] = useState(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [recruiterToDelete, setRecruiterToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // API integration
   const {
@@ -101,6 +102,18 @@ const AdminRecruiter = () => {
       );
     }
   }, [isError, error]);
+
+  const filteredRecruiters = recruiters.filter(recruiter => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (recruiter.fullName?.toLowerCase().includes(searchLower)) ||
+      (recruiter.companyName?.toLowerCase().includes(searchLower)) ||
+      (recruiter.email?.toLowerCase().includes(searchLower)) ||
+      (recruiter.phone?.toLowerCase().includes(searchLower)) ||
+      (recruiter.specialization?.toLowerCase().includes(searchLower))
+    );
+  });
 
   // Handle recruiter details error
   useEffect(() => {
@@ -306,13 +319,15 @@ const AdminRecruiter = () => {
               <Input.Search
                 placeholder="Search Recruiters"
                 allowClear
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   maxWidth: "300px",
                   width: "100%",
                   borderRadius: "8px",
-                  height: "35px", // Increased height to match button
+                  height: "35px",
                 }}
-                size="large" // Added size prop
+                size="large"
                 className="custom-search-input"
               />
 
@@ -336,7 +351,7 @@ const AdminRecruiter = () => {
 
         {isLoading ? (
           <Card loading style={{ borderRadius: "16px" }} />
-        ) : recruiters?.length > 0 ? (
+        ) : filteredRecruiters?.length > 0 ? (
           <Row
             gutter={[16, 16]}
             style={{
@@ -346,7 +361,7 @@ const AdminRecruiter = () => {
               marginTop: "16px",
             }}
           >
-            {recruiters.map((recruiter) => (
+            {filteredRecruiters.map((recruiter) => (
               <div key={recruiter._id}>
                 <Card
                   style={{

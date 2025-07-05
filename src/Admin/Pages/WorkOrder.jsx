@@ -58,6 +58,7 @@ const WorkOrder = () => {
   const [workOrderToDeactivate, setWorkOrderToDeactivate] = useState(null);
   const [activateModalVisible, setActivateModalVisible] = useState(false);
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: workOrdersData, isLoading, refetch } = useGetWorkOrdersQuery();
   const workOrders = workOrdersData?.workorders || [];
@@ -75,6 +76,20 @@ const WorkOrder = () => {
     setWorkOrderToPublish(workOrder);
     setPublishModalVisible(true);
   };
+
+  const filteredWorkOrders = workOrders.filter(workOrder => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (workOrder.title?.toLowerCase().includes(searchLower)) ||
+      (workOrder.jobCode?.toLowerCase().includes(searchLower)) ||
+      (workOrder.jobFunction?.toLowerCase().includes(searchLower)) ||
+      (workOrder.description?.toLowerCase().includes(searchLower)) ||
+      (workOrder.EmploymentType?.toLowerCase().includes(searchLower)) ||
+      (workOrder.annualSalary?.toString().includes(searchTerm)) ||
+      (workOrder.workplace?.toLowerCase().includes(searchLower))
+    );
+  });
 
   const showDeactivateModal = (workOrder) => {
     setWorkOrderToDeactivate(workOrder);
@@ -392,13 +407,15 @@ const WorkOrder = () => {
               <Input.Search
                 placeholder="Search Work Orders"
                 allowClear
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   maxWidth: "300px",
                   width: "100%",
                   borderRadius: "8px",
-                  height: "35px", // Increased height to match button
+                  height: "35px",
                 }}
-                size="large" // Added size prop
+                size="large"
                 className="custom-search-input"
               />
 
@@ -430,7 +447,7 @@ const WorkOrder = () => {
           >
             <Skeleton />
           </div>
-        ) : workOrders?.length > 0 ? (
+        ) : filteredWorkOrders?.length > 0 ? (
           <Row
             gutter={[
               { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
@@ -453,7 +470,7 @@ const WorkOrder = () => {
               },
             }}
           >
-            {workOrders.map((workOrder) => (
+            {filteredWorkOrders.map((workOrder) => (
               <div key={workOrder._id}>
                 <Card
                   style={{
