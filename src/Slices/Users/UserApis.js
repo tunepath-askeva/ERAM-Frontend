@@ -144,6 +144,14 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+ 
+    getCandidateNotification: builder.query({
+      query: () => ({
+        url: `/notify`,
+        method: "GET",
+      }),
+    }),
+ 
     uploadStageDocuments: builder.mutation({
       query: ({ customFieldId, stageId, files, filesMetadata }) => {
         const formData = new FormData();
@@ -178,6 +186,7 @@ export const {
   useGetJobsByBranchQuery,
   useGetSourcedJobsQuery,
   useGetJobsbyIdQuery,
+  useGetCandidateNotificationQuery,
   useSubmitJobApplicationMutation,
   useGetUserAppliedJobsQuery,
   useWithdrawJobApplicationMutation,
