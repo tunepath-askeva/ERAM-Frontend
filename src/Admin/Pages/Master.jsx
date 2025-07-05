@@ -14,6 +14,7 @@ import {
   Tag,
   Spin,
   Input,
+     Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -50,6 +51,11 @@ const Master = () => {
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [projectToToggle, setProjectToToggle] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
 
   const {
     data: projectsData,
@@ -71,7 +77,26 @@ const Master = () => {
   const [toggleProjectStatus, { isLoading: isToggling }] =
     useDisableProjectStatusMutation();
 
+
   const projects = projectsData?.allProjects || [];
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.prefix.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize });
+  };
+
+  const paginatedProjects = filteredProjects.slice(
+    (pagination.current - 1) * pagination.pageSize,
+    pagination.current * pagination.pageSize
+  );
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+  };
 
   const showCreateModal = () => {
     setModalMode("create");
@@ -275,13 +300,15 @@ const Master = () => {
               <Input.Search
                 placeholder="Search Projects"
                 allowClear
+                onChange={(e) => handleSearch(e.target.value)}
+                onSearch={handleSearch}
                 style={{
                   maxWidth: "300px",
                   width: "100%",
                   borderRadius: "8px",
-                  height: "35px", // Increased height to match button
+                  height: "35px",
                 }}
-                size="large" // Added size prop
+                size="large"
                 className="custom-search-input"
               />
 
@@ -306,216 +333,231 @@ const Master = () => {
         {isLoadingProjects ? (
           <Card loading style={{ borderRadius: "16px" }} />
         ) : projects?.length > 0 ? (
-          <Row
-            gutter={[16, 16]}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-              gap: "16px",
-            }}
-          >
-            {projects.map((project) => (
-              <div key={project._id}>
-                <Card
-                  style={{
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    background: "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(10px)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                      }}
-                    >
+          <>
+            <Row
+              gutter={[16, 16]}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {paginatedProjects.map((project) => (
+                <div key={project._id}>
+                  <Card
+                    style={{
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      backdropFilter: "blur(10px)",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                    title={
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          minWidth: 0,
-                          flex: 1,
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "8px",
                         }}
                       >
-                        <FolderOpenOutlined
+                        <div
                           style={{
-                            color: "#ff4d4f",
-                            marginRight: 8,
-                            fontSize: "16px",
-                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            minWidth: 0,
+                            flex: 1,
                           }}
-                        />
-                        <Text
-                          strong
-                          style={{
-                            fontSize: "16px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={project.name}
                         >
-                          {project.name}
-                        </Text>
+                          <FolderOpenOutlined
+                            style={{
+                              color: "#ff4d4f",
+                              marginRight: 8,
+                              fontSize: "16px",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Text
+                            strong
+                            style={{
+                              fontSize: "16px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={project.name}
+                          >
+                            {project.name}
+                          </Text>
+                        </div>
+                        <Badge
+                          count={project.prefix}
+                          style={{ backgroundColor: "#52c41a", flexShrink: 0 }}
+                        />
                       </div>
-                      <Badge
-                        count={project.prefix}
-                        style={{ backgroundColor: "#52c41a", flexShrink: 0 }}
-                      />
-                    </div>
-                  }
-                  extra={
-                    <Space size="small">
-                      <Tooltip title="View Details">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewProject(project)}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Edit Project">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => showEditModal(project)}
-                        />
-                      </Tooltip>
-                      <Tooltip
-                        title={
-                          project.status === "active"
-                            ? "Deactivate Project"
-                            : "Activate Project"
-                        }
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={
-                            project.status === "active" ? (
-                              <StopOutlined />
-                            ) : (
-                              <PlayCircleOutlined />
-                            )
+                    }
+                    extra={
+                      <Space size="small">
+                        <Tooltip title="View Details">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewProject(project)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Edit Project">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => showEditModal(project)}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          title={
+                            project.status === "active"
+                              ? "Deactivate Project"
+                              : "Activate Project"
                           }
-                          onClick={() => showStatusModal(project)}
-                          style={{
-                            color:
-                              project.status === "active"
-                                ? "#ff4d4f"
-                                : "#52c41a",
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Delete Project">
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(project)}
-                        />
-                      </Tooltip>
-                    </Space>
-                  }
-                  bodyStyle={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: "20px",
-                  }}
-                >
-                  <div
-                    style={{
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={
+                              project.status === "active" ? (
+                                <StopOutlined />
+                              ) : (
+                                <PlayCircleOutlined />
+                              )
+                            }
+                            onClick={() => showStatusModal(project)}
+                            style={{
+                              color:
+                                project.status === "active"
+                                  ? "#ff4d4f"
+                                  : "#52c41a",
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Delete Project">
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => showDeleteModal(project)}
+                          />
+                        </Tooltip>
+                      </Space>
+                    }
+                    bodyStyle={{
                       flex: 1,
                       display: "flex",
                       flexDirection: "column",
+                      padding: "20px",
                     }}
                   >
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "13px" }}
-                      >
-                        <FileTextOutlined style={{ marginRight: 4 }} />
-                        Description:
-                      </Text>
-                      <Paragraph
-                        style={{
-                          marginTop: 8,
-                          marginBottom: 0,
-                          color: "#666",
-                          fontSize: "12px",
-                          lineHeight: 1.5,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                        title={project.description}
-                      >
-                        {project.description}
-                      </Paragraph>
-                    </div>
-
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "12px" }}
-                      >
-                        <TagOutlined style={{ marginRight: 4 }} />
-                        Project Prefix:
-                      </Text>
-                      <div style={{ marginTop: 6 }}>
-                        <Tag
-                          color="blue"
-                          style={{
-                            borderRadius: 6,
-                            fontSize: "12px",
-                            padding: "4px 8px",
-                          }}
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "13px" }}
                         >
-                          {project.prefix}
-                        </Tag>
+                          <FileTextOutlined style={{ marginRight: 4 }} />
+                          Description:
+                        </Text>
+                        <Paragraph
+                          style={{
+                            marginTop: 8,
+                            marginBottom: 0,
+                            color: "#666",
+                            fontSize: "12px",
+                            lineHeight: 1.5,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                          title={project.description}
+                        >
+                          {project.description}
+                        </Paragraph>
+                      </div>
+
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                        >
+                          <TagOutlined style={{ marginRight: 4 }} />
+                          Project Prefix:
+                        </Text>
+                        <div style={{ marginTop: 6 }}>
+                          <Tag
+                            color="blue"
+                            style={{
+                              borderRadius: 6,
+                              fontSize: "12px",
+                              padding: "4px 8px",
+                            }}
+                          >
+                            {project.prefix}
+                          </Tag>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                        >
+                          Status:
+                        </Text>
+                        <div style={{ marginTop: 6 }}>
+                          <Tag
+                            color={project.status === "active" ? "green" : "red"}
+                            style={{
+                              borderRadius: 6,
+                              fontSize: "12px",
+                              padding: "4px 8px",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {project.status}
+                          </Tag>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Status Badge */}
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "12px" }}
-                      >
-                        Status:
-                      </Text>
-                      <div style={{ marginTop: 6 }}>
-                        <Tag
-                          color={project.status === "active" ? "green" : "red"}
-                          style={{
-                            borderRadius: 6,
-                            fontSize: "12px",
-                            padding: "4px 8px",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {project.status}
-                        </Tag>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </div>
+              ))}
+            </Row>
+            {filteredProjects.length > 0 && (
+              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                <Pagination
+                  current={pagination.current}
+                  pageSize={pagination.pageSize}
+                  total={filteredProjects.length}
+                  onChange={handlePaginationChange}
+                  showSizeChanger
+                  showQuickJumper
+                  pageSizeOptions={['10', '20', '50', '100']}
+                />
               </div>
-            ))}
-          </Row>
+            )}
+          </>
         ) : (
           <Card
             style={{

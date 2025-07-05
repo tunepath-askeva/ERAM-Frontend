@@ -78,6 +78,7 @@ const AdminCandidates = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: candidatesData, isLoading, refetch } = useGetCandidatesQuery();
   const [bulkImportCandidates] = useBulkImportCandidatesMutation();
@@ -99,6 +100,16 @@ const AdminCandidates = () => {
     setDisableModalVisible(false);
     setCandidateToToggle(null);
   };
+
+  const filteredCandidates = candidates.filter(candidate => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      candidate.fullName.toLowerCase().includes(searchLower) ||
+      (candidate.email && candidate.email.toLowerCase().includes(searchLower)) ||
+      (candidate.companyName && candidate.companyName.toLowerCase().includes(searchLower)) ||
+      (candidate.specialization && candidate.specialization.toLowerCase().includes(searchLower))
+    );
+  });
 
   const handleToggleStatus = async () => {
     if (!candidateToToggle) return;
@@ -370,7 +381,7 @@ const AdminCandidates = () => {
                 minWidth: "200px",
               }}
             >
-              <UserOutlined
+              <TeamOutlined
                 size={24}
                 style={{ marginRight: "8px", color: "#2c3e50" }}
               />
@@ -405,6 +416,8 @@ const AdminCandidates = () => {
                 }}
                 size="large"
                 className="custom-search-input"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onSearch={(value) => setSearchTerm(value)}
               />
 
               <Button
@@ -451,7 +464,7 @@ const AdminCandidates = () => {
           >
             <Skeleton />
           </div>
-        ) : candidates?.length > 0 ? (
+        ) : filteredCandidates?.length > 0 ? (
           <Row
             gutter={[16, 16]}
             style={{
@@ -461,7 +474,7 @@ const AdminCandidates = () => {
               marginTop: "16px",
             }}
           >
-            {candidates.map((candidate) => (
+            {filteredCandidates.map((candidate) => (
               <div key={candidate._id}>
                 <Card
                   style={{
