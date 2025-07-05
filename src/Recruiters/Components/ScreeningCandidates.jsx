@@ -24,6 +24,8 @@ import {
   Skeleton,
   Steps,
   Pagination,
+  Avatar,
+  Checkbox
 } from "antd";
 import {
   EyeOutlined,
@@ -33,6 +35,10 @@ import {
   CheckOutlined,
   CloseOutlined,
   ArrowRightOutlined,
+  UserOutlined,
+  BankOutlined,
+  EnvironmentOutlined,
+  ToolOutlined
 } from "@ant-design/icons";
 import {
   useGetJobApplicationsQuery,
@@ -57,6 +63,7 @@ const ScreeningCandidates = ({ jobId }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
+  const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -95,8 +102,6 @@ const ScreeningCandidates = ({ jobId }) => {
   const { data: recruiterStages, isLoading: recruiterStagesLoading } =
     useGetRecruiterStagesQuery(jobId);
 
-  console.log(filteredSource, "Filtered");
-
   const allCandidates = useMemo(() => {
     return (
       jobApplications?.formResponses?.map((response) => ({
@@ -104,6 +109,7 @@ const ScreeningCandidates = ({ jobId }) => {
         candidateStatus: response.status,
         applicationId: response._id,
         responses: response.responses,
+        image: response.user?.image // Ensure image is included from the response
       })) || []
     );
   }, [jobApplications]);
@@ -302,6 +308,33 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
+  const handleSelectCandidate = (candidateId) => {
+    setSelectedCandidates(prev => 
+      prev.includes(candidateId) 
+        ? prev.filter(id => id !== candidateId) 
+        : [...prev, candidateId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const currentPageCandidates = filteredCandidates
+      .slice(
+        (pagination.current - 1) * pagination.pageSize,
+        pagination.current * pagination.pageSize
+      )
+      .map(candidate => candidate._id);
+
+    if (currentPageCandidates.every(id => selectedCandidates.includes(id))) {
+      setSelectedCandidates(prev => 
+        prev.filter(id => !currentPageCandidates.includes(id))
+      );
+    } else {
+      setSelectedCandidates(prev => 
+        [...new Set([...prev, ...currentPageCandidates])]
+      );
+    }
+  };
+
   if (isLoading || recruiterStagesLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -345,6 +378,37 @@ const ScreeningCandidates = ({ jobId }) => {
 
       <Divider style={{ margin: "12px 0" }} />
 
+      {/* Select All Checkbox */}
+      {/* <div style={{ marginBottom: "16px" }}>
+        <Checkbox 
+          onChange={handleSelectAll}
+          checked={
+            filteredCandidates
+              .slice(
+                (pagination.current - 1) * pagination.pageSize,
+                pagination.current * pagination.pageSize
+              )
+              .every(candidate => selectedCandidates.includes(candidate._id))
+          }
+          indeterminate={
+            filteredCandidates
+              .slice(
+                (pagination.current - 1) * pagination.pageSize,
+                pagination.current * pagination.pageSize
+              )
+              .some(candidate => selectedCandidates.includes(candidate._id)) &&
+            !filteredCandidates
+              .slice(
+                (pagination.current - 1) * pagination.pageSize,
+                pagination.current * pagination.pageSize
+              )
+              .every(candidate => selectedCandidates.includes(candidate._id))
+          }
+        >
+          Select all on this page
+        </Checkbox>
+      </div> */}
+
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
         {filteredCandidates.length > 0 ? (
           <>
@@ -354,40 +418,161 @@ const ScreeningCandidates = ({ jobId }) => {
                 pagination.current * pagination.pageSize
               )
               .map((candidate, index) => (
-                <CandidateCard
-                  key={candidate._id || index}
-                  candidate={candidate}
-                  index={index}
-                  onViewProfile={handleViewProfile}
-                  showExperience={true}
-                  showSkills={true}
-                  maxSkills={3}
-                  actions={[
-                    <Button
-                      key="view"
-                      icon={<EyeOutlined />}
-                      onClick={() => handleViewProfile(candidate)}
-                    >
-                      View Profile
-                    </Button>,
+                <div key={candidate._id || index} style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}>
+                  <Card
+                    hoverable
+                    style={{
+                      padding: "clamp(16px, 3vw, 24px)",
+                      borderRadius: "12px"
+                    }}
+                    bodyStyle={{ padding: 0 }}
+                  >
+                    <Row align="middle" gutter={[16, 16]}>
+                      <Col flex="auto">
+                        <Row align="top" gutter={[16, 12]}>
+                          {/* Main Content Column */}
+                          <Col
+                            xs={24}
+                            md={18}
+                            style={{
+                              paddingRight: "clamp(0px, 2vw, 16px)",
+                              marginBottom: "clamp(0px, 3vw, 12px)"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", marginBottom: "clamp(8px, 1.5vw, 12px)" }}>
+                              {/* <Checkbox 
+                                checked={selectedCandidates.includes(candidate._id)}
+                                onChange={() => handleSelectCandidate(candidate._id)}
+                                style={{ marginRight: "8px" }}
+                              /> */}
+                              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 12px" }}>
+                                <Text
+                                  strong
+                                  style={{
+                                    fontSize: "clamp(16px, 1.8vw, 18px)",
+                                    lineHeight: 1.3,
+                                    marginRight: "8px"
+                                  }}
+                                >
+                                  {candidate.fullName}
+                                </Text>
+                                <Tag color="blue" style={{ margin: 0 }}>{candidate.title}</Tag>
+                                <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
+                                  {candidate.totalExperienceYears || 0} years exp
+                                </Text>
+                              </div>
+                            </div>
 
-                    <Button
-                      key="shortlist"
-                      icon={<CheckOutlined />}
-                      onClick={() => handleStatusUpdate("shortlisted")}
-                    >
-                      Shortlist
-                    </Button>,
-                    <Button
-                      key="reject"
-                      danger
-                      icon={<CloseOutlined />}
-                      onClick={() => handleStatusUpdate("rejected")}
-                    >
-                      Reject
-                    </Button>,
-                  ]}
-                />
+                            {/* Company/Location Row */}
+                            <div style={{
+                              marginBottom: "clamp(8px, 1.5vw, 12px)",
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "8px 12px",
+                              alignItems: "center"
+                            }}>
+                              <Space size={4}>
+                                <BankOutlined style={{ color: "#666", fontSize: "14px" }} />
+                                <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }} ellipsis>
+                                  {candidate.currentCompany || candidate.workExperience?.[0]?.company || "Not specified"}
+                                </Text>
+                              </Space>
+
+                              <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+
+                              <Space size={4}>
+                                <EnvironmentOutlined style={{ color: "#666", fontSize: "14px" }} />
+                                <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>{candidate.location}</Text>
+                              </Space>
+
+                              <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+
+                              <Tag color={getScreeningStatusColor(candidate.candidateStatus)}>
+                                {candidate.candidateStatus?.toUpperCase() || "SCREENING"}
+                              </Tag>
+                            </div>
+
+                            {/* Skills Section */}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", alignItems: "center" }}>
+                              <ToolOutlined style={{ color: "#666", fontSize: "14px" }} />
+                              <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>Skills:</Text>
+                              {candidate.skills?.slice(0, 5).map((skill, index) => (
+                                <Tag
+                                  key={index}
+                                  style={{
+                                    margin: 0,
+                                    fontSize: "clamp(12px, 1.3vw, 13px)",
+                                    padding: "2px 8px"
+                                  }}
+                                >
+                                  {skill}
+                                </Tag>
+                              ))}
+                              {candidate.skills?.length > 5 && (
+                                <Tag style={{ margin: 0, fontSize: "clamp(12px, 1.3vw, 13px)" }}>
+                                  +{candidate.skills.length - 5} more
+                                </Tag>
+                              )}
+                            </div>
+                          </Col>
+
+                          {/* Avatar Column */}
+                          <Col
+                            xs={24}
+                            md={6}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "clamp(8px, 1.5vw, 12px)"
+                            }}
+                          >
+                            <div style={{
+                              width: "clamp(80px, 20vw, 100px)",
+                              height: "clamp(80px, 20vw, 100px)",
+                              borderRadius: "12px",
+                              backgroundColor: "#da2c46",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden"
+                            }}>
+                              {candidate.image ? (
+                                <img
+                                  src={candidate.image}
+                                  alt={candidate.fullName}
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover"
+                                  }}
+                                />
+                              ) : (
+                                <UserOutlined style={{ fontSize: "clamp(32px, 8vw, 40px)", color: "#fff" }} />
+                              )}
+                            </div>
+
+                            <Button
+                              type="primary"
+                              style={{
+                                backgroundColor: "#da2c46",
+                                width: "100%",
+                                maxWidth: "100px",
+                                fontSize: "clamp(13px, 1.5vw, 14px)",
+                                padding: "6px 12px"
+                              }}
+                              icon={<EyeOutlined />}
+                              onClick={() => handleViewProfile(candidate)}
+                            >
+                              View
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Col>
+                    </Row>
+                  </Card>
+                </div>
               ))}
             <div style={{ marginTop: 16, textAlign: "right" }}>
               <Pagination
@@ -401,7 +586,8 @@ const ScreeningCandidates = ({ jobId }) => {
                     pageSize: pageSize,
                   }));
                 }}
-                showSizeChanger={false}
+                showSizeChanger
+                pageSizeOptions={[10, 20, 50, 100]}
               />
             </div>
           </>
@@ -512,7 +698,7 @@ const ScreeningCandidates = ({ jobId }) => {
             </Descriptions>
 
             <Divider orientation="left" style={{ margin: "16px 0" }}>
-              Move to Pipeline
+              {/* Move to Pipeline */}
             </Divider>
 
             <div style={{ marginBottom: "16px" }}>
@@ -525,7 +711,6 @@ const ScreeningCandidates = ({ jobId }) => {
               >
                 Move to Pipeline
               </Button>
-            
             </div>
 
             <Divider />

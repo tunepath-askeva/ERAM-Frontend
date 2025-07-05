@@ -295,14 +295,14 @@ const SourcedCandidates = ({ jobId }) => {
   const { sourcedCandidates, selectedCandidatesList } = useMemo(() => {
     const sourced = shouldFetch
       ? allCandidates.filter((candidate) => {
-          const status = candidate.status;
-          return (
-            !status ||
-            status === "sourced" ||
-            status === "applied" ||
-            candidate.isSourced
-          );
-        })
+        const status = candidate.status;
+        return (
+          !status ||
+          status === "sourced" ||
+          status === "applied" ||
+          candidate.isSourced
+        );
+      })
       : [];
 
     const selected = allCandidates.filter(
@@ -710,102 +710,154 @@ const SourcedCandidates = ({ jobId }) => {
             ) : sourcedCandidates.length > 0 ? (
               <>
                 {sourcedCandidates.map((candidate) => (
-                  <div key={candidate._id} style={{ marginBottom: "16px" }}>
-                    <Card hoverable>
+                  <div key={candidate._id} style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}>
+                    <Card
+                      hoverable
+                      style={{
+                        padding: "clamp(16px, 3vw, 24px)",
+                        borderRadius: "12px"
+                      }}
+                      bodyStyle={{ padding: 0 }}
+                    >
                       <Row align="middle" gutter={[16, 16]}>
                         <Col flex="none">
                           <Checkbox
                             checked={selectedCandidates.includes(candidate._id)}
-                            onChange={(e) =>
-                              handleCandidateSelect(
-                                candidate._id,
-                                e.target.checked
-                              )
-                            }
+                            onChange={(e) => handleCandidateSelect(candidate._id, e.target.checked)}
                           />
                         </Col>
 
                         <Col flex="auto">
-                          <Row align="top" gutter={[16, 8]}>
-                            <Col span={18}>
-                              <div style={{ marginBottom: "8px" }}>
-                                <Text
-                                  strong
-                                  style={{
-                                    fontSize: "16px",
-                                    marginRight: "12px",
-                                  }}
-                                >
-                                  {candidate.fullName}
-                                </Text>
-                                <Tag color="blue">{candidate.title}</Tag>
-                                <Text type="secondary">
-                                  {candidate.totalExperienceYears || 0} years
-                                  exp
-                                </Text>
+                          <Row align="top" gutter={[16, 12]}>
+                            {/* Main Content Column - Fluid width */}
+                            <Col
+                              xs={24}
+                              md={18}
+                              style={{
+                                paddingRight: "clamp(0px, 2vw, 16px)",
+                                marginBottom: "clamp(0px, 3vw, 12px)"
+                              }}
+                            >
+                              <div style={{ marginBottom: "clamp(8px, 1.5vw, 12px)" }}>
+                                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 12px" }}>
+                                  <Text
+                                    strong
+                                    style={{
+                                      fontSize: "clamp(16px, 1.8vw, 18px)",
+                                      lineHeight: 1.3,
+                                      marginRight: "8px"
+                                    }}
+                                  >
+                                    {candidate.fullName}
+                                  </Text>
+                                  <Tag color="blue" style={{ margin: 0 }}>{candidate.title}</Tag>
+                                  <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
+                                    {candidate.totalExperienceYears || 0} years exp
+                                  </Text>
+                                </div>
                               </div>
 
-                              <div style={{ marginBottom: "8px" }}>
-                                <Space split={<Divider type="vertical" />}>
-                                  <Space>
-                                    <BankOutlined style={{ color: "#666" }} />
-                                    <Text>
-                                      {candidate.currentCompany ||
-                                        candidate.workExperience?.[0]
-                                          ?.company ||
-                                        "Not specified"}
-                                    </Text>
-                                  </Space>
-                                  <Space>
-                                    <EnvironmentOutlined
-                                      style={{ color: "#666" }}
-                                    />
-                                    <Text>{candidate.location}</Text>
-                                  </Space>
-                                  <Space>
-                                    {getCandidateStatusTag(
-                                      candidate.status,
-                                      candidate.isApplied
-                                    )}
-                                  </Space>
+                              {/* Company/Location Row - Responsive wrapping */}
+                              <div style={{
+                                marginBottom: "clamp(8px, 1.5vw, 12px)",
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "8px 12px",
+                                alignItems: "center"
+                              }}>
+                                <Space size={4}>
+                                  <BankOutlined style={{ color: "#666", fontSize: "14px" }} />
+                                  <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }} ellipsis>
+                                    {candidate.currentCompany || candidate.workExperience?.[0]?.company || "Not specified"}
+                                  </Text>
                                 </Space>
+
+                                <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+
+                                <Space size={4}>
+                                  <EnvironmentOutlined style={{ color: "#666", fontSize: "14px" }} />
+                                  <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>{candidate.location}</Text>
+                                </Space>
+
+                                <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+
+                                <div>
+                                  {getCandidateStatusTag(candidate.status, candidate.isApplied)}
+                                </div>
                               </div>
 
-                              <div>
-                                <Space>
-                                  <ToolOutlined style={{ color: "#666" }} />
-                                  <Text type="secondary">Skills:</Text>
-                                  {candidate.skills
-                                    ?.slice(0, 4)
-                                    .map((skill, index) => (
-                                      <Tag key={index} size="small">
-                                        {skill}
-                                      </Tag>
-                                    ))}
-                                  {candidate.skills?.length > 4 && (
-                                    <Tag size="small" color="default">
-                                      +{candidate.skills.length - 4} more
-                                    </Tag>
-                                  )}
-                                </Space>
+                              {/* Skills Section - Fluid wrapping */}
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", alignItems: "center" }}>
+                                <ToolOutlined style={{ color: "#666", fontSize: "14px" }} />
+                                <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>Skills:</Text>
+                                {candidate.skills?.slice(0, 5).map((skill, index) => (
+                                  <Tag
+                                    key={index}
+                                    style={{
+                                      margin: 0,
+                                      fontSize: "clamp(12px, 1.3vw, 13px)",
+                                      padding: "2px 8px"
+                                    }}
+                                  >
+                                    {skill}
+                                  </Tag>
+                                ))}
+                                {candidate.skills?.length > 5 && (
+                                  <Tag style={{ margin: 0, fontSize: "clamp(12px, 1.3vw, 13px)" }}>
+                                    +{candidate.skills.length - 5} more
+                                  </Tag>
+                                )}
                               </div>
                             </Col>
 
-                            <Col span={6} style={{ textAlign: "center" }}>
-                              <div style={{ marginBottom: "8px" }}>
-                                <Avatar
-                                  size={60}
-                                  src={candidate.image}
-                                  icon={!candidate.image && <UserOutlined />}
-                                  style={{ backgroundColor: "#da2c46" }}
-                                />
+                            {/* Avatar Column - Responsive sizing */}
+                            <Col
+                              xs={24}
+                              md={6}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "clamp(8px, 1.5vw, 12px)"
+                              }}
+                            >
+                              <div style={{
+                                width: "clamp(80px, 20vw, 100px)",
+                                height: "clamp(80px, 20vw, 100px)",
+                                borderRadius: "12px",
+                                backgroundColor: "#da2c46",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden"
+                              }}>
+                                {candidate.image ? (
+                                  <img
+                                    src={candidate.image}
+                                    alt={candidate.fullName}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover"
+                                    }}
+                                  />
+                                ) : (
+                                  <UserOutlined style={{ fontSize: "clamp(32px, 8vw, 40px)", color: "#fff" }} />
+                                )}
                               </div>
+
                               <Button
                                 type="primary"
-                                size="small"
+                                style={{
+                                  backgroundColor: "#da2c46",
+                                  width: "100%",
+                                  maxWidth: "100px",
+                                  fontSize: "clamp(13px, 1.5vw, 14px)",
+                                  padding: "6px 12px"
+                                }}
                                 icon={<EyeOutlined />}
                                 onClick={() => handleViewProfile(candidate)}
-                                style={{ backgroundColor: "#da2c46" }}
                               >
                                 View Profile
                               </Button>
