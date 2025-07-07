@@ -120,7 +120,7 @@ const CandidateCard = ({
   const experience = getExperienceDisplay();
 
   const handleViewProfile = () => {
-    navigate(`/recruiter/candidates/${candidate._id}`);
+    onViewProfile(candidate);
   };
 
   const formatSalary = (salary) => {
