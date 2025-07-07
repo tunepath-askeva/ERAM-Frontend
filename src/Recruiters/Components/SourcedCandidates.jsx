@@ -45,14 +45,11 @@ import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
-  useGetSelectedCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
-import SelectedCandidates from "./SelelctedCandidates";
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 const { Panel } = Collapse;
 const { Option } = Select;
 
@@ -134,12 +131,10 @@ const languageOptions = [
 ];
 
 const SourcedCandidates = ({ jobId }) => {
-  const [activeTab, setActiveTab] = useState("sourced");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
-  const [screeningCount, setScreeningCount] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
 
   const [pagination, setPagination] = useState({
@@ -208,7 +203,6 @@ const SourcedCandidates = ({ jobId }) => {
     if (filters.profileUpdated) {
       params.append("profileUpdated", filters.profileUpdated);
     }
-
     if (filters.visaStatus) {
       params.append("visaStatus", filters.visaStatus);
     }
@@ -235,17 +229,12 @@ const SourcedCandidates = ({ jobId }) => {
     skip: !shouldFetch || !queryParams,
   });
 
-  const { data: selectedCandidateData } = useGetSelectedCandidatesQuery();
-
-  const selectedCandidateCount =
-    selectedCandidateData?.customFieldResponses?.length || 0;
   const {
     data: jobApplications,
     isLoading: jobLoading,
     error: jobError,
     refetch: jobRefetch,
   } = useGetJobApplicationsQuery(jobId);
-  const { refetch: refetchScreening } = useGetJobApplicationsQuery(jobId);
 
   useEffect(() => {
     if (sourcedCandidatesData) {
@@ -298,24 +287,18 @@ const SourcedCandidates = ({ jobId }) => {
     return merged;
   }, [jobApplications, sourcedCandidatesData]);
 
-  const { sourcedCandidates, selectedCandidatesList } = useMemo(() => {
+  const sourcedCandidates = useMemo(() => {
     if (!shouldFetch) {
-      return { sourcedCandidates: [], selectedCandidatesList: [] };
+      return [];
     }
 
-    const sourced = allCandidates.filter((candidate) => {
+    return allCandidates.filter((candidate) => {
       const status = candidate.status;
       return (
         status !== "selected" &&
         (status === "sourced" || status === "applied" || !status)
       );
     });
-
-    const selected = allCandidates.filter(
-      (candidate) => candidate.status === "selected"
-    );
-
-    return { sourcedCandidates: sourced, selectedCandidatesList: selected };
   }, [allCandidates, shouldFetch]);
 
   const hasActiveFilters = useMemo(() => {
@@ -346,12 +329,6 @@ const SourcedCandidates = ({ jobId }) => {
 
   const handleFilterModalCancel = () => {
     setIsFilterModalVisible(false);
-  };
-
-  const handleSelectedStatusUpdate = () => {
-    refetchScreening();
-    jobRefetch();
-    refetchSourced();
   };
 
   const handleClearSearch = () => {
@@ -589,203 +566,169 @@ const SourcedCandidates = ({ jobId }) => {
         </Title>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        size={window.innerWidth < 768 ? "small" : "default"}
-        tabBarStyle={{
-          marginBottom: window.innerWidth < 768 ? "8px" : "16px",
-        }}
+      <Row
+        justify="space-between"
+        align="middle"
+        style={{ marginBottom: "20px" }}
       >
-        <TabPane
-          tab={
-            <span style={{ color: "#da2c46" }}>
-              <UserOutlined />
-              Sourced ({sourcedCandidates.length})
-            </span>
-          }
-          key="sourced"
-        >
-          <Row
-            justify="space-between"
-            align="middle"
-            style={{ marginBottom: "20px" }}
-          >
-            <Col>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<FilterOutlined />}
-                  onClick={showFilterModal}
-                  style={{ backgroundColor: "#da2c46" }}
-                >
-                  Advanced Filters
-                </Button>
-                {hasActiveFilters && (
-                  <Button icon={<ClearOutlined />} onClick={handleClearSearch}>
-                    Clear All
-                  </Button>
-                )}
-              </Space>
-            </Col>
-            <Col>
-              <Space>
-                <Text>
-                  {selectedCandidates.length} selected of{" "}
-                  {sourcedCandidates.length} candidates
-                </Text>
-                {selectedCandidates.length > 0 && (
-                  <Button
-                    type="primary"
-                    size="small"
-                    style={{ backgroundColor: "#da2c46" }}
-                    onClick={() => handleBulkStatusUpdate("selected")}
-                  >
-                    Move to Selected
-                  </Button>
-                )}
-              </Space>
-            </Col>
-          </Row>
-
-          {hasActiveFilters && (
-            <Card size="small" style={{ marginBottom: "20px" }}>
-              <Space wrap>
-                <Text strong>Active Filters:</Text>
-                {filters.skills.map((skill) => (
-                  <Tag key={skill} color="blue">
-                    {skill}
-                  </Tag>
-                ))}
-                {filters.location && (
-                  <Tag color="green">Location: {filters.location}</Tag>
-                )}
-                {filters.company && (
-                  <Tag color="orange">Company: {filters.company}</Tag>
-                )}
-                {filters.qualification && (
-                  <Tag color="purple">
-                    Qualification: {filters.qualification}
-                  </Tag>
-                )}
-                {filters.jobRole && (
-                  <Tag color="cyan">Role: {filters.jobRole}</Tag>
-                )}
-                {(filters.experience[0] > 0 || filters.experience[1] < 20) && (
-                  <Tag color="red">
-                    Experience: {filters.experience[0]}-{filters.experience[1]}{" "}
-                    years
-                  </Tag>
-                )}
-                {(filters.salary[0] > 0 || filters.salary[1] < 100000) && (
-                  <Tag color="gold">
-                    Salary: ₹{filters.salary[0] / 1000}K-₹
-                    {filters.salary[1] / 1000}K
-                  </Tag>
-                )}
-              </Space>
-            </Card>
-          )}
-
-          {shouldFetch && sourcedCandidates.length > 0 && (
-            <Card size="small" style={{ marginBottom: "16px" }}>
-              <Checkbox
-                checked={selectAll}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              >
-                Select all candidates on this page
-              </Checkbox>
-            </Card>
-          )}
-
-          <Divider
-            style={{ margin: window.innerWidth < 768 ? "8px 0" : "12px 0" }}
-          />
-
-          <div>
-            {!shouldFetch ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <span style={{ fontSize: "14px", color: "#999" }}>
-                    Use the advanced filters to find candidates
-                  </span>
-                }
-              />
-            ) : isSourcedLoading ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <Skeleton active />
-                <Skeleton active />
-                <Skeleton active />
-              </div>
-            ) : sourcedError ? (
-              <Alert
-                message="Failed to load sourced candidates"
-                description="Unable to fetch sourced candidates data"
-                type="error"
-                showIcon
-              />
-            ) : sourcedCandidates.length > 0 ? (
-              <>
-                {sourcedCandidates.map((candidate) => (
-                  <CandidateCard
-                    key={candidate._id}
-                    candidate={candidate}
-                    onViewProfile={handleViewProfile}
-                    showExperience={true}
-                    showSkills={true}
-                    maxSkills={5}
-                    onSelectCandidate={handleCandidateSelect}
-                    isSelected={selectedCandidates.includes(candidate._id)}
-                    isSelectable={true}
-                  />
-                ))}
-
-                <div style={{ marginTop: 16, textAlign: "center" }}>
-                  <Pagination
-                    current={pagination.current}
-                    pageSize={pagination.pageSize}
-                    total={pagination.total}
-                    onChange={handlePaginationChange}
-                    showSizeChanger={true}
-                    showQuickJumper={true}
-                    showTotal={(total, range) =>
-                      `${range[0]}-${range[1]} of ${total} candidates`
-                    }
-                    pageSizeOptions={["10", "20", "50"]}
-                    simple={window.innerWidth < 768}
-                    size={window.innerWidth < 768 ? "small" : "default"}
-                  />
-                </div>
-              </>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <span style={{ fontSize: "14px", color: "#999" }}>
-                    No candidates found matching your search criteria
-                  </span>
-                }
-              />
+        <Col>
+          <Space>
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={showFilterModal}
+              style={{ backgroundColor: "#da2c46" }}
+            >
+              Advanced Filters
+            </Button>
+            {hasActiveFilters && (
+              <Button icon={<ClearOutlined />} onClick={handleClearSearch}>
+                Clear All
+              </Button>
             )}
-          </div>
-        </TabPane>
+          </Space>
+        </Col>
+        <Col>
+          <Space>
+            <Text>
+              {selectedCandidates.length} selected of{" "}
+              {sourcedCandidates.length} candidates
+            </Text>
+            {selectedCandidates.length > 0 && (
+              <Button
+                type="primary"
+                size="small"
+                style={{ backgroundColor: "#da2c46" }}
+                onClick={() => handleBulkStatusUpdate("selected")}
+              >
+                Move to Selected
+              </Button>
+            )}
+          </Space>
+        </Col>
+      </Row>
 
-        <TabPane
-          tab={
-            <span style={{ color: "#da2c46" }}>
-              <CheckOutlined />
-              Selected ({selectedCandidateCount})
-            </span>
-          }
-          key="selected"
-        >
-          <SelectedCandidates
-            jobId={jobId}
-            onStatusUpdate={handleSelectedStatusUpdate}
+      {hasActiveFilters && (
+        <Card size="small" style={{ marginBottom: "20px" }}>
+          <Space wrap>
+            <Text strong>Active Filters:</Text>
+            {filters.skills.map((skill) => (
+              <Tag key={skill} color="blue">
+                {skill}
+              </Tag>
+            ))}
+            {filters.location && (
+              <Tag color="green">Location: {filters.location}</Tag>
+            )}
+            {filters.company && (
+              <Tag color="orange">Company: {filters.company}</Tag>
+            )}
+            {filters.qualification && (
+              <Tag color="purple">
+                Qualification: {filters.qualification}
+              </Tag>
+            )}
+            {filters.jobRole && (
+              <Tag color="cyan">Role: {filters.jobRole}</Tag>
+            )}
+            {(filters.experience[0] > 0 || filters.experience[1] < 20) && (
+              <Tag color="red">
+                Experience: {filters.experience[0]}-{filters.experience[1]}{" "}
+                years
+              </Tag>
+            )}
+            {(filters.salary[0] > 0 || filters.salary[1] < 100000) && (
+              <Tag color="gold">
+                Salary: ₹{filters.salary[0] / 1000}K-₹
+                {filters.salary[1] / 1000}K
+              </Tag>
+            )}
+          </Space>
+        </Card>
+      )}
+
+      {shouldFetch && sourcedCandidates.length > 0 && (
+        <Card size="small" style={{ marginBottom: "16px" }}>
+          <Checkbox
+            checked={selectAll}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+          >
+            Select all candidates on this page
+          </Checkbox>
+        </Card>
+      )}
+
+      <Divider
+        style={{ margin: window.innerWidth < 768 ? "8px 0" : "12px 0" }}
+      />
+
+      <div>
+        {!shouldFetch ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span style={{ fontSize: "14px", color: "#999" }}>
+                Use the advanced filters to find candidates
+              </span>
+            }
           />
-        </TabPane>
-      </Tabs>
+        ) : isSourcedLoading ? (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <Skeleton active />
+            <Skeleton active />
+            <Skeleton active />
+          </div>
+        ) : sourcedError ? (
+          <Alert
+            message="Failed to load sourced candidates"
+            description="Unable to fetch sourced candidates data"
+            type="error"
+            showIcon
+          />
+        ) : sourcedCandidates.length > 0 ? (
+          <>
+            {sourcedCandidates.map((candidate) => (
+              <CandidateCard
+                key={candidate._id}
+                candidate={candidate}
+                onViewProfile={handleViewProfile}
+                showExperience={true}
+                showSkills={true}
+                maxSkills={5}
+                onSelectCandidate={handleCandidateSelect}
+                isSelected={selectedCandidates.includes(candidate._id)}
+                isSelectable={true}
+              />
+            ))}
+
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={pagination.total}
+                onChange={handlePaginationChange}
+                showSizeChanger={true}
+                showQuickJumper={true}
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} candidates`
+                }
+                pageSizeOptions={["10", "20", "50"]}
+                simple={window.innerWidth < 768}
+                size={window.innerWidth < 768 ? "small" : "default"}
+              />
+            </div>
+          </>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span style={{ fontSize: "14px", color: "#999" }}>
+                No candidates found matching your search criteria
+              </span>
+            }
+          />
+        )}
+      </div>
 
       {/* Advanced Filter Modal */}
       <Modal
