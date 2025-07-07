@@ -20,6 +20,8 @@ import {
   BankOutlined,
   ToolOutlined,
   EyeOutlined,
+  DollarOutlined,
+  GlobalOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -37,6 +39,7 @@ const CandidateCard = ({
   isSelectable = false,
 }) => {
   const navigate = useNavigate();
+
   const calculateExperience = (workExperience) => {
     if (
       !workExperience ||
@@ -48,24 +51,92 @@ const CandidateCard = ({
 
     let totalMonths = 0;
     workExperience.forEach((exp) => {
-      if (exp.startDate) {
+      // Skip if startDate is null or undefined
+      if (!exp.startDate) {
+        return;
+      }
+
+      try {
         const start = new Date(exp.startDate);
-        const end = exp.endDate ? new Date(exp.endDate) : new Date();
+
+        // Check if startDate is valid
+        if (isNaN(start.getTime())) {
+          return;
+        }
+
+        let end;
+        // Handle endDate - check for "Present" or null/undefined
+        if (
+          !exp.endDate ||
+          exp.endDate === "Present" ||
+          exp.endDate === "present"
+        ) {
+          end = new Date();
+        } else {
+          end = new Date(exp.endDate);
+          // Check if endDate is valid
+          if (isNaN(end.getTime())) {
+            end = new Date();
+          }
+        }
+
         const monthsDiff =
           (end.getFullYear() - start.getFullYear()) * 12 +
           (end.getMonth() - start.getMonth());
-        totalMonths += monthsDiff;
+
+        // Only add positive months
+        if (monthsDiff > 0) {
+          totalMonths += monthsDiff;
+        }
+      } catch (error) {
+        console.warn("Error calculating experience for:", exp);
+        return;
       }
     });
 
     return Math.round((totalMonths / 12) * 10) / 10;
   };
 
-  const experience = calculateExperience(candidate.workExperience);
+  const getExperienceDisplay = () => {
+    // First check if totalExperienceYears is available
+    if (candidate.totalExperienceYears) {
+      return candidate.totalExperienceYears;
+    }
 
-const handleViewProfile = () => {
-  onViewProfile(candidate); 
-};
+    // Otherwise calculate from work experience
+    const calculatedExp = calculateExperience(candidate.workExperience);
+
+    if (calculatedExp === 0) {
+      return "Fresher";
+    }
+
+    if (calculatedExp < 1) {
+      return "< 1 year";
+    }
+
+    return `${calculatedExp} year${calculatedExp !== 1 ? "s" : ""}`;
+  };
+
+  const experience = getExperienceDisplay();
+
+  const handleViewProfile = () => {
+    navigate(`/recruiter/candidates/${candidate._id}`);
+  };
+
+  const formatSalary = (salary) => {
+    if (!salary || salary === "0") return null;
+
+    const numSalary = parseFloat(salary);
+    if (isNaN(numSalary)) return salary;
+
+    if (numSalary >= 100000) {
+      return `₹${(numSalary / 100000).toFixed(1)}L`;
+    } else if (numSalary >= 1000) {
+      return `₹${(numSalary / 1000).toFixed(0)}K`;
+    } else {
+      return `₹${numSalary}`;
+    }
+  };
 
   const getCandidateStatusTag = (status, isApplied) => {
     if (!status || status === "sourced") {
@@ -155,7 +226,7 @@ const handleViewProfile = () => {
                         type="secondary"
                         style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
                       >
-                        {experience || 0} years exp
+                        {experience} exp
                       </Text>
                     )}
                   </div>
@@ -176,6 +247,7 @@ const handleViewProfile = () => {
                       style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
                       ellipsis
                     >
+                      Current Company :{" "}
                       {candidate.currentCompany ||
                         candidate.workExperience?.[0]?.company ||
                         "Not specified"}
@@ -192,7 +264,7 @@ const handleViewProfile = () => {
                       style={{ color: "#666", fontSize: "14px" }}
                     />
                     <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
-                      {candidate.location || "Not specified"}
+                      Current Location : {candidate.location || "Not specified"}
                     </Text>
                   </Space>
 
@@ -209,6 +281,52 @@ const handleViewProfile = () => {
                   </div>
                 </div>
 
+                {/* Second row with salary and nationality */}
+                <div
+                  style={{
+                    marginBottom: "clamp(8px, 1.5vw, 12px)",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px 12px",
+                    alignItems: "center",
+                  }}
+                >
+                  {formatSalary(candidate.currentSalary) && (
+                    <>
+                      <Space size={4}>
+                        <DollarOutlined
+                          style={{ color: "#666", fontSize: "14px" }}
+                        />
+                        <Text
+                          style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
+                          type="secondary"
+                        >
+                          Current Salary:{" "}
+                          {formatSalary(candidate.currentSalary)}
+                        </Text>
+                      </Space>
+
+                      {candidate.nationality && (
+                        <Divider
+                          type="vertical"
+                          style={{ margin: 0, height: "auto" }}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {candidate.nationality && (
+                    <Space size={4}>
+                      <GlobalOutlined
+                        style={{ color: "#666", fontSize: "14px" }}
+                      />
+                      <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
+                        Nationality : {candidate.nationality}
+                      </Text>
+                    </Space>
+                  )}
+                </div>
+
                 {showSkills && candidate.skills?.length > 0 && (
                   <div
                     style={{
@@ -223,7 +341,7 @@ const handleViewProfile = () => {
                       type="secondary"
                       style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
                     >
-                      Skills:
+                      Key Skills:
                     </Text>
                     {candidate.skills
                       .slice(0, maxSkills)

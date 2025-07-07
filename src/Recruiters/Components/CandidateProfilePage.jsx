@@ -246,7 +246,7 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                 {candidate.resumeUrl ? (
                   <iframe
                     src={candidate.resumeUrl}
-                    style={{ width: "100%", height: "800px", border: "none" }}
+                    style={{ width: "100%", height: "600px", border: "none" }}
                     title="Candidate Resume"
                   />
                 ) : (
