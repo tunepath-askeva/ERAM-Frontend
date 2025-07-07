@@ -1,11 +1,27 @@
 import React from "react";
-import { Card, Tag, Typography, Row, Col, Avatar, Button, Space } from "antd";
+import {
+  Card,
+  Tag,
+  Typography,
+  Row,
+  Col,
+  Avatar,
+  Button,
+  Space,
+  Checkbox,
+  Divider,
+} from "antd";
 import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
   TrophyOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  ToolOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -16,7 +32,11 @@ const CandidateCard = ({
   showExperience = true,
   showSkills = true,
   maxSkills = 3,
+  onSelectCandidate,
+  isSelected,
+  isSelectable = false,
 }) => {
+  const navigate = useNavigate();
   const calculateExperience = (workExperience) => {
     if (
       !workExperience ||
@@ -43,135 +63,259 @@ const CandidateCard = ({
 
   const experience = calculateExperience(candidate.workExperience);
 
-  const handleViewProfile = () => {
-    if (onViewProfile) {
-      onViewProfile(candidate);
-    } else {
-      console.log("View candidate:", candidate);
+const handleViewProfile = () => {
+  onViewProfile(candidate); 
+};
+
+  const getCandidateStatusTag = (status, isApplied) => {
+    if (!status || status === "sourced") {
+      return isApplied ? (
+        <Tag color="blue">Applied</Tag>
+      ) : (
+        <Tag color="default">Sourced</Tag>
+      );
     }
+
+    const statusColors = {
+      applied: "blue",
+      selected: "green",
+      screening: "orange",
+      hired: "purple",
+      rejected: "red",
+    };
+
+    return (
+      <Tag color={statusColors[status] || "default"}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Tag>
+    );
   };
 
   return (
-    <Card
+    <div
       key={candidate._id || index}
-      size="small"
-      style={{
-        marginBottom: "12px",
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-      }}
-      hoverable
+      style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}
     >
-      <Row gutter={[16, 12]} align="middle">
-        <Col flex="none">
-          <Avatar
-            size={48}
-            icon={<UserOutlined />}
-            style={{ backgroundColor: "#1890ff" }}
-          >
-            {candidate?.fullName?.charAt(0)?.toUpperCase()}
-          </Avatar>
-        </Col>
+      <Card
+        hoverable
+        style={{
+          padding: "clamp(16px, 3vw, 24px)",
+          borderRadius: "12px",
+        }}
+        bodyStyle={{ padding: 0 }}
+      >
+        <Row align="middle" gutter={[16, 16]}>
+          {isSelectable && (
+            <Col flex="none">
+              <Checkbox
+                checked={isSelected}
+                onChange={(e) =>
+                  onSelectCandidate(candidate._id, e.target.checked)
+                }
+              />
+            </Col>
+          )}
 
-        <Col flex="auto">
-          <div>
-            <Title
-              level={5}
-              style={{
-                margin: "0 0 4px 0",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              {candidate?.fullName || "Unknown Candidate"}
-            </Title>
-
-            <Space direction="vertical" size={2}>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          <Col flex="auto">
+            <Row align="top" gutter={[16, 12]}>
+              <Col
+                xs={24}
+                md={18}
+                style={{
+                  paddingRight: "clamp(0px, 2vw, 16px)",
+                  marginBottom: "clamp(0px, 3vw, 12px)",
+                }}
               >
-                <MailOutlined style={{ fontSize: "12px", color: "#666" }} />
-                <Text style={{ fontSize: "13px", color: "#666" }}>
-                  {candidate?.email || "No email provided"}
-                </Text>
-              </div>
-
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <PhoneOutlined style={{ fontSize: "12px", color: "#666" }} />
-                <Text style={{ fontSize: "13px", color: "#666" }}>
-                  {candidate?.phone || "No phone provided"}
-                </Text>
-              </div>
-
-              {showExperience && experience > 0 && (
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <TrophyOutlined style={{ fontSize: "12px", color: "#666" }} />
-                  <Text style={{ fontSize: "13px", color: "#666" }}>
-                    {experience} years experience
-                  </Text>
+                <div style={{ marginBottom: "clamp(8px, 1.5vw, 12px)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: "8px 12px",
+                    }}
+                  >
+                    <Text
+                      strong
+                      style={{
+                        fontSize: "clamp(16px, 1.8vw, 18px)",
+                        lineHeight: 1.3,
+                        marginRight: "8px",
+                      }}
+                    >
+                      {candidate.fullName || "Unknown Candidate"}
+                    </Text>
+                    {candidate.title && (
+                      <Tag color="blue" style={{ margin: 0 }}>
+                        {candidate.title}
+                      </Tag>
+                    )}
+                    {showExperience && (
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
+                      >
+                        {experience || 0} years exp
+                      </Text>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {candidate.location && (
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{
+                    marginBottom: "clamp(8px, 1.5vw, 12px)",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px 12px",
+                    alignItems: "center",
+                  }}
                 >
-                  <span style={{ fontSize: "12px", color: "#666" }}>📍</span>
-                  <Text style={{ fontSize: "13px", color: "#666" }}>
-                    {candidate.location}
-                  </Text>
-                </div>
-              )}
+                  <Space size={4}>
+                    <BankOutlined style={{ color: "#666", fontSize: "14px" }} />
+                    <Text
+                      style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
+                      ellipsis
+                    >
+                      {candidate.currentCompany ||
+                        candidate.workExperience?.[0]?.company ||
+                        "Not specified"}
+                    </Text>
+                  </Space>
 
-              {showSkills &&
-                candidate.skills &&
-                candidate.skills.length > 0 && (
-                  <div style={{ marginTop: "4px" }}>
-                    <Space size={4} wrap>
-                      {candidate.skills
-                        .slice(0, maxSkills)
-                        .map((skill, idx) => (
-                          <Tag key={idx} size="small" color="blue">
-                            {skill}
-                          </Tag>
-                        ))}
-                      {candidate.skills.length > maxSkills && (
-                        <Tag size="small" color="default">
-                          +{candidate.skills.length - maxSkills} more
+                  <Divider
+                    type="vertical"
+                    style={{ margin: 0, height: "auto" }}
+                  />
+
+                  <Space size={4}>
+                    <EnvironmentOutlined
+                      style={{ color: "#666", fontSize: "14px" }}
+                    />
+                    <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
+                      {candidate.location || "Not specified"}
+                    </Text>
+                  </Space>
+
+                  <Divider
+                    type="vertical"
+                    style={{ margin: 0, height: "auto" }}
+                  />
+
+                  <div>
+                    {getCandidateStatusTag(
+                      candidate.status,
+                      candidate.isApplied
+                    )}
+                  </div>
+                </div>
+
+                {showSkills && candidate.skills?.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px 8px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <ToolOutlined style={{ color: "#666", fontSize: "14px" }} />
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
+                    >
+                      Skills:
+                    </Text>
+                    {candidate.skills
+                      .slice(0, maxSkills)
+                      .map((skill, index) => (
+                        <Tag
+                          key={index}
+                          style={{
+                            margin: 0,
+                            fontSize: "clamp(12px, 1.3vw, 13px)",
+                            padding: "2px 8px",
+                          }}
+                        >
+                          {skill}
                         </Tag>
-                      )}
-                    </Space>
+                      ))}
+                    {candidate.skills.length > maxSkills && (
+                      <Tag
+                        style={{
+                          margin: 0,
+                          fontSize: "clamp(12px, 1.3vw, 13px)",
+                        }}
+                      >
+                        +{candidate.skills.length - maxSkills} more
+                      </Tag>
+                    )}
                   </div>
                 )}
-            </Space>
-          </div>
-        </Col>
+              </Col>
 
-        <Col flex="none">
-          <Space direction="vertical" size={4} align="end">
-            <Tag
-              color={candidate.status === "contacted" ? "blue" : "orange"}
-              style={{ fontSize: "11px" }}
-            >
-              {candidate.status || "new"}
-            </Tag>
+              <Col
+                xs={24}
+                md={6}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "clamp(8px, 1.5vw, 12px)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "clamp(80px, 20vw, 100px)",
+                    height: "clamp(80px, 20vw, 100px)",
+                    borderRadius: "12px",
+                    backgroundColor: "#da2c46",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  {candidate.image ? (
+                    <img
+                      src={candidate.image}
+                      alt={candidate.fullName}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <UserOutlined
+                      style={{
+                        fontSize: "clamp(32px, 8vw, 40px)",
+                        color: "#fff",
+                      }}
+                    />
+                  )}
+                </div>
 
-            <Button
-              type="primary"
-              size="small"
-              style={{ fontSize: "12px", background: "#da2c46" }}
-              onClick={handleViewProfile}
-            >
-              View Profile
-            </Button>
-          </Space>
-        </Col>
-      </Row>
-    </Card>
+                <Button
+                  type="primary"
+                  style={{
+                    backgroundColor: "#da2c46",
+                    width: "100%",
+                    maxWidth: "100px",
+                    fontSize: "clamp(13px, 1.5vw, 14px)",
+                    padding: "6px 12px",
+                  }}
+                  icon={<EyeOutlined />}
+                  onClick={handleViewProfile}
+                >
+                  View Profile
+                </Button>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+      </Card>
+    </div>
   );
 };
 
