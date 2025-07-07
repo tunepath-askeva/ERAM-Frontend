@@ -58,7 +58,7 @@ const SelectedCandidates = ({ jobId }) => {
       applicationId: response._id,
       status: response.status,
       isSourced: response.isSourced,
-      isApplied: true, // Since these are selected candidates, they must have applied
+      isApplied: true, 
       responses: response.responses,
       createdAt: response.createdAt,
       updatedAt: response.updatedAt,
@@ -135,7 +135,7 @@ const SelectedCandidates = ({ jobId }) => {
         Id: selectedCandidate._id,
         status: newStatus,
         jobId: jobId,
-        isSourced: selectedCandidate.isSourced,
+        isSourced:true,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
