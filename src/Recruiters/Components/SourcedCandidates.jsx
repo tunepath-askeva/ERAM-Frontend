@@ -417,7 +417,7 @@ const SourcedCandidates = ({ jobId }) => {
           Id: candidate._id,
           status: newStatus,
           jobId: jobId,
-          isSourced: candidate.isSourced,
+          isSourced: true,
         }).unwrap();
       });
 
