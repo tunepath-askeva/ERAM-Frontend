@@ -350,7 +350,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     ...notificationList,
   ];
 
-    const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
+  const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
 
   const handleLogout = async () => {
     try {
@@ -369,8 +369,8 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
       enqueueSnackbar(
         error?.data?.message ||
-          error?.message ||
-          "Logout failed. Please try again.",
+        error?.message ||
+        "Logout failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -387,51 +387,124 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   };
 
   const notificationMenu = (
-  <div
-    style={{
-      maxWidth: 300,
-      maxHeight: 300,
-      overflowY: "auto",
-      padding: "10px",
-    }}
-  >
-    {unreadNotifications.length === 0 ? (
-      <Empty
-        description="No new notifications"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
-    ) : (
-      <>
-        <List
-          dataSource={unreadNotifications}
-          renderItem={(item) => (
-            <List.Item
-              key={item._id}
-              onClick={() => handleNotificationClick(item)}
+    <div
+      style={{
+        width: "min(350px, 90vw)",
+        maxHeight: "400px",
+        overflowY: "auto",
+        padding: "12px 0",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+        backgroundColor: "#ffffff",
+      }}
+    >
+      {unreadNotifications.length === 0 ? (
+        <div style={{ padding: "24px 16px", textAlign: "center" }}>
+          <Empty
+            description={
+              <span style={{ color: "#666", fontSize: "14px" }}>
+                No new notifications
+              </span>
+            }
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            imageStyle={{ height: 60 }}
+          />
+        </div>
+      ) : (
+        <>
+          <div style={{ padding: "0 16px 8px", borderBottom: "1px solid #f0f0f0" }}>
+            <Text strong style={{ fontSize: "16px" }}>
+              Notifications
+            </Text>
+          </div>
+          <List
+            dataSource={unreadNotifications}
+            renderItem={(item) => (
+              <List.Item
+                key={item._id}
+                onClick={() => handleNotificationClick(item)}
+                style={{
+                  cursor: "pointer",
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #f5f5f5",
+                  transition: "background-color 0.2s",
+                  ":hover": {
+                    backgroundColor: "#f9f9f9",
+                  },
+                }}
+              >
+                <div style={{ width: "100%" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <Text strong style={{ fontSize: "14px" }}>
+                      {item.title}
+                    </Text>
+                    {item.isUnread && (
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          backgroundColor: "#1890ff",
+                        }}
+                      />
+                    )}
+                  </div>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: "13px",
+                      display: "block",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    {item.message}
+                  </Text>
+                  {item.timestamp && (
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: "11px",
+                        marginTop: "4px",
+                        display: "block",
+                      }}
+                    >
+                      {formatDate(item.timestamp)}
+                    </Text>
+                  )}
+                </div>
+              </List.Item>
+            )}
+          />
+          <div
+            style={{
+              padding: "12px 16px 8px",
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "center",
+            }}
+          >
+            <Button
+              type="text"
+              onClick={() => navigate("/notifications")}
               style={{
-                cursor: "pointer",
-                backgroundColor: "#e6f7ff",
-                borderLeft: "4px solid #1890ff",
-                paddingLeft: 10,
+                color: "#da2c46",
+                fontWeight: 500,
+                fontSize: "14px",
               }}
             >
-              <div>
-                <Text strong>{item.title}</Text>
-                <br />
-                <Text type="secondary">{item.message}</Text>
-              </div>
-            </List.Item>
-          )}
-        />
-        <div style={{ textAlign: "center", marginTop: 10 }}>
-          <Button type="link" onClick={() => navigate("/notifications")}>
-            View All Notifications
-          </Button>
-        </div>
-      </>
-    )}
-  </div>
-);
+              View All Notifications
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
 
   const userMenuItems = [

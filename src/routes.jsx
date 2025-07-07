@@ -57,6 +57,7 @@ import HrDashboard from "./HR/Pages/HrDashboard";
 import HrPayroll from "./HR/Pages/HrPayroll";
 import HrEmployees from "./HR/Pages/HrEmployees";
 import ProtectedCandidate from "./Auth/ProtectedCandidate";
+import Notifications from "./Pages/Notifications";
 
 const AppRoutes = () => {
   return (
@@ -177,6 +178,10 @@ const AppRoutes = () => {
         <Route
           path="/candidate-settings"
           element={<ProtectedCandidate element={<CandidateSettings />} />}
+        />
+        <Route
+          path="/notifications"
+          element={<ProtectedCandidate element={<Notifications />} />}
         />
       </Route>
 
