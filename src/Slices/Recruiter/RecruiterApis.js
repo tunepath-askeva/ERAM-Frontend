@@ -62,6 +62,18 @@ export const recruiterApi = createApi({
         };
       },
     }),
+    getSelectedCandidates: builder.query({
+      query: () => ({
+        url: "/selected",
+        method: "GET",
+      }),
+    }),
+    getScreeningCandidates: builder.query({
+      query: () => ({
+        url: "/screening",
+        method: "GET",
+      }),
+    }),
 
     updateCandidateStatus: builder.mutation({
       query: ({ Id, status, jobId, isSourced }) => ({
@@ -173,6 +185,8 @@ export const {
   useGetRecruiterJobIdQuery,
   useGetJobApplicationsQuery,
   useGetSourcedCandidateQuery,
+  useGetSelectedCandidatesQuery,
+  useGetScreeningCandidatesQuery,
   useUpdateCandidateStatusMutation,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,

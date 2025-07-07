@@ -25,7 +25,7 @@ import {
   Steps,
   Pagination,
   Avatar,
-  Checkbox
+  Checkbox,
 } from "antd";
 import {
   EyeOutlined,
@@ -38,16 +38,14 @@ import {
   UserOutlined,
   BankOutlined,
   EnvironmentOutlined,
-  ToolOutlined
+  ToolOutlined,
 } from "@ant-design/icons";
 import {
-  useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
-  useGetSourcedCandidateQuery,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
+  useGetScreeningCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
-import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -75,6 +73,13 @@ const ScreeningCandidates = ({ jobId }) => {
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
+  const {
+    data: screeningData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetScreeningCandidatesQuery();
+
   const [moveToPipeline, { isLoading: isMovingToPipeline }] =
     useMoveToPipelineMutation();
 
@@ -85,49 +90,35 @@ const ScreeningCandidates = ({ jobId }) => {
     screeningStatus: [],
   });
 
-  const {
-    data: jobApplications,
-    isLoading: jobLoading,
-    error: jobError,
-    refetch: jobRefetch,
-  } = useGetJobApplicationsQuery(jobId);
-
-  const {
-    data: filteredSource,
-    isLoading,
-    error,
-    refetch,
-  } = useGetSourcedCandidateQuery({});
-
   const { data: recruiterStages, isLoading: recruiterStagesLoading } =
     useGetRecruiterStagesQuery(jobId);
 
   const allCandidates = useMemo(() => {
     return (
-      jobApplications?.formResponses?.map((response) => ({
+      screeningData?.customFieldResponses?.map((response) => ({
         ...response.user,
         candidateStatus: response.status,
         applicationId: response._id,
         responses: response.responses,
-        image: response.user?.image // Ensure image is included from the response
+        image: response.user?.image,
+        workOrder: response.workOrder,
+        interviewDetails: response.interviewDetails,
+        createdAt: response.createdAt,
+        updatedAt: response.updatedAt,
       })) || []
     );
-  }, [jobApplications]);
+  }, [screeningData]);
+
+  const screeningCount = useMemo(() => {
+    return allCandidates.length;
+  }, [allCandidates]);
 
   const filterOptions = useMemo(() => {
-    const screeningCandidates = allCandidates.filter(
-      (candidate) =>
-        candidate.candidateStatus === "screening" ||
-        candidate.candidateStatus === "interview" ||
-        candidate.candidateStatus === "shortlisted" ||
-        candidate.candidateStatus === "rejected"
-    );
-
     const allSkills = new Set();
     const allEducation = new Set();
     const allLocations = new Set();
 
-    screeningCandidates.forEach((user) => {
+    allCandidates.forEach((user) => {
       if (user.skills && Array.isArray(user.skills)) {
         user.skills.forEach((skill) => allSkills.add(skill.toLowerCase()));
       }
@@ -151,18 +142,8 @@ const ScreeningCandidates = ({ jobId }) => {
     };
   }, [allCandidates]);
 
-  const screeningCandidates = useMemo(() => {
-    return allCandidates.filter(
-      (candidate) =>
-        candidate.candidateStatus === "screening" ||
-        candidate.candidateStatus === "interview" ||
-        candidate.candidateStatus === "shortlisted" ||
-        candidate.candidateStatus === "rejected"
-    );
-  }, [allCandidates]);
-
   const filteredCandidates = useMemo(() => {
-    let candidates = screeningCandidates;
+    let candidates = allCandidates;
 
     if (searchTerm) {
       candidates = candidates.filter(
@@ -207,7 +188,7 @@ const ScreeningCandidates = ({ jobId }) => {
     }
 
     return candidates;
-  }, [screeningCandidates, searchTerm, filters]);
+  }, [allCandidates, searchTerm, filters]);
 
   const clearAllFilters = () => {
     setFilters({
@@ -298,7 +279,7 @@ const ScreeningCandidates = ({ jobId }) => {
       }).unwrap();
 
       message.success("Candidate moved to pipeline successfully");
-      jobRefetch();
+      refetch();
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to move candidate to pipeline:", error);
@@ -309,9 +290,9 @@ const ScreeningCandidates = ({ jobId }) => {
   };
 
   const handleSelectCandidate = (candidateId) => {
-    setSelectedCandidates(prev => 
-      prev.includes(candidateId) 
-        ? prev.filter(id => id !== candidateId) 
+    setSelectedCandidates((prev) =>
+      prev.includes(candidateId)
+        ? prev.filter((id) => id !== candidateId)
         : [...prev, candidateId]
     );
   };
@@ -322,16 +303,16 @@ const ScreeningCandidates = ({ jobId }) => {
         (pagination.current - 1) * pagination.pageSize,
         pagination.current * pagination.pageSize
       )
-      .map(candidate => candidate._id);
+      .map((candidate) => candidate._id);
 
-    if (currentPageCandidates.every(id => selectedCandidates.includes(id))) {
-      setSelectedCandidates(prev => 
-        prev.filter(id => !currentPageCandidates.includes(id))
+    if (currentPageCandidates.every((id) => selectedCandidates.includes(id))) {
+      setSelectedCandidates((prev) =>
+        prev.filter((id) => !currentPageCandidates.includes(id))
       );
     } else {
-      setSelectedCandidates(prev => 
-        [...new Set([...prev, ...currentPageCandidates])]
-      );
+      setSelectedCandidates((prev) => [
+        ...new Set([...prev, ...currentPageCandidates]),
+      ]);
     }
   };
 
@@ -347,18 +328,7 @@ const ScreeningCandidates = ({ jobId }) => {
     );
   }
 
-  if (error) {
-    return (
-      <div style={{ padding: "16px" }}>
-        <Alert
-          message="Failed to load screening candidates"
-          description="Unable to fetch screening candidates for this job."
-          type="error"
-          showIcon
-        />
-      </div>
-    );
-  }
+
 
   return (
     <div style={{ padding: "0", fontSize: "14px" }}>
@@ -372,42 +342,11 @@ const ScreeningCandidates = ({ jobId }) => {
             color: "#da2c46",
           }}
         >
-          Screening Candidates ({screeningCandidates.length})
+          Screening Candidates ({screeningCount})
         </Title>{" "}
       </div>
 
       <Divider style={{ margin: "12px 0" }} />
-
-      {/* Select All Checkbox */}
-      {/* <div style={{ marginBottom: "16px" }}>
-        <Checkbox 
-          onChange={handleSelectAll}
-          checked={
-            filteredCandidates
-              .slice(
-                (pagination.current - 1) * pagination.pageSize,
-                pagination.current * pagination.pageSize
-              )
-              .every(candidate => selectedCandidates.includes(candidate._id))
-          }
-          indeterminate={
-            filteredCandidates
-              .slice(
-                (pagination.current - 1) * pagination.pageSize,
-                pagination.current * pagination.pageSize
-              )
-              .some(candidate => selectedCandidates.includes(candidate._id)) &&
-            !filteredCandidates
-              .slice(
-                (pagination.current - 1) * pagination.pageSize,
-                pagination.current * pagination.pageSize
-              )
-              .every(candidate => selectedCandidates.includes(candidate._id))
-          }
-        >
-          Select all on this page
-        </Checkbox>
-      </div> */}
 
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
         {filteredCandidates.length > 0 ? (
@@ -418,12 +357,15 @@ const ScreeningCandidates = ({ jobId }) => {
                 pagination.current * pagination.pageSize
               )
               .map((candidate, index) => (
-                <div key={candidate._id || index} style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}>
+                <div
+                  key={candidate._id || index}
+                  style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}
+                >
                   <Card
                     hoverable
                     style={{
                       padding: "clamp(16px, 3vw, 24px)",
-                      borderRadius: "12px"
+                      borderRadius: "12px",
                     }}
                     bodyStyle={{ padding: 0 }}
                   >
@@ -436,80 +378,147 @@ const ScreeningCandidates = ({ jobId }) => {
                             md={18}
                             style={{
                               paddingRight: "clamp(0px, 2vw, 16px)",
-                              marginBottom: "clamp(0px, 3vw, 12px)"
+                              marginBottom: "clamp(0px, 3vw, 12px)",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", marginBottom: "clamp(8px, 1.5vw, 12px)" }}>
-                              {/* <Checkbox 
-                                checked={selectedCandidates.includes(candidate._id)}
-                                onChange={() => handleSelectCandidate(candidate._id)}
-                                style={{ marginRight: "8px" }}
-                              /> */}
-                              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 12px" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                marginBottom: "clamp(8px, 1.5vw, 12px)",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  alignItems: "center",
+                                  gap: "8px 12px",
+                                }}
+                              >
                                 <Text
                                   strong
                                   style={{
                                     fontSize: "clamp(16px, 1.8vw, 18px)",
                                     lineHeight: 1.3,
-                                    marginRight: "8px"
+                                    marginRight: "8px",
                                   }}
                                 >
                                   {candidate.fullName}
                                 </Text>
-                                <Tag color="blue" style={{ margin: 0 }}>{candidate.title}</Tag>
-                                <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>
-                                  {candidate.totalExperienceYears || 0} years exp
+                                <Tag color="blue" style={{ margin: 0 }}>
+                                  {candidate.title}
+                                </Tag>
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: "clamp(13px, 1.5vw, 14px)",
+                                  }}
+                                >
+                                  {candidate.totalExperienceYears || 0} years
+                                  exp
                                 </Text>
                               </div>
                             </div>
 
                             {/* Company/Location Row */}
-                            <div style={{
-                              marginBottom: "clamp(8px, 1.5vw, 12px)",
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "8px 12px",
-                              alignItems: "center"
-                            }}>
+                            <div
+                              style={{
+                                marginBottom: "clamp(8px, 1.5vw, 12px)",
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "8px 12px",
+                                alignItems: "center",
+                              }}
+                            >
                               <Space size={4}>
-                                <BankOutlined style={{ color: "#666", fontSize: "14px" }} />
-                                <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }} ellipsis>
-                                  {candidate.currentCompany || candidate.workExperience?.[0]?.company || "Not specified"}
+                                <BankOutlined
+                                  style={{ color: "#666", fontSize: "14px" }}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: "clamp(13px, 1.5vw, 14px)",
+                                  }}
+                                  ellipsis
+                                >
+                                  {candidate.currentCompany ||
+                                    candidate.workExperience?.[0]?.company ||
+                                    "Not specified"}
                                 </Text>
                               </Space>
 
-                              <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+                              <Divider
+                                type="vertical"
+                                style={{ margin: 0, height: "auto" }}
+                              />
 
                               <Space size={4}>
-                                <EnvironmentOutlined style={{ color: "#666", fontSize: "14px" }} />
-                                <Text style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>{candidate.location}</Text>
+                                <EnvironmentOutlined
+                                  style={{ color: "#666", fontSize: "14px" }}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: "clamp(13px, 1.5vw, 14px)",
+                                  }}
+                                >
+                                  {candidate.location}
+                                </Text>
                               </Space>
 
-                              <Divider type="vertical" style={{ margin: 0, height: "auto" }} />
+                              <Divider
+                                type="vertical"
+                                style={{ margin: 0, height: "auto" }}
+                              />
 
-                              <Tag color={getScreeningStatusColor(candidate.candidateStatus)}>
-                                {candidate.candidateStatus?.toUpperCase() || "SCREENING"}
+                              <Tag
+                                color={getScreeningStatusColor(
+                                  candidate.candidateStatus
+                                )}
+                              >
+                                {candidate.candidateStatus?.toUpperCase() ||
+                                  "SCREENING"}
                               </Tag>
                             </div>
 
                             {/* Skills Section */}
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", alignItems: "center" }}>
-                              <ToolOutlined style={{ color: "#666", fontSize: "14px" }} />
-                              <Text type="secondary" style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}>Skills:</Text>
-                              {candidate.skills?.slice(0, 5).map((skill, index) => (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "6px 8px",
+                                alignItems: "center",
+                              }}
+                            >
+                              <ToolOutlined
+                                style={{ color: "#666", fontSize: "14px" }}
+                              />
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
+                              >
+                                Skills:
+                              </Text>
+                              {candidate.skills
+                                ?.slice(0, 5)
+                                .map((skill, index) => (
+                                  <Tag
+                                    key={index}
+                                    style={{
+                                      margin: 0,
+                                      fontSize: "clamp(12px, 1.3vw, 13px)",
+                                      padding: "2px 8px",
+                                    }}
+                                  >
+                                    {skill}
+                                  </Tag>
+                                ))}
+                              {candidate.skills?.length > 5 && (
                                 <Tag
-                                  key={index}
                                   style={{
                                     margin: 0,
                                     fontSize: "clamp(12px, 1.3vw, 13px)",
-                                    padding: "2px 8px"
                                   }}
                                 >
-                                  {skill}
-                                </Tag>
-                              ))}
-                              {candidate.skills?.length > 5 && (
-                                <Tag style={{ margin: 0, fontSize: "clamp(12px, 1.3vw, 13px)" }}>
                                   +{candidate.skills.length - 5} more
                                 </Tag>
                               )}
@@ -525,19 +534,21 @@ const ScreeningCandidates = ({ jobId }) => {
                               flexDirection: "column",
                               alignItems: "center",
                               justifyContent: "center",
-                              gap: "clamp(8px, 1.5vw, 12px)"
+                              gap: "clamp(8px, 1.5vw, 12px)",
                             }}
                           >
-                            <div style={{
-                              width: "clamp(80px, 20vw, 100px)",
-                              height: "clamp(80px, 20vw, 100px)",
-                              borderRadius: "12px",
-                              backgroundColor: "#da2c46",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              overflow: "hidden"
-                            }}>
+                            <div
+                              style={{
+                                width: "clamp(80px, 20vw, 100px)",
+                                height: "clamp(80px, 20vw, 100px)",
+                                borderRadius: "12px",
+                                backgroundColor: "#da2c46",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden",
+                              }}
+                            >
                               {candidate.image ? (
                                 <img
                                   src={candidate.image}
@@ -545,11 +556,16 @@ const ScreeningCandidates = ({ jobId }) => {
                                   style={{
                                     width: "100%",
                                     height: "100%",
-                                    objectFit: "cover"
+                                    objectFit: "cover",
                                   }}
                                 />
                               ) : (
-                                <UserOutlined style={{ fontSize: "clamp(32px, 8vw, 40px)", color: "#fff" }} />
+                                <UserOutlined
+                                  style={{
+                                    fontSize: "clamp(32px, 8vw, 40px)",
+                                    color: "#fff",
+                                  }}
+                                />
                               )}
                             </div>
 
@@ -560,7 +576,7 @@ const ScreeningCandidates = ({ jobId }) => {
                                 width: "100%",
                                 maxWidth: "100px",
                                 fontSize: "clamp(13px, 1.5vw, 14px)",
-                                padding: "6px 12px"
+                                padding: "6px 12px",
                               }}
                               icon={<EyeOutlined />}
                               onClick={() => handleViewProfile(candidate)}
@@ -650,6 +666,9 @@ const ScreeningCandidates = ({ jobId }) => {
               </Descriptions.Item>
               <Descriptions.Item label="Title">
                 {selectedCandidate.title}
+              </Descriptions.Item>
+              <Descriptions.Item label="Work Order">
+                {selectedCandidate.workOrder?.title || "N/A"}
               </Descriptions.Item>
 
               <Descriptions.Item label="Skills" span={2}>

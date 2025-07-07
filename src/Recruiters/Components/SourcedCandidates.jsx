@@ -45,9 +45,11 @@ import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
+  useGetSelectedCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
+import SelectedCandidates from "./SelelctedCandidates";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -137,6 +139,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
+  const [screeningCount, setScreeningCount] = useState(0);
   const [selectAll, setSelectAll] = useState(false);
 
   const [pagination, setPagination] = useState({
@@ -232,12 +235,17 @@ const SourcedCandidates = ({ jobId }) => {
     skip: !shouldFetch || !queryParams,
   });
 
+  const { data: selectedCandidateData } = useGetSelectedCandidatesQuery();
+
+  const selectedCandidateCount =
+    selectedCandidateData?.customFieldResponses?.length || 0;
   const {
     data: jobApplications,
     isLoading: jobLoading,
     error: jobError,
     refetch: jobRefetch,
   } = useGetJobApplicationsQuery(jobId);
+  const { refetch: refetchScreening } = useGetJobApplicationsQuery(jobId);
 
   useEffect(() => {
     if (sourcedCandidatesData) {
@@ -338,6 +346,12 @@ const SourcedCandidates = ({ jobId }) => {
 
   const handleFilterModalCancel = () => {
     setIsFilterModalVisible(false);
+  };
+
+  const handleSelectedStatusUpdate = () => {
+    refetchScreening();
+    jobRefetch();
+    refetchSourced();
   };
 
   const handleClearSearch = () => {
@@ -688,9 +702,7 @@ const SourcedCandidates = ({ jobId }) => {
             style={{ margin: window.innerWidth < 768 ? "8px 0" : "12px 0" }}
           />
 
-          <div
-           
-          >
+          <div>
             {!shouldFetch ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -763,57 +775,15 @@ const SourcedCandidates = ({ jobId }) => {
           tab={
             <span style={{ color: "#da2c46" }}>
               <CheckOutlined />
-              Selected ({selectedCandidatesList.length})
+              Selected ({selectedCandidateCount})
             </span>
           }
           key="selected"
         >
-          <div
-            style={{
-              maxHeight: window.innerWidth < 768 ? "400px" : "600px",
-              overflowY: "auto",
-            }}
-          >
-            {selectedCandidatesList.length > 0 ? (
-              <>
-                {selectedCandidatesList.map((candidate) => (
-                  <CandidateCard
-                    key={candidate._id}
-                    candidate={candidate}
-                    onViewProfile={handleViewProfile}
-                    showExperience={true}
-                    showSkills={true}
-                    maxSkills={5}
-                  />
-                ))}
-                <div style={{ marginTop: 16, textAlign: "center" }}>
-                  <Pagination
-                    current={pagination.current}
-                    pageSize={pagination.pageSize}
-                    total={selectedCandidatesList.length}
-                    onChange={(page, pageSize) => {
-                      setPagination((prev) => ({
-                        ...prev,
-                        current: page,
-                        pageSize: pageSize,
-                      }));
-                    }}
-                    showSizeChanger={false}
-                    simple={window.innerWidth < 768}
-                    size={window.innerWidth < 768 ? "small" : "default"}
-                  />
-                </div>
-              </>
-            ) : (
-              <Empty
-                description={
-                  <span style={{ fontSize: "14px", color: "#999" }}>
-                    No selected candidates yet
-                  </span>
-                }
-              />
-            )}
-          </div>
+          <SelectedCandidates
+            jobId={jobId}
+            onStatusUpdate={handleSelectedStatusUpdate}
+          />
         </TabPane>
       </Tabs>
 
