@@ -44,10 +44,9 @@ const recruiterTypes = [
   "Airticket",
   "Agency",
   "Co-Ordinator",
-  "CoOrdinator Admin",
+  "Co-Ordinator Admin",
 ];
 
-// Sidebar menu items mapping to access permissions
 const accessPermissions = [
   { key: "dashboard", label: "Dashboard" },
   { key: "jobs", label: "Jobs" },
