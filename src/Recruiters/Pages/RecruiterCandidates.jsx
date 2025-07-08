@@ -26,6 +26,7 @@ import {
   Collapse,
   Popconfirm,
   Descriptions,
+  Empty,
 } from "antd";
 import {
   SearchOutlined,
@@ -254,7 +255,7 @@ const RecruiterCandidates = () => {
     try {
       await changeInterviewStatus({
         id: selectedCandidate._id,
-        interviewId,
+        _id: interviewId,
         status,
       }).unwrap();
 
@@ -269,7 +270,6 @@ const RecruiterCandidates = () => {
 
   const handleRescheduleInterview = (interview) => {
     form.resetFields();
-
     form.setFieldsValue({
       title: interview.title,
       type: interview.mode,
@@ -279,7 +279,6 @@ const RecruiterCandidates = () => {
       interviewers: interview.interviewerIds,
       notes: interview.notes,
     });
-
     setInterviewToReschedule(interview._id);
     setScheduleInterviewModalVisible(true);
   };
@@ -287,7 +286,6 @@ const RecruiterCandidates = () => {
   const handleScheduleInterviewSubmit = async (values) => {
     try {
       const payload = {
-        candidateId: selectedCandidate._id,
         title: values.title,
         scheduledAt: values.datetime.format(),
         mode: values.type,
@@ -303,10 +301,13 @@ const RecruiterCandidates = () => {
       }
 
       if (interviewToReschedule) {
-        payload.interviewId = interviewToReschedule;
+        payload.id = interviewToReschedule;
       }
 
-      await addInterviewDetails(payload).unwrap();
+      await addInterviewDetails({
+        id: selectedCandidate._id,
+        payload,
+      }).unwrap();
       message.success(
         interviewToReschedule
           ? "Interview rescheduled successfully!"
@@ -1102,19 +1103,19 @@ const RecruiterCandidates = () => {
                               color={
                                 interview.status === "scheduled"
                                   ? "blue"
-                                  : "green"
+                                  : interview.status === "interview_completed"
+                                  ? "green"
+                                  : "red"
                               }
                             >
                               {interview.status}
                             </Tag>
                             <Button
                               size="small"
-                              disabled={
-                                interview.status === "interview_completed"
-                              }
+                              disabled={interview.status !== "scheduled"}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRescheduleInterview(interview); // Pass the interview object
+                                handleRescheduleInterview(interview);
                               }}
                             >
                               Reschedule
@@ -1146,7 +1147,8 @@ const RecruiterCandidates = () => {
                             {allRecruiters ? (
                               <List
                                 size="small"
-                                dataSource={interview.interviewerIds.map((id) =>
+                                dataSource={interview
+                                  ?.interviewerIds?.map((id) =>
                                   allRecruiters.otherRecruiters.find(
                                     (r) => r._id === id
                                   )
@@ -1190,6 +1192,7 @@ const RecruiterCandidates = () => {
                                     interview._id
                                   )
                                 }
+                                loading={isChangingStatus}
                               >
                                 Mark as Completed
                               </Button>
@@ -1201,6 +1204,7 @@ const RecruiterCandidates = () => {
                                     interview._id
                                   )
                                 }
+                                loading={isChangingStatus}
                               >
                                 Cancel Interview
                               </Button>
@@ -1567,37 +1571,6 @@ const RecruiterCandidates = () => {
           setInterviewToReschedule(null);
         }}
         footer={[
-          selectedCandidate?.interviewDetails?.status === "scheduled" && (
-            <Space key="actions" style={{ float: "left" }}>
-              <Button
-                type="primary"
-                onClick={() =>
-                  handleChangeInterviewStatus(
-                    "interview_completed",
-                    interviewToReschedule ||
-                      selectedCandidate?.interviewDetails?.[0]?._id
-                  )
-                }
-                loading={isChangingStatus}
-                style={{ background: "#da2c46" }}
-              >
-                Mark as Completed
-              </Button>
-              <Button
-                danger
-                onClick={() =>
-                  handleChangeInterviewStatus(
-                    "interview_cancelled",
-                    interviewToReschedule ||
-                      selectedCandidate?.interviewDetails?.[0]?._id
-                  )
-                }
-                loading={isChangingStatus}
-              >
-                Cancel Interview
-              </Button>
-            </Space>
-          ),
           <Button
             key="cancel"
             onClick={() => {
