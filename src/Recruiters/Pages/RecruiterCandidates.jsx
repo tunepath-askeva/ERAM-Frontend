@@ -76,6 +76,7 @@ const RecruiterCandidates = () => {
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [addCandidateModalVisible, setAddCandidateModalVisible] =
     useState(false);
+  const [interviewToReschedule, setInterviewToReschedule] = useState(null);
   const [bulkUploadModalVisible, setBulkUploadModalVisible] = useState(false);
   const [scheduleInterviewModalVisible, setScheduleInterviewModalVisible] =
     useState(false);
@@ -98,21 +99,19 @@ const RecruiterCandidates = () => {
   const { data: allRecruiters } = useGetAllRecruitersQuery();
 
   const candidates =
-    apiData?.data?.map((candidate) => {
-      return {
-        id: candidate._id,
-        _id: candidate._id,
-        name: candidate.user.fullName,
-        email: candidate.user.email,
-        position: candidate.workOrder.title,
-        jobCode: candidate.workOrder.jobCode,
-        status: candidate.status,
-        stageProgress: candidate.stageProgress,
-        updatedAt: candidate.updatedAt,
-        avatar: candidate.user.image || null,
-        interviewDetails: candidate.interviewDetails?.[0] || null, // Take first element or null
-      };
-    }) || [];
+    apiData?.data?.map((candidate) => ({
+      id: candidate._id,
+      _id: candidate._id,
+      name: candidate.user.fullName,
+      email: candidate.user.email,
+      position: candidate.workOrder.title,
+      jobCode: candidate.workOrder.jobCode,
+      status: candidate.status,
+      stageProgress: candidate.stageProgress,
+      updatedAt: candidate.updatedAt,
+      avatar: candidate.user.image || null,
+      interviewDetails: candidate.interviewDetails || [],
+    })) || [];
 
   // Custom styles
   const buttonStyle = {
@@ -219,50 +218,60 @@ const RecruiterCandidates = () => {
     }
   };
 
-  const handleScheduleInterview = (candidate) => {
-    setSelectedCandidate(candidate);
-    if (candidate.interviewDetails) {
-      form.setFieldsValue({
-        type: candidate.interviewDetails.mode,
-        meetingLink: candidate.interviewDetails.meetingLink,
-        location: candidate.interviewDetails.location,
-        datetime: dayjs(candidate.interviewDetails.date),
-        interviewers: candidate.interviewDetails.interviewerIds,
-        notes: candidate.interviewDetails.notes,
-      });
-    }
-    setScheduleInterviewModalVisible(true);
+  const getActiveInterview = (candidate) => {
+    if (!candidate?.interviewDetails?.length) return null;
+
+    return (
+      candidate.interviewDetails.find(
+        (interview) => !["completed", "cancelled"].includes(interview.status)
+      ) || candidate.interviewDetails[candidate.interviewDetails.length - 1]
+    );
   };
 
-  const handleChangeInterviewStatus = async (status) => {
-    if (!selectedCandidate) return;
+  const handleScheduleInterview = (candidate) => {
+    setSelectedCandidate(candidate);
+    const activeInterview = getActiveInterview(candidate);
+
+    form.resetFields();
+
+    if (activeInterview) {
+      form.setFieldsValue({
+        title: activeInterview.title,
+        type: activeInterview.mode,
+        meetingLink: activeInterview.meetingLink,
+        location: activeInterview.location,
+        datetime: dayjs(activeInterview.date),
+        interviewers: activeInterview.interviewerIds,
+        notes: activeInterview.notes,
+      });
+    }
+
+    setScheduleInterviewModalVisible(true);
+  };
+  const handleChangeInterviewStatus = async (status, interviewId) => {
+    if (!selectedCandidate || !interviewId) return;
 
     try {
       await changeInterviewStatus({
         id: selectedCandidate._id,
+        interviewId,
         status,
       }).unwrap();
 
       message.success(`Interview ${status.replace("_", " ")} successfully!`);
       refetch();
-
-      if (
-        status === "interview_completed" ||
-        status === "interview_cancelled"
-      ) {
-        setScheduleInterviewModalVisible(false);
-      }
+      setScheduleInterviewModalVisible(false);
     } catch (error) {
       message.error(`Failed to update interview status: ${error.message}`);
       console.error("Interview status change error:", error);
     }
   };
 
-  const handleRescheduleInterview = () => {
-    if (!selectedCandidate?.interviewDetails) return;
+  const handleRescheduleInterview = (interview) => {
+    form.resetFields();
 
-    const interview = selectedCandidate.interviewDetails;
     form.setFieldsValue({
+      title: interview.title,
       type: interview.mode,
       meetingLink: interview.meetingLink,
       location: interview.location,
@@ -270,45 +279,47 @@ const RecruiterCandidates = () => {
       interviewers: interview.interviewerIds,
       notes: interview.notes,
     });
+
+    setInterviewToReschedule(interview._id);
     setScheduleInterviewModalVisible(true);
   };
 
-  const handleScheduleInterviewSubmit = async (values, candidateId) => {
-    if (!values.datetime || !values.interviewers?.length) {
-      message.error("Please fill all required fields");
-      return false;
-    }
-
+  const handleScheduleInterviewSubmit = async (values) => {
     try {
       const payload = {
-        id: candidateId,
+        candidateId: selectedCandidate._id,
+        title: values.title,
         scheduledAt: values.datetime.format(),
-        platform: values.type,
+        mode: values.type,
         status: "scheduled",
-        recruiterId: values.interviewers[0],
+        interviewerIds: values.interviewers,
         notes: values.notes,
       };
 
       if (values.type === "online") {
-        payload.link = values.meetingLink;
+        payload.meetingLink = values.meetingLink;
       } else if (values.type === "in-person") {
         payload.location = values.location;
       }
 
-      await addInterviewDetails(payload).unwrap();
+      if (interviewToReschedule) {
+        payload.interviewId = interviewToReschedule;
+      }
 
-      message.success("Interview scheduled successfully!");
-      return true;
-    } catch (error) {
-      console.error("Interview scheduling error:", error);
-      const errorMessage =
-        error.data?.message || error.message || "Failed to schedule interview";
-      message.error(errorMessage);
-      return false;
-    } finally {
+      await addInterviewDetails(payload).unwrap();
+      message.success(
+        interviewToReschedule
+          ? "Interview rescheduled successfully!"
+          : "Interview scheduled successfully!"
+      );
+
       setScheduleInterviewModalVisible(false);
       form.resetFields();
+      setInterviewToReschedule(null);
       refetch();
+    } catch (error) {
+      message.error("Failed to schedule interview");
+      console.error("Error:", error);
     }
   };
 
@@ -326,17 +337,20 @@ const RecruiterCandidates = () => {
         });
         break;
       case "interview":
-        if (
-          !candidate.interviewDetails ||
-          candidate.interviewDetails.status !== "interview_completed"
-        ) {
+        if ((candidate.interviewDetails?.length || 0) === 0) {
           actions.push({
             key: "schedule",
-            label: candidate.interviewDetails
-              ? "Reschedule Interview"
-              : "Schedule Interview",
+            label: "Schedule Interview",
             icon: <CalendarOutlined style={iconTextStyle} />,
             onClick: () => handleScheduleInterview(candidate),
+            style: { color: "#722ed1" },
+          });
+        } else {
+          actions.push({
+            key: "view-interviews",
+            label: "View Interviews",
+            icon: <EyeOutlined style={iconTextStyle} />,
+            onClick: () => handleViewProfile(candidate),
             style: { color: "#722ed1" },
           });
         }
@@ -956,7 +970,6 @@ const RecruiterCandidates = () => {
             >
               Message
             </Button>
-            {/* {selectedCandidate && renderStageActions(selectedCandidate)} */}
           </Space>
         }
       >
@@ -1019,7 +1032,6 @@ const RecruiterCandidates = () => {
                   ))}
                 </div>
               </TabPane>
-
               <TabPane tab="Activity" key="2">
                 <List
                   itemLayout="horizontal"
@@ -1051,170 +1063,178 @@ const RecruiterCandidates = () => {
                   )}
                 />
               </TabPane>
-
               <TabPane tab="Documents" key="3">
                 {renderDocuments(selectedCandidate.stageProgress)}
               </TabPane>
-
-              <TabPane tab="Interview Details" key="4">
-                {selectedCandidate.interviewDetails ? (
-                  <div>
-                    <Divider orientation="left">Interview Information</Divider>
-                    <Descriptions column={1} bordered size="small">
-                      <Descriptions.Item label="Mode">
-                        {selectedCandidate.interviewDetails.mode === "online"
-                          ? "Online"
-                          : selectedCandidate.interviewDetails.mode ===
-                            "in-person"
-                          ? "In Person"
-                          : "Telephonic"}
-                      </Descriptions.Item>
-                      {selectedCandidate.interviewDetails.mode === "online" && (
-                        <Descriptions.Item label="Meeting Link">
-                          <a
-                            href={
-                              selectedCandidate.interviewDetails.meetingLink
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Join Meeting
-                          </a>
-                        </Descriptions.Item>
-                      )}
-                      {selectedCandidate.interviewDetails.mode ===
-                        "in-person" && (
-                        <Descriptions.Item label="Location">
-                          {selectedCandidate.interviewDetails.location}
-                        </Descriptions.Item>
-                      )}
-                      <Descriptions.Item label="Scheduled Date">
-                        {new Date(
-                          selectedCandidate.interviewDetails.date
-                        ).toLocaleString()}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Status">
-                        <Tag
-                          color={
-                            selectedCandidate.interviewDetails.status ===
-                            "scheduled"
-                              ? "blue"
-                              : selectedCandidate.interviewDetails.status ===
-                                "completed"
-                              ? "green"
-                              : "orange"
-                          }
-                        >
-                          {selectedCandidate.interviewDetails.status
-                            .charAt(0)
-                            .toUpperCase() +
-                            selectedCandidate.interviewDetails.status.slice(1)}
-                        </Tag>
-                      </Descriptions.Item>
-                      {selectedCandidate.interviewDetails.notes && (
-                        <Descriptions.Item label="Notes">
-                          {selectedCandidate.interviewDetails.notes}
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-
-                    <Divider orientation="left">Interviewers</Divider>
-                    {allRecruiters && (
-                      <List
-                        dataSource={selectedCandidate.interviewDetails.interviewerIds.map(
-                          (id) =>
-                            allRecruiters.otherRecruiters.find(
-                              (r) => r._id === id
-                            )
-                        )}
-                        renderItem={(recruiter) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              avatar={
-                                <Avatar
-                                  src={recruiter?.image}
-                                  style={{ backgroundColor: "#f56a00" }}
-                                >
-                                  {recruiter?.fullName?.charAt(0)}
-                                </Avatar>
+              <TabPane
+                tab={
+                  <span>
+                    Interviews{" "}
+                    <Badge
+                      count={selectedCandidate.interviewDetails?.length || 0}
+                    />
+                  </span>
+                }
+                key="4"
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Button
+                    type="primary"
+                    style={{ background: "#da2c46" }}
+                    onClick={() => {
+                      form.resetFields();
+                      setScheduleInterviewModalVisible(true);
+                    }}
+                    icon={<PlusOutlined />}
+                  >
+                    Schedule New Interview
+                  </Button>
+                </div>
+                {selectedCandidate.interviewDetails?.length > 0 ? (
+                  <Collapse accordion>
+                    {selectedCandidate.interviewDetails.map((interview) => (
+                      <Panel
+                        header={`${interview.title} (${interview.status})`}
+                        key={interview._id}
+                        extra={
+                          <Space>
+                            <Tag
+                              color={
+                                interview.status === "scheduled"
+                                  ? "blue"
+                                  : "green"
                               }
-                              title={<Text strong>{recruiter?.fullName}</Text>}
-                              description={
-                                <>
-                                  <Text>{recruiter?.specialization}</Text>
-                                  <br />
-                                  <Text type="secondary">
-                                    {recruiter?.email}
-                                  </Text>
-                                </>
+                            >
+                              {interview.status}
+                            </Tag>
+                            <Button
+                              size="small"
+                              disabled={
+                                interview.status === "interview_completed"
                               }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    )}
-
-                    {selectedCandidate?.interviewDetails?.status ===
-                      "scheduled" && (
-                      <div
-                        style={
-                          window.innerWidth < 768
-                            ? mobileButtonGroupStyle
-                            : { display: "flex", gap: 8, marginTop: 16 }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRescheduleInterview(interview); // Pass the interview object
+                              }}
+                            >
+                              Reschedule
+                            </Button>
+                          </Space>
                         }
                       >
-                        <Button
-                          type="primary"
-                          onClick={() =>
-                            handleChangeInterviewStatus("interview_completed")
-                          }
-                          loading={isChangingStatus}
-                          block={window.innerWidth < 768}
-                          style={{ background: "#da2c46" }}
-                        >
-                          Mark as Completed
-                        </Button>
-                        <Button
-                          danger
-                          onClick={() =>
-                            handleChangeInterviewStatus("interview_cancelled")
-                          }
-                          loading={isChangingStatus}
-                          block={window.innerWidth < 768}
-                        >
-                          Cancel Interview
-                        </Button>
-                        <Button
-                          type="primary"
-                          onClick={handleRescheduleInterview}
-                          block={window.innerWidth < 768}
-                          style={{ background: "#da2c46" }}
-                        >
-                          Reschedule Interview
-                        </Button>
-                      </div>
-                    )}
-                    {selectedCandidate?.interviewDetails?.status ===
-                      "cancelled" && (
-                      <div
-                        style={
-                          window.innerWidth < 768
-                            ? mobileButtonGroupStyle
-                            : { display: "flex", gap: 8, marginTop: 16 }
-                        }
-                      >
-                        <Button
-                          type="primary"
-                          onClick={handleRescheduleInterview}
-                          block={window.innerWidth < 768}
-                        >
-                          Reschedule Interview
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                        <Descriptions bordered column={1} size="small">
+                          <Descriptions.Item label="Date & Time">
+                            {new Date(interview.date).toLocaleString()}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Mode">
+                            {interview.mode === "online"
+                              ? "Online"
+                              : "In-Person"}
+                          </Descriptions.Item>
+                          {interview.mode === "online" && (
+                            <Descriptions.Item label="Meeting Link">
+                              <a
+                                href={interview.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Join Meeting
+                              </a>
+                            </Descriptions.Item>
+                          )}
+                          <Descriptions.Item label="Interviewers">
+                            {allRecruiters ? (
+                              <List
+                                size="small"
+                                dataSource={interview.interviewerIds.map((id) =>
+                                  allRecruiters.otherRecruiters.find(
+                                    (r) => r._id === id
+                                  )
+                                )}
+                                renderItem={(recruiter) => (
+                                  <List.Item>
+                                    <List.Item.Meta
+                                      avatar={
+                                        <Avatar
+                                          src={recruiter?.image}
+                                          size="small"
+                                        />
+                                      }
+                                      title={recruiter?.fullName || "Unknown"}
+                                      description={recruiter?.specialization}
+                                    />
+                                  </List.Item>
+                                )}
+                              />
+                            ) : (
+                              <Text>Loading interviewers...</Text>
+                            )}
+                          </Descriptions.Item>
+                          {interview.notes && (
+                            <Descriptions.Item label="Notes">
+                              {interview.notes}
+                            </Descriptions.Item>
+                          )}
+                        </Descriptions>
+
+                        {/* Action buttons */}
+                        <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                          {interview.status === "scheduled" && (
+                            <>
+                              <Button
+                                type="primary"
+                                style={{ background: "#da2c46" }}
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_completed",
+                                    interview._id
+                                  )
+                                }
+                              >
+                                Mark as Completed
+                              </Button>
+                              <Button
+                                danger
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_cancelled",
+                                    interview._id
+                                  )
+                                }
+                              >
+                                Cancel Interview
+                              </Button>
+                              <Button
+                                type="primary"
+                                style={{ background: "#da2c46" }}
+                                onClick={() => {
+                                  setSelectedCandidate({
+                                    ...selectedCandidate,
+                                    interviewDetails: [interview],
+                                  });
+                                  handleRescheduleInterview(interview);
+                                }}
+                              >
+                                Reschedule
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </Panel>
+                    ))}
+                  </Collapse>
                 ) : (
-                  <Text type="secondary">No interview scheduled yet.</Text>
+                  <Empty
+                    description="No interviews scheduled yet"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  >
+                    <Button
+                      type="primary"
+                      onClick={() => setScheduleInterviewModalVisible(true)}
+                    >
+                      Schedule Interview
+                    </Button>
+                  </Empty>
                 )}
               </TabPane>
             </Tabs>
@@ -1538,12 +1558,13 @@ const RecruiterCandidates = () => {
       {/* Schedule Interview Modal */}
       <Modal
         title={`${
-          selectedCandidate?.interviewDetails ? "Reschedule" : "Schedule"
-        } Interview with ${selectedCandidate?.name}`}
+          interviewToReschedule ? "Reschedule" : "Schedule New"
+        } Interview`}
         open={scheduleInterviewModalVisible}
         onCancel={() => {
           setScheduleInterviewModalVisible(false);
           form.resetFields();
+          setInterviewToReschedule(null);
         }}
         footer={[
           selectedCandidate?.interviewDetails?.status === "scheduled" && (
@@ -1551,7 +1572,11 @@ const RecruiterCandidates = () => {
               <Button
                 type="primary"
                 onClick={() =>
-                  handleChangeInterviewStatus("interview_completed")
+                  handleChangeInterviewStatus(
+                    "interview_completed",
+                    interviewToReschedule ||
+                      selectedCandidate?.interviewDetails?.[0]?._id
+                  )
                 }
                 loading={isChangingStatus}
                 style={{ background: "#da2c46" }}
@@ -1561,7 +1586,11 @@ const RecruiterCandidates = () => {
               <Button
                 danger
                 onClick={() =>
-                  handleChangeInterviewStatus("interview_cancelled")
+                  handleChangeInterviewStatus(
+                    "interview_cancelled",
+                    interviewToReschedule ||
+                      selectedCandidate?.interviewDetails?.[0]?._id
+                  )
                 }
                 loading={isChangingStatus}
               >
@@ -1574,25 +1603,20 @@ const RecruiterCandidates = () => {
             onClick={() => {
               setScheduleInterviewModalVisible(false);
               form.resetFields();
+              setInterviewToReschedule(null);
             }}
           >
             Cancel
           </Button>,
-          selectedCandidate?.interviewDetails?.status !== "completed" &&
-            selectedCandidate?.interviewDetails?.status !== "cancelled" && (
-              <Button
-                key="submit"
-                type="primary"
-                style={buttonStyle}
-                onClick={() => form.submit()}
-                loading={isSchedulingInterview}
-              >
-                {selectedCandidate?.interviewDetails
-                  ? "Reschedule"
-                  : "Schedule"}{" "}
-                Interview
-              </Button>
-            ),
+          <Button
+            key="submit"
+            type="primary"
+            style={buttonStyle}
+            onClick={() => form.submit()}
+            loading={isSchedulingInterview}
+          >
+            {interviewToReschedule ? "Reschedule" : "Schedule"} Interview
+          </Button>,
         ]}
         width={window.innerWidth < 768 ? "95%" : 700}
       >
@@ -1606,6 +1630,15 @@ const RecruiterCandidates = () => {
             await handleScheduleInterviewSubmit(values, selectedCandidate._id);
           }}
         >
+          <Form.Item
+            label="Interview Title"
+            name="title"
+            rules={[
+              { required: true, message: "Please enter interview title" },
+            ]}
+          >
+            <Input placeholder="e.g. Technical Interview, HR Round, etc." />
+          </Form.Item>
           <Form.Item
             label="Interview Type"
             name="type"
