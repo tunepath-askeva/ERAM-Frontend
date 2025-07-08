@@ -19,7 +19,6 @@ import {
   Input,
   Form,
   Select,
-
 } from "antd";
 import {
   PlusOutlined,
@@ -41,7 +40,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 
 import {
   useGetRecruitersQuery,
@@ -64,7 +63,7 @@ const AdminRecruiter = () => {
   const [selectedRecruiterId, setSelectedRecruiterId] = useState(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [recruiterToDelete, setRecruiterToDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   // API integration
   const {
@@ -97,21 +96,22 @@ const AdminRecruiter = () => {
   useEffect(() => {
     if (isError) {
       message.error(
-        `Failed to load recruiters: ${error?.data?.message || error?.message || "Unknown error"
+        `Failed to load recruiters: ${
+          error?.data?.message || error?.message || "Unknown error"
         }`
       );
     }
   }, [isError, error]);
 
-  const filteredRecruiters = recruiters.filter(recruiter => {
+  const filteredRecruiters = recruiters.filter((recruiter) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
-      (recruiter.fullName?.toLowerCase().includes(searchLower)) ||
-      (recruiter.companyName?.toLowerCase().includes(searchLower)) ||
-      (recruiter.email?.toLowerCase().includes(searchLower)) ||
-      (recruiter.phone?.toLowerCase().includes(searchLower)) ||
-      (recruiter.specialization?.toLowerCase().includes(searchLower))
+      recruiter.fullName?.toLowerCase().includes(searchLower) ||
+      recruiter.companyName?.toLowerCase().includes(searchLower) ||
+      recruiter.email?.toLowerCase().includes(searchLower) ||
+      recruiter.phone?.toLowerCase().includes(searchLower) ||
+      recruiter.specialization?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -119,9 +119,10 @@ const AdminRecruiter = () => {
   useEffect(() => {
     if (isRecruiterDetailsError && viewModalVisible) {
       message.error(
-        `Failed to load recruiter details: ${recruiterDetailsError?.data?.message ||
-        recruiterDetailsError?.message ||
-        "Unknown error"
+        `Failed to load recruiter details: ${
+          recruiterDetailsError?.data?.message ||
+          recruiterDetailsError?.message ||
+          "Unknown error"
         }`
       );
     }
@@ -141,7 +142,8 @@ const AdminRecruiter = () => {
     if (!recruiterToToggle) return;
 
     try {
-      const newStatus = recruiterToToggle.accountStatus === "active" ? "inActive" : "active";
+      const newStatus =
+        recruiterToToggle.accountStatus === "active" ? "inActive" : "active";
 
       await toggleRecruiterStatus({
         recruiterId: recruiterToToggle._id,
@@ -150,9 +152,11 @@ const AdminRecruiter = () => {
 
       const action = newStatus === "active" ? "enabled" : "disabled";
       enqueueSnackbar(
-        `Recruiter "${getRecruiterDisplayName(recruiterToToggle)}" ${action} successfully`,
+        `Recruiter "${getRecruiterDisplayName(
+          recruiterToToggle
+        )}" ${action} successfully`,
         {
-          variant: 'success',
+          variant: "success",
         }
       );
 
@@ -162,9 +166,11 @@ const AdminRecruiter = () => {
     } catch (error) {
       enqueueSnackbar(
         error?.data?.message ||
-        `Failed to ${recruiterToToggle.accountStatus === "active" ? "disable" : "enable"} recruiter`,
+          `Failed to ${
+            recruiterToToggle.accountStatus === "active" ? "disable" : "enable"
+          } recruiter`,
         {
-          variant: 'error',
+          variant: "error",
         }
       );
       console.error("Toggle status error:", error);
@@ -189,9 +195,11 @@ const AdminRecruiter = () => {
       await deleteRecruiter(recruiterToDelete._id).unwrap();
 
       enqueueSnackbar(
-        `Recruiter "${getRecruiterDisplayName(recruiterToDelete)}" deleted successfully`,
+        `Recruiter "${getRecruiterDisplayName(
+          recruiterToDelete
+        )}" deleted successfully`,
         {
-          variant: 'success',
+          variant: "success",
         }
       );
 
@@ -199,12 +207,9 @@ const AdminRecruiter = () => {
       setRecruiterToDelete(null);
       refetch();
     } catch (error) {
-      enqueueSnackbar(
-        error?.data?.message || "Failed to delete recruiter",
-        {
-          variant: 'error',
-        }
-      );
+      enqueueSnackbar(error?.data?.message || "Failed to delete recruiter", {
+        variant: "error",
+      });
       console.error("Delete recruiter error:", error);
     }
   };
@@ -338,7 +343,8 @@ const AdminRecruiter = () => {
                 onClick={showCreateModal}
                 className="recruiter-button"
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   height: "48px", // Explicit height
                   minWidth: "180px", // Minimum width to prevent shrinking
                 }}
@@ -592,10 +598,10 @@ const AdminRecruiter = () => {
             />
           </Card>
         )}
-      </div >
+      </div>
 
       {/* Recruiter Form Modal - Used for both Create and Edit */}
-      < RecruiterForm
+      <RecruiterForm
         open={recruiterModalVisible}
         onCancel={handleRecruiterModalClose}
         onSuccess={handleRecruiterSuccess}
@@ -606,37 +612,35 @@ const AdminRecruiter = () => {
       />
 
       {/* View Recruiter Modal */}
-      < Modal
+      <Modal
         title={
-          < div style={{ display: "flex", alignItems: "center" }
-          }>
+          <div style={{ display: "flex", alignItems: "center" }}>
             <InfoCircleOutlined
               style={{ marginRight: 8, color: "#da2c46", fontSize: 18 }}
             />
             <span style={{ fontSize: "16px", fontWeight: 600 }}>
               Recruiter Details
             </span>
-          </div >
+          </div>
         }
         open={viewModalVisible}
         onCancel={handleViewModalClose}
         width="90%"
         style={{ maxWidth: 800 }}
         centered
-        footer={
-          [
-            <Button
-              key="close"
-              type="primary"
-              onClick={handleViewModalClose}
-              size="medium"
-              style={{
-                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              }}
-            >
-              Close
-            </Button>,
-          ]}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            onClick={handleViewModalClose}
+            size="medium"
+            style={{
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+            }}
+          >
+            Close
+          </Button>,
+        ]}
       >
         <div style={{ padding: "16px 0" }}>
           {isLoadingRecruiterDetails ? (
@@ -756,8 +760,38 @@ const AdminRecruiter = () => {
                     </span>
                   }
                 >
-                  {selectedRecruiterData.experience
-                    ? `${selectedRecruiterData.experience} years`
+                  {selectedRecruiterData.totalExperienceYears
+                    ? `${selectedRecruiterData.totalExperienceYears}`
+                    : "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <CalendarOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Recruiter Type
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.recruiterType
+                    ? `${selectedRecruiterData.recruiterType} `
+                    : "Not specified"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <CalendarOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Permissions
+                    </span>
+                  }
+                >
+                  {selectedRecruiterData.permissions
+                    ? `${selectedRecruiterData.permissions}`
                     : "Not specified"}
                 </Descriptions.Item>
               </Descriptions>
@@ -788,12 +822,12 @@ const AdminRecruiter = () => {
             </div>
           )}
         </div>
-      </Modal >
+      </Modal>
 
       {/* Disable/Enable Confirmation Modal */}
-      < Modal
+      <Modal
         title={
-          < div
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -812,41 +846,40 @@ const AdminRecruiter = () => {
                 : "Enable"}{" "}
               Recruiter
             </span>
-          </div >
+          </div>
         }
         open={disableModalVisible}
         onCancel={handleDisableCancel}
         width="90%"
         style={{ maxWidth: 500 }}
         centered
-        footer={
-          [
-            <Button key="cancel" onClick={handleDisableCancel} size="large">
-              Cancel
-            </Button>,
-            <Button
-              key="confirm"
-              type="primary"
-              danger={recruiterToToggle?.accountStatus === "active"}
-              onClick={handleToggleStatus}
-              loading={isToggling}
-              size="large"
-              style={{
-                background:
-                  recruiterToToggle?.accountStatus === "active"
-                    ? "#ff4d4f"
-                    : "#52c41a",
-                borderColor:
-                  recruiterToToggle?.accountStatus === "active"
-                    ? "#ff4d4f"
-                    : "#52c41a",
-              }}
-            >
-              {recruiterToToggle?.accountStatus === "active"
-                ? "Disable"
-                : "Enable"}
-            </Button>,
-          ]}
+        footer={[
+          <Button key="cancel" onClick={handleDisableCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="confirm"
+            type="primary"
+            danger={recruiterToToggle?.accountStatus === "active"}
+            onClick={handleToggleStatus}
+            loading={isToggling}
+            size="large"
+            style={{
+              background:
+                recruiterToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+              borderColor:
+                recruiterToToggle?.accountStatus === "active"
+                  ? "#ff4d4f"
+                  : "#52c41a",
+            }}
+          >
+            {recruiterToToggle?.accountStatus === "active"
+              ? "Disable"
+              : "Enable"}
+          </Button>,
+        ]}
       >
         <div style={{ padding: "16px 0" }}>
           <Text>
@@ -865,12 +898,12 @@ const AdminRecruiter = () => {
             </div>
           )}
         </div>
-      </Modal >
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      < Modal
+      <Modal
         title={
-          < div
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -879,33 +912,32 @@ const AdminRecruiter = () => {
           >
             <DeleteOutlined style={{ marginRight: 8, fontSize: 18 }} />
             <span style={{ fontSize: "16px" }}>Delete Recruiter</span>
-          </div >
+          </div>
         }
         open={deleteModalVisible}
         onCancel={handleDeleteCancel}
         width="90%"
         style={{ maxWidth: 500 }}
         centered
-        footer={
-          [
-            <Button key="cancel" onClick={handleDeleteCancel} size="large">
-              Cancel
-            </Button>,
-            <Button
-              key="delete"
-              type="primary"
-              danger
-              onClick={handleDeleteRecruiter}
-              loading={isDeleting}
-              size="large"
-              style={{
-                background: "#ff4d4f",
-                borderColor: "#ff4d4f",
-              }}
-            >
-              Delete
-            </Button>,
-          ]}
+        footer={[
+          <Button key="cancel" onClick={handleDeleteCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            onClick={handleDeleteRecruiter}
+            loading={isDeleting}
+            size="large"
+            style={{
+              background: "#ff4d4f",
+              borderColor: "#ff4d4f",
+            }}
+          >
+            Delete
+          </Button>,
+        ]}
       >
         <div style={{ padding: "16px 0" }}>
           <div
@@ -955,7 +987,7 @@ const AdminRecruiter = () => {
             </Text>
           </div>
         </div>
-      </Modal >
+      </Modal>
     </>
   );
 };
