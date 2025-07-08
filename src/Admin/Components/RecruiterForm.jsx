@@ -10,6 +10,7 @@ import {
   Space,
   InputNumber,
   Select,
+  Checkbox,
 } from "antd";
 import {
   UserOutlined,
@@ -23,6 +24,7 @@ import {
   EnvironmentOutlined,
   StarOutlined,
   ToolOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import {
   useCreateRecruiterMutation,
@@ -32,6 +34,29 @@ import { useSnackbar } from "notistack";
 
 const { Title } = Typography;
 const { Option } = Select;
+
+const recruiterTypes = [
+  "Recruiter",
+  "Admin Recruiter",
+  "HR",
+  "Visa",
+  "Vehicle",
+  "Airticket",
+  "Agency",
+  "Co-Ordinator",
+  "CoOrdinator Admin",
+];
+
+// Sidebar menu items mapping to access permissions
+const accessPermissions = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "jobs", label: "Jobs" },
+  { key: "candidates", label: "Candidates" },
+  { key: "staged-candidates", label: "Staged Candidates" },
+  { key: "approvals", label: "Approvals" },
+  { key: "employees", label: "Employees" },
+  { key: "payroll", label: "Payroll" },
+];
 
 const RecruiterForm = ({
   open,
@@ -62,6 +87,8 @@ const RecruiterForm = ({
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
           experience: initialValues.experience || 0,
+          recruiterType: initialValues.recruiterType || "Recruiter",
+          permissions: initialValues.permissions || [],
         });
       } else {
         form.resetFields();
@@ -79,6 +106,8 @@ const RecruiterForm = ({
         phoneno: values.phoneno,
         specialization: values.specialization,
         experience: values.experience,
+        recruiterType: values.recruiterType,
+        permissions: values.permissions || [],
         role: "recruiter",
       };
 
@@ -94,12 +123,12 @@ const RecruiterForm = ({
           id: recruiterId,
           ...payload,
         }).unwrap();
-        enqueueSnackbar("Recruiter updated successfully!", { 
+        enqueueSnackbar("Recruiter updated successfully!", {
           variant: "success",
         });
       } else {
         result = await createRecruiter(payload).unwrap();
-        enqueueSnackbar("Recruiter created successfully!", { 
+        enqueueSnackbar("Recruiter created successfully!", {
           variant: "success",
         });
       }
@@ -118,7 +147,7 @@ const RecruiterForm = ({
         (mode === "edit"
           ? "Failed to update recruiter"
           : "Failed to create recruiter");
-      enqueueSnackbar(errorMessage, { 
+      enqueueSnackbar(errorMessage, {
         variant: "error",
       });
     }
@@ -161,7 +190,7 @@ const RecruiterForm = ({
         },
       }}
       confirmLoading={isLoading}
-      width={700}
+      width={800}
       okText={mode === "add" ? "Create Recruiter" : "Update Recruiter"}
       cancelText="Cancel"
       destroyOnClose={true}
@@ -178,7 +207,7 @@ const RecruiterForm = ({
           style={{ marginBottom: 16 }}
         >
           <Row gutter={16}>
-            <Col span={24}>
+            <Col span={12}>
               <Form.Item
                 label="Full Name"
                 name="fullName"
@@ -195,6 +224,36 @@ const RecruiterForm = ({
                   prefix={<UserOutlined />}
                   size="large"
                 />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Recruiter Type"
+                name="recruiterType"
+                rules={[
+                  { required: true, message: "Please select recruiter type" },
+                ]}
+              >
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="Select recruiter type"
+                  size="large"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  notFoundContent={null}
+                  mode="tags"
+                >
+                  {recruiterTypes.map((type) => (
+                    <Option key={type} value={type}>
+                      {type}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>
@@ -320,6 +379,7 @@ const RecruiterForm = ({
               )}
             </Space>
           }
+          style={{ marginBottom: 16 }}
         >
           <Row gutter={16}>
             <Col span={12}>
@@ -380,6 +440,30 @@ const RecruiterForm = ({
               </Form.Item>
             </Col>
           </Row>
+        </Card>
+
+        <Card
+          size="small"
+          title={
+            <Space>
+              <CheckCircleOutlined />
+              <span>Access Permissions</span>
+            </Space>
+          }
+        >
+          <Form.Item name="permissions">
+            <Checkbox.Group style={{ width: "100%" }}>
+              <Row gutter={[16, 16]}>
+                {accessPermissions.map((permission) => (
+                  <Col span={8} key={permission.key}>
+                    <Checkbox value={permission.key}>
+                      {permission.label}
+                    </Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </Form.Item>
         </Card>
       </Form>
     </Modal>
