@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Form,
@@ -72,6 +72,9 @@ const RecruiterForm = ({
     useCreateRecruiterMutation();
   const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
   const { enqueueSnackbar } = useSnackbar();
+  
+  // State to manage dynamic recruiter types
+  const [dynamicRecruiterTypes, setDynamicRecruiterTypes] = useState(recruiterTypes);
 
   const isLoading = isCreating || isEditing;
 
@@ -81,6 +84,11 @@ const RecruiterForm = ({
   useEffect(() => {
     if (open) {
       if (mode === "edit" && initialValues) {
+        // If the recruiter type from initialValues is not in the predefined list, add it
+        if (initialValues.recruiterType && !recruiterTypes.includes(initialValues.recruiterType)) {
+          setDynamicRecruiterTypes(prev => [...prev, initialValues.recruiterType]);
+        }
+        
         form.setFieldsValue({
           fullName: initialValues.fullName || "",
           email: initialValues.email || "",
@@ -92,6 +100,8 @@ const RecruiterForm = ({
         });
       } else {
         form.resetFields();
+        // Reset dynamic types when adding new recruiter
+        setDynamicRecruiterTypes(recruiterTypes);
       }
     }
   }, [open, mode, initialValues, form]);
@@ -106,7 +116,7 @@ const RecruiterForm = ({
         phoneno: values.phoneno,
         specialization: values.specialization,
         experience: values.experience,
-        recruiterType: values.recruiterType,
+        recruiterType: values.recruiterType, // This will now be a string
         permissions: values.permissions || [],
         role: "recruiter",
       };
@@ -155,6 +165,7 @@ const RecruiterForm = ({
 
   const handleCancel = () => {
     form.resetFields();
+    setDynamicRecruiterTypes(recruiterTypes);
     onCancel();
   };
 
@@ -172,6 +183,14 @@ const RecruiterForm = ({
       return Promise.reject(new Error("Passwords do not match!"));
     },
   });
+
+  // Handle custom recruiter type selection
+  const handleRecruiterTypeChange = (value) => {
+    // If the selected value is not in the current options, add it
+    if (value && !dynamicRecruiterTypes.includes(value)) {
+      setDynamicRecruiterTypes(prev => [...prev, value]);
+    }
+  };
 
   return (
     <Modal
@@ -237,7 +256,7 @@ const RecruiterForm = ({
                 <Select
                   showSearch
                   allowClear
-                  placeholder="Select recruiter type"
+                  placeholder="Select or type recruiter type"
                   size="large"
                   optionFilterProp="children"
                   filterOption={(input, option) =>
@@ -245,10 +264,39 @@ const RecruiterForm = ({
                       .toLowerCase()
                       .indexOf(input.toLowerCase()) >= 0
                   }
+                  onChange={handleRecruiterTypeChange}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !dynamicRecruiterTypes.includes(value)) {
+                      setDynamicRecruiterTypes(prev => [...prev, value]);
+                      form.setFieldsValue({ recruiterType: value });
+                    }
+                  }}
+                  onPressEnter={(e) => {
+                    const value = e.target.value;
+                    if (value && !dynamicRecruiterTypes.includes(value)) {
+                      setDynamicRecruiterTypes(prev => [...prev, value]);
+                      form.setFieldsValue({ recruiterType: value });
+                    }
+                  }}
                   notFoundContent={null}
-                  mode="tags"
+                  dropdownRender={(menu) => (
+                    <div>
+                      {menu}
+                      <div
+                        style={{
+                          padding: '8px',
+                          borderTop: '1px solid #f0f0f0',
+                          fontSize: '12px',
+                          color: '#666',
+                        }}
+                      >
+                        💡 Tip: Type and press Enter or click away to add custom type
+                      </div>
+                    </div>
+                  )}
                 >
-                  {recruiterTypes.map((type) => (
+                  {dynamicRecruiterTypes.map((type) => (
                     <Option key={type} value={type}>
                       {type}
                     </Option>
