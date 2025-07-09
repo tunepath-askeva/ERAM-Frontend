@@ -74,14 +74,23 @@ export const recruiterApi = createApi({
     }),
     getScreeningCandidates: builder.query({
       query: ({ jobId, page, limit }) => ({
-        url: `/screening/${jobId}`, 
+        url: `/screening/${jobId}`,
         method: "GET",
         params: {
           page,
           limit,
         },
       }),
-      
+    }),
+    getPendingCandidates: builder.query({
+      query: ({ jobId, page, limit }) => ({
+        url: `/inpending/${jobId}`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+        },
+      }),
     }),
 
     updateCandidateStatus: builder.mutation({
@@ -209,4 +218,5 @@ export const {
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
   useChangeInterviewStatusMutation,
+  useGetPendingCandidatesQuery,
 } = recruiterApi;

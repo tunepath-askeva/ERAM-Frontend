@@ -20,12 +20,14 @@ import {
   Skeleton,
   Breadcrumb,
   Button,
+  
 } from "antd";
 import { CheckCircleOutlined, LeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import SourcedCandidates from "./SourcedCandidates";
 import ScreeningCandidates from "./ScreeningCandidates";
 import SelectedCandidates from "./SelelctedCandidates";
+import PendingCandidates from "./PendingCandidates";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -702,6 +704,16 @@ const RecruiterViewJob = () => {
               key="declined"
             >
               <AppliedCandidates jobId={id} candidateType="declined" />
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Pending Candidates
+                </span>
+              }
+              key="pending"
+            >
+              <PendingCandidates jobId={id} />
             </TabPane>
             <TabPane
               tab={
