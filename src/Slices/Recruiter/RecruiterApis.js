@@ -71,13 +71,17 @@ export const recruiterApi = createApi({
           limit,
         },
       }),
-      
     }),
     getScreeningCandidates: builder.query({
-      query: () => ({
-        url: "/screening",
+      query: ({ jobId, page, limit }) => ({
+        url: `/screening/${jobId}`, 
         method: "GET",
+        params: {
+          page,
+          limit,
+        },
       }),
+      
     }),
 
     updateCandidateStatus: builder.mutation({

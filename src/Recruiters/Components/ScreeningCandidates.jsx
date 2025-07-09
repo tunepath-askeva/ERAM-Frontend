@@ -79,7 +79,11 @@ const ScreeningCandidates = ({ jobId }) => {
     isLoading,
     error,
     refetch,
-  } = useGetScreeningCandidatesQuery();
+  } = useGetScreeningCandidatesQuery({
+    jobId,
+    page: pagination.current,
+    limit: pagination.pageSize,
+  });
 
   const [moveToPipeline, { isLoading: isMovingToPipeline }] =
     useMoveToPipelineMutation();
@@ -93,6 +97,26 @@ const ScreeningCandidates = ({ jobId }) => {
 
   const { data: recruiterStages, isLoading: recruiterStagesLoading } =
     useGetRecruiterStagesQuery(jobId);
+
+  useEffect(() => {
+    if (screeningData) {
+      setPagination((prev) => ({
+        ...prev,
+        total:
+          screeningData.total ||
+          screeningData.customFieldResponses?.length ||
+          0,
+      }));
+    }
+  }, [screeningData]);
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({
+      current: page,
+      pageSize,
+      total: pagination.total,
+    });
+  };
 
   const allCandidates = useMemo(() => {
     return (
@@ -683,14 +707,8 @@ const ScreeningCandidates = ({ jobId }) => {
               <Pagination
                 current={pagination.current}
                 pageSize={pagination.pageSize}
-                total={filteredCandidates.length}
-                onChange={(page, pageSize) => {
-                  setPagination((prev) => ({
-                    ...prev,
-                    current: page,
-                    pageSize: pageSize,
-                  }));
-                }}
+                total={pagination.total}
+                onChange={handlePaginationChange}
                 showSizeChanger
                 pageSizeOptions={[10, 20, 50, 100]}
               />

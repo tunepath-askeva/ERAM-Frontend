@@ -51,7 +51,6 @@ const SelectedCandidates = ({ jobId }) => {
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
-  // Extract candidates from the response
   const candidates =
     responseData?.customFieldResponses?.map((response) => ({
       ...response.user,
