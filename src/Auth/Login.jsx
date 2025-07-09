@@ -16,9 +16,9 @@ const Login = () => {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
-   const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const branchId = searchParams.get("branchId");
-  console.log(branchId,'id-branch')
+  console.log(branchId, "id-branch");
 
   const onFinish = async (values) => {
     try {
@@ -56,20 +56,28 @@ const Login = () => {
       const response = await loginUser({
         email: values.email,
         password: values.password,
-        branchId
+        branchId,
       }).unwrap();
 
+      console.log("Login Response:", response);
+
+      // 👉 Log token if it exists in the response
+      console.log("Token:", response.token);
+
       if (response.requireOtp) {
-        enqueueSnackbar("OTP sent to your email. Please verify to complete login.", {
-          variant: "info",
-          anchorOrigin: { vertical: "top", horizontal: "right" },
-          autoHideDuration: 3000,
-        });
-        navigate("/verify-otp", { 
-          state: { 
+        enqueueSnackbar(
+          "OTP sent to your email. Please verify to complete login.",
+          {
+            variant: "info",
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            autoHideDuration: 3000,
+          }
+        );
+        navigate("/verify-otp", {
+          state: {
             email: response.email,
-            message: response.message 
-          } 
+            message: response.message,
+          },
         });
         return;
       }
@@ -82,16 +90,23 @@ const Login = () => {
 
       const userRole = response.user.roles;
 
+      const permissions = response.user.permissions || [];
       const userInfo = {
         email: response.user.email,
         name: response.user.name,
         roles: response.user.roles,
       };
 
-      dispatch(setUserCredentials({
+      const payload = {
         userInfo: userInfo,
-        role: userRole
-      }));
+        role: userRole,
+      };
+
+      if (userRole === "recruiter") {
+        payload.permissions = permissions;
+      }
+
+      dispatch(setUserCredentials(payload));
 
       // Navigate based on user role
       switch (userRole) {
@@ -116,15 +131,20 @@ const Login = () => {
             anchorOrigin: { vertical: "top", horizontal: "right" },
             autoHideDuration: 3000,
           });
-          navigate("/"); 
+          navigate("/");
       }
     } catch (error) {
       console.error("Login error:", error);
-      enqueueSnackbar(error?.data?.message || error?.message || "Login failed. Please try again.", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Login failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
     }
   };
 
@@ -180,7 +200,7 @@ const Login = () => {
             borderRadius: "20px",
             border: "none",
             overflow: "hidden",
-            padding: "40px"
+            padding: "40px",
           }}
         >
           <div

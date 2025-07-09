@@ -9,9 +9,9 @@ import {
   TranslationOutlined,
   UsergroupDeleteOutlined,
   UsergroupAddOutlined,
-  CheckOutlined
+  CheckOutlined,
 } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
@@ -51,6 +51,10 @@ const RecruiterSidebar = ({
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
   const location = useLocation();
   const selectedKey = location.pathname;
 
@@ -59,36 +63,43 @@ const RecruiterSidebar = ({
       key: "/recruiter/dashboard",
       icon: <DashboardOutlined />,
       label: "Dashboard",
+      permission: "dashboard",
     },
     {
       key: "/recruiter/jobs",
       icon: <UnorderedListOutlined />,
       label: "Jobs",
+      permission: "jobs",
     },
     {
       key: "/recruiter/candidates",
       icon: <UsergroupAddOutlined />,
       label: "Candidates",
+      permission: "candidates",
     },
     {
       key: "/recruiter/staged-candidates",
       icon: <UsergroupAddOutlined />,
       label: "Staged Candidates",
+      permission: "staged-candidates",
     },
-     {
+    {
       key: "/recruiter/approvals",
-      icon:<CheckOutlined />,
+      icon: <CheckOutlined />,
       label: "Approvals",
+      permission: "approvals",
     },
     {
       key: "/recruiter/employees",
       icon: <UsergroupDeleteOutlined />,
       label: "Employees",
+      permission: "employees",
     },
     {
       key: "/recruiter/payroll",
       icon: <TranslationOutlined />,
       label: "Payroll",
+      permission: "payroll",
     },
   ];
 
@@ -181,6 +192,11 @@ const RecruiterSidebar = ({
   const getFirstLetter = () => {
     return recruiterInfo.name.charAt(0).toUpperCase();
   };
+
+  const filteredMenuItems =
+    permissions?.length > 0
+      ? menuItems.filter((item) => permissions.includes(item.permission))
+      : menuItems;
 
   const handleLogout = async () => {
     try {
@@ -306,7 +322,7 @@ const RecruiterSidebar = ({
           gap: "8px",
         }}
       >
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <button
             key={item.key}
             onClick={() => handleMenuClick({ key: item.key })}
