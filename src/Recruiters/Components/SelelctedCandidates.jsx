@@ -25,7 +25,7 @@ import {
   FileOutlined,
 } from "@ant-design/icons";
 import {
-  useUpdateCandidateStatusMutation,
+  useMoveCandidateStatusMutation,
   useGetSelectedCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
@@ -63,8 +63,8 @@ const SelectedCandidates = ({ jobId }) => {
     limit: pagination.pageSize,
   });
 
-  const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
-    useUpdateCandidateStatusMutation();
+  const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
+    useMoveCandidateStatusMutation();
 
   const candidates =
     responseData?.customFieldResponses?.map((response) => ({
@@ -139,12 +139,10 @@ const SelectedCandidates = ({ jobId }) => {
         const candidate = candidates.find((c) => c._id === candidateId);
         if (!candidate) return Promise.resolve();
 
-        return updateCandidateStatus({
-          applicationId: candidate.applicationId,
-          Id: candidate._id,
+        return moveCandidateStatus({
+          id: candidate._id,
           status: newStatus,
           jobId: jobId,
-          isSourced: true,
         }).unwrap();
       });
 
@@ -167,12 +165,10 @@ const SelectedCandidates = ({ jobId }) => {
     if (!selectedCandidate) return;
 
     try {
-      await updateCandidateStatus({
-        applicationId: selectedCandidate.applicationId,
-        Id: selectedCandidate._id,
+      await moveCandidateStatus({
+        id: selectedCandidate._id, 
         status: newStatus,
         jobId: jobId,
-        isSourced: true,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);

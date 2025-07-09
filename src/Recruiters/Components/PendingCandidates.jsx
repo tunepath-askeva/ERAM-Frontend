@@ -36,7 +36,7 @@ import {
   FileOutlined,
 } from "@ant-design/icons";
 import {
-  useUpdateCandidateStatusMutation,
+  useMoveCandidateStatusMutation,
   useGetPendingCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
@@ -64,8 +64,8 @@ const PendingCandidates = ({ jobId }) => {
     total: 0,
   });
 
-  const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
-    useUpdateCandidateStatusMutation();
+  const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
+    useMoveCandidateStatusMutation();
 
   const {
     data: pendingData,
@@ -164,8 +164,8 @@ const PendingCandidates = ({ jobId }) => {
     try {
       if (!selectedCandidate) return;
 
-      await updateCandidateStatus({
-        applicationId: selectedCandidate.applicationId,
+      await moveCandidateStatus({
+        id: selectedCandidate._id,
         status: newStatus,
         jobId: jobId,
       }).unwrap();
@@ -214,8 +214,8 @@ const PendingCandidates = ({ jobId }) => {
     try {
       const promises = selectedCandidates.map((candidateId) => {
         const candidate = allCandidates.find((c) => c._id === candidateId);
-        return updateCandidateStatus({
-          applicationId: candidate.applicationId,
+        return moveCandidateStatus({
+          id: candidate._id, 
           status: newStatus,
           jobId: jobId,
         }).unwrap();
