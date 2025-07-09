@@ -216,7 +216,7 @@ const JobDetailsPage = () => {
 
       const responses = [];
 
-      // Handle custom fields
+      // Handle custom fields only
       for (const field of job.customFields) {
         const fieldId = field.id.toString();
         const fieldValue = reviewData[fieldId];
@@ -242,23 +242,6 @@ const JobDetailsPage = () => {
             label: fieldLabel,
             value: fieldValue,
           });
-        }
-      }
-
-      // Handle required documents
-      if (job.documents) {
-        for (const doc of job.documents) {
-          const docId = `document-${doc._id}`;
-          const files = fileList[docId];
-          if (files && files[0]?.originFileObj) {
-            formData.append("files", files[0].originFileObj);
-            responses.push({
-              fieldKey: docId,
-              label: doc.name,
-              value: files[0].name,
-              isDocument: true,
-            });
-          }
         }
       }
 
@@ -795,63 +778,6 @@ const JobDetailsPage = () => {
                     key={field.id}
                   >
                     {renderCustomField(field)}
-                  </Col>
-                ))}
-              {job.documents &&
-                job.documents.map((doc, index) => (
-                  <Col xs={24} key={`doc-${index}`}>
-                    <Form.Item
-                      name={`document-${doc._id}`}
-                      label={
-                        <span className="form-label">
-                          <FileTextOutlined />
-                          <span style={{ marginLeft: 8 }}>{doc.name}</span>
-                          <span style={{ color: "#ff4d4f" }}> *</span>
-                        </span>
-                      }
-                      rules={[
-                        { required: true, message: `${doc.name} is required` },
-                      ]}
-                    >
-                      <Upload.Dragger
-                        beforeUpload={(file) => {
-                          const isValidType = [
-                            "image/jpeg",
-                            "image/png",
-                            "application/pdf",
-                            "application/msword",
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                          ].includes(file.type);
-
-                          if (!isValidType) {
-                            message.error(
-                              "Only images, PDFs, or Word docs allowed!"
-                            );
-                            return Upload.LIST_OFF;
-                          }
-                          return false;
-                        }}
-                        maxCount={1}
-                        fileList={fileList[`document-${doc._id}`] || []}
-                        onChange={(info) =>
-                          handleFileChange(`document-${doc._id}`, info)
-                        }
-                        className="upload-dragger"
-                      >
-                        <p className="ant-upload-drag-icon">
-                          <UploadOutlined style={{ color: "#da2c46" }} />
-                        </p>
-                        <p className="ant-upload-text">
-                          Click or drag file to upload {doc.name}
-                        </p>
-                        {doc.description && (
-                          <p className="ant-upload-hint">{doc.description}</p>
-                        )}
-                        <p className="ant-upload-hint">
-                          Support for PDF, DOC, DOCX, JPG, PNG files
-                        </p>
-                      </Upload.Dragger>
-                    </Form.Item>
                   </Col>
                 ))}
             </Row>

@@ -144,14 +144,14 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
- 
+
     getCandidateNotification: builder.query({
       query: () => ({
         url: `/notify`,
         method: "GET",
       }),
     }),
- 
+
     uploadStageDocuments: builder.mutation({
       query: ({ customFieldId, stageId, files, filesMetadata }) => {
         const formData = new FormData();
@@ -167,6 +167,20 @@ export const userApi = createApi({
 
         return {
           url: "/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    submitWorkOrderDocuments: builder.mutation({
+      query: ({ customFieldId, files, filesMetadata }) => {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("files", file));
+        formData.append("filesMetadata", JSON.stringify(filesMetadata));
+        formData.append("customFieldId", customFieldId);
+
+        return {
+          url: "/workOrderupload",
           method: "POST",
           body: formData,
         };
@@ -197,4 +211,5 @@ export const {
   useGetSourcedJobByIdQuery,
   useGetAppliedJobByIdQuery,
   useUploadStageDocumentsMutation,
+  useSubmitWorkOrderDocumentsMutation,
 } = userApi;
