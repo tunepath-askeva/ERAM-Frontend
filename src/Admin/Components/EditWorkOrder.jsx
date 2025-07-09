@@ -87,7 +87,7 @@ const EditWorkOrder = () => {
   const [customStages, setCustomStages] = useState({});
   const [draggedStage, setDraggedStage] = useState(null);
   const [stageApprovers, setStageApprovers] = useState({});
-  const [requiredDocuments, setRequiredDocuments] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const navigate = useNavigate();
 
   const { data: approvalData } = useGetApprovalQuery();
@@ -216,10 +216,12 @@ const EditWorkOrder = () => {
               `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           })) || []
         );
-        setRequiredDocuments(
-          workOrder.requiredDocuments?.map((doc) => ({
-            ...doc,
-            id: doc.id || Date.now() + Math.random().toString(36).substr(2, 9),
+        setDocuments(
+          workOrderData.workOrder.documents?.map((doc) => ({
+            id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
+            name: doc.name,
+            description: doc.description,
+            isMandatory: true, 
           })) || []
         );
       } catch (error) {
@@ -421,7 +423,7 @@ const EditWorkOrder = () => {
 
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: new ObjectId().toString(), // Generate a valid ObjectId string
+      id: new ObjectId().toString(), 
       name: `New Stage`,
       description: "",
       isCustom: true,
@@ -588,19 +590,19 @@ const EditWorkOrder = () => {
       id: Date.now(),
       name: "",
       description: "",
-      isMandatory: true,
+      isMandatory: true, 
     };
-    setRequiredDocuments([...requiredDocuments, newDocument]);
+    setDocuments([...documents, newDocument]);
   };
 
   const updateDocument = (id, updates) => {
-    setRequiredDocuments((docs) =>
+    setDocuments((docs) =>
       docs.map((doc) => (doc.id === id ? { ...doc, ...updates } : doc))
     );
   };
 
   const removeDocument = (id) => {
-    setRequiredDocuments((docs) => docs.filter((doc) => doc.id !== id));
+    setDocuments((docs) => docs.filter((doc) => doc.id !== id));
   };
 
   const handleSubmit = async () => {
@@ -638,7 +640,11 @@ const EditWorkOrder = () => {
         customFields: applicationFields,
         workOrderStatus: "published",
         pipelineStageTimeline,
-        requiredDocuments,
+        documents: documents.map((doc) => ({
+          name: doc.name,
+          description: doc.description,
+          isMandatory: doc.isMandatory 
+        })),
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -2094,7 +2100,7 @@ const EditWorkOrder = () => {
               style={{ marginBottom: "16px" }}
             >
               <div style={{ marginBottom: "16px" }}>
-                {requiredDocuments.map((doc, index) => (
+                {documents.map((doc, index) => (
                   <Card
                     key={doc.id}
                     size="small"

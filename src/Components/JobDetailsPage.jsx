@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Typography,
@@ -176,13 +176,13 @@ const JobDetailsPage = () => {
     const newSavedJobs = new Set(savedJobs);
     if (savedJobs.has(job._id)) {
       newSavedJobs.delete(job._id);
-      enqueueSnackbar('Job removed from saved jobs', {
-        variant: 'error',
+      enqueueSnackbar("Job removed from saved jobs", {
+        variant: "error",
       });
     } else {
       newSavedJobs.add(job._id);
-      enqueueSnackbar('Job saved successfully', {
-        variant: 'success',
+      enqueueSnackbar("Job saved successfully", {
+        variant: "success",
       });
     }
     setSavedJobs(newSavedJobs);
@@ -197,8 +197,8 @@ const JobDetailsPage = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      enqueueSnackbar('Job URL copied to clipboard!', {
-        variant: 'success',
+      enqueueSnackbar("Job URL copied to clipboard!", {
+        variant: "success",
       });
     }
   };
@@ -216,12 +216,13 @@ const JobDetailsPage = () => {
 
       const responses = [];
 
+      // Handle custom fields
       for (const field of job.customFields) {
         const fieldId = field.id.toString();
         const fieldValue = reviewData[fieldId];
         const fieldLabel = field.label;
 
-        if (field.type === "file") {
+        if (field.type === "file" || field.type === "document") {
           const files = fileList[field.id];
           if (files && files[0]?.originFileObj) {
             formData.append("files", files[0].originFileObj);
@@ -244,12 +245,29 @@ const JobDetailsPage = () => {
         }
       }
 
+      // Handle required documents
+      if (job.documents) {
+        for (const doc of job.documents) {
+          const docId = `document-${doc._id}`;
+          const files = fileList[docId];
+          if (files && files[0]?.originFileObj) {
+            formData.append("files", files[0].originFileObj);
+            responses.push({
+              fieldKey: docId,
+              label: doc.name,
+              value: files[0].name,
+              isDocument: true,
+            });
+          }
+        }
+      }
+
       formData.append("responses", JSON.stringify(responses));
 
       await submitJobApplication(formData).unwrap();
 
-      enqueueSnackbar('Application submitted successfully!', {
-        variant: 'success',
+      enqueueSnackbar("Application submitted successfully!", {
+        variant: "success",
       });
 
       form.resetFields();
@@ -257,16 +275,11 @@ const JobDetailsPage = () => {
       setCurrentStep(2);
     } catch (error) {
       console.error("Submission error:", error);
-
-      enqueueSnackbar(
-        error?.data?.message || "Submission failed",
-        {
-          variant: 'error',
-        }
-      );
+      enqueueSnackbar(error?.data?.message || "Submission failed", {
+        variant: "error",
+      });
     }
   };
-
 
   const handleGoBack = () => {
     navigate("/candidate-jobs");
@@ -311,6 +324,58 @@ const JobDetailsPage = () => {
         ? [{ required: true, message: `${field.label} is required` }]
         : [],
     };
+
+    if (field.type === "document") {
+      return (
+        <Form.Item
+          name={field.id}
+          label={
+            <span className="form-label">
+              <FileTextOutlined />
+              <span style={{ marginLeft: 8 }}>{field.label}</span>
+              {field.required && <span style={{ color: "#ff4d4f" }}> *</span>}
+            </span>
+          }
+          rules={
+            field.required
+              ? [{ required: true, message: `${field.label} is required` }]
+              : []
+          }
+        >
+          <Upload.Dragger
+            beforeUpload={(file) => {
+              const isValidType = [
+                "image/jpeg",
+                "image/png",
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ].includes(file.type);
+
+              if (!isValidType) {
+                message.error("Only images, PDFs, or Word docs allowed!");
+                return Upload.LIST_OFF;
+              }
+              return false;
+            }}
+            maxCount={1}
+            fileList={fileList[field.id] || []}
+            onChange={(info) => handleFileChange(field.id, info)}
+            className="upload-dragger"
+          >
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined style={{ color: "#da2c46" }} />
+            </p>
+            <p className="ant-upload-text">
+              Click or drag file to upload {field.label}
+            </p>
+            <p className="ant-upload-hint">
+              Support for PDF, DOC, DOCX, JPG, PNG files
+            </p>
+          </Upload.Dragger>
+        </Form.Item>
+      );
+    }
 
     switch (field.type) {
       case "text":
@@ -485,7 +550,7 @@ const JobDetailsPage = () => {
                 onClick={handleSaveJob}
                 className={`action-btn ${
                   savedJobs.has(job._id) ? "saved" : ""
-                  }`}
+                }`}
                 size="large"
               />
               <Button
@@ -586,6 +651,27 @@ const JobDetailsPage = () => {
               <Tag key={index} className="skill-tag">
                 {skill}
               </Tag>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {job.documents && job.documents.length > 0 && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            Required Documents
+          </Title>
+          <div className="documents-list">
+            {job.documents.map((doc, index) => (
+              <div key={index} className="document-item">
+                <FileTextOutlined className="document-icon" />
+                <div className="document-info">
+                  <Text strong>{doc.name}</Text>
+                  {doc.description && (
+                    <Text type="secondary">{doc.description}</Text>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </Card>
@@ -711,10 +797,66 @@ const JobDetailsPage = () => {
                     {renderCustomField(field)}
                   </Col>
                 ))}
+              {job.documents &&
+                job.documents.map((doc, index) => (
+                  <Col xs={24} key={`doc-${index}`}>
+                    <Form.Item
+                      name={`document-${doc._id}`}
+                      label={
+                        <span className="form-label">
+                          <FileTextOutlined />
+                          <span style={{ marginLeft: 8 }}>{doc.name}</span>
+                          <span style={{ color: "#ff4d4f" }}> *</span>
+                        </span>
+                      }
+                      rules={[
+                        { required: true, message: `${doc.name} is required` },
+                      ]}
+                    >
+                      <Upload.Dragger
+                        beforeUpload={(file) => {
+                          const isValidType = [
+                            "image/jpeg",
+                            "image/png",
+                            "application/pdf",
+                            "application/msword",
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                          ].includes(file.type);
+
+                          if (!isValidType) {
+                            message.error(
+                              "Only images, PDFs, or Word docs allowed!"
+                            );
+                            return Upload.LIST_OFF;
+                          }
+                          return false;
+                        }}
+                        maxCount={1}
+                        fileList={fileList[`document-${doc._id}`] || []}
+                        onChange={(info) =>
+                          handleFileChange(`document-${doc._id}`, info)
+                        }
+                        className="upload-dragger"
+                      >
+                        <p className="ant-upload-drag-icon">
+                          <UploadOutlined style={{ color: "#da2c46" }} />
+                        </p>
+                        <p className="ant-upload-text">
+                          Click or drag file to upload {doc.name}
+                        </p>
+                        {doc.description && (
+                          <p className="ant-upload-hint">{doc.description}</p>
+                        )}
+                        <p className="ant-upload-hint">
+                          Support for PDF, DOC, DOCX, JPG, PNG files
+                        </p>
+                      </Upload.Dragger>
+                    </Form.Item>
+                  </Col>
+                ))}
             </Row>
 
             <Divider />
-
             <Row justify="end">
               <Button
                 type="primary"
@@ -1162,6 +1304,31 @@ const JobDetailsPage = () => {
         .submit-button:hover {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(218, 44, 70, 0.2) !important;
+        }
+
+        .documents-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .document-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 8px;
+          background-color: #f9f9f9;
+        }
+
+        .document-icon {
+          font-size: 24px;
+          color: #da2c46;
+        }
+
+        .document-info {
+          display: flex;
+          flex-direction: column;
         }
       `}</style>
 

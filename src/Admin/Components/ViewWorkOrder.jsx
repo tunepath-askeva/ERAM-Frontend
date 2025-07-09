@@ -235,6 +235,48 @@ const ViewWorkOrder = () => {
           </div>
         )}
 
+        {workOrder.documents?.length > 0 && (
+          <div style={{ marginTop: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Required Documents
+            </Text>
+            <div
+              style={{
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.documents.map((doc, index) => (
+                <div
+                  key={doc._id}
+                  style={{
+                    marginBottom:
+                      index < workOrder.documents.length - 1 ? "8px" : "0",
+                  }}
+                >
+                  <Text strong style={{ fontSize: "12px", display: "block" }}>
+                    {doc.name}
+                  </Text>
+                  {doc.description && (
+                    <Text style={{ fontSize: "12px", color: "#666" }}>
+                      {doc.description}
+                    </Text>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {workOrder.languagesRequired?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text
