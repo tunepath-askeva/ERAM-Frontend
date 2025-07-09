@@ -63,10 +63,15 @@ export const recruiterApi = createApi({
       },
     }),
     getSelectedCandidates: builder.query({
-      query: () => ({
-        url: "/selected",
+      query: ({ jobId, page, limit }) => ({
+        url: `/selected/${jobId}`,
         method: "GET",
+        params: {
+          page,
+          limit,
+        },
       }),
+      
     }),
     getScreeningCandidates: builder.query({
       query: () => ({
