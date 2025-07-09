@@ -827,7 +827,7 @@ const EditWorkOrder = () => {
             </div>
           )}
 
-          {requiredDocuments?.length > 0 && (
+          {documents?.length > 0 && (
             <div style={{ marginBottom: "12px" }}>
               <h4
                 style={{
@@ -841,7 +841,7 @@ const EditWorkOrder = () => {
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
-                {requiredDocuments.map((doc, index) => (
+                {documents.map((doc, index) => (
                   <div
                     key={index}
                     style={{ display: "flex", alignItems: "center" }}

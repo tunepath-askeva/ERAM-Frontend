@@ -14,8 +14,16 @@ import {
   Skeleton,
   Alert,
   message,
+  Tabs,
+  List,
+  Tag,
+  Descriptions,
 } from "antd";
-import { CheckOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  FileDoneOutlined,
+  FileOutlined,
+} from "@ant-design/icons";
 import {
   useUpdateCandidateStatusMutation,
   useGetSelectedCandidatesQuery,
@@ -24,12 +32,19 @@ import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
 
 const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 
 const SelectedCandidates = ({ jobId }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [activeTabKey, setActiveTabKey] = useState("profile");
+  const [missingMandatoryDocuments, setMissingMandatoryDocuments] = useState(
+    []
+  );
+  const [missingOptionalDocuments, setMissingOptionalDocuments] = useState([]);
+  const [allMandatoryUploaded, setAllMandatoryUploaded] = useState(false);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -61,13 +76,15 @@ const SelectedCandidates = ({ jobId }) => {
       responses: response.responses,
       createdAt: response.createdAt,
       updatedAt: response.updatedAt,
+      workOrderDocuments: response.workOrder?.documents || [],
+      uploadedDocuments: response.workOrderuploadedDocuments || [],
     })) || [];
 
   useEffect(() => {
     if (responseData) {
       setPagination((prev) => ({
         ...prev,
-        total: responseData.customFieldResponses?.length || 0,
+        total: responseData.totalItems || 0,
       }));
     }
   }, [responseData]);
@@ -90,7 +107,28 @@ const SelectedCandidates = ({ jobId }) => {
 
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
+
+    // Check for missing documents when opening modal
+    const requiredDocs = candidate.workOrderDocuments || [];
+    const uploadedDocs = candidate.uploadedDocuments || [];
+
+    const mandatoryMissing = requiredDocs.filter(
+      (doc) =>
+        doc.isMandatory &&
+        !uploadedDocs.some((uploaded) => uploaded.documentName === doc.name)
+    );
+
+    const optionalMissing = requiredDocs.filter(
+      (doc) =>
+        !doc.isMandatory &&
+        !uploadedDocs.some((uploaded) => uploaded.documentName === doc.name)
+    );
+
+    setMissingMandatoryDocuments(mandatoryMissing);
+    setMissingOptionalDocuments(optionalMissing);
+    setAllMandatoryUploaded(mandatoryMissing.length === 0);
     setIsModalVisible(true);
+    setActiveTabKey("profile");
   };
 
   const handleBulkStatusUpdate = async (newStatus) => {
@@ -160,6 +198,114 @@ const SelectedCandidates = ({ jobId }) => {
       pageSize: pageSize,
     }));
     setSelectAll(false);
+  };
+
+  const renderDocumentsTab = () => {
+    const requiredDocs = selectedCandidate?.workOrderDocuments || [];
+    const uploadedDocs = selectedCandidate?.uploadedDocuments || [];
+
+    return (
+      <div>
+        <Title level={5} style={{ marginBottom: 16 }}>
+          Required Documents
+          <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+            (Mandatory documents are marked with *)
+          </Text>
+        </Title>
+
+        <List
+          itemLayout="horizontal"
+          dataSource={requiredDocs}
+          renderItem={(doc) => {
+            const uploadedDoc = uploadedDocs.find(
+              (d) => d.documentName === doc.name
+            );
+            return (
+              <List.Item>
+                <List.Item.Meta
+                  avatar={
+                    uploadedDoc ? (
+                      <FileDoneOutlined
+                        style={{ color: "#52c41a", fontSize: 20 }}
+                      />
+                    ) : (
+                      <FileOutlined
+                        style={{
+                          color: doc.isMandatory ? "#ff4d4f" : "#faad14",
+                          fontSize: 20,
+                        }}
+                      />
+                    )
+                  }
+                  title={
+                    <Space>
+                      <Text>
+                        {doc.name}
+                        {doc.isMandatory && <Text type="danger">*</Text>}
+                      </Text>
+                      {uploadedDoc ? (
+                        <Tag color="green">Uploaded</Tag>
+                      ) : (
+                        <Tag color={doc.isMandatory ? "red" : "orange"}>
+                          {doc.isMandatory
+                            ? "Missing (Required)"
+                            : "Missing (Optional)"}
+                        </Tag>
+                      )}
+                    </Space>
+                  }
+                  description={
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Description">
+                        {doc.description || "No description provided"}
+                      </Descriptions.Item>
+                      {uploadedDoc && (
+                        <>
+                          <Descriptions.Item label="File Name">
+                            {uploadedDoc.fileName}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Uploaded At">
+                            {new Date(uploadedDoc.uploadedAt).toLocaleString()}
+                          </Descriptions.Item>
+                        </>
+                      )}
+                    </Descriptions>
+                  }
+                />
+                {uploadedDoc && (
+                  <Button
+                    type="link"
+                    href={uploadedDoc.fileUrl}
+                    target="_blank"
+                    icon={<FileOutlined />}
+                  >
+                    View
+                  </Button>
+                )}
+              </List.Item>
+            );
+          }}
+        />
+
+        <Divider />
+
+        <Title level={5} style={{ marginBottom: 16 }}>
+          Resume
+        </Title>
+        {selectedCandidate?.resumeUrl ? (
+          <Button
+            type="link"
+            href={selectedCandidate.resumeUrl}
+            target="_blank"
+            icon={<FileOutlined />}
+          >
+            View Resume
+          </Button>
+        ) : (
+          <Text type="secondary">No resume uploaded</Text>
+        )}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -267,7 +413,7 @@ const SelectedCandidates = ({ jobId }) => {
       </div>
 
       <Modal
-        title="Candidate Profile"
+        title={`Candidate Profile - ${selectedCandidate?.fullName || ""}`}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         width={1000}
@@ -275,19 +421,88 @@ const SelectedCandidates = ({ jobId }) => {
           <Button key="back" onClick={() => setIsModalVisible(false)}>
             Close
           </Button>,
-          <Button
-            key="status"
-            type="primary"
-            loading={isUpdatingStatus}
-            onClick={() => handleStatusUpdate("screening")}
-            style={{ backgroundColor: "#da2c46" }}
-          >
-            Move to Screening
-          </Button>,
+          allMandatoryUploaded ? (
+            <>
+              <Button
+                type="primary"
+                key="pending"
+                style={{ backgroundColor: "#da2c46" }}
+                onClick={() => handleStatusUpdate("in-pending")}
+              >
+                Move to Pending
+              </Button>
+              <Button
+                key="screening"
+                type="primary"
+                loading={isUpdatingStatus}
+                onClick={() => handleStatusUpdate("screening")}
+                style={{ backgroundColor: "#da2c46" }}
+              >
+                Move to Screening
+              </Button>
+            </>
+          ) : (
+            <Button
+              key="pending"
+              type="default"
+              danger
+              onClick={() => handleStatusUpdate("in-pending")}
+            >
+              Move to Pending (Missing {missingMandatoryDocuments.length}{" "}
+              Mandatory Documents)
+            </Button>
+          ),
         ]}
       >
-        {selectedCandidate && (
-          <CandidateProfilePage candidate={selectedCandidate} />
+        <Tabs activeKey={activeTabKey} onChange={setActiveTabKey}>
+          <TabPane tab="Profile" key="profile">
+            {selectedCandidate && (
+              <CandidateProfilePage candidate={selectedCandidate} />
+            )}
+          </TabPane>
+          <TabPane tab="Documents" key="documents">
+            {selectedCandidate && renderDocumentsTab()}
+          </TabPane>
+        </Tabs>
+
+        {(missingMandatoryDocuments.length > 0 ||
+          missingOptionalDocuments.length > 0) && (
+          <Alert
+            message={
+              missingMandatoryDocuments.length > 0
+                ? `Missing ${missingMandatoryDocuments.length} mandatory document(s)`
+                : `Missing ${missingOptionalDocuments.length} optional document(s)`
+            }
+            description={
+              <div>
+                {missingMandatoryDocuments.length > 0 && (
+                  <div>
+                    <Text strong>Mandatory Documents:</Text>
+                    <ul>
+                      {missingMandatoryDocuments.map((doc, index) => (
+                        <li key={`mandatory-${index}`}>
+                          {doc.name} <Text type="danger">(Required)</Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {missingOptionalDocuments.length > 0 && (
+                  <div>
+                    <Text strong>Optional Documents:</Text>
+                    <ul>
+                      {missingOptionalDocuments.map((doc, index) => (
+                        <li key={`optional-${index}`}>{doc.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            }
+            type={missingMandatoryDocuments.length > 0 ? "error" : "warning"}
+            showIcon
+            style={{ marginTop: 16 }}
+          />
         )}
       </Modal>
     </div>

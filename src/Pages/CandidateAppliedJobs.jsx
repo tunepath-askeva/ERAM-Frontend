@@ -131,12 +131,13 @@ const APPLICATION_STATUSES = {
     icon: <CalendarOutlined />,
     description: "Moved to Pipeline",
   },
-  SHORTLISTED: {
-    key: "shortlisted",
-    label: "Shortlisted",
+  PENDING: {
+    key: "in-pending",
+    label: "Pending",
     color: "#3b82f6",
     icon: <StarOutlined />,
-    description: "Congratulations! You have been shortlisted",
+    description:
+      "Your profile is in pending pls update all required documents.",
   },
   // Add the 'interview' status that's coming from your API
   INTERVIEW: {
@@ -175,7 +176,7 @@ const APPLICATION_STATUSES = {
     description: "Job offer has been extended to you",
   },
   OFFER: {
-    key:"offer",
+    key: "offer",
     label: "Hired",
     color: "#059669",
     icon: <TrophyOutlined />,
@@ -254,7 +255,7 @@ const CandidateAppliedJobs = () => {
     const formattedSourcedJobs =
       sourcedData?.sourcedJobs?.map((job) => {
         const workOrder = job.workOrder;
-        console.log(job.status, "SOURCED JOB STATUS"); 
+        console.log(job.status, "SOURCED JOB STATUS");
         return {
           _id: job._id,
           title: workOrder.title,
@@ -266,7 +267,7 @@ const CandidateAppliedJobs = () => {
           experience: workOrder.experience || "Not specified",
           salary: `₹${workOrder.annualSalary}`,
           appliedDate: job.createdAt.split("T")[0],
-          status: job.status, 
+          status: job.status,
           applicationId: workOrder.jobCode,
           skills: workOrder.requiredSkills || [],
           notes: workOrder.description,
@@ -411,7 +412,7 @@ const CandidateAppliedJobs = () => {
     const statusOrder = [
       "applied",
       "under_review",
-      "shortlisted",
+      "in-pending",
       "interview",
       "interview_completed",
       "final_round",
