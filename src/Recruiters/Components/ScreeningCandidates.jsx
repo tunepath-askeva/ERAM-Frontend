@@ -62,6 +62,7 @@ const ScreeningCandidates = ({ jobId }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
+  const [isBulkMoving, setIsBulkMoving] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -289,15 +290,46 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
-  const handleSelectCandidate = (candidateId) => {
+  const handleBulkMoveToPipeline = async () => {
+    if (selectedCandidates.length === 0) {
+      message.warning("Please select at least one candidate");
+      return;
+    }
+
+    setIsBulkMoving(true);
+    try {
+      const promises = selectedCandidates.map((candidateId) => {
+        const candidate = allCandidates.find((c) => c._id === candidateId);
+        return moveToPipeline({
+          applicationId: candidate.applicationId,
+          jobId: jobId,
+          userId: candidate._id,
+        }).unwrap();
+      });
+
+      await Promise.all(promises);
+      message.success(
+        `Moved ${selectedCandidates.length} candidates to pipeline successfully`
+      );
+      setSelectedCandidates([]);
+      refetch();
+    } catch (error) {
+      console.error("Failed to move candidates to pipeline:", error);
+      message.error(
+        error.data?.message || "Failed to move candidates to pipeline"
+      );
+    } finally {
+      setIsBulkMoving(false);
+    }
+  };
+
+  const handleSelectCandidate = (candidateId, checked) => {
     setSelectedCandidates((prev) =>
-      prev.includes(candidateId)
-        ? prev.filter((id) => id !== candidateId)
-        : [...prev, candidateId]
+      checked ? [...prev, candidateId] : prev.filter((id) => id !== candidateId)
     );
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAll = (e) => {
     const currentPageCandidates = filteredCandidates
       .slice(
         (pagination.current - 1) * pagination.pageSize,
@@ -305,14 +337,14 @@ const ScreeningCandidates = ({ jobId }) => {
       )
       .map((candidate) => candidate._id);
 
-    if (currentPageCandidates.every((id) => selectedCandidates.includes(id))) {
-      setSelectedCandidates((prev) =>
-        prev.filter((id) => !currentPageCandidates.includes(id))
-      );
-    } else {
+    if (e.target.checked) {
       setSelectedCandidates((prev) => [
         ...new Set([...prev, ...currentPageCandidates]),
       ]);
+    } else {
+      setSelectedCandidates((prev) =>
+        prev.filter((id) => !currentPageCandidates.includes(id))
+      );
     }
   };
 
@@ -328,29 +360,78 @@ const ScreeningCandidates = ({ jobId }) => {
     );
   }
 
-
-
   return (
     <div style={{ padding: "0", fontSize: "14px" }}>
       <div style={{ marginBottom: "16px" }}>
-        <Title
-          level={4}
-          style={{
-            margin: "0 0 8px 0",
-            fontSize: "18px",
-            fontWeight: "600",
-            color: "#da2c46",
-          }}
-        >
-          Screening Candidates ({screeningCount})
-        </Title>{" "}
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title
+              level={4}
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#da2c46",
+              }}
+            >
+              Screening Candidates ({screeningCount})
+            </Title>
+          </Col>
+          <Col>
+            {selectedCandidates.length > 0 && (
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                onClick={handleBulkMoveToPipeline}
+                loading={isBulkMoving}
+                style={{ background: "#da2c46" }}
+              >
+                Move Selected ({selectedCandidates.length})
+              </Button>
+            )}
+          </Col>
+        </Row>
       </div>
 
       <Divider style={{ margin: "12px 0" }} />
 
-      <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+      <div>
         {filteredCandidates.length > 0 ? (
           <>
+            <Card size="small" style={{ marginBottom: "16px" }}>
+              <Checkbox
+                onChange={handleSelectAll}
+                checked={filteredCandidates
+                  .slice(
+                    (pagination.current - 1) * pagination.pageSize,
+                    pagination.current * pagination.pageSize
+                  )
+                  .every((candidate) =>
+                    selectedCandidates.includes(candidate._id)
+                  )}
+                indeterminate={
+                  filteredCandidates
+                    .slice(
+                      (pagination.current - 1) * pagination.pageSize,
+                      pagination.current * pagination.pageSize
+                    )
+                    .some((candidate) =>
+                      selectedCandidates.includes(candidate._id)
+                    ) &&
+                  !filteredCandidates
+                    .slice(
+                      (pagination.current - 1) * pagination.pageSize,
+                      pagination.current * pagination.pageSize
+                    )
+                    .every((candidate) =>
+                      selectedCandidates.includes(candidate._id)
+                    )
+                }
+              >
+                Select all candidates on this page
+              </Checkbox>
+            </Card>
+
             {filteredCandidates
               .slice(
                 (pagination.current - 1) * pagination.pageSize,
@@ -370,17 +451,26 @@ const ScreeningCandidates = ({ jobId }) => {
                     bodyStyle={{ padding: 0 }}
                   >
                     <Row align="middle" gutter={[16, 16]}>
-                      <Col flex="auto">
+                      {/* Left side - Candidate Details */}
+                      <Col xs={24} md={18}>
                         <Row align="top" gutter={[16, 12]}>
-                          {/* Main Content Column */}
-                          <Col
-                            xs={24}
-                            md={18}
-                            style={{
-                              paddingRight: "clamp(0px, 2vw, 16px)",
-                              marginBottom: "clamp(0px, 3vw, 12px)",
-                            }}
-                          >
+                          {/* Checkbox Column */}
+                          <Col xs={2}>
+                            <Checkbox
+                              checked={selectedCandidates.includes(
+                                candidate._id
+                              )}
+                              onChange={(e) =>
+                                handleSelectCandidate(
+                                  candidate._id,
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          </Col>
+
+                          {/* Main Details Column */}
+                          <Col xs={22}>
                             <div
                               style={{
                                 display: "flex",
@@ -524,67 +614,66 @@ const ScreeningCandidates = ({ jobId }) => {
                               )}
                             </div>
                           </Col>
+                        </Row>
+                      </Col>
 
-                          {/* Avatar Column */}
-                          <Col
-                            xs={24}
-                            md={6}
+                      {/* Right side - Avatar and View Button */}
+                      <Col xs={24} md={6}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: "clamp(8px, 1.5vw, 12px)",
+                          }}
+                        >
+                          <div
                             style={{
+                              width: "clamp(80px, 20vw, 100px)",
+                              height: "clamp(80px, 20vw, 100px)",
+                              borderRadius: "12px",
+                              backgroundColor: "#da2c46",
                               display: "flex",
-                              flexDirection: "column",
                               alignItems: "center",
                               justifyContent: "center",
-                              gap: "clamp(8px, 1.5vw, 12px)",
+                              overflow: "hidden",
                             }}
                           >
-                            <div
-                              style={{
-                                width: "clamp(80px, 20vw, 100px)",
-                                height: "clamp(80px, 20vw, 100px)",
-                                borderRadius: "12px",
-                                backgroundColor: "#da2c46",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                overflow: "hidden",
-                              }}
-                            >
-                              {candidate.image ? (
-                                <img
-                                  src={candidate.image}
-                                  alt={candidate.fullName}
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ) : (
-                                <UserOutlined
-                                  style={{
-                                    fontSize: "clamp(32px, 8vw, 40px)",
-                                    color: "#fff",
-                                  }}
-                                />
-                              )}
-                            </div>
+                            {candidate.image ? (
+                              <img
+                                src={candidate.image}
+                                alt={candidate.fullName}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            ) : (
+                              <UserOutlined
+                                style={{
+                                  fontSize: "clamp(32px, 8vw, 40px)",
+                                  color: "#fff",
+                                }}
+                              />
+                            )}
+                          </div>
 
-                            <Button
-                              type="primary"
-                              style={{
-                                backgroundColor: "#da2c46",
-                                width: "100%",
-                                maxWidth: "100px",
-                                fontSize: "clamp(13px, 1.5vw, 14px)",
-                                padding: "6px 12px",
-                              }}
-                              icon={<EyeOutlined />}
-                              onClick={() => handleViewProfile(candidate)}
-                            >
-                              View
-                            </Button>
-                          </Col>
-                        </Row>
+                          <Button
+                            type="primary"
+                            style={{
+                              backgroundColor: "#da2c46",
+                              width: "100%",
+                              maxWidth: "100px",
+                              fontSize: "clamp(13px, 1.5vw, 14px)",
+                              padding: "6px 12px",
+                            }}
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewProfile(candidate)}
+                          >
+                            View
+                          </Button>
+                        </div>
                       </Col>
                     </Row>
                   </Card>
