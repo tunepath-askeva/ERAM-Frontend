@@ -1078,19 +1078,21 @@ const RecruiterCandidates = () => {
                 }
                 key="4"
               >
-                <div style={{ marginBottom: 16 }}>
-                  <Button
-                    type="primary"
-                    style={{ background: "#da2c46" }}
-                    onClick={() => {
-                      form.resetFields();
-                      setScheduleInterviewModalVisible(true);
-                    }}
-                    icon={<PlusOutlined />}
-                  >
-                    Schedule New Interview
-                  </Button>
-                </div>
+                {selectedCandidate.status === "interview" && (
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      style={{ background: "#da2c46" }}
+                      onClick={() => {
+                        form.resetFields();
+                        setScheduleInterviewModalVisible(true);
+                      }}
+                      icon={<PlusOutlined />}
+                    >
+                      Schedule New Interview
+                    </Button>
+                  </div>
+                )}
                 {selectedCandidate.interviewDetails?.length > 0 ? (
                   <Collapse accordion>
                     {selectedCandidate.interviewDetails.map((interview) => (
@@ -1147,11 +1149,11 @@ const RecruiterCandidates = () => {
                             {allRecruiters ? (
                               <List
                                 size="small"
-                                dataSource={interview
-                                  ?.interviewerIds?.map((id) =>
-                                  allRecruiters.otherRecruiters.find(
-                                    (r) => r._id === id
-                                  )
+                                dataSource={interview?.interviewerIds?.map(
+                                  (id) =>
+                                    allRecruiters.otherRecruiters.find(
+                                      (r) => r._id === id
+                                    )
                                 )}
                                 renderItem={(recruiter) => (
                                   <List.Item>
@@ -1229,15 +1231,21 @@ const RecruiterCandidates = () => {
                   </Collapse>
                 ) : (
                   <Empty
-                    description="No interviews scheduled yet"
+                    description={
+                      selectedCandidate.status === "interview"
+                        ? "No interviews scheduled yet"
+                        : "No interviews were scheduled for this candidate"
+                    }
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   >
-                    <Button
-                      type="primary"
-                      onClick={() => setScheduleInterviewModalVisible(true)}
-                    >
-                      Schedule Interview
-                    </Button>
+                    {selectedCandidate.status === "interview" && (
+                      <Button
+                        type="primary"
+                        onClick={() => setScheduleInterviewModalVisible(true)}
+                      >
+                        Schedule Interview
+                      </Button>
+                    )}
                   </Empty>
                 )}
               </TabPane>
