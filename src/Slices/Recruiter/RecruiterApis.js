@@ -175,7 +175,7 @@ export const recruiterApi = createApi({
     moveCandidateStatus: builder.mutation({
       query: ({ id, ...payload }) => ({
         url: `/stage/${id}`,
-        method: "PATCH",
+        method: "PUT",
         body: payload,
       }),
     }),
