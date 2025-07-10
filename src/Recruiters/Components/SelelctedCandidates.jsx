@@ -66,6 +66,8 @@ const SelectedCandidates = ({ jobId }) => {
   const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
     useMoveCandidateStatusMutation();
 
+    
+
   const candidates =
     responseData?.customFieldResponses?.map((response) => ({
       ...response.user,
