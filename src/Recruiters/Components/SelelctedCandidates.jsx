@@ -140,7 +140,7 @@ const SelectedCandidates = ({ jobId }) => {
         if (!candidate) return Promise.resolve();
 
         return moveCandidateStatus({
-          id: candidate._id,
+          id: candidate.applicationId, // Changed from _id to applicationId
           status: newStatus,
           jobId: jobId,
         }).unwrap();
@@ -166,7 +166,7 @@ const SelectedCandidates = ({ jobId }) => {
 
     try {
       await moveCandidateStatus({
-        id: selectedCandidate._id, 
+        id: selectedCandidate.applicationId, // Changed from _id to applicationId
         status: newStatus,
         jobId: jobId,
       }).unwrap();

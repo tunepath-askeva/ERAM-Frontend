@@ -193,6 +193,13 @@ export const recruiterApi = createApi({
         body: { status, _id },
       }),
     }),
+    notifyCandidate: builder.mutation({
+      query: ({ userId, workOrderId, customFieldId }) => ({
+        url: "/notify",
+        method: "POST",
+        body: { userId, workOrderId, customFieldId },
+      }),
+    }),
   }),
 });
 
@@ -219,4 +226,5 @@ export const {
   useAddInterviewDetailsMutation,
   useChangeInterviewStatusMutation,
   useGetPendingCandidatesQuery,
+  useNotifyCandidateMutation
 } = recruiterApi;

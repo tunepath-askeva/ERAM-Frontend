@@ -38,6 +38,7 @@ import {
 import {
   useMoveCandidateStatusMutation,
   useGetPendingCandidatesQuery,
+  useNotifyCandidateMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
@@ -66,6 +67,8 @@ const PendingCandidates = ({ jobId }) => {
 
   const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
     useMoveCandidateStatusMutation();
+  const [notifyCandidate, { isLoading: isNotifying }] =
+    useNotifyCandidateMutation();
 
   const {
     data: pendingData,
@@ -82,8 +85,7 @@ const PendingCandidates = ({ jobId }) => {
     if (pendingData) {
       setPagination((prev) => ({
         ...prev,
-        total:
-          pendingData.total || pendingData.customFieldResponses?.length || 0,
+        total: pendingData.totalItems || 0,
       }));
     }
   }, [pendingData]);
@@ -100,6 +102,7 @@ const PendingCandidates = ({ jobId }) => {
     return (
       pendingData?.customFieldResponses?.map((response) => ({
         ...response.user,
+        _id: response.user._id,
         candidateStatus: response.status,
         applicationId: response._id,
         responses: response.responses,
@@ -165,7 +168,7 @@ const PendingCandidates = ({ jobId }) => {
       if (!selectedCandidate) return;
 
       await moveCandidateStatus({
-        id: selectedCandidate._id,
+        id: selectedCandidate.applicationId, // Use applicationId instead of _id
         status: newStatus,
         jobId: jobId,
       }).unwrap();
@@ -215,7 +218,7 @@ const PendingCandidates = ({ jobId }) => {
       const promises = selectedCandidates.map((candidateId) => {
         const candidate = allCandidates.find((c) => c._id === candidateId);
         return moveCandidateStatus({
-          id: candidate._id, 
+          id: candidate.applicationId, // Use applicationId instead of _id
           status: newStatus,
           jobId: jobId,
         }).unwrap();
@@ -237,6 +240,23 @@ const PendingCandidates = ({ jobId }) => {
     }
   };
 
+  const handleNotifyCandidate = async () => {
+    if (!selectedCandidate) return;
+
+    try {
+      await notifyCandidate({
+        userId: selectedCandidate._id,
+        workOrderId: selectedCandidate.workOrder?._id,
+        customFieldId: selectedCandidate.applicationId,
+      }).unwrap();
+
+      message.success("Notification sent successfully");
+    } catch (error) {
+      console.error("Failed to send notification:", error);
+      message.error(error.data?.message || "Failed to send notification");
+    }
+  };
+
   const renderDocumentsTab = () => {
     const requiredDocs = selectedCandidate?.workOrderDocuments || [];
     const uploadedDocs = selectedCandidate?.uploadedDocuments || [];
@@ -250,79 +270,85 @@ const PendingCandidates = ({ jobId }) => {
           </Text>
         </Title>
 
-        <List
-          itemLayout="horizontal"
-          dataSource={requiredDocs}
-          renderItem={(doc) => {
-            const uploadedDoc = uploadedDocs.find(
-              (d) => d.documentName === doc.name
-            );
-            return (
-              <List.Item>
-                <List.Item.Meta
-                  avatar={
-                    uploadedDoc ? (
-                      <FileDoneOutlined
-                        style={{ color: "#52c41a", fontSize: 20 }}
-                      />
-                    ) : (
-                      <FileOutlined
-                        style={{
-                          color: doc.isMandatory ? "#ff4d4f" : "#faad14",
-                          fontSize: 20,
-                        }}
-                      />
-                    )
-                  }
-                  title={
-                    <Space>
-                      <Text>
-                        {doc.name}
-                        {doc.isMandatory && <Text type="danger">*</Text>}
-                      </Text>
-                      {uploadedDoc ? (
-                        <Tag color="green">Uploaded</Tag>
+        {requiredDocs.length > 0 ? (
+          <List
+            itemLayout="horizontal"
+            dataSource={requiredDocs}
+            renderItem={(doc) => {
+              const uploadedDoc = uploadedDocs.find(
+                (d) => d.documentName === doc.name
+              );
+              return (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={
+                      uploadedDoc ? (
+                        <FileDoneOutlined
+                          style={{ color: "#52c41a", fontSize: 20 }}
+                        />
                       ) : (
-                        <Tag color={doc.isMandatory ? "red" : "orange"}>
-                          {doc.isMandatory
-                            ? "Missing (Required)"
-                            : "Missing (Optional)"}
-                        </Tag>
-                      )}
-                    </Space>
-                  }
-                  description={
-                    <Descriptions size="small" column={1}>
-                      <Descriptions.Item label="Description">
-                        {doc.description || "No description provided"}
-                      </Descriptions.Item>
-                      {uploadedDoc && (
-                        <>
-                          <Descriptions.Item label="File Name">
-                            {uploadedDoc.fileName}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Uploaded At">
-                            {new Date(uploadedDoc.uploadedAt).toLocaleString()}
-                          </Descriptions.Item>
-                        </>
-                      )}
-                    </Descriptions>
-                  }
-                />
-                {uploadedDoc && (
-                  <Button
-                    type="link"
-                    href={uploadedDoc.fileUrl}
-                    target="_blank"
-                    icon={<FileOutlined />}
-                  >
-                    View
-                  </Button>
-                )}
-              </List.Item>
-            );
-          }}
-        />
+                        <FileOutlined
+                          style={{
+                            color: doc.isMandatory ? "#ff4d4f" : "#faad14",
+                            fontSize: 20,
+                          }}
+                        />
+                      )
+                    }
+                    title={
+                      <Space>
+                        <Text>
+                          {doc.name}
+                          {doc.isMandatory && <Text type="danger">*</Text>}
+                        </Text>
+                        {uploadedDoc ? (
+                          <Tag color="green">Uploaded</Tag>
+                        ) : (
+                          <Tag color={doc.isMandatory ? "red" : "orange"}>
+                            {doc.isMandatory
+                              ? "Missing (Required)"
+                              : "Missing (Optional)"}
+                          </Tag>
+                        )}
+                      </Space>
+                    }
+                    description={
+                      <Descriptions size="small" column={1}>
+                        <Descriptions.Item label="Description">
+                          {doc.description || "No description provided"}
+                        </Descriptions.Item>
+                        {uploadedDoc && (
+                          <>
+                            <Descriptions.Item label="File Name">
+                              {uploadedDoc.fileName}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Uploaded At">
+                              {new Date(
+                                uploadedDoc.uploadedAt
+                              ).toLocaleString()}
+                            </Descriptions.Item>
+                          </>
+                        )}
+                      </Descriptions>
+                    }
+                  />
+                  {uploadedDoc && (
+                    <Button
+                      type="link"
+                      href={uploadedDoc.fileUrl}
+                      target="_blank"
+                      icon={<FileOutlined />}
+                    >
+                      View
+                    </Button>
+                  )}
+                </List.Item>
+              );
+            }}
+          />
+        ) : (
+          <Text type="secondary">No documents required for this position</Text>
+        )}
 
         <Divider />
 
@@ -347,7 +373,7 @@ const PendingCandidates = ({ jobId }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: "orange",
+      "in-pending": "orange",
       screening: "blue",
       selected: "green",
       rejected: "red",
@@ -572,7 +598,7 @@ const PendingCandidates = ({ jobId }) => {
                                 )}
                               >
                                 {candidate.candidateStatus?.toUpperCase() ||
-                                  "PENDING"}
+                                  "IN-PENDING"}
                               </Tag>
                             </div>
 
@@ -747,7 +773,7 @@ const PendingCandidates = ({ jobId }) => {
                       color={getStatusColor(selectedCandidate.candidateStatus)}
                     >
                       {selectedCandidate.candidateStatus?.toUpperCase() ||
-                        "PENDING"}
+                        "IN-PENDING"}
                     </Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label="Location">
@@ -871,15 +897,15 @@ const PendingCandidates = ({ jobId }) => {
                   gap: "8px",
                 }}
               >
-                {missingMandatoryDocuments.length > 0 && (
+                {(missingMandatoryDocuments.length > 0 ||
+                  missingOptionalDocuments.length > 0 ||
+                  (selectedCandidate?.workOrderDocuments?.length > 0 &&
+                    selectedCandidate?.uploadedDocuments?.length === 0)) && (
                   <Button
                     type="primary"
                     style={{ backgroundColor: "#da2c46" }}
-                    onClick={() => {
-                      message.info(
-                        "Notification feature will be implemented soon"
-                      );
-                    }}
+                    onClick={handleNotifyCandidate}
+                    loading={isNotifying}
                   >
                     Notify Candidate
                   </Button>
