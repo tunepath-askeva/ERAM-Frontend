@@ -135,36 +135,40 @@ const EditWorkOrder = () => {
           }
         };
 
-        const initialCustomStages = {};
+        // Initialize pipeline stage dates from API response
         const initialStageDates = {};
-        const initialStageApprovers = {};
+        const initialCustomStages = {};
 
         if (workOrder.pipelineStageTimeline) {
           workOrder.pipelineStageTimeline.forEach((timeline) => {
-            if (!initialStageDates[timeline.pipelineId]) {
-              initialStageDates[timeline.pipelineId] = [];
+            const pipelineId = timeline.pipelineId._id;
+
+            if (!initialStageDates[pipelineId]) {
+              initialStageDates[pipelineId] = [];
             }
 
-            initialStageDates[timeline.pipelineId].push({
+            initialStageDates[pipelineId].push({
               stageId: timeline.stageId,
+              stageName: timeline.stageName,
               startDate: timeline.startDate,
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
               approvalId: timeline.approvalId?._id || null,
               recruiterId: timeline.recruiterId?._id || null,
+              isCustomStage: timeline.isCustomStage || false,
             });
 
             if (timeline.isCustomStage) {
-              if (!initialCustomStages[timeline.pipelineId]) {
-                initialCustomStages[timeline.pipelineId] = [];
+              if (!initialCustomStages[pipelineId]) {
+                initialCustomStages[pipelineId] = [];
               }
 
               if (
-                !initialCustomStages[timeline.pipelineId].some(
+                !initialCustomStages[pipelineId].some(
                   (s) => s.id === timeline.stageId
                 )
               ) {
-                initialCustomStages[timeline.pipelineId].push({
+                initialCustomStages[pipelineId].push({
                   id: timeline.stageId,
                   name: timeline.stageName,
                   description: "",
@@ -179,8 +183,8 @@ const EditWorkOrder = () => {
         setPipelineStageDates(initialStageDates);
         setSelectedPipelines(
           Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline]
+            ? workOrder.pipeline.map((p) => p._id)
+            : [workOrder.pipeline._id]
         );
 
         const formData = {
@@ -1282,6 +1286,12 @@ const EditWorkOrder = () => {
         .map((stage) => stage.approvalId)
     );
 
+    // Get timeline data for the current pipeline from API response
+    const pipelineTimeline =
+      workOrderData?.workOrder?.pipelineStageTimeline?.filter(
+        (timeline) => timeline.pipelineId._id === currentPipelineForDates._id
+      ) || [];
+
     return (
       <Modal
         title={`Set Stage Dates & Approvals for ${
@@ -1317,9 +1327,26 @@ const EditWorkOrder = () => {
         <div style={{ padding: "16px 0" }}>
           {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
-            const dateEntry = pipelineStageDates[
-              currentPipelineForDates._id
-            ]?.find((d) => d.stageId === stageId);
+            // Find timeline data for this stage
+            const timelineData = pipelineTimeline.find(
+              (t) => t.stageId === stageId
+            );
+
+            // Get date entry from local state or fallback to API data
+            const dateEntry =
+              pipelineStageDates[currentPipelineForDates._id]?.find(
+                (d) => d.stageId === stageId
+              ) ||
+              (timelineData
+                ? {
+                    stageId: timelineData.stageId,
+                    startDate: timelineData.startDate,
+                    endDate: timelineData.endDate,
+                    dependencyType: timelineData.dependencyType,
+                    approvalId: timelineData.approvalId?._id,
+                    recruiterId: timelineData.recruiterId?._id,
+                  }
+                : null);
 
             // Filter approval levels - exclude those already used in other stages
             const availableApprovalLevels = approvalLevels.filter(
@@ -1482,11 +1509,7 @@ const EditWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select recruiter"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.recruiterId || undefined
-                        }
+                        value={dateEntry?.recruiterId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -1517,11 +1540,7 @@ const EditWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select approval level"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.approvalId || undefined
-                        }
+                        value={dateEntry?.approvalId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -1554,11 +1573,7 @@ const EditWorkOrder = () => {
                         placeholder="Select dependency type"
                         style={{ width: "100%" }}
                         size="small"
-                        value={
-                          dateEntry?.dependencyType ||
-                          stage.dependencyType ||
-                          "independent"
-                        }
+                        value={dateEntry?.dependencyType || "independent"}
                         onChange={(value) =>
                           handleDependencyTypeChange(
                             currentPipelineForDates._id,
