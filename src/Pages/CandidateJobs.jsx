@@ -519,7 +519,6 @@ const CandidateJobs = () => {
         <Result
           status="404"
           title="There are no jobs available for now!!!"
-          subTitle={"Something went wrong while fetching jobs."}
           extra={[
             <Button
               type="primary"
