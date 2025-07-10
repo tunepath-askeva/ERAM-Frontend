@@ -525,26 +525,27 @@ const RecruiterViewJob = () => {
 
         {workOrder.pipelineStageTimeline?.length > 0 ? (
           <div style={{ marginTop: "16px" }}>
-            {Object.values(pipelines).map((pipeline) => (
-              <div key={pipeline.name} style={{ marginBottom: "24px" }}>
+            {Object.values(pipelines).map((pipeline, pipelineIndex) => (
+              <div key={pipelineIndex} style={{ marginBottom: "24px" }}>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     marginBottom: "12px",
-                    paddingBottom: "8px",
-                    borderBottom: "1px solid #f0f0f0",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
                   }}
                 >
-                  <Text strong style={{ fontSize: "15px", marginRight: "8px" }}>
+                  <Text strong style={{ fontSize: "14px", marginRight: "8px" }}>
                     {pipeline.name}
                   </Text>
                   <Tag color="blue" style={{ fontSize: "12px" }}>
-                    {pipeline.stages.length} stages
+                    {pipeline.stages.length}{" "}
+                    {pipeline.stages.length === 1 ? "stage" : "stages"}
                   </Tag>
                 </div>
 
-                {pipeline.stages.map((stage, index) => (
+                {pipeline.stages.map((stage, stageIndex) => (
                   <Card
                     key={stage._id}
                     size="small"
@@ -561,13 +562,16 @@ const RecruiterViewJob = () => {
                             strong
                             style={{ fontSize: "12px", display: "block" }}
                           >
-                            Stage {index + 1}
+                            Stage {stageIndex + 1}
                           </Text>
                           <Text style={{ fontSize: "12px", display: "block" }}>
                             Stage Name: {stage.stageName}
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            Assigned Recruiter: {stage.recruiterId.fullName}
+                            Assigned Recruiter:{" "}
+                            {stage.recruiterId
+                              ? stage.recruiterId.fullName
+                              : "Not assigned"}
                           </Text>
                         </div>
                       </Col>
@@ -580,7 +584,9 @@ const RecruiterViewJob = () => {
                             Start Date
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            {new Date(stage.startDate).toLocaleDateString()}
+                            {stage.startDate
+                              ? new Date(stage.startDate).toLocaleDateString()
+                              : "Not set"}
                           </Text>
                         </div>
                       </Col>
@@ -593,7 +599,9 @@ const RecruiterViewJob = () => {
                             End Date
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            {new Date(stage.endDate).toLocaleDateString()}
+                            {stage.endDate
+                              ? new Date(stage.endDate).toLocaleDateString()
+                              : "Not set"}
                           </Text>
                         </div>
                       </Col>

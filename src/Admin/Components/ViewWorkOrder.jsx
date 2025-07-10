@@ -602,7 +602,10 @@ const ViewWorkOrder = () => {
                             Stage Name: {stage.stageName}
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            Assigned Recruiter: {stage.recruiterId.fullName}
+                            Assigned Recruiter:{" "}
+                            {stage.recruiterId
+                              ? stage.recruiterId.fullName
+                              : "Not assigned"}
                           </Text>
                         </div>
                       </Col>
@@ -615,7 +618,9 @@ const ViewWorkOrder = () => {
                             Start Date
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            {new Date(stage.startDate).toLocaleDateString()}
+                            {stage.startDate
+                              ? new Date(stage.startDate).toLocaleDateString()
+                              : "Not set"}
                           </Text>
                         </div>
                       </Col>
@@ -628,7 +633,9 @@ const ViewWorkOrder = () => {
                             End Date
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            {new Date(stage.endDate).toLocaleDateString()}
+                            {stage.endDate
+                              ? new Date(stage.endDate).toLocaleDateString()
+                              : "Not set"}
                           </Text>
                         </div>
                       </Col>
