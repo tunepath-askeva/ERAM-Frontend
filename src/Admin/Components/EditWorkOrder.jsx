@@ -221,7 +221,7 @@ const EditWorkOrder = () => {
             id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
             name: doc.name,
             description: doc.description,
-            isMandatory: true, 
+            isMandatory: true,
           })) || []
         );
       } catch (error) {
@@ -423,7 +423,7 @@ const EditWorkOrder = () => {
 
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: new ObjectId().toString(), 
+      id: new ObjectId().toString(),
       name: `New Stage`,
       description: "",
       isCustom: true,
@@ -590,7 +590,7 @@ const EditWorkOrder = () => {
       id: Date.now(),
       name: "",
       description: "",
-      isMandatory: true, 
+      isMandatory: true,
     };
     setDocuments([...documents, newDocument]);
   };
@@ -643,7 +643,7 @@ const EditWorkOrder = () => {
         documents: documents.map((doc) => ({
           name: doc.name,
           description: doc.description,
-          isMandatory: doc.isMandatory 
+          isMandatory: doc.isMandatory,
         })),
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
@@ -1260,20 +1260,18 @@ const EditWorkOrder = () => {
 
     if (!currentPipelineForDates) return null;
 
+    // Combine existing stages with custom stages
     const allStages = [
-      ...(customStages[currentPipelineForDates._id] || []),
       ...(currentPipelineForDates.stages || []),
+      ...(customStages[currentPipelineForDates._id] || []),
     ];
 
-    const sortedStages = allStages.sort((a, b) => {
-      const aIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
-        (d) => d.stageId === (a._id || a.id)
-      );
-      const bIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
-        (d) => d.stageId === (b._id || b.id)
-      );
-      return (aIndex || 0) - (bIndex || 0);
-    });
+    // Get all approval levels already selected in this pipeline
+    const usedApprovalLevels = new Set(
+      pipelineStageDates[currentPipelineForDates._id]
+        ?.filter((stage) => stage.approvalId)
+        .map((stage) => stage.approvalId)
+    );
 
     return (
       <Modal
@@ -1308,11 +1306,20 @@ const EditWorkOrder = () => {
         }}
       >
         <div style={{ padding: "16px 0" }}>
-          {sortedStages.map((stage) => {
+          {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
             const dateEntry = pipelineStageDates[
               currentPipelineForDates._id
             ]?.find((d) => d.stageId === stageId);
+
+            // Filter approval levels - exclude those already used in other stages
+            const availableApprovalLevels = approvalLevels.filter(
+              (level) =>
+                // Include if it's the current selection for this stage
+                dateEntry?.approvalId === level.id ||
+                // Or if it hasn't been used yet
+                !usedApprovalLevels.has(level.id)
+            );
 
             return (
               <Card
@@ -1334,7 +1341,11 @@ const EditWorkOrder = () => {
                         gap: "8px",
                       }}
                     >
-                      <span style={{ cursor: "grab" }}>⋮⋮</span>
+                      <span
+                        style={{ cursor: stage.isCustom ? "grab" : "default" }}
+                      >
+                        ⋮⋮
+                      </span>
                       {stage.isCustom ? (
                         <Input
                           value={stage.name}
@@ -1390,10 +1401,11 @@ const EditWorkOrder = () => {
                   marginBottom: 16,
                   cursor: stage.isCustom ? "move" : "default",
                 }}
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, stage)}
+                draggable={stage.isCustom}
+                onDragStart={(e) => stage.isCustom && handleDragStart(e, stage)}
                 onDragOver={handleDragOver}
                 onDrop={(e) =>
+                  stage.isCustom &&
                   handleDrop(e, stage, currentPipelineForDates._id)
                 }
               >
@@ -1512,7 +1524,7 @@ const EditWorkOrder = () => {
                         style={{ width: "100%" }}
                         size="small"
                       >
-                        {approvalLevels.map((level) => (
+                        {availableApprovalLevels.map((level) => (
                           <Option key={level.id} value={level.id}>
                             {level.name}
                           </Option>
@@ -1533,7 +1545,11 @@ const EditWorkOrder = () => {
                         placeholder="Select dependency type"
                         style={{ width: "100%" }}
                         size="small"
-                        value={dateEntry?.dependencyType || "independent"}
+                        value={
+                          dateEntry?.dependencyType ||
+                          stage.dependencyType ||
+                          "independent"
+                        }
                         onChange={(value) =>
                           handleDependencyTypeChange(
                             currentPipelineForDates._id,

@@ -1101,7 +1101,6 @@ const AddWorkOrder = () => {
         id: approval._id,
         name: approval.groupName,
       })) || [];
-
     const dependencyTypes = [
       { id: "independent", name: "Independent" },
       { id: "dependent", name: "Dependent" },
@@ -1114,6 +1113,13 @@ const AddWorkOrder = () => {
       ...(currentPipelineForDates.stages || []),
       ...(customStages[currentPipelineForDates._id] || []),
     ];
+
+    // Get all approval levels already selected in this pipeline
+    const usedApprovalLevels = new Set(
+      pipelineStageDates[currentPipelineForDates._id]
+        ?.filter((stage) => stage.approvalId)
+        .map((stage) => stage.approvalId)
+    );
 
     return (
       <Modal
@@ -1153,6 +1159,15 @@ const AddWorkOrder = () => {
             const dateEntry = pipelineStageDates[
               currentPipelineForDates._id
             ]?.find((d) => d.stageId === stageId);
+
+            // Filter approval levels - exclude those already used in other stages
+            const availableApprovalLevels = approvalLevels.filter(
+              (level) =>
+                // Include if it's the current selection for this stage
+                dateEntry?.approvalId === level.id ||
+                // Or if it hasn't been used yet
+                !usedApprovalLevels.has(level.id)
+            );
 
             return (
               <Card
@@ -1242,7 +1257,6 @@ const AddWorkOrder = () => {
                   handleDrop(e, stage, currentPipelineForDates._id)
                 }
               >
-                {/* Rest of your card content remains the same */}
                 <Row gutter={[16, 16]} align="bottom">
                   {/* Date Section */}
                   <Col xs={24} sm={12} md={12} lg={8}>
@@ -1358,7 +1372,7 @@ const AddWorkOrder = () => {
                         style={{ width: "100%" }}
                         size="small"
                       >
-                        {approvalLevels.map((level) => (
+                        {availableApprovalLevels.map((level) => (
                           <Option key={level.id} value={level.id}>
                             {level.name}
                           </Option>
