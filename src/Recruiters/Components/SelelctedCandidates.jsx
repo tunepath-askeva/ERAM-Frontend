@@ -61,6 +61,7 @@ const SelectedCandidates = ({ jobId }) => {
     jobId,
     page: pagination.current,
     limit: pagination.pageSize,
+    
   });
 
   const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
