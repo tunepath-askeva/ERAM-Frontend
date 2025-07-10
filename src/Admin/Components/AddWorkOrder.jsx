@@ -1160,14 +1160,7 @@ const AddWorkOrder = () => {
               currentPipelineForDates._id
             ]?.find((d) => d.stageId === stageId);
 
-            // Filter approval levels - exclude those already used in other stages
-            const availableApprovalLevels = approvalLevels.filter(
-              (level) =>
-                // Include if it's the current selection for this stage
-                dateEntry?.approvalId === level.id ||
-                // Or if it hasn't been used yet
-                !usedApprovalLevels.has(level.id)
-            );
+            const availableApprovalLevels = approvalLevels;
 
             return (
               <Card
@@ -1356,11 +1349,7 @@ const AddWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select approval level"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.approvalId || undefined
-                        }
+                        value={dateEntry?.approvalId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -1372,7 +1361,7 @@ const AddWorkOrder = () => {
                         style={{ width: "100%" }}
                         size="small"
                       >
-                        {availableApprovalLevels.map((level) => (
+                        {approvalLevels.map((level) => (
                           <Option key={level.id} value={level.id}>
                             {level.name}
                           </Option>
