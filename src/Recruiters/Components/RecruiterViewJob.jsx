@@ -20,7 +20,6 @@ import {
   Skeleton,
   Breadcrumb,
   Button,
-  
 } from "antd";
 import { CheckCircleOutlined, LeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -495,88 +494,133 @@ const RecruiterViewJob = () => {
     </div>
   );
 
-  const renderPipelineStages = () => (
-    <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
-      <h3
-        style={{
-          margin: "0 0 12px 0",
-          color: " #da2c46",
-          fontSize: "18px",
-          fontWeight: "600",
-          wordBreak: "break-word",
-          lineHeight: "1.3",
-        }}
-      >
-        Pipeline Stages Timeline
-      </h3>
+  const renderPipelineStages = () => {
+    // Group stages by pipeline
+    const pipelines = {};
+    workOrder.pipelineStageTimeline?.forEach((stage) => {
+      const pipelineId = stage.pipelineId._id;
+      if (!pipelines[pipelineId]) {
+        pipelines[pipelineId] = {
+          name: stage.pipelineId.name,
+          stages: [],
+        };
+      }
+      pipelines[pipelineId].stages.push(stage);
+    });
 
-      {workOrder.pipelineStageTimeline?.length > 0 ? (
-        <div style={{ marginTop: "16px" }}>
-          {workOrder.pipelineStageTimeline.map((stage, index) => (
-            <Card
-              key={stage._id}
-              size="small"
-              style={{
-                marginBottom: "12px",
-                borderLeft: "4px solid #1890ff",
-                borderRadius: "6px",
-              }}
-            >
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={8}>
-                  <div>
-                    <Text strong style={{ fontSize: "12px", display: "block" }}>
-                      Stage {index + 1}
-                    </Text>
-                    <Text style={{ fontSize: "12px", display: "block" }}>
-                      Stage Name : {stage.stageName}
-                    </Text>
-                    <Text style={{ fontSize: "12px" }}>
-                      Assigned Recruiter : {stage.recruiterId.fullName}
-                    </Text>
-                  </div>
-                </Col>
-                <Col xs={12} sm={8}>
-                  <div>
-                    <Text strong style={{ fontSize: "12px", display: "block" }}>
-                      Start Date
-                    </Text>
-                    <Text style={{ fontSize: "12px" }}>
-                      {new Date(stage.startDate).toLocaleDateString()}
-                    </Text>
-                  </div>
-                </Col>
-                <Col xs={12} sm={8}>
-                  <div>
-                    <Text strong style={{ fontSize: "12px", display: "block" }}>
-                      End Date
-                    </Text>
-                    <Text style={{ fontSize: "12px" }}>
-                      {new Date(stage.endDate).toLocaleDateString()}
-                    </Text>
-                  </div>
-                </Col>
-              </Row>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div
+    return (
+      <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
+        <h3
           style={{
-            textAlign: "center",
-            color: "#999",
-            padding: "40px 16px",
-            fontSize: "13px",
-            backgroundColor: "#fafafa",
-            borderRadius: "6px",
-            border: "1px dashed #d9d9d9",
+            margin: "0 0 12px 0",
+            color: " #da2c46",
+            fontSize: "18px",
+            fontWeight: "600",
+            wordBreak: "break-word",
+            lineHeight: "1.3",
           }}
         >
-          No pipeline stages timeline configured for this work order.
-        </div>
-      )}
-    </div>
-  );
+          Pipeline Stages Timeline
+        </h3>
+
+        {workOrder.pipelineStageTimeline?.length > 0 ? (
+          <div style={{ marginTop: "16px" }}>
+            {Object.values(pipelines).map((pipeline) => (
+              <div key={pipeline.name} style={{ marginBottom: "24px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                    paddingBottom: "8px",
+                    borderBottom: "1px solid #f0f0f0",
+                  }}
+                >
+                  <Text strong style={{ fontSize: "15px", marginRight: "8px" }}>
+                    {pipeline.name}
+                  </Text>
+                  <Tag color="blue" style={{ fontSize: "12px" }}>
+                    {pipeline.stages.length} stages
+                  </Tag>
+                </div>
+
+                {pipeline.stages.map((stage, index) => (
+                  <Card
+                    key={stage._id}
+                    size="small"
+                    style={{
+                      marginBottom: "12px",
+                      borderLeft: "4px solid #1890ff",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <Row gutter={[16, 8]}>
+                      <Col xs={24} sm={8}>
+                        <div>
+                          <Text
+                            strong
+                            style={{ fontSize: "12px", display: "block" }}
+                          >
+                            Stage {index + 1}
+                          </Text>
+                          <Text style={{ fontSize: "12px", display: "block" }}>
+                            Stage Name: {stage.stageName}
+                          </Text>
+                          <Text style={{ fontSize: "12px" }}>
+                            Assigned Recruiter: {stage.recruiterId.fullName}
+                          </Text>
+                        </div>
+                      </Col>
+                      <Col xs={12} sm={8}>
+                        <div>
+                          <Text
+                            strong
+                            style={{ fontSize: "12px", display: "block" }}
+                          >
+                            Start Date
+                          </Text>
+                          <Text style={{ fontSize: "12px" }}>
+                            {new Date(stage.startDate).toLocaleDateString()}
+                          </Text>
+                        </div>
+                      </Col>
+                      <Col xs={12} sm={8}>
+                        <div>
+                          <Text
+                            strong
+                            style={{ fontSize: "12px", display: "block" }}
+                          >
+                            End Date
+                          </Text>
+                          <Text style={{ fontSize: "12px" }}>
+                            {new Date(stage.endDate).toLocaleDateString()}
+                          </Text>
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              textAlign: "center",
+              color: "#999",
+              padding: "40px 16px",
+              fontSize: "13px",
+              backgroundColor: "#fafafa",
+              borderRadius: "6px",
+              border: "1px dashed #d9d9d9",
+            }}
+          >
+            No pipeline stages timeline configured for this work order.
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div>
