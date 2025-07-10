@@ -177,10 +177,17 @@ const EditWorkOrder = () => {
 
         setCustomStages(initialCustomStages);
         setPipelineStageDates(initialStageDates);
-        setSelectedPipelines(workOrder.pipeline.map((p) => p._id));
+        setSelectedPipelines(
+          Array.isArray(workOrder.pipeline)
+            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
+            : [workOrder.pipeline]
+        );
 
         const formData = {
           ...workOrder,
+          pipeline: Array.isArray(workOrder.pipeline)
+            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
+            : [workOrder.pipeline],
           numberOfCandidates: workOrder.numberOfCandidate,
           startDate: formatDate(workOrder.startDate),
           endDate: formatDate(workOrder.endDate),
@@ -276,6 +283,7 @@ const EditWorkOrder = () => {
 
   const handlePipelineChange = (selectedPipelineIds) => {
     setSelectedPipelines(selectedPipelineIds);
+    jobForm.setFieldsValue({ pipeline: selectedPipelineIds });
 
     const newStageDates = { ...pipelineStageDates };
     selectedPipelineIds.forEach((pipeId) => {
@@ -637,6 +645,7 @@ const EditWorkOrder = () => {
       const workOrderPayload = {
         ...jobData,
         ...values,
+        pipeline: selectedPipelines,
         customFields: applicationFields,
         workOrderStatus: "published",
         pipelineStageTimeline,
