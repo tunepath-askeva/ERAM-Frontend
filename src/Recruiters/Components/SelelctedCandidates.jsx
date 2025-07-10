@@ -61,7 +61,7 @@ const SelectedCandidates = ({ jobId }) => {
     jobId,
     page: pagination.current,
     limit: pagination.pageSize,
-    
+
   });
 
   const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
@@ -69,6 +69,7 @@ const SelectedCandidates = ({ jobId }) => {
 
 
   const candidates =
+  
     responseData?.customFieldResponses?.map((response) => ({
       ...response.user,
       applicationId: response._id,
