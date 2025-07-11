@@ -185,8 +185,29 @@ const Notifications = () => {
             marginBottom: "16px",
           }}
         >
-          <Text strong style={{ fontSize: "16px" }}>
+          <Text strong style={{ fontSize: "16px", display: "flex", alignItems: "center" }}>
             Recent Notifications
+            {unreadCount > 0 && (
+              <span 
+                style={{
+                  marginLeft: "8px",
+                  backgroundColor: "#da2c46",
+                  color: "white",
+                  borderRadius: "10px",
+                  padding: "2px 8px",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  animation: unreadCount > 0 ? "pulse 1.5s infinite" : "none"
+                }}
+              >
+                {unreadCount} new
+              </span>
+            )}
+            {/* {unreadCount === 0 && (
+              <span style={{ marginLeft: "8px", color: "#52c41a" }}>
+                ✓ All caught up!
+              </span>
+            )} */}
           </Text>
           <Space>
             {unreadCount > 0 && (

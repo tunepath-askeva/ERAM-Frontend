@@ -14,6 +14,9 @@ import {
   List,
   Typography,
   Empty,
+  Tag,
+  Space,
+  Popconfirm,
 } from "antd";
 import {
   UserOutlined,
@@ -23,11 +26,19 @@ import {
   DoubleRightOutlined,
   BellOutlined,
   MailOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined,
+  ExclamationCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 import { socket } from "../utils/socket.js";
 import { notification } from "antd";
 import { useGetCandidateNotificationQuery } from "../Slices/Users/UserApis.js";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -152,12 +163,10 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [notificationVisible, setNotificationVisible] = useState(false);
 
   const [logout] = useLogoutSuperAdminMutation();
-  const { data: notifications } = useGetCandidateNotificationQuery();
+  const { data: notifications, refetch: refetchNotifications } = useGetCandidateNotificationQuery();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  console.log(notifications, "hi notificaiotns");
 
   useEffect(() => {
     const candidateDataRaw =
@@ -212,7 +221,6 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         if (candidateData) {
           const parsedData = JSON.parse(candidateData);
 
-          // Extract name with multiple fallbacks
           const name =
             parsedData.name ||
             parsedData.fullName ||
@@ -247,11 +255,6 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           setCandidateInfo(extractedInfo);
         } else {
           console.warn("No candidate data found in localStorage");
-
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            const value = localStorage.getItem(key);
-          }
         }
       } catch (error) {
         console.error("Error parsing candidate info from localStorage:", error);
@@ -289,6 +292,81 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const combinedNotifications = [
+    ...(notifications?.notification || []),
+    ...notificationList,
+  ];
+
+  const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
+
+  const handleMarkAsRead = (id) => {
+    // Update local state
+    if (notifications?.notification?.some(n => n._id === id)) {
+      // This is from API data
+      // In a real app, you would make an API call here to mark as read
+      refetchNotifications();
+    } else {
+      // This is from socket data
+      setNotificationList(prev =>
+        prev.map(notification =>
+          notification._id === id ? { ...notification, isRead: true } : notification
+        )
+      );
+    }
+  };
+
+  const handleDeleteNotification = (id) => {
+    // Update local state
+    if (notifications?.notification?.some(n => n._id === id)) {
+      // This is from API data
+      // In a real app, you would make an API call here to delete
+      refetchNotifications();
+    } else {
+      // This is from socket data
+      setNotificationList(prev => prev.filter(notification => notification._id !== id));
+    }
+  };
+
+  const markAllAsRead = () => {
+    // Mark all as read logic
+    // In a real app, you would make an API call here
+    refetchNotifications();
+    setNotificationList(prev =>
+      prev.map(notification => ({ ...notification, isRead: true }))
+    );
+  };
+
+  const clearAllNotifications = () => {
+    // Clear all notifications logic
+    // In a real app, you would make an API call here
+    setNotificationList([]);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "info":
+        return <InfoCircleOutlined style={{ color: "#1890ff" }} />;
+      case "success":
+        return <CheckCircleOutlined style={{ color: "#52c41a" }} />;
+      case "warning":
+        return <ExclamationCircleOutlined style={{ color: "#faad14" }} />;
+      case "error":
+        return <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />;
+      default:
+        return <BellOutlined style={{ color: "#722ed1" }} />;
+    }
+  };
+
+  const handleNotificationClick = (item) => {
+    if (!item.isRead) {
+      handleMarkAsRead(item._id || item.id);
+    }
+    
+    if (item.link) {
+      navigate(item.link);
+    }
+  };
 
   const getNavbarHeight = () => {
     if (screenSize.isMobile) return 56;
@@ -363,13 +441,6 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-  const combinedNotifications = [
-    ...(notifications?.notification || []),
-    ...notificationList,
-  ];
-
-  const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
-
   const handleLogout = async () => {
     try {
       await logout().unwrap();
@@ -398,133 +469,286 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-  const handleNotificationClick = () => {};
-
   const getFirstLetter = () => {
     return candidateInfo.name.charAt(0).toUpperCase();
   };
 
   const notificationMenu = (
-    <div
-      style={{
-        width: "min(350px, 90vw)",
-        maxHeight: "400px",
-        overflowY: "auto",
-        padding: "12px 0",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      {unreadNotifications.length === 0 ? (
-        <div style={{ padding: "24px 16px", textAlign: "center" }}>
-          <Empty
-            description={
-              <span style={{ color: "#666", fontSize: "14px" }}>
-                No new notifications
-              </span>
-            }
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            imageStyle={{ height: 60 }}
-          />
-        </div>
-      ) : (
-        <>
-          <div
-            style={{ padding: "0 16px 8px", borderBottom: "1px solid #f0f0f0" }}
-          >
-            <Text strong style={{ fontSize: "16px" }}>
-              Notifications
-            </Text>
-          </div>
-          <List
-            dataSource={unreadNotifications}
-            renderItem={(item) => (
-              <List.Item
-                key={item._id}
-                onClick={() => handleNotificationClick(item)}
-                style={{
-                  cursor: "pointer",
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #f5f5f5",
-                  transition: "background-color 0.2s",
-                  ":hover": {
-                    backgroundColor: "#f9f9f9",
-                  },
+  <div
+    style={{
+      width: screenSize.isMobile ? 'calc(100vw - 24px)' : 'min(400px, 90vw)',
+      maxHeight: screenSize.isMobile ? 'calc(100vh - 120px)' : '500px',
+      overflowY: 'auto',
+      padding: '0',
+      borderRadius: '8px',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+      backgroundColor: '#ffffff',
+      position: screenSize.isMobile ? 'fixed' : 'relative',
+      left: screenSize.isMobile ? '12px' : 'auto',
+      top: screenSize.isMobile ? '12px' : 'auto',
+    }}
+  >
+    {combinedNotifications.length === 0 ? (
+      <div style={{ 
+        padding: screenSize.isMobile ? '16px 12px' : '24px 16px', 
+        textAlign: 'center' 
+      }}>
+        <Empty
+          description={
+            <span style={{ 
+              color: '#666', 
+              fontSize: screenSize.isMobile ? '13px' : '14px',
+              lineHeight: '1.4'
+            }}>
+              No notifications available
+            </span>
+          }
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          imageStyle={{ 
+            height: screenSize.isMobile ? 45 : 60,
+            marginBottom: screenSize.isMobile ? '8px' : '12px'
+          }}
+        />
+      </div>
+    ) : (
+      <>
+        <div 
+          style={{ 
+            padding: screenSize.isMobile ? '12px' : '16px',
+            borderBottom: '1px solid #f0f0f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: screenSize.isMobile ? 'sticky' : 'static',
+            top: 0,
+            background: '#fff',
+            zIndex: 1
+          }}
+        >
+          <Text strong style={{ 
+            fontSize: screenSize.isMobile ? '15px' : '16px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: screenSize.isMobile ? '60%' : 'none'
+          }}>
+            <BellOutlined style={{ 
+              marginRight: screenSize.isMobile ? 6 : 8, 
+              color: '#da2c46',
+              fontSize: screenSize.isMobile ? '14px' : '16px'
+            }} />
+            Notifications
+          </Text>
+          <Space size={screenSize.isMobile ? 4 : 8}>
+            {unreadNotifications.length > 0 && (
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={markAllAsRead}
+                style={{ 
+                  fontSize: screenSize.isMobile ? '12px' : '13px',
+                  padding: screenSize.isMobile ? '0 4px' : '0 8px',
+                  height: 'auto'
                 }}
               >
-                <div style={{ width: "100%" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <Text strong style={{ fontSize: "14px" }}>
+                Mark all
+              </Button>
+            )}
+            <Popconfirm
+              title="Clear all notifications?"
+              onConfirm={clearAllNotifications}
+              okText="Yes"
+              cancelText="No"
+              placement="bottomRight"
+              overlayStyle={{
+                width: screenSize.isMobile ? '80vw' : 'auto'
+              }}
+            >
+              <Button 
+                type="link" 
+                size="small" 
+                danger
+                style={{ 
+                  fontSize: screenSize.isMobile ? '12px' : '13px',
+                  padding: screenSize.isMobile ? '0 4px' : '0 8px',
+                  height: 'auto'
+                }}
+              >
+                Clear all
+              </Button>
+            </Popconfirm>
+          </Space>
+        </div>
+        <List
+          dataSource={combinedNotifications}
+          renderItem={(item) => (
+            <List.Item
+              key={item._id || item.id}
+              onClick={() => handleNotificationClick(item)}
+              style={{
+                cursor: 'pointer',
+                padding: screenSize.isMobile ? '10px 12px' : '12px 16px',
+                borderBottom: '1px solid #f5f5f5',
+                transition: 'all 0.2s',
+                backgroundColor: !item.isRead ? '#f6f9ff' : 'transparent',
+                ':hover': {
+                  backgroundColor: '#f9f9f9',
+                },
+              }}
+            >
+              <div style={{ width: '100%' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: screenSize.isMobile ? '4px' : '8px',
+                  }}
+                >
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: screenSize.isMobile ? '4px' : '8px',
+                    flexWrap: 'wrap',
+                    flex: 1,
+                    minWidth: 0
+                  }}>
+                    <Avatar
+                      icon={getNotificationIcon(item.type)}
+                      style={{
+                        backgroundColor: 'transparent',
+                        fontSize: screenSize.isMobile ? '16px' : '20px',
+                        marginRight: screenSize.isMobile ? '4px' : '8px',
+                        flexShrink: 0
+                      }}
+                    />
+                    <Text strong style={{ 
+                      fontSize: screenSize.isMobile ? '13px' : '14px',
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
                       {item.title}
                     </Text>
-                    {item.isUnread && (
-                      <span
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          backgroundColor: "#1890ff",
+                    {item.type && (
+                      <Tag 
+                        color={
+                          item.type === 'info' ? 'blue' :
+                          item.type === 'success' ? 'green' :
+                          item.type === 'warning' ? 'orange' :
+                          item.type === 'error' ? 'red' : 'purple'
+                        }
+                        style={{ 
+                          margin: 0,
+                          fontSize: screenSize.isMobile ? '10px' : '12px',
+                          padding: screenSize.isMobile ? '0 4px' : '0 6px',
+                          lineHeight: '18px',
+                          flexShrink: 0
                         }}
-                      />
+                      >
+                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                      </Tag>
                     )}
                   </div>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: "13px",
-                      display: "block",
-                      lineHeight: "1.4",
-                    }}
-                  >
-                    {item.message}
-                  </Text>
-                  {item.timestamp && (
+                  {!item.isRead && (
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: '#1890ff',
+                        flexShrink: 0,
+                        marginTop: screenSize.isMobile ? '4px' : '6px',
+                        marginLeft: '4px'
+                      }}
+                    />
+                  )}
+                </div>
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: screenSize.isMobile ? '12px' : '13px',
+                    display: 'block',
+                    lineHeight: '1.4',
+                    marginBottom: screenSize.isMobile ? '4px' : '8px',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {item.message}
+                </Text>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  {item.createdAt && (
                     <Text
                       type="secondary"
                       style={{
-                        fontSize: "11px",
-                        marginTop: "4px",
-                        display: "block",
+                        fontSize: screenSize.isMobile ? '10px' : '11px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
                       }}
                     >
-                      {formatDate(item.timestamp)}
+                      <ClockCircleOutlined style={{ 
+                        fontSize: screenSize.isMobile ? '10px' : '11px' 
+                      }} />
+                      {dayjs(item.createdAt || item.timestamp).fromNow()}
                     </Text>
                   )}
+                  {!item.isRead && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(item._id || item.id);
+                      }}
+                      style={{ 
+                        padding: 0, 
+                        fontSize: screenSize.isMobile ? '10px' : '11px',
+                        height: 'auto'
+                      }}
+                    >
+                      Mark read
+                    </Button>
+                  )}
                 </div>
-              </List.Item>
-            )}
-          />
-          <div
+              </div>
+            </List.Item>
+          )}
+        />
+        <div
+          style={{
+            padding: screenSize.isMobile ? '10px 12px' : '12px 16px',
+            borderTop: '1px solid #f0f0f0',
+            textAlign: 'center',
+            position: screenSize.isMobile ? 'sticky' : 'static',
+            bottom: 0,
+            background: '#fff',
+            zIndex: 1
+          }}
+        >
+          <Button
+            type="text"
+            onClick={() => navigate('/notifications')}
             style={{
-              padding: "12px 16px 8px",
-              borderTop: "1px solid #f0f0f0",
-              textAlign: "center",
+              color: '#da2c46',
+              fontWeight: 500,
+              fontSize: screenSize.isMobile ? '13px' : '14px',
+              padding: screenSize.isMobile ? '0 8px' : '0 12px',
+              width: '100%'
             }}
           >
-            <Button
-              type="text"
-              onClick={() => navigate("/notifications")}
-              style={{
-                color: "#da2c46",
-                fontWeight: 500,
-                fontSize: "14px",
-              }}
-            >
-              View All Notifications
-            </Button>
-          </div>
-        </>
-      )}
-    </div>
-  );
+            View All Notifications
+          </Button>
+        </div>
+      </>
+    )}
+  </div>
+);
 
   const userMenuItems = [
     {
@@ -656,9 +880,10 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           overlay={notificationMenu}
           trigger={["click"]}
           onOpenChange={(open) => setNotificationVisible(open)}
+          placement="bottomRight"
         >
           <Badge
-            count={combinedNotifications.filter((n) => !n.isRead).length}
+            count={unreadNotifications.length}
             size="small"
           >
             <NavButton
