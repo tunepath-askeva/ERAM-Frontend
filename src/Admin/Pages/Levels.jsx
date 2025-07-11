@@ -68,7 +68,6 @@ const Levels = () => {
     page: pagination.current,
     pageSize: pagination.pageSize,
   });
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -79,13 +78,14 @@ const Levels = () => {
   }, [searchTerm]);
 
   const levels =
-    approvalData?.aprovals?.map((approval) => ({
+    approvalData?.approvals?.map((approval) => ({
       ...approval,
       name: approval.groupName,
       stages: approval.levels,
-      levelStatus: "active",
+      levelStatus: "active", 
     })) || [];
-  const totalCount = approvalData?.totalCount || 0;
+
+  const totalCount = approvalData?.total || 0;
 
   const isLevelActive = (level) => {
     return level?.levelStatus === "active";
@@ -192,6 +192,11 @@ const Levels = () => {
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
   };
+
+  // Add debug logging
+  console.log("Approval Data:", approvalData);
+  console.log("Levels:", levels);
+  console.log("Total Count:", totalCount);
 
   if (isError) {
     return (

@@ -304,11 +304,13 @@ export const adminApi = createApi({
       }),
     }),
     getApproval: builder.query({
-      query: ({ searchTerm, page, pageSize }) => {
+      query: (params = {}) => {
+        // Add default empty object
         let url = "/approval?";
-        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
-        if (page) url += `page=${page}&`;
-        if (pageSize) url += `limit=${pageSize}&`;
+        if (params.searchTerm)
+          url += `search=${encodeURIComponent(params.searchTerm)}&`;
+        if (params.page) url += `page=${params.page}&`;
+        if (params.pageSize) url += `limit=${params.pageSize}&`;
         return {
           url: url.slice(0, -1),
           method: "GET",
@@ -316,8 +318,8 @@ export const adminApi = createApi({
       },
       transformResponse: (response) => {
         return {
-          aprovals: response.aprovals || response.allApprovals,
-          totalCount: response.totalCount,
+          approvals: response.approvals, 
+          total: response.total,
           totalPages: response.totalPages,
         };
       },
