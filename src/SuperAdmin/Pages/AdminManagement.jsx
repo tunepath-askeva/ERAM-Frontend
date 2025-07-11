@@ -395,10 +395,6 @@ const AdminManagement = () => {
                 <Title level={2} style={{ margin: 0 }}>
                   Admin Management
                 </Title>
-                <Text type="secondary">
-                  Manage administrators and their branch assignments (
-                  {totalAdmins} admins)
-                </Text>
               </div>
             </Space>
           </Col>
