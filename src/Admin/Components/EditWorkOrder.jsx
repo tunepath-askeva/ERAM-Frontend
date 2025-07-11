@@ -202,9 +202,6 @@ const EditWorkOrder = () => {
                 typeof recruiter === "object" ? recruiter._id : recruiter
               )
             : [workOrder.assignedRecruiters],
-          pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline],
           project:
             typeof workOrder.project === "object"
               ? workOrder.project._id
