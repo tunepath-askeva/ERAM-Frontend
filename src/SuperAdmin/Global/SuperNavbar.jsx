@@ -12,6 +12,7 @@ import {
   DoubleLeftOutlined,
   DoubleRightOutlined,
   BellOutlined,
+  MailOutlined
 } from "@ant-design/icons";
 import styled from "styled-components";
 
@@ -80,17 +81,26 @@ const NavButton = styled(Button)`
   }
 `;
 
-const LogoContainer = styled.div`
+const UserInfoContainer = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f8f9fa;
+  margin: -8px -12px 8px -12px;
+`;
+
+const UserName = styled.div`
+  font-weight: 600;
+  color: #2a4365;
+  font-size: 14px;
+  margin-bottom: 2px;
+`;
+
+const UserEmail = styled.div`
+  color: #64748b;
+  font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: 16px;
-  margin-right: auto;
-
-  @media (max-width: ${BREAKPOINTS.mobile}px) {
-    margin-left: 8px;
-    gap: 8px;
-  }
+  gap: 4px;
 `;
 
 const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
@@ -109,8 +119,48 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop,
   });
 
+  const [superAdminInfo, setSuperAdminInfo] = useState({
+    name: "Super Admin",
+    email: "",
+    roles: "",
+  });
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const fetchSuperAdminInfo = () => {
+      try {
+        const superAdminData = localStorage.getItem("superAdminInfo");
+
+        if (superAdminData) {
+          const parsedData = JSON.parse(superAdminData);
+
+          const name =
+            parsedData.name ||
+            parsedData.fullName ||
+            parsedData.firstName ||
+            parsedData.username ||
+            "Super Admin";
+
+          const email = parsedData.email || "";
+
+          const roles =
+            parsedData.roles || parsedData.role || parsedData.userRole || "";
+
+          setSuperAdminInfo({
+            name: name,
+            email: email,
+            roles: roles,
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing admin info from localStorage:", error);
+      }
+    };
+
+    fetchSuperAdminInfo();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -159,13 +209,6 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     if (screenSize.isMobile) return 32;
     if (screenSize.isTablet) return 36;
     return 40;
-  };
-
-  const getLogoSize = () => {
-    if (screenSize.isMobile) return { width: "80px", height: "100px" };
-    if (screenSize.isTablet) return { width: "100px", height: "100px" };
-    if (screenSize.isLargeDesktop) return { width: "140px", height: "100px" };
-    return { width: "120px", height: "100px" };
   };
 
   const getNavbarLeftMargin = () => {
@@ -230,7 +273,38 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
+  const getFirstLetter = () => {
+    return superAdminInfo.name.charAt(0).toUpperCase();
+  };
+
   const userMenuItems = [
+    {
+      key: "user-info",
+      label: (
+        <UserInfoContainer>
+          <UserName>{superAdminInfo.name}</UserName>
+          {superAdminInfo.roles && (
+            <div
+              style={{
+                color: "#64748b",
+                fontSize: "11px",
+                marginTop: "4px",
+                fontWeight: "500",
+              }}
+            >
+              {superAdminInfo.roles}
+            </div>
+          )}
+          {superAdminInfo.email && (
+            <UserEmail>
+              <MailOutlined style={{ fontSize: "12px" }} />
+              {superAdminInfo.email}
+            </UserEmail>
+          )}
+        </UserInfoContainer>
+      ),
+      disabled: true,
+    },
     {
       key: "profile",
       icon: <UserOutlined style={{ color: "#2a4365" }} />,
@@ -265,60 +339,18 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }}
       />
 
-      <LogoContainer>
+      {!screenSize.isMobile && (
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            transition: "all 0.2s ease",
+            fontSize: screenSize.isTablet ? "14px" : "16px",
+            fontWeight: 600,
+            color: "#2a4365",
+            whiteSpace: "nowrap",
           }}
         >
-          <img
-            src="/Workforce.svg" 
-            alt="Company Logo"
-            style={{
-              ...getLogoSize(),
-              objectFit: "contain",
-              borderRadius: "2px",
-            }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          <div
-            style={{
-              display: "none",
-              ...getLogoSize(),
-              backgroundColor: "#ffffff",
-              borderRadius: "2px",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#666",
-              fontSize: screenSize.isMobile ? "10px" : "12px",
-              fontWeight: "500",
-              textAlign: "center",
-              border: "1px dashed #ccc",
-            }}
-          >
-            {screenSize.isMobile ? "Logo" : "Your Logo"}
-          </div>
+          Super Admin Panel
         </div>
-
-        {!screenSize.isMobile && (
-          <div
-            style={{
-              fontSize: screenSize.isTablet ? "14px" : "16px",
-              fontWeight: 600,
-              color: "#2a4365",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Super Admin Panel
-          </div>
-        )}
-      </LogoContainer>
+      )}
 
       <div style={{ flex: 1 }} />
 
@@ -365,9 +397,11 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.2s ease",
+              fontWeight: "600",
             }}
-            icon={<UserOutlined />}
-          />
+          >
+            {superAdminInfo.name ? getFirstLetter() : <UserOutlined />}
+          </Avatar>
         </Dropdown>
       </div>
     </AppBar>

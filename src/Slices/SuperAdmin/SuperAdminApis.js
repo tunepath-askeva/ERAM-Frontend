@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const baseUrl = window.location.hostname === "localhost"
-  ? "http://localhost:5000/api/super-admin"
-  : "https://eram-backend-2gvv.onrender.com/api/super-admin";
+const baseUrl =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000/api/super-admin"
+    : "https://eram-backend-2gvv.onrender.com/api/super-admin";
 
 export const superAdminApi = createApi({
   reducerPath: "superAdminApi",
@@ -74,8 +75,40 @@ export const superAdminApi = createApi({
       invalidatesTags: ["Admin"],
     }),
     getAdmins: builder.query({
-      query: () => "/admin",
+      query: (params = {}) => {
+        const { page = 1, limit = 10, search, status } = params;
+
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", page.toString());
+        queryParams.append("limit", limit.toString());
+
+        if (search && search.trim()) {
+          queryParams.append("search", search.trim());
+        }
+
+        if (status && status !== "all") {
+          queryParams.append("status", status);
+        }
+
+        return `/admin?${queryParams.toString()}`;
+      },
       providesTags: ["Admin"],
+      transformResponse: (response) => {
+        return {
+          allAdmins: response.allAdmins || response.data || [],
+          totalCount:
+            response.totalCount ||
+            response.total ||
+            response.allAdmins?.length ||
+            0,
+          currentPage: response.currentPage || response.page || 1,
+          totalPages:
+            response.totalPages ||
+            Math.ceil((response.totalCount || response.total || 0) / 10),
+          hasMore: response.hasMore || false,
+        };
+      },
     }),
     getSingleAdmin: builder.query({
       query: (adminId) => `/adminId/${adminId}`,

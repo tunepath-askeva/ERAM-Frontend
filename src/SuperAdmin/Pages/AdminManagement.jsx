@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Table,
@@ -13,7 +13,6 @@ import {
   Col,
   Flex,
   message,
-  Popconfirm,
   Modal,
 } from "antd";
 import {
@@ -27,14 +26,12 @@ import {
   MailOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
-  CalendarOutlined,
   BankOutlined,
   CheckCircleOutlined,
   PlusOutlined,
   ExclamationCircleOutlined,
   UserDeleteOutlined,
   CheckOutlined,
-  PlayCircleOutlined,
 } from "@ant-design/icons";
 
 import AdminFormModal from "../Modal/AdminFormModal";
@@ -56,14 +53,27 @@ const { Option } = Select;
 const AdminManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [viewingAdminId, setViewingAdminId] = useState(null);
-  const [statusChangeModalVisible, setStatusChangeModalVisible] =
-    useState(false);
+  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
   const [adminToToggle, setAdminToToggle] = useState(null);
+
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); 
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const {
     data: branchesData,
@@ -76,24 +86,25 @@ const AdminManagement = () => {
     isLoading: adminLoading,
     error: adminError,
     refetch: refetchAdmins,
-  } = useGetAdminsQuery();
+  } = useGetAdminsQuery({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchTerm,
+    status: filterStatus === "all" ? undefined : filterStatus,
+  });
 
   const { data: singleAdminData, isLoading: singleAdminLoading } =
     useGetSingleAdminQuery(viewingAdminId, {
       skip: !viewingAdminId,
     });
 
-  const [createAdmin, { isLoading: createAdminLoading }] =
-    useCreateAdminMutation();
-
-  const [updateAdmin, { isLoading: updateAdminLoading }] =
-    useUpdateAdminMutation();
-
-  const [disableAdmin, { isLoading: disableAdminLoading }] =
-    useDisableAdminMutation();
+  const [createAdmin, { isLoading: createAdminLoading }] = useCreateAdminMutation();
+  const [updateAdmin, { isLoading: updateAdminLoading }] = useUpdateAdminMutation();
+  const [disableAdmin, { isLoading: disableAdminLoading }] = useDisableAdminMutation();
 
   const branches = branchesData?.branch || [];
   const admins = adminData?.allAdmins || [];
+  const totalAdmins = adminData?.totalCount || 0;
   const skeletonRows = 5;
 
   const transformedAdmins = useMemo(() => {
@@ -136,15 +147,19 @@ const AdminManagement = () => {
     });
   }, [admins, branches]);
 
-  const filteredAdmins = transformedAdmins.filter((admin) => {
-    const matchesSearch =
-      admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.role.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || admin.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (value) => {
+    setFilterStatus(value);
+    setCurrentPage(1); 
+  };
+
+  const handlePaginationChange = (page, size) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  };
 
   const handleAddAdmin = async (payload) => {
     try {
@@ -336,7 +351,7 @@ const AdminManagement = () => {
           ) : (
             <Button
               type="text"
-              icon={<CheckOutlined /> }
+              icon={<CheckOutlined />}
               onClick={() => showStatusChangeModal(record)}
               title="Enable Admin"
               style={{ color: "#52c41a" }}
@@ -347,7 +362,6 @@ const AdminManagement = () => {
     },
   ];
 
-  // Get the action details for the modal
   const getStatusChangeDetails = () => {
     if (!adminToToggle) return { action: "", color: "", icon: null };
 
@@ -365,7 +379,6 @@ const AdminManagement = () => {
 
   return (
     <div>
-      {/* Header */}
       <Card style={{ marginBottom: "24px" }}>
         <Row justify="space-between" align="middle">
           <Col>
@@ -384,7 +397,7 @@ const AdminManagement = () => {
                 </Title>
                 <Text type="secondary">
                   Manage administrators and their branch assignments (
-                  {filteredAdmins.length} admins)
+                  {totalAdmins} admins)
                 </Text>
               </div>
             </Space>
@@ -406,16 +419,16 @@ const AdminManagement = () => {
         </Row>
       </Card>
 
-      {/* Filters */}
       <Card style={{ marginBottom: "24px" }}>
         <Row gutter={16} align="middle">
           <Col flex="auto">
             <Input
-              placeholder="Search by name, email or role..."
+              placeholder="Search by name, email, phone, location, branch name or branch code..."
               prefix={<SearchOutlined />}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               size="large"
+              allowClear
             />
           </Col>
           <Col>
@@ -423,7 +436,7 @@ const AdminManagement = () => {
               <FilterOutlined />
               <Select
                 value={filterStatus}
-                onChange={setFilterStatus}
+                onChange={handleFilterChange}
                 style={{ width: 160 }}
                 size="large"
               >
@@ -436,27 +449,30 @@ const AdminManagement = () => {
         </Row>
       </Card>
 
-      {/* Admins Table */}
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredAdmins}
+          dataSource={transformedAdmins}
           loading={{
             spinning: adminLoading || branchesLoading,
             indicator: <SkeletonLoader rowCount={skeletonRows} />,
           }}
           pagination={{
-            pageSize: 10,
+            current: currentPage,
+            pageSize: pageSize,
+            total: totalAdmins,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} admins`,
+            onChange: handlePaginationChange,
+            onShowSizeChange: handlePaginationChange,
+            pageSizeOptions: ['10', '20', '50', '100'],
           }}
           scroll={{ x: "max-content" }}
         />
       </Card>
 
-      {/* Status Change Confirmation Modal */}
       <Modal
         title={
           <Space>

@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSnackbar } from "notistack"; // Add this import
+import { useSnackbar } from "notistack";
 import { SuperAdminlogout } from "../../Slices/SuperAdmin/SuperAdminSlice";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 
@@ -37,7 +37,7 @@ const SuperSidebar = ({
   });
 
   const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+  const { enqueueSnackbar } = useSnackbar();
 
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
@@ -109,10 +109,10 @@ const SuperSidebar = ({
     return "20px";
   };
 
-  const getImageLogoSize = () => {
+  const getLogoSize = () => {
     if (screenSize.isMobile) return { width: "120px", height: "100px" };
-    if (screenSize.isTablet) return collapsed ? { width: "40px", height: "40px" } : { width: "100px", height: "100px" };
-    return collapsed ? { width: "50px", height: "50px" } : { width: "140px", height: "100px" };
+    if (screenSize.isTablet) return collapsed ? { width: "40px", height: "100px" } : { width: "100px", height: "100px" };
+    return collapsed ? { width: "50px", height: "100px" } : { width: "140px", height: "100px" };
   };
 
   const handleLogout = async () => {
@@ -150,65 +150,26 @@ const SuperSidebar = ({
     >
       <div
         style={{
-          height: screenSize.isMobile ? "56px" : "64px",
+          height: screenSize.isMobile ? "80px" : "100px",
           display: "flex",
           alignItems: "center",
-          justifyContent:
-            collapsed && !screenSize.isMobile ? "center" : "flex-start",
-          padding: collapsed && !screenSize.isMobile ? "0 12px" : "0 24px",
+          justifyContent: "center",
+          padding: "16px",
           borderBottom: "1px solid #e2e8f0",
-          minHeight: screenSize.isMobile ? "56px" : "64px",
+          minHeight: screenSize.isMobile ? "80px" : "100px",
           marginBottom: "32px",
         }}
       >
-        {(!collapsed || screenSize.isMobile) && (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-                fontWeight: "bold",
-                fontSize: "16px",
-              }}
-            >
-              S
-            </div>
-            <h1
-              style={{
-                fontSize: "20px",
-                fontWeight: "bold",
-                color: "#1e293b",
-                margin: 0,
-              }}
-            >
-              Super Admin
-            </h1>
-          </div>
-        )}
-        {collapsed && !screenSize.isMobile && (
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#ffffff",
-              fontWeight: "bold",
-              fontSize: "16px",
-            }}
-          >
-            S
-          </div>
-        )}
+        <img
+          src="/Workforce.svg" 
+          alt="Company Logo"
+          style={{
+            ...getLogoSize(),
+            objectFit: "contain",
+            maxWidth: "100%",
+            maxHeight: "100%",
+          }}
+        />
       </div>
 
       <nav
@@ -274,59 +235,6 @@ const SuperSidebar = ({
           </button>
         ))}
       </nav>
-
-      {/* Image Logo Section */}
-      <div
-        style={{
-          padding: screenSize.isMobile ? "24px 24px 16px 24px" : "24px 24px 16px 24px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: "8px",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <img
-            src="/Workforce.svg" 
-            alt="Company Logo"
-            style={{
-              ...getImageLogoSize(),
-              objectFit: "contain",
-              borderRadius: "4px",
-            }}
-            onError={(e) => {
-             
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          
-          <div
-            style={{
-              display: "none",
-              ...getImageLogoSize(),
-              backgroundColor: "#f0f0f0",
-              borderRadius: "4px",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#666",
-              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
-              fontWeight: "500",
-              textAlign: "center",
-              border: "2px dashed #ccc",
-            }}
-          >
-            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
-          </div>
-        </div>
-      </div>
 
       <div
         style={{
