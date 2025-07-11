@@ -70,7 +70,7 @@ const AdminManagement = () => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setCurrentPage(1); 
-    }, 3000);
+    }, 700);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
