@@ -254,6 +254,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
 }
 
 @media (min-width: 768px) {
@@ -283,17 +284,18 @@
 }
 
 @media (max-width: 767px) {
-  .candidate-header>div {
+  .candidate-header > div {
     flex-direction: column;
     align-items: stretch !important;
+    gap: 16px;
   }
 
-  .candidate-header>div>div:first-child {
+  .candidate-header > div > div:first-child {
     justify-content: center;
     margin-bottom: 16px;
   }
 
-  .candidate-header>div>div:last-child {
+  .candidate-header > div > div:last-child {
     flex-direction: column;
     gap: 12px;
   }
@@ -301,18 +303,35 @@
   .candidate-title {
     font-size: 20px !important;
     text-align: center;
+    width: 100%;
   }
 
   .candidate-button {
     width: 100% !important;
     height: 48px !important;
+    margin-top: 8px;
   }
 
   .candidate-header .ant-input-search {
     max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .bulk-import-btn,
+  .add-candidate-btn {
+    width: 100% !important;
   }
 }
 
+@media (max-width: 480px) {
+  .candidate-header {
+    padding: 16px;
+  }
+  
+  .candidate-title {
+    font-size: 18px !important;
+  }
+}
 
 /* level styles */
 .level-header {

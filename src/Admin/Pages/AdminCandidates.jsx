@@ -20,6 +20,7 @@ import {
   Select,
   Upload,
   Skeleton,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -59,12 +60,14 @@ import {
 } from "../../Slices/Admin/AdminApis.js";
 import CandidateFormModal from "../Components/CandidateFormModal";
 import CandidateViewModal from "../Components/CandidateViewModal";
+import { useForm } from "antd/es/form/Form.js";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 const AdminCandidates = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [candidateModalVisible, setCandidateModalVisible] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
@@ -77,19 +80,60 @@ const AdminCandidates = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
-  const { enqueueSnackbar } = useSnackbar();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  const { data: candidatesData, isLoading, refetch } = useGetCandidatesQuery();
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page when search term changes
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: candidatesResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetCandidatesQuery({
+    searchTerm: debouncedSearchTerm,
+    page: currentPage,
+    pageSize: pageSize,
+  });
+
   const [bulkImportCandidates] = useBulkImportCandidatesMutation();
   const [deleteCandidate, { isLoading: isDeleting }] =
     useDeleteCandidateMutation();
-
   const [toggleCandidateStatus] = useDisableCandidateStatusMutation();
 
-  const [form] = Form.useForm();
+  const candidates = candidatesResponse?.getCandidates || [];
+  const totalCount = candidatesResponse?.totalCount || 0;
+  const totalPages = candidatesResponse?.totalPages || 0;
 
-  const candidates = candidatesData?.getCandidates || [];
+  const [form] = useForm();
+
+  const handlePageChange = (page, size) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  };
+
+  // Error handling
+  useEffect(() => {
+    if (isError) {
+      enqueueSnackbar(
+        `Failed to load candidates: ${
+          error?.data?.message || error?.message || "Unknown error"
+        }`,
+        { variant: "error" }
+      );
+    }
+  }, [isError, error]);
 
   const showDisableModal = (candidate) => {
     setCandidateToToggle(candidate);
@@ -101,44 +145,34 @@ const AdminCandidates = () => {
     setCandidateToToggle(null);
   };
 
-  const filteredCandidates = candidates.filter(candidate => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      candidate.fullName.toLowerCase().includes(searchLower) ||
-      (candidate.email && candidate.email.toLowerCase().includes(searchLower)) ||
-      (candidate.companyName && candidate.companyName.toLowerCase().includes(searchLower)) ||
-      (candidate.specialization && candidate.specialization.toLowerCase().includes(searchLower))
-    );
-  });
-
   const handleToggleStatus = async () => {
     if (!candidateToToggle) return;
 
     setIsToggling(true);
 
     try {
-      const response = await toggleCandidateStatus(candidateToToggle._id).unwrap();
+      const response = await toggleCandidateStatus(
+        candidateToToggle._id
+      ).unwrap();
 
-      const newStatus = response?.accountStatus ||
+      const newStatus =
+        response?.accountStatus ||
         (candidateToToggle.accountStatus === "active" ? "inactive" : "active");
 
       enqueueSnackbar(
         `Candidate "${candidateToToggle.fullName}" status updated to ${newStatus}`,
-        {
-          variant: "success",
-        }
+        { variant: "success" }
       );
 
       setDisableModalVisible(false);
       setCandidateToToggle(null);
-      refetch(); // Refresh the list
+      refetch();
     } catch (error) {
       console.error("Toggle status error:", error);
       enqueueSnackbar(
-        error?.data?.message || "Failed to update candidate status. Please try again.",
-        {
-          variant: "error",
-        }
+        error?.data?.message ||
+          "Failed to update candidate status. Please try again.",
+        { variant: "error" }
       );
     } finally {
       setIsToggling(false);
@@ -178,7 +212,6 @@ const AdminCandidates = () => {
 
   const showCreateModal = () => {
     setEditingCandidate(null);
-    form.resetFields();
     setCandidateModalVisible(true);
   };
 
@@ -190,18 +223,17 @@ const AdminCandidates = () => {
   const handleCandidateModalClose = () => {
     setCandidateModalVisible(false);
     setEditingCandidate(null);
-    form.resetFields();
     refetch();
   };
 
-  const handleViewCandidate = (candidate) => {
-    setSelectedCandidateId(candidate._id); // Change this line
+  const handleViewCandidate = (candidateId) => {
+    setSelectedCandidateId(candidateId);
     setViewModalVisible(true);
   };
 
   const handleViewModalClose = () => {
     setViewModalVisible(false);
-    setSelectedCandidateId(null); // Change this line
+    setSelectedCandidateId(null);
   };
 
   const handleBulkImport = () => {
@@ -218,10 +250,12 @@ const AdminCandidates = () => {
       file.type === "text/csv" ||
       file.type === "application/vnd.ms-excel" ||
       file.type ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (!isCSVorExcel) {
-      enqueueSnackbar("You can only upload CSV or Excel files!", { variant: "error" });
+      enqueueSnackbar("You can only upload CSV or Excel files!", {
+        variant: "error",
+      });
       return false;
     }
 
@@ -281,7 +315,9 @@ const AdminCandidates = () => {
       const parsedData = await parseCSV(fileContent);
 
       if (parsedData.length === 0) {
-        enqueueSnackbar("No valid data found in the file", { variant: "error" });
+        enqueueSnackbar("No valid data found in the file", {
+          variant: "error",
+        });
         setIsImporting(false);
         return;
       }
@@ -292,8 +328,9 @@ const AdminCandidates = () => {
             row["Full Name"] ||
             row["fullName"] ||
             row["Name"] ||
-            `${row["First Name"] || row["firstName"] || ""} ${row["Last Name"] || row["lastName"] || ""
-              }`.trim();
+            `${row["First Name"] || row["firstName"] || ""} ${
+              row["Last Name"] || row["lastName"] || ""
+            }`.trim();
 
           return {
             fullName,
@@ -326,7 +363,9 @@ const AdminCandidates = () => {
         role: "candidate",
       }).unwrap();
 
-      enqueueSnackbar(`Successfully imported ${response.count} candidates`, { variant: "success" });
+      enqueueSnackbar(`Successfully imported ${response.count} candidates`, {
+        variant: "success",
+      });
       refetch();
       setBulkImportVisible(false);
       setFileList([]);
@@ -350,6 +389,99 @@ const AdminCandidates = () => {
 
   return (
     <>
+      <div className="candidate-header">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
+          {/* Title Section */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              minWidth: "200px",
+            }}
+          >
+            <TeamOutlined
+              size={24}
+              style={{ marginRight: "8px", color: "#2c3e50" }}
+            />
+            <Title
+              level={2}
+              className="candidate-title"
+              style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
+            >
+              Candidate Management
+            </Title>
+          </div>
+
+          {/* Search and Button Section */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              flex: 1,
+              justifyContent: "flex-end",
+              minWidth: "300px",
+            }}
+          >
+            <Input.Search
+              placeholder="Search Candidates"
+              allowClear
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                maxWidth: "300px",
+                width: "100%",
+                borderRadius: "8px",
+                height: "35px",
+              }}
+              size="large"
+              className="custom-search-input"
+            />
+
+            <Button
+              type="default"
+              size="large"
+              icon={<UploadOutlined />}
+              onClick={handleBulkImport}
+              className="candidate-button bulk-import-btn"
+              style={{
+                border: "1px solid #da2c46",
+                color: "#da2c46",
+                height: "48px",
+                minWidth: "150px",
+              }}
+            >
+              Bulk Import
+            </Button>
+
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={showCreateModal}
+              className="candidate-button add-candidate-btn"
+              style={{
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                height: "48px",
+                minWidth: "200px",
+              }}
+            >
+              Add New Candidate
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div
         style={{
           padding: "16px",
@@ -362,98 +494,6 @@ const AdminCandidates = () => {
           },
         }}
       >
-        <div className="candidate-header">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              width: "100%",
-              flexWrap: "wrap",
-              gap: "16px",
-            }}
-          >
-            {/* Title Section */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                minWidth: "200px",
-              }}
-            >
-              <TeamOutlined
-                size={24}
-                style={{ marginRight: "8px", color: "#2c3e50" }}
-              />
-              <Title
-                level={2}
-                className="candidate-title"
-                style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
-              >
-                Candidate Management
-              </Title>
-            </div>
-
-            {/* Search and Button Section */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                flex: 1,
-                justifyContent: "flex-end",
-                minWidth: "300px",
-              }}
-            >
-              <Input.Search
-                placeholder="Search candidates"
-                allowClear
-                style={{
-                  maxWidth: "300px",
-                  width: "100%",
-                  borderRadius: "8px",
-                  height: "35px",
-                }}
-                size="large"
-                className="custom-search-input"
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onSearch={(value) => setSearchTerm(value)}
-              />
-
-              <Button
-                type="default"
-                size="large"
-                icon={<UploadOutlined />}
-                onClick={handleBulkImport}
-                className="candidate-button bulk-import-btn"
-                style={{
-                  border: "1px solid #da2c46",
-                  color: "#da2c46",
-                  height: "48px",
-                  minWidth: "150px",
-                }}
-              >
-                Bulk Import
-              </Button>
-
-              <Button
-                type="primary"
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={showCreateModal}
-                className="candidate-button add-candidate-btn"
-                style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  height: "48px",
-                  minWidth: "200px",
-                }}
-              >
-                Add New Candidate
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {isLoading ? (
           <div
             style={{
@@ -464,235 +504,261 @@ const AdminCandidates = () => {
           >
             <Skeleton />
           </div>
-        ) : filteredCandidates?.length > 0 ? (
-          <Row
-            gutter={[16, 16]}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "16px",
-              marginTop: "16px",
-            }}
-          >
-            {filteredCandidates.map((candidate) => (
-              <div key={candidate._id}>
-                <Card
-                  style={{
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    background: "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(10px)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  title={
+        ) : candidates?.length > 0 ? (
+          <>
+            <Row
+              gutter={[16, 16]}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "16px",
+                marginTop: "16px",
+              }}
+            >
+              {candidates.map((candidate) => (
+                <div key={candidate._id}>
+                  <Card
+                    style={{
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      backdropFilter: "blur(10px)",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                    title={
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          <UserOutlined
+                            style={{
+                              color: "#da2c46",
+                              marginRight: 8,
+                              fontSize: "16px",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Text
+                            strong
+                            style={{
+                              fontSize: "14px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={candidate.fullName}
+                          >
+                            {candidate.fullName}
+                          </Text>
+                        </div>
+                        <Tag
+                          color={
+                            candidate.accountStatus === "active"
+                              ? "green"
+                              : "red"
+                          }
+                        >
+                          {candidate.accountStatus}
+                        </Tag>
+                      </div>
+                    }
+                    extra={
+                      <Space size="small">
+                        <Tooltip title="View Details">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewCandidate(candidate._id)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Edit Candidate">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => showEditModal(candidate)}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          title={
+                            candidate.accountStatus === "active"
+                              ? "Disable Candidate"
+                              : "Enable Candidate"
+                          }
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<StopOutlined />}
+                            onClick={() => showDisableModal(candidate)}
+                            danger={candidate.accountStatus === "active"}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Delete Candidate">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => showDeleteModal(candidate)}
+                            danger
+                          />
+                        </Tooltip>
+                      </Space>
+                    }
+                  >
+                    <div style={{ flex: 1 }}>
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: "100%" }}
+                      >
+                        <div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <MailOutlined /> Email
+                          </Text>
+                          <Paragraph
+                            style={{ margin: "4px 0", fontSize: "13px" }}
+                            ellipsis={{ rows: 1 }}
+                          >
+                            {candidate.email}
+                          </Paragraph>
+                        </div>
+
+                        <div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <PhoneOutlined /> Phone
+                          </Text>
+                          <Paragraph
+                            style={{ margin: "4px 0", fontSize: "13px" }}
+                          >
+                            {candidate.phone}
+                          </Paragraph>
+                        </div>
+
+                        <div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <BankOutlined /> Current Company
+                          </Text>
+                          <Paragraph
+                            style={{ margin: "4px 0", fontSize: "13px" }}
+                            ellipsis={{ rows: 1 }}
+                          >
+                            {candidate.companyName || "Not specified"}
+                          </Paragraph>
+                        </div>
+
+                        <div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            <TrophyOutlined /> Specialization
+                          </Text>
+                          <Paragraph
+                            style={{ margin: "4px 0", fontSize: "13px" }}
+                            ellipsis={{ rows: 1 }}
+                          >
+                            {candidate.specialization || "Not specified"}
+                          </Paragraph>
+                        </div>
+
+                        {candidate.skills?.length > 0 && (
+                          <div>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              <CodeOutlined /> Skills
+                            </Text>
+                            <div style={{ marginTop: "4px" }}>
+                              {candidate.skills
+                                .slice(0, 3)
+                                .map((skill, index) => (
+                                  <Tag
+                                    key={index}
+                                    style={{ marginBottom: "4px" }}
+                                  >
+                                    {skill}
+                                  </Tag>
+                                ))}
+                              {candidate.skills.length > 3 && (
+                                <Tooltip
+                                  title={candidate.skills.slice(3).join(", ")}
+                                >
+                                  <Tag>+{candidate.skills.length - 3} more</Tag>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </Space>
+                    </div>
+
+                    <Divider style={{ margin: "12px 0" }} />
+
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "center",
                         justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "8px",
+                        alignItems: "center",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          minWidth: 0,
-                          flex: 1,
-                        }}
-                      >
-                        <UserOutlined
+                      <Tooltip title="Qualifications">
+                        <div
                           style={{
-                            color: "#da2c46",
-                            marginRight: 8,
-                            fontSize: "16px",
-                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
                           }}
-                        />
-                        <Text
-                          strong
-                          style={{
-                            fontSize: "14px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={candidate.fullName}
                         >
-                          {candidate.fullName}
-                        </Text>
-                      </div>
-                      <Tag
-                        color={
-                          candidate.accountStatus === "active" ? "green" : "red"
-                        }
-                      >
-                        {candidate.accountStatus}
-                      </Tag>
-                    </div>
-                  }
-                  extra={
-                    <Space size="small">
-                      <Tooltip title="View Details">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewCandidate(candidate)}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Edit Candidate">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => showEditModal(candidate)}
-                        />
-                      </Tooltip>
-                      <Tooltip
-                        title={
-                          candidate.accountStatus === "active"
-                            ? "Disable Candidate"
-                            : "Enable Candidate"
-                        }
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<StopOutlined />}
-                          onClick={() => showDisableModal(candidate)}
-                          danger={candidate.accountStatus === "active"}
-                        />
-                      </Tooltip>
-                      {/* Add the delete button here */}
-                      <Tooltip title="Delete Candidate">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(candidate)}
-                          danger
-                        />
-                      </Tooltip>
-                    </Space>
-                  }
-                >
-                  <div style={{ flex: 1 }}>
-                    <Space
-                      direction="vertical"
-                      size="small"
-                      style={{ width: "100%" }}
-                    >
-                      <div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          <MailOutlined /> Email
-                        </Text>
-                        <Paragraph
-                          style={{ margin: "4px 0", fontSize: "13px" }}
-                          ellipsis={{ rows: 1 }}
-                        >
-                          {candidate.email}
-                        </Paragraph>
-                      </div>
-
-                      <div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          <PhoneOutlined /> Phone
-                        </Text>
-                        <Paragraph
-                          style={{ margin: "4px 0", fontSize: "13px" }}
-                        >
-                          {candidate.phone}
-                        </Paragraph>
-                      </div>
-
-                      <div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          <BankOutlined /> Current Company
-                        </Text>
-                        <Paragraph
-                          style={{ margin: "4px 0", fontSize: "13px" }}
-                          ellipsis={{ rows: 1 }}
-                        >
-                          {candidate.companyName || "Not specified"}
-                        </Paragraph>
-                      </div>
-
-                      <div>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          <TrophyOutlined /> Specialization
-                        </Text>
-                        <Paragraph
-                          style={{ margin: "4px 0", fontSize: "13px" }}
-                          ellipsis={{ rows: 1 }}
-                        >
-                          {candidate.specialization || "Not specified"}
-                        </Paragraph>
-                      </div>
-
-                      {candidate.skills?.length > 0 && (
-                        <div>
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            <CodeOutlined /> Skills
+                          <BookOutlined
+                            style={{ color: "#1890ff", fontSize: "14px" }}
+                          />
+                          <Text style={{ fontSize: "13px" }}>
+                            {candidate.qualifications || "Not specified"}
                           </Text>
-                          <div style={{ marginTop: "4px" }}>
-                            {candidate.skills
-                              .slice(0, 3)
-                              .map((skill, index) => (
-                                <Tag
-                                  key={index}
-                                  style={{ marginBottom: "4px" }}
-                                >
-                                  {skill}
-                                </Tag>
-                              ))}
-                            {candidate.skills.length > 3 && (
-                              <Tooltip
-                                title={candidate.skills.slice(3).join(", ")}
-                              >
-                                <Tag>+{candidate.skills.length - 3} more</Tag>
-                              </Tooltip>
-                            )}
-                          </div>
                         </div>
-                      )}
-                    </Space>
-                  </div>
+                      </Tooltip>
+                    </div>
+                  </Card>
+                </div>
+              ))}
+            </Row>
 
-                  <Divider style={{ margin: "12px 0" }} />
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Tooltip title="Qualifications">
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <BookOutlined
-                          style={{ color: "#1890ff", fontSize: "14px" }}
-                        />
-                        <Text style={{ fontSize: "13px" }}>
-                          {candidate.qualifications || "Not specified"}
-                        </Text>
-                      </div>
-                    </Tooltip>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </Row>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "24px",
+                padding: "16px",
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                total={totalCount}
+                pageSize={pageSize}
+                onChange={handlePageChange}
+                onShowSizeChange={handlePageChange}
+                showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} candidates`
+                }
+                pageSizeOptions={["5", "10", "20", "50"]}
+              />
+            </div>
+          </>
         ) : (
           <Card
             style={{
@@ -705,7 +771,11 @@ const AdminCandidates = () => {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <Text type="secondary">
-                  No candidates found. Add your first candidate to get started.
+                  {isError
+                    ? "Failed to load candidates"
+                    : searchTerm
+                    ? "No candidates found matching your search"
+                    : "No candidates added yet"}
                 </Text>
               }
             >
@@ -724,17 +794,17 @@ const AdminCandidates = () => {
             </Empty>
           </Card>
         )}
-      </div >
+      </div>
 
       {/* Candidate Form Modal */}
-      < CandidateFormModal
+      <CandidateFormModal
         visible={candidateModalVisible}
         onCancel={handleCandidateModalClose}
         form={form}
         editingCandidate={editingCandidate}
       />
       {/* Candidate View Modal */}
-      < CandidateViewModal
+      <CandidateViewModal
         visible={viewModalVisible}
         onCancel={handleViewModalClose}
         candidateId={selectedCandidateId}

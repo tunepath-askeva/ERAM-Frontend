@@ -24,7 +24,23 @@ export const adminApi = createApi({
       }),
     }),
     getPipelines: builder.query({
-      query: () => "/Pipeline",
+      query: ({ searchTerm, page, pageSize }) => {
+        let url = "/Pipeline?";
+        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+        if (page) url += `page=${page}&`;
+        if (pageSize) url += `limit=${pageSize}&`;
+        return {
+          url: url.slice(0, -1),
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return {
+          allPipelines: response.pipelines || response.allPipelines,
+          totalCount: response.totalCount,
+          totalPages: response.totalPages,
+        };
+      },
       providesTags: ["Pipeline"],
     }),
     getPipelineById: builder.query({
@@ -145,7 +161,7 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           recruiters: response.recruiters,
-          totalCount: response.totalCount, 
+          totalCount: response.totalCount,
           totalPages: response.totalPages,
         };
       },
@@ -230,10 +246,23 @@ export const adminApi = createApi({
       }),
     }),
     getCandidates: builder.query({
-      query: () => ({
-        url: "/candidate",
-        method: "GET",
-      }),
+      query: ({ searchTerm, page, pageSize }) => {
+        let url = "/candidate?";
+        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+        if (page) url += `page=${page}&`;
+        if (pageSize) url += `limit=${pageSize}&`;
+        return {
+          url: url.slice(0, -1),
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return {
+          getCandidates: response.candidates || response.getCandidates,
+          totalCount: response.totalCount,
+          totalPages: response.totalPages,
+        };
+      },
     }),
     editCandidate: builder.mutation({
       query: ({ id, candidateData }) => ({

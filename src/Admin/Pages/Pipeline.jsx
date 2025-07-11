@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Card,
@@ -63,7 +63,8 @@ const Pipeline = () => {
   const [pipelineToToggle, setPipelineToToggle] = useState(null);
   const [copyModalVisible, setCopyModalVisible] = useState(false);
   const [pipelineToCopy, setPipelineToCopy] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -71,11 +72,26 @@ const Pipeline = () => {
 
   const { enqueueSnackbar } = useSnackbar();
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const {
     data: pipelinesResponse,
     isLoading,
+    isError,
+    error,
     refetch,
-  } = useGetPipelinesQuery();
+  } = useGetPipelinesQuery({
+    searchTerm: debouncedSearchTerm,
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+  });
 
   const {
     data: pipelineDetails,
@@ -93,7 +109,19 @@ const Pipeline = () => {
 
   const [copyPipeline, { isLoading: isCopying }] = useCopyPipelineMutation();
 
+  useEffect(() => {
+    if (isError) {
+      enqueueSnackbar(
+        `Failed to load pipelines: ${
+          error?.data?.message || error?.message || "Unknown error"
+        }`,
+        { variant: "error" }
+      );
+    }
+  }, [isError, error]);
+
   const pipelines = pipelinesResponse?.allPipelines || [];
+  const totalCount = pipelinesResponse?.totalCount || 0;
 
   const isPipelineActive = (pipeline) => {
     return pipeline?.pipelineStatus === "active";
@@ -108,23 +136,6 @@ const Pipeline = () => {
     setDeleteModalVisible(false);
     setPipelineToDelete(null);
   };
-
-  const filteredPipelines = pipelines.filter(pipeline => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (pipeline.name?.toLowerCase().includes(searchLower)) ||
-      (pipeline.description?.toLowerCase().includes(searchLower)) ||
-      (pipeline.stages.some(stage => stage.name.toLowerCase().includes(searchLower))) ||
-      (pipeline.stages.some(stage => stage.requiredDocuments.some(doc => doc.toLowerCase().includes(searchLower))))
-    );
-  });
-
-  // Apply pagination to filtered pipelines
-  const paginatedPipelines = filteredPipelines.slice(
-    (pagination.current - 1) * pagination.pageSize,
-    pagination.current * pagination.pageSize
-  );
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
@@ -321,7 +332,8 @@ const Pipeline = () => {
                 onClick={showCreateModal}
                 className="pipeline-button"
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   height: "48px", // Explicit height
                   minWidth: "190px", // Minimum width to prevent shrinking
                 }}
@@ -334,7 +346,7 @@ const Pipeline = () => {
 
         {isLoading ? (
           <Card loading style={{ borderRadius: "16px" }} />
-        ) : filteredPipelines?.length > 0 ? (
+        ) : pipelines?.length > 0 ? (
           <>
             <Row
               gutter={[
@@ -358,7 +370,7 @@ const Pipeline = () => {
                 },
               }}
             >
-              {paginatedPipelines.map((pipeline) => (
+              {pipelines.map((pipeline) => (
                 <div key={pipeline._id}>
                   <Card
                     style={{
@@ -516,7 +528,9 @@ const Pipeline = () => {
                           }, 0) > 0 ? (
                             <Text type="secondary" style={{ fontSize: "11px" }}>
                               {pipeline.stages.reduce((totalDocs, stage) => {
-                                return totalDocs + stage.requiredDocuments.length;
+                                return (
+                                  totalDocs + stage.requiredDocuments.length
+                                );
                               }, 0)}{" "}
                               documents across all stages
                             </Text>
@@ -599,15 +613,21 @@ const Pipeline = () => {
                 </div>
               ))}
             </Row>
-            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+            <div
+              style={{
+                marginTop: 24,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
               <Pagination
                 current={pagination.current}
                 pageSize={pagination.pageSize}
-                total={filteredPipelines.length}
+                total={totalCount}
                 onChange={handlePaginationChange}
                 showSizeChanger
                 showQuickJumper
-                pageSizeOptions={['10', '20', '50', '100']}
+                pageSizeOptions={["10", "20", "50", "100"]}
               />
             </div>
           </>
@@ -650,7 +670,9 @@ const Pipeline = () => {
                       },
                     }}
                   >
-                    {searchTerm ? 'No pipelines match your search' : 'Create your first pipeline to get started with structured hiring'}
+                    {searchTerm
+                      ? "No pipelines match your search"
+                      : "Create your first pipeline to get started with structured hiring"}
                   </Text>
                 </div>
               }
@@ -722,13 +744,13 @@ const Pipeline = () => {
                   <Tag
                     color={
                       pipelineDetails.getPipelineByIds.pipelineStatus ===
-                        "active"
+                      "active"
                         ? "green"
                         : "red"
                     }
                   >
                     {pipelineDetails.getPipelineByIds.pipelineStatus ===
-                      "active"
+                    "active"
                       ? "Active"
                       : "Inactive"}
                   </Tag>
