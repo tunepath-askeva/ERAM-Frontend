@@ -19,6 +19,7 @@ import {
   Input,
   Form,
   Select,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -46,7 +47,7 @@ import {
   useGetRecruitersQuery,
   useDisableRecruiterStatusMutation,
   useGetRecruiterByIdQuery,
-  useDeleteRecruiterMutation, // Add this import
+  useDeleteRecruiterMutation, 
 } from "../../Slices/Admin/AdminApis.js";
 
 const { Title, Text, Paragraph } = Typography;
@@ -64,15 +65,30 @@ const AdminRecruiter = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [recruiterToDelete, setRecruiterToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  // API integration
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1);
+    }, 7000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const {
     data: recruitersResponse,
     isLoading,
     isError,
     error,
     refetch,
-  } = useGetRecruitersQuery();
+  } = useGetRecruitersQuery({
+    searchTerm: debouncedSearchTerm,
+    page: currentPage,
+    pageSize: pageSize,
+  });
 
   const [toggleRecruiterStatus, { isLoading: isToggling }] =
     useDisableRecruiterStatusMutation();
@@ -89,7 +105,9 @@ const AdminRecruiter = () => {
     skip: !selectedRecruiterId || !viewModalVisible,
   });
 
-  const recruiters = recruitersResponse?.recruiters || recruitersResponse || [];
+  const recruiters = recruitersResponse?.recruiters || [];
+  const totalCount = recruitersResponse?.totalCount || 0;
+  const totalPages = recruitersResponse?.totalPages || 0;
   const selectedRecruiterData =
     selectedRecruiterResponse?.recruiter || selectedRecruiterResponse;
 
@@ -186,6 +204,11 @@ const AdminRecruiter = () => {
   const handleDeleteCancel = () => {
     setDeleteModalVisible(false);
     setRecruiterToDelete(null);
+  };
+
+  const handlePageChange = (page, size) => {
+    setCurrentPage(page);
+    setPageSize(size);
   };
 
   const handleDeleteRecruiter = async () => {
@@ -345,8 +368,8 @@ const AdminRecruiter = () => {
                 style={{
                   background:
                     "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  height: "48px", // Explicit height
-                  minWidth: "180px", // Minimum width to prevent shrinking
+                  height: "48px",
+                  minWidth: "180px",
                 }}
               >
                 Add New Recruiter
@@ -357,199 +380,228 @@ const AdminRecruiter = () => {
 
         {isLoading ? (
           <Card loading style={{ borderRadius: "16px" }} />
-        ) : filteredRecruiters?.length > 0 ? (
-          <Row
-            gutter={[16, 16]}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "16px",
-              marginTop: "16px",
-            }}
-          >
-            {filteredRecruiters.map((recruiter) => (
-              <div key={recruiter._id}>
-                <Card
-                  style={{
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    background: "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(10px)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          minWidth: 0,
-                          flex: 1,
-                        }}
-                      >
-                        <UserOutlined
-                          style={{
-                            color: "#da2c46",
-                            marginRight: 8,
-                            fontSize: "16px",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Text
-                          strong
-                          style={{
-                            fontSize: "14px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={getRecruiterDisplayName(recruiter)}
-                        >
-                          {getRecruiterDisplayName(recruiter)}
-                        </Text>
-                      </div>
-                      <Tag
-                        color={
-                          recruiter.accountStatus === "active" ? "green" : "red"
-                        }
-                      >
-                        {recruiter.accountStatus}
-                      </Tag>
-                    </div>
-                  }
-                  extra={
-                    <Space size="small">
-                      <Tooltip title="View Details">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handleViewRecruiter(recruiter._id)}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Edit Recruiter">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => showEditModal(recruiter)}
-                        />
-                      </Tooltip>
-                      <Tooltip
-                        title={
-                          recruiter.accountStatus === "active"
-                            ? "Disable Recruiter"
-                            : "Enable Recruiter"
-                        }
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={
-                            recruiter.accountStatus === "active" ? (
-                              <StopOutlined />
-                            ) : (
-                              <CheckCircleOutlined />
-                            )
-                          }
-                          onClick={() => showDisableModal(recruiter)}
-                          style={{
-                            color:
-                              recruiter.accountStatus === "active"
-                                ? "#ff4d4f"
-                                : "#52c41a",
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Delete Recruiter">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={() => showDeleteModal(recruiter)}
-                          style={{
-                            color: "#ff4d4f",
-                          }}
-                        />
-                      </Tooltip>
-                    </Space>
-                  }
-                  bodyStyle={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: "16px",
-                  }}
-                >
-                  <div
+        ) : recruiters?.length > 0 ? (
+          <>
+            <Row
+              gutter={[16, 16]}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "16px",
+                marginTop: "16px",
+              }}
+            >
+              {recruiters.map((recruiter) => (
+                <div key={recruiter._id}>
+                  <Card
                     style={{
-                      flex: 1,
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      backdropFilter: "blur(10px)",
+                      height: "100%",
                       display: "flex",
                       flexDirection: "column",
                     }}
-                  >
-                    <div style={{ marginBottom: 16 }}>
+                    title={
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          marginBottom: 8,
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "8px",
                         }}
                       >
-                        <MailOutlined
-                          style={{ marginRight: 8, color: "#666" }}
-                        />
-                        <Text>{recruiter.email}</Text>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <PhoneOutlined
-                          style={{ marginRight: 8, color: "#666" }}
-                        />
-                        <Text>{recruiter.phone}</Text>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <TeamOutlined
-                          style={{ marginRight: 8, color: "#666" }}
-                        />
-                        <Text>{getRecruiterLocation(recruiter)}</Text>
-                      </div>
-                      {recruiter.experienceYears && (
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <Badge
-                            count={`${recruiter.experienceYears}y exp`}
-                            style={{ backgroundColor: "#52c41a" }}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          <UserOutlined
+                            style={{
+                              color: "#da2c46",
+                              marginRight: 8,
+                              fontSize: "16px",
+                              flexShrink: 0,
+                            }}
                           />
+                          <Text
+                            strong
+                            style={{
+                              fontSize: "14px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={getRecruiterDisplayName(recruiter)}
+                          >
+                            {getRecruiterDisplayName(recruiter)}
+                          </Text>
                         </div>
-                      )}
+                        <Tag
+                          color={
+                            recruiter.accountStatus === "active"
+                              ? "green"
+                              : "red"
+                          }
+                        >
+                          {recruiter.accountStatus}
+                        </Tag>
+                      </div>
+                    }
+                    extra={
+                      <Space size="small">
+                        <Tooltip title="View Details">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewRecruiter(recruiter._id)}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Edit Recruiter">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => showEditModal(recruiter)}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          title={
+                            recruiter.accountStatus === "active"
+                              ? "Disable Recruiter"
+                              : "Enable Recruiter"
+                          }
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={
+                              recruiter.accountStatus === "active" ? (
+                                <StopOutlined />
+                              ) : (
+                                <CheckCircleOutlined />
+                              )
+                            }
+                            onClick={() => showDisableModal(recruiter)}
+                            style={{
+                              color:
+                                recruiter.accountStatus === "active"
+                                  ? "#ff4d4f"
+                                  : "#52c41a",
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Delete Recruiter">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => showDeleteModal(recruiter)}
+                            style={{
+                              color: "#ff4d4f",
+                            }}
+                          />
+                        </Tooltip>
+                      </Space>
+                    }
+                    bodyStyle={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      padding: "16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ marginBottom: 16 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <MailOutlined
+                            style={{ marginRight: 8, color: "#666" }}
+                          />
+                          <Text>{recruiter.email}</Text>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <PhoneOutlined
+                            style={{ marginRight: 8, color: "#666" }}
+                          />
+                          <Text>{recruiter.phone}</Text>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <TeamOutlined
+                            style={{ marginRight: 8, color: "#666" }}
+                          />
+                          <Text>{getRecruiterLocation(recruiter)}</Text>
+                        </div>
+                        {recruiter.experienceYears && (
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <Badge
+                              count={`${recruiter.experienceYears}y exp`}
+                              style={{ backgroundColor: "#52c41a" }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </Row>
+                  </Card>
+                </div>
+              ))}
+            </Row>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "24px",
+                padding: "16px",
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                total={totalCount}
+                pageSize={pageSize}
+                onChange={handlePageChange}
+                onShowSizeChange={handlePageChange}
+                showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} recruiters`
+                }
+                pageSizeOptions={["5", "10", "20", "50"]}
+              />
+            </div>
+          </>
         ) : (
           <Card
             style={{
@@ -573,6 +625,8 @@ const AdminRecruiter = () => {
                   >
                     {isError
                       ? "Failed to load recruiters"
+                      : searchTerm
+                      ? "No recruiters found matching your search"
                       : "No recruiters added yet"}
                   </Text>
                   <br />
@@ -584,6 +638,8 @@ const AdminRecruiter = () => {
                   >
                     {isError
                       ? "Please try refreshing the page"
+                      : searchTerm
+                      ? "Try adjusting your search criteria"
                       : "Add your first recruiter to get started"}
                   </Text>
                   {isError && (

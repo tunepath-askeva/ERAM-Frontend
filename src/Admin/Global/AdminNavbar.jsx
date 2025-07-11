@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useSnackbar } from "notistack"; 
+import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { userLogout } from "../../Slices/Users/UserSlice.js";
 
@@ -101,19 +101,6 @@ const UserEmail = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-`;
-
-const LogoContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: 16px;
-  margin-right: auto;
-
-  @media (max-width: ${BREAKPOINTS.mobile}px) {
-    margin-left: 8px;
-    gap: 8px;
-  }
 `;
 
 const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
@@ -244,13 +231,6 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     return collapsed ? collapsedWidth : sidebarWidth;
   };
 
-  const getLogoSize = () => {
-    if (screenSize.isMobile) return { width: "80px", height: "100px" };
-    if (screenSize.isTablet) return { width: "100px", height: "100px" };
-    if (screenSize.isLargeDesktop) return { width: "140px", height: "100px" };
-    return { width: "120px", height: "100px" };
-  };
-
   const getToggleIcon = () => {
     const iconStyle = {
       fontSize: getIconSize(),
@@ -370,60 +350,18 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }}
       />
 
-      <LogoContainer>
+      {!screenSize.isMobile && (
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            transition: "all 0.2s ease",
+            fontSize: screenSize.isTablet ? "14px" : "16px",
+            fontWeight: 600,
+            color: "#2a4365",
+            whiteSpace: "nowrap",
           }}
         >
-          <img
-            src="/Workforce.svg"
-            alt="Company Logo"
-            style={{
-              ...getLogoSize(),
-              objectFit: "contain",
-              borderRadius: "2px",
-            }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          <div
-            style={{
-              display: "none",
-              ...getLogoSize(),
-              backgroundColor: "#ffffff",
-              borderRadius: "2px",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#666",
-              fontSize: screenSize.isMobile ? "10px" : "12px",
-              fontWeight: "500",
-              textAlign: "center",
-              border: "1px dashed #ccc",
-            }}
-          >
-            {screenSize.isMobile ? "Logo" : "Your Logo"}
-          </div>
+          Admin Panel
         </div>
-
-        {!screenSize.isMobile && (
-          <div
-            style={{
-              fontSize: screenSize.isTablet ? "14px" : "16px",
-              fontWeight: 600,
-              color: "#2a4365",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Admin Panel
-          </div>
-        )}
-      </LogoContainer>
+      )}
 
       <div style={{ flex: 1 }} />
 

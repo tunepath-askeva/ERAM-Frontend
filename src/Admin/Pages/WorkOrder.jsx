@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Card,
@@ -15,7 +15,8 @@ import {
   Divider,
   Switch,
   Skeleton,
-  Input
+  Input,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -42,7 +43,7 @@ import {
   usePublishWorkOrderMutation,
   useToggleWorkOrderStatusMutation,
 } from "../../Slices/Admin/AdminApis.js";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -58,10 +59,33 @@ const WorkOrder = () => {
   const [workOrderToDeactivate, setWorkOrderToDeactivate] = useState(null);
   const [activateModalVisible, setActivateModalVisible] = useState(false);
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  const { data: workOrdersData, isLoading, refetch } = useGetWorkOrdersQuery();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); 
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: workOrdersData,
+    isLoading,
+    refetch,
+  } = useGetWorkOrdersQuery({
+    searchTerm: debouncedSearchTerm,
+    page: currentPage,
+    pageSize: pageSize,
+  });
+
   const workOrders = workOrdersData?.workorders || [];
+  const totalCount = workOrdersData?.totalCount || 0;
+  const totalPages = workOrdersData?.totalPages || 0;
 
   const [deleteWorkOrder] = useDeleteWorkOrderMutation();
   const [publishWorkOrder] = usePublishWorkOrderMutation();
@@ -76,20 +100,6 @@ const WorkOrder = () => {
     setWorkOrderToPublish(workOrder);
     setPublishModalVisible(true);
   };
-
-  const filteredWorkOrders = workOrders.filter(workOrder => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (workOrder.title?.toLowerCase().includes(searchLower)) ||
-      (workOrder.jobCode?.toLowerCase().includes(searchLower)) ||
-      (workOrder.jobFunction?.toLowerCase().includes(searchLower)) ||
-      (workOrder.description?.toLowerCase().includes(searchLower)) ||
-      (workOrder.EmploymentType?.toLowerCase().includes(searchLower)) ||
-      (workOrder.annualSalary?.toString().includes(searchTerm)) ||
-      (workOrder.workplace?.toLowerCase().includes(searchLower))
-    );
-  });
 
   const showDeactivateModal = (workOrder) => {
     setWorkOrderToDeactivate(workOrder);
@@ -128,16 +138,15 @@ const WorkOrder = () => {
       await deleteWorkOrder(workOrderToDelete._id).unwrap();
       enqueueSnackbar(
         `Work Order "${workOrderToDelete.title}" deleted successfully`,
-        { variant: 'success' }
+        { variant: "success" }
       );
       refetch();
       setDeleteModalVisible(false);
       setWorkOrderToDelete(null);
     } catch (error) {
-      enqueueSnackbar(
-        error?.data?.message || "Failed to delete work order",
-        { variant: 'error' }
-      );
+      enqueueSnackbar(error?.data?.message || "Failed to delete work order", {
+        variant: "error",
+      });
       console.error("Delete error:", error);
     }
   };
@@ -149,16 +158,15 @@ const WorkOrder = () => {
       await publishWorkOrder(workOrderToPublish._id).unwrap();
       enqueueSnackbar(
         `Work Order "${workOrderToPublish.title}" published successfully`,
-        { variant: 'success' }
+        { variant: "success" }
       );
       refetch();
       setPublishModalVisible(false);
       setWorkOrderToPublish(null);
     } catch (error) {
-      enqueueSnackbar(
-        error?.data?.message || "Failed to publish work order",
-        { variant: 'error' }
-      );
+      enqueueSnackbar(error?.data?.message || "Failed to publish work order", {
+        variant: "error",
+      });
       console.error("Publish error:", error);
     }
   };
@@ -170,7 +178,7 @@ const WorkOrder = () => {
       await toggleWorkOrderStatus(workOrderToDeactivate._id).unwrap();
       enqueueSnackbar(
         `Work Order "${workOrderToDeactivate.title}" deactivated successfully`,
-        { variant: 'success' }
+        { variant: "success" }
       );
       refetch();
       setDeactivateModalVisible(false);
@@ -178,7 +186,7 @@ const WorkOrder = () => {
     } catch (error) {
       enqueueSnackbar(
         error?.data?.message || "Failed to deactivate work order",
-        { variant: 'error' }
+        { variant: "error" }
       );
       console.error("Deactivate error:", error);
     }
@@ -191,16 +199,15 @@ const WorkOrder = () => {
       await toggleWorkOrderStatus(workOrderToActivate._id).unwrap();
       enqueueSnackbar(
         `Work Order "${workOrderToActivate.title}" activated successfully`,
-        { variant: 'success' }
+        { variant: "success" }
       );
       refetch();
       setActivateModalVisible(false);
       setWorkOrderToActivate(null);
     } catch (error) {
-      enqueueSnackbar(
-        error?.data?.message || "Failed to activate work order",
-        { variant: 'error' }
-      );
+      enqueueSnackbar(error?.data?.message || "Failed to activate work order", {
+        variant: "error",
+      });
       console.error("Activate error:", error);
     }
   };
@@ -225,6 +232,15 @@ const WorkOrder = () => {
 
   const handleCreateWorkOrder = () => {
     navigate("/admin/add-workorder");
+  };
+
+  const handlePageChange = (page, size) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  };
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
   };
 
   const getStatusTag = (status) => {
@@ -408,7 +424,8 @@ const WorkOrder = () => {
                 placeholder="Search Work Orders"
                 allowClear
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
+                onSearch={handleSearch}
                 style={{
                   maxWidth: "300px",
                   width: "100%",
@@ -426,9 +443,10 @@ const WorkOrder = () => {
                 onClick={handleCreateWorkOrder}
                 className="workorder-button"
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  height: "48px", // Explicit height
-                  minWidth: "200px", // Minimum width to prevent shrinking
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  height: "48px",
+                  minWidth: "200px",
                 }}
               >
                 Create New Work Order
@@ -447,207 +465,236 @@ const WorkOrder = () => {
           >
             <Skeleton />
           </div>
-        ) : filteredWorkOrders?.length > 0 ? (
-          <Row
-            gutter={[
-              { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
-              { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
-            ]}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "16px",
-              "@media (min-width: 576px)": {
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                gap: "20px",
-              },
-              "@media (min-width: 768px)": {
-                gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-                gap: "24px",
-              },
-              "@media (min-width: 1200px)": {
-                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-              },
-            }}
-          >
-            {filteredWorkOrders.map((workOrder) => (
-              <div key={workOrder._id}>
-                <Card
-                  style={{
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    background: "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(10px)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    "@media (min-width: 768px)": {
-                      borderRadius: "16px",
-                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-                    },
-                  }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                      }}
-                    >
+        ) : workOrders?.length > 0 ? (
+          <>
+            <Row
+              gutter={[
+                { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+                { xs: 12, sm: 16, md: 16, lg: 20, xl: 24 },
+              ]}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "16px",
+                "@media (min-width: 576px)": {
+                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                  gap: "20px",
+                },
+                "@media (min-width: 768px)": {
+                  gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+                  gap: "24px",
+                },
+                "@media (min-width: 1200px)": {
+                  gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                },
+              }}
+            >
+              {workOrders.map((workOrder) => (
+                <div key={workOrder._id}>
+                  <Card
+                    style={{
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      background: "rgba(255, 255, 255, 0.95)",
+                      backdropFilter: "blur(10px)",
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      "@media (min-width: 768px)": {
+                        borderRadius: "16px",
+                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                      },
+                    }}
+                    title={
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          minWidth: 0,
-                          flex: 1,
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "8px",
                         }}
                       >
-                        <FolderOpenOutlined
+                        <div
                           style={{
-                            color: "#da2c46",
-                            marginRight: 8,
-                            fontSize: "16px",
-                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            minWidth: 0,
+                            flex: 1,
                           }}
-                        />
-                        <Text
-                          strong
-                          style={{
-                            fontSize: "14px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            "@media (min-width: 576px)": {
-                              fontSize: "16px",
-                            },
-                          }}
-                          title={workOrder.title}
                         >
-                          {workOrder.title}
-                        </Text>
-                      </div>
-                      {getStatusTag(workOrder.workOrderStatus)}
-                    </div>
-                  }
-                  extra={renderActionButtons(workOrder)}
-                  bodyStyle={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    padding: "16px",
-                    "@media (min-width: 576px)": {
-                      padding: "20px",
-                    },
-                  }}
-                >
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div style={{ marginBottom: 16 }}>
-                      <Space size={[8, 16]} wrap>
-                        <Tag icon={<BookOutlined />}>
-                          {workOrder.jobFunction}
-                        </Tag>
-                        <Tag icon={<GlobalOutlined />}>
-                          {getWorkplaceType(workOrder.workplace)}
-                        </Tag>
-                        <Tag icon={<ClockCircleOutlined />}>
-                          {getEmploymentType(workOrder.EmploymentType)}
-                        </Tag>
-                        {workOrder.annualSalary && (
-                          <Tag icon={<DollarOutlined />}>
-                            ${workOrder.annualSalary}
-                          </Tag>
-                        )}
-                      </Space>
-                    </div>
-
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "13px" }}
-                      >
-                        Pipeline Stages:
-                      </Text>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          maxHeight: "120px",
-                          overflowY: "auto",
-                          overflowX: "hidden",
-                        }}
-                      >
-                        {workOrder.pipeline?.map((pipeline, index) => (
-                          <Tag
-                            key={index}
-                            color="blue"
+                          <FolderOpenOutlined
                             style={{
-                              marginBottom: 6,
-                              marginRight: 6,
-                              borderRadius: 6,
-                              fontSize: "11px",
-                              padding: "2px 6px",
-                              display: "inline-block",
-                              maxWidth: "100%",
+                              color: "#da2c46",
+                              marginRight: 8,
+                              fontSize: "16px",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Text
+                            strong
+                            style={{
+                              fontSize: "14px",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
                               "@media (min-width: 576px)": {
-                                fontSize: "12px",
-                                padding: "4px 8px",
-                                borderRadius: 8,
+                                fontSize: "16px",
                               },
                             }}
+                            title={workOrder.title}
                           >
-                            {pipeline.name}
+                            {workOrder.title}
+                          </Text>
+                        </div>
+                        {getStatusTag(workOrder.workOrderStatus)}
+                      </div>
+                    }
+                    extra={renderActionButtons(workOrder)}
+                    bodyStyle={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      padding: "16px",
+                      "@media (min-width: 576px)": {
+                        padding: "20px",
+                      },
+                    }}
+                  >
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div style={{ marginBottom: 16 }}>
+                        <Space size={[8, 16]} wrap>
+                          <Tag icon={<BookOutlined />}>
+                            {workOrder.jobFunction}
                           </Tag>
-                        ))}
+                          <Tag icon={<GlobalOutlined />}>
+                            {getWorkplaceType(workOrder.workplace)}
+                          </Tag>
+                          <Tag icon={<ClockCircleOutlined />}>
+                            {getEmploymentType(workOrder.EmploymentType)}
+                          </Tag>
+                          {workOrder.annualSalary && (
+                            <Tag icon={<DollarOutlined />}>
+                              ${workOrder.annualSalary}
+                            </Tag>
+                          )}
+                        </Space>
                       </div>
-                    </div>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "12px" }}
-                      >
-                        <FileTextOutlined style={{ marginRight: 4 }} />
-                        Job Code:
-                      </Text>
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: "11px" }}>
-                          {workOrder.jobCode}
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "13px" }}
+                        >
+                          Pipeline Stages:
                         </Text>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            maxHeight: "120px",
+                            overflowY: "auto",
+                            overflowX: "hidden",
+                          }}
+                        >
+                          {workOrder.pipeline?.map((pipeline, index) => (
+                            <Tag
+                              key={index}
+                              color="blue"
+                              style={{
+                                marginBottom: 6,
+                                marginRight: 6,
+                                borderRadius: 6,
+                                fontSize: "11px",
+                                padding: "2px 6px",
+                                display: "inline-block",
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                "@media (min-width: 576px)": {
+                                  fontSize: "12px",
+                                  padding: "4px 8px",
+                                  borderRadius: 8,
+                                },
+                              }}
+                            >
+                              {pipeline.name}
+                            </Tag>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <Text
-                        strong
-                        style={{ color: "#2c3e50", fontSize: "12px" }}
-                      >
-                        <ClockCircleOutlined style={{ marginRight: 4 }} />
-                        Deadline:
-                      </Text>
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: "11px" }}>
-                          {new Date(
-                            workOrder.deadlineDate
-                          ).toLocaleDateString()}
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                        >
+                          <FileTextOutlined style={{ marginRight: 4 }} />
+                          Job Code:
                         </Text>
+                        <div style={{ marginTop: 6 }}>
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            {workOrder.jobCode}
+                          </Text>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                        >
+                          <ClockCircleOutlined style={{ marginRight: 4 }} />
+                          Deadline:
+                        </Text>
+                        <div style={{ marginTop: 6 }}>
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            {new Date(
+                              workOrder.deadlineDate
+                            ).toLocaleDateString()}
+                          </Text>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </Row>
+                  </Card>
+                </div>
+              ))}
+            </Row>
+
+            {/* Pagination */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "24px",
+                padding: "16px",
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                total={totalCount}
+                pageSize={pageSize}
+                onChange={handlePageChange}
+                onShowSizeChange={handlePageChange}
+                showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} items`
+                }
+                pageSizeOptions={["5", "10", "50", "100"]}
+                style={{
+                  textAlign: "center",
+                }}
+              />
+            </div>
+          </>
         ) : (
           <Card
             style={{
@@ -675,7 +722,9 @@ const WorkOrder = () => {
                       },
                     }}
                   >
-                    No work orders created yet
+                    {searchTerm
+                      ? "No work orders found matching your search"
+                      : "No work orders created yet"}
                   </Text>
                   <br />
                   <Text
@@ -687,7 +736,9 @@ const WorkOrder = () => {
                       },
                     }}
                   >
-                    Create your first work order to get started
+                    {searchTerm
+                      ? "Try adjusting your search criteria"
+                      : "Create your first work order to get started"}
                   </Text>
                 </div>
               }
@@ -696,6 +747,7 @@ const WorkOrder = () => {
         )}
       </div>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         title={
           <div
@@ -954,7 +1006,7 @@ const WorkOrder = () => {
           <div
             style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}
           >
-            <StopOutlined
+            <ExclamationCircleOutlined
               style={{ marginRight: 8, fontSize: 18, color: "#ff4d4f" }}
             />
             <span style={{ fontSize: "16px" }}>Deactivate Work Order</span>
@@ -1006,11 +1058,12 @@ const WorkOrder = () => {
             />
             <div>
               <Text strong style={{ color: "#ff4d4f", fontSize: "13px" }}>
-                This will make the work order invisible to candidates!
+                This will hide the work order from candidates!
               </Text>
               <br />
               <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                Candidates will no longer be able to apply for this position.
+                Deactivated work orders won't accept new applications but
+                existing applications will remain.
               </Text>
             </div>
           </div>
@@ -1051,7 +1104,7 @@ const WorkOrder = () => {
 
                 <div style={{ marginBottom: "6px" }}>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Current Status:</strong> Active
+                    <strong>Current Status:</strong> Published
                   </Text>
                 </div>
 
@@ -1063,9 +1116,9 @@ const WorkOrder = () => {
 
                 <div>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Created:</strong>{" "}
+                    <strong>Published:</strong>{" "}
                     {new Date(
-                      workOrderToDeactivate.createdAt
+                      workOrderToDeactivate.publishedAt
                     ).toLocaleDateString()}
                   </Text>
                 </div>
@@ -1081,7 +1134,7 @@ const WorkOrder = () => {
           <div
             style={{ display: "flex", alignItems: "center", color: "#52c41a" }}
           >
-            <PlayCircleOutlined
+            <ExclamationCircleOutlined
               style={{ marginRight: 8, fontSize: 18, color: "#52c41a" }}
             />
             <span style={{ fontSize: "16px" }}>Activate Work Order</span>
@@ -1133,11 +1186,11 @@ const WorkOrder = () => {
             />
             <div>
               <Text strong style={{ color: "#52c41a", fontSize: "13px" }}>
-                This will make the work order visible to candidates!
+                This will make the work order visible to candidates again!
               </Text>
               <br />
               <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                Candidates will be able to apply for this position.
+                Activated work orders will accept new applications.
               </Text>
             </div>
           </div>
@@ -1190,9 +1243,9 @@ const WorkOrder = () => {
 
                 <div>
                   <Text style={{ color: "#666", fontSize: "12px" }}>
-                    <strong>Created:</strong>{" "}
+                    <strong>Last Active:</strong>{" "}
                     {new Date(
-                      workOrderToActivate.createdAt
+                      workOrderToActivate.updatedAt
                     ).toLocaleDateString()}
                   </Text>
                 </div>

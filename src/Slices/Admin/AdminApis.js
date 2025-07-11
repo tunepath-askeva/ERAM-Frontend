@@ -79,10 +79,16 @@ export const adminApi = createApi({
       }),
     }),
     getWorkOrders: builder.query({
-      query: () => ({
-        url: "/workOrder",
-        methid: "GET",
-      }),
+      query: ({ searchTerm, page, pageSize }) => {
+        let url = "/workOrder?";
+        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+        if (page) url += `page=${page}&`;
+        if (pageSize) url += `limit=${pageSize}&`;
+        return {
+          url: url.slice(0, -1),
+          method: "GET",
+        };
+      },
     }),
     getWorkOrderById: builder.query({
       query: (id) => `/workOrder/${id}`,
@@ -126,10 +132,23 @@ export const adminApi = createApi({
       }),
     }),
     getRecruiters: builder.query({
-      query: () => ({
-        url: "/recruiters",
-        method: "GET",
-      }),
+      query: ({ searchTerm, page, pageSize }) => {
+        let url = "/recruiters?";
+        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+        if (page) url += `page=${page}&`;
+        if (pageSize) url += `limit=${pageSize}&`;
+        return {
+          url: url.slice(0, -1),
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return {
+          recruiters: response.recruiters,
+          totalCount: response.totalCount, 
+          totalPages: response.totalPages,
+        };
+      },
     }),
 
     editRecruiter: builder.mutation({

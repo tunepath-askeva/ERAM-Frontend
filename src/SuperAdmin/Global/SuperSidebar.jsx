@@ -109,10 +109,15 @@ const SuperSidebar = ({
     return "20px";
   };
 
-  const getLogoSize = () => {
+  const getImageLogoSize = () => {
     if (screenSize.isMobile) return { width: "120px", height: "100px" };
-    if (screenSize.isTablet) return collapsed ? { width: "40px", height: "100px" } : { width: "100px", height: "100px" };
-    return collapsed ? { width: "50px", height: "100px" } : { width: "140px", height: "100px" };
+    if (screenSize.isTablet)
+      return collapsed
+        ? { width: "40px", height: "40px" }
+        : { width: "100px", height: "100px" };
+    return collapsed
+      ? { width: "50px", height: "50px" }
+      : { width: "140px", height: "100px" };
   };
 
   const handleLogout = async () => {
@@ -130,11 +135,16 @@ const SuperSidebar = ({
     } catch (error) {
       console.error("Logout failed:", error);
 
-      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Logout failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
     }
   };
 
@@ -161,13 +171,16 @@ const SuperSidebar = ({
         }}
       >
         <img
-          src="/Workforce.svg" 
+          src="/Workforce.svg"
           alt="Company Logo"
           style={{
-            ...getLogoSize(),
+            ...getImageLogoSize(),
             objectFit: "contain",
-            maxWidth: "100%",
-            maxHeight: "100%",
+            borderRadius: "4px",
+          }}
+          onError={(e) => {
+            e.target.style.display = "none";
+            e.target.nextSibling.style.display = "flex";
           }}
         />
       </div>
@@ -225,8 +238,8 @@ const SuperSidebar = ({
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                      ? "#e11d48"
-                      : "#64748b",
+                    ? "#e11d48"
+                    : "#64748b",
                 fontSize: getIconSize(),
                 minWidth: getIconSize(),
               },
