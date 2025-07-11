@@ -109,6 +109,12 @@ const SuperSidebar = ({
     return "20px";
   };
 
+  const getImageLogoSize = () => {
+    if (screenSize.isMobile) return { width: "120px", height: "100px" };
+    if (screenSize.isTablet) return collapsed ? { width: "40px", height: "40px" } : { width: "100px", height: "100px" };
+    return collapsed ? { width: "50px", height: "50px" } : { width: "140px", height: "100px" };
+  };
+
   const handleLogout = async () => {
     try {
       await logoutSuperAdmin().unwrap();
@@ -269,13 +275,65 @@ const SuperSidebar = ({
         ))}
       </nav>
 
+      {/* Image Logo Section */}
+      <div
+        style={{
+          padding: screenSize.isMobile ? "24px 24px 16px 24px" : "24px 24px 16px 24px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: "8px",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <img
+            src="/Workforce.svg" 
+            alt="Company Logo"
+            style={{
+              ...getImageLogoSize(),
+              objectFit: "contain",
+              borderRadius: "4px",
+            }}
+            onError={(e) => {
+             
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          
+          <div
+            style={{
+              display: "none",
+              ...getImageLogoSize(),
+              backgroundColor: "#f0f0f0",
+              borderRadius: "4px",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
+              fontWeight: "500",
+              textAlign: "center",
+              border: "2px dashed #ccc",
+            }}
+          >
+            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
+          </div>
+        </div>
+      </div>
+
       <div
         style={{
           padding: screenSize.isMobile
-            ? "32px 24px 24px 24px"
-            : "32px 24px 24px 24px",
+            ? "16px 24px 24px 24px"
+            : "16px 24px 24px 24px",
           borderTop: "1px solid #e2e8f0",
-          marginTop: "auto",
         }}
       >
         <Button

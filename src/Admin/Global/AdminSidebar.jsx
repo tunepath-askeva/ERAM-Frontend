@@ -43,7 +43,7 @@ const AdminSidebar = ({
   const [adminInfo, setAdminInfo] = useState({
     name: "Admin",
     email: "",
-    roles: "", // Added roles to the state
+    roles: "",
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -97,11 +97,9 @@ const AdminSidebar = ({
     },
   ];
 
-  // Fetch admin info from localStorage
   useEffect(() => {
     const fetchAdminInfo = () => {
       try {
-        // Try to get admin info from different possible localStorage keys
         const adminData =
           localStorage.getItem("adminInfo") ||
           localStorage.getItem("superAdminInfo") ||
@@ -111,7 +109,6 @@ const AdminSidebar = ({
         if (adminData) {
           const parsedData = JSON.parse(adminData);
 
-          // Handle different data structures for name
           const name =
             parsedData.name ||
             parsedData.fullName ||
@@ -121,7 +118,6 @@ const AdminSidebar = ({
 
           const email = parsedData.email || "";
 
-          // Handle different data structures for roles
           const roles =
             parsedData.roles ||
             parsedData.role ||
@@ -141,7 +137,6 @@ const AdminSidebar = ({
         }
       } catch (error) {
         console.error("Error parsing admin info from localStorage:", error);
-        // Keep default values if parsing fails
       }
     };
 
@@ -197,7 +192,17 @@ const AdminSidebar = ({
     return "20px";
   };
 
-  // Get first letter of admin name for logo
+  const getImageLogoSize = () => {
+    if (screenSize.isMobile) return { width: "120px", height: "100px" };
+    if (screenSize.isTablet)
+      return collapsed
+        ? { width: "40px", height: "40px" }
+        : { width: "100px", height: "100px" };
+    return collapsed
+      ? { width: "50px", height: "50px" }
+      : { width: "140px", height: "100px" };
+  };
+
   const getFirstLetter = () => {
     return adminInfo.name.charAt(0).toUpperCase();
   };
@@ -380,6 +385,58 @@ const AdminSidebar = ({
           </button>
         ))}
       </nav>
+
+      <div
+        style={{
+          padding: screenSize.isMobile
+            ? "24px 24px 16px 24px"
+            : "24px 24px 16px 24px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: "8px",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <img
+            src="/Workforce.svg"
+            alt="Company Logo"
+            style={{
+              ...getImageLogoSize(),
+              objectFit: "contain",
+              borderRadius: "4px",
+            }}
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          <div
+            style={{
+              display: "none",
+              ...getImageLogoSize(),
+              backgroundColor: "#f0f0f0",
+              borderRadius: "4px",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
+              fontWeight: "500",
+              textAlign: "center",
+              border: "2px dashed #ccc",
+            }}
+          >
+            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
+          </div>
+        </div>
+      </div>
 
       <div
         style={{

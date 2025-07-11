@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useSnackbar } from "notistack"; // Add this import
+import { useSnackbar } from "notistack"; 
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { userLogout } from "../../Slices/Users/UserSlice.js";
 
@@ -103,6 +103,19 @@ const UserEmail = styled.div`
   gap: 4px;
 `;
 
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+  margin-right: auto;
+
+  @media (max-width: ${BREAKPOINTS.mobile}px) {
+    margin-left: 8px;
+    gap: 8px;
+  }
+`;
+
 const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -127,22 +140,20 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Fetch admin info from localStorage
   useEffect(() => {
     const fetchAdminInfo = () => {
       try {
-        // Try to get admin info from different possible localStorage keys
         const adminData =
-          localStorage.getItem('adminInfo') ||
-          localStorage.getItem('superAdminInfo') ||
-          localStorage.getItem('userInfo') ||
-          localStorage.getItem('user');
+          localStorage.getItem("adminInfo") ||
+          localStorage.getItem("superAdminInfo") ||
+          localStorage.getItem("userInfo") ||
+          localStorage.getItem("user");
 
         if (adminData) {
           const parsedData = JSON.parse(adminData);
 
-          // Handle different data structures for name
-          const name = parsedData.name ||
+          const name =
+            parsedData.name ||
             parsedData.fullName ||
             parsedData.firstName ||
             parsedData.username ||
@@ -150,14 +161,15 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
           const email = parsedData.email || "";
 
-          // Handle different data structures for roles
-          const roles = parsedData.roles ||
+          const roles =
+            parsedData.roles ||
             parsedData.role ||
             parsedData.userRole ||
             parsedData.position ||
             parsedData.designation ||
-            (Array.isArray(parsedData.roles) ?
-              parsedData.roles.join(", ") : "") ||
+            (Array.isArray(parsedData.roles)
+              ? parsedData.roles.join(", ")
+              : "") ||
             "";
 
           setAdminInfo({
@@ -168,7 +180,6 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }
       } catch (error) {
         console.error("Error parsing admin info from localStorage:", error);
-        // Keep default values if parsing fails
       }
     };
 
@@ -233,6 +244,13 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     return collapsed ? collapsedWidth : sidebarWidth;
   };
 
+  const getLogoSize = () => {
+    if (screenSize.isMobile) return { width: "80px", height: "100px" };
+    if (screenSize.isTablet) return { width: "100px", height: "100px" };
+    if (screenSize.isLargeDesktop) return { width: "140px", height: "100px" };
+    return { width: "120px", height: "100px" };
+  };
+
   const getToggleIcon = () => {
     const iconStyle = {
       fontSize: getIconSize(),
@@ -270,15 +288,19 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       });
 
       navigate("/login");
-
     } catch (error) {
       console.error("Logout failed:", error);
 
-      enqueueSnackbar(error?.data?.message || error?.message || "Logout failed. Please try again.", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Logout failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
     }
   };
 
@@ -293,12 +315,14 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         <UserInfoContainer>
           <UserName>{adminInfo.name}</UserName>
           {adminInfo.roles && (
-            <div style={{
-              color: "#64748b",
-              fontSize: "11px",
-              marginTop: "4px",
-              fontWeight: "500"
-            }}>
+            <div
+              style={{
+                color: "#64748b",
+                fontSize: "11px",
+                marginTop: "4px",
+                fontWeight: "500",
+              }}
+            >
               {adminInfo.roles}
             </div>
           )}
@@ -308,7 +332,6 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               {adminInfo.email}
             </UserEmail>
           )}
-
         </UserInfoContainer>
       ),
       disabled: true,
@@ -347,16 +370,60 @@ const AdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         }}
       />
 
-      {!screenSize.isMobile && (
+      <LogoContainer>
         <div
           style={{
-            fontSize: screenSize.isTablet ? "16px" : "18px",
-            fontWeight: 600,
-            color: "#2a4365",
-            marginRight: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.2s ease",
           }}
-        >        </div>
-      )}
+        >
+          <img
+            src="/Workforce.svg"
+            alt="Company Logo"
+            style={{
+              ...getLogoSize(),
+              objectFit: "contain",
+              borderRadius: "2px",
+            }}
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          <div
+            style={{
+              display: "none",
+              ...getLogoSize(),
+              backgroundColor: "#ffffff",
+              borderRadius: "2px",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              fontSize: screenSize.isMobile ? "10px" : "12px",
+              fontWeight: "500",
+              textAlign: "center",
+              border: "1px dashed #ccc",
+            }}
+          >
+            {screenSize.isMobile ? "Logo" : "Your Logo"}
+          </div>
+        </div>
+
+        {!screenSize.isMobile && (
+          <div
+            style={{
+              fontSize: screenSize.isTablet ? "14px" : "16px",
+              fontWeight: 600,
+              color: "#2a4365",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Admin Panel
+          </div>
+        )}
+      </LogoContainer>
 
       <div style={{ flex: 1 }} />
 

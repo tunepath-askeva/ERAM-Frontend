@@ -116,6 +116,19 @@ const UserEmail = styled.div`
   gap: 4px;
 `;
 
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+  margin-right: auto;
+
+  @media (max-width: ${BREAKPOINTS.mobile}px) {
+    margin-left: 8px;
+    gap: 8px;
+  }
+`;
+
 const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -318,6 +331,13 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     return collapsed ? collapsedWidth : sidebarWidth;
   };
 
+  const getLogoSize = () => {
+    if (screenSize.isMobile) return { width: "80px", height: "100px" };
+    if (screenSize.isTablet) return { width: "100px", height: "100px" };
+    if (screenSize.isLargeDesktop) return { width: "140px", height: "100px" };
+    return { width: "120px", height: "100px" };
+  };
+
   const getToggleIcon = () => {
     const iconStyle = {
       fontSize: getIconSize(),
@@ -334,8 +354,6 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       <DoubleLeftOutlined style={iconStyle} />
     );
   };
-
-
 
   const toggleSidebar = () => {
     if (screenSize.isMobile) {
@@ -369,8 +387,8 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
       enqueueSnackbar(
         error?.data?.message ||
-        error?.message ||
-        "Logout failed. Please try again.",
+          error?.message ||
+          "Logout failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -412,7 +430,9 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
         </div>
       ) : (
         <>
-          <div style={{ padding: "0 16px 8px", borderBottom: "1px solid #f0f0f0" }}>
+          <div
+            style={{ padding: "0 16px 8px", borderBottom: "1px solid #f0f0f0" }}
+          >
             <Text strong style={{ fontSize: "16px" }}>
               Notifications
             </Text>
@@ -506,7 +526,6 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     </div>
   );
 
-
   const userMenuItems = [
     {
       key: "user-info",
@@ -581,6 +600,48 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           {" "}
         </div>
       )}
+
+      <LogoContainer>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <img
+            src="/Workforce.svg"
+            alt="Company Logo"
+            style={{
+              ...getLogoSize(),
+              objectFit: "contain",
+              borderRadius: "2px",
+            }}
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          <div
+            style={{
+              display: "none",
+              ...getLogoSize(),
+              backgroundColor: "#ffffff",
+              borderRadius: "2px",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              fontSize: screenSize.isMobile ? "10px" : "12px",
+              fontWeight: "500",
+              textAlign: "center",
+              border: "1px dashed #ccc",
+            }}
+          >
+            {screenSize.isMobile ? "Logo" : "Your Logo"}
+          </div>
+        </div>
+      </LogoContainer>
 
       <div style={{ flex: 1 }} />
 

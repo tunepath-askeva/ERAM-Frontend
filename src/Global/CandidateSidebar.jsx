@@ -64,16 +64,13 @@ const CandidateSidebar = ({
       key: "/candidate-settings",
       icon: <SettingOutlined />,
       label: "Settings",
-    }
+    },
   ];
 
   useEffect(() => {
     const fetchCandidateInfo = () => {
       try {
-        const possibleKeys = [
-          'candidateInfo',
-          'userInfo',
-        ];
+        const possibleKeys = ["candidateInfo", "userInfo"];
 
         let candidateData = null;
         let foundKey = null;
@@ -92,13 +89,10 @@ const CandidateSidebar = ({
           const parsedData = JSON.parse(candidateData);
           console.log(`Parsed data from ${foundKey}:`, parsedData);
 
-          const name = parsedData.name ||
-            parsedData.fullName ||
-            "Candidate";
+          const name = parsedData.name || parsedData.fullName || "Candidate";
 
           // Extract email with multiple fallbacks
-          const email = parsedData.email ||
-            "";
+          const email = parsedData.email || "";
 
           let roles = "";
           if (parsedData.roles) {
@@ -108,8 +102,7 @@ const CandidateSidebar = ({
               roles = parsedData.roles;
             }
           } else {
-            roles = parsedData.role ||
-              "";
+            roles = parsedData.role || "";
           }
 
           const extractedInfo = {
@@ -122,7 +115,10 @@ const CandidateSidebar = ({
           setCandidateInfo(extractedInfo);
         } else {
           console.warn("No candidate data found in localStorage");
-          console.log("Available localStorage keys:", Object.keys(localStorage));
+          console.log(
+            "Available localStorage keys:",
+            Object.keys(localStorage)
+          );
 
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -139,16 +135,16 @@ const CandidateSidebar = ({
     fetchCandidateInfo();
 
     const handleStorageChange = (e) => {
-      if (e.key && (e.key.includes('candidate') || e.key.includes('user'))) {
+      if (e.key && (e.key.includes("candidate") || e.key.includes("user"))) {
         console.log("localStorage changed for key:", e.key);
         fetchCandidateInfo();
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
@@ -201,7 +197,17 @@ const CandidateSidebar = ({
     return "20px";
   };
 
-  // Get first letter of candidate name for logo
+  const getImageLogoSize = () => {
+    if (screenSize.isMobile) return { width: "120px", height: "100px" };
+    if (screenSize.isTablet)
+      return collapsed
+        ? { width: "40px", height: "40px" }
+        : { width: "100px", height: "100px" };
+    return collapsed
+      ? { width: "50px", height: "50px" }
+      : { width: "140px", height: "100px" };
+  };
+
   const getFirstLetter = () => {
     return candidateInfo.name.charAt(0).toUpperCase();
   };
@@ -223,8 +229,8 @@ const CandidateSidebar = ({
 
       enqueueSnackbar(
         error?.data?.message ||
-        error?.message ||
-        "Logout failed. Please try again.",
+          error?.message ||
+          "Logout failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -346,14 +352,14 @@ const CandidateSidebar = ({
                 selectedKey === item.key
                   ? "#fde2e4"
                   : hoveredKey === item.key
-                    ? "#f1f5f9"
-                    : "transparent",
+                  ? "#f1f5f9"
+                  : "transparent",
               color:
                 selectedKey === item.key
                   ? "#e11d48"
                   : hoveredKey === item.key
-                    ? "#1e293b"
-                    : "#475569",
+                  ? "#1e293b"
+                  : "#475569",
               border: "none",
               cursor: "pointer",
               fontWeight: "500",
@@ -374,8 +380,8 @@ const CandidateSidebar = ({
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                      ? "#e11d48"
-                      : "#64748b",
+                    ? "#e11d48"
+                    : "#64748b",
                 fontSize: getIconSize(),
                 minWidth: getIconSize(),
               },
@@ -384,6 +390,58 @@ const CandidateSidebar = ({
           </button>
         ))}
       </nav>
+
+      <div
+        style={{
+          padding: screenSize.isMobile
+            ? "24px 24px 16px 24px"
+            : "24px 24px 16px 24px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: "8px",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <img
+            src="/Workforce.svg"
+            alt="Company Logo"
+            style={{
+              ...getImageLogoSize(),
+              objectFit: "contain",
+              borderRadius: "4px",
+            }}
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+          <div
+            style={{
+              display: "none",
+              ...getImageLogoSize(),
+              backgroundColor: "#f0f0f0",
+              borderRadius: "4px",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#666",
+              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
+              fontWeight: "500",
+              textAlign: "center",
+              border: "2px dashed #ccc",
+            }}
+          >
+            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
+          </div>
+        </div>
+      </div>
 
       <div
         style={{
