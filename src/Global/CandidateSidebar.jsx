@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Button, Drawer } from "antd";
+import { Layout, Button, Drawer, Badge } from "antd";
 import {
   BulbOutlined,
+  BellOutlined,
   SettingOutlined,
   LogoutOutlined,
   FormOutlined,
@@ -11,6 +12,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../Slices/SuperAdmin/SuperAdminApis.js";
 import { userLogout } from "../Slices/Users/UserSlice.js";
+import { useGetCandidateNotificationQuery } from "../Slices/Users/UserApis.js";
 
 const { Sider } = Layout;
 
@@ -48,6 +50,9 @@ const CandidateSidebar = ({
   const dispatch = useDispatch();
   const location = useLocation();
   const selectedKey = location.pathname;
+  const { data: notifications } = useGetCandidateNotificationQuery();
+
+  const unreadNotificationsCount = notifications?.notification?.filter(n => !n.isRead).length || 0;
 
   const menuItems = [
     {
@@ -64,6 +69,18 @@ const CandidateSidebar = ({
       key: "/candidate-settings",
       icon: <SettingOutlined />,
       label: "Settings",
+    },
+    {
+      key: "/notifications",
+      icon: <BellOutlined />,
+      label: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span>Notifications</span>
+          {unreadNotificationsCount > 0 && (
+            <Badge count={unreadNotificationsCount} size="medium" style={{ backgroundColor: "#da2c46" }} />
+          )}
+        </div>
+      ),
     }
   ];
 
