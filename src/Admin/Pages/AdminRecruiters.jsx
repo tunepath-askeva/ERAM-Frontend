@@ -73,7 +73,7 @@ const AdminRecruiter = () => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setCurrentPage(1);
-    }, 7000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
