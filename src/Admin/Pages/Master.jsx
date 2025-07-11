@@ -55,7 +55,7 @@ const Master = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 12
   });
 
   const {
@@ -572,7 +572,7 @@ const Master = () => {
                   onChange={handlePaginationChange}
                   showSizeChanger
                   showQuickJumper
-                  pageSizeOptions={["10", "20", "50", "100"]}
+                  pageSizeOptions={["12", "21", "30", "60", "90", "120"]}
                 />
               </div>
             )}

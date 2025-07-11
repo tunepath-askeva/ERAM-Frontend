@@ -82,7 +82,7 @@ const AdminCandidates = () => {
   const [candidateToDelete, setCandidateToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(12);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   // Debounce search term
@@ -755,7 +755,7 @@ const AdminCandidates = () => {
                 showTotal={(total, range) =>
                   `${range[0]}-${range[1]} of ${total} candidates`
                 }
-                pageSizeOptions={["5", "10", "20", "50"]}
+                pageSizeOptions={["12", "24", "36", "64", "128"]}
               />
             </div>
           </>

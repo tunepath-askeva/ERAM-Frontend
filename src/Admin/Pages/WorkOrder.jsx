@@ -61,7 +61,7 @@ const WorkOrder = () => {
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); 
+  const [pageSize, setPageSize] = useState(12); 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   useEffect(() => {
@@ -688,7 +688,7 @@ const WorkOrder = () => {
                 showTotal={(total, range) =>
                   `${range[0]}-${range[1]} of ${total} items`
                 }
-                pageSizeOptions={["5", "10", "50", "100"]}
+                pageSizeOptions={["12", "24", "36", "64", "128"]}
                 style={{
                   textAlign: "center",
                 }}

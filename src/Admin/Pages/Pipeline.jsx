@@ -67,7 +67,7 @@ const Pipeline = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 12,
   });
 
   const { enqueueSnackbar } = useSnackbar();
@@ -627,7 +627,7 @@ const Pipeline = () => {
                 onChange={handlePaginationChange}
                 showSizeChanger
                 showQuickJumper
-                pageSizeOptions={["10", "20", "50", "100"]}
+                pageSizeOptions={["12", "24", "36", "64", "128"]}
               />
             </div>
           </>
