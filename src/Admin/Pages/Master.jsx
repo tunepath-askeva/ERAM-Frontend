@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useSnackbar } from 'notistack';
+import React, { useState, useEffect } from "react";
+import { useSnackbar } from "notistack";
 import {
   Card,
   Button,
@@ -14,7 +14,7 @@ import {
   Tag,
   Spin,
   Input,
-     Pagination,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -51,7 +51,8 @@ const Master = () => {
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [projectToToggle, setProjectToToggle] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -62,7 +63,11 @@ const Master = () => {
     isLoading: isLoadingProjects,
     refetch: refetchProjects,
     error: projectsError,
-  } = useGetProjectsQuery();
+  } = useGetProjectsQuery({
+    searchTerm: debouncedSearchTerm,
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+  });
 
   const {
     data: selectedProject,
@@ -77,22 +82,23 @@ const Master = () => {
   const [toggleProjectStatus, { isLoading: isToggling }] =
     useDisableProjectStatusMutation();
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const projects = projectsData?.allProjects || [];
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.prefix.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const totalCount = projectsData?.totalCount || 0;
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
   };
 
-  const paginatedProjects = filteredProjects.slice(
-    (pagination.current - 1) * pagination.pageSize,
-    pagination.current * pagination.pageSize
-  );
+  const paginatedProjects = projects;
 
   const handleSearch = (value) => {
     setSearchTerm(value);
@@ -136,11 +142,12 @@ const Master = () => {
 
     try {
       await deleteProject(projectToDelete._id).unwrap();
-      enqueueSnackbar(`Project "${projectToDelete.name}" deleted successfully`, {
-        variant: 'success',
-
-
-      });
+      enqueueSnackbar(
+        `Project "${projectToDelete.name}" deleted successfully`,
+        {
+          variant: "success",
+        }
+      );
       setDeleteModalVisible(false);
       setProjectToDelete(null);
       refetchProjects();
@@ -149,8 +156,7 @@ const Master = () => {
       enqueueSnackbar(
         error?.data?.message || error?.message || "Failed to delete project",
         {
-          variant: 'error',
-
+          variant: "error",
         }
       );
     }
@@ -170,18 +176,19 @@ const Master = () => {
     if (!projectToToggle) return;
 
     try {
-      const newStatus = projectToToggle.status === "active" ? "inActive" : "active";
+      const newStatus =
+        projectToToggle.status === "active" ? "inActive" : "active";
       await toggleProjectStatus({
         projectId: projectToToggle._id,
         accountStatus: newStatus,
       }).unwrap();
 
       enqueueSnackbar(
-        `Project "${projectToToggle.name}" has been ${newStatus === "active" ? "activated" : "deactivated"
+        `Project "${projectToToggle.name}" has been ${
+          newStatus === "active" ? "activated" : "deactivated"
         } successfully`,
         {
-          variant: 'success',
-
+          variant: "success",
         }
       );
 
@@ -191,10 +198,11 @@ const Master = () => {
     } catch (error) {
       console.error("Status toggle error:", error);
       enqueueSnackbar(
-        error?.data?.message || error?.message || "Failed to update project status",
+        error?.data?.message ||
+          error?.message ||
+          "Failed to update project status",
         {
-          variant: 'error',
-
+          variant: "error",
         }
       );
     }
@@ -244,16 +252,18 @@ const Master = () => {
 
   return (
     <>
-      <div style={{
-        padding: "16px",
-        minHeight: "100vh",
-        "@media (min-width: 576px)": {
-          padding: "24px",
-        },
-        "@media (min-width: 768px)": {
-          padding: "32px",
-        }
-      }}>
+      <div
+        style={{
+          padding: "16px",
+          minHeight: "100vh",
+          "@media (min-width: 576px)": {
+            padding: "24px",
+          },
+          "@media (min-width: 768px)": {
+            padding: "32px",
+          },
+        }}
+      >
         <div className="project-header">
           <div
             style={{
@@ -319,7 +329,8 @@ const Master = () => {
                 onClick={showCreateModal}
                 className="project-button"
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   height: "48px", // Explicit height
                   minWidth: "180px", // Minimum width to prevent shrinking
                 }}
@@ -527,7 +538,9 @@ const Master = () => {
                         </Text>
                         <div style={{ marginTop: 6 }}>
                           <Tag
-                            color={project.status === "active" ? "green" : "red"}
+                            color={
+                              project.status === "active" ? "green" : "red"
+                            }
                             style={{
                               borderRadius: 6,
                               fontSize: "12px",
@@ -544,16 +557,22 @@ const Master = () => {
                 </div>
               ))}
             </Row>
-            {filteredProjects.length > 0 && (
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+            {projects.length > 0 && (
+              <div
+                style={{
+                  marginTop: 24,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
                 <Pagination
                   current={pagination.current}
                   pageSize={pagination.pageSize}
-                  total={filteredProjects.length}
+                  total={totalCount}
                   onChange={handlePaginationChange}
                   showSizeChanger
                   showQuickJumper
-                  pageSizeOptions={['10', '20', '50', '100']}
+                  pageSizeOptions={["10", "20", "50", "100"]}
                 />
               </div>
             )}
@@ -573,19 +592,22 @@ const Master = () => {
               description={
                 <div style={{ textAlign: "center" }}>
                   <Text style={{ fontSize: "16px", color: "#7f8c8d" }}>
-                    No projects created yet
+                    {searchTerm
+                      ? "No projects match your search"
+                      : "No projects created yet"}
                   </Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: "14px" }}>
-                    Create your first project to get started with project
-                    management
+                    {searchTerm
+                      ? "Try a different search term"
+                      : "Create your first project to get started"}
                   </Text>
                 </div>
               }
             />
           </Card>
         )}
-      </div >
+      </div>
 
       <ProjectFormModal
         visible={isFormModalVisible}
@@ -992,8 +1014,9 @@ const Master = () => {
             style={{
               background:
                 projectToToggle?.status === "active" ? "#fff2f0" : "#f6ffed",
-              border: `1px solid ${projectToToggle?.status === "active" ? "#ffccc7" : "#b7eb8f"
-                }`,
+              border: `1px solid ${
+                projectToToggle?.status === "active" ? "#ffccc7" : "#b7eb8f"
+              }`,
               borderRadius: "8px",
               padding: "16px",
               marginBottom: "20px",

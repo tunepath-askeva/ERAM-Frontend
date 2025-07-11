@@ -51,7 +51,8 @@ const Levels = () => {
   const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [levelToToggle, setLevelToToggle] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -62,7 +63,20 @@ const Levels = () => {
     isLoading,
     isError,
     refetch,
-  } = useGetApprovalQuery();
+  } = useGetApprovalQuery({
+    searchTerm: debouncedSearchTerm,
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const levels =
     approvalData?.aprovals?.map((approval) => ({
@@ -71,6 +85,7 @@ const Levels = () => {
       stages: approval.levels,
       levelStatus: "active",
     })) || [];
+  const totalCount = approvalData?.totalCount || 0;
 
   const isLevelActive = (level) => {
     return level?.levelStatus === "active";
@@ -80,16 +95,6 @@ const Levels = () => {
     setLevelToDelete(level);
     setDeleteModalVisible(true);
   };
-
-  const filteredLevels = levels.filter(level => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (level.groupName?.toLowerCase().includes(searchLower)) ||
-      (level.description?.toLowerCase().includes(searchLower)) ||
-      (level.levels?.some(stage => stage.levelName.toLowerCase().includes(searchLower)))
-    );
-  });
 
   const handleDeleteCancel = () => {
     setDeleteModalVisible(false);
@@ -137,7 +142,8 @@ const Levels = () => {
       await refetch();
 
       enqueueSnackbar(
-        `Level "${levelToToggle.groupName}" is now ${isLevelActive(levelToToggle) ? "inactive" : "active"
+        `Level "${levelToToggle.groupName}" is now ${
+          isLevelActive(levelToToggle) ? "inactive" : "active"
         }`,
         { variant: "success" }
       );
@@ -181,11 +187,7 @@ const Levels = () => {
     return levels.find((level) => level._id === levelId);
   };
 
-  // Apply pagination to filtered pipelines
-  const paginatedLevels = filteredLevels.slice(
-    (pagination.current - 1) * pagination.pageSize,
-    pagination.current * pagination.pageSize
-  );
+  const paginatedLevels = levels;
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
@@ -284,7 +286,8 @@ const Levels = () => {
                 onClick={showCreateModal}
                 className="level-button"
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
                   height: "48px", // Explicit height
                   minWidth: "170px", // Minimum width to prevent shrinking
                 }}
@@ -297,7 +300,7 @@ const Levels = () => {
 
         {isLoading ? (
           <Card loading style={{ borderRadius: "16px" }} />
-        ) : filteredLevels?.length > 0 ? (
+        ) : levels?.length > 0 ? (
           <>
             <Row
               gutter={[16, 16]}
@@ -496,15 +499,21 @@ const Levels = () => {
                 </div>
               ))}
             </Row>
-            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+            <div
+              style={{
+                marginTop: 24,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
               <Pagination
                 current={pagination.current}
                 pageSize={pagination.pageSize}
-                total={filteredLevels.length}
+                total={totalCount}
                 onChange={handlePaginationChange}
                 showSizeChanger
                 showQuickJumper
-                pageSizeOptions={['10', '20', '50', '100']}
+                pageSizeOptions={["10", "20", "50", "100"]}
               />
             </div>
           </>
@@ -522,225 +531,216 @@ const Levels = () => {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div style={{ textAlign: "center" }}>
-                  <Text
-                    style={{
-                      fontSize: "14px",
-                      color: "#7f8c8d",
-                    }}
-                  >
-                    No levels created yet
+                  <Text style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                    {searchTerm
+                      ? "No levels match your search"
+                      : "No levels created yet"}
                   </Text>
                   <br />
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: "12px",
-                    }}
-                  >
-                    Create your first level to get started
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {searchTerm
+                      ? "Try a different search term"
+                      : "Create your first level to get started"}
                   </Text>
                 </div>
               }
             />
           </Card>
         )}
-      </div >
+      </div>
 
       {/* View Level Modal */}
-      < Modal
+      <Modal
         title={
-          < div style={{ display: "flex", alignItems: "center" }
-          }>
+          <div style={{ display: "flex", alignItems: "center" }}>
             <InfoCircleOutlined style={{ marginRight: 8, color: "#da2c46" }} />
             Level Details
-          </div >
+          </div>
         }
         open={viewModalVisible}
         onCancel={handleViewModalClose}
-        footer={
-          [
-            <Button
-              key="close"
-              type="primary"
-              style={{
-                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              }}
-              onClick={handleViewModalClose}
-            >
-              Close
-            </Button>,
-          ]}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            style={{
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+            }}
+            onClick={handleViewModalClose}
+          >
+            Close
+          </Button>,
+        ]}
         width="90%"
         style={{ maxWidth: 800 }}
         centered
         destroyOnClose
       >
-        {
-          isLoading ? (
-            <div style={{ textAlign: "center", padding: "50px 0" }} >
-              <Spin size="large" />
-              <div style={{ marginTop: 16 }}>
-                <Text>Loading level details...</Text>
-              </div>
-            </div >
-          ) : (
-            <div>
-              {selectedLevelId && getLevelDetails(selectedLevelId) ? (
-                <>
-                  <Card
-                    title="Level Information"
-                    style={{ marginBottom: 16 }}
-                    size="small"
-                  >
-                    <Descriptions column={1} size="small">
-                      <Descriptions.Item label="Name">
-                        <Text strong>
-                          {getLevelDetails(selectedLevelId).groupName}
-                        </Text>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Description">
-                        <Text>
-                          {getLevelDetails(selectedLevelId).description ||
-                            "No description"}
-                        </Text>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Total Stages">
-                        <Badge
-                          count={
-                            getLevelDetails(selectedLevelId).levels?.length || 0
-                          }
-                          showZero
-                          style={{ backgroundColor: "#52c41a" }}
-                        />
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Status">
-                        <Tag
-                          color={
-                            isLevelActive(getLevelDetails(selectedLevelId))
-                              ? "green"
-                              : "red"
-                          }
-                        >
-                          {isLevelActive(getLevelDetails(selectedLevelId))
-                            ? "Active"
-                            : "Inactive"}
-                        </Tag>
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </Card>
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "50px 0" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text>Loading level details...</Text>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {selectedLevelId && getLevelDetails(selectedLevelId) ? (
+              <>
+                <Card
+                  title="Level Information"
+                  style={{ marginBottom: 16 }}
+                  size="small"
+                >
+                  <Descriptions column={1} size="small">
+                    <Descriptions.Item label="Name">
+                      <Text strong>
+                        {getLevelDetails(selectedLevelId).groupName}
+                      </Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Description">
+                      <Text>
+                        {getLevelDetails(selectedLevelId).description ||
+                          "No description"}
+                      </Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Total Stages">
+                      <Badge
+                        count={
+                          getLevelDetails(selectedLevelId).levels?.length || 0
+                        }
+                        showZero
+                        style={{ backgroundColor: "#52c41a" }}
+                      />
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Status">
+                      <Tag
+                        color={
+                          isLevelActive(getLevelDetails(selectedLevelId))
+                            ? "green"
+                            : "red"
+                        }
+                      >
+                        {isLevelActive(getLevelDetails(selectedLevelId))
+                          ? "Active"
+                          : "Inactive"}
+                      </Tag>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
 
-                  <Card
-                    title={
-                      <div>
-                        <OrderedListOutlined style={{ marginRight: 8 }} />
-                        Level Stages (
-                        {getLevelDetails(selectedLevelId).levels?.length || 0})
-                      </div>
-                    }
-                    size="small"
-                  >
-                    {getLevelDetails(selectedLevelId).levels?.length > 0 ? (
-                      <List
-                        dataSource={[
-                          ...getLevelDetails(selectedLevelId).levels,
-                        ].sort((a, b) => a.levelOrder - b.levelOrder)}
-                        renderItem={(stage, index) => (
-                          <List.Item
-                            style={{
-                              background: index % 2 === 0 ? "#fafafa" : "white",
-                              borderRadius: 8,
-                              marginBottom: 12,
-                              padding: "16px",
-                              border: "1px solid #f0f0f0",
-                            }}
-                          >
-                            <div style={{ width: "100%" }}>
+                <Card
+                  title={
+                    <div>
+                      <OrderedListOutlined style={{ marginRight: 8 }} />
+                      Level Stages (
+                      {getLevelDetails(selectedLevelId).levels?.length || 0})
+                    </div>
+                  }
+                  size="small"
+                >
+                  {getLevelDetails(selectedLevelId).levels?.length > 0 ? (
+                    <List
+                      dataSource={[
+                        ...getLevelDetails(selectedLevelId).levels,
+                      ].sort((a, b) => a.levelOrder - b.levelOrder)}
+                      renderItem={(stage, index) => (
+                        <List.Item
+                          style={{
+                            background: index % 2 === 0 ? "#fafafa" : "white",
+                            borderRadius: 8,
+                            marginBottom: 12,
+                            padding: "16px",
+                            border: "1px solid #f0f0f0",
+                          }}
+                        >
+                          <div style={{ width: "100%" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginBottom: 12,
+                              }}
+                            >
                               <div
                                 style={{
                                   display: "flex",
-                                  justifyContent: "space-between",
                                   alignItems: "center",
-                                  marginBottom: 12,
                                 }}
                               >
-                                <div
+                                <Tag
+                                  color="blue"
                                   style={{
-                                    display: "flex",
-                                    alignItems: "center",
+                                    margin: 0,
+                                    fontSize: "12px",
+                                    padding: "4px 8px",
+                                    borderRadius: "6px",
                                   }}
                                 >
-                                  <Tag
-                                    color="blue"
-                                    style={{
-                                      margin: 0,
-                                      fontSize: "12px",
-                                      padding: "4px 8px",
-                                      borderRadius: "6px",
-                                    }}
-                                  >
-                                    Stage #{stage.levelOrder}
-                                  </Tag>
-                                  <Text
-                                    strong
-                                    style={{ marginLeft: 12, fontSize: 16 }}
-                                  >
-                                    {stage.levelName}
-                                  </Text>
+                                  Stage #{stage.levelOrder}
+                                </Tag>
+                                <Text
+                                  strong
+                                  style={{ marginLeft: 12, fontSize: 16 }}
+                                >
+                                  {stage.levelName}
+                                </Text>
+                              </div>
+                            </div>
+
+                            {stage.assignedRecruiters?.length > 0 && (
+                              <div style={{ marginTop: 8 }}>
+                                <Text
+                                  strong
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#666",
+                                  }}
+                                >
+                                  Assigned Recruiters:
+                                </Text>
+                                <div style={{ marginTop: 4 }}>
+                                  {stage.assignedRecruiters.map(
+                                    (recruiter, i) => (
+                                      <Tag key={i} style={{ marginBottom: 4 }}>
+                                        {recruiter.fullName} ({recruiter.email})
+                                      </Tag>
+                                    )
+                                  )}
                                 </div>
                               </div>
-
-                              {stage.assignedRecruiters?.length > 0 && (
-                                <div style={{ marginTop: 8 }}>
-                                  <Text
-                                    strong
-                                    style={{
-                                      fontSize: 13,
-                                      color: "#666",
-                                    }}
-                                  >
-                                    Assigned Recruiters:
-                                  </Text>
-                                  <div style={{ marginTop: 4 }}>
-                                    {stage.assignedRecruiters.map(
-                                      (recruiter, i) => (
-                                        <Tag key={i} style={{ marginBottom: 4 }}>
-                                          {recruiter.fullName} ({recruiter.email})
-                                        </Tag>
-                                      )
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </List.Item>
-                        )}
-                      />
-                    ) : (
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="No stages configured for this level"
-                      />
-                    )}
-                  </Card>
-                </>
-              ) : (
-                <Empty description="Level not found" />
-              )}
-            </div>
-          )}
-      </Modal >
+                            )}
+                          </div>
+                        </List.Item>
+                      )}
+                    />
+                  ) : (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description="No stages configured for this level"
+                    />
+                  )}
+                </Card>
+              </>
+            ) : (
+              <Empty description="Level not found" />
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Create/Edit Level Modal */}
-      < CreateLevelModal
+      <CreateLevelModal
         visible={isModalVisible}
         onClose={handleModalClose}
         editingLevel={editingLevel}
       />
 
       {/* Disable Level Modal */}
-      < Modal
+      <Modal
         title={
-          < div
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -759,41 +759,40 @@ const Levels = () => {
                 : "Enable"}{" "}
               Level
             </span>
-          </div >
+          </div>
         }
         open={disableModalVisible}
         onCancel={handleDisableCancel}
         width="90%"
         style={{ maxWidth: 500 }}
         centered
-        footer={
-          [
-            <Button key="cancel" onClick={handleDisableCancel} size="large">
-              Cancel
-            </Button>,
-            <Button
-              key="confirm"
-              type="primary"
-              danger={levelToToggle && isLevelActive(levelToToggle)}
-              onClick={handleToggleStatus}
-              loading={isLoading}
-              size="large"
-              style={{
-                background:
-                  levelToToggle && isLevelActive(levelToToggle)
-                    ? "#ff4d4f"
-                    : "#52c41a",
-                borderColor:
-                  levelToToggle && isLevelActive(levelToToggle)
-                    ? "#ff4d4f"
-                    : "#52c41a",
-              }}
-            >
-              {levelToToggle && isLevelActive(levelToToggle)
-                ? "Disable"
-                : "Enable"}
-            </Button>,
-          ]}
+        footer={[
+          <Button key="cancel" onClick={handleDisableCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="confirm"
+            type="primary"
+            danger={levelToToggle && isLevelActive(levelToToggle)}
+            onClick={handleToggleStatus}
+            loading={isLoading}
+            size="large"
+            style={{
+              background:
+                levelToToggle && isLevelActive(levelToToggle)
+                  ? "#ff4d4f"
+                  : "#52c41a",
+              borderColor:
+                levelToToggle && isLevelActive(levelToToggle)
+                  ? "#ff4d4f"
+                  : "#52c41a",
+            }}
+          >
+            {levelToToggle && isLevelActive(levelToToggle)
+              ? "Disable"
+              : "Enable"}
+          </Button>,
+        ]}
       >
         <div style={{ padding: "16px 0" }}>
           {levelToToggle && (
@@ -866,12 +865,12 @@ const Levels = () => {
             </>
           )}
         </div>
-      </Modal >
+      </Modal>
 
       {/* Delete Level Modal */}
-      < Modal
+      <Modal
         title={
-          < div
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -882,30 +881,29 @@ const Levels = () => {
               style={{ marginRight: 8, fontSize: 18 }}
             />
             <span style={{ fontSize: "16px" }}>Delete Level</span>
-          </div >
+          </div>
         }
         open={deleteModalVisible}
         onCancel={handleDeleteCancel}
         width="90%"
         style={{ maxWidth: 500 }}
         centered
-        footer={
-          [
-            <Button key="cancel" onClick={handleDeleteCancel} size="large">
-              Cancel
-            </Button>,
-            <Button
-              key="delete"
-              type="primary"
-              danger
-              onClick={handleDeleteConfirm}
-              loading={isLoading}
-              size="large"
-              icon={<DeleteOutlined />}
-            >
-              Delete Level
-            </Button>,
-          ]}
+        footer={[
+          <Button key="cancel" onClick={handleDeleteCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            onClick={handleDeleteConfirm}
+            loading={isLoading}
+            size="large"
+            icon={<DeleteOutlined />}
+          >
+            Delete Level
+          </Button>,
+        ]}
       >
         <div style={{ padding: "16px 0" }}>
           {levelToDelete && (
@@ -967,7 +965,7 @@ const Levels = () => {
             </>
           )}
         </div>
-      </Modal >
+      </Modal>
     </>
   );
 };
