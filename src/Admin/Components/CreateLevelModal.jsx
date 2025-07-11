@@ -47,11 +47,16 @@ const LevelItem = ({
 }) => {
   const approversList =
     level.assignedRecruiters ||
-    level.approvers?.map((a) => {
-      const recruiter = recruiters.find((r) => r._id === a.user);
-      return recruiter ? recruiter : { _id: a.user, fullName: a.user };
-    }) ||
-    [];
+    (level.approvers
+      ? [
+          {
+            _id: level.approvers.user,
+            fullName:
+              recruiters.find((r) => r._id === level.approvers.user)
+                ?.fullName || level.approvers.user,
+          },
+        ]
+      : []);
 
   return (
     <Col xs={24} sm={12} lg={8}>
@@ -166,7 +171,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   const [currentLevel, setCurrentLevel] = useState({
     levelName: "",
     description: "",
-    approvers: [],
+    approvers: null,
     levelOrder: 1,
   });
   const [isEditingLevel, setIsEditingLevel] = useState(false);
@@ -296,12 +301,9 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
       groupName: groupName.trim(),
       levels: levels.map((level) => ({
         ...level,
-        // Include assignedRecruiters if your API expects it
-        assignedRecruiters: level.approvers.map((a) => ({
-          _id: a.user,
-          // You might need to add additional fields here if required by your API
-        })),
-        // Remove approvers if your API doesn't use them
+        assignedRecruiters: level.approvers
+          ? [{ _id: level.approvers.user }]
+          : [],
         approvers: undefined,
       })),
     };
@@ -546,14 +548,13 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
               Approvers
             </Text>
             <Select
-              mode="multiple"
-              placeholder="Select approvers"
+              placeholder="Select approver"
               loading={isRecruitersLoading}
-              value={currentLevel.approvers.map((a) => a.user)}
-              onChange={(values) =>
+              value={currentLevel.approvers?.user || undefined}
+              onChange={(value) =>
                 setCurrentLevel((prev) => ({
                   ...prev,
-                  approvers: values.map((user) => ({ user })),
+                  approvers: value ? { user: value } : null,
                 }))
               }
               style={{
@@ -584,9 +585,12 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                     </Avatar>
                     <div>
                       <Text strong>{recruiter.fullName}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        {recruiter.email}
+
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: "12px", marginLeft: 3 }}
+                      >
+                        ({recruiter.email})
                       </Text>
                     </div>
                   </div>

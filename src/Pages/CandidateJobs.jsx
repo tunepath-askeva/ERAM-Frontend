@@ -518,8 +518,7 @@ const CandidateJobs = () => {
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <Result
           status="404"
-          title="Failed to Load Jobs"
-          subTitle={"Something went wrong while fetching jobs."}
+          title="There are no jobs available for now!!!"
           extra={[
             <Button
               type="primary"

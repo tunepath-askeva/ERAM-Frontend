@@ -14,6 +14,11 @@ const initializeUserState = () => {
     state[key] = storedInfo ? JSON.parse(storedInfo) : null;
   });
 
+  const storedPermissions = localStorage.getItem("recruiterPermissions");
+  state.recruiterPermissions = storedPermissions
+    ? JSON.parse(storedPermissions)
+    : [];
+
   return state;
 };
 
@@ -24,11 +29,19 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUserCredentials: (state, action) => {
-      const { userInfo, role } = action.payload;
+      const { userInfo, role, permissions } = action.payload;
       const roleKey = getRoleBasedKey(role);
 
       state[roleKey] = userInfo;
       localStorage.setItem(roleKey, JSON.stringify(userInfo));
+
+      if (role === "recruiter" && permissions) {
+        state.recruiterPermissions = permissions;
+        localStorage.setItem(
+          "recruiterPermissions",
+          JSON.stringify(permissions)
+        );
+      }
     },
 
     userLogout: (state, action) => {
@@ -39,6 +52,11 @@ const userSlice = createSlice({
       state[roleKey] = null;
 
       localStorage.removeItem(roleKey);
+
+      if (role === "recruiter") {
+        state.recruiterPermissions = [];
+        localStorage.removeItem("recruiterPermissions");
+      }
     },
 
     clearAllUserData: (state) => {

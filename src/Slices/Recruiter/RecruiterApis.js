@@ -62,6 +62,36 @@ export const recruiterApi = createApi({
         };
       },
     }),
+    getSelectedCandidates: builder.query({
+      query: ({ jobId, page, limit }) => ({
+        url: `/selected/${jobId}`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+        },
+      }),
+    }),
+    getScreeningCandidates: builder.query({
+      query: ({ jobId, page, limit }) => ({
+        url: `/screening/${jobId}`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+        },
+      }),
+    }),
+    getPendingCandidates: builder.query({
+      query: ({ jobId, page, limit }) => ({
+        url: `/inpending/${jobId}`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+        },
+      }),
+    }),
 
     updateCandidateStatus: builder.mutation({
       query: ({ Id, status, jobId, isSourced }) => ({
@@ -145,7 +175,7 @@ export const recruiterApi = createApi({
     moveCandidateStatus: builder.mutation({
       query: ({ id, ...payload }) => ({
         url: `/stage/${id}`,
-        method: "PATCH",
+        method: "PUT",
         body: payload,
       }),
     }),
@@ -157,10 +187,17 @@ export const recruiterApi = createApi({
       }),
     }),
     changeInterviewStatus: builder.mutation({
-      query: ({ id, status }) => ({
+      query: ({ id, status, _id }) => ({
         url: `/interviewStatus/${id}`,
         method: "PUT",
-        body: { status },
+        body: { status, _id },
+      }),
+    }),
+    notifyCandidate: builder.mutation({
+      query: ({ userId, workOrderId, customFieldId }) => ({
+        url: "/notify",
+        method: "POST",
+        body: { userId, workOrderId, customFieldId },
       }),
     }),
   }),
@@ -173,6 +210,8 @@ export const {
   useGetRecruiterJobIdQuery,
   useGetJobApplicationsQuery,
   useGetSourcedCandidateQuery,
+  useGetSelectedCandidatesQuery,
+  useGetScreeningCandidatesQuery,
   useUpdateCandidateStatusMutation,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
@@ -186,4 +225,6 @@ export const {
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
   useChangeInterviewStatusMutation,
+  useGetPendingCandidatesQuery,
+  useNotifyCandidateMutation
 } = recruiterApi;

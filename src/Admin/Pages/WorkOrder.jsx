@@ -584,7 +584,7 @@ const WorkOrder = () => {
                           overflowX: "hidden",
                         }}
                       >
-                        {workOrder.pipeline?.stages?.map((stage, index) => (
+                        {workOrder.pipeline?.map((pipeline, index) => (
                           <Tag
                             key={index}
                             color="blue"
@@ -606,7 +606,7 @@ const WorkOrder = () => {
                               },
                             }}
                           >
-                            {stage.name}
+                            {pipeline.name}
                           </Tag>
                         ))}
                       </div>

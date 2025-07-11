@@ -82,6 +82,7 @@ const AddWorkOrder = () => {
   const [customStages, setCustomStages] = useState({});
   const [draggedStage, setDraggedStage] = useState(null);
   const [stageApprovers, setStageApprovers] = useState({});
+  const [requiredDocuments, setRequiredDocuments] = useState([]);
   const navigate = useNavigate();
 
   const { data: approvalData } = useGetApprovalQuery();
@@ -429,6 +430,26 @@ const AddWorkOrder = () => {
     });
   };
 
+  const addDocument = () => {
+    const newDocument = {
+      id: Date.now(),
+      name: "",
+      description: "",
+      isMandatory: true,
+    };
+    setRequiredDocuments([...requiredDocuments, newDocument]);
+  };
+
+  const updateDocument = (id, updates) => {
+    setRequiredDocuments((docs) =>
+      docs.map((doc) => (doc.id === id ? { ...doc, ...updates } : doc))
+    );
+  };
+
+  const removeDocument = (id) => {
+    setRequiredDocuments((docs) => docs.filter((doc) => doc.id !== id));
+  };
+
   const updateFieldOption = (fieldId, optionIndex, value) => {
     const field = applicationFields.find((f) => f.id === fieldId);
     const newOptions = [...field.options];
@@ -478,6 +499,7 @@ const AddWorkOrder = () => {
         WorkorderStatus: status,
         isActive: status === "published" ? "active" : "inactive",
         pipelineStageTimeline,
+        requiredDocuments,
       };
 
       const result = await createWorkOrder(workOrderData).unwrap();
@@ -648,6 +670,38 @@ const AddWorkOrder = () => {
                 >
                   {skill}
                 </Tag>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {requiredDocuments?.length > 0 && (
+          <div style={{ marginBottom: "12px" }}>
+            <h4
+              style={{
+                margin: "0 0 4px 0",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              Required Documents
+            </h4>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
+              {requiredDocuments.map((doc, index) => (
+                <div
+                  key={index}
+                  style={{ display: "flex", alignItems: "center" }}
+                >
+                  <span style={{ marginRight: "4px" }}>
+                    {doc.isMandatory ? "•" : "◦"}
+                  </span>
+                  <span style={{ fontSize: "12px" }}>
+                    <strong>{doc.name}</strong>
+                    {doc.description && ` - ${doc.description}`}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
@@ -1047,7 +1101,6 @@ const AddWorkOrder = () => {
         id: approval._id,
         name: approval.groupName,
       })) || [];
-
     const dependencyTypes = [
       { id: "independent", name: "Independent" },
       { id: "dependent", name: "Dependent" },
@@ -1060,6 +1113,13 @@ const AddWorkOrder = () => {
       ...(currentPipelineForDates.stages || []),
       ...(customStages[currentPipelineForDates._id] || []),
     ];
+
+    // Get all approval levels already selected in this pipeline
+    const usedApprovalLevels = new Set(
+      pipelineStageDates[currentPipelineForDates._id]
+        ?.filter((stage) => stage.approvalId)
+        .map((stage) => stage.approvalId)
+    );
 
     return (
       <Modal
@@ -1099,6 +1159,8 @@ const AddWorkOrder = () => {
             const dateEntry = pipelineStageDates[
               currentPipelineForDates._id
             ]?.find((d) => d.stageId === stageId);
+
+            const availableApprovalLevels = approvalLevels;
 
             return (
               <Card
@@ -1188,7 +1250,6 @@ const AddWorkOrder = () => {
                   handleDrop(e, stage, currentPipelineForDates._id)
                 }
               >
-                {/* Rest of your card content remains the same */}
                 <Row gutter={[16, 16]} align="bottom">
                   {/* Date Section */}
                   <Col xs={24} sm={12} md={12} lg={8}>
@@ -1288,11 +1349,7 @@ const AddWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select approval level"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.approvalId || undefined
-                        }
+                        value={dateEntry?.approvalId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -1808,6 +1865,81 @@ const AddWorkOrder = () => {
               <Form.Item name="benefits" label="Benefits">
                 <TextArea rows={4} placeholder="Enter job benefits" />
               </Form.Item>
+            </Card>
+
+            <Card
+              type="inner"
+              title="Required Documents"
+              style={{ marginBottom: "16px" }}
+            >
+              <div style={{ marginBottom: "16px" }}>
+                {requiredDocuments.map((doc, index) => (
+                  <Card
+                    key={doc.id}
+                    size="small"
+                    style={{ marginBottom: "12px" }}
+                    title={`Document ${index + 1}`}
+                    extra={
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeDocument(doc.id)}
+                      />
+                    }
+                  >
+                    <Row gutter={[16, 8]}>
+                      <Col span={24}>
+                        <Form.Item label="Document Name">
+                          <Input
+                            value={doc.name}
+                            onChange={(e) =>
+                              updateDocument(doc.id, { name: e.target.value })
+                            }
+                            placeholder="e.g., Resume, Cover Letter, ID Proof"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item label="Description">
+                          <Input.TextArea
+                            value={doc.description}
+                            onChange={(e) =>
+                              updateDocument(doc.id, {
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Enter document description or instructions"
+                            rows={2}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item>
+                          <Checkbox
+                            checked={doc.isMandatory}
+                            onChange={(e) =>
+                              updateDocument(doc.id, {
+                                isMandatory: e.target.checked,
+                              })
+                            }
+                          >
+                            Mandatory Document
+                          </Checkbox>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={addDocument}
+                  icon={<PlusOutlined />}
+                  block
+                >
+                  Add Required Document
+                </Button>
+              </div>
             </Card>
 
             <Row justify="end" gutter={16}>

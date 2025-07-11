@@ -54,6 +54,7 @@ const RecruiterJobs = () => {
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
+  const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
   const navigate = useNavigate();
 
   const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
@@ -66,6 +67,13 @@ const RecruiterJobs = () => {
       setFilteredJobs(transformedJobs);
     }
   }, [apiData]);
+
+  useEffect(() => {
+    const recruiterInfo = JSON.parse(
+      localStorage.getItem("recruiterInfo") || "{}"
+    );
+    setCurrentRecruiterEmail(recruiterInfo.email || "");
+  }, []);
 
   const transformJobData = (jobs) => {
     if (!jobs || !Array.isArray(jobs)) return [];
@@ -98,6 +106,7 @@ const RecruiterJobs = () => {
       applications: job.numberOfCandidate || 0,
       pipeline: job.pipeline?.[0]?.name || "No Pipeline",
       stages: job.pipeline?.[0]?.stages?.map((stage) => stage.name) || [],
+      assignedRecruiters: job.assignedRecruiters || [],
       deadline: job.deadlineDate,
     }));
   };
@@ -133,6 +142,14 @@ const RecruiterJobs = () => {
         // Here you would call your API to activate the job
       },
     });
+  };
+
+  // Updated function to only check assignedRecruiters array
+  const isRecruiterAssigned = (assignedRecruiters) => {
+    return assignedRecruiters.some(
+      (recruiter) =>
+        recruiter.email.toLowerCase() === currentRecruiterEmail.toLowerCase()
+    );
   };
 
   const handleEditJob = (job, e) => {
@@ -191,8 +208,7 @@ const RecruiterJobs = () => {
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <Result
           status="404"
-          title="Failed to Load Jobs"
-          subTitle={"Something went wrong while fetching jobs."}
+          title="No Jobs assigned yet for you."
           extra={[
             <Button
               type="primary"
@@ -456,13 +472,16 @@ const RecruiterJobs = () => {
                       }}
                     >
                       <Space>
-                        <Tooltip title="Edit Job">
-                          <Button
-                            type="text"
-                            icon={<EditOutlined />}
-                            onClick={(e) => handleEditJob(job, e)}
-                          />
-                        </Tooltip>
+                        {/* Only show edit button if recruiter is in the main assignedRecruiters array */}
+                        {isRecruiterAssigned(job.assignedRecruiters) && (
+                          <Tooltip title="Edit Job">
+                            <Button
+                              type="text"
+                              icon={<EditOutlined />}
+                              onClick={(e) => handleEditJob(job, e)}
+                            />
+                          </Tooltip>
+                        )}
                         {job.isActive ? (
                           <Tooltip title="Deactivate Job">
                             <Button

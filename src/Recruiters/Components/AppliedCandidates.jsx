@@ -118,29 +118,28 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     }
   });
 
-  const handleViewResume = (resumeUrl, candidateName) => {
+  const handleViewResume = (resumeUrl, fileName) => {
     if (!resumeUrl) {
-      message.warning("No resume available for this candidate");
+      message.warning("No file available");
       return;
     }
-    setSelectedResume({ url: resumeUrl, name: candidateName });
+    setSelectedResume({ url: resumeUrl, name: fileName });
     setResumeModalVisible(true);
   };
 
-  const handleDownloadResume = (resumeUrl, candidateName) => {
+  const handleDownloadResume = (resumeUrl, fileName) => {
     if (!resumeUrl) {
-      message.warning("No resume available for this candidate");
+      message.warning("No file available");
       return;
     }
 
-    // Create a temporary link element to trigger download
     const link = document.createElement("a");
     link.href = resumeUrl;
-    link.download = `${candidateName}_Resume.pdf`;
+    link.download = fileName || "document.pdf";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    message.success("Resume download started");
+    message.success("Download started");
   };
 
   const handleStatusChange = (applicationId, newStatus) => {
@@ -197,10 +196,49 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     setDetailsModalVisible(true);
   };
 
+  const renderUploadedDocuments = (documents) => {
+    if (!documents || documents.length === 0) {
+      return <Text type="secondary">No documents uploaded</Text>;
+    }
+
+    return (
+      <Space direction="vertical" size={4}>
+        {documents.map((doc, index) => (
+          <div
+            key={index}
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <FileTextOutlined style={{ fontSize: "12px", color: "#666" }} />
+            <Space size={4}>
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => handleViewResume(doc.fileUrl, doc.fileName)}
+                style={{ padding: "0", fontSize: "12px", height: "auto" }}
+              >
+                {doc.fileName}
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadResume(doc.fileUrl, doc.fileName)}
+                style={{ padding: "0", fontSize: "12px", height: "auto" }}
+              >
+                Download
+              </Button>
+            </Space>
+          </div>
+        ))}
+      </Space>
+    );
+  };
+
   const renderApplicationDetails = () => {
     if (!selectedApplication) return null;
 
-    const { user, responses } = selectedApplication;
+    const { user, responses, workOrderuploadedDocuments } = selectedApplication;
 
     const resumeField = responses?.find(
       (response) =>
@@ -234,6 +272,9 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
           })}
         </Descriptions>
 
+        <Divider orientation="left">Work Order Documents</Divider>
+        {renderUploadedDocuments(workOrderuploadedDocuments)}
+
         {resumeUrl && (
           <>
             <Divider orientation="left">Resume</Divider>
@@ -259,7 +300,13 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   };
 
   const renderCandidateCard = (application, index) => {
-    const { user, responses, createdAt, status = "applied" } = application;
+    const {
+      user,
+      responses,
+      createdAt,
+      status = "applied",
+      workOrderuploadedDocuments,
+    } = application;
     const resumeUrl =
       user?.resume || responses?.find((r) => r.fieldType === "file")?.value;
 
@@ -364,6 +411,18 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                     </Space>
                   </div>
                 )}
+
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <FileTextOutlined
+                    style={{ fontSize: "12px", color: "#666" }}
+                  />
+                  <Text style={{ fontSize: "12px", color: "#666" }}>
+                    Work Documents:
+                  </Text>
+                  {renderUploadedDocuments(workOrderuploadedDocuments)}
+                </div>
               </Space>
             </div>
           </Col>

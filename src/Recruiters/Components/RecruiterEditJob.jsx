@@ -98,7 +98,9 @@ const RecruiterEditJob = () => {
         const formatDate = (dateString) => {
           if (!dateString) return null;
           try {
-            return dayjs(dateString);
+            // Extract just the date part from ISO string
+            const datePart = dateString.split("T")[0];
+            return dayjs(datePart);
           } catch (error) {
             console.error("Error formatting date:", dateString, error);
             return null;
@@ -114,7 +116,7 @@ const RecruiterEditJob = () => {
 
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = timeline.pipelineId;
+            const pipelineId = timeline.pipelineId._id; // Get _id from nested object
 
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
@@ -132,7 +134,6 @@ const RecruiterEditJob = () => {
                 initialCustomStages[pipelineId] = [];
               }
 
-              // Check if we already have this custom stage to avoid duplicates
               const existingCustomStage = initialCustomStages[pipelineId].find(
                 (s) => (s._id || s.id) === timeline.stageId
               );
@@ -183,42 +184,15 @@ const RecruiterEditJob = () => {
         const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
         setSelectedPipelines(selectedPipeIds);
 
-        if (fetchedJobData.workOrder.pipelineStageTimeline) {
-          fetchedJobData.workOrder.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = timeline.pipelineId;
-            const stageId = timeline.stageId;
-
-            if (!initialStageCustomFields[pipelineId]) {
-              initialStageCustomFields[pipelineId] = {};
-            }
-            if (!initialStageRequiredDocuments[pipelineId]) {
-              initialStageRequiredDocuments[pipelineId] = {};
-            }
-
-            initialStageCustomFields[pipelineId][stageId] =
-              timeline.customFields?.map((field) => ({
-                ...field,
-                id:
-                  field._id ||
-                  `field_${Date.now()}_${Math.random()
-                    .toString(36)
-                    .substr(2, 9)}`,
-              })) || [];
-
-            initialStageRequiredDocuments[pipelineId][stageId] =
-              timeline.requiredDocuments?.map((doc) => ({
-                ...doc,
-                id:
-                  doc._id ||
-                  `doc_${Date.now()}_${Math.random()
-                    .toString(36)
-                    .substr(2, 9)}`,
-              })) || [];
-          });
-        }
-
-        setStageCustomFields(initialStageCustomFields);
-        setStageRequiredDocuments(initialStageRequiredDocuments);
+        // Initialize custom fields
+        setApplicationFields(
+          job.customFields?.map((field) => ({
+            ...field,
+            id:
+              field._id ||
+              `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          })) || []
+        );
 
         // Prepare form data
         const formData = {
@@ -249,16 +223,6 @@ const RecruiterEditJob = () => {
 
         jobForm.setFieldsValue(formData);
         setJobData(formData);
-
-        // Initialize custom fields
-        setApplicationFields(
-          job.customFields?.map((field) => ({
-            ...field,
-            id:
-              field.id ||
-              `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          })) || []
-        );
       } catch (error) {
         console.error("Error initializing form:", error);
         message.error("Error loading job data");
@@ -1325,9 +1289,7 @@ const RecruiterEditJob = () => {
 
     const pipelineId = currentPipelineForDates._id;
     const pipelineStages = currentPipelineForDates.stages || [];
-
     const pipelineCustomStages = customStages[pipelineId] || [];
-
     const allStages = [
       ...pipelineStages.map((stage) => ({ ...stage, isCustom: false })),
       ...pipelineCustomStages.map((stage) => ({ ...stage, isCustom: true })),
@@ -1342,330 +1304,6 @@ const RecruiterEditJob = () => {
       );
       return (aIndex || 0) - (bIndex || 0);
     });
-    const renderFieldTypeControls = (field, pipelineId, stageId) => {
-      const needsOptions = ["dropdown", "select", "radio", "checkbox"].includes(
-        field.type
-      );
-      const isFileUpload = field.type === "file";
-
-      return (
-        <div style={{ marginTop: 12 }}>
-          {needsOptions && (
-            <div style={{ marginBottom: 8 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <span style={{ fontWeight: 500 }}>Options:</span>
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const currentOptions = field.options || [];
-                    const newOptions = [
-                      ...currentOptions,
-                      `Option ${currentOptions.length + 1}`,
-                    ];
-                    updateStageCustomField(pipelineId, stageId, field.id, {
-                      options: newOptions,
-                    });
-                  }}
-                >
-                  Add Option
-                </Button>
-              </div>
-              {(field.options || []).length === 0 && (
-                <div
-                  style={{
-                    padding: "8px 12px",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    color: "#666",
-                    marginBottom: 8,
-                  }}
-                >
-                  No options added yet. Click "Add Option" to add choices.
-                </div>
-              )}
-              {(field.options || []).map((option, index) => (
-                <div
-                  key={index}
-                  style={{ display: "flex", gap: 8, marginBottom: 4 }}
-                >
-                  <Input
-                    value={option}
-                    onChange={(e) => {
-                      const newOptions = [...(field.options || [])];
-                      newOptions[index] = e.target.value;
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        options: newOptions,
-                      });
-                    }}
-                    placeholder={`Option ${index + 1}`}
-                    size="small"
-                  />
-                  <Button
-                    type="text"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const newOptions = [...(field.options || [])];
-                      newOptions.splice(index, 1);
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        options: newOptions,
-                      });
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {isFileUpload && (
-            <div style={{ marginBottom: 8 }}>
-              <Row gutter={8}>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Max File Size (MB):
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.maxFileSize || 10}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        maxFileSize: value,
-                      })
-                    }
-                    min={1}
-                    max={100}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Accepted Formats:
-                    </span>
-                  </div>
-                  <Select
-                    mode="multiple"
-                    value={field.acceptedFormats || []}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        acceptedFormats: value,
-                      })
-                    }
-                    placeholder="Select formats"
-                    size="small"
-                    style={{ width: "100%" }}
-                  >
-                    <Option value=".pdf">PDF</Option>
-                    <Option value=".doc">DOC</Option>
-                    <Option value=".docx">DOCX</Option>
-                    <Option value=".txt">TXT</Option>
-                    <Option value=".jpg">JPG</Option>
-                    <Option value=".jpeg">JPEG</Option>
-                    <Option value=".png">PNG</Option>
-                    <Option value=".gif">GIF</Option>
-                    <Option value=".xlsx">XLSX</Option>
-                    <Option value=".xls">XLS</Option>
-                    <Option value=".csv">CSV</Option>
-                  </Select>
-                </Col>
-              </Row>
-            </div>
-          )}
-
-          {field.type === "text" && (
-            <div style={{ marginBottom: 8 }}>
-              <Row gutter={8}>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Min Length:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.minLength || 0}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        minLength: value,
-                      })
-                    }
-                    min={0}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Max Length:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.maxLength || 255}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        maxLength: value,
-                      })
-                    }
-                    min={1}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-              </Row>
-            </div>
-          )}
-
-          {field.type === "textarea" && (
-            <div style={{ marginBottom: 8 }}>
-              <Row gutter={8}>
-                <Col span={8}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>Rows:</span>
-                  </div>
-                  <InputNumber
-                    value={field.rows || 3}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        rows: value,
-                      })
-                    }
-                    min={2}
-                    max={10}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-                <Col span={8}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Min Length:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.minLength || 0}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        minLength: value,
-                      })
-                    }
-                    min={0}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-                <Col span={8}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Max Length:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.maxLength || 1000}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        maxLength: value,
-                      })
-                    }
-                    min={1}
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-              </Row>
-            </div>
-          )}
-
-          {field.type === "number" && (
-            <div style={{ marginBottom: 8 }}>
-              <Row gutter={8}>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Min Value:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.minValue}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        minValue: value,
-                      })
-                    }
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-                <Col span={12}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontWeight: 500, fontSize: 12 }}>
-                      Max Value:
-                    </span>
-                  </div>
-                  <InputNumber
-                    value={field.maxValue}
-                    onChange={(value) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        maxValue: value,
-                      })
-                    }
-                    size="small"
-                    style={{ width: "100%" }}
-                  />
-                </Col>
-              </Row>
-            </div>
-          )}
-
-          {field.type === "date" && (
-            <div style={{ marginBottom: 8 }}>
-              <Row gutter={8}>
-                <Col span={12}>
-                  <Checkbox
-                    checked={field.allowPastDates}
-                    onChange={(e) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        allowPastDates: e.target.checked,
-                      })
-                    }
-                  >
-                    Allow Past Dates
-                  </Checkbox>
-                </Col>
-                <Col span={12}>
-                  <Checkbox
-                    checked={field.allowFutureDates}
-                    onChange={(e) =>
-                      updateStageCustomField(pipelineId, stageId, field.id, {
-                        allowFutureDates: e.target.checked,
-                      })
-                    }
-                  >
-                    Allow Future Dates
-                  </Checkbox>
-                </Col>
-              </Row>
-            </div>
-          )}
-        </div>
-      );
-    };
 
     return (
       <Modal
@@ -1708,7 +1346,7 @@ const RecruiterEditJob = () => {
           const stageDetails =
             fetchedJobData?.workOrder?.pipelineStageTimeline?.find(
               (timeline) =>
-                timeline.pipelineId === pipelineId &&
+                timeline.pipelineId._id === pipelineId &&
                 timeline.stageId === stageId
             );
 
@@ -2047,14 +1685,6 @@ const RecruiterEditJob = () => {
             </Card>
           );
         })}
-        {/* <Button
-          type="dashed"
-          onClick={() => addCustomStage(pipelineId)}
-          icon={<PlusOutlined />}
-          style={{ width: "100%" }}
-        >
-          Add Custom Stage
-        </Button> */}
       </Modal>
     );
   };
@@ -2067,10 +1697,9 @@ const RecruiterEditJob = () => {
           const pipeline = activePipelines.find((p) => p._id === pipelineId);
           if (!pipeline) return null;
 
-          // Get all stages for this pipeline from the fetched job data
           const pipelineStages =
             fetchedJobData?.workOrder?.pipelineStageTimeline?.filter(
-              (timeline) => timeline.pipelineId === pipelineId
+              (timeline) => timeline.pipelineId._id === pipelineId
             ) || [];
 
           const hasDates = pipelineStages.some(

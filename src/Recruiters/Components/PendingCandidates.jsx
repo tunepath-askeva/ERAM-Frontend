@@ -12,26 +12,19 @@ import {
   Input,
   Select,
   Divider,
-  Collapse,
-  Badge,
   Modal,
   Descriptions,
   Tag,
   message,
-  DatePicker,
-  TimePicker,
-  Form,
-  Skeleton,
-  Steps,
   Pagination,
   Avatar,
   Checkbox,
+  Tabs,
+  List,
+  Skeleton,
 } from "antd";
 import {
   EyeOutlined,
-  CalendarOutlined,
-  PhoneOutlined,
-  VideoCameraOutlined,
   CheckOutlined,
   CloseOutlined,
   ArrowRightOutlined,
@@ -39,76 +32,63 @@ import {
   BankOutlined,
   EnvironmentOutlined,
   ToolOutlined,
+  FileDoneOutlined,
+  FileOutlined,
 } from "@ant-design/icons";
 import {
-  useUpdateCandidateStatusMutation,
-  useGetRecruiterStagesQuery,
-  useMoveToPipelineMutation,
-  useGetScreeningCandidatesQuery,
+  useMoveCandidateStatusMutation,
+  useGetPendingCandidatesQuery,
+  useNotifyCandidateMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
-import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
-const { Panel } = Collapse;
 const { TextArea } = Input;
-const { Step } = Steps;
+const { TabPane } = Tabs;
 
-const ScreeningCandidates = ({ jobId }) => {
+const PendingCandidates = ({ jobId }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [isBulkMoving, setIsBulkMoving] = useState(false);
+  const [activeTabKey, setActiveTabKey] = useState("profile");
+  const [missingMandatoryDocuments, setMissingMandatoryDocuments] = useState(
+    []
+  );
+  const [missingOptionalDocuments, setMissingOptionalDocuments] = useState([]);
+
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
 
-  const [form] = Form.useForm();
-
-  const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
-    useUpdateCandidateStatusMutation();
+  const [moveCandidateStatus, { isLoading: isUpdatingStatus }] =
+    useMoveCandidateStatusMutation();
+  const [notifyCandidate, { isLoading: isNotifying }] =
+    useNotifyCandidateMutation();
 
   const {
-    data: screeningData,
+    data: pendingData,
     isLoading,
     error,
     refetch,
-  } = useGetScreeningCandidatesQuery({
+  } = useGetPendingCandidatesQuery({
     jobId,
     page: pagination.current,
     limit: pagination.pageSize,
   });
 
-  const [moveToPipeline, { isLoading: isMovingToPipeline }] =
-    useMoveToPipelineMutation();
-
-  const [filters, setFilters] = useState({
-    skills: [],
-    education: [],
-    location: "",
-    screeningStatus: [],
-  });
-
-  const { data: recruiterStages, isLoading: recruiterStagesLoading } =
-    useGetRecruiterStagesQuery(jobId);
-
   useEffect(() => {
-    if (screeningData) {
+    if (pendingData) {
       setPagination((prev) => ({
         ...prev,
-        total:
-          screeningData.total ||
-          screeningData.customFieldResponses?.length ||
-          0,
+        total: pendingData.totalItems || 0,
       }));
     }
-  }, [screeningData]);
+  }, [pendingData]);
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({
@@ -120,51 +100,25 @@ const ScreeningCandidates = ({ jobId }) => {
 
   const allCandidates = useMemo(() => {
     return (
-      screeningData?.customFieldResponses?.map((response) => ({
+      pendingData?.customFieldResponses?.map((response) => ({
         ...response.user,
+        _id: response.user._id,
         candidateStatus: response.status,
         applicationId: response._id,
         responses: response.responses,
         image: response.user?.image,
         workOrder: response.workOrder,
+        workOrderDocuments: response.workOrder?.documents || [],
+        uploadedDocuments: response.workOrderuploadedDocuments || [],
         interviewDetails: response.interviewDetails,
         createdAt: response.createdAt,
         updatedAt: response.updatedAt,
       })) || []
     );
-  }, [screeningData]);
+  }, [pendingData]);
 
-  const screeningCount = useMemo(() => {
+  const pendingCount = useMemo(() => {
     return allCandidates.length;
-  }, [allCandidates]);
-
-  const filterOptions = useMemo(() => {
-    const allSkills = new Set();
-    const allEducation = new Set();
-    const allLocations = new Set();
-
-    allCandidates.forEach((user) => {
-      if (user.skills && Array.isArray(user.skills)) {
-        user.skills.forEach((skill) => allSkills.add(skill.toLowerCase()));
-      }
-
-      if (user.education && Array.isArray(user.education)) {
-        user.education.forEach((edu) => {
-          if (edu.degree) allEducation.add(edu.degree);
-          if (edu.field) allEducation.add(edu.field);
-        });
-      }
-
-      if (user.location) {
-        allLocations.add(user.location);
-      }
-    });
-
-    return {
-      skills: Array.from(allSkills).sort(),
-      education: Array.from(allEducation).sort(),
-      locations: Array.from(allLocations).sort(),
-    };
   }, [allCandidates]);
 
   const filteredCandidates = useMemo(() => {
@@ -181,169 +135,50 @@ const ScreeningCandidates = ({ jobId }) => {
       );
     }
 
-    if (filters.skills.length > 0) {
-      candidates = candidates.filter((candidate) => {
-        const candidateSkills =
-          candidate.skills?.map((skill) => skill.toLowerCase()) || [];
-        return filters.skills.some((filterSkill) =>
-          candidateSkills.includes(filterSkill.toLowerCase())
-        );
-      });
-    }
-
-    if (filters.education.length > 0) {
-      candidates = candidates.filter((candidate) => {
-        const candidateEducation = candidate.education || [];
-        return candidateEducation.some((edu) =>
-          filters.education.some(
-            (filterEdu) =>
-              edu.degree?.toLowerCase().includes(filterEdu.toLowerCase()) ||
-              edu.field?.toLowerCase().includes(filterEdu.toLowerCase())
-          )
-        );
-      });
-    }
-
-    if (filters.location) {
-      candidates = candidates.filter((candidate) =>
-        candidate.location
-          ?.toLowerCase()
-          .includes(filters.location.toLowerCase())
-      );
-    }
-
     return candidates;
-  }, [allCandidates, searchTerm, filters]);
-
-  const clearAllFilters = () => {
-    setFilters({
-      skills: [],
-      education: [],
-      location: "",
-      screeningStatus: [],
-    });
-    setSearchTerm("");
-  };
-
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (filters.skills.length > 0) count++;
-    if (filters.education.length > 0) count++;
-    if (filters.location) count++;
-    if (filters.screeningStatus.length > 0) count++;
-    return count;
-  }, [filters]);
+  }, [allCandidates, searchTerm]);
 
   const handleViewProfile = (candidate) => {
     setSelectedCandidate(candidate);
+
+    // Check for missing documents when opening modal
+    const requiredDocs = candidate.workOrderDocuments || [];
+    const uploadedDocs = candidate.uploadedDocuments || [];
+
+    const mandatoryMissing = requiredDocs.filter(
+      (doc) =>
+        doc.isMandatory &&
+        !uploadedDocs.some((uploaded) => uploaded.documentName === doc.name)
+    );
+
+    const optionalMissing = requiredDocs.filter(
+      (doc) =>
+        !doc.isMandatory &&
+        !uploadedDocs.some((uploaded) => uploaded.documentName === doc.name)
+    );
+
+    setMissingMandatoryDocuments(mandatoryMissing);
+    setMissingOptionalDocuments(optionalMissing);
     setIsModalVisible(true);
+    setActiveTabKey("profile");
   };
 
-  const handleStatusUpdate = async (newStatus, additionalData = {}) => {
+  const handleStatusUpdate = async (newStatus) => {
     try {
       if (!selectedCandidate) return;
 
-      await updateCandidateStatus({
-        applicationId: selectedCandidate.applicationId,
+      await moveCandidateStatus({
+        id: selectedCandidate.applicationId, // Use applicationId instead of _id
         status: newStatus,
         jobId: jobId,
-        ...additionalData,
       }).unwrap();
 
-      const statusMessages = {
-        interview: "Interview scheduled successfully",
-        rejected: "Candidate rejected",
-        shortlisted: "Candidate shortlisted for next round",
-      };
-
-      message.success(
-        statusMessages[newStatus] || "Candidate status updated successfully"
-      );
+      message.success(`Candidate moved to ${newStatus} successfully`);
       refetch();
       setIsModalVisible(false);
-      setIsScheduleModalVisible(false);
     } catch (error) {
       console.error("Failed to update candidate status:", error);
       message.error(error.data?.message || "Failed to update candidate status");
-    }
-  };
-
-  const handleScheduleSubmit = (values) => {
-    const interviewDateTime = dayjs(
-      values.date.format("YYYY-MM-DD") + " " + values.time.format("HH:mm")
-    );
-
-    const scheduleData = {
-      interviewType: values.interviewType,
-      interviewDateTime: interviewDateTime.toISOString(),
-      interviewNotes: values.notes,
-      interviewLink: values.interviewLink,
-    };
-
-    handleStatusUpdate("interview", scheduleData);
-  };
-
-  const getScreeningStatusColor = (status) => {
-    const colors = {
-      screening: "blue",
-      interview: "orange",
-      shortlisted: "green",
-      rejected: "red",
-    };
-    return colors[status] || "default";
-  };
-
-  const handleMoveToPipeline = async () => {
-    try {
-      if (!selectedCandidate) return;
-
-      await moveToPipeline({
-        applicationId: selectedCandidate.applicationId,
-        jobId: jobId,
-        userId: selectedCandidate._id,
-      }).unwrap();
-
-      message.success("Candidate moved to pipeline successfully");
-      refetch();
-      setIsModalVisible(false);
-    } catch (error) {
-      console.error("Failed to move candidate to pipeline:", error);
-      message.error(
-        error.data?.message || "Failed to move candidate to pipeline"
-      );
-    }
-  };
-
-  const handleBulkMoveToPipeline = async () => {
-    if (selectedCandidates.length === 0) {
-      message.warning("Please select at least one candidate");
-      return;
-    }
-
-    setIsBulkMoving(true);
-    try {
-      const promises = selectedCandidates.map((candidateId) => {
-        const candidate = allCandidates.find((c) => c._id === candidateId);
-        return moveToPipeline({
-          applicationId: candidate.applicationId,
-          jobId: jobId,
-          userId: candidate._id,
-        }).unwrap();
-      });
-
-      await Promise.all(promises);
-      message.success(
-        `Moved ${selectedCandidates.length} candidates to pipeline successfully`
-      );
-      setSelectedCandidates([]);
-      refetch();
-    } catch (error) {
-      console.error("Failed to move candidates to pipeline:", error);
-      message.error(
-        error.data?.message || "Failed to move candidates to pipeline"
-      );
-    } finally {
-      setIsBulkMoving(false);
     }
   };
 
@@ -372,7 +207,181 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
-  if (isLoading || recruiterStagesLoading) {
+  const handleBulkStatusUpdate = async (newStatus) => {
+    if (selectedCandidates.length === 0) {
+      message.warning("Please select at least one candidate");
+      return;
+    }
+
+    setIsBulkMoving(true);
+    try {
+      const promises = selectedCandidates.map((candidateId) => {
+        const candidate = allCandidates.find((c) => c._id === candidateId);
+        return moveCandidateStatus({
+          id: candidate.applicationId, // Use applicationId instead of _id
+          status: newStatus,
+          jobId: jobId,
+        }).unwrap();
+      });
+
+      await Promise.all(promises);
+      message.success(
+        `Moved ${selectedCandidates.length} candidates to ${newStatus} successfully`
+      );
+      setSelectedCandidates([]);
+      refetch();
+    } catch (error) {
+      console.error("Failed to update candidates status:", error);
+      message.error(
+        error.data?.message || "Failed to update candidates status"
+      );
+    } finally {
+      setIsBulkMoving(false);
+    }
+  };
+
+  const handleNotifyCandidate = async () => {
+    if (!selectedCandidate) return;
+
+    try {
+      await notifyCandidate({
+        userId: selectedCandidate._id,
+        workOrderId: selectedCandidate.workOrder?._id,
+        customFieldId: selectedCandidate.applicationId,
+      }).unwrap();
+
+      message.success("Notification sent successfully");
+    } catch (error) {
+      console.error("Failed to send notification:", error);
+      message.error(error.data?.message || "Failed to send notification");
+    }
+  };
+
+  const renderDocumentsTab = () => {
+    const requiredDocs = selectedCandidate?.workOrderDocuments || [];
+    const uploadedDocs = selectedCandidate?.uploadedDocuments || [];
+
+    return (
+      <div>
+        <Title level={5} style={{ marginBottom: 16 }}>
+          Required Documents
+          <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+            (Mandatory documents are marked with *)
+          </Text>
+        </Title>
+
+        {requiredDocs.length > 0 ? (
+          <List
+            itemLayout="horizontal"
+            dataSource={requiredDocs}
+            renderItem={(doc) => {
+              const uploadedDoc = uploadedDocs.find(
+                (d) => d.documentName === doc.name
+              );
+              return (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={
+                      uploadedDoc ? (
+                        <FileDoneOutlined
+                          style={{ color: "#52c41a", fontSize: 20 }}
+                        />
+                      ) : (
+                        <FileOutlined
+                          style={{
+                            color: doc.isMandatory ? "#ff4d4f" : "#faad14",
+                            fontSize: 20,
+                          }}
+                        />
+                      )
+                    }
+                    title={
+                      <Space>
+                        <Text>
+                          {doc.name}
+                          {doc.isMandatory && <Text type="danger">*</Text>}
+                        </Text>
+                        {uploadedDoc ? (
+                          <Tag color="green">Uploaded</Tag>
+                        ) : (
+                          <Tag color={doc.isMandatory ? "red" : "orange"}>
+                            {doc.isMandatory
+                              ? "Missing (Required)"
+                              : "Missing (Optional)"}
+                          </Tag>
+                        )}
+                      </Space>
+                    }
+                    description={
+                      <Descriptions size="small" column={1}>
+                        <Descriptions.Item label="Description">
+                          {doc.description || "No description provided"}
+                        </Descriptions.Item>
+                        {uploadedDoc && (
+                          <>
+                            <Descriptions.Item label="File Name">
+                              {uploadedDoc.fileName}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Uploaded At">
+                              {new Date(
+                                uploadedDoc.uploadedAt
+                              ).toLocaleString()}
+                            </Descriptions.Item>
+                          </>
+                        )}
+                      </Descriptions>
+                    }
+                  />
+                  {uploadedDoc && (
+                    <Button
+                      type="link"
+                      href={uploadedDoc.fileUrl}
+                      target="_blank"
+                      icon={<FileOutlined />}
+                    >
+                      View
+                    </Button>
+                  )}
+                </List.Item>
+              );
+            }}
+          />
+        ) : (
+          <Text type="secondary">No documents required for this position</Text>
+        )}
+
+        <Divider />
+
+        <Title level={5} style={{ marginBottom: 16 }}>
+          Resume
+        </Title>
+        {selectedCandidate?.resumeUrl ? (
+          <Button
+            type="link"
+            href={selectedCandidate.resumeUrl}
+            target="_blank"
+            icon={<FileOutlined />}
+          >
+            View Resume
+          </Button>
+        ) : (
+          <Text type="secondary">No resume uploaded</Text>
+        )}
+      </div>
+    );
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      "in-pending": "orange",
+      screening: "blue",
+      selected: "green",
+      rejected: "red",
+    };
+    return colors[status] || "default";
+  };
+
+  if (isLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
         <div style={{ textAlign: "center", padding: "40px 0" }}>
@@ -398,19 +407,18 @@ const ScreeningCandidates = ({ jobId }) => {
                 color: "#da2c46",
               }}
             >
-              Screening Candidates ({screeningCount})
+              Pending Candidates ({pendingCount})
             </Title>
           </Col>
           <Col>
             {selectedCandidates.length > 0 && (
               <Button
                 type="primary"
-                icon={<ArrowRightOutlined />}
-                onClick={handleBulkMoveToPipeline}
+                onClick={() => handleBulkStatusUpdate("screening")}
                 loading={isBulkMoving}
                 style={{ background: "#da2c46" }}
               >
-                Move Selected ({selectedCandidates.length})
+                Move to Screening ({selectedCandidates.length})
               </Button>
             )}
           </Col>
@@ -585,12 +593,12 @@ const ScreeningCandidates = ({ jobId }) => {
                               />
 
                               <Tag
-                                color={getScreeningStatusColor(
+                                color={getStatusColor(
                                   candidate.candidateStatus
                                 )}
                               >
                                 {candidate.candidateStatus?.toUpperCase() ||
-                                  "SCREENING"}
+                                  "IN-PENDING"}
                               </Tag>
                             </div>
 
@@ -719,9 +727,9 @@ const ScreeningCandidates = ({ jobId }) => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                {searchTerm || activeFiltersCount > 0
+                {searchTerm
                   ? "No candidates match your search criteria"
-                  : "No screening candidates found"}
+                  : "No pending candidates found"}
               </span>
             }
           />
@@ -730,7 +738,7 @@ const ScreeningCandidates = ({ jobId }) => {
 
       {/* Candidate Details Modal */}
       <Modal
-        title="Candidate Details"
+        title={`Candidate Details - ${selectedCandidate?.fullName || ""}`}
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
@@ -744,100 +752,131 @@ const ScreeningCandidates = ({ jobId }) => {
       >
         {selectedCandidate && (
           <>
-            <Descriptions
-              bordered
-              column={window.innerWidth < 768 ? 1 : 2}
-              size="small"
-            >
-              <Descriptions.Item label="Full Name" span={2}>
-                {selectedCandidate.fullName}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {selectedCandidate.email}
-              </Descriptions.Item>
-              <Descriptions.Item label="Phone">
-                {selectedCandidate.phone}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                <Tag
-                  color={getScreeningStatusColor(
-                    selectedCandidate.candidateStatus
-                  )}
+            <Tabs activeKey={activeTabKey} onChange={setActiveTabKey}>
+              <TabPane tab="Profile" key="profile">
+                <Descriptions
+                  bordered
+                  column={window.innerWidth < 768 ? 1 : 2}
+                  size="small"
                 >
-                  {selectedCandidate.candidateStatus?.toUpperCase() ||
-                    "SCREENING"}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Location">
-                {selectedCandidate.location}
-              </Descriptions.Item>
-              <Descriptions.Item label="Title">
-                {selectedCandidate.title}
-              </Descriptions.Item>
-              <Descriptions.Item label="Work Order">
-                {selectedCandidate.workOrder?.title || "N/A"}
-              </Descriptions.Item>
+                  <Descriptions.Item label="Full Name" span={2}>
+                    {selectedCandidate.fullName}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Email">
+                    {selectedCandidate.email}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Phone">
+                    {selectedCandidate.phone}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Status">
+                    <Tag
+                      color={getStatusColor(selectedCandidate.candidateStatus)}
+                    >
+                      {selectedCandidate.candidateStatus?.toUpperCase() ||
+                        "IN-PENDING"}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Location">
+                    {selectedCandidate.location}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Title">
+                    {selectedCandidate.title}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Work Order">
+                    {selectedCandidate.workOrder?.title || "N/A"}
+                  </Descriptions.Item>
 
-              <Descriptions.Item label="Skills" span={2}>
-                <Space wrap>
-                  {selectedCandidate.skills?.map((skill, index) => (
-                    <Tag key={index}>{skill}</Tag>
-                  ))}
-                </Space>
-              </Descriptions.Item>
+                  <Descriptions.Item label="Skills" span={2}>
+                    <Space wrap>
+                      {selectedCandidate.skills?.map((skill, index) => (
+                        <Tag key={index}>{skill}</Tag>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
 
-              <Descriptions.Item label="Education" span={2}>
-                {selectedCandidate.education?.length > 0 ? (
-                  selectedCandidate.education.map((edu, index) => (
-                    <div key={index} style={{ marginBottom: 8 }}>
-                      <Text strong>
-                        {edu.degree} in {edu.field}
-                      </Text>
-                      <br />
-                      <Text type="secondary">
-                        {edu.institution} ({edu.year})
-                      </Text>
-                    </div>
-                  ))
-                ) : (
-                  <Text type="secondary">No education information</Text>
-                )}
-              </Descriptions.Item>
+                  <Descriptions.Item label="Education" span={2}>
+                    {selectedCandidate.education?.length > 0 ? (
+                      selectedCandidate.education.map((edu, index) => (
+                        <div key={index} style={{ marginBottom: 8 }}>
+                          <Text strong>
+                            {edu.degree} in {edu.field}
+                          </Text>
+                          <br />
+                          <Text type="secondary">
+                            {edu.institution} ({edu.year})
+                          </Text>
+                        </div>
+                      ))
+                    ) : (
+                      <Text type="secondary">No education information</Text>
+                    )}
+                  </Descriptions.Item>
 
-              <Descriptions.Item label="Work Experience" span={2}>
-                {selectedCandidate.workExperience?.length > 0 ? (
-                  selectedCandidate.workExperience.map((exp, index) => (
-                    <div key={index} style={{ marginBottom: 8 }}>
-                      <Text strong>
-                        {exp.title} at {exp.company}
-                      </Text>
-                      <br />
-                      <Text type="secondary">{exp.duration}</Text>
-                      <br />
-                      <Text>{exp.description}</Text>
-                    </div>
-                  ))
-                ) : (
-                  <Text type="secondary">No work experience</Text>
-                )}
-              </Descriptions.Item>
-            </Descriptions>
+                  <Descriptions.Item label="Work Experience" span={2}>
+                    {selectedCandidate.workExperience?.length > 0 ? (
+                      selectedCandidate.workExperience.map((exp, index) => (
+                        <div key={index} style={{ marginBottom: 8 }}>
+                          <Text strong>
+                            {exp.title} at {exp.company}
+                          </Text>
+                          <br />
+                          <Text type="secondary">{exp.duration}</Text>
+                          <br />
+                          <Text>{exp.description}</Text>
+                        </div>
+                      ))
+                    ) : (
+                      <Text type="secondary">No work experience</Text>
+                    )}
+                  </Descriptions.Item>
+                </Descriptions>
+              </TabPane>
+              <TabPane tab="Documents" key="documents">
+                {renderDocumentsTab()}
+              </TabPane>
+            </Tabs>
 
-            <Divider orientation="left" style={{ margin: "16px 0" }}>
-              {/* Move to Pipeline */}
-            </Divider>
-
-            <div style={{ marginBottom: "16px" }}>
-              <Button
-                type="primary"
-                icon={<ArrowRightOutlined />}
-                onClick={handleMoveToPipeline}
-                loading={isMovingToPipeline}
-                style={{ background: "#da2c46" }}
-              >
-                Move to Pipeline
-              </Button>
-            </div>
+            {(missingMandatoryDocuments.length > 0 ||
+              missingOptionalDocuments.length > 0) && (
+              <Alert
+                message={
+                  missingMandatoryDocuments.length > 0
+                    ? `Missing ${missingMandatoryDocuments.length} mandatory document(s)`
+                    : `Missing ${missingOptionalDocuments.length} optional document(s)`
+                }
+                description={
+                  <div>
+                    {missingMandatoryDocuments.length > 0 && (
+                      <div>
+                        <Text strong>Mandatory Documents:</Text>
+                        <ul>
+                          {missingMandatoryDocuments.map((doc, index) => (
+                            <li key={`mandatory-${index}`}>
+                              {doc.name} <Text type="danger">(Required)</Text>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {missingOptionalDocuments.length > 0 && (
+                      <div>
+                        <Text strong>Optional Documents:</Text>
+                        <ul>
+                          {missingOptionalDocuments.map((doc, index) => (
+                            <li key={`optional-${index}`}>{doc.name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                }
+                type={
+                  missingMandatoryDocuments.length > 0 ? "error" : "warning"
+                }
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
 
             <Divider />
 
@@ -858,8 +897,25 @@ const ScreeningCandidates = ({ jobId }) => {
                   gap: "8px",
                 }}
               >
-                <Button danger onClick={() => handleStatusUpdate("rejected")}>
-                  <CloseOutlined /> Reject
+                {(missingMandatoryDocuments.length > 0 ||
+                  missingOptionalDocuments.length > 0 ||
+                  (selectedCandidate?.workOrderDocuments?.length > 0 &&
+                    selectedCandidate?.uploadedDocuments?.length === 0)) && (
+                  <Button
+                    type="primary"
+                    style={{ backgroundColor: "#da2c46" }}
+                    onClick={handleNotifyCandidate}
+                    loading={isNotifying}
+                  >
+                    Notify Candidate
+                  </Button>
+                )}
+                <Button
+                  type="primary"
+                  onClick={() => handleStatusUpdate("screening")}
+                  style={{ backgroundColor: "#da2c46" }}
+                >
+                  Move to Screening
                 </Button>
               </div>
             </div>
@@ -870,4 +926,4 @@ const ScreeningCandidates = ({ jobId }) => {
   );
 };
 
-export default ScreeningCandidates;
+export default PendingCandidates;

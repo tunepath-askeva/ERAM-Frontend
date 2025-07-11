@@ -87,6 +87,7 @@ const EditWorkOrder = () => {
   const [customStages, setCustomStages] = useState({});
   const [draggedStage, setDraggedStage] = useState(null);
   const [stageApprovers, setStageApprovers] = useState({});
+  const [documents, setDocuments] = useState([]);
   const navigate = useNavigate();
 
   const { data: approvalData } = useGetApprovalQuery();
@@ -134,36 +135,40 @@ const EditWorkOrder = () => {
           }
         };
 
-        const initialCustomStages = {};
+        // Initialize pipeline stage dates from API response
         const initialStageDates = {};
-        const initialStageApprovers = {};
+        const initialCustomStages = {};
 
         if (workOrder.pipelineStageTimeline) {
           workOrder.pipelineStageTimeline.forEach((timeline) => {
-            if (!initialStageDates[timeline.pipelineId]) {
-              initialStageDates[timeline.pipelineId] = [];
+            const pipelineId = timeline.pipelineId._id;
+
+            if (!initialStageDates[pipelineId]) {
+              initialStageDates[pipelineId] = [];
             }
 
-            initialStageDates[timeline.pipelineId].push({
+            initialStageDates[pipelineId].push({
               stageId: timeline.stageId,
+              stageName: timeline.stageName,
               startDate: timeline.startDate,
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
               approvalId: timeline.approvalId?._id || null,
               recruiterId: timeline.recruiterId?._id || null,
+              isCustomStage: timeline.isCustomStage || false,
             });
 
             if (timeline.isCustomStage) {
-              if (!initialCustomStages[timeline.pipelineId]) {
-                initialCustomStages[timeline.pipelineId] = [];
+              if (!initialCustomStages[pipelineId]) {
+                initialCustomStages[pipelineId] = [];
               }
 
               if (
-                !initialCustomStages[timeline.pipelineId].some(
+                !initialCustomStages[pipelineId].some(
                   (s) => s.id === timeline.stageId
                 )
               ) {
-                initialCustomStages[timeline.pipelineId].push({
+                initialCustomStages[pipelineId].push({
                   id: timeline.stageId,
                   name: timeline.stageName,
                   description: "",
@@ -176,10 +181,17 @@ const EditWorkOrder = () => {
 
         setCustomStages(initialCustomStages);
         setPipelineStageDates(initialStageDates);
-        setSelectedPipelines(workOrder.pipeline.map((p) => p._id));
+        setSelectedPipelines(
+          Array.isArray(workOrder.pipeline)
+            ? workOrder.pipeline.map((p) => p._id)
+            : [workOrder.pipeline._id]
+        );
 
         const formData = {
           ...workOrder,
+          pipeline: Array.isArray(workOrder.pipeline)
+            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
+            : [workOrder.pipeline],
           numberOfCandidates: workOrder.numberOfCandidate,
           startDate: formatDate(workOrder.startDate),
           endDate: formatDate(workOrder.endDate),
@@ -190,9 +202,6 @@ const EditWorkOrder = () => {
                 typeof recruiter === "object" ? recruiter._id : recruiter
               )
             : [workOrder.assignedRecruiters],
-          pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline],
           project:
             typeof workOrder.project === "object"
               ? workOrder.project._id
@@ -213,6 +222,14 @@ const EditWorkOrder = () => {
             id:
               field.id ||
               `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          })) || []
+        );
+        setDocuments(
+          workOrderData.workOrder.documents?.map((doc) => ({
+            id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
+            name: doc.name,
+            description: doc.description,
+            isMandatory: true,
           })) || []
         );
       } catch (error) {
@@ -267,6 +284,7 @@ const EditWorkOrder = () => {
 
   const handlePipelineChange = (selectedPipelineIds) => {
     setSelectedPipelines(selectedPipelineIds);
+    jobForm.setFieldsValue({ pipeline: selectedPipelineIds });
 
     const newStageDates = { ...pipelineStageDates };
     selectedPipelineIds.forEach((pipeId) => {
@@ -414,7 +432,7 @@ const EditWorkOrder = () => {
 
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: new ObjectId().toString(), // Generate a valid ObjectId string
+      id: new ObjectId().toString(),
       name: `New Stage`,
       description: "",
       isCustom: true,
@@ -576,6 +594,26 @@ const EditWorkOrder = () => {
     updateApplicationField(fieldId, { options: newOptions });
   };
 
+  const addDocument = () => {
+    const newDocument = {
+      id: Date.now(),
+      name: "",
+      description: "",
+      isMandatory: true,
+    };
+    setDocuments([...documents, newDocument]);
+  };
+
+  const updateDocument = (id, updates) => {
+    setDocuments((docs) =>
+      docs.map((doc) => (doc.id === id ? { ...doc, ...updates } : doc))
+    );
+  };
+
+  const removeDocument = (id) => {
+    setDocuments((docs) => docs.filter((doc) => doc.id !== id));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -608,10 +646,15 @@ const EditWorkOrder = () => {
       const workOrderPayload = {
         ...jobData,
         ...values,
+        pipeline: selectedPipelines,
         customFields: applicationFields,
         workOrderStatus: "published",
         pipelineStageTimeline,
-
+        documents: documents.map((doc) => ({
+          name: doc.name,
+          description: doc.description,
+          isMandatory: doc.isMandatory,
+        })),
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -789,6 +832,38 @@ const EditWorkOrder = () => {
                   >
                     {skill}
                   </Tag>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {documents?.length > 0 && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Required Documents
+              </h4>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                {documents.map((doc, index) => (
+                  <div
+                    key={index}
+                    style={{ display: "flex", alignItems: "center" }}
+                  >
+                    <span style={{ marginRight: "4px" }}>
+                      {doc.isMandatory ? "•" : "◦"}
+                    </span>
+                    <span style={{ fontSize: "12px" }}>
+                      <strong>{doc.name}</strong>
+                      {doc.description && ` - ${doc.description}`}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1195,20 +1270,24 @@ const EditWorkOrder = () => {
 
     if (!currentPipelineForDates) return null;
 
+    // Combine existing stages with custom stages
     const allStages = [
-      ...(customStages[currentPipelineForDates._id] || []),
       ...(currentPipelineForDates.stages || []),
+      ...(customStages[currentPipelineForDates._id] || []),
     ];
 
-    const sortedStages = allStages.sort((a, b) => {
-      const aIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
-        (d) => d.stageId === (a._id || a.id)
-      );
-      const bIndex = pipelineStageDates[currentPipelineForDates._id]?.findIndex(
-        (d) => d.stageId === (b._id || b.id)
-      );
-      return (aIndex || 0) - (bIndex || 0);
-    });
+    // Get all approval levels already selected in this pipeline
+    const usedApprovalLevels = new Set(
+      pipelineStageDates[currentPipelineForDates._id]
+        ?.filter((stage) => stage.approvalId)
+        .map((stage) => stage.approvalId)
+    );
+
+    // Get timeline data for the current pipeline from API response
+    const pipelineTimeline =
+      workOrderData?.workOrder?.pipelineStageTimeline?.filter(
+        (timeline) => timeline.pipelineId._id === currentPipelineForDates._id
+      ) || [];
 
     return (
       <Modal
@@ -1243,11 +1322,30 @@ const EditWorkOrder = () => {
         }}
       >
         <div style={{ padding: "16px 0" }}>
-          {sortedStages.map((stage) => {
+          {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
-            const dateEntry = pipelineStageDates[
-              currentPipelineForDates._id
-            ]?.find((d) => d.stageId === stageId);
+            // Find timeline data for this stage
+            const timelineData = pipelineTimeline.find(
+              (t) => t.stageId === stageId
+            );
+
+            // Get date entry from local state or fallback to API data
+            const dateEntry =
+              pipelineStageDates[currentPipelineForDates._id]?.find(
+                (d) => d.stageId === stageId
+              ) ||
+              (timelineData
+                ? {
+                    stageId: timelineData.stageId,
+                    startDate: timelineData.startDate,
+                    endDate: timelineData.endDate,
+                    dependencyType: timelineData.dependencyType,
+                    approvalId: timelineData.approvalId?._id,
+                    recruiterId: timelineData.recruiterId?._id,
+                  }
+                : null);
+
+            const availableApprovalLevels = approvalLevels;
 
             return (
               <Card
@@ -1269,7 +1367,11 @@ const EditWorkOrder = () => {
                         gap: "8px",
                       }}
                     >
-                      <span style={{ cursor: "grab" }}>⋮⋮</span>
+                      <span
+                        style={{ cursor: stage.isCustom ? "grab" : "default" }}
+                      >
+                        ⋮⋮
+                      </span>
                       {stage.isCustom ? (
                         <Input
                           value={stage.name}
@@ -1325,10 +1427,11 @@ const EditWorkOrder = () => {
                   marginBottom: 16,
                   cursor: stage.isCustom ? "move" : "default",
                 }}
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, stage)}
+                draggable={stage.isCustom}
+                onDragStart={(e) => stage.isCustom && handleDragStart(e, stage)}
                 onDragOver={handleDragOver}
                 onDrop={(e) =>
+                  stage.isCustom &&
                   handleDrop(e, stage, currentPipelineForDates._id)
                 }
               >
@@ -1396,11 +1499,7 @@ const EditWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select recruiter"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.recruiterId || undefined
-                        }
+                        value={dateEntry?.recruiterId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -1431,11 +1530,7 @@ const EditWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select approval level"
-                        value={
-                          pipelineStageDates[currentPipelineForDates._id]?.find(
-                            (d) => d.stageId === stageId
-                          )?.approvalId || undefined
-                        }
+                        value={dateEntry?.approvalId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
@@ -2027,6 +2122,81 @@ const EditWorkOrder = () => {
               <Form.Item name="benefits" label="Benefits">
                 <TextArea rows={4} placeholder="Enter job benefits" />
               </Form.Item>
+            </Card>
+
+            <Card
+              type="inner"
+              title="Required Documents"
+              style={{ marginBottom: "16px" }}
+            >
+              <div style={{ marginBottom: "16px" }}>
+                {documents.map((doc, index) => (
+                  <Card
+                    key={doc.id}
+                    size="small"
+                    style={{ marginBottom: "12px" }}
+                    title={`Document ${index + 1}`}
+                    extra={
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeDocument(doc.id)}
+                      />
+                    }
+                  >
+                    <Row gutter={[16, 8]}>
+                      <Col span={24}>
+                        <Form.Item label="Document Name">
+                          <Input
+                            value={doc.name}
+                            onChange={(e) =>
+                              updateDocument(doc.id, { name: e.target.value })
+                            }
+                            placeholder="e.g., Resume, Cover Letter, ID Proof"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item label="Description">
+                          <Input.TextArea
+                            value={doc.description}
+                            onChange={(e) =>
+                              updateDocument(doc.id, {
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Enter document description or instructions"
+                            rows={2}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item>
+                          <Checkbox
+                            checked={doc.isMandatory}
+                            onChange={(e) =>
+                              updateDocument(doc.id, {
+                                isMandatory: e.target.checked,
+                              })
+                            }
+                          >
+                            Mandatory Document
+                          </Checkbox>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+                <Button
+                  type="dashed"
+                  onClick={addDocument}
+                  icon={<PlusOutlined />}
+                  block
+                >
+                  Add Required Document
+                </Button>
+              </div>
             </Card>
 
             <div
