@@ -24,13 +24,12 @@ export const adminApi = createApi({
       }),
     }),
     getPipelines: builder.query({
-      query: ({ searchTerm, page, pageSize }) => {
+      query: ({ searchTerm, page = 1, pageSize = 10 } = {}) => {
         let url = "/Pipeline?";
         if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
-        if (page) url += `page=${page}&`;
-        if (pageSize) url += `limit=${pageSize}&`;
+        url += `page=${page}&limit=${pageSize}`;
         return {
-          url: url.slice(0, -1),
+          url,
           method: "GET",
         };
       },
@@ -148,13 +147,12 @@ export const adminApi = createApi({
       }),
     }),
     getRecruiters: builder.query({
-      query: ({ searchTerm, page, pageSize }) => {
+      query: ({ searchTerm, page = 1, pageSize = 10 } = {}) => {
         let url = "/recruiters?";
         if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
-        if (page) url += `page=${page}&`;
-        if (pageSize) url += `limit=${pageSize}&`;
+        url += `page=${page}&limit=${pageSize}`;
         return {
-          url: url.slice(0, -1),
+          url,
           method: "GET",
         };
       },
@@ -227,6 +225,33 @@ export const adminApi = createApi({
       },
       providesTags: ["Project"],
     }),
+    getProjects: builder.query({
+      query: ({ searchTerm = "", page, pageSize } = {}) => {
+        let url = "/projects?";
+
+        if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
+
+        const isPaginated = page !== undefined && pageSize !== undefined;
+
+        if (isPaginated) {
+          url += `page=${page}&limit=${pageSize}&`;
+        }
+
+        return {
+          url: url.slice(0, -1),
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return {
+          allProjects: response.projects || response.allProjects || [],
+          totalCount: response.totalCount ?? 0,
+          totalPages: response.totalPages ?? 0,
+        };
+      },
+      providesTags: ["Project"],
+    }),
+
     deleteProject: builder.mutation({
       query: (id) => ({
         url: `/project/${id}`,
@@ -304,21 +329,28 @@ export const adminApi = createApi({
       }),
     }),
     getApproval: builder.query({
-      query: (params = {}) => {
-        // Add default empty object
-        let url = "/approval?";
-        if (params.searchTerm)
-          url += `search=${encodeURIComponent(params.searchTerm)}&`;
-        if (params.page) url += `page=${params.page}&`;
-        if (params.pageSize) url += `limit=${params.pageSize}&`;
+      query: ({ searchTerm = "", page, pageSize } = {}) => {
+        let url = "/approval";
+        const queryParams = [];
+
+        if (searchTerm)
+          queryParams.push(`search=${encodeURIComponent(searchTerm)}`);
+        if (page !== undefined) queryParams.push(`page=${page}`);
+        if (pageSize !== undefined) queryParams.push(`limit=${pageSize}`);
+
+        if (queryParams.length > 0) {
+          url += `?${queryParams.join("&")}`;
+        }
+
         return {
-          url: url.slice(0, -1),
+          url,
           method: "GET",
         };
       },
+
       transformResponse: (response) => {
         return {
-          approvals: response.approvals, 
+          approvals: response.data?.approvals || response.approvals || [],
           total: response.total,
           totalPages: response.totalPages,
         };

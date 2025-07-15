@@ -90,7 +90,10 @@ const EditWorkOrder = () => {
   const [documents, setDocuments] = useState([]);
   const navigate = useNavigate();
 
-  const { data: approvalData } = useGetApprovalQuery();
+  const { data: approvalData, isLoading: isLoadingApprovals } =
+    useGetApprovalQuery({
+      includePagination: false,
+    });
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
@@ -209,6 +212,9 @@ const EditWorkOrder = () => {
           requiredSkills: Array.isArray(workOrder.requiredSkills)
             ? workOrder.requiredSkills
             : [],
+          qualification: workOrder.qualification || "Qualification",
+          keyResponsibilities:
+            workOrder.keyResponsibilities || "Responsibilities",
           isCommon: workOrder.isCommon || false,
           isActive: workOrder.isActive === "active",
         };
@@ -760,8 +766,8 @@ const EditWorkOrder = () => {
             </p>
           </div>
 
-          <Row gutter={8} style={{ marginBottom: "12px" }}>
-            <Col span={12}>
+          {displayData?.keyResponsibilities && (
+            <div style={{ marginBottom: "12px" }}>
               <h4
                 style={{
                   margin: "0 0 2px 0",
@@ -769,11 +775,34 @@ const EditWorkOrder = () => {
                   fontWeight: "600",
                 }}
               >
-                Experience
+                Key Responsibilities
               </h4>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                {displayData?.Experience || "0"} years
+              <p style={{ fontSize: "12px", whiteSpace: "pre-wrap" }}>
+                {displayData.keyResponsibilities}
               </p>
+            </div>
+          )}
+
+          <Row gutter={8} style={{ marginBottom: "12px" }}>
+            <Col span={12}>
+              {displayData?.experienceMin !== undefined &&
+                displayData?.experienceMax !== undefined && (
+                  <div style={{ marginBottom: "12px" }}>
+                    <h4
+                      style={{
+                        margin: "0 0 2px 0",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Experience
+                    </h4>
+                    <p style={{ margin: 0, fontSize: "12px" }}>
+                      {displayData.experienceMin} - {displayData.experienceMax}{" "}
+                      years
+                    </p>
+                  </div>
+                )}
             </Col>
             <Col span={12}>
               <h4
@@ -791,22 +820,24 @@ const EditWorkOrder = () => {
             </Col>
           </Row>
 
-          {displayData?.annualSalary && (
-            <div style={{ marginBottom: "12px" }}>
-              <h4
-                style={{
-                  margin: "0 0 2px 0",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                }}
-              >
-                Annual Salary
-              </h4>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                ${displayData.annualSalary.toLocaleString()}
-              </p>
-            </div>
-          )}
+          {displayData?.salaryMin !== undefined &&
+            displayData?.salaryMax !== undefined && (
+              <div style={{ marginBottom: "12px" }}>
+                <h4
+                  style={{
+                    margin: "0 0 2px 0",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Salary Range
+                </h4>
+                <p style={{ margin: 0, fontSize: "12px" }}>
+                  SAR {displayData.salaryMin?.toLocaleString()} - SAR{" "}
+                  {displayData.salaryMax?.toLocaleString()}
+                </p>
+              </div>
+            )}
 
           {displayData?.requiredSkills?.length > 0 && (
             <div style={{ marginBottom: "12px" }}>
@@ -889,6 +920,23 @@ const EditWorkOrder = () => {
                 }}
               >
                 {displayData.jobRequirements}
+              </p>
+            </div>
+          )}
+
+          {displayData?.qualification && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Qualification
+              </h4>
+              <p style={{ fontSize: "12px", whiteSpace: "pre-wrap" }}>
+                {displayData.qualification}
               </p>
             </div>
           )}
@@ -1259,7 +1307,7 @@ const EditWorkOrder = () => {
 
   const renderPipelineDatesModal = () => {
     const approvalLevels =
-      approvalData?.aprovals?.map((approval) => ({
+      approvalData?.approvals?.map((approval) => ({
         id: approval._id,
         name: approval.groupName,
       })) || [];
@@ -1958,6 +2006,16 @@ const EditWorkOrder = () => {
                   placeholder="Enter detailed job description"
                 />
               </Form.Item>
+
+              <Form.Item
+                name="keyResponsibilities"
+                label="Key Responsibilities"
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="Describe key responsibilities..."
+                />
+              </Form.Item>
             </Card>
 
             {/* Job Details */}
@@ -2007,14 +2065,25 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={8}>
                   <Form.Item
-                    name="Experience"
-                    label="Required Experience (years)"
+                    name="experienceMin"
+                    label="Minimum Experience (Years)"
                   >
                     <InputNumber
-                      min={0}
-                      max={50}
-                      placeholder="Years of experience"
                       style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter min experience"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="experienceMax"
+                    label="Maximum Experience (Years)"
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter max experience"
                     />
                   </Form.Item>
                 </Col>
@@ -2031,14 +2100,20 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="annualSalary" label="Salary ($)">
+                  <Form.Item name="salaryMin" label="Minimum Salary (SAR)">
                     <InputNumber
-                      min={0}
-                      formatter={(value) =>
-                        `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter minimum salary"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="salaryMax" label="Maximum Salary (SAR)">
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter maximum salary"
                     />
                   </Form.Item>
                 </Col>
@@ -2116,6 +2191,13 @@ const EditWorkOrder = () => {
                 <TextArea
                   rows={4}
                   placeholder="Enter detailed job requirements"
+                />
+              </Form.Item>
+
+              <Form.Item name="qualification" label="Qualification">
+                <TextArea
+                  rows={3}
+                  placeholder="List required qualifications..."
                 />
               </Form.Item>
 

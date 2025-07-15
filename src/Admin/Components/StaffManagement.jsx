@@ -293,7 +293,6 @@ const StaffManagement = () => {
                         size="small"
                         icon={<EyeOutlined />}
                         onClick={() => handleViewStaff(staffMember)}
-                        style={{ color: "#1890ff" }}
                       />
                     </Tooltip>
                     <Tooltip title="Edit Staff">
@@ -302,7 +301,6 @@ const StaffManagement = () => {
                         size="small"
                         icon={<EditOutlined />}
                         onClick={() => showEditModal(staffMember)}
-                        style={{ color: "#52c41a" }}
                       />
                     </Tooltip>
                     <Tooltip title="Delete Staff">

@@ -266,7 +266,6 @@ const ClientsManagement = () => {
                         size="small"
                         icon={<EyeOutlined />}
                         onClick={() => handleViewClient(client)}
-                        style={{ color: "#1890ff" }}
                       />
                     </Tooltip>
                     <Tooltip title="Edit Client">
@@ -275,7 +274,6 @@ const ClientsManagement = () => {
                         size="small"
                         icon={<EditOutlined />}
                         onClick={() => showEditModal(client)}
-                        style={{ color: "#52c41a" }}
                       />
                     </Tooltip>
                     <Tooltip title="Delete Client">

@@ -85,7 +85,10 @@ const AddWorkOrder = () => {
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const navigate = useNavigate();
 
-  const { data: approvalData } = useGetApprovalQuery();
+  const { data: approvalData, isLoading: isLoadingApprovals } =
+    useGetApprovalQuery({
+      includePagination: false,
+    });
   const { data: Branch } = useGetAdminBranchQuery();
   const { data: recruiters } = useGetRecruitersQuery();
   const { data: projects } = useGetProjectsQuery();
@@ -602,8 +605,8 @@ const AddWorkOrder = () => {
           </p>
         </div>
 
-        <Row gutter={8} style={{ marginBottom: "12px" }}>
-          <Col span={12}>
+        {jobData?.keyResponsibilities && (
+          <div style={{ marginBottom: "12px" }}>
             <h4
               style={{
                 margin: "0 0 2px 0",
@@ -611,10 +614,32 @@ const AddWorkOrder = () => {
                 fontWeight: "600",
               }}
             >
-              Experience
+              Key Responsibilities
             </h4>
+            <p style={{ fontSize: "12px" }}>{jobData.keyResponsibilities}</p>
+          </div>
+        )}
+
+        <Row gutter={8} style={{ marginBottom: "12px" }}>
+          <Col span={12}>
             <p style={{ margin: "0", fontSize: "12px" }}>
-              {jobData?.Experience || "0"} years
+              {jobData?.experienceMin !== undefined &&
+                jobData?.experienceMax !== undefined && (
+                  <div style={{ marginBottom: "12px" }}>
+                    <h4
+                      style={{
+                        margin: "0 0 2px 0",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Experience
+                    </h4>
+                    <p style={{ margin: 0, fontSize: "12px" }}>
+                      {jobData.experienceMin} - {jobData.experienceMax} years
+                    </p>
+                  </div>
+                )}
             </p>
           </Col>
           <Col span={12}>
@@ -633,22 +658,24 @@ const AddWorkOrder = () => {
           </Col>
         </Row>
 
-        {jobData?.annualSalary && (
-          <div style={{ marginBottom: "12px" }}>
-            <h4
-              style={{
-                margin: "0 0 2px 0",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
-              Annual Salary
-            </h4>
-            <p style={{ margin: "0", fontSize: "12px" }}>
-              ${jobData.annualSalary.toLocaleString()}
-            </p>
-          </div>
-        )}
+        {jobData?.salaryMin !== undefined &&
+          jobData?.salaryMax !== undefined && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 2px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Salary Range
+              </h4>
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                SAR {jobData.salaryMin?.toLocaleString()} - SAR{" "}
+                {jobData.salaryMax?.toLocaleString()}
+              </p>
+            </div>
+          )}
 
         {jobData?.requiredSkills?.length > 0 && (
           <div style={{ marginBottom: "12px" }}>
@@ -728,6 +755,21 @@ const AddWorkOrder = () => {
             >
               {jobData.jobRequirements}
             </p>
+          </div>
+        )}
+
+        {jobData?.qualification && (
+          <div style={{ marginBottom: "12px" }}>
+            <h4
+              style={{
+                margin: "0 0 2px 0",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              Qualification
+            </h4>
+            <p style={{ fontSize: "12px" }}>{jobData.qualification}</p>
           </div>
         )}
 
@@ -1097,7 +1139,7 @@ const AddWorkOrder = () => {
 
   const renderPipelineDatesModal = () => {
     const approvalLevels =
-      approvalData?.aprovals?.map((approval) => ({
+      approvalData?.approvals?.map((approval) => ({
         id: approval._id,
         name: approval.groupName,
       })) || [];
@@ -1702,6 +1744,16 @@ const AddWorkOrder = () => {
                   placeholder="Enter detailed job description"
                 />
               </Form.Item>
+
+              <Form.Item
+                name="keyResponsibilities"
+                label="Key Responsibilities"
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="Describe key responsibilities..."
+                />
+              </Form.Item>
             </Card>
 
             {/* Job Details */}
@@ -1751,17 +1803,29 @@ const AddWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={8}>
                   <Form.Item
-                    name="Experience"
-                    label="Required Experience (years)"
+                    name="experienceMin"
+                    label="Minimum Experience (Years)"
                   >
                     <InputNumber
-                      min={0}
-                      max={50}
-                      placeholder="Years of experience"
                       style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter min experience"
                     />
                   </Form.Item>
                 </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="experienceMax"
+                    label="Maximum Experience (Years)"
+                  >
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter max experience"
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col xs={24} md={8}>
                   <Form.Item name="Education" label="Education Requirement">
                     <Select placeholder="Select education level">
@@ -1775,17 +1839,24 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="annualSalary" label="Salary ($)">
+                  <Form.Item name="salaryMin" label="Minimum Salary (SAR)">
                     <InputNumber
-                      min={0}
-                      formatter={(value) =>
-                        `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter minimum salary"
                     />
                   </Form.Item>
                 </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="salaryMax" label="Maximum Salary (SAR)">
+                    <InputNumber
+                      style={{ width: "100%" }}
+                      min={0}
+                      placeholder="Enter maximum salary"
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col xs={24} md={8}>
                   <Form.Item
                     name="salaryType"
@@ -1859,6 +1930,13 @@ const AddWorkOrder = () => {
                 <TextArea
                   rows={4}
                   placeholder="Enter detailed job requirements"
+                />
+              </Form.Item>
+
+              <Form.Item name="qualification" label="Qualification">
+                <TextArea
+                  rows={3}
+                  placeholder="List required qualifications..."
                 />
               </Form.Item>
 
