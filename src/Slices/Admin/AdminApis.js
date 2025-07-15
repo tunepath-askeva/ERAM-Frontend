@@ -371,6 +371,14 @@ export const adminApi = createApi({
         body: approvalData,
       }),
     }),
+    addClient: builder.mutation({
+      query: (clientData) => ({
+        url: "/client",
+        method: "POST",
+        body: clientData,
+      }),
+      invalidatesTags: ["Client"],
+    }),
   }),
 });
 
@@ -428,4 +436,7 @@ export const {
   useGetApprovalQuery,
   useAddApprovalMutation,
   useUpdateApprovalMutation,
+
+  //Client
+  useAddClientMutation,
 } = adminApi;

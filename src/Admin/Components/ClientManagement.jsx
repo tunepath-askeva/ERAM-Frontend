@@ -32,12 +32,16 @@ import {
   WarningOutlined,
   TagOutlined,
 } from "@ant-design/icons";
+import { useAddClientMutation } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const ClientsManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
+
+  const [addClient] = useAddClientMutation();
+
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [editingClient, setEditingClient] = useState(null);
@@ -55,7 +59,7 @@ const ClientsManagement = () => {
       code: "ABC001",
       email: "abc@example.com",
       contactNo: "1234567890",
-      contactPerson: "John Doe",
+      contactPersonNumber: "John Doe",
       sapCode: "SAP001",
       type: "Customer",
       status: "active",
@@ -66,7 +70,7 @@ const ClientsManagement = () => {
       code: "XYZ002",
       email: "xyz@example.com",
       contactNo: "0987654321",
-      contactPerson: "Jane Smith",
+      contactPersonNumber: "Jane Smith",
       sapCode: "SAP002",
       type: "Supplier",
       status: "active",
@@ -77,7 +81,7 @@ const ClientsManagement = () => {
       code: "TSI003",
       email: "tech@example.com",
       contactNo: "1122334455",
-      contactPerson: "Mike Johnson",
+      contactPersonNumber: "Mike Johnson",
       sapCode: "SAP003",
       type: "Both",
       status: "inactive",
@@ -98,21 +102,21 @@ const ClientsManagement = () => {
     setIsFormModalVisible(true);
   };
 
-  const handleFormSubmit = (values) => {
-    if (modalMode === "create") {
-      // Add new client
-      setClients([...clients, { ...values, id: clients.length + 1 }]);
-      enqueueSnackbar("Client created successfully", { variant: "success" });
-    } else {
-      // Update client
-      setClients(
-        clients.map((c) =>
-          c.id === editingClient.id ? { ...c, ...values } : c
-        )
-      );
-      enqueueSnackbar("Client updated successfully", { variant: "success" });
+  const handleFormSubmit = async (values) => {
+    try {
+      if (modalMode === "create") {
+        await addClient(values).unwrap();
+        enqueueSnackbar("Client created successfully", { variant: "success" });
+      } else {
+        await updateClient({ id: editingClient.id, ...values }).unwrap();
+        enqueueSnackbar("Client updated successfully", { variant: "success" });
+      }
+      setIsFormModalVisible(false);
+    } catch (error) {
+      enqueueSnackbar(error.data?.message || "An error occurred", {
+        variant: "error",
+      });
     }
-    setIsFormModalVisible(false);
   };
 
   const showDeleteModal = (client) => {
@@ -132,11 +136,12 @@ const ClientsManagement = () => {
   };
 
   // Filter clients based on search term
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.contactPersonNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -212,45 +217,37 @@ const ClientsManagement = () => {
       <Row gutter={[16, 16]} style={{ marginTop: "16px" }}>
         {filteredClients.length === 0 ? (
           <Col span={24}>
-            <Empty 
-              description="No clients found" 
+            <Empty
+              description="No clients found"
               style={{ padding: "40px 0" }}
             />
           </Col>
         ) : (
           filteredClients.map((client) => (
-            <Col 
-              key={client.id} 
-              xs={24} 
-              sm={24} 
-              md={12} 
-              lg={12} 
-              xl={8} 
-              xxl={6}
-            >
+            <Col key={client.id} xs={24} sm={24} md={12} lg={12} xl={8} xxl={6}>
               <Card
                 title={
                   <div
-                    style={{ 
-                      display: "flex", 
+                    style={{
+                      display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                       flexWrap: "wrap",
-                      gap: "8px"
+                      gap: "8px",
                     }}
                   >
-                    <Text 
-                      strong 
-                      style={{ 
+                    <Text
+                      strong
+                      style={{
                         fontSize: "16px",
                         wordBreak: "break-word",
                         flex: 1,
-                        minWidth: "0"
+                        minWidth: "0",
                       }}
                     >
                       {client.name}
                     </Text>
-                    <Tag 
+                    <Tag
                       color={client.status === "active" ? "green" : "red"}
                       style={{ margin: 0 }}
                     >
@@ -287,51 +284,92 @@ const ClientsManagement = () => {
                     </Tooltip>
                   </Space>
                 }
-                style={{ 
+                style={{
                   height: "100%",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  borderRadius: "8px"
+                  borderRadius: "8px",
                 }}
                 bodyStyle={{ padding: "16px" }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <ContactsOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Text 
-                      style={{ 
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <ContactsOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Text
+                      style={{
                         fontSize: "14px",
                         wordBreak: "break-word",
-                        flex: 1
+                        flex: 1,
                       }}
                     >
-                      {client.contactPerson}
+                      {client.contactPersonNumber}
                     </Text>
                   </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <MailOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Text 
-                      style={{ 
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <MailOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Text
+                      style={{
                         fontSize: "14px",
                         wordBreak: "break-all",
-                        flex: 1
+                        flex: 1,
                       }}
                     >
                       {client.email}
                     </Text>
                   </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <PhoneOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <PhoneOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
                     <Text style={{ fontSize: "14px" }}>{client.contactNo}</Text>
                   </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <TagOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Tag 
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <TagOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Tag
                       color={
-                        client.type === "Customer" ? "blue" : 
-                        client.type === "Supplier" ? "orange" : "purple"
+                        client.type === "Customer"
+                          ? "blue"
+                          : client.type === "Supplier"
+                          ? "orange"
+                          : "purple"
                       }
                       style={{ margin: 0 }}
                     >
@@ -383,7 +421,9 @@ const ClientsManagement = () => {
               <Form.Item
                 name="name"
                 label="Client Name"
-                rules={[{ required: true, message: "Please enter client name" }]}
+                rules={[
+                  { required: true, message: "Please enter client name" },
+                ]}
               >
                 <Input placeholder="Enter client name" />
               </Form.Item>
@@ -392,7 +432,9 @@ const ClientsManagement = () => {
               <Form.Item
                 name="code"
                 label="Client Code"
-                rules={[{ required: true, message: "Please enter client code" }]}
+                rules={[
+                  { required: true, message: "Please enter client code" },
+                ]}
               >
                 <Input placeholder="Enter client code" />
               </Form.Item>
@@ -435,9 +477,11 @@ const ClientsManagement = () => {
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="contactPerson"
+                name="contactPersonNumber"
                 label="Contact Person"
-                rules={[{ required: true, message: "Please enter contact person" }]}
+                rules={[
+                  { required: true, message: "Please enter contact person" },
+                ]}
               >
                 <Input placeholder="Enter contact person name" />
               </Form.Item>
@@ -515,7 +559,13 @@ const ClientsManagement = () => {
               <Col xs={24} sm={12}>
                 <div>
                   <Text strong>Email:</Text>
-                  <Text style={{ display: "block", marginTop: "4px", wordBreak: "break-all" }}>
+                  <Text
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      wordBreak: "break-all",
+                    }}
+                  >
                     {selectedClient.email}
                   </Text>
                 </div>
@@ -532,7 +582,7 @@ const ClientsManagement = () => {
                 <div>
                   <Text strong>Contact Person:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.contactPerson}
+                    {selectedClient.contactPersonNumber}
                   </Text>
                 </div>
               </Col>
