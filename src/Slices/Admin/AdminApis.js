@@ -379,6 +379,14 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["Client"],
     }),
+    addStaff: builder.mutation({
+      query: (staffData) => ({
+        url: "/staff",
+        method: "POST",
+        body: staffData,
+      }),
+      invalidatesTags: ["Staff"],
+    }),
   }),
 });
 
@@ -439,4 +447,7 @@ export const {
 
   //Client
   useAddClientMutation,
+
+  //Staff
+  useAddStaffMutation,
 } = adminApi;

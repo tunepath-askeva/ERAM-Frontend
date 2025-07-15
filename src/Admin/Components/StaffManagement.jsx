@@ -31,12 +31,16 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
+import { useAddStaffMutation } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const StaffManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
+
+  const [addStaff] = useAddStaffMutation();
+
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [editingStaff, setEditingStaff] = useState(null);
@@ -52,7 +56,7 @@ const StaffManagement = () => {
     {
       id: 1,
       name: "John Smith",
-      role: "Project Manager",
+      staffType: "Project Manager",
       email: "john.smith@example.com",
       contactNo: "9876543210",
       status: "active",
@@ -60,7 +64,7 @@ const StaffManagement = () => {
     {
       id: 2,
       name: "Sarah Johnson",
-      role: "Driver",
+      staffType: "Driver",
       email: "sarah.johnson@example.com",
       contactNo: "8765432109",
       status: "active",
@@ -68,7 +72,7 @@ const StaffManagement = () => {
     {
       id: 3,
       name: "Mike Davis",
-      role: "Outside Co-ordinator",
+      staffType: "Outside Co-ordinator",
       email: "mike.davis@example.com",
       contactNo: "7654321098",
       status: "inactive",
@@ -76,7 +80,7 @@ const StaffManagement = () => {
     {
       id: 4,
       name: "Lisa Brown",
-      role: "Camp Admin",
+      staffType: "Camp Admin",
       email: "lisa.brown@example.com",
       contactNo: "6543210987",
       status: "active",
@@ -84,7 +88,7 @@ const StaffManagement = () => {
     {
       id: 5,
       name: "Tom Wilson",
-      role: "Pro",
+      staffType: "Pro",
       email: "tom.wilson@example.com",
       contactNo: "5432109876",
       status: "active",
@@ -105,23 +109,29 @@ const StaffManagement = () => {
     setIsFormModalVisible(true);
   };
 
-  const handleFormSubmit = (values) => {
-    if (modalMode === "create") {
-      // Add new staff
-      setStaff([...staff, { ...values, id: staff.length + 1, status: "active" }]);
-      enqueueSnackbar("Staff member added successfully", {
-        variant: "success",
-      });
-    } else {
-      // Update staff
-      setStaff(
-        staff.map((s) => (s.id === editingStaff.id ? { ...s, ...values } : s))
-      );
-      enqueueSnackbar("Staff member updated successfully", {
-        variant: "success",
+  const handleFormSubmit = async (values) => {
+    try {
+      if (modalMode === "create") {
+        const payload = {
+        ...values,
+        role: "staff" // Static role value
+      };
+        await addStaff(payload).unwrap();
+        enqueueSnackbar("Staff member added successfully", {
+          variant: "success",
+        });
+      } else {
+        await updateStaff({ id: editingStaff.id, ...values }).unwrap();
+        enqueueSnackbar("Staff member updated successfully", {
+          variant: "success",
+        });
+      }
+      setIsFormModalVisible(false);
+    } catch (error) {
+      enqueueSnackbar(error.data?.message || "An error occurred", {
+        variant: "error",
       });
     }
-    setIsFormModalVisible(false);
   };
 
   const showDeleteModal = (staffMember) => {
@@ -143,14 +153,15 @@ const StaffManagement = () => {
   };
 
   // Filter staff based on search term
-  const filteredStaff = staff.filter((staffMember) =>
-    staffMember.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staffMember.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staffMember.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStaff = staff.filter(
+    (staffMember) =>
+      staffMember.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staffMember.staffType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staffMember.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleColor = (role) => {
-    switch (role) {
+  const getRoleColor = (staffType) => {
+    switch (staffType) {
       case "Driver":
         return "blue";
       case "Outside Co-ordinator":
@@ -239,45 +250,45 @@ const StaffManagement = () => {
       <Row gutter={[16, 16]} style={{ marginTop: "16px" }}>
         {filteredStaff.length === 0 ? (
           <Col span={24}>
-            <Empty 
-              description="No staff members found" 
+            <Empty
+              description="No staff members found"
               style={{ padding: "40px 0" }}
             />
           </Col>
         ) : (
           filteredStaff.map((staffMember) => (
-            <Col 
-              key={staffMember.id} 
-              xs={24} 
-              sm={24} 
-              md={12} 
-              lg={12} 
-              xl={8} 
+            <Col
+              key={staffMember.id}
+              xs={24}
+              sm={24}
+              md={12}
+              lg={12}
+              xl={8}
               xxl={6}
             >
               <Card
                 title={
                   <div
-                    style={{ 
-                      display: "flex", 
+                    style={{
+                      display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                       flexWrap: "wrap",
-                      gap: "8px"
+                      gap: "8px",
                     }}
                   >
-                    <Text 
-                      strong 
-                      style={{ 
+                    <Text
+                      strong
+                      style={{
                         fontSize: "16px",
                         wordBreak: "break-word",
                         flex: 1,
-                        minWidth: "0"
+                        minWidth: "0",
                       }}
                     >
                       {staffMember.name}
                     </Text>
-                    <Tag 
+                    <Tag
                       color={staffMember.status === "active" ? "green" : "red"}
                       style={{ margin: 0 }}
                     >
@@ -314,40 +325,72 @@ const StaffManagement = () => {
                     </Tooltip>
                   </Space>
                 }
-                style={{ 
+                style={{
                   height: "100%",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  borderRadius: "8px"
+                  borderRadius: "8px",
                 }}
                 bodyStyle={{ padding: "16px" }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <SolutionOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Tag 
-                      color={getRoleColor(staffMember.role)}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <SolutionOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Tag
+                      color={getRoleColor(staffMember.staffType)}
                       style={{ margin: 0 }}
                     >
-                      {staffMember.role}
+                      {staffMember.staffType}
                     </Tag>
                   </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <MailOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Text 
-                      style={{ 
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <MailOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Text
+                      style={{
                         fontSize: "14px",
                         wordBreak: "break-all",
-                        flex: 1
+                        flex: 1,
                       }}
                     >
                       {staffMember.email}
                     </Text>
                   </div>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <PhoneOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <Text style={{ fontSize: "14px" }}>{staffMember.contactNo}</Text>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <PhoneOutlined
+                      style={{ color: "#8c8c8c", fontSize: "14px" }}
+                    />
+                    <Text style={{ fontSize: "14px" }}>
+                      {staffMember.contactNo}
+                    </Text>
                   </div>
                 </div>
               </Card>
@@ -370,10 +413,10 @@ const StaffManagement = () => {
           <Button key="cancel" onClick={() => setIsFormModalVisible(false)}>
             Cancel
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            style={{background: "#da2c46"}} 
+          <Button
+            key="submit"
+            type="primary"
+            style={{ background: "#da2c46" }}
             onClick={() => form.submit()}
           >
             {modalMode === "create" ? "Add Staff" : "Update Staff"}
@@ -401,13 +444,15 @@ const StaffManagement = () => {
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
-                name="role"
+                name="staffType"
                 label="Role"
                 rules={[{ required: true, message: "Please select role" }]}
               >
                 <Select placeholder="Select role">
                   <Option value="Driver">Driver</Option>
-                  <Option value="Outside Co-ordinator">Outside Co-ordinator</Option>
+                  <Option value="Outside Co-ordinator">
+                    Outside Co-ordinator
+                  </Option>
                   <Option value="Camp Admin">Camp Admin</Option>
                   <Option value="Pro">Pro</Option>
                   <Option value="Project Manager">Project Manager</Option>
@@ -490,8 +535,8 @@ const StaffManagement = () => {
                 <div>
                   <Text strong>Role:</Text>
                   <div style={{ marginTop: "4px" }}>
-                    <Tag color={getRoleColor(selectedStaff.role)}>
-                      {selectedStaff.role}
+                    <Tag color={getRoleColor(selectedStaff.staffType)}>
+                      {selectedStaff.staffType}
                     </Tag>
                   </div>
                 </div>
@@ -499,7 +544,13 @@ const StaffManagement = () => {
               <Col xs={24} sm={12}>
                 <div>
                   <Text strong>Email:</Text>
-                  <Text style={{ display: "block", marginTop: "4px", wordBreak: "break-all" }}>
+                  <Text
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      wordBreak: "break-all",
+                    }}
+                  >
                     {selectedStaff.email}
                   </Text>
                 </div>
@@ -516,7 +567,11 @@ const StaffManagement = () => {
                 <div>
                   <Text strong>Status:</Text>
                   <div style={{ marginTop: "4px" }}>
-                    <Tag color={selectedStaff.status === "active" ? "green" : "red"}>
+                    <Tag
+                      color={
+                        selectedStaff.status === "active" ? "green" : "red"
+                      }
+                    >
                       {selectedStaff.status}
                     </Tag>
                   </div>
@@ -561,7 +616,7 @@ const StaffManagement = () => {
             <div style={{ marginTop: "16px" }}>
               <Text strong>{staffToDelete.name}</Text>
               <br />
-              <Text type="secondary">{staffToDelete.role}</Text>
+              <Text type="secondary">{staffToDelete.staffType}</Text>
             </div>
           )}
         </div>
