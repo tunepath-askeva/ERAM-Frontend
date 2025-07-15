@@ -416,7 +416,13 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["Client"],
     }),
-
+    deleteClient: builder.mutation({
+      query: (id) => ({
+        url: `/client/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Client"],
+    }),
     addStaff: builder.mutation({
       query: (staffData) => ({
         url: "/staff",
@@ -459,6 +465,13 @@ export const adminApi = createApi({
         url: `/staff/${staffId}`,
         method: "PUT",
         body: staffData,
+      }),
+      invalidatesTags: ["Staff"],
+    }),
+    deleteStaff: builder.mutation({
+      query: (id) => ({
+        url: `/staff/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["Staff"],
     }),
@@ -524,9 +537,11 @@ export const {
   useAddClientMutation,
   useGetClientsQuery,
   useUpdateClientMutation,
+  useDeleteClientMutation,
 
   //Staff
   useAddStaffMutation,
   useGetStaffsQuery,
   useEditStaffMutation,
+  useDeleteStaffMutation,
 } = adminApi;

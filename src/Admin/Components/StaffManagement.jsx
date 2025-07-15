@@ -35,6 +35,7 @@ import {
   useAddStaffMutation,
   useGetStaffsQuery,
   useEditStaffMutation,
+  useDeleteStaffMutation,
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
@@ -80,7 +81,8 @@ const StaffManagement = () => {
     pageSize: pagination.pageSize,
   });
 
-  // Extract staffs from API response
+  const [deleteStaff] = useDeleteStaffMutation();
+
   const staffs = staffsData?.staffs || [];
 
   const showCreateModal = () => {
@@ -93,7 +95,6 @@ const StaffManagement = () => {
   const showEditModal = (staffMember) => {
     setModalMode("edit");
     setEditingStaff(staffMember);
-    // Map API response fields to form fields
     const formValues = {
       name: staffMember.fullName,
       staffType: staffMember.staffType,
@@ -112,7 +113,7 @@ const StaffManagement = () => {
           staffType: values.staffType,
           email: values.email,
           contactNo: values.contactNo,
-          role: "staff", 
+          role: "staff",
         };
         await addStaff(payload).unwrap();
         enqueueSnackbar("Staff member added successfully", {
@@ -125,9 +126,9 @@ const StaffManagement = () => {
           email: values.email,
           contactNo: values.contactNo,
         };
-        await editStaff({ 
-          staffId: editingStaff._id, 
-          ...payload 
+        await editStaff({
+          staffId: editingStaff._id,
+          ...payload,
         }).unwrap();
         enqueueSnackbar("Staff member updated successfully", {
           variant: "success",
@@ -147,9 +148,8 @@ const StaffManagement = () => {
     setDeleteModalVisible(true);
   };
 
-  const handleDeleteConfirm = () => {
-    // TODO: Implement delete API call
-    // await deleteStaff(staffToDelete._id).unwrap();
+  const handleDeleteConfirm = async () => {
+    await deleteStaff(staffToDelete._id).unwrap();
     enqueueSnackbar("Staff member deleted successfully", {
       variant: "success",
     });
@@ -188,12 +188,14 @@ const StaffManagement = () => {
 
   if (isLoadingStaffs) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '400px' 
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+        }}
+      >
         <Spin size="large" />
       </div>
     );
@@ -201,12 +203,14 @@ const StaffManagement = () => {
 
   if (staffsError) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '400px' 
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+        }}
+      >
         <Text type="danger">Error loading staff data</Text>
       </div>
     );
@@ -325,7 +329,9 @@ const StaffManagement = () => {
                       {staffMember.fullName}
                     </Text>
                     <Tag
-                      color={staffMember.accountStatus === "active" ? "green" : "red"}
+                      color={
+                        staffMember.accountStatus === "active" ? "green" : "red"
+                      }
                       style={{ margin: 0 }}
                     >
                       {staffMember.accountStatus}
@@ -437,11 +443,13 @@ const StaffManagement = () => {
 
       {/* Pagination */}
       {staffs.length > 0 && (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          marginTop: '24px' 
-        }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "24px",
+          }}
+        >
           <Pagination
             current={pagination.current}
             pageSize={pagination.pageSize}
@@ -582,7 +590,11 @@ const StaffManagement = () => {
               <Title level={4} style={{ marginBottom: "8px" }}>
                 {selectedStaff.fullName}
               </Title>
-              <Tag color={selectedStaff.accountStatus === "active" ? "green" : "red"}>
+              <Tag
+                color={
+                  selectedStaff.accountStatus === "active" ? "green" : "red"
+                }
+              >
                 {selectedStaff.accountStatus}
               </Tag>
             </div>
@@ -626,7 +638,9 @@ const StaffManagement = () => {
                   <div style={{ marginTop: "4px" }}>
                     <Tag
                       color={
-                        selectedStaff.accountStatus === "active" ? "green" : "red"
+                        selectedStaff.accountStatus === "active"
+                          ? "green"
+                          : "red"
                       }
                     >
                       {selectedStaff.accountStatus}

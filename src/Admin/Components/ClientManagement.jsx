@@ -35,7 +35,8 @@ import {
 import {
   useAddClientMutation,
   useGetClientsQuery,
-  useUpdateClientMutation, // Add this import
+  useUpdateClientMutation,
+  useDeleteClientMutation,
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
@@ -45,7 +46,7 @@ const ClientsManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const [addClient] = useAddClientMutation();
-  const [updateClient] = useUpdateClientMutation(); // Add this hook
+  const [updateClient] = useUpdateClientMutation();
 
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -81,6 +82,8 @@ const ClientsManagement = () => {
     page: pagination.current,
     pageSize: pagination.pageSize,
   });
+
+  const [deleteClient] = useDeleteClientMutation();
 
   const showCreateModal = () => {
     setModalMode("create");
@@ -118,7 +121,7 @@ const ClientsManagement = () => {
       }
       setIsFormModalVisible(false);
       form.resetFields();
-      refetchClients(); // Refresh the client list
+      refetchClients(); 
     } catch (error) {
       enqueueSnackbar(
         error.data?.message || error.message || "An error occurred",
@@ -132,9 +135,8 @@ const ClientsManagement = () => {
     setDeleteModalVisible(true);
   };
 
-  const handleDeleteConfirm = () => {
-    // TODO: Implement delete functionality
-    // await deleteClient(clientToDelete._id).unwrap();
+  const handleDeleteConfirm = async () => {
+    await deleteClient( clientToDelete._id).unwrap();
     enqueueSnackbar("Client deleted successfully", { variant: "success" });
     setDeleteModalVisible(false);
   };
