@@ -23,13 +23,7 @@ const Master = () => {
         },
       }}
     >
-      <Card
-        bordered={false}
-        style={{
-          borderRadius: "12px",
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-        }}
-      >
+     
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -104,7 +98,7 @@ const Master = () => {
             <StaffManagement />
           </TabPane>
         </Tabs>
-      </Card>
+     
     </div>
   );
 };
