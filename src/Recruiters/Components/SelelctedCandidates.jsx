@@ -154,6 +154,7 @@ const SelectedCandidates = ({ jobId }) => {
       message.success(
         `Successfully moved ${selectedCandidates.length} candidates to ${newStatus}`
       );
+      
 
       setSelectedCandidates([]);
       setSelectAll(false);
