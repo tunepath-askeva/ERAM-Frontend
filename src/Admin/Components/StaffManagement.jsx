@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import {
   Button,
@@ -31,7 +31,11 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { useAddStaffMutation } from "../../Slices/Admin/AdminApis";
+import {
+  useAddStaffMutation,
+  useGetStaffsQuery,
+  useEditStaffMutation,
+} from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -40,6 +44,7 @@ const StaffManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const [addStaff] = useAddStaffMutation();
+  const [editStaff] = useEditStaffMutation();
 
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -49,51 +54,34 @@ const StaffManagement = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 12,
+  });
   const [form] = Form.useForm();
 
-  // Mock data - replace with your actual API calls
-  const [staff, setStaff] = useState([
-    {
-      id: 1,
-      name: "John Smith",
-      staffType: "Project Manager",
-      email: "john.smith@example.com",
-      contactNo: "9876543210",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      staffType: "Driver",
-      email: "sarah.johnson@example.com",
-      contactNo: "8765432109",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Mike Davis",
-      staffType: "Outside Co-ordinator",
-      email: "mike.davis@example.com",
-      contactNo: "7654321098",
-      status: "inactive",
-    },
-    {
-      id: 4,
-      name: "Lisa Brown",
-      staffType: "Camp Admin",
-      email: "lisa.brown@example.com",
-      contactNo: "6543210987",
-      status: "active",
-    },
-    {
-      id: 5,
-      name: "Tom Wilson",
-      staffType: "Pro",
-      email: "tom.wilson@example.com",
-      contactNo: "5432109876",
-      status: "active",
-    },
-  ]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: staffsData,
+    isLoading: isLoadingStaffs,
+    refetch: refetchStaffs,
+    error: staffsError,
+  } = useGetStaffsQuery({
+    searchTerm: debouncedSearchTerm,
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+  });
+
+  // Extract staffs from API response
+  const staffs = staffsData?.staffs || [];
 
   const showCreateModal = () => {
     setModalMode("create");
@@ -105,7 +93,14 @@ const StaffManagement = () => {
   const showEditModal = (staffMember) => {
     setModalMode("edit");
     setEditingStaff(staffMember);
-    form.setFieldsValue(staffMember);
+    // Map API response fields to form fields
+    const formValues = {
+      name: staffMember.fullName,
+      staffType: staffMember.staffType,
+      email: staffMember.email,
+      contactNo: staffMember.phone,
+    };
+    form.setFieldsValue(formValues);
     setIsFormModalVisible(true);
   };
 
@@ -113,20 +108,33 @@ const StaffManagement = () => {
     try {
       if (modalMode === "create") {
         const payload = {
-        ...values,
-        role: "staff" // Static role value
-      };
+          fullName: values.name,
+          staffType: values.staffType,
+          email: values.email,
+          phone: values.contactNo,
+          role: "staff", // Static role value
+        };
         await addStaff(payload).unwrap();
         enqueueSnackbar("Staff member added successfully", {
           variant: "success",
         });
       } else {
-        await updateStaff({ id: editingStaff.id, ...values }).unwrap();
+        const payload = {
+          fullName: values.name,
+          staffType: values.staffType,
+          email: values.email,
+          phone: values.contactNo,
+        };
+        await editStaff({ 
+          staffId: editingStaff._id, 
+          ...payload 
+        }).unwrap();
         enqueueSnackbar("Staff member updated successfully", {
           variant: "success",
         });
       }
       setIsFormModalVisible(false);
+      refetchStaffs();
     } catch (error) {
       enqueueSnackbar(error.data?.message || "An error occurred", {
         variant: "error",
@@ -140,25 +148,19 @@ const StaffManagement = () => {
   };
 
   const handleDeleteConfirm = () => {
-    setStaff(staff.filter((s) => s.id !== staffToDelete.id));
+    // TODO: Implement delete API call
+    // await deleteStaff(staffToDelete._id).unwrap();
     enqueueSnackbar("Staff member deleted successfully", {
       variant: "success",
     });
     setDeleteModalVisible(false);
+    refetchStaffs();
   };
 
   const handleViewStaff = (staffMember) => {
     setSelectedStaff(staffMember);
     setViewModalVisible(true);
   };
-
-  // Filter staff based on search term
-  const filteredStaff = staff.filter(
-    (staffMember) =>
-      staffMember.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staffMember.staffType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staffMember.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const getRoleColor = (staffType) => {
     switch (staffType) {
@@ -176,6 +178,39 @@ const StaffManagement = () => {
         return "default";
     }
   };
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({
+      current: page,
+      pageSize: pageSize,
+    });
+  };
+
+  if (isLoadingStaffs) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (staffsError) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px' 
+      }}>
+        <Text type="danger">Error loading staff data</Text>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -226,6 +261,7 @@ const StaffManagement = () => {
               }}
               size="large"
               className="custom-search-input"
+              loading={isLoadingStaffs}
             />
 
             <Button
@@ -248,7 +284,7 @@ const StaffManagement = () => {
 
       {/* Staff List */}
       <Row gutter={[16, 16]} style={{ marginTop: "16px" }}>
-        {filteredStaff.length === 0 ? (
+        {staffs.length === 0 ? (
           <Col span={24}>
             <Empty
               description="No staff members found"
@@ -256,9 +292,9 @@ const StaffManagement = () => {
             />
           </Col>
         ) : (
-          filteredStaff.map((staffMember) => (
+          staffs.map((staffMember) => (
             <Col
-              key={staffMember.id}
+              key={staffMember._id}
               xs={24}
               sm={24}
               md={12}
@@ -286,13 +322,13 @@ const StaffManagement = () => {
                         minWidth: "0",
                       }}
                     >
-                      {staffMember.name}
+                      {staffMember.fullName}
                     </Text>
                     <Tag
-                      color={staffMember.status === "active" ? "green" : "red"}
+                      color={staffMember.accountStatus === "active" ? "green" : "red"}
                       style={{ margin: 0 }}
                     >
-                      {staffMember.status}
+                      {staffMember.accountStatus}
                     </Tag>
                   </div>
                 }
@@ -389,7 +425,7 @@ const StaffManagement = () => {
                       style={{ color: "#8c8c8c", fontSize: "14px" }}
                     />
                     <Text style={{ fontSize: "14px" }}>
-                      {staffMember.contactNo}
+                      {staffMember.phone}
                     </Text>
                   </div>
                 </div>
@@ -398,6 +434,27 @@ const StaffManagement = () => {
           ))
         )}
       </Row>
+
+      {/* Pagination */}
+      {staffs.length > 0 && (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          marginTop: '24px' 
+        }}>
+          <Pagination
+            current={pagination.current}
+            pageSize={pagination.pageSize}
+            total={staffsData?.total || staffs.length}
+            onChange={handlePaginationChange}
+            showSizeChanger
+            showQuickJumper
+            showTotal={(total, range) =>
+              `${range[0]}-${range[1]} of ${total} items`
+            }
+          />
+        </div>
+      )}
 
       {/* Staff Form Modal */}
       <Modal
@@ -523,10 +580,10 @@ const StaffManagement = () => {
           <div style={{ padding: "16px 0" }}>
             <div style={{ marginBottom: "24px" }}>
               <Title level={4} style={{ marginBottom: "8px" }}>
-                {selectedStaff.name}
+                {selectedStaff.fullName}
               </Title>
-              <Tag color={selectedStaff.status === "active" ? "green" : "red"}>
-                {selectedStaff.status}
+              <Tag color={selectedStaff.accountStatus === "active" ? "green" : "red"}>
+                {selectedStaff.accountStatus}
               </Tag>
             </div>
 
@@ -559,7 +616,7 @@ const StaffManagement = () => {
                 <div>
                   <Text strong>Contact Number:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedStaff.contactNo}
+                    {selectedStaff.phone}
                   </Text>
                 </div>
               </Col>
@@ -569,10 +626,10 @@ const StaffManagement = () => {
                   <div style={{ marginTop: "4px" }}>
                     <Tag
                       color={
-                        selectedStaff.status === "active" ? "green" : "red"
+                        selectedStaff.accountStatus === "active" ? "green" : "red"
                       }
                     >
-                      {selectedStaff.status}
+                      {selectedStaff.accountStatus}
                     </Tag>
                   </div>
                 </div>
@@ -614,7 +671,7 @@ const StaffManagement = () => {
           <Text>Are you sure you want to delete this staff member?</Text>
           {staffToDelete && (
             <div style={{ marginTop: "16px" }}>
-              <Text strong>{staffToDelete.name}</Text>
+              <Text strong>{staffToDelete.fullName}</Text>
               <br />
               <Text type="secondary">{staffToDelete.staffType}</Text>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import {
   Button,
@@ -32,7 +32,11 @@ import {
   WarningOutlined,
   TagOutlined,
 } from "@ant-design/icons";
-import { useAddClientMutation } from "../../Slices/Admin/AdminApis";
+import {
+  useAddClientMutation,
+  useGetClientsQuery,
+  useUpdateClientMutation, // Add this import
+} from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -41,6 +45,7 @@ const ClientsManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const [addClient] = useAddClientMutation();
+  const [updateClient] = useUpdateClientMutation(); // Add this hook
 
   const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -50,43 +55,32 @@ const ClientsManagement = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 12,
+  });
   const [form] = Form.useForm();
 
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: "ABC Corporation",
-      code: "ABC001",
-      email: "abc@example.com",
-      contactNo: "1234567890",
-      contactPersonNumber: "John Doe",
-      sapCode: "SAP001",
-      type: "Customer",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "XYZ Ltd",
-      code: "XYZ002",
-      email: "xyz@example.com",
-      contactNo: "0987654321",
-      contactPersonNumber: "Jane Smith",
-      sapCode: "SAP002",
-      type: "Supplier",
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "Tech Solutions Inc",
-      code: "TSI003",
-      email: "tech@example.com",
-      contactNo: "1122334455",
-      contactPersonNumber: "Mike Johnson",
-      sapCode: "SAP003",
-      type: "Both",
-      status: "inactive",
-    },
-  ]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const {
+    data: clientData,
+    isLoading: isLoadingClients,
+    refetch: refetchClients,
+    error: clientsError,
+  } = useGetClientsQuery({
+    searchTerm: debouncedSearchTerm,
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+  });
 
   const showCreateModal = () => {
     setModalMode("create");
@@ -98,7 +92,15 @@ const ClientsManagement = () => {
   const showEditModal = (client) => {
     setModalMode("edit");
     setEditingClient(client);
-    form.setFieldsValue(client);
+    form.setFieldsValue({
+      name: client.fullName,
+      code: client.ClientCode,
+      email: client.email,
+      contactNo: client.phone,
+      contactPersonNumber: client.contactPersonMobile,
+      sapCode: client.sapCode,
+      type: client.clientType,
+    });
     setIsFormModalVisible(true);
   };
 
@@ -108,14 +110,20 @@ const ClientsManagement = () => {
         await addClient(values).unwrap();
         enqueueSnackbar("Client created successfully", { variant: "success" });
       } else {
-        await updateClient({ id: editingClient.id, ...values }).unwrap();
+        await updateClient({
+          clientId: editingClient._id,
+          ...values,
+        }).unwrap();
         enqueueSnackbar("Client updated successfully", { variant: "success" });
       }
       setIsFormModalVisible(false);
+      form.resetFields();
+      refetchClients(); // Refresh the client list
     } catch (error) {
-      enqueueSnackbar(error.data?.message || "An error occurred", {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        error.data?.message || error.message || "An error occurred",
+        { variant: "error" }
+      );
     }
   };
 
@@ -125,7 +133,8 @@ const ClientsManagement = () => {
   };
 
   const handleDeleteConfirm = () => {
-    setClients(clients.filter((c) => c.id !== clientToDelete.id));
+    // TODO: Implement delete functionality
+    // await deleteClient(clientToDelete._id).unwrap();
     enqueueSnackbar("Client deleted successfully", { variant: "success" });
     setDeleteModalVisible(false);
   };
@@ -135,14 +144,12 @@ const ClientsManagement = () => {
     setViewModalVisible(true);
   };
 
-  // Filter clients based on search term
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.contactPersonNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({
+      current: page,
+      pageSize: pageSize,
+    });
+  };
 
   return (
     <>
@@ -213,175 +220,216 @@ const ClientsManagement = () => {
         </div>
       </div>
 
+      {/* Loading Spinner */}
+      {isLoadingClients && (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <Spin size="large" />
+        </div>
+      )}
+
       {/* Client List */}
-      <Row gutter={[16, 16]} style={{ marginTop: "16px" }}>
-        {filteredClients.length === 0 ? (
-          <Col span={24}>
-            <Empty
-              description="No clients found"
-              style={{ padding: "40px 0" }}
-            />
-          </Col>
-        ) : (
-          filteredClients.map((client) => (
-            <Col key={client.id} xs={24} sm={24} md={12} lg={12} xl={8} xxl={6}>
-              <Card
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
-                    <Text
-                      strong
+      {!isLoadingClients && (
+        <Row gutter={[16, 16]} style={{ marginTop: "20px" }}>
+          {clientData?.clients?.length === 0 ? (
+            <Col span={24}>
+              <Empty
+                description={
+                  searchTerm
+                    ? "No clients found matching your search"
+                    : "No clients found"
+                }
+                style={{ padding: "40px 0" }}
+              />
+            </Col>
+          ) : (
+            clientData?.clients?.map((client) => (
+              <Col
+                key={client._id}
+                xs={24}
+                sm={24}
+                md={12}
+                lg={12}
+                xl={8}
+                xxl={6}
+              >
+                <Card
+                  title={
+                    <div
                       style={{
-                        fontSize: "16px",
-                        wordBreak: "break-word",
-                        flex: 1,
-                        minWidth: "0",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: "8px",
                       }}
                     >
-                      {client.name}
-                    </Text>
-                    <Tag
-                      color={client.status === "active" ? "green" : "red"}
-                      style={{ margin: 0 }}
-                    >
-                      {client.status}
-                    </Tag>
-                  </div>
-                }
-                extra={
-                  <Space size="small">
-                    <Tooltip title="View Details">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => handleViewClient(client)}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Edit Client">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => showEditModal(client)}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Delete Client">
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => showDeleteModal(client)}
-                      />
-                    </Tooltip>
-                  </Space>
-                }
-                style={{
-                  height: "100%",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  borderRadius: "8px",
-                }}
-                bodyStyle={{ padding: "16px" }}
-              >
-                <div
+                      <Text
+                        strong
+                        style={{
+                          fontSize: "16px",
+                          wordBreak: "break-word",
+                          flex: 1,
+                          minWidth: "0",
+                        }}
+                      >
+                        {client.fullName}
+                      </Text>
+                      <Tag
+                        color={
+                          client.accountStatus === "active" ? "green" : "red"
+                        }
+                        style={{ margin: 0 }}
+                      >
+                        {client.accountStatus}
+                      </Tag>
+                    </div>
+                  }
+                  extra={
+                    <Space size="small">
+                      <Tooltip title="View Details">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handleViewClient(client)}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Edit Client">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => showEditModal(client)}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Delete Client">
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => showDeleteModal(client)}
+                        />
+                      </Tooltip>
+                    </Space>
+                  }
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
+                    height: "100%",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    borderRadius: "8px",
                   }}
+                  bodyStyle={{ padding: "16px" }}
                 >
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      flexDirection: "column",
                       gap: "8px",
                     }}
                   >
-                    <ContactsOutlined
-                      style={{ color: "#8c8c8c", fontSize: "14px" }}
-                    />
-                    <Text
+                    <div
                       style={{
-                        fontSize: "14px",
-                        wordBreak: "break-word",
-                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
                       }}
                     >
-                      {client.contactPersonNumber}
-                    </Text>
-                  </div>
+                      <ContactsOutlined
+                        style={{ color: "#8c8c8c", fontSize: "14px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "14px",
+                          wordBreak: "break-word",
+                          flex: 1,
+                        }}
+                      >
+                        {client.contactPersonMobile}
+                      </Text>
+                    </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <MailOutlined
-                      style={{ color: "#8c8c8c", fontSize: "14px" }}
-                    />
-                    <Text
+                    <div
                       style={{
-                        fontSize: "14px",
-                        wordBreak: "break-all",
-                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
                       }}
                     >
-                      {client.email}
-                    </Text>
-                  </div>
+                      <MailOutlined
+                        style={{ color: "#8c8c8c", fontSize: "14px" }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: "14px",
+                          wordBreak: "break-all",
+                          flex: 1,
+                        }}
+                      >
+                        {client.email}
+                      </Text>
+                    </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <PhoneOutlined
-                      style={{ color: "#8c8c8c", fontSize: "14px" }}
-                    />
-                    <Text style={{ fontSize: "14px" }}>{client.contactNo}</Text>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <TagOutlined
-                      style={{ color: "#8c8c8c", fontSize: "14px" }}
-                    />
-                    <Tag
-                      color={
-                        client.type === "Customer"
-                          ? "blue"
-                          : client.type === "Supplier"
-                          ? "orange"
-                          : "purple"
-                      }
-                      style={{ margin: 0 }}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
                     >
-                      {client.type}
-                    </Tag>
+                      <PhoneOutlined
+                        style={{ color: "#8c8c8c", fontSize: "14px" }}
+                      />
+                      <Text style={{ fontSize: "14px" }}>{client.phone}</Text>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <TagOutlined
+                        style={{ color: "#8c8c8c", fontSize: "14px" }}
+                      />
+                      <Tag
+                        color={
+                          client.clientType === "Customer"
+                            ? "blue"
+                            : client.clientType === "Supplier"
+                            ? "orange"
+                            : "purple"
+                        }
+                        style={{ margin: 0 }}
+                      >
+                        {client.clientType}
+                      </Tag>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Col>
-          ))
-        )}
-      </Row>
+                </Card>
+              </Col>
+            ))
+          )}
+        </Row>
+      )}
+
+      {/* Pagination */}
+      {!isLoadingClients && clientData?.clients?.length > 0 && (
+        <div style={{ textAlign: "center", marginTop: "24px" }}>
+          <Pagination
+            current={pagination.current}
+            pageSize={pagination.pageSize}
+            total={clientData?.total || 0}
+            onChange={handlePaginationChange}
+            showSizeChanger
+            showQuickJumper
+            showTotal={(total, range) =>
+              `${range[0]}-${range[1]} of ${total} clients`
+            }
+            pageSizeOptions={["12", "24", "48", "96"]}
+          />
+        </div>
+      )}
 
       {/* Client Form Modal */}
       <Modal
@@ -392,9 +440,18 @@ const ClientsManagement = () => {
           </div>
         }
         open={isFormModalVisible}
-        onCancel={() => setIsFormModalVisible(false)}
+        onCancel={() => {
+          setIsFormModalVisible(false);
+          form.resetFields();
+        }}
         footer={[
-          <Button key="cancel" onClick={() => setIsFormModalVisible(false)}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              setIsFormModalVisible(false);
+              form.resetFields();
+            }}
+          >
             Cancel
           </Button>,
           <Button
@@ -410,12 +467,7 @@ const ClientsManagement = () => {
         style={{ maxWidth: "700px" }}
         destroyOnClose
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFormSubmit}
-          initialValues={editingClient || {}}
-        >
+        <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -457,17 +509,17 @@ const ClientsManagement = () => {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="contactNo"
-                label="Contact Number"
+                label="Phone Number"
                 rules={[
-                  { required: true, message: "Please enter contact number" },
+                  { required: true, message: "Please enter phone number" },
                   {
                     pattern: /^[0-9]+$/,
-                    message: "Please enter valid contact number",
+                    message: "Please enter valid phone number",
                   },
                 ]}
               >
                 <Input
-                  placeholder="Enter contact number"
+                  placeholder="Enter phone number"
                   prefix={<PhoneOutlined />}
                 />
               </Form.Item>
@@ -489,12 +541,10 @@ const ClientsManagement = () => {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="sapCode"
-                label="Client Code From SAP"
-                rules={[
-                  { required: true, message: "Please enter SAP client code" },
-                ]}
+                label="SAP Code"
+                rules={[{ required: true, message: "Please enter SAP code" }]}
               >
-                <Input placeholder="Enter SAP client code" />
+                <Input placeholder="Enter SAP code" />
               </Form.Item>
             </Col>
           </Row>
@@ -507,7 +557,6 @@ const ClientsManagement = () => {
             <Select placeholder="Select client type">
               <Option value="Customer">Customer</Option>
               <Option value="Supplier">Supplier</Option>
-              <Option value="Both">Both</Option>
             </Select>
           </Form.Item>
         </Form>
@@ -540,10 +589,14 @@ const ClientsManagement = () => {
           <div style={{ padding: "16px 0" }}>
             <div style={{ marginBottom: "24px" }}>
               <Title level={4} style={{ marginBottom: "8px" }}>
-                {selectedClient.name}
+                {selectedClient.fullName}
               </Title>
-              <Tag color={selectedClient.status === "active" ? "green" : "red"}>
-                {selectedClient.status}
+              <Tag
+                color={
+                  selectedClient.accountStatus === "active" ? "green" : "red"
+                }
+              >
+                {selectedClient.accountStatus}
               </Tag>
             </div>
 
@@ -552,7 +605,7 @@ const ClientsManagement = () => {
                 <div>
                   <Text strong>Client Code:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.code}
+                    {selectedClient.ClientCode}
                   </Text>
                 </div>
               </Col>
@@ -572,9 +625,9 @@ const ClientsManagement = () => {
               </Col>
               <Col xs={24} sm={12}>
                 <div>
-                  <Text strong>Contact Number:</Text>
+                  <Text strong>Phone Number:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.contactNo}
+                    {selectedClient.phone}
                   </Text>
                 </div>
               </Col>
@@ -582,13 +635,13 @@ const ClientsManagement = () => {
                 <div>
                   <Text strong>Contact Person:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.contactPersonNumber}
+                    {selectedClient.contactPersonMobile}
                   </Text>
                 </div>
               </Col>
               <Col xs={24} sm={12}>
                 <div>
-                  <Text strong>SAP Client Code:</Text>
+                  <Text strong>SAP Code:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
                     {selectedClient.sapCode}
                   </Text>
@@ -598,7 +651,7 @@ const ClientsManagement = () => {
                 <div>
                   <Text strong>Client Type:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.type}
+                    {selectedClient.clientType}
                   </Text>
                 </div>
               </Col>
@@ -639,7 +692,7 @@ const ClientsManagement = () => {
           <Text>Are you sure you want to delete this client?</Text>
           {clientToDelete && (
             <div style={{ marginTop: "16px" }}>
-              <Text strong>{clientToDelete.name}</Text>
+              <Text strong>{clientToDelete.fullName}</Text>
             </div>
           )}
         </div>

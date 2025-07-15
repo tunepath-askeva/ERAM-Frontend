@@ -371,6 +371,35 @@ export const adminApi = createApi({
         body: approvalData,
       }),
     }),
+    getClients: builder.query({
+      query: ({ searchTerm = "", page, pageSize } = {}) => {
+        let url = "/clients";
+        const queryParams = [];
+
+        if (searchTerm)
+          queryParams.push(`search=${encodeURIComponent(searchTerm)}`);
+        if (page !== undefined) queryParams.push(`page=${page}`);
+        if (pageSize !== undefined) queryParams.push(`limit=${pageSize}`);
+
+        if (queryParams.length > 0) {
+          url += `?${queryParams.join("&")}`;
+        }
+
+        return {
+          url,
+          method: "GET",
+        };
+      },
+
+      transformResponse: (response) => {
+        return {
+          clients: response.data?.clients || response.clients || [],
+          total: response.total,
+          totalPages: response.totalPages,
+        };
+      },
+      providesTags: ["Client"],
+    }),
     addClient: builder.mutation({
       query: (clientData) => ({
         url: "/client",
@@ -379,10 +408,56 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["Client"],
     }),
+    updateClient: builder.mutation({
+      query: ({ clientId, ...clientData }) => ({
+        url: `/client/${clientId}`,
+        method: "PUT",
+        body: clientData,
+      }),
+      invalidatesTags: ["Client"],
+    }),
+
     addStaff: builder.mutation({
       query: (staffData) => ({
         url: "/staff",
         method: "POST",
+        body: staffData,
+      }),
+      invalidatesTags: ["Staff"],
+    }),
+    getStaffs: builder.query({
+      query: ({ searchTerm = "", page, pageSize } = {}) => {
+        let url = "/staffs";
+        const queryParams = [];
+
+        if (searchTerm)
+          queryParams.push(`search=${encodeURIComponent(searchTerm)}`);
+        if (page !== undefined) queryParams.push(`page=${page}`);
+        if (pageSize !== undefined) queryParams.push(`limit=${pageSize}`);
+
+        if (queryParams.length > 0) {
+          url += `?${queryParams.join("&")}`;
+        }
+
+        return {
+          url,
+          method: "GET",
+        };
+      },
+
+      transformResponse: (response) => {
+        return {
+          staffs: response.data?.staffs || response.staffs || [],
+          total: response.total,
+          totalPages: response.totalPages,
+        };
+      },
+      providesTags: ["Staff"],
+    }),
+    editStaff: builder.mutation({
+      query: ({ staffId, ...staffData }) => ({
+        url: `/staff/${staffId}`,
+        method: "PUT",
         body: staffData,
       }),
       invalidatesTags: ["Staff"],
@@ -447,7 +522,11 @@ export const {
 
   //Client
   useAddClientMutation,
+  useGetClientsQuery,
+  useUpdateClientMutation,
 
   //Staff
   useAddStaffMutation,
+  useGetStaffsQuery,
+  useEditStaffMutation,
 } = adminApi;
