@@ -188,7 +188,7 @@
   }
 }
 
-/* project styles */
+/* Base project styles */
 .project-header {
   margin-bottom: 24px;
   background: rgba(255, 255, 255, 0.95);
@@ -199,7 +199,65 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-@media (min-width: 768px) {
+.project-title {
+  font-size: 20px !important;
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  transition: all 0.3s ease;
+}
+
+.project-button {
+  background: linear-gradient(135deg, #da2c46 70%, #a51632 100%) !important;
+  border: none !important;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.project-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(218, 44, 70, 0.3);
+}
+
+.custom-search-input {
+  transition: all 0.3s ease;
+}
+
+.custom-search-input:focus-within {
+  box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2);
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Large screens (desktop) */
+@media (min-width: 1200px) {
+  .project-header {
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .project-title {
+    font-size: 28px !important;
+  }
+
+  .project-button {
+    height: 52px !important;
+    font-size: 16px !important;
+    min-width: 200px !important;
+    padding: 0 24px !important;
+  }
+}
+
+/* Medium screens (tablet) */
+@media (min-width: 768px) and (max-width: 1199px) {
   .project-header {
     padding: 24px;
     margin-bottom: 32px;
@@ -218,32 +276,48 @@
   }
 }
 
+/* Small screens and mobile */
 @media (max-width: 767px) {
-  .project-header>div {
-    flex-direction: column;
-    align-items: stretch !important;
+  .project-header {
+    padding: 16px;
+    margin-bottom: 20px;
   }
 
-  .project-header>div>div:first-child {
-    justify-content: center;
+  .project-header > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .project-header > div > div:first-child {
+    justify-content: center !important;
     margin-bottom: 16px;
   }
 
-  .project-header>div>div:last-child {
-    flex-direction: column;
-    gap: 12px;
+  .project-header > div > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+    min-width: auto !important;
   }
 
   .project-title {
-    font-size: 20px !important;
+    font-size: 18px !important;
     text-align: center;
   }
 
   .project-button {
     width: 100% !important;
-    height: 48px !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+  }
+
+  .custom-search-input {
+    max-width: 100% !important;
+    height: 40px !important;
   }
 }
+
 
 /* candidate styles */
 .candidate-header {
@@ -387,5 +461,267 @@
   .level-button {
     width: 100% !important;
     height: 48px !important;
+  }
+}
+
+/* Base client styles */
+.client-header {
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.client-title {
+  font-size: 20px !important;
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  transition: all 0.3s ease;
+}
+
+.client-button {
+  background: linear-gradient(135deg, #da2c46 70%, #a51632 100%) !important;
+  border: none !important;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.client-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(218, 44, 70, 0.3);
+}
+
+.custom-search-input {
+  transition: all 0.3s ease;
+}
+
+.custom-search-input:focus-within {
+  box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2);
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Large screens (desktop) */
+@media (min-width: 1200px) {
+  .client-header {
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .client-title {
+    font-size: 28px !important;
+  }
+
+  .client-button {
+    height: 52px !important;
+    font-size: 16px !important;
+    min-width: 200px !important;
+    padding: 0 24px !important;
+  }
+}
+
+/* Medium screens (tablet) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .client-header {
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .client-title {
+    font-size: 24px !important;
+    text-align: left;
+  }
+
+  .client-button {
+    height: 48px !important;
+    font-size: 16px !important;
+    min-width: 180px !important;
+  }
+}
+
+/* Small screens and mobile */
+@media (max-width: 767px) {
+  .client-header {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .client-header > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .client-header > div > div:first-child {
+    justify-content: center !important;
+    margin-bottom: 16px;
+  }
+
+  .client-header > div > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+    min-width: auto !important;
+  }
+
+  .client-title {
+    font-size: 18px !important;
+    text-align: center;
+  }
+
+  .client-button {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+  }
+
+  .custom-search-input {
+    max-width: 100% !important;
+    height: 40px !important;
+  }
+}
+
+
+
+/* staff styles */
+.staff-header {
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.staff-title {
+  font-size: 20px !important;
+  margin: 0 !important;
+  color: #2c3e50 !important;
+  transition: all 0.3s ease;
+}
+
+.staff-button {
+  background: linear-gradient(135deg, #da2c46 70%, #a51632 100%) !important;
+  border: none !important;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.staff-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(218, 44, 70, 0.3);
+}
+
+.custom-search-input {
+  transition: all 0.3s ease;
+}
+
+.custom-search-input:focus-within {
+  box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2);
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Large screens (desktop) */
+@media (min-width: 1200px) {
+  .staff-header {
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .staff-title {
+    font-size: 28px !important;
+  }
+
+  .staff-button {
+    height: 52px !important;
+    font-size: 16px !important;
+    min-width: 200px !important;
+    padding: 0 24px !important;
+  }
+}
+
+/* Medium screens (tablet) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .staff-header {
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .staff-title {
+    font-size: 24px !important;
+    text-align: left;
+  }
+
+  .staff-button {
+    height: 48px !important;
+    font-size: 16px !important;
+    min-width: 180px !important;
+  }
+}
+
+/* Small screens and mobile */
+@media (max-width: 767px) {
+  .staff-header {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .staff-header > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .staff-header > div > div:first-child {
+    justify-content: center !important;
+    margin-bottom: 16px;
+  }
+
+  .staff-header > div > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+    min-width: auto !important;
+  }
+
+  .staff-title {
+    font-size: 18px !important;
+    text-align: center;
+  }
+
+  .staff-button {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+  }
+
+  .custom-search-input {
+    max-width: 100% !important;
+    height: 40px !important;
   }
 }
