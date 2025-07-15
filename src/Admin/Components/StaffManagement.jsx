@@ -108,11 +108,11 @@ const StaffManagement = () => {
     try {
       if (modalMode === "create") {
         const payload = {
-          fullName: values.name,
+          name: values.name,
           staffType: values.staffType,
           email: values.email,
-          phone: values.contactNo,
-          role: "staff", // Static role value
+          contactNo: values.contactNo,
+          role: "staff", 
         };
         await addStaff(payload).unwrap();
         enqueueSnackbar("Staff member added successfully", {
@@ -120,10 +120,10 @@ const StaffManagement = () => {
         });
       } else {
         const payload = {
-          fullName: values.name,
+          name: values.name,
           staffType: values.staffType,
           email: values.email,
-          phone: values.contactNo,
+          contactNo: values.contactNo,
         };
         await editStaff({ 
           staffId: editingStaff._id, 
