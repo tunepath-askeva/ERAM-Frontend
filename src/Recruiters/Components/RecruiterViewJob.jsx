@@ -104,6 +104,9 @@ const RecruiterViewJob = () => {
           <Tag color="orange" style={{ fontSize: "12px", padding: "4px 8px" }}>
             {workOrder.workOrderStatus}
           </Tag>
+          <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
+            Project: {workOrder.project?.name}
+          </Tag>
         </div>
 
         <Row gutter={[16, 12]} style={{ marginBottom: "16px" }}>
@@ -126,7 +129,7 @@ const RecruiterViewJob = () => {
                 Experience
               </Text>
               <Text style={{ fontSize: "12px" }}>
-                {workOrder.Experience} years
+                {workOrder.experienceMin} - {workOrder.experienceMax} years
               </Text>
             </div>
           </Col>
@@ -172,23 +175,35 @@ const RecruiterViewJob = () => {
           </Col>
         </Row>
 
-        {workOrder.annualSalary && (
+        <div style={{ marginBottom: "16px" }}>
+          <Text strong style={{ fontSize: "13px", display: "block" }}>
+            Salary Range
+          </Text>
+          <Text
+            style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
+          >
+            ${workOrder.salaryMin?.toLocaleString()} - $
+            {workOrder.salaryMax?.toLocaleString()} ({workOrder.salaryType})
+          </Text>
+        </div>
+
+        {/* Assigned Recruiters */}
+        {workOrder.assignedRecruiters?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
-            <Text
-              strong
-              style={{
-                fontSize: "13px",
-                display: "block",
-                marginBottom: "4px",
-              }}
-            >
-              Annual Salary
+            <Text strong style={{ fontSize: "13px", display: "block" }}>
+              Assigned Recruiters
             </Text>
-            <Text
-              style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
-            >
-              ${parseInt(workOrder.annualSalary).toLocaleString()}
-            </Text>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {workOrder.assignedRecruiters.map((recruiter, index) => (
+                <Tag
+                  key={index}
+                  color="blue"
+                  style={{ fontSize: "12px", padding: "4px 8px" }}
+                >
+                  {recruiter.fullName}
+                </Tag>
+              ))}
+            </div>
           </div>
         )}
 
@@ -236,6 +251,7 @@ const RecruiterViewJob = () => {
           </Col>
         </Row>
 
+        {/* Job Description */}
         <div style={{ marginBottom: "16px" }}>
           <Text
             strong
@@ -260,6 +276,67 @@ const RecruiterViewJob = () => {
           </Paragraph>
         </div>
 
+        {/* Key Responsibilities */}
+        {workOrder.keyResponsibilities && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Key Responsibilities
+            </Text>
+            <Paragraph
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "13px",
+                wordBreak: "break-word",
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.keyResponsibilities}
+            </Paragraph>
+          </div>
+        )}
+
+        {/* Qualifications */}
+        {workOrder.qualification && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Qualifications
+            </Text>
+            <Paragraph
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "13px",
+                wordBreak: "break-word",
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.qualification}
+            </Paragraph>
+          </div>
+        )}
+
+        {/* Required Skills */}
         {workOrder.requiredSkills?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text
@@ -286,6 +363,7 @@ const RecruiterViewJob = () => {
           </div>
         )}
 
+        {/* Languages Required */}
         {workOrder.languagesRequired?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text
@@ -312,6 +390,7 @@ const RecruiterViewJob = () => {
           </div>
         )}
 
+        {/* Job Requirements */}
         {workOrder.jobRequirements && (
           <div style={{ marginBottom: "16px" }}>
             <Text
@@ -341,6 +420,7 @@ const RecruiterViewJob = () => {
           </div>
         )}
 
+        {/* Benefits */}
         {workOrder.benefits?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text
@@ -353,23 +433,43 @@ const RecruiterViewJob = () => {
             >
               Benefits
             </Text>
+            <ul style={{ paddingLeft: "20px", margin: 0 }}>
+              {workOrder.benefits
+                .filter((benefit) => benefit.trim() !== "")
+                .map((benefit, index) => (
+                  <li
+                    key={index}
+                    style={{ marginBottom: "8px", fontSize: "13px" }}
+                  >
+                    {benefit}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Required Documents */}
+        {workOrder.documents?.length > 0 && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Required Documents
+            </Text>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {workOrder.benefits.map((benefit, index) => (
-                <Paragraph
+              {workOrder.documents.map((doc, index) => (
+                <Tag
                   key={index}
-                  style={{
-                    whiteSpace: "pre-wrap",
-                    margin: "0",
-                    fontSize: "13px",
-                    wordBreak: "break-word",
-                    backgroundColor: "#fff",
-                    padding: "12px",
-                    borderRadius: "6px",
-                    border: "1px solid #f0f0f0",
-                  }}
+                  color={doc.isMandatory ? "red" : "blue"}
+                  style={{ fontSize: "11px", margin: "0", padding: "4px 8px" }}
                 >
-                  {benefit}
-                </Paragraph>
+                  {doc.name} {doc.isMandatory ? "(Required)" : ""}
+                </Tag>
               ))}
             </div>
           </div>
@@ -533,6 +633,7 @@ const RecruiterViewJob = () => {
                     alignItems: "center",
                     marginBottom: "12px",
                     padding: "8px 12px",
+                    backgroundColor: "#f0f5ff",
                     borderRadius: "6px",
                   }}
                 >
@@ -568,11 +669,16 @@ const RecruiterViewJob = () => {
                             Stage Name: {stage.stageName}
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            Assigned Recruiter:{" "}
-                            {stage.recruiterId
-                              ? stage.recruiterId.fullName
-                              : "Not assigned"}
+                            Dependency: {stage.dependencyType}
                           </Text>
+                          {stage.isCustomStage && (
+                            <Tag
+                              color="orange"
+                              style={{ fontSize: "11px", marginTop: "4px" }}
+                            >
+                              Custom Stage
+                            </Tag>
+                          )}
                         </div>
                       </Col>
                       <Col xs={12} sm={8}>
@@ -606,6 +712,93 @@ const RecruiterViewJob = () => {
                         </div>
                       </Col>
                     </Row>
+
+                    {/* Approval Group */}
+                    {stage.approvalId && (
+                      <Row gutter={[16, 8]} style={{ marginTop: "8px" }}>
+                        <Col span={24}>
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "12px", display: "block" }}
+                            >
+                              Approval Group
+                            </Text>
+                            <Text style={{ fontSize: "12px" }}>
+                              {stage.approvalId.groupName}
+                            </Text>
+                          </div>
+                        </Col>
+                      </Row>
+                    )}
+
+                    {/* Recruiters */}
+                    {stage.recruiterIds?.length > 0 && (
+                      <Row gutter={[16, 8]} style={{ marginTop: "8px" }}>
+                        <Col span={24}>
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "12px", display: "block" }}
+                            >
+                              Assigned Recruiters
+                            </Text>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "4px",
+                                marginTop: "4px",
+                              }}
+                            >
+                              {stage.recruiterIds.map((recruiter, idx) => (
+                                <Tag
+                                  key={idx}
+                                  color="blue"
+                                  style={{ fontSize: "11px" }}
+                                >
+                                  {recruiter.fullName} ({recruiter.email})
+                                </Tag>
+                              ))}
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    )}
+
+                    {/* Staff */}
+                    {stage.staffIds?.length > 0 && (
+                      <Row gutter={[16, 8]} style={{ marginTop: "8px" }}>
+                        <Col span={24}>
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "12px", display: "block" }}
+                            >
+                              Assigned Staff
+                            </Text>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "4px",
+                                marginTop: "4px",
+                              }}
+                            >
+                              {stage.staffIds.map((staff, idx) => (
+                                <Tag
+                                  key={idx}
+                                  color="green"
+                                  style={{ fontSize: "11px" }}
+                                >
+                                  {staff.fullName} ({staff.email})
+                                </Tag>
+                              ))}
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    )}
                   </Card>
                 ))}
               </div>
