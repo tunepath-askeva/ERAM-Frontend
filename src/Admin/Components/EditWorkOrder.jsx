@@ -153,7 +153,7 @@ const EditWorkOrder = () => {
 
   useEffect(() => {
     if (workOrderData?.workOrder) {
-      const workOrder = workOrderData?.workOrder;
+      const workOrder = workOrderData.workOrder;
       try {
         const formatDate = (dateString) => {
           if (!dateString) return null;
@@ -184,37 +184,10 @@ const EditWorkOrder = () => {
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
               approvalId: timeline.approvalId?._id || null,
-              recruiterIds: Array.isArray(timeline.recruiterIds)
-                ? timeline.recruiterIds
-                : timeline.recruiterId
-                ? [timeline.recruiterId]
-                : [],
-              staffIds: Array.isArray(timeline.staffIds)
-                ? timeline.staffIds
-                : timeline.staffId
-                ? [timeline.staffId]
-                : [],
+              recruiterIds: timeline.recruiterIds?.map((r) => r._id) || [],
+              staffIds: timeline.staffIds?.map((s) => s._id) || [],
               isCustomStage: timeline.isCustomStage || false,
             });
-
-            if (timeline.isCustomStage) {
-              if (!initialCustomStages[pipelineId]) {
-                initialCustomStages[pipelineId] = [];
-              }
-
-              if (
-                !initialCustomStages[pipelineId].some(
-                  (s) => s.id === timeline.stageId
-                )
-              ) {
-                initialCustomStages[pipelineId].push({
-                  id: timeline.stageId,
-                  name: timeline.stageName,
-                  description: "",
-                  isCustom: true,
-                });
-              }
-            }
           });
         }
 
@@ -229,37 +202,27 @@ const EditWorkOrder = () => {
         const formData = {
           ...workOrder,
           pipeline: Array.isArray(workOrder.pipeline)
-            ? workOrder.pipeline.map((p) => (typeof p === "object" ? p._id : p))
-            : [workOrder.pipeline],
+            ? workOrder.pipeline.map((p) => p._id)
+            : [workOrder.pipeline._id],
           numberOfCandidates: workOrder.numberOfCandidate,
           startDate: formatDate(workOrder.startDate),
           endDate: formatDate(workOrder.endDate),
           deadlineDate: formatDate(workOrder.deadlineDate),
           alertDate: formatDate(workOrder.alertDate),
-          assignedRecruiters: Array.isArray(workOrder.assignedRecruiters)
-            ? workOrder.assignedRecruiters.map((recruiter) =>
-                typeof recruiter === "object" ? recruiter._id : recruiter
-              )
-            : [workOrder.assignedRecruiters],
-          client:
-            typeof workOrder.client === "object"
-              ? workOrder.client._id
-              : workOrder.client,
-          languagesRequired: Array.isArray(workOrder.languagesRequired)
-            ? workOrder.languagesRequired
-            : [],
-          project:
-            typeof workOrder.project === "object"
-              ? workOrder.project._id
-              : workOrder.project,
-          requiredSkills: Array.isArray(workOrder.requiredSkills)
-            ? workOrder.requiredSkills
-            : [],
+          assignedRecruiters:
+            workOrder.assignedRecruiters?.map((r) => r._id) || [],
+          client: workOrder.client._id,
+          languagesRequired: workOrder.languagesRequired || [],
+          project: workOrder.project._id,
+          requiredSkills: workOrder.requiredSkills || [],
           qualification: workOrder.qualification || "Qualification",
           keyResponsibilities:
             workOrder.keyResponsibilities || "Responsibilities",
           isCommon: workOrder.isCommon || false,
           isActive: workOrder.isActive === "active",
+          benefits: Array.isArray(workOrder.benefits)
+            ? workOrder.benefits.join("\n")
+            : workOrder.benefits || "",
         };
 
         jobForm.setFieldsValue(formData);
@@ -274,7 +237,7 @@ const EditWorkOrder = () => {
           })) || []
         );
         setDocuments(
-          workOrderData.workOrder.documents?.map((doc) => ({
+          workOrder.documents?.map((doc) => ({
             id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
             name: doc.name,
             description: doc.description,
@@ -363,49 +326,25 @@ const EditWorkOrder = () => {
     if (pipeline) {
       setCurrentPipelineForDates(pipeline);
 
-      if (!pipelineStageDates[pipelineId]) {
-        const initialDates = [];
+      const initialDates =
+        workOrderData?.workOrder?.pipelineStageTimeline
+          ?.filter((t) => t.pipelineId._id === pipelineId)
+          ?.map((timeline) => ({
+            stageId: timeline.stageId,
+            stageName: timeline.stageName,
+            startDate: timeline.startDate,
+            endDate: timeline.endDate,
+            dependencyType: timeline.dependencyType || "independent",
+            approvalId: timeline.approvalId?._id || null,
+            recruiterIds: timeline.recruiterIds?.map((r) => r._id) || [],
+            staffIds: timeline.staffIds?.map((s) => s._id) || [],
+            isCustomStage: timeline.isCustomStage || false,
+          })) || [];
 
-        if (workOrderData?.workOrder?.pipelineStageTimeline) {
-          workOrderData.workOrder.pipelineStageTimeline
-            .filter((t) => t.pipelineId === pipelineId)
-            .forEach((timeline) => {
-              initialDates.push({
-                stageId: timeline.stageId,
-                startDate: timeline.startDate,
-                endDate: timeline.endDate,
-              });
-            });
-        }
-
-        pipeline.stages.forEach((stage) => {
-          if (!initialDates.some((d) => d.stageId === stage._id)) {
-            initialDates.push({
-              stageId: stage._id,
-              startDate: null,
-              endDate: null,
-            });
-          }
-        });
-
-        if (customStages[pipelineId]) {
-          customStages[pipelineId].forEach((customStage) => {
-            if (!initialDates.some((d) => d.stageId === customStage.id)) {
-              initialDates.push({
-                stageId: customStage.id,
-                startDate: null,
-                endDate: null,
-              });
-            }
-          });
-        }
-
-        setPipelineStageDates((prev) => ({
-          ...prev,
-          [pipelineId]: initialDates,
-        }));
-      }
-
+      setPipelineStageDates((prev) => ({
+        ...prev,
+        [pipelineId]: initialDates,
+      }));
       setPipelineDatesModalVisible(true);
     }
   };
@@ -1976,35 +1915,18 @@ const EditWorkOrder = () => {
                       { required: true, message: "Please select a pipeline" },
                     ]}
                   >
-                    <Space.Compact style={{ width: "100%" }}>
-                      <Select
-                        mode="multiple"
-                        placeholder="Select pipeline"
-                        onChange={handlePipelineChange}
-                        style={{ width: "calc(100% - 120px)" }}
-                        value={selectedPipelines}
-                      >
-                        {activePipelines.map((pipeline) => (
-                          <Option key={pipeline._id} value={pipeline._id}>
-                            {pipeline.name}
-                          </Option>
-                        ))}
-                      </Select>
-                      <Button
-                        type="primary"
-                        onClick={() => {
-                          setEditingPipeline(null);
-                          setPipelineModalVisible(true);
-                        }}
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                          width: "120px",
-                        }}
-                      >
-                        + New Pipeline
-                      </Button>
-                    </Space.Compact>
+                    <Select
+                      mode="multiple"
+                      placeholder="Select pipeline"
+                      onChange={handlePipelineChange}
+                      value={selectedPipelines}
+                    >
+                      {activePipelines.map((pipeline) => (
+                        <Option key={pipeline._id} value={pipeline._id}>
+                          {pipeline.name}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
 
                   {selectedPipelines.length > 0 && renderSelectedPipelines()}
@@ -2263,11 +2185,16 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="isActive"
-                    label="Common Work Order"
+                    label="Active Status"
                     valuePropName="checked"
                   >
                     <Switch
                       checked={workOrderData?.workOrder?.isActive === "active"}
+                      onChange={(checked) => {
+                        jobForm.setFieldsValue({
+                          isActive: checked ? "active" : "inactive",
+                        });
+                      }}
                     />
                   </Form.Item>
                 </Col>
@@ -2312,7 +2239,14 @@ const EditWorkOrder = () => {
               </Form.Item>
 
               <Form.Item name="benefits" label="Benefits">
-                <TextArea rows={4} placeholder="Enter job benefits" />
+                <TextArea
+                  rows={4}
+                  placeholder="Enter job benefits (one per line)"
+                  onChange={(e) => {
+                    const lines = e.target.value.split("\n");
+                    jobForm.setFieldsValue({ benefits: lines });
+                  }}
+                />
               </Form.Item>
             </Card>
 

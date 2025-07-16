@@ -103,6 +103,16 @@ const ViewWorkOrder = () => {
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
+                Project
+              </Text>
+              <Text style={{ fontSize: "12px", wordBreak: "break-word" }}>
+                {workOrder.project?.name || "Not specified"}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={8}>
+            <div>
+              <Text strong style={{ fontSize: "13px", display: "block" }}>
                 Job Code
               </Text>
               <Text
@@ -113,16 +123,47 @@ const ViewWorkOrder = () => {
               </Text>
             </div>
           </Col>
+
+          {workOrder.assignedRecruiters?.length > 0 && (
+            <div style={{ marginBottom: "16px" }}>
+              <Text
+                strong
+                style={{
+                  fontSize: "13px",
+                  display: "block",
+                  marginBottom: "8px",
+                }}
+              >
+                Assigned Recruiters
+              </Text>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {workOrder.assignedRecruiters.map((recruiter, index) => (
+                  <Tag
+                    key={index}
+                    color="blue"
+                    style={{
+                      fontSize: "11px",
+                      margin: "0",
+                      padding: "4px 8px",
+                    }}
+                  >
+                    {recruiter.fullName}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+          )}
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
                 Experience
               </Text>
               <Text style={{ fontSize: "12px" }}>
-                {workOrder.Experience} years
+                {workOrder.experienceMin} - {workOrder.experienceMax} years
               </Text>
             </div>
           </Col>
+
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
@@ -165,7 +206,7 @@ const ViewWorkOrder = () => {
           </Col>
         </Row>
 
-        {workOrder.annualSalary && (
+        {workOrder.salaryMin && workOrder.salaryMax && (
           <div style={{ marginBottom: "16px" }}>
             <Text
               strong
@@ -175,12 +216,13 @@ const ViewWorkOrder = () => {
                 marginBottom: "4px",
               }}
             >
-              Annual Salary
+              Salary Range ({workOrder.salaryType})
             </Text>
             <Text
               style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
             >
-              ${parseInt(workOrder.annualSalary).toLocaleString()}
+              ${parseInt(workOrder.salaryMin).toLocaleString()} - $
+              {parseInt(workOrder.salaryMax).toLocaleString()}
             </Text>
           </div>
         )}
@@ -208,6 +250,36 @@ const ViewWorkOrder = () => {
             {workOrder.description}
           </Paragraph>
         </div>
+
+        {workOrder.keyResponsibilities && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Key Responsibilities
+            </Text>
+            <Paragraph
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "13px",
+                wordBreak: "break-word",
+                lineHeight: "1.5",
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.keyResponsibilities}
+            </Paragraph>
+          </div>
+        )}
 
         {workOrder.requiredSkills?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
@@ -328,6 +400,35 @@ const ViewWorkOrder = () => {
               }}
             >
               {workOrder.jobRequirements}
+            </Paragraph>
+          </div>
+        )}
+
+        {workOrder.qualification && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              Qualification
+            </Text>
+            <Paragraph
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "13px",
+                wordBreak: "break-word",
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.qualification}
             </Paragraph>
           </div>
         )}
@@ -602,14 +703,60 @@ const ViewWorkOrder = () => {
                             Stage Name: {stage.stageName}
                           </Text>
                           <Text style={{ fontSize: "12px" }}>
-                            Assigned Recruiter:{" "}
-                            {stage.recruiterId
-                              ? stage.recruiterId.fullName
-                              : "Not assigned"}
+                            Approval Group:{" "}
+                            {stage.approvalId?.groupName || "None"}
                           </Text>
                         </div>
                       </Col>
                       <Col xs={12} sm={8}>
+                        <div>
+                          <Text
+                            strong
+                            style={{ fontSize: "12px", display: "block" }}
+                          >
+                            Recruiters
+                          </Text>
+                          <div style={{ marginTop: "4px" }}>
+                            {stage.recruiterIds?.map((recruiter, idx) => (
+                              <Tag
+                                key={idx}
+                                color="blue"
+                                style={{
+                                  fontSize: "10px",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                {recruiter.fullName}
+                              </Tag>
+                            ))}
+                          </div>
+                        </div>
+                      </Col>
+                      <Col xs={12} sm={8}>
+                        <div>
+                          <Text
+                            strong
+                            style={{ fontSize: "12px", display: "block" }}
+                          >
+                            Staff
+                          </Text>
+                          <div style={{ marginTop: "4px" }}>
+                            {stage.staffIds?.map((staff, idx) => (
+                              <Tag
+                                key={idx}
+                                color="green"
+                                style={{
+                                  fontSize: "10px",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                {staff.fullName}
+                              </Tag>
+                            ))}
+                          </div>
+                        </div>
+                      </Col>
+                      <Col xs={12} sm={6}>
                         <div>
                           <Text
                             strong
@@ -624,7 +771,7 @@ const ViewWorkOrder = () => {
                           </Text>
                         </div>
                       </Col>
-                      <Col xs={12} sm={8}>
+                      <Col xs={12} sm={6}>
                         <div>
                           <Text
                             strong

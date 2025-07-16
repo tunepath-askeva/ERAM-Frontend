@@ -48,7 +48,6 @@ const CandidateFormModal = ({
   useEffect(() => {
     if (visible) {
       if (isEditMode && editingCandidate) {
-        // Pre-populate form with existing candidate data
         const [firstName, ...lastNameParts] =
           editingCandidate.fullName.split(" ");
         const lastName = lastNameParts.join(" ");
