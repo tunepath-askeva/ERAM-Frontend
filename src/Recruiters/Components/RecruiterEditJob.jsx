@@ -80,6 +80,10 @@ const RecruiterEditJob = () => {
   const [stageApprovers, setStageApprovers] = useState({});
   const [stageCustomFields, setStageCustomFields] = useState({});
   const [stageRequiredDocuments, setStageRequiredDocuments] = useState({});
+  const [stageStaffAssignments, setStageStaffAssignments] = useState({});
+  const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
+    {}
+  );
 
   const {
     data: fetchedJobData,
@@ -88,9 +92,11 @@ const RecruiterEditJob = () => {
     refetch,
   } = useGetRecruiterJobIdQuery(id);
   const { data: pipelineData } = useGetPipelinesQuery();
+  // const { data: clientsData } = useGetClientsQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
   const activePipelines = pipelineData?.pipelines || [];
+  // const clients = clientsData?.clients || [];
 
   useEffect(() => {
     if (fetchedJobData?.workOrder) {
@@ -98,7 +104,6 @@ const RecruiterEditJob = () => {
         const formatDate = (dateString) => {
           if (!dateString) return null;
           try {
-            // Extract just the date part from ISO string
             const datePart = dateString.split("T")[0];
             return dayjs(datePart);
           } catch (error) {
@@ -113,10 +118,12 @@ const RecruiterEditJob = () => {
         const initialCustomStages = {};
         const initialStageCustomFields = {};
         const initialStageRequiredDocuments = {};
+        const initialStageStaffAssignments = {};
+        const initialStageRecruiterAssignments = {};
 
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = timeline.pipelineId._id; // Get _id from nested object
+            const pipelineId = timeline.pipelineId._id;
 
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
@@ -155,6 +162,12 @@ const RecruiterEditJob = () => {
             if (!initialStageRequiredDocuments[pipelineId]) {
               initialStageRequiredDocuments[pipelineId] = {};
             }
+            if (!initialStageStaffAssignments[pipelineId]) {
+              initialStageStaffAssignments[pipelineId] = {};
+            }
+            if (!initialStageRecruiterAssignments[pipelineId]) {
+              initialStageRecruiterAssignments[pipelineId] = {};
+            }
 
             initialStageCustomFields[pipelineId][timeline.stageId] =
               timeline.customFields?.map((field) => ({
@@ -175,16 +188,23 @@ const RecruiterEditJob = () => {
                     .toString(36)
                     .substr(2, 9)}`,
               })) || [];
+
+            initialStageStaffAssignments[pipelineId][timeline.stageId] =
+              timeline.staffIds?.map((staff) => staff._id) || [];
+
+            initialStageRecruiterAssignments[pipelineId][timeline.stageId] =
+              timeline.recruiterIds?.map((recruiter) => recruiter._id) || [];
           });
         }
 
         setPipelineStageDates(initialStageDates);
         setCustomStages(initialCustomStages);
+        setStageStaffAssignments(initialStageStaffAssignments);
+        setStageRecruiterAssignments(initialStageRecruiterAssignments);
 
         const selectedPipeIds = job.pipeline?.map((p) => p._id) || [];
         setSelectedPipelines(selectedPipeIds);
 
-        // Initialize custom fields
         setApplicationFields(
           job.customFields?.map((field) => ({
             ...field,
@@ -194,7 +214,6 @@ const RecruiterEditJob = () => {
           })) || []
         );
 
-        // Prepare form data
         const formData = {
           title: job.title,
           jobCode: job.jobCode,
@@ -207,16 +226,22 @@ const RecruiterEditJob = () => {
           Experience: job.Experience,
           Education: job.Education,
           salaryType: job.salaryType,
-          annualSalary: job.annualSalary,
+          salaryMin: job.salaryMin,
+          salaryMax: job.salaryMax,
+          experienceMin: job.experienceMin,
+          experienceMax: job.experienceMax,
           startDate: formatDate(job.startDate),
           endDate: formatDate(job.endDate),
           deadlineDate: formatDate(job.deadlineDate),
           alertDate: formatDate(job.alertDate),
           requiredSkills: job.requiredSkills || [],
           jobRequirements: job.jobRequirements,
+          keyResponsibilities: job.keyResponsibilities,
+          qualification: job.qualification,
           numberOfCandidate: job.numberOfCandidate,
           benefits: job.benefits || [],
           languagesRequired: job.languagesRequired || [],
+          client: job.client?._id,
           pipeline: selectedPipeIds,
           isActive: job.isActive === "active",
         };
@@ -666,6 +691,11 @@ const RecruiterEditJob = () => {
             const requiredDocuments =
               stageRequiredDocuments[pipeId]?.[dateEntry.stageId] || [];
 
+            const staffIds =
+              stageStaffAssignments[pipeId]?.[dateEntry.stageId] || [];
+            const recruiterIds =
+              stageRecruiterAssignments[pipeId]?.[dateEntry.stageId] || [];
+
             return {
               pipelineId: pipeId,
               stageId: dateEntry.stageId,
@@ -677,7 +707,8 @@ const RecruiterEditJob = () => {
               endDate: dateEntry.endDate,
               dependencyType: dateEntry.dependencyType || "independent",
               isCustomStage: isCustom,
-              recruiterId: originalStage?.recruiterId?._id || null,
+              recruiterIds: recruiterIds.map((id) => ({ _id: id })),
+              staffIds: staffIds.map((id) => ({ _id: id })),
               approvalId: originalStage?.approvalId?._id || null,
               customFields: customFields.map((field) => ({
                 _id: field._id,
@@ -708,7 +739,7 @@ const RecruiterEditJob = () => {
                 }),
               })),
               requiredDocuments: requiredDocuments.map((doc) => ({
-                _id: doc._id, // Include the original _id if it exists
+                _id: doc._id,
                 title: doc.title,
               })),
             };
@@ -742,6 +773,30 @@ const RecruiterEditJob = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStaffAssignmentChange = (pipelineId, stageId, staffIds) => {
+    setStageStaffAssignments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: staffIds,
+      },
+    }));
+  };
+
+  const handleRecruiterAssignmentChange = (
+    pipelineId,
+    stageId,
+    recruiterIds
+  ) => {
+    setStageRecruiterAssignments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: recruiterIds,
+      },
+    }));
   };
 
   const handleCancel = () => {
@@ -1305,6 +1360,19 @@ const RecruiterEditJob = () => {
       return (aIndex || 0) - (bIndex || 0);
     });
 
+    // Get assigned recruiters from work order
+    const assignedRecruiters =
+      fetchedJobData?.workOrder?.assignedRecruiters || [];
+    // Get staff members (you may need to fetch this from your API)
+    const staffMembers = [
+      {
+        _id: "68763ddd529fd3206aead692",
+        fullName: "dhoni parvez",
+        email: "rohithdhoniparvez@gmail.com",
+      },
+      // Add more staff members as needed
+    ];
+
     return (
       <Modal
         title={`Set Stage Dates & Approvals for ${
@@ -1352,6 +1420,10 @@ const RecruiterEditJob = () => {
 
           const stageFields = stageCustomFields[pipelineId]?.[stageId] || [];
           const stageDocs = stageRequiredDocuments[pipelineId]?.[stageId] || [];
+          const assignedStaff =
+            stageStaffAssignments[pipelineId]?.[stageId] || [];
+          const assignedRecruitersForStage =
+            stageRecruiterAssignments[pipelineId]?.[stageId] || [];
 
           return (
             <Card
@@ -1429,12 +1501,7 @@ const RecruiterEditJob = () => {
             >
               <Row gutter={[16, 16]} align="bottom">
                 <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Start Date"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
+                  <Form.Item label="Start Date" style={{ marginBottom: 0 }}>
                     <DatePicker
                       style={{ width: "100%" }}
                       size="small"
@@ -1454,12 +1521,7 @@ const RecruiterEditJob = () => {
                 </Col>
 
                 <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="End Date"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
+                  <Form.Item label="End Date" style={{ marginBottom: 0 }}>
                     <DatePicker
                       style={{ width: "100%" }}
                       size="small"
@@ -1480,43 +1542,8 @@ const RecruiterEditJob = () => {
 
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
-                    label="Assigned Recruiter"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <Select
-                      value={
-                        stageDetails?.recruiterId?.fullName || "Not assigned"
-                      }
-                      disabled
-                    ></Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Required Approval"
-                    style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
-                  >
-                    <Select
-                      value={
-                        stageDetails?.approvalId?.groupName ||
-                        "No approval required"
-                      }
-                      disabled
-                    ></Select>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
                     label="Dependency Type"
                     style={{ marginBottom: 0 }}
-                    labelCol={{ span: 24 }}
-                    wrapperCol={{ span: 24 }}
                   >
                     <Select
                       value={dateEntry?.dependencyType || "independent"}
@@ -1529,6 +1556,81 @@ const RecruiterEditJob = () => {
                       <Option value="independent">Independent</Option>
                       <Option value="dependent">Dependent</Option>
                     </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Assigned Recruiters"
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Select
+                      mode="multiple"
+                      value={assignedRecruitersForStage}
+                      onChange={(value) =>
+                        handleRecruiterAssignmentChange(
+                          pipelineId,
+                          stageId,
+                          value
+                        )
+                      }
+                      style={{ width: "100%" }}
+                      size="small"
+                      placeholder="Select recruiters"
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .indexOf(input.toLowerCase()) >= 0
+                      }
+                    >
+                      {assignedRecruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item label="Assigned Staff" style={{ marginBottom: 0 }}>
+                    <Select
+                      mode="multiple"
+                      value={assignedStaff}
+                      onChange={(value) =>
+                        handleStaffAssignmentChange(pipelineId, stageId, value)
+                      }
+                      style={{ width: "100%" }}
+                      size="small"
+                      placeholder="Select staff"
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .indexOf(input.toLowerCase()) >= 0
+                      }
+                    >
+                      {staffMembers.map((staff) => (
+                        <Option key={staff._id} value={staff._id}>
+                          {staff.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={12} lg={8}>
+                  <Form.Item
+                    label="Required Approval"
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Select
+                      value={
+                        stageDetails?.approvalId?.groupName ||
+                        "No approval required"
+                      }
+                    ></Select>
                   </Form.Item>
                 </Col>
               </Row>
@@ -1823,7 +1925,6 @@ const RecruiterEditJob = () => {
           current={currentStep}
           style={{ marginBottom: "24px" }}
           size="small"
-          responsive={false}
         >
           <Steps.Step
             title={<span style={{ fontSize: "12px" }}>Job Details</span>}
@@ -1836,23 +1937,14 @@ const RecruiterEditJob = () => {
         </Steps>
 
         <Card title="Edit Job - Job Details" style={{ marginBottom: "24px" }}>
-          <Form
-            form={jobForm}
-            layout="vertical"
-            initialValues={{
-              isActive: true,
-            }}
-          >
+          <Form form={jobForm} layout="vertical">
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="title"
                   label="Job Title"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please enter job title",
-                    },
+                    { required: true, message: "Please enter job title" },
                   ]}
                 >
                   <Input placeholder="e.g. Senior Software Engineer" disabled />
@@ -1862,12 +1954,7 @@ const RecruiterEditJob = () => {
                 <Form.Item
                   name="jobCode"
                   label="Job Code"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter job code",
-                    },
-                  ]}
+                  rules={[{ required: true, message: "Please enter job code" }]}
                 >
                   <Input placeholder="e.g. AWINC-1-1112" disabled />
                 </Form.Item>
@@ -1899,10 +1986,7 @@ const RecruiterEditJob = () => {
                   name="workplace"
                   label="Workplace Type"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please select workplace type",
-                    },
+                    { required: true, message: "Please select workplace type" },
                   ]}
                 >
                   <Select placeholder="Select workplace type">
@@ -1925,10 +2009,7 @@ const RecruiterEditJob = () => {
                   name="jobFunction"
                   label="Job Function"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please enter job function",
-                    },
+                    { required: true, message: "Please enter job function" },
                   ]}
                 >
                   <Input placeholder="e.g. Software Development" />
@@ -1952,13 +2033,47 @@ const RecruiterEditJob = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
+                <Form.Item name="client" label="Client">
+                  <Select placeholder="Select client" showSearch disabled>
+                    {/* {clients.map((client) => (
+                      <Option key={client._id} value={client._id}>
+                        {client.name}
+                      </Option>
+                    ))} */}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* Experience Range */}
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
                 <Form.Item
-                  name="Experience"
-                  label="Required Experience (years)"
+                  name="experienceMin"
+                  label="Minimum Experience (years)"
                   rules={[
                     {
                       required: true,
-                      message: "Please enter required experience",
+                      message: "Please enter minimum experience",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={50}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 3"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="experienceMax"
+                  label="Maximum Experience (years)"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter maximum experience",
                     },
                   ]}
                 >
@@ -1972,58 +2087,45 @@ const RecruiterEditJob = () => {
               </Col>
             </Row>
 
+            {/* Salary Range */}
             <Row gutter={[24, 16]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="Education"
-                  label="Required Education"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please select education level",
-                    },
-                  ]}
-                >
-                  <Select placeholder="Select education level">
-                    <Option value="high-school">High School</Option>
-                    <Option value="associate">Associate Degree</Option>
-                    <Option value="bachelor">Bachelor's Degree</Option>
-                    <Option value="masters">Master's Degree</Option>
-                    <Option value="phd">PhD</Option>
-                    <Option value="none">None</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="salaryType"
                   label="Salary Type"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please select salary type",
-                    },
+                    { required: true, message: "Please select salary type" },
                   ]}
                 >
                   <Select placeholder="Select salary type">
                     <Option value="annual">Annual</Option>
                     <Option value="monthly">Monthly</Option>
+                    <Option value="weekly">Weekly</Option>
                     <Option value="hourly">Hourly</Option>
                   </Select>
                 </Form.Item>
               </Col>
-            </Row>
-
-            <Row gutter={[24, 16]}>
-              <Col xs={24} sm={12}>
+              <Col xs={24} sm={6}>
                 <Form.Item
-                  name="annualSalary"
-                  label="Salary Amount"
+                  name="salaryMin"
+                  label="Minimum Salary"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please enter salary amount",
-                    },
+                    { required: true, message: "Please enter minimum salary" },
+                  ]}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: "100%" }}
+                    placeholder="e.g. 50000"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Form.Item
+                  name="salaryMax"
+                  label="Maximum Salary"
+                  rules={[
+                    { required: true, message: "Please enter maximum salary" },
                   ]}
                 >
                   <InputNumber
@@ -2033,47 +2135,46 @@ const RecruiterEditJob = () => {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="numberOfCandidate"
-                  label="Number of Candidates Needed"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter number of candidates",
-                    },
-                  ]}
-                >
-                  <InputNumber
-                    min={1}
-                    style={{ width: "100%" }}
-                    placeholder="e.g. 5"
-                  />
-                </Form.Item>
-              </Col>
             </Row>
 
             <Form.Item
               name="description"
               label="Job Description"
               rules={[
-                {
-                  required: true,
-                  message: "Please enter job description",
-                },
+                { required: true, message: "Please enter job description" },
               ]}
             >
               <TextArea rows={6} placeholder="Enter detailed job description" />
             </Form.Item>
 
             <Form.Item
-              name="requiredSkills"
-              label="Required Skills"
+              name="keyResponsibilities"
+              label="Key Responsibilities"
               rules={[
                 {
                   required: true,
-                  message: "Please add at least one skill",
+                  message: "Please enter key responsibilities",
                 },
+              ]}
+            >
+              <TextArea rows={4} placeholder="Enter key responsibilities" />
+            </Form.Item>
+
+            <Form.Item
+              name="qualification"
+              label="Qualifications"
+              rules={[
+                { required: true, message: "Please enter qualifications" },
+              ]}
+            >
+              <TextArea rows={4} placeholder="Enter required qualifications" />
+            </Form.Item>
+
+            <Form.Item
+              name="requiredSkills"
+              label="Required Skills"
+              rules={[
+                { required: true, message: "Please add at least one skill" },
               ]}
             >
               <Select
@@ -2083,14 +2184,19 @@ const RecruiterEditJob = () => {
               />
             </Form.Item>
 
+            <Form.Item name="languagesRequired" label="Languages Required">
+              <Select
+                mode="tags"
+                placeholder="Add languages (type and press enter)"
+                tokenSeparators={[","]}
+              />
+            </Form.Item>
+
             <Form.Item
               name="jobRequirements"
               label="Additional Requirements"
               rules={[
-                {
-                  required: true,
-                  message: "Please enter job requirements",
-                },
+                { required: true, message: "Please enter job requirements" },
               ]}
             >
               <TextArea
@@ -2103,10 +2209,7 @@ const RecruiterEditJob = () => {
               name="benefits"
               label="Benefits"
               rules={[
-                {
-                  required: true,
-                  message: "Please add at least one benefit",
-                },
+                { required: true, message: "Please add at least one benefit" },
               ]}
             >
               <TextArea
@@ -2121,10 +2224,7 @@ const RecruiterEditJob = () => {
                   name="startDate"
                   label="Start Date"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please select start date",
-                    },
+                    { required: true, message: "Please select start date" },
                   ]}
                 >
                   <DatePicker style={{ width: "100%" }} />
@@ -2135,10 +2235,7 @@ const RecruiterEditJob = () => {
                   name="endDate"
                   label="End Date"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please select end date",
-                    },
+                    { required: true, message: "Please select end date" },
                   ]}
                 >
                   <DatePicker style={{ width: "100%" }} />
@@ -2149,10 +2246,7 @@ const RecruiterEditJob = () => {
                   name="deadlineDate"
                   label="Application Deadline"
                   rules={[
-                    {
-                      required: true,
-                      message: "Please select deadline date",
-                    },
+                    { required: true, message: "Please select deadline date" },
                   ]}
                 >
                   <DatePicker style={{ width: "100%" }} disabled />
