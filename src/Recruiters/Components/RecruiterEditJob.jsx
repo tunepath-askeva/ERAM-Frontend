@@ -850,6 +850,47 @@ const RecruiterEditJob = () => {
             )}
           </div>
 
+          {/* Experience Range */}
+          <div style={{ marginBottom: "12px" }}>
+            <h4
+              style={{
+                margin: "0 0 4px 0",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              Experience Required
+            </h4>
+            <p style={{ margin: "0", fontSize: "12px" }}>
+              {displayData?.experienceMin || "0"} -{" "}
+              {displayData?.experienceMax || "0"} years
+            </p>
+          </div>
+
+          {/* Salary Range */}
+          {displayData?.salaryMin && displayData?.salaryMax && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Salary Range
+              </h4>
+              <p style={{ margin: "0", fontSize: "12px" }}>
+                {displayData.salaryType === "annual" && "$"}
+                {displayData.salaryMin.toLocaleString()} -{" "}
+                {displayData.salaryMax.toLocaleString()}
+                {displayData.salaryType === "hourly" && " per hour"}
+                {displayData.salaryType === "weekly" && " per week"}
+                {displayData.salaryType === "monthly" && " per month"}
+                {displayData.salaryType === "annual" && " per year"}
+              </p>
+            </div>
+          )}
+
           <div style={{ marginBottom: "12px" }}>
             <h4
               style={{
@@ -874,51 +915,85 @@ const RecruiterEditJob = () => {
             </p>
           </div>
 
-          <Row gutter={8} style={{ marginBottom: "12px" }}>
-            <Col span={12}>
-              <h4
-                style={{
-                  margin: "0 0 2px 0",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                }}
-              >
-                Experience
-              </h4>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                {displayData?.Experience || "0"} years
-              </p>
-            </Col>
-            <Col span={12}>
-              <h4
-                style={{
-                  margin: "0 0 2px 0",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                }}
-              >
-                Education
-              </h4>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                {displayData?.Education || "Not specified"}
-              </p>
-            </Col>
-          </Row>
-
-          {displayData?.annualSalary && (
+          {/* Key Responsibilities */}
+          {displayData?.keyResponsibilities && (
             <div style={{ marginBottom: "12px" }}>
               <h4
                 style={{
-                  margin: "0 0 2px 0",
+                  margin: "0 0 4px 0",
                   fontSize: "13px",
                   fontWeight: "600",
                 }}
               >
-                Annual Salary
+                Key Responsibilities
               </h4>
-              <p style={{ margin: "0", fontSize: "12px" }}>
-                ${displayData.annualSalary.toLocaleString()}
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                  lineHeight: "1.4",
+                }}
+              >
+                {displayData.keyResponsibilities}
               </p>
+            </div>
+          )}
+
+          {/* Qualifications */}
+          {displayData?.qualification && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Qualifications
+              </h4>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  margin: "0",
+                  fontSize: "12px",
+                  wordBreak: "break-word",
+                  lineHeight: "1.4",
+                }}
+              >
+                {displayData.qualification}
+              </p>
+            </div>
+          )}
+
+          {/* Required Languages */}
+          {displayData?.languagesRequired?.length > 0 && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Required Languages
+              </h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+                {displayData.languagesRequired.map((language, index) => (
+                  <Tag
+                    key={index}
+                    color="blue"
+                    style={{
+                      fontSize: "10px",
+                      margin: "0",
+                      padding: "2px 6px",
+                    }}
+                  >
+                    {language}
+                  </Tag>
+                ))}
+              </div>
             </div>
           )}
 
