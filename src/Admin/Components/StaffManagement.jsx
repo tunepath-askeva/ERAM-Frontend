@@ -31,6 +31,7 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
   CheckOutlined,
+  StopOutlined
 } from "@ant-design/icons";
 import {
   useAddStaffMutation,
@@ -397,7 +398,7 @@ const StaffManagement = () => {
                         size="small"
                         icon={
                           staffMember.accountStatus === "active" ? (
-                            <WarningOutlined />
+                            <StopOutlined />
                           ) : (
                             <CheckOutlined />
                           )

@@ -10,21 +10,37 @@ import {
   LockOutlined,
   BookOutlined,
   StarOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
-import { 
-  useAddCandidateMutation, 
-  useEditCandidateMutation 
+import {
+  useAddCandidateMutation,
+  useEditCandidateMutation,
+  useGetClientsQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
 
 const { Option } = Select;
-
 const { TextArea } = Input;
 
-const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidate }) => {
+const CandidateFormModal = ({
+  visible,
+  onCancel,
+  onSubmit,
+  form,
+  editingCandidate,
+}) => {
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
   const { enqueueSnackbar } = useSnackbar();
+  const { data: clientsData } = useGetClientsQuery({
+    includePagination: false,
+  });
+
+  const activeSuppliers =
+    clientsData?.clients?.filter(
+      (client) =>
+        client.accountStatus === "active" && client.clientType === "Supplier"
+    ) || [];
 
   const isEditMode = !!editingCandidate;
   const isLoading = isAdding || isEditing;
@@ -33,9 +49,10 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
     if (visible) {
       if (isEditMode && editingCandidate) {
         // Pre-populate form with existing candidate data
-        const [firstName, ...lastNameParts] = editingCandidate.fullName.split(" ");
+        const [firstName, ...lastNameParts] =
+          editingCandidate.fullName.split(" ");
         const lastName = lastNameParts.join(" ");
-        
+
         form.setFieldsValue({
           firstName: firstName || "",
           lastName: lastName || "",
@@ -45,6 +62,7 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
           specialization: editingCandidate.specialization || "",
           experience: editingCandidate.experience || "",
           qualifications: editingCandidate.qualifications || "",
+          supplierId: editingCandidate.supplierId || undefined, // Add supplierId
         });
       } else {
         form.resetFields();
@@ -70,10 +88,12 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
 
         await editCandidate({
           id: editingCandidate._id,
-          candidateData: editPayload
+          candidateData: editPayload,
         }).unwrap();
-        
-        enqueueSnackbar("Candidate updated successfully!", { variant: "success" });
+
+        enqueueSnackbar("Candidate updated successfully!", {
+          variant: "success",
+        });
       } else {
         const createPayload = {
           ...payload,
@@ -82,7 +102,9 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
         };
 
         await addCandidate(createPayload).unwrap();
-        enqueueSnackbar("Candidate created successfully!", { variant: "success" });
+        enqueueSnackbar("Candidate created successfully!", {
+          variant: "success",
+        });
       }
 
       if (onSubmit) {
@@ -92,10 +114,15 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
       onCancel();
       form.resetFields();
     } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} candidate:`, error);
+      console.error(
+        `Error ${isEditMode ? "updating" : "creating"} candidate:`,
+        error
+      );
       enqueueSnackbar(
-        error?.data?.message || 
-        `Failed to ${isEditMode ? 'update' : 'create'} candidate. Please try again.`,
+        error?.data?.message ||
+          `Failed to ${
+            isEditMode ? "update" : "create"
+          } candidate. Please try again.`,
         { variant: "error" }
       );
     }
@@ -103,11 +130,11 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
 
   const validateConfirmPassword = (_, value) => {
     const password = form.getFieldValue("password");
-    
+
     if (isEditMode && !password && !value) {
       return Promise.resolve();
     }
-    
+
     if (!value || password === value) {
       return Promise.resolve();
     }
@@ -243,9 +270,7 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
               name="experience"
               rules={[{ required: true, message: "Please enter experience" }]}
             >
-               <Input
-                placeholder="Enter work experience."
-              />
+              <Input placeholder="Enter work experience." />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -264,25 +289,72 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
           </Col>
         </Row>
 
+        {/* Add Supplier Field */}
+        <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item
+              label="Supplier (Optional)"
+              name="supplierId"
+              help="Select a supplier if this candidate is associated with one"
+            >
+              <Select
+                placeholder={
+                  clientsData ? "Select a supplier" : "Loading suppliers..."
+                }
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  String(option?.children ?? "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+                loading={!clientsData}
+                notFoundContent={
+                  activeSuppliers.length === 0
+                    ? "No active suppliers available"
+                    : null
+                }
+              >
+                {activeSuppliers.map((supplier) => (
+                  <Option
+                    key={supplier._id}
+                    value={supplier._id}
+                    title={supplier.fullName || supplier.companyName}
+                  >
+                    {supplier.fullName ||
+                      supplier.companyName ||
+                      `Supplier (ID: ${supplier._id})`}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label={isEditMode ? "New Password (Optional)" : "Password"}
               name="password"
               rules={[
-                { 
-                  required: !isEditMode, 
-                  message: "Please enter password" 
+                {
+                  required: !isEditMode,
+                  message: "Please enter password",
                 },
-                { 
-                  min: 6, 
-                  message: "Password must be at least 6 characters" 
+                {
+                  min: 6,
+                  message: "Password must be at least 6 characters",
                 },
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder={isEditMode ? "Leave blank to keep current password" : "Enter password"}
+                placeholder={
+                  isEditMode
+                    ? "Leave blank to keep current password"
+                    : "Enter password"
+                }
               />
             </Form.Item>
           </Col>
@@ -292,9 +364,9 @@ const CandidateFormModal = ({ visible, onCancel, onSubmit, form, editingCandidat
               name="confirmPassword"
               dependencies={["password"]}
               rules={[
-                { 
-                  required: !isEditMode && form.getFieldValue("password"), 
-                  message: "Please confirm password" 
+                {
+                  required: !isEditMode && form.getFieldValue("password"),
+                  message: "Please confirm password",
                 },
                 { validator: validateConfirmPassword },
               ]}

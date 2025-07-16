@@ -32,6 +32,7 @@ import {
   WarningOutlined,
   TagOutlined,
   CheckOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
 import {
   useAddClientMutation,
@@ -345,7 +346,7 @@ const ClientsManagement = () => {
                           size="small"
                           icon={
                             client.accountStatus === "active" ? (
-                              <WarningOutlined />
+                              <StopOutlined />
                             ) : (
                               <CheckOutlined />
                             )
