@@ -211,6 +211,11 @@ const EditWorkOrder = () => {
             : [workOrder.pipeline._id]
         );
 
+        // Handle benefits - ensure it's always an array
+        const benefits = Array.isArray(workOrder.benefits)
+          ? workOrder.benefits.join("\n")
+          : workOrder.benefits || "";
+
         const formData = {
           ...workOrder,
           pipeline: Array.isArray(workOrder.pipeline)
@@ -223,13 +228,12 @@ const EditWorkOrder = () => {
           alertDate: formatDate(workOrder.alertDate),
           assignedRecruiters:
             workOrder.assignedRecruiters?.map((r) => r._id) || [],
-          client: workOrder.client._id,
+          client: workOrder.client?._id || null, // Handle null client
           languagesRequired: Array.isArray(workOrder.languagesRequired)
             ? workOrder.languagesRequired
             : (workOrder.languagesRequired || "")
                 .split(",")
-                .map((lang) => lang.trim())
-                .filter((lang) => lang), 
+                .filter((lang) => lang.trim()),
           project: workOrder.project._id,
           requiredSkills: workOrder.requiredSkills || [],
           qualification: workOrder.qualification || "Qualification",
@@ -237,9 +241,7 @@ const EditWorkOrder = () => {
             workOrder.keyResponsibilities || "Responsibilities",
           isCommon: workOrder.isCommon || false,
           isActive: workOrder.isActive === "active",
-          benefits: Array.isArray(workOrder.benefits)
-            ? workOrder.benefits.join("\n")
-            : workOrder.benefits || "",
+          benefits: benefits,
         };
 
         jobForm.setFieldsValue(formData);
@@ -258,7 +260,7 @@ const EditWorkOrder = () => {
             id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
             name: doc.name,
             description: doc.description,
-            isMandatory: true,
+            isMandatory: doc.isMandatory !== false, // Default to true if not specified
           })) || []
         );
       } catch (error) {
@@ -664,13 +666,9 @@ const EditWorkOrder = () => {
           description: doc.description,
           isMandatory: doc.isMandatory,
         })),
-        client: values.client,
-        languagesRequired: Array.isArray(values.languagesRequired)
-          ? values.languagesRequired
-          : (values.languagesRequired || "")
-              .split(",")
-              .map((lang) => lang.trim())
-              .filter((lang) => lang), // Properly handle languagesRequired
+        client: values.client || jobData.client,
+        languagesRequired:
+          values.languagesRequired || jobData.languagesRequired || [],
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -1993,10 +1991,10 @@ const EditWorkOrder = () => {
                     name="client"
                     label="Assign Client"
                     rules={[
-                      { required: true, message: "Please select a client" },
-                    ]}
+                      { required: false, message: "Please select a client" },
+                    ]} // Make client optional
                   >
-                    <Select placeholder="Select client">
+                    <Select placeholder="Select client" allowClear>
                       {activeClients.map((client) => (
                         <Option key={client._id} value={client._id}>
                           {client.fullName}
