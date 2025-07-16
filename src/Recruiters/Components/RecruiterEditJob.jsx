@@ -42,6 +42,8 @@ import {
   useGetRecruiterJobIdQuery,
   useGetPipelinesQuery,
   useGetAllRecruitersQuery,
+  useGetAllLevelsQuery,
+  useGetAllStaffsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
@@ -94,13 +96,16 @@ const RecruiterEditJob = () => {
   } = useGetRecruiterJobIdQuery(id);
   const { data: pipelineData } = useGetPipelinesQuery();
   const { data: recruiterData } = useGetAllRecruitersQuery();
+  const { data: staffData } = useGetAllStaffsQuery();
+  const { data: levelData } = useGetAllLevelsQuery();
   // const { data: clientsData } = useGetClientsQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
   const activePipelines = pipelineData?.pipelines || [];
   // const clients = clientsData?.clients || [];
-  const recruiters = recruiterData?.otherRecruiters || []
-
+  const recruiters = recruiterData?.otherRecruiters || [];
+  const staffs = staffData?.otherRecruiters || [];
+  const levelGroups = levelData?.otherRecruiters || [];
   useEffect(() => {
     if (fetchedJobData?.workOrder) {
       try {
@@ -127,7 +132,7 @@ const RecruiterEditJob = () => {
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
             const pipelineId = timeline.pipelineId._id;
-
+            const stageId = timeline.stageId;
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
             }
@@ -137,6 +142,7 @@ const RecruiterEditJob = () => {
               startDate: timeline.startDate,
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
+              approvalId: timeline.approvalId?._id || undefined,
             });
 
             if (timeline.isCustomStage) {
@@ -157,6 +163,14 @@ const RecruiterEditJob = () => {
                   isCustom: true,
                 });
               }
+            }
+
+            if (timeline.approvalId) {
+              handleLevelChange(
+                pipelineId,
+                timeline.stageId,
+                timeline.approvalId._id
+              );
             }
 
             if (!initialStageCustomFields[pipelineId]) {
@@ -712,7 +726,7 @@ const RecruiterEditJob = () => {
               isCustomStage: isCustom,
               recruiterIds: recruiterIds.map((id) => ({ _id: id })),
               staffIds: staffIds.map((id) => ({ _id: id })),
-              approvalId: originalStage?.approvalId?._id || null,
+              approvalId: dateEntry.approvalId || null,
               customFields: customFields.map((field) => ({
                 _id: field._id,
                 label: field.label,
@@ -786,6 +800,37 @@ const RecruiterEditJob = () => {
         [stageId]: staffIds,
       },
     }));
+  };
+
+  const handleLevelChange = (pipelineId, stageId, levelId) => {
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      const stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+
+      if (stageIndex === -1) {
+        newDates[pipelineId].push({
+          stageId,
+          approvalId: levelId,
+          startDate: null,
+          endDate: null,
+          dependencyType: "independent",
+        });
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          approvalId: levelId,
+        };
+      }
+
+      return newDates;
+    });
   };
 
   const handleRecruiterAssignmentChange = (
@@ -1664,7 +1709,7 @@ const RecruiterEditJob = () => {
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
-                          {recruiter.fullName}
+                          {recruiter.fullName || recruiter.email}
                         </Option>
                       ))}
                     </Select>
@@ -1689,9 +1734,9 @@ const RecruiterEditJob = () => {
                           .indexOf(input.toLowerCase()) >= 0
                       }
                     >
-                      {staffMembers.map((staff) => (
+                      {staffs.map((staff) => (
                         <Option key={staff._id} value={staff._id}>
-                          {staff.fullName}
+                          {staff.fullName || staff.email}
                         </Option>
                       ))}
                     </Select>
@@ -1699,16 +1744,28 @@ const RecruiterEditJob = () => {
                 </Col>
 
                 <Col xs={24} sm={12} md={12} lg={8}>
-                  <Form.Item
-                    label="Required Approval"
-                    style={{ marginBottom: 0 }}
-                  >
+                  <Form.Item label="Approval Level" style={{ marginBottom: 0 }}>
                     <Select
-                      value={
-                        stageDetails?.approvalId?.groupName ||
-                        "No approval required"
+                      style={{ width: "100%" }}
+                      size="small"
+                      placeholder="Select approval level"
+                      value={dateEntry?.approvalId || undefined}
+                      onChange={(value) =>
+                        handleLevelChange(pipelineId, stageId, value)
                       }
-                    ></Select>
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .indexOf(input.toLowerCase()) >= 0
+                      }
+                    >
+                      {levelGroups.map((group) => (
+                        <Option key={group._id} value={group._id}>
+                          {group.groupName}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
@@ -2112,12 +2169,21 @@ const RecruiterEditJob = () => {
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item name="client" label="Client">
-                  <Select placeholder="Select client" showSearch disabled>
-                    {/* {clients.map((client) => (
-                      <Option key={client._id} value={client._id}>
-                        {client.name}
+                  <Select
+                    placeholder="Select client"
+                    showSearch
+                    disabled
+                    value={fetchedJobData?.workOrder?.client?._id}
+                  >
+                    {fetchedJobData?.workOrder?.client && (
+                      <Option
+                        key={fetchedJobData.workOrder.client._id}
+                        value={fetchedJobData.workOrder.client._id}
+                      >
+                        {fetchedJobData.workOrder.client.fullName ||
+                          fetchedJobData.workOrder.client.email}
                       </Option>
-                    ))} */}
+                    )}
                   </Select>
                 </Form.Item>
               </Col>

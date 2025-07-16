@@ -25,6 +25,18 @@ export const recruiterApi = createApi({
         methid: "GET",
       }),
     }),
+    getAllStaffs: builder.query({
+      query: () => ({
+        url: "/staff",
+        methid: "GET",
+      }),
+    }),
+    getAllLevels: builder.query({
+      query: () => ({
+        url: "/levels",
+        methid: "GET",
+      }),
+    }),
     getRecruiterJobs: builder.query({
       query: () => ({
         url: "/recruiter",
@@ -226,5 +238,7 @@ export const {
   useAddInterviewDetailsMutation,
   useChangeInterviewStatusMutation,
   useGetPendingCandidatesQuery,
-  useNotifyCandidateMutation
+  useNotifyCandidateMutation,
+  useGetAllLevelsQuery,
+  useGetAllStaffsQuery,
 } = recruiterApi;
