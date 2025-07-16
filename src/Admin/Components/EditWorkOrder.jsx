@@ -46,6 +46,8 @@ import {
   useGetAdminBranchQuery,
   useGetWorkOrderByIdQuery,
   useGetApprovalQuery,
+  useGetClientsQuery,
+  useGetStaffsQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -106,6 +108,14 @@ const EditWorkOrder = () => {
   } = useGetWorkOrderByIdQuery(id, {
     skip: !id,
   });
+  const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
+    {
+      includePagination: false,
+    }
+  );
+  const { data: staffsData, isLoading: isLoadingStaffs } = useGetStaffsQuery({
+    includePagination: false,
+  });
   const [editWorkOrder] = useEditWorkOrderMutation();
 
   const branchId = Branch?.branch?._id;
@@ -123,6 +133,23 @@ const EditWorkOrder = () => {
   const activeProjects =
     projects?.allProjects?.filter((project) => project.status === "active") ||
     [];
+
+  const activeClients =
+    clientsData?.clients?.filter(
+      (client) =>
+        client.clientType === "Customer" && client.accountStatus === "active"
+    ) || [];
+
+  const activeStaffs =
+    staffsData?.staffs?.filter((staff) => staff.accountStatus === "active") ||
+    [];
+
+  useEffect(() => {
+    console.log("Edit WorkOrder - Clients Data:", clientsData);
+    console.log("Edit WorkOrder - Active Clients:", activeClients);
+    console.log("Edit WorkOrder - Staffs Data:", staffsData);
+    console.log("Edit WorkOrder - Active Staffs:", activeStaffs);
+  }, [clientsData, staffsData]);
 
   useEffect(() => {
     if (workOrderData?.workOrder) {
@@ -157,7 +184,16 @@ const EditWorkOrder = () => {
               endDate: timeline.endDate,
               dependencyType: timeline.dependencyType || "independent",
               approvalId: timeline.approvalId?._id || null,
-              recruiterId: timeline.recruiterId?._id || null,
+              recruiterIds: Array.isArray(timeline.recruiterIds)
+                ? timeline.recruiterIds
+                : timeline.recruiterId
+                ? [timeline.recruiterId]
+                : [],
+              staffIds: Array.isArray(timeline.staffIds)
+                ? timeline.staffIds
+                : timeline.staffId
+                ? [timeline.staffId]
+                : [],
               isCustomStage: timeline.isCustomStage || false,
             });
 
@@ -205,6 +241,13 @@ const EditWorkOrder = () => {
                 typeof recruiter === "object" ? recruiter._id : recruiter
               )
             : [workOrder.assignedRecruiters],
+          client:
+            typeof workOrder.client === "object"
+              ? workOrder.client._id
+              : workOrder.client,
+          languagesRequired: Array.isArray(workOrder.languagesRequired)
+            ? workOrder.languagesRequired
+            : [],
           project:
             typeof workOrder.project === "object"
               ? workOrder.project._id
@@ -642,7 +685,8 @@ const EditWorkOrder = () => {
             endDate: dateEntry.endDate,
             dependencyType: dateEntry.dependencyType || "independent",
             approvalId: dateEntry.approvalId || null,
-            recruiterId: dateEntry.recruiterId || null,
+            recruiterIds: dateEntry.recruiterIds || [],
+            staffIds: dateEntry.staffIds || [],
             isCustomStage: !!stages.find(
               (s) => (s._id || s.id) === dateEntry.stageId
             )?.isCustom,
@@ -661,6 +705,8 @@ const EditWorkOrder = () => {
           description: doc.description,
           isMandatory: doc.isMandatory,
         })),
+        client: values.client,
+        languagesRequired: values.languagesRequired || [],
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -1540,19 +1586,20 @@ const EditWorkOrder = () => {
                   {/* Recruiter Assignment */}
                   <Col xs={24} sm={12} md={12} lg={8}>
                     <Form.Item
-                      label="Assigned Recruiter"
+                      label="Assigned Recruiters"
                       style={{ marginBottom: 0 }}
                       labelCol={{ span: 24 }}
                       wrapperCol={{ span: 24 }}
                     >
                       <Select
-                        placeholder="Select recruiter"
-                        value={dateEntry?.recruiterId || undefined}
+                        mode="multiple"
+                        placeholder="Select recruiters"
+                        value={dateEntry?.recruiterIds || []}
                         onChange={(value) =>
                           handleStageDateChange(
                             currentPipelineForDates._id,
                             stageId,
-                            "recruiterId",
+                            "recruiterIds",
                             value
                           )
                         }
@@ -1593,6 +1640,37 @@ const EditWorkOrder = () => {
                         {approvalLevels.map((level) => (
                           <Option key={level.id} value={level.id}>
                             {level.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col xs={24} sm={12} md={12} lg={8}>
+                    <Form.Item
+                      label="Assigned Staff"
+                      style={{ marginBottom: 0 }}
+                      labelCol={{ span: 24 }}
+                      wrapperCol={{ span: 24 }}
+                    >
+                      <Select
+                        mode="multiple"
+                        placeholder="Select staff"
+                        value={dateEntry?.staffIds || []}
+                        onChange={(value) =>
+                          handleStageDateChange(
+                            currentPipelineForDates._id,
+                            stageId,
+                            "staffIds",
+                            value
+                          )
+                        }
+                        style={{ width: "100%" }}
+                        size="small"
+                      >
+                        {activeStaffs.map((staff) => (
+                          <Option key={staff._id} value={staff._id}>
+                            {staff.fullName}
                           </Option>
                         ))}
                       </Select>
@@ -1890,7 +1968,7 @@ const EditWorkOrder = () => {
               </Row>
 
               <Row gutter={[16, 8]}>
-                <Col xs={24} md={12} lg={8}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     name="pipeline"
                     label="Pipeline"
@@ -1931,7 +2009,7 @@ const EditWorkOrder = () => {
 
                   {selectedPipelines.length > 0 && renderSelectedPipelines()}
                 </Col>
-                <Col xs={24} md={12} lg={8}>
+                <Col xs={24} md={12}>
                   <Form.Item
                     name="assignedRecruiters"
                     label="Assigned Recruiters"
@@ -1957,6 +2035,38 @@ const EditWorkOrder = () => {
                         </Option>
                       ))}
                     </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 8]}>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="client"
+                    label="Assign Client"
+                    rules={[
+                      { required: true, message: "Please select a client" },
+                    ]}
+                  >
+                    <Select placeholder="Select client">
+                      {activeClients.map((client) => (
+                        <Option key={client._id} value={client._id}>
+                          {client.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="languagesRequired"
+                    label="Languages Required (comma separated)"
+                  >
+                    <Select
+                      mode="tags"
+                      tokenSeparators={[","]}
+                      placeholder="e.g., English, Arabic, French"
+                    />
                   </Form.Item>
                 </Col>
               </Row>
