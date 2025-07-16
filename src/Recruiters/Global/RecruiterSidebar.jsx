@@ -257,68 +257,19 @@ const RecruiterSidebar = ({
           marginBottom: "32px",
         }}
       >
-        {(!collapsed || screenSize.isMobile) && (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                background:
-                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-                fontWeight: "bold",
-                fontSize: "16px",
-              }}
-            >
-              {getFirstLetter()}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <h1
-                style={{
-                  fontSize: "20px",
-                  color: "#1e293b",
-                  margin: 0,
-                  lineHeight: 1,
-                }}
-              >
-                {recruiterInfo.name}
-              </h1>
-              {recruiterInfo.roles && (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#64748b",
-                    marginTop: "2px",
-                  }}
-                >
-                  {recruiterInfo.roles}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        {collapsed && !screenSize.isMobile && (
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#ffffff",
-              fontWeight: "bold",
-              fontSize: "16px",
-            }}
-          >
-            {getFirstLetter()}
-          </div>
-        )}
+        <img
+          src="/Workforce.svg"
+          alt="Company Logo"
+          style={{
+            ...getImageLogoSize(),
+            objectFit: "contain",
+            borderRadius: "4px",
+          }}
+          onError={(e) => {
+            e.target.style.display = "none";
+            e.target.nextSibling.style.display = "flex";
+          }}
+        />
       </div>
 
       <nav
@@ -385,57 +336,7 @@ const RecruiterSidebar = ({
         ))}
       </nav>
 
-      <div
-        style={{
-          padding: screenSize.isMobile
-            ? "24px 24px 16px 24px"
-            : "24px 24px 16px 24px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: "8px",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <img
-            src="/Workforce.svg"
-            alt="Company Logo"
-            style={{
-              ...getImageLogoSize(),
-              objectFit: "contain",
-              borderRadius: "4px",
-            }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          <div
-            style={{
-              display: "none",
-              ...getImageLogoSize(),
-              backgroundColor: "#f0f0f0",
-              borderRadius: "4px",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#666",
-              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
-              fontWeight: "500",
-              textAlign: "center",
-              border: "2px dashed #ccc",
-            }}
-          >
-            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
-          </div>
-        </div>
-      </div>
+ 
 
       <div
         style={{
