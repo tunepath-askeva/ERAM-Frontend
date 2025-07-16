@@ -177,6 +177,18 @@ const EditWorkOrder = () => {
               initialStageDates[pipelineId] = [];
             }
 
+            if (timeline.isCustomStage) {
+              if (!initialCustomStages[pipelineId]) {
+                initialCustomStages[pipelineId] = [];
+              }
+
+              initialCustomStages[pipelineId].push({
+                id: timeline.stageId,
+                name: timeline.stageName,
+                isCustom: true,
+              });
+            }
+
             initialStageDates[pipelineId].push({
               stageId: timeline.stageId,
               stageName: timeline.stageName,
@@ -212,7 +224,12 @@ const EditWorkOrder = () => {
           assignedRecruiters:
             workOrder.assignedRecruiters?.map((r) => r._id) || [],
           client: workOrder.client._id,
-          languagesRequired: workOrder.languagesRequired || [],
+          languagesRequired: Array.isArray(workOrder.languagesRequired)
+            ? workOrder.languagesRequired
+            : (workOrder.languagesRequired || "")
+                .split(",")
+                .map((lang) => lang.trim())
+                .filter((lang) => lang), 
           project: workOrder.project._id,
           requiredSkills: workOrder.requiredSkills || [],
           qualification: workOrder.qualification || "Qualification",
@@ -606,6 +623,7 @@ const EditWorkOrder = () => {
     setLoading(true);
     try {
       const values = jobForm.getFieldsValue();
+      console.log("Form values:", values); // Debug log
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
         const stages = [
@@ -632,9 +650,11 @@ const EditWorkOrder = () => {
           })) || []
         );
       });
+
       const workOrderPayload = {
-        ...jobData,
         ...values,
+        ...jobData,
+
         pipeline: selectedPipelines,
         customFields: applicationFields,
         workOrderStatus: "published",
@@ -645,7 +665,12 @@ const EditWorkOrder = () => {
           isMandatory: doc.isMandatory,
         })),
         client: values.client,
-        languagesRequired: values.languagesRequired || [],
+        languagesRequired: Array.isArray(values.languagesRequired)
+          ? values.languagesRequired
+          : (values.languagesRequired || "")
+              .split(",")
+              .map((lang) => lang.trim())
+              .filter((lang) => lang), // Properly handle languagesRequired
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
         deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
@@ -654,6 +679,7 @@ const EditWorkOrder = () => {
         numberOfCandidate: values.numberOfCandidates,
       };
 
+      console.log("Final payload:", workOrderPayload); // Debug log
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
 
       enqueueSnackbar("Work order updated and published successfully!", {
@@ -1982,12 +2008,19 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="languagesRequired"
-                    label="Languages Required (comma separated)"
+                    label="Languages Required"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter at least one language",
+                      },
+                    ]}
                   >
                     <Select
                       mode="tags"
                       tokenSeparators={[","]}
                       placeholder="e.g., English, Arabic, French"
+                      style={{ width: "100%" }}
                     />
                   </Form.Item>
                 </Col>
