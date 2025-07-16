@@ -31,12 +31,14 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
   TagOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import {
   useAddClientMutation,
   useGetClientsQuery,
   useUpdateClientMutation,
   useDeleteClientMutation,
+  useDisableClientMutation,
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
@@ -55,6 +57,8 @@ const ClientsManagement = () => {
   const [clientToDelete, setClientToDelete] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [disableModalVisible, setDisableModalVisible] = useState(false);
+  const [clientToDisable, setClientToDisable] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
@@ -84,6 +88,7 @@ const ClientsManagement = () => {
   });
 
   const [deleteClient] = useDeleteClientMutation();
+  const [disableClient] = useDisableClientMutation();
 
   const showCreateModal = () => {
     setModalMode("create");
@@ -121,7 +126,7 @@ const ClientsManagement = () => {
       }
       setIsFormModalVisible(false);
       form.resetFields();
-      refetchClients(); 
+      refetchClients();
     } catch (error) {
       enqueueSnackbar(
         error.data?.message || error.message || "An error occurred",
@@ -136,9 +141,33 @@ const ClientsManagement = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    await deleteClient( clientToDelete._id).unwrap();
+    await deleteClient(clientToDelete._id).unwrap();
     enqueueSnackbar("Client deleted successfully", { variant: "success" });
     setDeleteModalVisible(false);
+  };
+
+  const showDisableModal = (client) => {
+    setClientToDisable(client);
+    setDisableModalVisible(true);
+  };
+
+  const handleDisableConfirm = async () => {
+    try {
+      await disableClient(clientToDisable._id).unwrap();
+      enqueueSnackbar(
+        `Client ${
+          clientToDisable.accountStatus === "active" ? "disabled" : "enabled"
+        } successfully`,
+        { variant: "success" }
+      );
+      setDisableModalVisible(false);
+      refetchClients();
+    } catch (error) {
+      enqueueSnackbar(
+        error.data?.message || error.message || "An error occurred",
+        { variant: "error" }
+      );
+    }
   };
 
   const handleViewClient = (client) => {
@@ -302,6 +331,32 @@ const ClientsManagement = () => {
                           size="small"
                           icon={<EditOutlined />}
                           onClick={() => showEditModal(client)}
+                        />
+                      </Tooltip>
+                      <Tooltip
+                        title={
+                          client.accountStatus === "active"
+                            ? "Disable Client"
+                            : "Enable Client"
+                        }
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={
+                            client.accountStatus === "active" ? (
+                              <WarningOutlined />
+                            ) : (
+                              <CheckOutlined />
+                            )
+                          }
+                          onClick={() => showDisableModal(client)}
+                          style={{
+                            color:
+                              client.accountStatus === "active"
+                                ? "#faad14"
+                                : "#52c41a",
+                          }}
                         />
                       </Tooltip>
                       <Tooltip title="Delete Client">
@@ -695,6 +750,49 @@ const ClientsManagement = () => {
           {clientToDelete && (
             <div style={{ marginTop: "16px" }}>
               <Text strong>{clientToDelete.fullName}</Text>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        title={
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#faad14" }}
+          >
+            <WarningOutlined style={{ marginRight: 8 }} />
+            {clientToDisable?.accountStatus === "active"
+              ? "Disable Client"
+              : "Enable Client"}
+          </div>
+        }
+        open={disableModalVisible}
+        onCancel={() => setDisableModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDisableModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="disable"
+            type="primary"
+            danger={clientToDisable?.accountStatus === "active"}
+            onClick={handleDisableConfirm}
+          >
+            {clientToDisable?.accountStatus === "active" ? "Disable" : "Enable"}
+          </Button>,
+        ]}
+        width="90%"
+        style={{ maxWidth: "500px" }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text>
+            Are you sure you want to{" "}
+            {clientToDisable?.accountStatus === "active" ? "disable" : "enable"}{" "}
+            this client?
+          </Text>
+          {clientToDisable && (
+            <div style={{ marginTop: "16px" }}>
+              <Text strong>{clientToDisable.fullName}</Text>
             </div>
           )}
         </div>

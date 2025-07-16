@@ -30,12 +30,14 @@ import {
   EyeOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import {
   useAddStaffMutation,
   useGetStaffsQuery,
   useEditStaffMutation,
   useDeleteStaffMutation,
+  useDisableStaffMutation,
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
@@ -54,6 +56,8 @@ const StaffManagement = () => {
   const [staffToDelete, setStaffToDelete] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [disableModalVisible, setDisableModalVisible] = useState(false);
+  const [staffToDisable, setStaffToDisable] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
@@ -82,6 +86,7 @@ const StaffManagement = () => {
   });
 
   const [deleteStaff] = useDeleteStaffMutation();
+  const [disableStaff] = useDisableStaffMutation();
 
   const staffs = staffsData?.staffs || [];
 
@@ -155,6 +160,30 @@ const StaffManagement = () => {
     });
     setDeleteModalVisible(false);
     refetchStaffs();
+  };
+
+  const showDisableModal = (staff) => {
+    setStaffToDisable(staff);
+    setDisableModalVisible(true);
+  };
+
+  const handleDisableConfirm = async () => {
+    try {
+      await disableStaff(staffToDisable._id).unwrap();
+      enqueueSnackbar(
+        `Staff ${
+          staffToDisable.accountStatus === "active" ? "disabled" : "enabled"
+        } successfully`,
+        { variant: "success" }
+      );
+      setDisableModalVisible(false);
+      refetchStaffs();
+    } catch (error) {
+      enqueueSnackbar(
+        error.data?.message || error.message || "An error occurred",
+        { variant: "error" }
+      );
+    }
   };
 
   const handleViewStaff = (staffMember) => {
@@ -354,6 +383,32 @@ const StaffManagement = () => {
                         size="small"
                         icon={<EditOutlined />}
                         onClick={() => showEditModal(staffMember)}
+                      />
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        staffMember.accountStatus === "active"
+                          ? "Disable Staff"
+                          : "Enable Staff"
+                      }
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={
+                          staffMember.accountStatus === "active" ? (
+                            <WarningOutlined />
+                          ) : (
+                            <CheckOutlined />
+                          )
+                        }
+                        onClick={() => showDisableModal(staffMember)}
+                        style={{
+                          color:
+                            staffMember.accountStatus === "active"
+                              ? "#faad14"
+                              : "#52c41a",
+                        }}
                       />
                     </Tooltip>
                     <Tooltip title="Delete Staff">
@@ -688,6 +743,51 @@ const StaffManagement = () => {
               <Text strong>{staffToDelete.fullName}</Text>
               <br />
               <Text type="secondary">{staffToDelete.staffType}</Text>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        title={
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#faad14" }}
+          >
+            <WarningOutlined style={{ marginRight: 8 }} />
+            {staffToDisable?.accountStatus === "active"
+              ? "Disable Staff"
+              : "Enable Staff"}
+          </div>
+        }
+        open={disableModalVisible}
+        onCancel={() => setDisableModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDisableModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="disable"
+            type="primary"
+            danger={staffToDisable?.accountStatus === "active"}
+            onClick={handleDisableConfirm}
+          >
+            {staffToDisable?.accountStatus === "active" ? "Disable" : "Enable"}
+          </Button>,
+        ]}
+        width="90%"
+        style={{ maxWidth: "500px" }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text>
+            Are you sure you want to{" "}
+            {staffToDisable?.accountStatus === "active" ? "disable" : "enable"}{" "}
+            this staff member?
+          </Text>
+          {staffToDisable && (
+            <div style={{ marginTop: "16px" }}>
+              <Text strong>{staffToDisable.fullName}</Text>
+              <br />
+              <Text type="secondary">{staffToDisable.staffType}</Text>
             </div>
           )}
         </div>
