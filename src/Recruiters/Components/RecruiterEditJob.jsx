@@ -41,6 +41,7 @@ import {
   useUpdateRecruiterJobMutation,
   useGetRecruiterJobIdQuery,
   useGetPipelinesQuery,
+  useGetAllRecruitersQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
@@ -92,11 +93,13 @@ const RecruiterEditJob = () => {
     refetch,
   } = useGetRecruiterJobIdQuery(id);
   const { data: pipelineData } = useGetPipelinesQuery();
+  const { data: recruiterData } = useGetAllRecruitersQuery();
   // const { data: clientsData } = useGetClientsQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
   const activePipelines = pipelineData?.pipelines || [];
   // const clients = clientsData?.clients || [];
+  const recruiters = recruiterData?.otherRecruiters || []
 
   useEffect(() => {
     if (fetchedJobData?.workOrder) {
@@ -1659,7 +1662,7 @@ const RecruiterEditJob = () => {
                           .indexOf(input.toLowerCase()) >= 0
                       }
                     >
-                      {assignedRecruiters.map((recruiter) => (
+                      {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
                           {recruiter.fullName}
                         </Option>
