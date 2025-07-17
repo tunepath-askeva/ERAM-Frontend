@@ -39,124 +39,65 @@ const RecruiterRequisition = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [editingRequisition, setEditingRequisition] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: clientData } = useGetClientsQuery();
 
-  const [submitRequisition, { isLoading: isSubmitting }] =
-    useSubmitRequisitionMutation();
+  const [submitRequisition] = useSubmitRequisitionMutation();
 
-    const clients = clientData?.clients || []
+  const clients =
+    clientData?.clients?.map((client) => ({
+      id: client._id,
+      name: client.fullName,
+      email: client.email,
+    })) || [];
 
-  const handleSubmit = (values) => {
-    const clientObj = clients.find((c) => c.id === selectedClient);
-    const formattedValues = {
-      ...values,
-      startDate: values.startDate?.format("YYYY-MM-DD"),
-      endDate: values.endDate?.format("YYYY-MM-DD"),
-      deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
-      alertDate: values.alertDate?.format("YYYY-MM-DD"),
-      client: clientObj,
-    };
-
-    if (editingRequisition) {
-      // Update existing requisition
-      setRequisitions(
-        requisitions.map((req) =>
-          req.key === editingRequisition.key ? formattedValues : req
-        )
-      );
-      message.success("Requisition updated successfully");
-    } else {
-      // Add new requisition
-      setRequisitions([
-        ...requisitions,
-        {
-          ...formattedValues,
-          key: Date.now(),
-        },
-      ]);
-      message.success("Requisition added successfully");
-    }
-
-    form.resetFields();
-    setSelectedClient(null);
-    setEditingRequisition(null);
-    setIsModalVisible(false);
-  };
-
-  const handleEdit = (record) => {
-    setEditingRequisition(record);
-    setSelectedClient(record.client?.id);
-    form.setFieldsValue({
-      ...record,
-      startDate: record.startDate ? dayjs(record.startDate) : null,
-      endDate: record.endDate ? dayjs(record.endDate) : null,
-      deadlineDate: record.deadlineDate ? dayjs(record.deadlineDate) : null,
-      alertDate: record.alertDate ? dayjs(record.alertDate) : null,
-    });
-    setIsModalVisible(true);
-  };
-
-  const handleDelete = (key) => {
-    setRequisitions(requisitions.filter((req) => req.key !== key));
-    message.success("Requisition deleted successfully");
-  };
-
-  const submitAllRequisitions = async () => {
-    if (requisitions.length === 0) {
-      message.warning("No requisitions to submit");
-      return;
-    }
-
+  const handleSubmit = async (values) => {
+    setIsSubmitting(true);
     try {
-      // Submit each requisition to the API
-      const submissionPromises = requisitions.map(async (requisition) => {
-        // Remove the key field as it's only used for React rendering
-        const { key, ...requisitionData } = requisition;
+      const clientObj = clients.find((c) => c.id === selectedClient);
+      const formattedValues = {
+        ...values,
+        startDate: values.startDate?.format("YYYY-MM-DD"),
+        endDate: values.endDate?.format("YYYY-MM-DD"),
+        deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
+        alertDate: values.alertDate?.format("YYYY-MM-DD"),
+        client: selectedClient,
+        clientName: clientObj?.name,
+        clientEmail: clientObj?.email,
+      };
 
-        // Transform data to match API expectations
-        const apiData = {
-          clientId: requisitionData.client?.id,
-          clientName: requisitionData.client?.name,
-          clientEmail: requisitionData.client?.email,
-          title: requisitionData.title,
-          employmentType: requisitionData.EmploymentType,
-          workplace: requisitionData.workplace,
-          officeLocation: requisitionData.officeLocation,
-          jobFunction: requisitionData.jobFunction,
-          companyIndustry: requisitionData.companyIndustry,
-          experienceMin: requisitionData.experienceMin,
-          experienceMax: requisitionData.experienceMax,
-          salaryType: requisitionData.salaryType,
-          salaryMin: requisitionData.salaryMin,
-          salaryMax: requisitionData.salaryMax,
-          description: requisitionData.description,
-          keyResponsibilities: requisitionData.keyResponsibilities,
-          qualification: requisitionData.qualification,
-          jobRequirements: requisitionData.jobRequirements,
-          requiredSkills: requisitionData.requiredSkills,
-          languagesRequired: requisitionData.languagesRequired,
-          benefits: requisitionData.benefits,
-          startDate: requisitionData.startDate,
-          endDate: requisitionData.endDate,
-          deadlineDate: requisitionData.deadlineDate,
-          alertDate: requisitionData.alertDate,
-        };
+      // Submit to API
+      const result = await submitRequisition(formattedValues).unwrap();
 
-        return submitRequisition(apiData).unwrap();
-      });
+      if (editingRequisition) {
+        // Update existing requisition in local state
+        setRequisitions(
+          requisitions.map((req) =>
+            req.key === editingRequisition.key
+              ? { ...formattedValues, key: editingRequisition.key }
+              : req
+          )
+        );
+        message.success("Requisition updated successfully");
+      } else {
+        // Add new requisition to local state
+        setRequisitions([
+          ...requisitions,
+          {
+            ...formattedValues,
+            key: Date.now(),
+          },
+        ]);
+        message.success("Requisition created successfully");
+      }
 
-      // Wait for all submissions to complete
-      await Promise.all(submissionPromises);
-
-      message.success(
-        `${requisitions.length} requisitions submitted successfully`
-      );
-      setRequisitions([]); // Clear the local state after successful submission
+      form.resetFields();
+      setSelectedClient(null);
+      setEditingRequisition(null);
+      setIsModalVisible(false);
     } catch (error) {
-      console.error("Error submitting requisitions:", error);
-
-      // Handle different types of errors
+      console.error("Error submitting requisition:", error);
       if (error.status === 401) {
         message.error("Authentication failed. Please log in again.");
       } else if (error.status === 403) {
@@ -166,9 +107,30 @@ const RecruiterRequisition = () => {
       } else if (error.data?.message) {
         message.error(`Submission failed: ${error.data.message}`);
       } else {
-        message.error("Failed to submit requisitions. Please try again.");
+        message.error("Failed to submit requisition. Please try again.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (record) => {
+    setEditingRequisition(record);
+    setSelectedClient(record.client?.id || record.client);
+    form.setFieldsValue({
+      ...record,
+      startDate: record.startDate ? dayjs(record.startDate) : null,
+      endDate: record.endDate ? dayjs(record.endDate) : null,
+      deadlineDate: record.deadlineDate ? dayjs(record.deadlineDate) : null,
+      alertDate: record.alertDate ? dayjs(record.alertDate) : null,
+      client: record.client?.id || record.client,
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleDelete = (key) => {
+    setRequisitions(requisitions.filter((req) => req.key !== key));
+    message.success("Requisition deleted successfully");
   };
 
   const columns = [
@@ -176,7 +138,10 @@ const RecruiterRequisition = () => {
       title: "Client",
       dataIndex: "client",
       key: "client",
-      render: (client) => client?.name || "N/A",
+      render: (client) => {
+        const clientObj = clients.find((c) => c.id === client);
+        return clientObj?.name || "N/A";
+      },
       width: 150,
     },
     {
@@ -272,26 +237,14 @@ const RecruiterRequisition = () => {
         <Card
           title="Client Requisitions"
           extra={
-            <Space wrap>
-              <Button
-                type="primary"
-                onClick={() => setIsModalVisible(true)}
-                icon={<PlusOutlined />}
-                size="small"
-              >
-                Create New
-              </Button>
-              <Button
-                type="primary"
-                onClick={submitAllRequisitions}
-                disabled={requisitions.length === 0 || isSubmitting}
-                loading={isSubmitting}
-                size="small"
-                icon={isSubmitting ? <LoadingOutlined /> : null}
-              >
-                {isSubmitting ? "Submitting..." : "Submit All"}
-              </Button>
-            </Space>
+            <Button
+              type="primary"
+              onClick={() => setIsModalVisible(true)}
+              icon={<PlusOutlined />}
+              size="small"
+            >
+              Create New
+            </Button>
           }
           size="small"
         >
@@ -307,7 +260,6 @@ const RecruiterRequisition = () => {
             }}
             scroll={{ x: 800 }}
             size="small"
-            loading={isSubmitting}
           />
         </Card>
 
@@ -350,6 +302,7 @@ const RecruiterRequisition = () => {
               <Col span={24}>
                 <Form.Item
                   label="Client"
+                  name="client"
                   rules={[
                     { required: true, message: "Please select a client" },
                   ]}
