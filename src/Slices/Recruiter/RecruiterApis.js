@@ -74,6 +74,13 @@ export const recruiterApi = createApi({
         };
       },
     }),
+
+    getExactMatchCandidates: builder.query({
+      query: (id) => ({
+        url: `/exact/${id}`,
+        method: "GET",
+      }),
+    }),
     getSelectedCandidates: builder.query({
       query: ({ jobId, page, limit }) => ({
         url: `/selected/${jobId}`,
@@ -241,4 +248,5 @@ export const {
   useNotifyCandidateMutation,
   useGetAllLevelsQuery,
   useGetAllStaffsQuery,
+  useGetExactMatchCandidatesQuery,
 } = recruiterApi;

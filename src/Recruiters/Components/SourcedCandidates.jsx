@@ -45,6 +45,7 @@ import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
+  useGetExactMatchCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
@@ -160,7 +161,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [comment, setComment] = useState("");
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [candidateToUpdate, setCandidateToUpdate] = useState(null);
-
+  const [isExactMatch, setIsExactMatch] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -254,6 +255,15 @@ const SourcedCandidates = ({ jobId }) => {
   });
 
   const {
+    data: exactMatchData,
+    isLoading: isExactMatchLoading,
+    error: exactMatchError,
+    refetch: refetchExactMatch,
+  } = useGetExactMatchCandidatesQuery(jobId, {
+    skip: !isExactMatch,
+  });
+
+  const {
     data: jobApplications,
     isLoading: jobLoading,
     error: jobError,
@@ -282,13 +292,19 @@ const SourcedCandidates = ({ jobId }) => {
         isApplied: true,
       })) || [];
 
+    // Use exact match data when available, otherwise use sourced candidates
+    const candidateSource = isExactMatch
+      ? exactMatchData
+      : sourcedCandidatesData;
+
     const sourcedCandidates =
-      sourcedCandidatesData?.users?.map((user) => ({
+      candidateSource?.users?.map((user) => ({
         ...user,
         status: user.status || "sourced",
         applicationId: user._id,
         isApplied: false,
         isSourced: true,
+        isExactMatch: isExactMatch, // Add this flag
         currentCompany:
           user.workExperience?.[0]?.company || user.currentCompany,
         totalExperienceYears: user.totalExperienceYears || 0,
@@ -309,10 +325,10 @@ const SourcedCandidates = ({ jobId }) => {
     });
 
     return merged;
-  }, [jobApplications, sourcedCandidatesData]);
+  }, [jobApplications, sourcedCandidatesData, exactMatchData, isExactMatch]);
 
   const sourcedCandidates = useMemo(() => {
-    if (!shouldFetch) {
+    if (!shouldFetch && !isExactMatch) {
       return [];
     }
 
@@ -323,7 +339,7 @@ const SourcedCandidates = ({ jobId }) => {
         (status === "sourced" || status === "applied" || !status)
       );
     });
-  }, [allCandidates, shouldFetch]);
+  }, [allCandidates, shouldFetch, isExactMatch]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -338,6 +354,21 @@ const SourcedCandidates = ({ jobId }) => {
       filters.salary[1] < 100000
     );
   }, [filters]);
+
+  const handleExactMatch = async () => {
+    try {
+      setIsExactMatch(true);
+      setShouldFetch(false);
+      setFilters(initialFilters);
+      setTempFilters(initialFilters);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+
+      message.info("Fetching exact match candidates...");
+    } catch (error) {
+      console.error("Failed to fetch exact match candidates:", error);
+      message.error("Failed to fetch exact match candidates");
+    }
+  };
 
   const showFilterModal = () => {
     setTempFilters({ ...filters });
@@ -360,6 +391,7 @@ const SourcedCandidates = ({ jobId }) => {
     setTempFilters(initialFilters);
     setSkillInput("");
     setShouldFetch(false);
+    setIsExactMatch(false);
     setQueryParams("");
     setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     setSelectedCandidates([]);
@@ -630,17 +662,11 @@ const SourcedCandidates = ({ jobId }) => {
             <Button
               type="default"
               icon={<CheckOutlined />}
-              onClick={() => {
-                // This will trigger your exact match API when you implement it
-                message.info(
-                  "Exact match functionality will be implemented soon"
-                );
-                // You'll replace this with actual API call later
-                // setShouldFetch(true);
-                // setQueryParams("exactMatch=true");
-              }}
+              onClick={handleExactMatch}
+              loading={isExactMatchLoading}
+              disabled={isExactMatchLoading}
             >
-              Exact Match
+              {isExactMatch ? "Exact Match Active" : "Exact Match"}
             </Button>
             {hasActiveFilters && (
               <Button icon={<ClearOutlined />} onClick={handleClearSearch}>
@@ -669,10 +695,11 @@ const SourcedCandidates = ({ jobId }) => {
         </Col>
       </Row>
 
-      {hasActiveFilters && (
+      {(hasActiveFilters || isExactMatch) && (
         <Card size="small" style={{ marginBottom: "20px" }}>
           <Space wrap>
             <Text strong>Active Filters:</Text>
+            {isExactMatch && <Tag color="purple">Exact Match</Tag>}
             {filters.skills.map((skill) => (
               <Tag key={skill} color="blue">
                 {skill}
@@ -720,25 +747,29 @@ const SourcedCandidates = ({ jobId }) => {
       />
 
       <div>
-        {!shouldFetch ? (
+        {!shouldFetch && !isExactMatch ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                Use the advanced filters to find candidates
+                Use the advanced filters or exact match to find candidates
               </span>
             }
           />
-        ) : isSourcedLoading ? (
+        ) : isSourcedLoading || isExactMatchLoading ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <Skeleton active />
             <Skeleton active />
             <Skeleton active />
           </div>
-        ) : sourcedError ? (
+        ) : sourcedError || exactMatchError ? (
           <Alert
-            message="Failed to load sourced candidates"
-            description="Unable to fetch sourced candidates data"
+            message={`Failed to load ${
+              isExactMatch ? "exact match" : "sourced"
+            } candidates`}
+            description={`Unable to fetch ${
+              isExactMatch ? "exact match" : "sourced"
+            } candidates data`}
             type="error"
             showIcon
           />
@@ -780,7 +811,9 @@ const SourcedCandidates = ({ jobId }) => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                No candidates found matching your search criteria
+                {isExactMatch
+                  ? "No exact match candidates found for this job"
+                  : "No candidates found matching your search criteria"}
               </span>
             }
           />
