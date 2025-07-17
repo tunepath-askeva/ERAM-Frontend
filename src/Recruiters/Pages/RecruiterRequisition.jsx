@@ -15,14 +15,20 @@ import {
   InputNumber,
   Table,
   Modal,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
   MinusCircleOutlined,
   DeleteOutlined,
   UserOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import {
+  useSubmitRequisitionMutation,
+  useGetClientsQuery,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -34,15 +40,15 @@ const RecruiterRequisition = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [editingRequisition, setEditingRequisition] = useState(null);
 
-  // Mock clients data - replace with your actual data
-  const clients = [
-    { id: 1, name: "Client A", email: "clienta@example.com" },
-    { id: 2, name: "Client B", email: "clientb@example.com" },
-    { id: 3, name: "Client C", email: "clientc@example.com" },
-  ];
+  const { data: clientData } = useGetClientsQuery();
+
+  const [submitRequisition, { isLoading: isSubmitting }] =
+    useSubmitRequisitionMutation();
+
+    const clients = clientData?.clients || []
 
   const handleSubmit = (values) => {
-    const clientObj = clients.find(c => c.id === selectedClient);
+    const clientObj = clients.find((c) => c.id === selectedClient);
     const formattedValues = {
       ...values,
       startDate: values.startDate?.format("YYYY-MM-DD"),
@@ -94,6 +100,75 @@ const RecruiterRequisition = () => {
   const handleDelete = (key) => {
     setRequisitions(requisitions.filter((req) => req.key !== key));
     message.success("Requisition deleted successfully");
+  };
+
+  const submitAllRequisitions = async () => {
+    if (requisitions.length === 0) {
+      message.warning("No requisitions to submit");
+      return;
+    }
+
+    try {
+      // Submit each requisition to the API
+      const submissionPromises = requisitions.map(async (requisition) => {
+        // Remove the key field as it's only used for React rendering
+        const { key, ...requisitionData } = requisition;
+
+        // Transform data to match API expectations
+        const apiData = {
+          clientId: requisitionData.client?.id,
+          clientName: requisitionData.client?.name,
+          clientEmail: requisitionData.client?.email,
+          title: requisitionData.title,
+          employmentType: requisitionData.EmploymentType,
+          workplace: requisitionData.workplace,
+          officeLocation: requisitionData.officeLocation,
+          jobFunction: requisitionData.jobFunction,
+          companyIndustry: requisitionData.companyIndustry,
+          experienceMin: requisitionData.experienceMin,
+          experienceMax: requisitionData.experienceMax,
+          salaryType: requisitionData.salaryType,
+          salaryMin: requisitionData.salaryMin,
+          salaryMax: requisitionData.salaryMax,
+          description: requisitionData.description,
+          keyResponsibilities: requisitionData.keyResponsibilities,
+          qualification: requisitionData.qualification,
+          jobRequirements: requisitionData.jobRequirements,
+          requiredSkills: requisitionData.requiredSkills,
+          languagesRequired: requisitionData.languagesRequired,
+          benefits: requisitionData.benefits,
+          startDate: requisitionData.startDate,
+          endDate: requisitionData.endDate,
+          deadlineDate: requisitionData.deadlineDate,
+          alertDate: requisitionData.alertDate,
+        };
+
+        return submitRequisition(apiData).unwrap();
+      });
+
+      // Wait for all submissions to complete
+      await Promise.all(submissionPromises);
+
+      message.success(
+        `${requisitions.length} requisitions submitted successfully`
+      );
+      setRequisitions([]); // Clear the local state after successful submission
+    } catch (error) {
+      console.error("Error submitting requisitions:", error);
+
+      // Handle different types of errors
+      if (error.status === 401) {
+        message.error("Authentication failed. Please log in again.");
+      } else if (error.status === 403) {
+        message.error("You don't have permission to submit requisitions.");
+      } else if (error.status === 400) {
+        message.error("Invalid requisition data. Please check the form.");
+      } else if (error.data?.message) {
+        message.error(`Submission failed: ${error.data.message}`);
+      } else {
+        message.error("Failed to submit requisitions. Please try again.");
+      }
+    }
   };
 
   const columns = [
@@ -167,20 +242,9 @@ const RecruiterRequisition = () => {
         </Space>
       ),
       width: 120,
-      fixed: 'right',
+      fixed: "right",
     },
   ];
-
-  const submitAllRequisitions = () => {
-    if (requisitions.length === 0) {
-      message.warning("No requisitions to submit");
-      return;
-    }
-    // Here you would typically send the requisitions to your backend
-    console.log("Submitting all requisitions:", requisitions);
-    message.success(`${requisitions.length} requisitions submitted successfully`);
-    setRequisitions([]);
-  };
 
   const customStyles = `
     .ant-btn-primary {
@@ -220,10 +284,12 @@ const RecruiterRequisition = () => {
               <Button
                 type="primary"
                 onClick={submitAllRequisitions}
-                disabled={requisitions.length === 0}
+                disabled={requisitions.length === 0 || isSubmitting}
+                loading={isSubmitting}
                 size="small"
+                icon={isSubmitting ? <LoadingOutlined /> : null}
               >
-                Submit All
+                {isSubmitting ? "Submitting..." : "Submit All"}
               </Button>
             </Space>
           }
@@ -233,7 +299,7 @@ const RecruiterRequisition = () => {
             columns={columns}
             dataSource={requisitions}
             rowKey="key"
-            pagination={{ 
+            pagination={{
               pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
@@ -241,14 +307,13 @@ const RecruiterRequisition = () => {
             }}
             scroll={{ x: 800 }}
             size="small"
+            loading={isSubmitting}
           />
         </Card>
 
         <Modal
           title={
-            editingRequisition
-              ? "Edit Requisition"
-              : "Create New Requisition"
+            editingRequisition ? "Edit Requisition" : "Create New Requisition"
           }
           visible={isModalVisible}
           onCancel={() => {
@@ -259,15 +324,15 @@ const RecruiterRequisition = () => {
           }}
           footer={null}
           width="90%"
-          style={{ 
+          style={{
             maxWidth: 1200,
-            height: '100vh',
+            height: "100vh",
             top: 20,
           }}
           bodyStyle={{
-            height: 'calc(100vh - 110px)',
-            overflowY: 'auto',
-            padding: '16px',
+            height: "calc(100vh - 110px)",
+            overflowY: "auto",
+            padding: "16px",
           }}
         >
           <Form
@@ -285,7 +350,9 @@ const RecruiterRequisition = () => {
               <Col span={24}>
                 <Form.Item
                   label="Client"
-                  rules={[{ required: true, message: "Please select a client" }]}
+                  rules={[
+                    { required: true, message: "Please select a client" },
+                  ]}
                 >
                   <Select
                     placeholder="Select client"
@@ -486,7 +553,10 @@ const RecruiterRequisition = () => {
                     { required: true, message: "Please enter job description" },
                   ]}
                 >
-                  <TextArea rows={3} placeholder="Enter detailed job description" />
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter detailed job description"
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -514,7 +584,10 @@ const RecruiterRequisition = () => {
                     { required: true, message: "Please enter qualifications" },
                   ]}
                 >
-                  <TextArea rows={3} placeholder="Enter required qualifications" />
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter required qualifications"
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -522,10 +595,16 @@ const RecruiterRequisition = () => {
                   name="jobRequirements"
                   label="Additional Requirements"
                   rules={[
-                    { required: true, message: "Please enter job requirements" },
+                    {
+                      required: true,
+                      message: "Please enter job requirements",
+                    },
                   ]}
                 >
-                  <TextArea rows={3} placeholder="Enter any additional requirements" />
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter any additional requirements"
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -536,7 +615,10 @@ const RecruiterRequisition = () => {
                   name="requiredSkills"
                   label="Required Skills"
                   rules={[
-                    { required: true, message: "Please add at least one skill" },
+                    {
+                      required: true,
+                      message: "Please add at least one skill",
+                    },
                   ]}
                 >
                   <Select
@@ -564,10 +646,7 @@ const RecruiterRequisition = () => {
                   label="Benefits"
                   rules={[{ required: true, message: "Please add benefits" }]}
                 >
-                  <TextArea
-                    rows={2}
-                    placeholder="Enter benefits offered"
-                  />
+                  <TextArea rows={2} placeholder="Enter benefits offered" />
                 </Form.Item>
               </Col>
             </Row>
@@ -588,7 +667,9 @@ const RecruiterRequisition = () => {
                 <Form.Item
                   name="endDate"
                   label="End Date"
-                  rules={[{ required: true, message: "Please select end date" }]}
+                  rules={[
+                    { required: true, message: "Please select end date" },
+                  ]}
                 >
                   <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
@@ -615,7 +696,7 @@ const RecruiterRequisition = () => {
               </Col>
             </Row>
 
-            <Divider style={{ margin: '16px 0' }} />
+            <Divider style={{ margin: "16px 0" }} />
 
             <Form.Item>
               <Space>

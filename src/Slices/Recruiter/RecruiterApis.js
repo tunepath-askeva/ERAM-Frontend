@@ -219,6 +219,19 @@ export const recruiterApi = createApi({
         body: { userId, workOrderId, customFieldId },
       }),
     }),
+    submitRequisition: builder.mutation({
+      query: (requisitionData) => ({
+        url: "/requisition",
+        method: "POST",
+        body: requisitionData,
+      }),
+    }),
+    getClients: builder.query({
+      query: () => ({
+        url: "/clients",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -249,4 +262,6 @@ export const {
   useGetAllLevelsQuery,
   useGetAllStaffsQuery,
   useGetExactMatchCandidatesQuery,
+  useSubmitRequisitionMutation,
+  useGetClientsQuery,
 } = recruiterApi;
