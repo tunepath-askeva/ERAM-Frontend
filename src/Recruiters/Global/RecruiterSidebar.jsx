@@ -10,6 +10,7 @@ import {
   UsergroupDeleteOutlined,
   UsergroupAddOutlined,
   CheckOutlined,
+  DiffOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -64,6 +65,12 @@ const RecruiterSidebar = ({
       icon: <DashboardOutlined />,
       label: "Dashboard",
       permission: "dashboard",
+    },
+    {
+      key: "/recruiter/requisition",
+      icon: <DiffOutlined />,
+      label: "Requisitions",
+      permission: "requisition",
     },
     {
       key: "/recruiter/jobs",
@@ -335,8 +342,6 @@ const RecruiterSidebar = ({
           </button>
         ))}
       </nav>
-
- 
 
       <div
         style={{

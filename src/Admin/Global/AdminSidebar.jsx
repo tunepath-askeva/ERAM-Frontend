@@ -10,6 +10,7 @@ import {
   DeploymentUnitOutlined,
   UsergroupAddOutlined,
   BorderOuterOutlined,
+  DiffOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -59,6 +60,11 @@ const AdminSidebar = ({
       key: "/admin/dashboard",
       icon: <DashboardOutlined />,
       label: "Dashboard",
+    },
+    {
+      key: "/admin/requisitions",
+      icon: <DiffOutlined />,
+      label: "Recquisitions",
     },
     {
       key: "/admin/workorder",

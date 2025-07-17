@@ -698,3 +698,61 @@
     height: 40px !important;
   }
 }
+
+
+/* requisition styles */
+.requisition-header {
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (min-width: 768px) {
+  .requisition-header {
+    padding: 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  .requisition-title {
+    font-size: 24px !important;
+    text-align: left;
+  }
+
+  .requisition-button {
+    height: 48px !important;
+    font-size: 16px !important;
+    min-width: 170px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .requisition-header>div {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .requisition-header>div>div:first-child {
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .requisition-header>div>div:last-child {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .requisition-title {
+    font-size: 20px !important;
+    text-align: center;
+  }
+
+  .requisition-button {
+    width: 100% !important;
+    height: 48px !important;
+  }
+}

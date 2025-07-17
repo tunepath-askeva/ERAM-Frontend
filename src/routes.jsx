@@ -58,6 +58,8 @@ import HrPayroll from "./HR/Pages/HrPayroll";
 import HrEmployees from "./HR/Pages/HrEmployees";
 import ProtectedCandidate from "./Auth/ProtectedCandidate";
 import Notifications from "./Pages/Notifications";
+import AdminRequisition from "./Admin/Pages/AdminRequisition";
+import RecruiterRequisition from "./Recruiters/Pages/RecruiterRequisition";
 
 const AppRoutes = () => {
   return (
@@ -117,6 +119,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/recruiters"
           element={<ProtectedAdmin element={<AdminRecuiter />} />}
+        />
+        <Route
+          path="/admin/requisitions"
+          element={<ProtectedAdmin element={<AdminRequisition />} />}
         />
         <Route
           path="/admin/candidates"
@@ -194,6 +200,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/jobs"
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
+        />
+        <Route
+          path="/recruiter/requisition"
+          element={<ProtectedRecruiter element={<RecruiterRequisition />} />}
         />
         <Route
           path="/recruiter-jobs/:id"

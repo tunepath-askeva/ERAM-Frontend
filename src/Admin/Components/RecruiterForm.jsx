@@ -45,6 +45,7 @@ const recruiterTypes = [
   "Agency",
   "Co-Ordinator",
   "Co-Ordinator Admin",
+  "Sales",
 ];
 
 const accessPermissions = [
@@ -55,6 +56,7 @@ const accessPermissions = [
   { key: "approvals", label: "Approvals" },
   { key: "employees", label: "Employees" },
   { key: "payroll", label: "Payroll" },
+  { key: "requisition", label: "Requisition" },
 ];
 
 const RecruiterForm = ({
@@ -71,9 +73,10 @@ const RecruiterForm = ({
     useCreateRecruiterMutation();
   const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
   const { enqueueSnackbar } = useSnackbar();
-  
+
   // State to manage dynamic recruiter types
-  const [dynamicRecruiterTypes, setDynamicRecruiterTypes] = useState(recruiterTypes);
+  const [dynamicRecruiterTypes, setDynamicRecruiterTypes] =
+    useState(recruiterTypes);
 
   const isLoading = isCreating || isEditing;
 
@@ -84,10 +87,16 @@ const RecruiterForm = ({
     if (open) {
       if (mode === "edit" && initialValues) {
         // If the recruiter type from initialValues is not in the predefined list, add it
-        if (initialValues.recruiterType && !recruiterTypes.includes(initialValues.recruiterType)) {
-          setDynamicRecruiterTypes(prev => [...prev, initialValues.recruiterType]);
+        if (
+          initialValues.recruiterType &&
+          !recruiterTypes.includes(initialValues.recruiterType)
+        ) {
+          setDynamicRecruiterTypes((prev) => [
+            ...prev,
+            initialValues.recruiterType,
+          ]);
         }
-        
+
         form.setFieldsValue({
           fullName: initialValues.fullName || "",
           email: initialValues.email || "",
@@ -187,7 +196,7 @@ const RecruiterForm = ({
   const handleRecruiterTypeChange = (value) => {
     // If the selected value is not in the current options, add it
     if (value && !dynamicRecruiterTypes.includes(value)) {
-      setDynamicRecruiterTypes(prev => [...prev, value]);
+      setDynamicRecruiterTypes((prev) => [...prev, value]);
     }
   };
 
@@ -267,14 +276,14 @@ const RecruiterForm = ({
                   onBlur={(e) => {
                     const value = e.target.value;
                     if (value && !dynamicRecruiterTypes.includes(value)) {
-                      setDynamicRecruiterTypes(prev => [...prev, value]);
+                      setDynamicRecruiterTypes((prev) => [...prev, value]);
                       form.setFieldsValue({ recruiterType: value });
                     }
                   }}
                   onPressEnter={(e) => {
                     const value = e.target.value;
                     if (value && !dynamicRecruiterTypes.includes(value)) {
-                      setDynamicRecruiterTypes(prev => [...prev, value]);
+                      setDynamicRecruiterTypes((prev) => [...prev, value]);
                       form.setFieldsValue({ recruiterType: value });
                     }
                   }}
@@ -284,13 +293,14 @@ const RecruiterForm = ({
                       {menu}
                       <div
                         style={{
-                          padding: '8px',
-                          borderTop: '1px solid #f0f0f0',
-                          fontSize: '12px',
-                          color: '#666',
+                          padding: "8px",
+                          borderTop: "1px solid #f0f0f0",
+                          fontSize: "12px",
+                          color: "#666",
                         }}
                       >
-                        💡 Tip: Type and press Enter or click away to add custom type
+                        💡 Tip: Type and press Enter or click away to add custom
+                        type
                       </div>
                     </div>
                   )}
