@@ -109,7 +109,7 @@ export const recruiterApi = createApi({
       query: ({ Id, status, jobId, isSourced }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status, jobId, isSourced },
+        body: { status, jobId, isSourced, comment },
       }),
     }),
 

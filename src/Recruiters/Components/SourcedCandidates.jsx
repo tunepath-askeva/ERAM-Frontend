@@ -130,12 +130,36 @@ const languageOptions = [
   { value: "Tagalog", label: "Tagalog" },
 ];
 
+const CommentModal = ({ visible, onCancel, onOk, comment, setComment }) => {
+  return (
+    <Modal
+      title="Add Comment"
+      open={visible}
+      onOk={onOk}
+      onCancel={onCancel}
+      okText="Confirm"
+      cancelText="Cancel"
+      okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+    >
+      <Input.TextArea
+        rows={4}
+        placeholder="Enter your comments for this candidate..."
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+      />
+    </Modal>
+  );
+};
+
 const SourcedCandidates = ({ jobId }) => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [comment, setComment] = useState("");
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [candidateToUpdate, setCandidateToUpdate] = useState(null);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -395,6 +419,7 @@ const SourcedCandidates = ({ jobId }) => {
           status: newStatus,
           jobId: jobId,
           isSourced: true,
+          comment: "",
         }).unwrap();
       });
 
@@ -425,18 +450,29 @@ const SourcedCandidates = ({ jobId }) => {
   const handleStatusUpdate = async (newStatus) => {
     if (!selectedCandidate) return;
 
+    if (newStatus === "selected") {
+      setCandidateToUpdate(selectedCandidate);
+      setIsCommentModalVisible(true);
+      return;
+    }
+
+    await updateStatusWithComment(selectedCandidate, newStatus, "");
+  };
+
+  const updateStatusWithComment = async (candidate, newStatus, commentText) => {
     try {
       await updateCandidateStatus({
-        applicationId: selectedCandidate.applicationId,
-        Id: selectedCandidate._id,
+        applicationId: candidate.applicationId,
+        Id: candidate._id,
         status: newStatus,
         jobId: jobId,
-        isSourced: selectedCandidate.isSourced,
+        isSourced: candidate.isSourced,
+        comment: commentText,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
 
-      if (selectedCandidate.isSourced) {
+      if (candidate.isSourced) {
         refetchSourced();
       }
       jobRefetch();
@@ -446,12 +482,21 @@ const SourcedCandidates = ({ jobId }) => {
 
       if (newStatus === "selected") {
         setSelectedCandidates((prev) =>
-          prev.filter((id) => id !== selectedCandidate._id)
+          prev.filter((id) => id !== candidate._id)
         );
       }
     } catch (error) {
       console.error("Failed to update candidate status:", error);
       message.error(error.data?.message || "Failed to update candidate status");
+    }
+  };
+
+  const handleCommentConfirm = async () => {
+    setIsCommentModalVisible(false);
+    if (candidateToUpdate) {
+      await updateStatusWithComment(candidateToUpdate, "selected", comment);
+      setComment("");
+      setCandidateToUpdate(null);
     }
   };
 
@@ -581,6 +626,22 @@ const SourcedCandidates = ({ jobId }) => {
             >
               Advanced Filters
             </Button>
+
+            <Button
+              type="default"
+              icon={<CheckOutlined />}
+              onClick={() => {
+                // This will trigger your exact match API when you implement it
+                message.info(
+                  "Exact match functionality will be implemented soon"
+                );
+                // You'll replace this with actual API call later
+                // setShouldFetch(true);
+                // setQueryParams("exactMatch=true");
+              }}
+            >
+              Exact Match
+            </Button>
             {hasActiveFilters && (
               <Button icon={<ClearOutlined />} onClick={handleClearSearch}>
                 Clear All
@@ -591,8 +652,8 @@ const SourcedCandidates = ({ jobId }) => {
         <Col>
           <Space>
             <Text>
-              {selectedCandidates.length} selected of{" "}
-              {sourcedCandidates.length} candidates
+              {selectedCandidates.length} selected of {sourcedCandidates.length}{" "}
+              candidates
             </Text>
             {selectedCandidates.length > 0 && (
               <Button
@@ -624,13 +685,9 @@ const SourcedCandidates = ({ jobId }) => {
               <Tag color="orange">Company: {filters.company}</Tag>
             )}
             {filters.qualification && (
-              <Tag color="purple">
-                Qualification: {filters.qualification}
-              </Tag>
+              <Tag color="purple">Qualification: {filters.qualification}</Tag>
             )}
-            {filters.jobRole && (
-              <Tag color="cyan">Role: {filters.jobRole}</Tag>
-            )}
+            {filters.jobRole && <Tag color="cyan">Role: {filters.jobRole}</Tag>}
             {(filters.experience[0] > 0 || filters.experience[1] < 20) && (
               <Tag color="red">
                 Experience: {filters.experience[0]}-{filters.experience[1]}{" "}
@@ -1131,6 +1188,14 @@ const SourcedCandidates = ({ jobId }) => {
           <CandidateProfilePage candidate={selectedCandidate} />
         )}
       </Modal>
+
+      <CommentModal
+        visible={isCommentModalVisible}
+        onCancel={() => setIsCommentModalVisible(false)}
+        onOk={handleCommentConfirm}
+        comment={comment}
+        setComment={setComment}
+      />
     </div>
   );
 };

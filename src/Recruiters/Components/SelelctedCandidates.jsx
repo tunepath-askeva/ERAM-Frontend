@@ -170,7 +170,7 @@ const SelectedCandidates = ({ jobId }) => {
 
     try {
       await moveCandidateStatus({
-        id: selectedCandidate.applicationId, // Changed from _id to applicationId
+        id: selectedCandidate.applicationId,
         status: newStatus,
         jobId: jobId,
       }).unwrap();
