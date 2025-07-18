@@ -91,7 +91,8 @@ const RecruiterJobPipeline = () => {
         skills: user.skills || [],
         avatar: null,
         status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
-        currentStage: currentStageProgress?.stageId || null,
+        currentStage: currentStageProgress?.stageId || null, // Keep for backward compatibility
+        currentStageId: currentStageProgress?.stageId || null, // Add this field
         currentStageName: currentStageProgress?.stageName || "Unknown",
         stageStatus: currentStageProgress?.stageStatus || "pending",
         appliedDate: pipelineData.createdAt,
@@ -107,7 +108,6 @@ const RecruiterJobPipeline = () => {
         // Additional data needed for API call
         userId: user._id,
         workOrderId: workOrder._id,
-        currentStageId: currentStageProgress?.stageId,
       };
 
       const jobData = {
@@ -166,10 +166,8 @@ const RecruiterJobPipeline = () => {
     const stageTimeline = processedJobData.workOrder.pipelineStageTimeline.find(
       (timeline) => timeline.stageId === stageId
     );
-
-    return stageTimeline?.recruiterId || null;
+    return stageTimeline?.recruiterIds?.[0] || null;
   };
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -195,7 +193,7 @@ const RecruiterJobPipeline = () => {
   const getCandidatesInStage = (stageId) => {
     if (!processedJobData || !processedJobData.candidates) return [];
     return processedJobData.candidates.filter(
-      (candidate) => candidate.currentStage === stageId
+      (candidate) => candidate.currentStageId === stageId // Changed from currentStage to currentStageId
     );
   };
 
@@ -211,13 +209,17 @@ const RecruiterJobPipeline = () => {
     setIsMoveModalVisible(true);
   };
 
-  const confirmMoveCandidate = async () => {
+const confirmMoveCandidate = async () => {
+  try {
+    // Validate form fields
+    const values = await form.validateFields();
+    
     if (!selectedCandidate) {
       message.error("No candidate selected");
       return;
     }
 
-    const isLastStage = !getNextStageId(selectedCandidate.currentStage);
+    const isLastStage = !getNextStageId(selectedCandidate.currentStageId); // Use currentStageId
     const canMove = selectedCandidate.stageStatus === "approved";
 
     if (!canMove) {
@@ -225,7 +227,7 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
-    const nextStageId = getNextStageId(selectedCandidate.currentStage);
+    const nextStageId = getNextStageId(selectedCandidate.currentStageId); // Use currentStageId
 
     if (
       isLastStage &&
@@ -235,54 +237,52 @@ const RecruiterJobPipeline = () => {
       return;
     }
 
-    // Fix: Changed from getReviewerForStage to getReviewerIdForStage
+    // Get any valid recruiter for the current stage
     const currentStageRecruiterId = getReviewerIdForStage(
-      selectedCandidate.currentStage
+      selectedCandidate.currentStageId // Use currentStageId
     );
+    
     if (!currentStageRecruiterId) {
       message.error("No recruiter assigned to the current stage");
       return;
     }
 
-    try {
-      const payload = {
-        userId: selectedCandidate.userId,
-        workOrderId: selectedCandidate.workOrderId,
-        stageId: selectedCandidate.currentStageId,
-        reviewerId: currentStageRecruiterId,
-        reviewerComments:
-          reviewerComments ||
-          (isLastStage ? "Process completed" : "Moved to next stage"),
-        isFinished: isLastStage, // Add this flag for the finish case
-      };
+    const payload = {
+      userId: selectedCandidate.userId,
+      workOrderId: selectedCandidate.workOrderId,
+      stageId: selectedCandidate.currentStageId, // Use currentStageId
+      reviewerId: currentStageRecruiterId,
+      reviewerComments: values.reviewerComments || 
+        (isLastStage ? "Process completed" : "Moved to next stage"),
+      isFinished: isLastStage,
+    };
 
-      console.log("Moving/finishing candidate with payload:", payload);
+    console.log("Moving candidate with payload:", payload); // Debug log
 
-      const result = await moveToNextStage(payload).unwrap();
+    const result = await moveToNextStage(payload).unwrap();
 
-      message.success(
-        isLastStage
-          ? `Successfully completed process for ${selectedCandidate.name}`
-          : `Successfully moved ${selectedCandidate.name} to ${getStageName(
-              nextStageId
-            )}`
-      );
+    message.success(
+      isLastStage
+        ? `Successfully completed process for ${selectedCandidate.name}`
+        : `Successfully moved ${selectedCandidate.name} to ${getStageName(nextStageId)}`
+    );
 
-      setIsMoveModalVisible(false);
-      setSelectedCandidate(null);
-      setReviewerComments("");
-      form.resetFields();
-    } catch (error) {
-      console.error("Error moving/finishing candidate:", error);
-      message.error(
-        error?.data?.message ||
-          error?.message ||
-          (isLastStage
-            ? "Failed to finish process"
-            : "Failed to move candidate to next stage")
-      );
-    }
-  };
+    setIsMoveModalVisible(false);
+    setSelectedCandidate(null);
+    setReviewerComments("");
+    form.resetFields();
+    
+  } catch (error) {
+    if (error.errorFields) return;
+    
+    console.error("Error moving/finishing candidate:", error);
+    message.error(
+      error?.data?.message ||
+        error?.message ||
+        "Failed to move candidate to next stage"
+    );
+  }
+};
 
   const handleViewDocument = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
@@ -398,183 +398,171 @@ const RecruiterJobPipeline = () => {
     );
   };
 
-  const renderApprovalSection = (candidate) => {
-    // Get the current stage's approval status from stageProgress
-    const currentStageProgress = candidate.stageProgress.find(
-      (progress) => progress.stageId === candidate.currentStage
-    );
+const renderApprovalSection = (candidate) => {
+  const currentStageProgress = candidate.stageProgress.find(
+    (progress) => progress.stageId === candidate.currentStageId 
+  );
 
-    // Check if the stage itself is approved (from approval.isApproved)
-    const isStageApproved = currentStageProgress?.approval?.isApproved === true;
+  const isStageApproved = currentStageProgress?.approval?.isApproved === true;
 
-    // Get the current stage's recruiter ID (the current user/recruiter)
-    const currentStageRecruiterId = getReviewerIdForStage(
-      candidate.currentStage
-    );
+  const currentStageRecruiterId = getReviewerIdForStage(
+    candidate.currentStageId 
+  );
 
-    // Get reviewer comments for the current stage
-    const reviewerComments = currentStageProgress?.recruiterReviews || [];
+  const reviewerComments = currentStageProgress?.recruiterReviews || [];
 
-    // Check if THIS recruiter (current user) has already given their review
-    const currentRecruiterReview = reviewerComments.find(
-      (review) => review.recruiterId === currentStageRecruiterId
-    );
+  const hasAnyRecruiterApproved = reviewerComments.some(
+    (review) => review.status === "approved"
+  );
 
-    // Check if current recruiter's review status is "approved"
-    const currentRecruiterHasApproved =
-      currentRecruiterReview?.status === "approved";
+  const currentRecruiterReview = reviewerComments.find(
+    (review) => review.recruiterId === currentStageRecruiterId
+  );
 
-    // Get stage information
-    const stages = processedJobData.workOrder.pipelineStageTimeline;
-    const currentIndex = stages.findIndex(
-      (stage) => stage.stageId === candidate.currentStage
-    );
-    const isLastStage = currentIndex === stages.length - 1;
+  const currentRecruiterHasApproved =
+    currentRecruiterReview?.status === "approved";
 
-    // Button logic:
-    // 1. Show button if: stage is approved AND current recruiter hasn't approved yet
-    // 2. Hide button if: current recruiter has already approved
-    // 3. Enable button if: stage is approved (recruiter can give review)
+  const stages = processedJobData.workOrder.pipelineStageTimeline;
+  const currentIndex = stages.findIndex(
+    (stage) => stage.stageId === candidate.currentStageId 
+  );
+  const isLastStage = currentIndex === stages.length - 1;
 
-    const shouldHideButton = currentRecruiterHasApproved;
-    const canMoveCandidate = isStageApproved && !currentRecruiterHasApproved;
+  const shouldHideButton = hasAnyRecruiterApproved;
+  const canMoveCandidate = isStageApproved && !hasAnyRecruiterApproved;
 
-    const getStageStatusTag = () => {
-      if (isStageApproved) {
-        return (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            Stage Approved
-          </Tag>
-        );
-      } else {
-        return (
-          <Tag icon={<ClockCircleOutlined />} color="warning">
-            Stage Pending Approval
-          </Tag>
-        );
-      }
-    };
-
-    const getReviewStatusTag = () => {
-      if (!currentRecruiterReview) {
-        return isStageApproved ? (
-          <Tag icon={<ClockCircleOutlined />} color="orange">
-            Review Required
-          </Tag>
-        ) : null;
-      }
-
-      if (currentRecruiterHasApproved) {
-        return (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            Review Completed
-          </Tag>
-        );
-      }
-
+  const getStageStatusTag = () => {
+    if (isStageApproved) {
       return (
-        <Tag icon={<ClockCircleOutlined />} color="warning">
-          Review Pending
+        <Tag icon={<CheckCircleOutlined />} color="success">
+          Stage Approved
         </Tag>
       );
-    };
+    } else {
+      return (
+        <Tag icon={<ClockCircleOutlined />} color="warning">
+          Stage Pending Approval
+        </Tag>
+      );
+    }
+  };
 
-    const getStatusMessage = () => {
-      if (!isStageApproved) {
-        return "Stage approval is required before you can review this candidate.";
-      }
+  const getReviewStatusTag = () => {
+    if (hasAnyRecruiterApproved) {
+      return (
+        <Tag icon={<CheckCircleOutlined />} color="success">
+          Ready for Next Stage
+        </Tag>
+      );
+    }
 
-      if (currentRecruiterHasApproved) {
-        return "You have already reviewed and approved this candidate. They are ready for the next stage.";
-      }
-
-      if (isStageApproved && !currentRecruiterReview) {
-        return "Stage is approved. You can now review this candidate and move them to the next stage.";
-      }
-
-      if (currentRecruiterReview?.status === "pending") {
-        return "Your review is pending. Click the button to complete your review and move the candidate.";
-      }
-
-      return "Ready for your review.";
-    };
+    if (isStageApproved) {
+      return (
+        <Tag icon={<ClockCircleOutlined />} color="orange">
+          Awaiting Recruiter Action
+        </Tag>
+      );
+    }
 
     return (
-      <div
-        style={{
-          marginTop: "20px",
-          padding: "16px",
-          backgroundColor: "#fafafa",
-          borderRadius: "8px",
-          border: "1px solid #f0f0f0",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: screens.xs ? "column" : "row",
-            justifyContent: "space-between",
-            alignItems: screens.xs ? "flex-start" : "center",
-            gap: screens.xs ? "12px" : "0",
-          }}
-        >
-          <div>
-            <Text strong>Approval Status:</Text>
-            <div
-              style={{
-                marginTop: "4px",
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              {getStageStatusTag()}
-              {getReviewStatusTag()}
-            </div>
-          </div>
-
-          {!shouldHideButton && (
-            <Space
-              direction={screens.xs ? "vertical" : "horizontal"}
-              style={{ width: screens.xs ? "100%" : "auto" }}
-            >
-              <Button
-                type="primary"
-                icon={<ArrowRightOutlined />}
-                disabled={!canMoveCandidate}
-                onClick={(e) => handleMoveCandidate(candidate, e)}
-                loading={isMoving}
-                style={{
-                  backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                  borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                  width: screens.xs ? "100%" : "auto",
-                }}
-                block={screens.xs}
-              >
-                {isLastStage ? "Finish Process" : "Move to Next Stage"}
-              </Button>
-            </Space>
-          )}
-        </div>
-
-        <div style={{ marginTop: "12px" }}>
-          <Text
-            type={
-              currentRecruiterHasApproved
-                ? "success"
-                : canMoveCandidate
-                ? "success"
-                : "secondary"
-            }
-            style={{ fontSize: "12px" }}
-          >
-            <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
-            {getStatusMessage()}
-          </Text>
-        </div>
-      </div>
+      <Tag icon={<ClockCircleOutlined />} color="warning">
+        Awaiting Stage Approval
+      </Tag>
     );
   };
+
+  const getStatusMessage = () => {
+    if (!isStageApproved) {
+      return "Stage approval is required before any recruiter can move this candidate.";
+    }
+
+    if (hasAnyRecruiterApproved) {
+      return "A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
+    }
+
+    if (isStageApproved) {
+      return "Stage is approved. Any assigned recruiter can review this candidate and move them to the next stage.";
+    }
+
+    return "Awaiting stage approval and recruiter review.";
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: "20px",
+        padding: "16px",
+        backgroundColor: "#fafafa",
+        borderRadius: "8px",
+        border: "1px solid #f0f0f0",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: screens.xs ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: screens.xs ? "flex-start" : "center",
+          gap: screens.xs ? "12px" : "0",
+        }}
+      >
+        <div>
+          <Text strong>Approval Status:</Text>
+          <div
+            style={{
+              marginTop: "4px",
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+            }}
+          >
+            {getStageStatusTag()}
+            {getReviewStatusTag()}
+          </div>
+        </div>
+
+        {!shouldHideButton && (
+          <Space
+            direction={screens.xs ? "vertical" : "horizontal"}
+            style={{ width: screens.xs ? "100%" : "auto" }}
+          >
+            <Button
+              type="primary"
+              icon={<ArrowRightOutlined />}
+              disabled={!canMoveCandidate}
+              onClick={(e) => handleMoveCandidate(candidate, e)}
+              loading={isMoving}
+              style={{
+                backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                width: screens.xs ? "100%" : "auto",
+              }}
+              block={screens.xs}
+            >
+              {isLastStage ? "Finish Process" : "Move to Next Stage"}
+            </Button>
+          </Space>
+        )}
+      </div>
+
+      <div style={{ marginTop: "12px" }}>
+        <Text
+          type={
+            hasAnyRecruiterApproved
+              ? "success"
+              : canMoveCandidate
+              ? "success"
+              : "secondary"
+          }
+          style={{ fontSize: "12px" }}
+        >
+          <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
+          {getStatusMessage()}
+        </Text>
+      </div>
+    </div>
+  );
+};
 
   const renderCustomFields = (candidate) => {
     if (
@@ -978,7 +966,10 @@ const RecruiterJobPipeline = () => {
         }
         visible={isMoveModalVisible}
         onOk={confirmMoveCandidate}
-        onCancel={() => setIsMoveModalVisible(false)}
+        onCancel={() => {
+          setIsMoveModalVisible(false);
+          form.resetFields();
+        }}
         okText={
           !getNextStageId(selectedCandidate?.currentStage)
             ? "Confirm Finish"
@@ -991,7 +982,11 @@ const RecruiterJobPipeline = () => {
         }}
       >
         {selectedCandidate && (
-          <Form form={form} layout="vertical">
+          <Form
+            form={form}
+            layout="vertical"
+            initialValues={{ reviewerComments }}
+          >
             <Form.Item label="Candidate">
               <Input value={selectedCandidate.name} disabled />
             </Form.Item>
@@ -1033,8 +1028,6 @@ const RecruiterJobPipeline = () => {
                     ? "Enter any final comments about this candidate"
                     : "Enter any comments for the next stage reviewer"
                 }
-                value={reviewerComments}
-                onChange={(e) => setReviewerComments(e.target.value)}
               />
             </Form.Item>
           </Form>
