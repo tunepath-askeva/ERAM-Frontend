@@ -36,8 +36,10 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           allPipelines: response.pipelines || response.allPipelines,
-          totalCount: response.totalCount,
+          totalCount: response.total,
           totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Pipeline"],
@@ -100,11 +102,10 @@ export const adminApi = createApi({
         if (page) url += `page=${page}&`;
         if (pageSize) url += `limit=${pageSize}&`;
         return {
-          url: url.slice(0, -1), // Remove the trailing '&'
+          url: url.slice(0, -1),
           method: "GET",
         };
       },
-      // Add transformResponse to ensure consistent data structure
       transformResponse: (response) => {
         return {
           workorders: response.workorders,
@@ -169,8 +170,10 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           recruiters: response.recruiters,
-          totalCount: response.totalCount,
+          totalCount: response.total,
           totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
     }),
@@ -229,8 +232,10 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           allProjects: response.projects || response.allProjects,
-          totalCount: response.totalCount,
+          totalCount: response.total,
           totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Project"],
@@ -255,8 +260,10 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           allProjects: response.projects || response.allProjects || [],
-          totalCount: response.totalCount ?? 0,
+          totalCount: response.total ?? 0,
           totalPages: response.totalPages ?? 0,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Project"],
@@ -308,8 +315,10 @@ export const adminApi = createApi({
       transformResponse: (response) => {
         return {
           getCandidates: response.candidates || response.getCandidates,
-          totalCount: response.totalCount,
+          totalCount: response.total,
           totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
     }),
@@ -363,6 +372,8 @@ export const adminApi = createApi({
           approvals: response.data?.approvals || response.approvals || [],
           total: response.total,
           totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Approval"],
@@ -406,6 +417,8 @@ export const adminApi = createApi({
           clients: response.data?.clients || response.clients || [],
           total: response.total,
           totalPages: response.totalPages,
+           currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Client"],
@@ -472,6 +485,8 @@ export const adminApi = createApi({
           staffs: response.data?.staffs || response.staffs || [],
           total: response.total,
           totalPages: response.totalPages,
+           currentPage: response.page,
+          pageSize: response.limit,
         };
       },
       providesTags: ["Staff"],
