@@ -61,20 +61,26 @@ const WorkOrder = () => {
   const [workOrderToActivate, setWorkOrderToActivate] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12); 
+  const [pageSize, setPageSize] = useState(12);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); 
+      setCurrentPage(1);
     }, 1000);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const {
-    data: workOrdersData,
+    data: workOrdersData = {
+      workorders: [],
+      totalCount: 0,
+      totalPages: 0,
+      currentPage: 1,
+      pageSize: 12,
+    },
     isLoading,
     refetch,
   } = useGetWorkOrdersQuery({
@@ -238,7 +244,6 @@ const WorkOrder = () => {
     setCurrentPage(page);
     setPageSize(size);
   };
-
   const handleSearch = (value) => {
     setSearchTerm(value);
   };
@@ -689,9 +694,6 @@ const WorkOrder = () => {
                   `${range[0]}-${range[1]} of ${total} items`
                 }
                 pageSizeOptions={["12", "24", "36", "64", "128"]}
-                style={{
-                  textAlign: "center",
-                }}
               />
             </div>
           </>

@@ -100,8 +100,18 @@ export const adminApi = createApi({
         if (page) url += `page=${page}&`;
         if (pageSize) url += `limit=${pageSize}&`;
         return {
-          url: url.slice(0, -1),
+          url: url.slice(0, -1), // Remove the trailing '&'
           method: "GET",
+        };
+      },
+      // Add transformResponse to ensure consistent data structure
+      transformResponse: (response) => {
+        return {
+          workorders: response.workorders,
+          totalCount: response.total,
+          totalPages: response.totalPages,
+          currentPage: response.page,
+          pageSize: response.limit,
         };
       },
     }),
