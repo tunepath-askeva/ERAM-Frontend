@@ -410,7 +410,7 @@ const ScreeningCandidates = ({ jobId }) => {
                 loading={isBulkMoving}
                 style={{ background: "#da2c46" }}
               >
-                Move Selected ({selectedCandidates.length})
+                Move Pipeline ({selectedCandidates.length})
               </Button>
             )}
           </Col>
