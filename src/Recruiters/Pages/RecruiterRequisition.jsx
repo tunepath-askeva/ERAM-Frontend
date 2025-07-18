@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -16,6 +16,7 @@ import {
   Table,
   Modal,
   Spin,
+  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,11 +24,15 @@ import {
   DeleteOutlined,
   UserOutlined,
   LoadingOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
   useSubmitRequisitionMutation,
   useGetClientsQuery,
+  useGetRequisitionsQuery,
+  useEditRequisitionMutation,
+  useDeleteRequisitionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
@@ -37,13 +42,25 @@ const RecruiterRequisition = () => {
   const [form] = Form.useForm();
   const [requisitions, setRequisitions] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [editingRequisition, setEditingRequisition] = useState(null);
+  const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [requisitionToDelete, setRequisitionToDelete] = useState(null);
 
-  const { data: clientData } = useGetClientsQuery();
+  const { data: clientData, isLoading: clientsLoading } = useGetClientsQuery();
+  const {
+    data: requisitionData,
+    isLoading: requisitionsLoading,
+    refetch,
+  } = useGetRequisitionsQuery();
 
   const [submitRequisition] = useSubmitRequisitionMutation();
+  const [editRequisition] = useEditRequisitionMutation();
+  const [deleteRequisition, { isLoading: isDeleting }] =
+    useDeleteRequisitionMutation();
 
   const clients =
     clientData?.clients?.map((client) => ({
@@ -51,6 +68,20 @@ const RecruiterRequisition = () => {
       name: client.fullName,
       email: client.email,
     })) || [];
+
+  // Update local state when API data changes
+  useEffect(() => {
+    if (requisitionData?.requisition) {
+      const formattedRequisitions = requisitionData.requisition.map(
+        (req, index) => ({
+          ...req,
+          key: req._id || index,
+          status: req.isActive || "draft",
+        })
+      );
+      setRequisitions(formattedRequisitions);
+    }
+  }, [requisitionData]);
 
   const handleSubmit = async (values) => {
     setIsSubmitting(true);
@@ -65,32 +96,24 @@ const RecruiterRequisition = () => {
         client: selectedClient,
         clientName: clientObj?.name,
         clientEmail: clientObj?.email,
+        isActive: values.isActive || "inactive",
+        numberOfCandidate: values.numberOfCandidate || 1,
       };
 
-      // Submit to API
-      const result = await submitRequisition(formattedValues).unwrap();
-
+      // Check if editing or creating
       if (editingRequisition) {
-        // Update existing requisition in local state
-        setRequisitions(
-          requisitions.map((req) =>
-            req.key === editingRequisition.key
-              ? { ...formattedValues, key: editingRequisition.key }
-              : req
-          )
-        );
+        await editRequisition({
+          id: editingRequisition._id,
+          ...formattedValues,
+        }).unwrap();
         message.success("Requisition updated successfully");
       } else {
-        // Add new requisition to local state
-        setRequisitions([
-          ...requisitions,
-          {
-            ...formattedValues,
-            key: Date.now(),
-          },
-        ]);
+        await submitRequisition(formattedValues).unwrap();
         message.success("Requisition created successfully");
       }
+
+      // Refetch data to get updated list
+      refetch();
 
       form.resetFields();
       setSelectedClient(null);
@@ -116,21 +139,67 @@ const RecruiterRequisition = () => {
 
   const handleEdit = (record) => {
     setEditingRequisition(record);
-    setSelectedClient(record.client?.id || record.client);
+    setSelectedClient(record.client);
     form.setFieldsValue({
       ...record,
       startDate: record.startDate ? dayjs(record.startDate) : null,
       endDate: record.endDate ? dayjs(record.endDate) : null,
       deadlineDate: record.deadlineDate ? dayjs(record.deadlineDate) : null,
       alertDate: record.alertDate ? dayjs(record.alertDate) : null,
-      client: record.client?.id || record.client,
+      client: record.client,
+      isActive: record.isActive,
+      numberOfCandidate: record.numberOfCandidate,
     });
     setIsModalVisible(true);
   };
 
-  const handleDelete = (key) => {
-    setRequisitions(requisitions.filter((req) => req.key !== key));
-    message.success("Requisition deleted successfully");
+  const handleDelete = async (id) => {
+    try {
+      await deleteRequisition(id).unwrap();
+      message.success("Requisition deleted successfully");
+      refetch();
+    } catch (error) {
+      console.error("Error deleting requisition:", error);
+      if (error.status === 401) {
+        message.error("Authentication failed. Please log in again.");
+      } else if (error.status === 403) {
+        message.error("You don't have permission to delete requisitions.");
+      } else if (error.data?.message) {
+        message.error(`Deletion failed: ${error.data.message}`);
+      } else {
+        message.error("Failed to delete requisition. Please try again.");
+      }
+    } finally {
+      setIsDeleteModalVisible(false);
+      setRequisitionToDelete(null);
+    }
+  };
+
+  const handleViewDetails = (record) => {
+    setSelectedRequisition(record);
+    setIsDetailModalVisible(true);
+  };
+
+  const formatSalary = (record) => {
+    if (
+      !record.salaryMin &&
+      record.salaryMin !== 0 &&
+      !record.salaryMax &&
+      record.salaryMax !== 0
+    )
+      return "N/A";
+    const currency = record.salaryType === "annual" ? "SAR " : "";
+    const suffix =
+      {
+        hourly: "/hr",
+        weekly: "/wk",
+        monthly: "/mo",
+        annual: "/yr",
+      }[record.salaryType] || "";
+
+    return `${currency}${record.salaryMin || 0} - ${
+      record.salaryMax || 0
+    }${suffix}`;
   };
 
   const columns = [
@@ -155,6 +224,19 @@ const RecruiterRequisition = () => {
       dataIndex: "EmploymentType",
       key: "EmploymentType",
       width: 120,
+      render: (type) => (
+        <Tag
+          color={
+            type === "full-time"
+              ? "green"
+              : type === "part-time"
+              ? "blue"
+              : "orange"
+          }
+        >
+          {type}
+        </Tag>
+      ),
     },
     {
       title: "Experience",
@@ -166,47 +248,64 @@ const RecruiterRequisition = () => {
     {
       title: "Salary",
       key: "salary",
-      render: (_, record) => {
-        if (!record.salaryMin && !record.salaryMax) return "N/A";
-        return `${record.salaryType === "annual" ? "SAR- " : " "}${
-          record.salaryMin
-        } - ${record.salaryMax}${
-          record.salaryType === "hourly"
-            ? "/hr"
-            : record.salaryType === "weekly"
-            ? "/wk"
-            : record.salaryType === "monthly"
-            ? "/mo"
-            : record.salaryType === "annual"
-            ? "/yr"
-            : ""
-        }`;
-      },
+      render: (_, record) => formatSalary(record),
       width: 150,
     },
     {
       title: "Start Date",
       dataIndex: "startDate",
       key: "startDate",
+      render: (date) => (date ? dayjs(date).format("YYYY-MM-DD") : "N/A"),
       width: 120,
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      key: "status",
+      render: (status) => (
+        <Tag
+          color={
+            status === "active"
+              ? "green"
+              : status === "inactive"
+              ? "red"
+              : "default"
+          }
+        >
+          {status || "Draft"}
+        </Tag>
+      ),
+      width: 100,
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button type="link" onClick={() => handleEdit(record)}>
+          <Button
+            type="link"
+            onClick={() => handleViewDetails(record)}
+            icon={<EyeOutlined />}
+            size="small"
+          >
+            View
+          </Button>
+          <Button type="link" onClick={() => handleEdit(record)} size="small">
             Edit
           </Button>
           <Button
             type="link"
             danger
-            onClick={() => handleDelete(record.key)}
+            onClick={() => {
+              setRequisitionToDelete(record._id);
+              setIsDeleteModalVisible(true);
+            }}
             icon={<DeleteOutlined />}
+            size="small"
           />
         </Space>
       ),
-      width: 120,
+      width: 150,
       fixed: "right",
     },
   ];
@@ -251,6 +350,7 @@ const RecruiterRequisition = () => {
           <Table
             columns={columns}
             dataSource={requisitions}
+            loading={requisitionsLoading}
             rowKey="key"
             pagination={{
               pageSize: 10,
@@ -263,6 +363,135 @@ const RecruiterRequisition = () => {
           />
         </Card>
 
+        {/* Detail View Modal */}
+        <Modal
+          title={`Requisition Details - ${selectedRequisition?.title || "N/A"}`}
+          visible={isDetailModalVisible}
+          onCancel={() => setIsDetailModalVisible(false)}
+          footer={[
+            <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
+              Close
+            </Button>,
+            <Button
+              key="edit"
+              type="primary"
+              onClick={() => {
+                setIsDetailModalVisible(false);
+                handleEdit(selectedRequisition);
+              }}
+            >
+              Edit
+            </Button>,
+          ]}
+          width={800}
+        >
+          {selectedRequisition && (
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Client" span={2}>
+                {clients.find((c) => c.id === selectedRequisition.client)
+                  ?.name || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Job Title">
+                {selectedRequisition.title}
+              </Descriptions.Item>
+              <Descriptions.Item label="Employment Type">
+                <Tag
+                  color={
+                    selectedRequisition.EmploymentType === "full-time"
+                      ? "green"
+                      : "blue"
+                  }
+                >
+                  {selectedRequisition.EmploymentType}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Workplace">
+                {selectedRequisition.workplace}
+              </Descriptions.Item>
+              <Descriptions.Item label="Office Location">
+                {selectedRequisition.officeLocation || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Job Function">
+                {selectedRequisition.jobFunction}
+              </Descriptions.Item>
+              <Descriptions.Item label="Industry">
+                {selectedRequisition.companyIndustry}
+              </Descriptions.Item>
+              <Descriptions.Item label="Experience">
+                {selectedRequisition.experienceMin} -{" "}
+                {selectedRequisition.experienceMax} years
+              </Descriptions.Item>
+              <Descriptions.Item label="Salary">
+                {formatSalary(selectedRequisition)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Status">
+                <Tag
+                  color={
+                    selectedRequisition.isActive === "active" ? "green" : "red"
+                  }
+                >
+                  {selectedRequisition.isActive}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Number of Candidates">
+                {selectedRequisition.numberOfCandidate}
+              </Descriptions.Item>
+              <Descriptions.Item label="Start Date">
+                {selectedRequisition.startDate
+                  ? dayjs(selectedRequisition.startDate).format("YYYY-MM-DD")
+                  : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="End Date">
+                {selectedRequisition.endDate
+                  ? dayjs(selectedRequisition.endDate).format("YYYY-MM-DD")
+                  : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Application Deadline">
+                {selectedRequisition.deadlineDate
+                  ? dayjs(selectedRequisition.deadlineDate).format("YYYY-MM-DD")
+                  : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Alert Date">
+                {selectedRequisition.alertDate
+                  ? dayjs(selectedRequisition.alertDate).format("YYYY-MM-DD")
+                  : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Description" span={2}>
+                {selectedRequisition.description}
+              </Descriptions.Item>
+              <Descriptions.Item label="Key Responsibilities" span={2}>
+                {selectedRequisition.keyResponsibilities}
+              </Descriptions.Item>
+              <Descriptions.Item label="Qualifications" span={2}>
+                {selectedRequisition.qualification}
+              </Descriptions.Item>
+              <Descriptions.Item label="Requirements" span={2}>
+                {selectedRequisition.jobRequirements}
+              </Descriptions.Item>
+              <Descriptions.Item label="Required Skills" span={2}>
+                {selectedRequisition.requiredSkills?.map((skill) => (
+                  <Tag key={skill} color="blue">
+                    {skill}
+                  </Tag>
+                )) || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Languages" span={2}>
+                {selectedRequisition.languagesRequired?.map((lang) => (
+                  <Tag key={lang} color="green">
+                    {lang}
+                  </Tag>
+                )) || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Benefits" span={2}>
+                {Array.isArray(selectedRequisition.benefits)
+                  ? selectedRequisition.benefits.join(", ")
+                  : selectedRequisition.benefits}
+              </Descriptions.Item>
+            </Descriptions>
+          )}
+        </Modal>
+
+        {/* Create/Edit Modal */}
         <Modal
           title={
             editingRequisition ? "Edit Requisition" : "Create New Requisition"
@@ -287,388 +516,395 @@ const RecruiterRequisition = () => {
             padding: "16px",
           }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            initialValues={{
-              EmploymentType: "full-time",
-              workplace: "remote",
-              salaryType: "annual",
-            }}
-            size="small"
-          >
-            <Row gutter={[16, 8]}>
-              <Col span={24}>
-                <Form.Item
-                  label="Client"
-                  name="client"
-                  rules={[
-                    { required: true, message: "Please select a client" },
-                  ]}
-                >
-                  <Select
-                    placeholder="Select client"
-                    value={selectedClient}
-                    onChange={setSelectedClient}
-                    showSearch
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option.children
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    }
+          <Spin spinning={isSubmitting}>
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleSubmit}
+              initialValues={{
+                EmploymentType: "full-time",
+                workplace: "remote",
+                salaryType: "annual",
+                isActive: "inactive",
+                numberOfCandidate: 1,
+              }}
+              size="small"
+            >
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    label="Client"
+                    name="client"
+                    rules={[
+                      { required: true, message: "Please select a client" },
+                    ]}
                   >
-                    {clients.map((client) => (
-                      <Option key={client.id} value={client.id}>
-                        {client.name} ({client.email})
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+                    <Select
+                      placeholder="Select client"
+                      value={selectedClient}
+                      onChange={setSelectedClient}
+                      showSearch
+                      optionFilterProp="children"
+                      loading={clientsLoading}
+                      filterOption={(input, option) =>
+                        option.children
+                          .toLowerCase()
+                          .indexOf(input.toLowerCase()) >= 0
+                      }
+                    >
+                      {clients.map((client) => (
+                        <Option key={client.id} value={client.id}>
+                          {client.name} ({client.email})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="title"
-                  label="Job Title"
-                  rules={[
-                    { required: true, message: "Please enter job title" },
-                  ]}
-                >
-                  <Input placeholder="e.g. Senior Software Engineer" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="EmploymentType"
-                  label="Employment Type"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please select employment type",
-                    },
-                  ]}
-                >
-                  <Select placeholder="Select employment type">
-                    <Option value="full-time">Full-time</Option>
-                    <Option value="part-time">Part-time</Option>
-                    <Option value="contract">Contract</Option>
-                    <Option value="internship">Internship</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="workplace"
-                  label="Workplace Type"
-                  rules={[
-                    { required: true, message: "Please select workplace type" },
-                  ]}
-                >
-                  <Select placeholder="Select workplace type">
-                    <Option value="remote">Remote</Option>
-                    <Option value="hybrid">Hybrid</Option>
-                    <Option value="on-site">On-site</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="title"
+                    label="Job Title"
+                    rules={[
+                      { required: true, message: "Please enter job title" },
+                    ]}
+                  >
+                    <Input placeholder="e.g. Senior Software Engineer" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="EmploymentType"
+                    label="Employment Type"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select employment type",
+                      },
+                    ]}
+                  >
+                    <Select placeholder="Select employment type">
+                      <Option value="full-time">Full-time</Option>
+                      <Option value="part-time">Part-time</Option>
+                      <Option value="contract">Contract</Option>
+                      <Option value="internship">Internship</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="workplace"
+                    label="Workplace Type"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select workplace type",
+                      },
+                    ]}
+                  >
+                    <Select placeholder="Select workplace type">
+                      <Option value="remote">Remote</Option>
+                      <Option value="hybrid">Hybrid</Option>
+                      <Option value="on-site">On-site</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item name="officeLocation" label="Office Location">
-                  <Input placeholder="e.g. San Francisco, CA" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="jobFunction"
-                  label="Job Function"
-                  rules={[
-                    { required: true, message: "Please enter job function" },
-                  ]}
-                >
-                  <Input placeholder="e.g. Software Development" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  name="companyIndustry"
-                  label="Company Industry"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter company industry",
-                    },
-                  ]}
-                >
-                  <Input placeholder="e.g. Information Technology" />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="officeLocation" label="Office Location">
+                    <Input placeholder="e.g. City, Country" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="companyIndustry"
+                    label="Industry"
+                    rules={[
+                      { required: true, message: "Please enter industry" },
+                    ]}
+                  >
+                    <Input placeholder="e.g. Technology, Finance" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="jobFunction"
+                    label="Job Function"
+                    rules={[
+                      { required: true, message: "Please enter job function" },
+                    ]}
+                  >
+                    <Input placeholder="e.g. Software Development" />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="experienceMin"
-                  label="Min Experience (years)"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter minimum experience",
-                    },
-                  ]}
-                >
-                  <InputNumber
-                    min={0}
-                    max={50}
-                    style={{ width: "100%" }}
-                    placeholder="e.g. 3"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="experienceMax"
-                  label="Max Experience (years)"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter maximum experience",
-                    },
-                  ]}
-                >
-                  <InputNumber
-                    min={0}
-                    max={50}
-                    style={{ width: "100%" }}
-                    placeholder="e.g. 5"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Form.Item
-                  name="salaryType"
-                  label="Salary Type"
-                  rules={[
-                    { required: true, message: "Please select salary type" },
-                  ]}
-                >
-                  <Select placeholder="Select salary type">
-                    <Option value="annual">Annual</Option>
-                    <Option value="monthly">Monthly</Option>
-                    <Option value="weekly">Weekly</Option>
-                    <Option value="hourly">Hourly</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Form.Item
-                  name="salaryMin"
-                  label="Min Salary"
-                  rules={[
-                    { required: true, message: "Please enter minimum salary" },
-                  ]}
-                >
-                  <InputNumber
-                    min={0}
-                    style={{ width: "100%" }}
-                    placeholder="e.g. 50000"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={4}>
-                <Form.Item
-                  name="salaryMax"
-                  label="Max Salary"
-                  rules={[
-                    { required: true, message: "Please enter maximum salary" },
-                  ]}
-                >
-                  <InputNumber
-                    min={0}
-                    style={{ width: "100%" }}
-                    placeholder="e.g. 80000"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="experienceMin"
+                    label="Minimum Experience (years)"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter minimum experience",
+                      },
+                    ]}
+                  >
+                    <InputNumber min={0} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="experienceMax"
+                    label="Maximum Experience (years)"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter maximum experience",
+                      },
+                    ]}
+                  >
+                    <InputNumber min={0} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="numberOfCandidate"
+                    label="Number of Candidates"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter number of candidates",
+                      },
+                    ]}
+                  >
+                    <InputNumber min={1} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="description"
-                  label="Job Description"
-                  rules={[
-                    { required: true, message: "Please enter job description" },
-                  ]}
-                >
-                  <TextArea
-                    rows={3}
-                    placeholder="Enter detailed job description"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="keyResponsibilities"
-                  label="Key Responsibilities"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter key responsibilities",
-                    },
-                  ]}
-                >
-                  <TextArea rows={3} placeholder="Enter key responsibilities" />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item
+                    name="salaryType"
+                    label="Salary Type"
+                    rules={[
+                      { required: true, message: "Please select salary type" },
+                    ]}
+                  >
+                    <Select placeholder="Select salary type">
+                      <Option value="hourly">Hourly</Option>
+                      <Option value="weekly">Weekly</Option>
+                      <Option value="monthly">Monthly</Option>
+                      <Option value="annual">Annual</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="salaryMin" label="Minimum Salary">
+                    <InputNumber min={0} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="salaryMax" label="Maximum Salary">
+                    <InputNumber min={0} style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="qualification"
-                  label="Qualifications"
-                  rules={[
-                    { required: true, message: "Please enter qualifications" },
-                  ]}
-                >
-                  <TextArea
-                    rows={3}
-                    placeholder="Enter required qualifications"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="jobRequirements"
-                  label="Additional Requirements"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter job requirements",
-                    },
-                  ]}
-                >
-                  <TextArea
-                    rows={3}
-                    placeholder="Enter any additional requirements"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="startDate" label="Start Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="endDate" label="End Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="deadlineDate" label="Application Deadline">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="requiredSkills"
-                  label="Required Skills"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please add at least one skill",
-                    },
-                  ]}
-                >
-                  <Select
-                    mode="tags"
-                    placeholder="Add skills (type and press enter)"
-                    tokenSeparators={[","]}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item name="languagesRequired" label="Languages Required">
-                  <Select
-                    mode="tags"
-                    placeholder="Add languages (type and press enter)"
-                    tokenSeparators={[","]}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="alertDate" label="Alert Date">
+                    <DatePicker style={{ width: "100%" }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item name="isActive" label="Status">
+                    <Select placeholder="Select status">
+                      <Option value="active">Active</Option>
+                      <Option value="inactive">Inactive</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col span={24}>
-                <Form.Item
-                  name="benefits"
-                  label="Benefits"
-                  rules={[{ required: true, message: "Please add benefits" }]}
-                >
-                  <TextArea rows={2} placeholder="Enter benefits offered" />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    name="description"
+                    label="Job Description"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter job description",
+                      },
+                    ]}
+                  >
+                    <TextArea
+                      rows={4}
+                      placeholder="Detailed job description..."
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Row gutter={[16, 8]}>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="startDate"
-                  label="Start Date"
-                  rules={[
-                    { required: true, message: "Please select start date" },
-                  ]}
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="endDate"
-                  label="End Date"
-                  rules={[
-                    { required: true, message: "Please select end date" },
-                  ]}
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="deadlineDate"
-                  label="Application Deadline"
-                  rules={[
-                    { required: true, message: "Please select deadline date" },
-                  ]}
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item
-                  name="alertDate"
-                  label="Alert Date"
-                  help="Set a date for reminders"
-                >
-                  <DatePicker style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-            </Row>
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    name="keyResponsibilities"
+                    label="Key Responsibilities"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter key responsibilities",
+                      },
+                    ]}
+                  >
+                    <TextArea
+                      rows={4}
+                      placeholder="List of key responsibilities..."
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Divider style={{ margin: "16px 0" }} />
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    name="jobRequirements"
+                    label="Job Requirements"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter job requirements",
+                      },
+                    ]}
+                  >
+                    <TextArea
+                      rows={4}
+                      placeholder="List of job requirements..."
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-            <Form.Item>
-              <Space>
-                <Button
-                  onClick={() => {
-                    setIsModalVisible(false);
-                    form.resetFields();
-                    setSelectedClient(null);
-                    setEditingRequisition(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="primary" htmlType="submit">
-                  {editingRequisition ? "Update" : "Add"} Requisition
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    name="qualification"
+                    label="Qualifications"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter qualifications",
+                      },
+                    ]}
+                  >
+                    <TextArea
+                      rows={4}
+                      placeholder="Required qualifications..."
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item name="requiredSkills" label="Required Skills">
+                    <Select
+                      mode="tags"
+                      style={{ width: "100%" }}
+                      placeholder="Add skills"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item
+                    name="languagesRequired"
+                    label="Languages Required"
+                  >
+                    <Select
+                      mode="tags"
+                      style={{ width: "100%" }}
+                      placeholder="Add languages"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 8]}>
+                <Col span={24}>
+                  <Form.Item name="benefits" label="Benefits">
+                    <TextArea rows={4} placeholder="Benefits..." />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider style={{ margin: "16px 0" }} />
+
+              <Form.Item>
+                <Space>
+                  <Button
+                    onClick={() => {
+                      setIsModalVisible(false);
+                      form.resetFields();
+                      setSelectedClient(null);
+                      setEditingRequisition(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={isSubmitting}
+                  >
+                    {editingRequisition ? "Update" : "Add"} Requisition
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Spin>
+        </Modal>
+
+        <Modal
+          title="Confirm Delete"
+          visible={isDeleteModalVisible}
+          onOk={() => handleDelete(requisitionToDelete)}
+          onCancel={() => {
+            setIsDeleteModalVisible(false);
+            setRequisitionToDelete(null);
+          }}
+          confirmLoading={isDeleting}
+        >
+          <p>Are you sure you want to delete this requisition?</p>
+          <p>This action cannot be undone.</p>
         </Modal>
       </div>
     </>

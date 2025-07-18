@@ -219,6 +219,18 @@ export const recruiterApi = createApi({
         body: { userId, workOrderId, customFieldId },
       }),
     }),
+    getClients: builder.query({
+      query: () => ({
+        url: "/clients",
+        method: "GET",
+      }),
+    }),
+    getRequisitions: builder.query({
+      query: () => ({
+        url: "/requisition",
+        method: "GET",
+      }),
+    }),
     submitRequisition: builder.mutation({
       query: (requisitionData) => ({
         url: "/requisition",
@@ -226,11 +238,20 @@ export const recruiterApi = createApi({
         body: requisitionData,
       }),
     }),
-    getClients: builder.query({
-      query: () => ({
-        url: "/clients",
-        method: "GET",
+    editRequisition: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/requisition/${id}`,
+        method: "PUT",
+        body: data,
       }),
+      invalidatesTags: ["Requisition"],
+    }),
+    deleteRequisition: builder.mutation({
+      query: (id) => ({
+        url: `/requisition/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Requisition"], 
     }),
   }),
 });
@@ -264,4 +285,7 @@ export const {
   useGetExactMatchCandidatesQuery,
   useSubmitRequisitionMutation,
   useGetClientsQuery,
+  useGetRequisitionsQuery,
+  useEditRequisitionMutation,
+  useDeleteRequisitionMutation
 } = recruiterApi;
