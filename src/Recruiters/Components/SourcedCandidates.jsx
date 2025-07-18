@@ -46,6 +46,7 @@ import {
   useUpdateCandidateStatusMutation,
   useGetSourcedCandidateQuery,
   useGetExactMatchCandidatesQuery,
+  useGetPipelinesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
@@ -131,10 +132,19 @@ const languageOptions = [
   { value: "Tagalog", label: "Tagalog" },
 ];
 
-const CommentModal = ({ visible, onCancel, onOk, comment, setComment }) => {
+const CommentModal = ({
+  visible,
+  onCancel,
+  onOk,
+  comment,
+  setComment,
+  pipelines = [],
+  selectedPipeline,
+  setSelectedPipeline,
+}) => {
   return (
     <Modal
-      title="Add Comment"
+      title="Add Comment and Select Pipeline"
       open={visible}
       onOk={onOk}
       onCancel={onCancel}
@@ -142,12 +152,30 @@ const CommentModal = ({ visible, onCancel, onOk, comment, setComment }) => {
       cancelText="Cancel"
       okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
     >
-      <Input.TextArea
-        rows={4}
-        placeholder="Enter your comments for this candidate..."
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-      />
+      <Form layout="vertical">
+        <Form.Item label="Comment">
+          <Input.TextArea
+            rows={4}
+            placeholder="Enter your comments for this candidate..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </Form.Item>
+        <Form.Item label="Pipeline (Optional)">
+          <Select
+            placeholder="Select a pipeline"
+            value={selectedPipeline}
+            onChange={setSelectedPipeline}
+            allowClear
+          >
+            {pipelines.map((pipeline) => (
+              <Option key={pipeline._id} value={pipeline._id}>
+                {pipeline.name}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+      </Form>
     </Modal>
   );
 };
@@ -162,6 +190,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [candidateToUpdate, setCandidateToUpdate] = useState(null);
   const [isExactMatch, setIsExactMatch] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -174,6 +203,8 @@ const SourcedCandidates = ({ jobId }) => {
   const [skillInput, setSkillInput] = useState("");
   const [queryParams, setQueryParams] = useState("");
 
+  const { data: pipelineData } = useGetPipelinesQuery();
+  const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
@@ -500,6 +531,7 @@ const SourcedCandidates = ({ jobId }) => {
         jobId: jobId,
         isSourced: candidate.isSourced,
         comment: commentText,
+        pipelineId: selectedPipeline, 
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
@@ -511,6 +543,8 @@ const SourcedCandidates = ({ jobId }) => {
 
       setIsModalVisible(false);
       setSelectedCandidate(null);
+      setSelectedPipeline(null); 
+      setComment(""); 
 
       if (newStatus === "selected") {
         setSelectedCandidates((prev) =>
@@ -1224,10 +1258,16 @@ const SourcedCandidates = ({ jobId }) => {
 
       <CommentModal
         visible={isCommentModalVisible}
-        onCancel={() => setIsCommentModalVisible(false)}
+        onCancel={() => {
+          setIsCommentModalVisible(false);
+          setSelectedPipeline(null); // Reset on cancel
+        }}
         onOk={handleCommentConfirm}
         comment={comment}
         setComment={setComment}
+        pipelines={activePipelines}
+        selectedPipeline={selectedPipeline}
+        setSelectedPipeline={setSelectedPipeline}
       />
     </div>
   );

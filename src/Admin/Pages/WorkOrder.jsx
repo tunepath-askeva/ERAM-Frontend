@@ -689,7 +689,6 @@ const WorkOrder = () => {
                 onChange={handlePageChange}
                 onShowSizeChange={handlePageChange}
                 showSizeChanger
-                showQuickJumper
                 showTotal={(total, range) =>
                   `${range[0]}-${range[1]} of ${total} items`
                 }
