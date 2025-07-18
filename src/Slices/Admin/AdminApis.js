@@ -487,6 +487,12 @@ export const adminApi = createApi({
         method: "PATCH",
       }),
     }),
+    getAdminRequisiion: builder.query({
+      query: () => ({
+        url: "/requisition",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -558,4 +564,7 @@ export const {
   useEditStaffMutation,
   useDeleteStaffMutation,
   useDisableStaffMutation,
+
+  //Requisition
+  useGetAdminRequisiionQuery,
 } = adminApi;

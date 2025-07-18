@@ -30,7 +30,7 @@ import {
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
-// import { useGetRequisitionsQuery } from "../../Slices/Admin/AdminApis";
+import { useGetAdminRequisiionQuery } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text } = Typography;
 
@@ -43,93 +43,44 @@ const AdminRequisition = () => {
   });
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [requisitionToDelete, setRequisitionToDelete] = useState(null);
 
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
-  // Mock data - replace with actual API call
-  const mockRequisitions = [
-    {
-      _id: "1",
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      location: "Bangalore",
-      employmentType: "Full-time",
-      experience: "5-8 years",
-      salary: "₹15-25 LPA",
-      status: "active",
-      priority: "high",
-      positions: 2,
-      postedDate: "2024-01-15",
-      deadline: "2024-02-15",
-      hiringManager: "John Doe",
-      description: "Looking for experienced software engineer...",
-      skills: ["React", "Node.js", "MongoDB", "AWS"],
-      workMode: "Hybrid",
-    },
-    {
-      _id: "2",
-      title: "Product Manager",
-      department: "Product",
-      location: "Mumbai",
-      employmentType: "Full-time",
-      experience: "3-5 years",
-      salary: "₹12-18 LPA",
-      status: "paused",
-      priority: "medium",
-      positions: 1,
-      postedDate: "2024-01-10",
-      deadline: "2024-02-10",
-      hiringManager: "Jane Smith",
-      description: "Seeking product manager with strong analytical skills...",
-      skills: ["Product Strategy", "Analytics", "SQL", "Agile"],
-      workMode: "Remote",
-    },
-    {
-      _id: "3",
-      title: "UX Designer",
-      department: "Design",
-      location: "Delhi",
-      employmentType: "Contract",
-      experience: "2-4 years",
-      salary: "₹8-12 LPA",
-      status: "closed",
-      priority: "low",
-      positions: 1,
-      postedDate: "2024-01-05",
-      deadline: "2024-01-25",
-      hiringManager: "Mike Johnson",
-      description: "Creative UX designer for mobile applications...",
-      skills: ["Figma", "Adobe XD", "User Research", "Prototyping"],
-      workMode: "On-site",
-    },
-  ];
+  const { data: apiResponse, isLoading, isError, refetch } = useGetAdminRequisiionQuery();
 
-  // Uncomment and use actual API
-  // const {
-  //   data: requisitionData,
-  //   isLoading,
-  //   isError,
-  //   refetch,
-  // } = useGetRequisitionsQuery({
-  //   searchTerm: debouncedSearchTerm,
-  //   page: pagination.current,
-  //   pageSize: pagination.pageSize,
-  // });
+const transformRequisitionData = (data) => {
+  if (!data || !data.requisitions) return [];
+  
+  return data.requisitions.map(req => ({
+    _id: req._id,
+    title: req.title,
+    department: req.companyIndustry,
+    location: req.officeLocation,
+    employmentType: req.EmploymentType,
+    experience: `${req.experienceMin}-${req.experienceMax} years`,
+    salary: `$${req.salaryMin}-${req.salaryMax}`,
+    status: req.isActive,
+    priority: "medium",
+    positions: req.numberOfCandidate,
+    postedDate: new Date(req.createdAt).toISOString().split('T')[0],
+    deadline: new Date(req.deadlineDate).toISOString().split('T')[0],
+    hiringManager: "Manager",
+    description: req.description,
+    skills: req.requiredSkills,
+    workMode: req.workplace,
+    keyResponsibilities: req.keyResponsibilities, 
+    benefits: req.benefits, 
+    clientId: req.clientId, 
+    originalData: {
+      ...req,
+      client: req.clientId 
+    }
+  }));
+};
 
-  // Mock loading and error states
-  const isLoading = false;
-  const isError = false;
-  const requisitionData = {
-    requisitions: mockRequisitions,
-    total: mockRequisitions.length,
-  };
-
-  const refetch = () => {
-    console.log("Refetching data...");
-  };
+  const requisitions = transformRequisitionData(apiResponse);
+  const totalCount = apiResponse?.requisitions?.length || 0;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -140,14 +91,10 @@ const AdminRequisition = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const requisitions = requisitionData?.requisitions || [];
-  const totalCount = requisitionData?.total || 0;
-
   const handleCreateWorkOrder = (requisition) => {
-    // Navigate to create work order page with prefilled data
     navigate(`/admin/add-workorder`, {
       state: {
-        requisitionData: requisition,
+        requisitionData: requisition.originalData,
         prefilled: true,
       },
     });
@@ -163,33 +110,6 @@ const AdminRequisition = () => {
     setSelectedRequisition(null);
   };
 
-  const showDeleteModal = (requisition) => {
-    setRequisitionToDelete(requisition);
-    setDeleteModalVisible(true);
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteModalVisible(false);
-    setRequisitionToDelete(null);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!requisitionToDelete) return;
-
-    try {
-      // await deleteRequisitionApi(requisitionToDelete._id);
-      await refetch();
-      enqueueSnackbar(
-        `Requisition "${requisitionToDelete.title}" deleted successfully`,
-        { variant: "success" }
-      );
-      setDeleteModalVisible(false);
-      setRequisitionToDelete(null);
-    } catch (error) {
-      enqueueSnackbar("Failed to delete requisition", { variant: "error" });
-      console.error("Delete error:", error);
-    }
-  };
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
@@ -199,9 +119,7 @@ const AdminRequisition = () => {
     switch (status) {
       case "active":
         return "green";
-      case "paused":
-        return "orange";
-      case "closed":
+      case "inactive":
         return "red";
       default:
         return "blue";
@@ -283,8 +201,7 @@ const AdminRequisition = () => {
       ),
       filters: [
         { text: "Active", value: "active" },
-        { text: "Paused", value: "paused" },
-        { text: "Closed", value: "closed" },
+        { text: "Inactive", value: "inactive" },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -335,7 +252,7 @@ const AdminRequisition = () => {
               onClick={() => handleViewRequisition(record)}
             />
           </Tooltip>
-         
+
           <Button
             type="primary"
             size="small"
@@ -439,8 +356,6 @@ const AdminRequisition = () => {
                 size="large"
                 className="custom-search-input"
               />
-
-              
             </div>
           </div>
         </div>
@@ -553,7 +468,11 @@ const AdminRequisition = () => {
       >
         {selectedRequisition && (
           <div>
-            <Card title="Job Information" style={{ marginBottom: 16 }} size="small">
+            <Card
+              title="Job Information"
+              style={{ marginBottom: 16 }}
+              size="small"
+            >
               <Descriptions column={2} size="small">
                 <Descriptions.Item label="Job Title">
                   <Text strong>{selectedRequisition.title}</Text>
@@ -606,7 +525,11 @@ const AdminRequisition = () => {
               </Descriptions>
             </Card>
 
-            <Card title="Job Description" style={{ marginBottom: 16 }} size="small">
+            <Card
+              title="Job Description"
+              style={{ marginBottom: 16 }}
+              size="small"
+            >
               <Text>{selectedRequisition.description}</Text>
             </Card>
 
@@ -621,94 +544,6 @@ const AdminRequisition = () => {
             </Card>
           </div>
         )}
-      </Modal>
-
-      {/* Delete Requisition Modal */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", color: "#ff4d4f" }}>
-            <ExclamationCircleOutlined style={{ marginRight: 8, fontSize: 18 }} />
-            Delete Requisition
-          </div>
-        }
-        open={deleteModalVisible}
-        onCancel={handleDeleteCancel}
-        width="90%"
-        style={{ maxWidth: 500 }}
-        centered
-        footer={[
-          <Button key="cancel" onClick={handleDeleteCancel} size="large">
-            Cancel
-          </Button>,
-          <Button
-            key="delete"
-            type="primary"
-            danger
-            onClick={handleDeleteConfirm}
-            loading={isLoading}
-            size="large"
-            icon={<DeleteOutlined />}
-          >
-            Delete Requisition
-          </Button>,
-        ]}
-      >
-        <div style={{ padding: "16px 0" }}>
-          {requisitionToDelete && (
-            <>
-              <div
-                style={{
-                  background: "#fff2f0",
-                  border: "1px solid #ffccc7",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                }}
-              >
-                <WarningOutlined
-                  style={{
-                    color: "#ff4d4f",
-                    fontSize: "16px",
-                    marginTop: "2px",
-                    flexShrink: 0,
-                  }}
-                />
-                <div>
-                  <Text strong style={{ color: "#ff4d4f" }}>
-                    This action cannot be undone
-                  </Text>
-                  <br />
-                  <Text style={{ color: "#8c8c8c" }}>
-                    All data associated with this requisition will be permanently deleted.
-                  </Text>
-                </div>
-              </div>
-
-              <div>
-                <Text>
-                  You are about to delete the requisition{" "}
-                  <Text strong style={{ color: "#2c3e50" }}>
-                    "{requisitionToDelete.title}"
-                  </Text>
-                  .
-                </Text>
-                <div style={{ marginTop: 12 }}>
-                  <Text type="secondary">
-                    Department: <Text strong>{requisitionToDelete.department}</Text>
-                  </Text>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Text type="danger">
-                    <strong>Warning:</strong> Any ongoing applications for this requisition will be affected.
-                  </Text>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
       </Modal>
     </>
   );

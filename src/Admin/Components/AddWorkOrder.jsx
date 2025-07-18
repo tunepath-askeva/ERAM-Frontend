@@ -45,7 +45,7 @@ import {
   useGetStaffsQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -87,7 +87,9 @@ const AddWorkOrder = () => {
   const [requiredDocuments, setRequiredDocuments] = useState([]);
   const [clientSelectLoading, setClientSelectLoading] = useState(false);
   const [staffSelectLoading, setStaffSelectLoading] = useState(false);
+  const [isPrefilled, setIsPrefilled] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: approvalData, isLoading: isLoadingApprovals } =
     useGetApprovalQuery({
@@ -147,11 +149,65 @@ const AddWorkOrder = () => {
   };
 
   useEffect(() => {
-    console.log("Clients Data:", clientsData);
-    console.log("Active Clients:", activeClients);
-    console.log("Staffs Data:", staffsData);
-    console.log("Active Staffs:", activeStaffs);
-  }, [clientsData, staffsData]);
+    if (location.state?.requisitionData) {
+      const reqData = location.state.requisitionData;
+      setIsPrefilled(true);
+
+      const startDate = reqData.createdAt ? dayjs(reqData.createdAt) : dayjs();
+      const endDate = startDate.add(30, "day");
+      const alertDate = startDate.add(7, "day");
+      const deadlineDate = reqData.deadlineDate
+        ? dayjs(reqData.deadlineDate)
+        : startDate.add(14, "day");
+
+      jobForm.setFieldsValue({
+        title: reqData.title,
+        description: reqData.description,
+        companyIndustry: reqData.companyIndustry,
+        officeLocation: reqData.officeLocation,
+        EmploymentType: reqData.EmploymentType,
+        experienceMin: reqData.experienceMin,
+        experienceMax: reqData.experienceMax,
+        salaryMin: reqData.salaryMin,
+        salaryMax: reqData.salaryMax,
+        workplace: reqData.workplace,
+        requiredSkills: reqData.requiredSkills,
+        numberOfCandidate: reqData.numberOfCandidate,
+
+        startDate: startDate,
+        endDate: endDate,
+        alertDate: alertDate,
+        deadlineDate: deadlineDate,
+
+        keyResponsibilities: reqData.keyResponsibilities,
+        jobRequirements: reqData.jobRequirements,
+        qualification: reqData.qualification,
+        benefits: reqData.benefits,
+
+        client: reqData.clientId,
+
+        jobFunction: reqData.jobFunction,
+        salaryType: reqData.salaryType || "monthly",
+        Education: reqData.Education,
+      });
+
+      setRequiredDocuments(reqData.requiredDocuments || []);
+    }
+  }, [location.state, jobForm]);
+
+  useEffect(() => {
+    if (location.state?.requisitionData?.clientId && clientsData?.clients) {
+      const clientExists = clientsData.clients.some(
+        (client) => client._id === location.state.requisitionData.clientId
+      );
+
+      if (!clientExists) {
+        enqueueSnackbar("Client from requisition not found", {
+          variant: "warning",
+        });
+      }
+    }
+  }, [clientsData, location.state, enqueueSnackbar]);
 
   const handleApproverChange = (pipelineId, stageId, recruiterId) => {
     handleStageDateChange(pipelineId, stageId, "recruiterId", recruiterId);
