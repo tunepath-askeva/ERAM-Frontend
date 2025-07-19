@@ -60,6 +60,7 @@ import ProtectedCandidate from "./Auth/ProtectedCandidate";
 import Notifications from "./Pages/Notifications";
 import AdminRequisition from "./Admin/Pages/AdminRequisition";
 import RecruiterRequisition from "./Recruiters/Pages/RecruiterRequisition";
+import CandidateDocuments from "./Pages/CandidateDocuments";
 
 const AppRoutes = () => {
   return (
@@ -184,6 +185,10 @@ const AppRoutes = () => {
         <Route
           path="/candidate-settings"
           element={<ProtectedCandidate element={<CandidateSettings />} />}
+        />
+        <Route
+          path="/candidate-documents"
+          element={<ProtectedCandidate element={<CandidateDocuments />} />}
         />
         <Route
           path="/notifications"

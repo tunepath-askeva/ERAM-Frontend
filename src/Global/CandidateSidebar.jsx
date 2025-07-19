@@ -6,6 +6,7 @@ import {
   SettingOutlined,
   LogoutOutlined,
   FormOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,6 +66,11 @@ const CandidateSidebar = ({
       key: "/candidate-applied-jobs",
       icon: <FormOutlined />,
       label: "Applied Jobs",
+    },
+    {
+      key: "/candidate-documents",
+      icon: <FilePdfOutlined />,
+      label: "Documents",
     },
     {
       key: "/candidate-settings",

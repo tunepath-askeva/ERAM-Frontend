@@ -22,6 +22,7 @@ import {
   EyeOutlined,
   DollarOutlined,
   GlobalOutlined,
+  StarOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -228,6 +229,21 @@ const CandidateCard = ({
                       >
                         {experience} exp
                       </Text>
+                    )}
+                    {candidate.similarityScore && (
+                      <Tag
+                        icon={<StarOutlined />}
+                        color="green"
+                        style={{
+                          margin: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        Match Score:{" "}
+                        {(candidate.similarityScore * 100).toFixed(0)}%
+                      </Tag>
                     )}
                   </div>
                 </div>
