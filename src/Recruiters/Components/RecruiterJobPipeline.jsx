@@ -210,6 +210,7 @@ const RecruiterJobPipeline = () => {
       if (candidate.currentStageId === stageId) return true;
 
       // Show candidate if they have completed this stage (for historical view)
+      
       if (stageProgress.stageStatus === "approved") return true;
 
       return false;
