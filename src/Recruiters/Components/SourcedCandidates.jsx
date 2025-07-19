@@ -374,17 +374,28 @@ const SourcedCandidates = ({ jobId }) => {
 
   const hasActiveFilters = useMemo(() => {
     return (
+      filters.keywords.trim() ||
       filters.skills.length > 0 ||
-      filters.location ||
-      filters.company ||
-      filters.qualification ||
-      filters.jobRole ||
+      filters.location.trim() ||
+      filters.company.trim() ||
+      filters.qualifications.length > 0 ||
+      filters.jobRoles.length > 0 ||
+      filters.industries.length > 0 ||
+      filters.languages.length > 0 ||
       filters.experience[0] > 0 ||
       filters.experience[1] < 20 ||
       filters.salary[0] > 0 ||
-      filters.salary[1] < 100000
+      filters.salary[1] < 2000000 ||
+      filters.ageRange[0] > 18 ||
+      filters.ageRange[1] < 70 ||
+      filters.gender ||
+      filters.nationality ||
+      filters.noticePeriod ||
+      filters.profileUpdated ||
+      filters.visaStatus ||
+      isExactMatch
     );
-  }, [filters]);
+  }, [filters, isExactMatch]);
 
   const handleExactMatch = async () => {
     try {
@@ -418,15 +429,69 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleClearSearch = () => {
+    // Clear all filters
     setFilters(initialFilters);
     setTempFilters(initialFilters);
     setSkillInput("");
+
+    // Clear search states
     setShouldFetch(false);
     setIsExactMatch(false);
     setQueryParams("");
-    setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
+
+    // Reset pagination
+    setPagination((prev) => ({
+      ...prev,
+      current: 1,
+      total: 0,
+    }));
+
+    // Clear selections
     setSelectedCandidates([]);
     setSelectAll(false);
+    message.success("All filters cleared successfully");
+  };
+
+  const handleClearSpecificFilter = (filterType) => {
+    const clearedFilters = { ...filters };
+
+    switch (filterType) {
+      case "skills":
+        clearedFilters.skills = [];
+        break;
+      case "location":
+        clearedFilters.location = "";
+        break;
+      case "company":
+        clearedFilters.company = "";
+        break;
+      case "experience":
+        clearedFilters.experience = [0, 20];
+        break;
+      case "salary":
+        clearedFilters.salary = [0, 2000000];
+        break;
+      case "qualifications":
+        clearedFilters.qualifications = [];
+        break;
+      case "jobRoles":
+        clearedFilters.jobRoles = [];
+        break;
+      case "industries":
+        clearedFilters.industries = [];
+        break;
+      case "exactMatch":
+        setIsExactMatch(false);
+        setShouldFetch(false);
+        return;
+      default:
+        break;
+    }
+
+    setFilters(clearedFilters);
+    if (shouldFetch) {
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }
   };
 
   const handleSkillAdd = () => {
@@ -531,7 +596,7 @@ const SourcedCandidates = ({ jobId }) => {
         jobId: jobId,
         isSourced: candidate.isSourced,
         comment: commentText,
-        pipelineId: selectedPipeline, 
+        pipelineId: selectedPipeline,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
@@ -543,8 +608,8 @@ const SourcedCandidates = ({ jobId }) => {
 
       setIsModalVisible(false);
       setSelectedCandidate(null);
-      setSelectedPipeline(null); 
-      setComment(""); 
+      setSelectedPipeline(null);
+      setComment("");
 
       if (newStatus === "selected") {
         setSelectedCandidates((prev) =>
@@ -683,7 +748,7 @@ const SourcedCandidates = ({ jobId }) => {
         style={{ marginBottom: "20px" }}
       >
         <Col>
-          <Space>
+          <Space wrap>
             <Button
               type="primary"
               icon={<FilterOutlined />}
@@ -691,27 +756,225 @@ const SourcedCandidates = ({ jobId }) => {
               style={{ backgroundColor: "#da2c46" }}
             >
               Advanced Filters
+              {hasActiveFilters && !isExactMatch && (
+                <Badge
+                  count={
+                    Object.values(filters).filter((val) =>
+                      Array.isArray(val)
+                        ? val.length > 0
+                        : typeof val === "string"
+                        ? val.trim()
+                        : typeof val === "number"
+                        ? false
+                        : val !== null
+                    ).length
+                  }
+                  size="small"
+                />
+              )}
             </Button>
 
             <Button
-              type="default"
-              icon={<CheckOutlined />}
+              type={isExactMatch ? "primary" : "default"}
               onClick={handleExactMatch}
               loading={isExactMatchLoading}
-              disabled={isExactMatchLoading}
+              style={{
+                backgroundColor: isExactMatch ? "#722ed1" : undefined,
+                borderColor: isExactMatch ? "#722ed1" : "#d9d9d9",
+              }}
             >
-              {isExactMatch ? "Exact Match Active" : "Exact Match"}
+              Exact Match
             </Button>
-            {hasActiveFilters && (
-              <Button icon={<ClearOutlined />} onClick={handleClearSearch}>
-                Clear All
-              </Button>
+
+            {(hasActiveFilters || isExactMatch) && (
+              <Card size="small" style={{ marginBottom: "20px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Space wrap size={[8, 8]}>
+                      <Text strong style={{ color: "#666", fontSize: "13px" }}>
+                        Active Filters:
+                      </Text>
+
+                      {isExactMatch && (
+                        <Tag
+                          color="purple"
+                          closable
+                          onClose={() =>
+                            handleClearSpecificFilter("exactMatch")
+                          }
+                        >
+                          Exact Match
+                        </Tag>
+                      )}
+
+                      {filters.keywords && (
+                        <Tag
+                          color="blue"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({ ...prev, keywords: "" }))
+                          }
+                        >
+                          Keywords: {filters.keywords}
+                        </Tag>
+                      )}
+
+                      {filters.skills.map((skill) => (
+                        <Tag
+                          key={skill}
+                          color="blue"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              skills: prev.skills.filter((s) => s !== skill),
+                            }))
+                          }
+                        >
+                          {skill}
+                        </Tag>
+                      ))}
+
+                      {filters.location && (
+                        <Tag
+                          color="green"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({ ...prev, location: "" }))
+                          }
+                        >
+                          <EnvironmentOutlined /> {filters.location}
+                        </Tag>
+                      )}
+
+                      {filters.company && (
+                        <Tag
+                          color="orange"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({ ...prev, company: "" }))
+                          }
+                        >
+                          <BankOutlined /> {filters.company}
+                        </Tag>
+                      )}
+
+                      {filters.qualifications.length > 0 && (
+                        <Tag
+                          color="purple"
+                          closable
+                          onClose={() =>
+                            handleClearSpecificFilter("qualifications")
+                          }
+                        >
+                          Education: {filters.qualifications.join(", ")}
+                        </Tag>
+                      )}
+
+                      {filters.jobRoles.length > 0 && (
+                        <Tag
+                          color="cyan"
+                          closable
+                          onClose={() => handleClearSpecificFilter("jobRoles")}
+                        >
+                          <ToolOutlined /> {filters.jobRoles.join(", ")}
+                        </Tag>
+                      )}
+
+                      {(filters.experience[0] > 0 ||
+                        filters.experience[1] < 20) && (
+                        <Tag
+                          color="red"
+                          closable
+                          onClose={() =>
+                            handleClearSpecificFilter("experience")
+                          }
+                        >
+                          Exp: {filters.experience[0]}-{filters.experience[1]}{" "}
+                          years
+                        </Tag>
+                      )}
+
+                      {(filters.salary[0] > 0 ||
+                        filters.salary[1] < 2000000) && (
+                        <Tag
+                          color="gold"
+                          closable
+                          onClose={() => handleClearSpecificFilter("salary")}
+                        >
+                          <DollarOutlined /> ₹
+                          {(filters.salary[0] / 100000).toFixed(1)}L-₹
+                          {(filters.salary[1] / 100000).toFixed(1)}L
+                        </Tag>
+                      )}
+
+                      {filters.industries.length > 0 && (
+                        <Tag
+                          color="geekblue"
+                          closable
+                          onClose={() =>
+                            handleClearSpecificFilter("industries")
+                          }
+                        >
+                          Industry: {filters.industries.join(", ")}
+                        </Tag>
+                      )}
+
+                      {filters.gender && (
+                        <Tag
+                          color="magenta"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({ ...prev, gender: null }))
+                          }
+                        >
+                          Gender: {filters.gender}
+                        </Tag>
+                      )}
+
+                      {filters.nationality && (
+                        <Tag
+                          color="volcano"
+                          closable
+                          onClose={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              nationality: null,
+                            }))
+                          }
+                        >
+                          Nationality: {filters.nationality}
+                        </Tag>
+                      )}
+                    </Space>
+                  </div>
+
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<ClearOutlined />}
+                    onClick={handleClearSearch}
+                    style={{ flexShrink: 0 }}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </Card>
             )}
           </Space>
         </Col>
         <Col>
           <Space>
-            <Text>
+            <Text type="secondary">
               {selectedCandidates.length} selected of {sourcedCandidates.length}{" "}
               candidates
             </Text>
@@ -721,58 +984,53 @@ const SourcedCandidates = ({ jobId }) => {
                 size="small"
                 style={{ backgroundColor: "#da2c46" }}
                 onClick={() => handleBulkStatusUpdate("selected")}
+                loading={isUpdatingStatus}
               >
-                Move to Selected
+                Move Selected to Pipeline
               </Button>
             )}
           </Space>
         </Col>
       </Row>
 
-      {(hasActiveFilters || isExactMatch) && (
-        <Card size="small" style={{ marginBottom: "20px" }}>
-          <Space wrap>
-            <Text strong>Active Filters:</Text>
-            {isExactMatch && <Tag color="purple">Exact Match</Tag>}
-            {filters.skills.map((skill) => (
-              <Tag key={skill} color="blue">
-                {skill}
-              </Tag>
-            ))}
-            {filters.location && (
-              <Tag color="green">Location: {filters.location}</Tag>
-            )}
-            {filters.company && (
-              <Tag color="orange">Company: {filters.company}</Tag>
-            )}
-            {filters.qualification && (
-              <Tag color="purple">Qualification: {filters.qualification}</Tag>
-            )}
-            {filters.jobRole && <Tag color="cyan">Role: {filters.jobRole}</Tag>}
-            {(filters.experience[0] > 0 || filters.experience[1] < 20) && (
-              <Tag color="red">
-                Experience: {filters.experience[0]}-{filters.experience[1]}{" "}
-                years
-              </Tag>
-            )}
-            {(filters.salary[0] > 0 || filters.salary[1] < 100000) && (
-              <Tag color="gold">
-                Salary: ₹{filters.salary[0] / 1000}K-₹
-                {filters.salary[1] / 1000}K
-              </Tag>
-            )}
-          </Space>
-        </Card>
-      )}
-
-      {shouldFetch && sourcedCandidates.length > 0 && (
-        <Card size="small" style={{ marginBottom: "16px" }}>
-          <Checkbox
-            checked={selectAll}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          >
-            Select all candidates on this page
-          </Checkbox>
+      {(shouldFetch || isExactMatch) && sourcedCandidates.length > 0 && (
+        <Card
+          size="small"
+          style={{ marginBottom: "16px", backgroundColor: "#f6ffed" }}
+        >
+          <Row justify="space-between" align="middle">
+            <Col>
+              <Space>
+                <Text strong style={{ color: "#52c41a" }}>
+                  Found {sourcedCandidates.length} candidates
+                </Text>
+                {isExactMatch && <Text type="secondary">(Exact Match)</Text>}
+                {hasActiveFilters && !isExactMatch && (
+                  <Text type="secondary">
+                    (
+                    {
+                      Object.values(filters).filter((val) =>
+                        Array.isArray(val)
+                          ? val.length > 0
+                          : typeof val === "string"
+                          ? val.trim()
+                          : val !== null
+                      ).length
+                    }{" "}
+                    filters applied)
+                  </Text>
+                )}
+              </Space>
+            </Col>
+            <Col>
+              <Checkbox
+                checked={selectAll}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+              >
+                Select all on page
+              </Checkbox>
+            </Col>
+          </Row>
         </Card>
       )}
 
@@ -854,9 +1112,31 @@ const SourcedCandidates = ({ jobId }) => {
         )}
       </div>
 
-      {/* Advanced Filter Modal */}
       <Modal
-        title="Advanced Candidate Filters"
+        title={
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>Advanced Candidate Filters</span>
+            {hasActiveFilters && (
+              <Button
+                type="link"
+                size="small"
+                danger
+                onClick={() => {
+                  setTempFilters(initialFilters);
+                  setSkillInput("");
+                }}
+              >
+                Reset All Filters
+              </Button>
+            )}
+          </div>
+        }
         open={isFilterModalVisible}
         onOk={handleFilterModalOk}
         onCancel={handleFilterModalCancel}
