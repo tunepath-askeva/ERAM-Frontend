@@ -186,6 +186,12 @@ export const userApi = createApi({
         };
       },
     }),
+    getCandidateDocuments: builder.query({
+      query: () => ({
+        url: `/documents`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -212,4 +218,5 @@ export const {
   useGetAppliedJobByIdQuery,
   useUploadStageDocumentsMutation,
   useSubmitWorkOrderDocumentsMutation,
+  useGetCandidateDocumentsQuery,
 } = userApi;
