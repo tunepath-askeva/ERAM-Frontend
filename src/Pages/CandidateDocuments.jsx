@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import {
   Card,
-  Table,
   Tag,
   Button,
   Input,
   Select,
-  DatePicker,
   Space,
   Typography,
   Row,
@@ -17,284 +15,234 @@ import {
   Divider,
   Timeline,
   Avatar,
+  Collapse,
+  Progress,
 } from "antd";
 import {
   FileTextOutlined,
   DownloadOutlined,
   EyeOutlined,
   SearchOutlined,
-  FilterOutlined,
   CalendarOutlined,
-  UserOutlined,
   FolderOpenOutlined,
+  FilePdfOutlined,
+  FileImageOutlined,
+  FileWordOutlined,
+  FileExcelOutlined,
+  FileZipOutlined,
+  FileUnknownOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  CaretRightOutlined,
 } from "@ant-design/icons";
 import { useGetCandidateDocumentsQuery } from "../Slices/Users/UserApis";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { RangePicker } = DatePicker;
+const { Panel } = Collapse;
 
 const CandidateDocuments = () => {
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [previewModal, setPreviewModal] = useState({
     visible: false,
     document: null,
   });
   const [filters, setFilters] = useState({
     search: "",
-    workOrder: "all",
     stage: "all",
-    dateRange: null,
+    documentType: "all",
+    workOrder: "all",
   });
+  const [expandedWorkOrders, setExpandedWorkOrders] = useState([]);
 
-  const { data } = useGetCandidateDocumentsQuery();
+  const { data, isLoading, error } = useGetCandidateDocumentsQuery();
 
-  // Mock data for demonstration
-  const documentsData = [
-    {
-      id: 1,
-      workOrderId: "WO-2024-001",
-      workOrderTitle: "Software Developer Position - TechCorp",
-      stage: "Application",
-      documentName: "Resume_JohnDoe.pdf",
-      documentType: "Resume",
-      uploadDate: "2024-01-15",
-      fileSize: "245 KB",
-      status: "Approved",
-      downloadUrl: "#",
-    },
-    {
-      id: 2,
-      workOrderId: "WO-2024-001",
-      workOrderTitle: "Software Developer Position - TechCorp",
-      stage: "Application",
-      documentName: "CoverLetter_JohnDoe.pdf",
-      documentType: "Cover Letter",
-      uploadDate: "2024-01-15",
-      fileSize: "189 KB",
-      status: "Approved",
-      downloadUrl: "#",
-    },
-    {
-      id: 3,
-      workOrderId: "WO-2024-001",
-      workOrderTitle: "Software Developer Position - TechCorp",
-      stage: "Interview",
-      documentName: "Portfolio_Screenshots.zip",
-      documentType: "Portfolio",
-      uploadDate: "2024-01-20",
-      fileSize: "2.3 MB",
-      status: "Under Review",
-      downloadUrl: "#",
-    },
-    {
-      id: 4,
-      workOrderId: "WO-2024-002",
-      workOrderTitle: "Data Analyst Role - DataTech Solutions",
-      stage: "Application",
-      documentName: "Updated_Resume_2024.pdf",
-      documentType: "Resume",
-      uploadDate: "2024-02-01",
-      fileSize: "267 KB",
-      status: "Approved",
-      downloadUrl: "#",
-    },
-    {
-      id: 5,
-      workOrderId: "WO-2024-002",
-      workOrderTitle: "Data Analyst Role - DataTech Solutions",
-      stage: "Technical Test",
-      documentName: "SQL_Assessment_Results.pdf",
-      documentType: "Test Results",
-      uploadDate: "2024-02-05",
-      fileSize: "445 KB",
-      status: "Approved",
-      downloadUrl: "#",
-    },
-    {
-      id: 6,
-      workOrderId: "WO-2024-003",
-      workOrderTitle: "Frontend Developer - StartupXYZ",
-      stage: "Application",
-      documentName: "GitHub_Portfolio_Link.txt",
-      documentType: "Portfolio Link",
-      uploadDate: "2024-02-10",
-      fileSize: "1 KB",
-      status: "Pending",
-      downloadUrl: "#",
-    },
-  ];
-
-  const workOrders = [...new Set(documentsData.map((doc) => doc.workOrderId))];
-  const stages = [...new Set(documentsData.map((doc) => doc.stage))];
-
-  const getStatusColor = (status) => {
-    const colors = {
-      Approved: "success",
-      "Under Review": "processing",
-      Pending: "warning",
-      Rejected: "error",
-    };
-    return colors[status] || "default";
-  };
-
-  const getDocumentTypeIcon = (type) => {
-    const icons = {
-      Resume: "📄",
-      "Cover Letter": "📝",
-      Portfolio: "💼",
-      "Test Results": "📊",
-      "Portfolio Link": "🔗",
-      Certificate: "🏆",
-    };
-    return icons[type] || "📄";
-  };
-
-  const filteredData = documentsData.filter((doc) => {
-    const matchesSearch =
-      doc.documentName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      doc.workOrderTitle.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesWorkOrder =
-      filters.workOrder === "all" || doc.workOrderId === filters.workOrder;
-    const matchesStage = filters.stage === "all" || doc.stage === filters.stage;
-
-    return matchesSearch && matchesWorkOrder && matchesStage;
-  });
-
-  const groupedData = filteredData.reduce((acc, doc) => {
-    if (!acc[doc.workOrderId]) {
-      acc[doc.workOrderId] = {
-        workOrderId: doc.workOrderId,
-        workOrderTitle: doc.workOrderTitle,
-        documents: [],
-      };
+  const getFileIcon = (fileName) => {
+    const extension = fileName.split(".").pop().toLowerCase();
+    switch (extension) {
+      case "pdf":
+        return (
+          <FilePdfOutlined style={{ color: "#ff4d4f", fontSize: "24px" }} />
+        );
+      case "jpg":
+      case "jpeg":
+      case "png":
+      case "gif":
+        return (
+          <FileImageOutlined style={{ color: "#52c41a", fontSize: "24px" }} />
+        );
+      case "doc":
+      case "docx":
+        return (
+          <FileWordOutlined style={{ color: "#1890ff", fontSize: "24px" }} />
+        );
+      case "xls":
+      case "xlsx":
+        return (
+          <FileExcelOutlined style={{ color: "#52c41a", fontSize: "24px" }} />
+        );
+      case "zip":
+      case "rar":
+        return (
+          <FileZipOutlined style={{ color: "#faad14", fontSize: "24px" }} />
+        );
+      default:
+        return (
+          <FileUnknownOutlined style={{ color: "#d9d9d9", fontSize: "24px" }} />
+        );
     }
-    acc[doc.workOrderId].documents.push(doc);
-    return acc;
-  }, {});
+  };
 
-  const columns = [
-    {
-      title: "Document",
-      dataIndex: "documentName",
-      key: "documentName",
-      width: "35%",
-      render: (text, record) => (
-        <Space direction="vertical" size="small" style={{ width: "100%" }}>
-          <Space>
-            <span style={{ fontSize: "16px" }}>
-              {getDocumentTypeIcon(record.documentType)}
-            </span>
-            <Text strong style={{ fontSize: "14px" }}>
-              {text}
-            </Text>
-          </Space>
-          <Text type="secondary" style={{ fontSize: "12px" }}>
-            {record.documentType} • {record.fileSize}
-          </Text>
-          {/* Show stage and date on mobile */}
-          <div className="mobile-only" style={{ display: "none" }}>
-            <Space wrap>
-              <Tag color="#da2c46" size="small">
-                {record.stage}
-              </Tag>
-              <Text type="secondary" style={{ fontSize: "11px" }}>
-                <CalendarOutlined /> {record.uploadDate}
-              </Text>
-            </Space>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: "Stage",
-      dataIndex: "stage",
-      key: "stage",
-      width: "15%",
-      className: "desktop-only",
-      render: (stage) => (
-        <Tag color="#da2c46" style={{ borderRadius: "4px" }}>
-          {stage}
-        </Tag>
-      ),
-    },
-    {
-      title: "Date",
-      dataIndex: "uploadDate",
-      key: "uploadDate",
-      width: "20%",
-      className: "desktop-only",
-      render: (date) => (
-        <Space>
-          <CalendarOutlined style={{ color: "#da2c46" }} />
-          <Text style={{ fontSize: "13px" }}>{date}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      width: "15%",
-      render: (status) => (
-        <Badge
-          status={getStatusColor(status)}
-          text={status}
-          style={{ fontSize: "12px" }}
-        />
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: "15%",
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Preview">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() =>
-                setPreviewModal({ visible: true, document: record })
-              }
-              style={{ color: "#da2c46" }}
-            />
-          </Tooltip>
-          <Tooltip title="Download">
-            <Button
-              type="text"
-              icon={<DownloadOutlined />}
-              size="small"
-              onClick={() => window.open(record.downloadUrl)}
-              style={{ color: "#da2c46" }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "approved":
+        return <CheckCircleOutlined style={{ color: "#52c41a" }} />;
+      case "pending":
+        return <ClockCircleOutlined style={{ color: "#faad14" }} />;
+      case "rejected":
+        return <CloseCircleOutlined style={{ color: "#ff4d4f" }} />;
+      default:
+        return <ClockCircleOutlined style={{ color: "#d9d9d9" }} />;
+    }
+  };
 
-  const workOrderTimeline = selectedWorkOrder
-    ? groupedData[selectedWorkOrder]?.documents.map((doc) => ({
-        children: (
-          <div>
-            <Text strong>{doc.stage}</Text>
-            <br />
-            <Text>{doc.documentName}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: "12px" }}>
-              {doc.uploadDate}
-            </Text>
-          </div>
+  const transformApiData = (apiData) => {
+    if (!apiData?.data) return [];
+
+    return apiData.data.map((workOrder) => {
+      const stages = {};
+      
+      workOrder.uploadedDocuments?.forEach((doc) => {
+        if (!stages[doc.stageName]) {
+          stages[doc.stageName] = {
+            name: doc.stageName,
+            status: doc.stageStatus,
+            completedAt: doc.stageCompletedAt,
+            documents: [],
+          };
+        }
+        stages[doc.stageName].documents.push({
+          id: doc._id,
+          fileName: doc.fileName,
+          fileUrl: doc.fileUrl,
+          uploadedAt: doc.uploadedAt,
+          documentType: doc.documentName,
+          status: doc.stageStatus,
+          workOrderId: workOrder._id,
+          workOrderTitle: workOrder.workOrderTitle,
+        });
+      });
+
+      return {
+        workOrderId: workOrder._id,
+        workOrderTitle: workOrder.workOrderTitle,
+        stages: Object.values(stages),
+        totalDocuments: workOrder.uploadedDocuments?.length || 0,
+      };
+    });
+  };
+
+  const workOrdersData = transformApiData(data);
+
+  const documentTypes = workOrdersData?.length
+    ? [
+        ...new Set(
+          workOrdersData.flatMap((workOrder) =>
+            workOrder.stages.flatMap(
+              (stage) => stage.documents?.map((doc) => doc.documentType) || []
+            )
+          )
         ),
-        color: "#da2c46",
-      }))
+      ]
     : [];
+
+  const filteredWorkOrders = workOrdersData.filter((workOrder) => {
+    const matchesWorkOrder = 
+      filters.workOrder === "all" || 
+      workOrder.workOrderId === filters.workOrder;
+
+    const hasMatchingStages = workOrder.stages.some((stage) => {
+      const matchesSearch =
+        filters.search === "" ||
+        stage.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        stage.documents.some(
+          (doc) =>
+            doc.fileName.toLowerCase().includes(filters.search.toLowerCase()) ||
+            doc.documentType.toLowerCase().includes(filters.search.toLowerCase())
+        );
+
+      const matchesStage =
+        filters.stage === "all" || stage.name === filters.stage;
+      const matchesDocType =
+        filters.documentType === "all" ||
+        stage.documents.some((doc) => doc.documentType === filters.documentType);
+
+      return matchesSearch && matchesStage && matchesDocType;
+    });
+
+    return matchesWorkOrder && hasMatchingStages;
+  });
+
+  const handleWorkOrderExpand = (workOrderId, expanded) => {
+    if (expanded) {
+      setExpandedWorkOrders([...expandedWorkOrders, workOrderId]);
+    } else {
+      setExpandedWorkOrders(expandedWorkOrders.filter(id => id !== workOrderId));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: "24px", textAlign: "center" }}>
+        <Text>Loading documents...</Text>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "24px", textAlign: "center" }}>
+        <Text type="danger">Error loading documents. Please try again.</Text>
+      </div>
+    );
+  }
+
+  if (!data || !data.data || data.data.length === 0) {
+    return (
+      <div style={{ padding: "24px", textAlign: "center" }}>
+        <Text type="secondary">No documents found.</Text>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "12px" }}>
       <style jsx>{`
+        .stage-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+        }
+        .document-card {
+          transition: all 0.3s;
+          border-radius: 8px;
+        }
+        .document-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
+        }
+        .ant-collapse > .ant-collapse-item > .ant-collapse-header {
+          align-items: center !important;
+        }
+        .work-order-collapse .ant-collapse-header {
+          background-color: #f0f2f5;
+          border-radius: 8px !important;
+          padding: 12px 16px !important;
+        }
+        .work-order-collapse .ant-collapse-content {
+          background-color: transparent;
+        }
         @media (max-width: 768px) {
           .desktop-only {
             display: none !important;
@@ -302,28 +250,10 @@ const CandidateDocuments = () => {
           .mobile-only {
             display: block !important;
           }
-          .ant-table-thead > tr > th {
-            padding: 8px 4px !important;
-            font-size: 12px !important;
-          }
-          .ant-table-tbody > tr > td {
-            padding: 8px 4px !important;
-          }
-          .ant-card-body {
-            padding: 12px !important;
-          }
         }
         @media (min-width: 769px) {
           .mobile-only {
             display: none !important;
-          }
-        }
-        @media (max-width: 480px) {
-          .ant-table-scroll {
-            overflow-x: auto;
-          }
-          .ant-card {
-            margin-bottom: 8px;
           }
         }
       `}</style>
@@ -354,10 +284,10 @@ const CandidateDocuments = () => {
                           fontSize: "18px",
                         }}
                       >
-                        My Document History
+                        My Document Stages
                       </Title>
                       <Text type="secondary" style={{ fontSize: "12px" }}>
-                        Track all your uploaded documents across work orders
+                        Track all your uploaded documents grouped by work orders and stages
                       </Text>
                     </div>
                   </Space>
@@ -370,7 +300,7 @@ const CandidateDocuments = () => {
                 style={{ textAlign: "center", marginTop: "8px" }}
               >
                 <Badge
-                  count={documentsData.length}
+                  count={workOrdersData.reduce((total, wo) => total + wo.totalDocuments, 0)}
                   style={{ backgroundColor: "#da2c46" }}
                   showZero
                 >
@@ -395,7 +325,7 @@ const CandidateDocuments = () => {
             <Row gutter={[8, 8]} align="middle">
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Input
-                  placeholder="Search..."
+                  placeholder="Search documents..."
                   prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
                   value={filters.search}
                   onChange={(e) =>
@@ -404,201 +334,290 @@ const CandidateDocuments = () => {
                   size="middle"
                 />
               </Col>
-              <Col xs={24} sm={12} md={8} lg={6}>
+              <Col xs={12} sm={12} md={8} lg={6}>
                 <Select
-                  placeholder="Work Order"
+                  placeholder="Filter by Work Order"
                   style={{ width: "100%" }}
                   value={filters.workOrder}
-                  onChange={(value) =>
-                    setFilters({ ...filters, workOrder: value })
-                  }
+                  onChange={(value) => setFilters({ ...filters, workOrder: value })}
                   size="middle"
                 >
                   <Option value="all">All Work Orders</Option>
-                  {workOrders.map((wo) => (
-                    <Option key={wo} value={wo}>
-                      {wo}
+                  {workOrdersData.map((workOrder) => (
+                    <Option key={workOrder.workOrderId} value={workOrder.workOrderId}>
+                      {workOrder.workOrderTitle}
                     </Option>
                   ))}
                 </Select>
               </Col>
-              <Col xs={12} sm={12} md={4} lg={6}>
+              <Col xs={12} sm={12} md={8} lg={6}>
                 <Select
-                  placeholder="Stage"
+                  placeholder="Filter by Stage"
                   style={{ width: "100%" }}
                   value={filters.stage}
                   onChange={(value) => setFilters({ ...filters, stage: value })}
                   size="middle"
                 >
                   <Option value="all">All Stages</Option>
-                  {stages.map((stage) => (
-                    <Option key={stage} value={stage}>
-                      {stage}
+                  {workOrdersData.flatMap((workOrder) =>
+                    workOrder.stages.map((stage) => (
+                      <Option key={`${workOrder.workOrderId}-${stage.name}`} value={stage.name}>
+                        {stage.name}
+                      </Option>
+                    ))
+                  )}
+                </Select>
+              </Col>
+              <Col xs={12} sm={12} md={8} lg={6}>
+                <Select
+                  placeholder="Filter by Document Type"
+                  style={{ width: "100%" }}
+                  value={filters.documentType}
+                  onChange={(value) =>
+                    setFilters({ ...filters, documentType: value })
+                  }
+                  size="middle"
+                >
+                  <Option value="all">All Document Types</Option>
+                  {documentTypes.map((type) => (
+                    <Option key={type} value={type}>
+                      {type}
                     </Option>
                   ))}
                 </Select>
-              </Col>
-              <Col xs={12} sm={12} md={4} lg={6} className="desktop-only">
-                <RangePicker
-                  style={{ width: "100%" }}
-                  onChange={(dates) =>
-                    setFilters({ ...filters, dateRange: dates })
-                  }
-                  size="middle"
-                />
               </Col>
             </Row>
           </Card>
         </Col>
       </Row>
 
-      {/* Work Orders Overview */}
-      <Row gutter={[8, 8]} style={{ marginBottom: "16px" }}>
-        {Object.values(groupedData).map((workOrder) => (
-          <Col xs={24} sm={12} md={8} lg={6} xl={4} key={workOrder.workOrderId}>
-            <Card
-              hoverable
-              size="small"
-              onClick={() =>
-                setSelectedWorkOrder(
-                  selectedWorkOrder === workOrder.workOrderId
-                    ? null
-                    : workOrder.workOrderId
-                )
-              }
-              style={{
-                borderColor:
-                  selectedWorkOrder === workOrder.workOrderId
-                    ? "#da2c46"
-                    : undefined,
-                borderWidth:
-                  selectedWorkOrder === workOrder.workOrderId ? "2px" : "1px",
-                minHeight: "120px",
-              }}
-            >
-              <div style={{ textAlign: "center" }}>
-                <Title
-                  level={5}
-                  style={{
-                    color: "#da2c46",
-                    margin: "0 0 4px 0",
-                    fontSize: "14px",
-                  }}
-                >
-                  {workOrder.workOrderId}
-                </Title>
-                <Text
-                  style={{
-                    fontSize: "12px",
-                    display: "block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {workOrder.workOrderTitle.length > 40
-                    ? `${workOrder.workOrderTitle.substring(0, 40)}...`
-                    : workOrder.workOrderTitle}
-                </Text>
-                <Space>
-                  <Badge
-                    count={workOrder.documents.length}
-                    style={{ backgroundColor: "#da2c46" }}
-                    showZero
-                  />
-                  <Text style={{ fontSize: "11px" }}>docs</Text>
-                </Space>
+      {/* Work Orders Collapse */}
+      <Collapse
+        accordion
+        className="work-order-collapse"
+        expandIcon={({ isActive }) => (
+          <CaretRightOutlined rotate={isActive ? 90 : 0} />
+        )}
+        onChange={(keys) => {
+          // Handle accordion behavior while maintaining expanded state tracking
+          const lastKey = keys[keys.length - 1];
+          if (lastKey) {
+            handleWorkOrderExpand(lastKey, true);
+          } else {
+            // When panel is closed, keys is empty
+            // We don't have a way to know which panel was closed in accordion mode
+            // So we'll just rely on the expand/collapse handlers
+          }
+        }}
+      >
+        {filteredWorkOrders.map((workOrder) => (
+          <Panel
+            key={workOrder.workOrderId}
+            header={
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                <Text strong>{workOrder.workOrderTitle}</Text>
+                <Badge
+                  count={workOrder.totalDocuments}
+                  style={{ backgroundColor: "#da2c46" }}
+                />
               </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Timeline View for Selected Work Order */}
-      {selectedWorkOrder && (
-        <Row gutter={[8, 8]} style={{ marginBottom: "16px" }}>
-          <Col span={24}>
-            <Card
-              title={
-                <Text style={{ fontSize: "14px" }}>
-                  Timeline - {selectedWorkOrder}
-                </Text>
-              }
-              size="small"
-            >
-              <Timeline items={workOrderTimeline} size="small" />
-            </Card>
-          </Col>
-        </Row>
-      )}
-
-      {/* Documents Table */}
-      <Row gutter={[8, 8]}>
-        <Col span={24}>
-          <Card
-            title={<Text style={{ fontSize: "16px" }}>Documents List</Text>}
-            size="small"
-            extra={
-              <Space>
-                <Button
-                  icon={<FilterOutlined />}
-                  size="small"
-                  style={{ borderColor: "#da2c46", color: "#da2c46" }}
-                  className="desktop-only"
-                >
-                  Export
-                </Button>
-              </Space>
             }
+            extra={
+              <Tag color={
+                workOrder.stages.every(s => s.status === "approved") ? "green" :
+                workOrder.stages.some(s => s.status === "rejected") ? "red" : "orange"
+              }>
+                {workOrder.stages.every(s => s.status === "approved") ? "Completed" :
+                 workOrder.stages.some(s => s.status === "rejected") ? "Rejected" : "In Progress"}
+              </Tag>
+            }
+            onExpand={(expanded) => handleWorkOrderExpand(workOrder.workOrderId, expanded)}
           >
-            <Table
-              columns={columns}
-              dataSource={filteredData}
-              rowKey="id"
-              size="small"
-              scroll={{ x: 600 }}
-              pagination={{
-                pageSize: 8,
-                showSizeChanger: false,
-                showQuickJumper: false,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total}`,
-                responsive: true,
-                simple: window.innerWidth < 768,
-              }}
-              expandable={{
-                expandedRowRender: (record) => (
-                  <div style={{ padding: "8px", backgroundColor: "#fafafa" }}>
-                    <Row gutter={[8, 8]}>
-                      <Col xs={24} sm={12}>
-                        <Text strong style={{ fontSize: "12px" }}>
-                          Work Order:{" "}
-                        </Text>
-                        <Text style={{ fontSize: "12px" }}>
-                          {record.workOrderTitle}
-                        </Text>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Text strong style={{ fontSize: "12px" }}>
-                          Stage:{" "}
-                        </Text>
-                        <Tag color="#da2c46" size="small">
-                          {record.stage}
-                        </Tag>
-                      </Col>
-                    </Row>
-                  </div>
-                ),
-                rowExpandable: () => true,
-              }}
-            />
-          </Card>
-        </Col>
-      </Row>
+            {/* Stages Timeline */}
+            <Row gutter={[8, 8]} style={{ marginBottom: "16px" }}>
+              <Col span={24}>
+                <Card size="small" title={<Text strong>Stages Progress</Text>}>
+                  <Timeline mode="alternate">
+                    {workOrder.stages.map((stage, index) => (
+                      <Timeline.Item
+                        key={index}
+                        dot={getStatusIcon(stage.status)}
+                        color={
+                          stage.status === "approved"
+                            ? "green"
+                            : stage.status === "rejected"
+                            ? "red"
+                            : "orange"
+                        }
+                      >
+                        <Card size="small" style={{ width: "100%" }}>
+                          <Space direction="vertical" style={{ width: "100%" }}>
+                            <Text strong>{stage.name}</Text>
+                            <Text type="secondary">
+                              {stage.status === "approved"
+                                ? "Completed"
+                                : stage.status === "rejected"
+                                ? "Rejected"
+                                : "In Progress"}
+                            </Text>
+                            {stage.completedAt && (
+                              <Text type="secondary" style={{ fontSize: "12px" }}>
+                                <CalendarOutlined />{" "}
+                                {new Date(stage.completedAt).toLocaleDateString()}
+                              </Text>
+                            )}
+                            <Progress
+                              percent={
+                                stage.status === "approved"
+                                  ? 100
+                                  : stage.status === "rejected"
+                                  ? 100
+                                  : 50
+                              }
+                              status={
+                                stage.status === "approved"
+                                  ? "success"
+                                  : stage.status === "rejected"
+                                  ? "exception"
+                                  : "active"
+                              }
+                              size="small"
+                            />
+                          </Space>
+                        </Card>
+                      </Timeline.Item>
+                    ))}
+                  </Timeline>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Documents by Stage */}
+            <Row gutter={[8, 8]}>
+              <Col span={24}>
+                <Card size="small" title={<Text strong>Documents by Stage</Text>}>
+                  <Collapse accordion>
+                    {workOrder.stages.map((stage) => (
+                      <Panel
+                        key={stage.name}
+                        header={
+                          <div className="stage-header">
+                            <Space>
+                              <Text strong>{stage.name}</Text>
+                              <Tag
+                                color={
+                                  stage.status === "approved"
+                                    ? "green"
+                                    : stage.status === "rejected"
+                                    ? "red"
+                                    : "orange"
+                                }
+                              >
+                                {stage.status}
+                              </Tag>
+                            </Space>
+                            <Badge
+                              count={stage.documents.length}
+                              style={{ backgroundColor: "#da2c46" }}
+                            />
+                          </div>
+                        }
+                        extra={
+                          <Text type="secondary">
+                            {stage.completedAt
+                              ? new Date(stage.completedAt).toLocaleDateString()
+                              : "In progress"}
+                          </Text>
+                        }
+                      >
+                        <Row gutter={[16, 16]}>
+                          {stage.documents.map((doc) => (
+                            <Col xs={24} sm={12} md={8} lg={6} key={doc.id}>
+                              <Card
+                                className="document-card"
+                                hoverable
+                                actions={[
+                                  <Tooltip title="Preview">
+                                    <EyeOutlined
+                                      key="preview"
+                                      onClick={() =>
+                                        setPreviewModal({
+                                          visible: true,
+                                          document: doc,
+                                        })
+                                      }
+                                      style={{ color: "#da2c46" }}
+                                    />
+                                  </Tooltip>,
+                                  <Tooltip title="Download">
+                                    <DownloadOutlined
+                                      key="download"
+                                      onClick={() =>
+                                        window.open(doc.fileUrl, "_blank")
+                                      }
+                                      style={{ color: "#da2c46" }}
+                                    />
+                                  </Tooltip>,
+                                ]}
+                              >
+                                <Card.Meta
+                                  avatar={getFileIcon(doc.fileName)}
+                                  title={
+                                    <Text ellipsis={{ tooltip: doc.fileName }}>
+                                      {doc.fileName}
+                                    </Text>
+                                  }
+                                  description={
+                                    <Space direction="vertical" size={0}>
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: "12px" }}
+                                      >
+                                        {doc.documentType}
+                                      </Text>
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: "12px" }}
+                                      >
+                                        <CalendarOutlined />{" "}
+                                        {new Date(
+                                          doc.uploadedAt
+                                        ).toLocaleDateString()}
+                                      </Text>
+                                      <Tag
+                                        color={
+                                          doc.status === "approved"
+                                            ? "green"
+                                            : doc.status === "rejected"
+                                            ? "red"
+                                            : "orange"
+                                        }
+                                        style={{ marginTop: "8px" }}
+                                      >
+                                        {doc.status}
+                                      </Tag>
+                                    </Space>
+                                  }
+                                />
+                              </Card>
+                            </Col>
+                          ))}
+                        </Row>
+                      </Panel>
+                    ))}
+                  </Collapse>
+                </Card>
+              </Col>
+            </Row>
+          </Panel>
+        ))}
+      </Collapse>
 
       {/* Preview Modal */}
       <Modal
         title={
           <Text style={{ fontSize: "16px" }}>
-            Preview: {previewModal.document?.documentName}
+            Preview: {previewModal.document?.fileName}
           </Text>
         }
         open={previewModal.visible}
@@ -610,6 +629,9 @@ const CandidateDocuments = () => {
             style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
             icon={<DownloadOutlined />}
             size="middle"
+            onClick={() =>
+              window.open(previewModal.document?.fileUrl, "_blank")
+            }
           >
             Download
           </Button>,
@@ -620,29 +642,39 @@ const CandidateDocuments = () => {
         {previewModal.document && (
           <div style={{ textAlign: "center", padding: "20px" }}>
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>
-              {getDocumentTypeIcon(previewModal.document.documentType)}
+              {getFileIcon(previewModal.document.fileName)}
             </div>
             <Title level={4} style={{ fontSize: "18px" }}>
-              {previewModal.document.documentName}
+              {previewModal.document.fileName}
             </Title>
             <Space direction="vertical" size="small">
+              <Text style={{ fontSize: "13px" }}>
+                Work Order: {previewModal.document.workOrderTitle}
+              </Text>
               <Text style={{ fontSize: "13px" }}>
                 Document Type: {previewModal.document.documentType}
               </Text>
               <Text style={{ fontSize: "13px" }}>
-                File Size: {previewModal.document.fileSize}
+                Upload Date:{" "}
+                {new Date(
+                  previewModal.document.uploadedAt
+                ).toLocaleDateString()}
               </Text>
-              <Text style={{ fontSize: "13px" }}>
-                Upload Date: {previewModal.document.uploadDate}
-              </Text>
-              <Badge
-                status={getStatusColor(previewModal.document.status)}
-                text={previewModal.document.status}
-              />
+              <Tag
+                color={
+                  previewModal.document.status === "approved"
+                    ? "green"
+                    : previewModal.document.status === "rejected"
+                    ? "red"
+                    : "orange"
+                }
+              >
+                {previewModal.document.status}
+              </Tag>
             </Space>
             <Divider />
             <Text type="secondary" style={{ fontSize: "12px" }}>
-              Document preview would be displayed here in a real implementation
+              Click download to view the actual document
             </Text>
           </div>
         )}
