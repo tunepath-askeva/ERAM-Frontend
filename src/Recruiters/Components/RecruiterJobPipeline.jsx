@@ -67,7 +67,12 @@ const RecruiterJobPipeline = () => {
 
   const primaryColor = "#da2c46";
 
-  const { data: apiData, isLoading, error } = useGetPipelineJobsByIdQuery(id);
+  const {
+    data: apiData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetPipelineJobsByIdQuery(id);
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
 
@@ -78,9 +83,11 @@ const RecruiterJobPipeline = () => {
       const user = pipelineData.user;
       const stageProgress = pipelineData.stageProgress || [];
 
-      // Get pipeline data from stageProgress[0].pipelineId
       const fullPipeline = stageProgress[0]?.pipelineId || {};
-      const currentStageProgress = stageProgress[0];
+
+      const currentStageProgress =
+        stageProgress.find((stage) => stage.stageStatus !== "approved") ||
+        stageProgress[stageProgress.length - 1];
 
       const processedCandidate = {
         _id: pipelineData._id,
@@ -91,8 +98,8 @@ const RecruiterJobPipeline = () => {
         skills: user.skills || [],
         avatar: null,
         status: pipelineData.status === "pipeline" ? "Active" : "Inactive",
-        currentStage: currentStageProgress?.stageId || null, // Keep for backward compatibility
-        currentStageId: currentStageProgress?.stageId || null, // Add this field
+        currentStage: currentStageProgress?.stageId || null,
+        currentStageId: currentStageProgress?.stageId || null,
         currentStageName: currentStageProgress?.stageName || "Unknown",
         stageStatus: currentStageProgress?.stageStatus || "pending",
         appliedDate: pipelineData.createdAt,
@@ -105,7 +112,6 @@ const RecruiterJobPipeline = () => {
           fullPipeline.stages?.find(
             (s) => s._id === currentStageProgress?.stageId
           )?.requiredDocuments || [],
-        // Additional data needed for API call
         userId: user._id,
         workOrderId: workOrder._id,
       };
@@ -192,9 +198,22 @@ const RecruiterJobPipeline = () => {
 
   const getCandidatesInStage = (stageId) => {
     if (!processedJobData || !processedJobData.candidates) return [];
-    return processedJobData.candidates.filter(
-      (candidate) => candidate.currentStageId === stageId // Changed from currentStage to currentStageId
-    );
+
+    return processedJobData.candidates.filter((candidate) => {
+      const stageProgress = candidate.stageProgress.find(
+        (progress) => progress.stageId === stageId
+      );
+
+      if (!stageProgress) return false;
+
+      // Show candidate if this is their current active stage
+      if (candidate.currentStageId === stageId) return true;
+
+      // Show candidate if they have completed this stage (for historical view)
+      if (stageProgress.stageStatus === "approved") return true;
+
+      return false;
+    });
   };
 
   const handleMoveCandidate = (candidate, e) => {
@@ -203,86 +222,163 @@ const RecruiterJobPipeline = () => {
     setReviewerComments("");
     form.resetFields();
 
-    const nextStageId = getNextStageId(candidate.currentStage);
+    const currentStageId = candidate.currentStageId || candidate.currentStage;
+    const nextStageId = getNextStageId(currentStageId);
     setTargetStage(nextStageId);
 
     setIsMoveModalVisible(true);
   };
 
-const confirmMoveCandidate = async () => {
-  try {
-    // Validate form fields
-    const values = await form.validateFields();
-    
-    if (!selectedCandidate) {
-      message.error("No candidate selected");
-      return;
+  const confirmMoveCandidate = async () => {
+    try {
+      const values = await form.validateFields();
+
+      if (!selectedCandidate) {
+        message.error("No candidate selected");
+        return;
+      }
+
+      const currentStageId =
+        selectedCandidate.currentStageId || selectedCandidate.currentStage;
+
+      if (!currentStageId) {
+        message.error("Cannot determine current stage for candidate");
+        return;
+      }
+
+      const isLastStage = !getNextStageId(currentStageId);
+
+      const currentStageProgress =
+        stageProgress.find((stage) => stage.stageStatus === "pending") ||
+        stageProgress[stageProgress.length - 1];
+
+      if (!currentStageProgress) {
+        message.error("Cannot find stage progress for current stage");
+        return;
+      }
+
+      const hasApprovalLevels =
+        currentStageProgress.approval &&
+        currentStageProgress.approval.approvalId;
+
+      if (hasApprovalLevels) {
+        const isStageApproved =
+          currentStageProgress.approval?.isApproved === true;
+        if (!isStageApproved) {
+          message.warning(
+            "Cannot move candidate until current stage is approved"
+          );
+          return;
+        }
+      }
+
+      const reviewerComments = currentStageProgress?.recruiterReviews || [];
+      const hasAnyRecruiterApproved = reviewerComments.some(
+        (review) => review.status === "approved"
+      );
+
+      if (hasAnyRecruiterApproved) {
+        message.warning(
+          "This candidate has already been approved by a recruiter"
+        );
+        return;
+      }
+
+      if (!hasApprovalLevels) {
+        const currentStage = processedJobData.pipeline.stages.find(
+          (stage) => stage._id === currentStageId
+        );
+
+        const stageTimeline =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (timeline) => timeline.stageId === currentStageId
+          );
+
+        const allRequiredDocuments = [
+          ...(currentStage?.requiredDocuments || []),
+          ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
+        ];
+
+        const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+
+        if (uniqueRequiredDocuments.length > 0) {
+          const uploadedDocuments = selectedCandidate.uploadedDocuments || [];
+          if (uploadedDocuments.length === 0) {
+            message.warning(
+              "Cannot move candidate until required documents are uploaded"
+            );
+            return;
+          }
+        }
+      }
+
+      const nextStageId = getNextStageId(currentStageId);
+
+      if (isLastStage && hasApprovalLevels) {
+        const isApproved = currentStageProgress?.approval?.isApproved;
+        if (!isApproved) {
+          message.warning(
+            "Cannot finish process until final approval is granted"
+          );
+          return;
+        }
+      }
+
+      const currentStageRecruiterId = getReviewerIdForStage(currentStageId);
+
+      if (!currentStageRecruiterId) {
+        message.error("No recruiter assigned to the current stage");
+        return;
+      }
+
+      const payload = {
+        userId: selectedCandidate.userId,
+        workOrderId: selectedCandidate.workOrderId,
+        stageId: currentStageId,
+        reviewerId: currentStageRecruiterId,
+        reviewerComments:
+          values.reviewerComments ||
+          (isLastStage ? "Process completed" : "Moved to next stage"),
+        isFinished: isLastStage,
+      };
+
+      console.log("Moving candidate with payload:", payload);
+
+      const result = await moveToNextStage(payload).unwrap();
+
+      message.success(
+        isLastStage
+          ? `Successfully completed process for ${selectedCandidate.name}`
+          : `Successfully moved ${selectedCandidate.name} to ${getStageName(
+              nextStageId
+            )}`
+      );
+
+      setIsMoveModalVisible(false);
+      setSelectedCandidate(null);
+      setReviewerComments("");
+      form.resetFields();
+      refetch();
+    } catch (error) {
+      if (error.errorFields) {
+        return;
+      }
+
+      console.error("Error moving/finishing candidate:", error);
+
+      let errorMessage = "Failed to move candidate to next stage";
+
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+
+      message.error(errorMessage);
     }
-
-    const isLastStage = !getNextStageId(selectedCandidate.currentStageId); // Use currentStageId
-    const canMove = selectedCandidate.stageStatus === "approved";
-
-    if (!canMove) {
-      message.warning("Cannot move candidate until current stage is approved");
-      return;
-    }
-
-    const nextStageId = getNextStageId(selectedCandidate.currentStageId); // Use currentStageId
-
-    if (
-      isLastStage &&
-      !selectedCandidate.stageProgress[0]?.approval?.isApproved
-    ) {
-      message.warning("Cannot finish process until approval is granted");
-      return;
-    }
-
-    // Get any valid recruiter for the current stage
-    const currentStageRecruiterId = getReviewerIdForStage(
-      selectedCandidate.currentStageId // Use currentStageId
-    );
-    
-    if (!currentStageRecruiterId) {
-      message.error("No recruiter assigned to the current stage");
-      return;
-    }
-
-    const payload = {
-      userId: selectedCandidate.userId,
-      workOrderId: selectedCandidate.workOrderId,
-      stageId: selectedCandidate.currentStageId, // Use currentStageId
-      reviewerId: currentStageRecruiterId,
-      reviewerComments: values.reviewerComments || 
-        (isLastStage ? "Process completed" : "Moved to next stage"),
-      isFinished: isLastStage,
-    };
-
-    console.log("Moving candidate with payload:", payload); // Debug log
-
-    const result = await moveToNextStage(payload).unwrap();
-
-    message.success(
-      isLastStage
-        ? `Successfully completed process for ${selectedCandidate.name}`
-        : `Successfully moved ${selectedCandidate.name} to ${getStageName(nextStageId)}`
-    );
-
-    setIsMoveModalVisible(false);
-    setSelectedCandidate(null);
-    setReviewerComments("");
-    form.resetFields();
-    
-  } catch (error) {
-    if (error.errorFields) return;
-    
-    console.error("Error moving/finishing candidate:", error);
-    message.error(
-      error?.data?.message ||
-        error?.message ||
-        "Failed to move candidate to next stage"
-    );
-  }
-};
+  };
 
   const handleViewDocument = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
@@ -398,171 +494,255 @@ const confirmMoveCandidate = async () => {
     );
   };
 
-const renderApprovalSection = (candidate) => {
-  const currentStageProgress = candidate.stageProgress.find(
-    (progress) => progress.stageId === candidate.currentStageId 
-  );
+  const renderApprovalSection = (candidate, stageId = null) => {
+    const targetStageId = stageId || candidate.currentStageId;
 
-  const isStageApproved = currentStageProgress?.approval?.isApproved === true;
+    const currentStageProgress = candidate.stageProgress.find(
+      (progress) => progress.stageId === targetStageId
+    );
 
-  const currentStageRecruiterId = getReviewerIdForStage(
-    candidate.currentStageId 
-  );
+    if (!currentStageProgress) return null;
 
-  const reviewerComments = currentStageProgress?.recruiterReviews || [];
+    const hasApprovalLevels =
+      currentStageProgress.approval && currentStageProgress.approval.approvalId;
 
-  const hasAnyRecruiterApproved = reviewerComments.some(
-    (review) => review.status === "approved"
-  );
+    const isStageApproved = hasApprovalLevels
+      ? currentStageProgress?.approval?.isApproved === true
+      : true;
 
-  const currentRecruiterReview = reviewerComments.find(
-    (review) => review.recruiterId === currentStageRecruiterId
-  );
+    const currentStageRecruiterId = getReviewerIdForStage(targetStageId);
 
-  const currentRecruiterHasApproved =
-    currentRecruiterReview?.status === "approved";
+    const reviewerComments = currentStageProgress?.recruiterReviews || [];
 
-  const stages = processedJobData.workOrder.pipelineStageTimeline;
-  const currentIndex = stages.findIndex(
-    (stage) => stage.stageId === candidate.currentStageId 
-  );
-  const isLastStage = currentIndex === stages.length - 1;
+    const hasAnyRecruiterApproved = reviewerComments.some(
+      (review) => review.status === "approved"
+    );
 
-  const shouldHideButton = hasAnyRecruiterApproved;
-  const canMoveCandidate = isStageApproved && !hasAnyRecruiterApproved;
+    const currentRecruiterReview = reviewerComments.find(
+      (review) => review.recruiterId === currentStageRecruiterId
+    );
 
-  const getStageStatusTag = () => {
-    if (isStageApproved) {
-      return (
-        <Tag icon={<CheckCircleOutlined />} color="success">
-          Stage Approved
-        </Tag>
+    const currentRecruiterHasApproved =
+      currentRecruiterReview?.status === "approved";
+
+    const stages = processedJobData.workOrder.pipelineStageTimeline;
+    const currentIndex = stages.findIndex(
+      (stage) => stage.stageId === targetStageId
+    );
+    const isLastStage = currentIndex === stages.length - 1;
+
+    const isCurrentStage = candidate.currentStageId === targetStageId;
+
+    const checkDocumentsUploaded = () => {
+      if (hasApprovalLevels) {
+        return true;
+      }
+
+      const currentStage = processedJobData.pipeline.stages.find(
+        (stage) => stage._id === targetStageId
       );
-    } else {
+
+      const stageTimeline =
+        processedJobData.workOrder?.pipelineStageTimeline?.find(
+          (timeline) => timeline.stageId === targetStageId
+        );
+
+      const allRequiredDocuments = [
+        ...(currentStage?.requiredDocuments || []),
+        ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
+      ];
+
+      const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+
+      if (uniqueRequiredDocuments.length === 0) {
+        return true;
+      }
+
+      const uploadedDocuments = candidate.uploadedDocuments || [];
+
+      return uploadedDocuments.length > 0;
+    };
+
+    const areDocumentsUploaded = checkDocumentsUploaded();
+
+    const shouldHideButton = hasAnyRecruiterApproved || !isCurrentStage;
+
+    const canMoveCandidate = hasApprovalLevels
+      ? isStageApproved && !hasAnyRecruiterApproved && isCurrentStage
+      : !hasAnyRecruiterApproved && isCurrentStage && areDocumentsUploaded;
+
+    const getStageStatusTag = () => {
+      if (!hasApprovalLevels) {
+        return null;
+      }
+
+      if (isStageApproved) {
+        return (
+          <Tag icon={<CheckCircleOutlined />} color="success">
+            Stage Approved
+          </Tag>
+        );
+      } else {
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="warning">
+            Stage Pending Approval
+          </Tag>
+        );
+      }
+    };
+
+    const getReviewStatusTag = () => {
+      if (hasAnyRecruiterApproved) {
+        return (
+          <Tag icon={<CheckCircleOutlined />} color="success">
+            {isCurrentStage ? "Ready for Next Stage" : "Completed"}
+          </Tag>
+        );
+      }
+
+      if (!hasApprovalLevels && isCurrentStage) {
+        if (!areDocumentsUploaded) {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="orange">
+              Awaiting Document Upload
+            </Tag>
+          );
+        }
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="orange">
+            Awaiting Recruiter Action
+          </Tag>
+        );
+      }
+
+      if (isStageApproved && isCurrentStage) {
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="orange">
+            Awaiting Recruiter Action
+          </Tag>
+        );
+      }
+
       return (
         <Tag icon={<ClockCircleOutlined />} color="warning">
-          Stage Pending Approval
+          {isCurrentStage
+            ? hasApprovalLevels
+              ? "Awaiting Stage Approval"
+              : "Awaiting Recruiter Review"
+            : "Pending"}
         </Tag>
       );
-    }
-  };
+    };
 
-  const getReviewStatusTag = () => {
-    if (hasAnyRecruiterApproved) {
-      return (
-        <Tag icon={<CheckCircleOutlined />} color="success">
-          Ready for Next Stage
-        </Tag>
-      );
-    }
+    const getStatusMessage = () => {
+      if (!isCurrentStage && currentStageProgress.stageStatus === "approved") {
+        return "This stage has been completed.";
+      }
 
-    if (isStageApproved) {
-      return (
-        <Tag icon={<ClockCircleOutlined />} color="orange">
-          Awaiting Recruiter Action
-        </Tag>
-      );
-    }
+      if (!isCurrentStage) {
+        return "This stage is not currently active for this candidate.";
+      }
+
+      if (hasAnyRecruiterApproved) {
+        return "A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
+      }
+
+      if (!hasApprovalLevels) {
+        if (!areDocumentsUploaded) {
+          return "Required documents must be uploaded before this candidate can be moved to the next stage.";
+        }
+        return "This stage has no approval requirements. Any assigned recruiter can review this candidate and move them to the next stage.";
+      }
+
+      if (!isStageApproved) {
+        return "Stage approval is required before any recruiter can move this candidate.";
+      }
+
+      if (isStageApproved) {
+        return "Stage is approved. Any assigned recruiter can review this candidate and move them to the next stage.";
+      }
+
+      return "Awaiting stage approval and recruiter review.";
+    };
 
     return (
-      <Tag icon={<ClockCircleOutlined />} color="warning">
-        Awaiting Stage Approval
-      </Tag>
-    );
-  };
-
-  const getStatusMessage = () => {
-    if (!isStageApproved) {
-      return "Stage approval is required before any recruiter can move this candidate.";
-    }
-
-    if (hasAnyRecruiterApproved) {
-      return "A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
-    }
-
-    if (isStageApproved) {
-      return "Stage is approved. Any assigned recruiter can review this candidate and move them to the next stage.";
-    }
-
-    return "Awaiting stage approval and recruiter review.";
-  };
-
-  return (
-    <div
-      style={{
-        marginTop: "20px",
-        padding: "16px",
-        backgroundColor: "#fafafa",
-        borderRadius: "8px",
-        border: "1px solid #f0f0f0",
-      }}
-    >
       <div
         style={{
-          display: "flex",
-          flexDirection: screens.xs ? "column" : "row",
-          justifyContent: "space-between",
-          alignItems: screens.xs ? "flex-start" : "center",
-          gap: screens.xs ? "12px" : "0",
+          marginTop: "20px",
+          padding: "16px",
+          backgroundColor: isCurrentStage ? "#fafafa" : "#f9f9f9",
+          borderRadius: "8px",
+          border: `1px solid ${isCurrentStage ? "#f0f0f0" : "#e0e0e0"}`,
         }}
       >
-        <div>
-          <Text strong>Approval Status:</Text>
-          <div
-            style={{
-              marginTop: "4px",
-              display: "flex",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}
-          >
-            {getStageStatusTag()}
-            {getReviewStatusTag()}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: screens.xs ? "column" : "row",
+            justifyContent: "space-between",
+            alignItems: screens.xs ? "flex-start" : "center",
+            gap: screens.xs ? "12px" : "0",
+          }}
+        >
+          <div>
+            <Text strong>
+              {hasApprovalLevels ? "Approval Status:" : "Review Status:"}
+            </Text>
+            <div
+              style={{
+                marginTop: "4px",
+                display: "flex",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              {getStageStatusTag() && getStageStatusTag()}
+              {getReviewStatusTag()}
+            </div>
           </div>
+
+          {!shouldHideButton && (
+            <Space
+              direction={screens.xs ? "vertical" : "horizontal"}
+              style={{ width: screens.xs ? "100%" : "auto" }}
+            >
+              <Button
+                type="primary"
+                icon={<ArrowRightOutlined />}
+                disabled={!canMoveCandidate}
+                onClick={(e) => handleMoveCandidate(candidate, e)}
+                loading={isMoving}
+                style={{
+                  backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                  borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                  width: screens.xs ? "100%" : "auto",
+                }}
+                block={screens.xs}
+              >
+                {isLastStage ? "Finish Process" : "Move to Next Stage"}
+              </Button>
+            </Space>
+          )}
         </div>
 
-        {!shouldHideButton && (
-          <Space
-            direction={screens.xs ? "vertical" : "horizontal"}
-            style={{ width: screens.xs ? "100%" : "auto" }}
+        <div style={{ marginTop: "12px" }}>
+          <Text
+            type={
+              hasAnyRecruiterApproved
+                ? "success"
+                : canMoveCandidate
+                ? "success"
+                : "secondary"
+            }
+            style={{ fontSize: "12px" }}
           >
-            <Button
-              type="primary"
-              icon={<ArrowRightOutlined />}
-              disabled={!canMoveCandidate}
-              onClick={(e) => handleMoveCandidate(candidate, e)}
-              loading={isMoving}
-              style={{
-                backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                width: screens.xs ? "100%" : "auto",
-              }}
-              block={screens.xs}
-            >
-              {isLastStage ? "Finish Process" : "Move to Next Stage"}
-            </Button>
-          </Space>
-        )}
+            <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
+            {getStatusMessage()}
+          </Text>
+        </div>
       </div>
-
-      <div style={{ marginTop: "12px" }}>
-        <Text
-          type={
-            hasAnyRecruiterApproved
-              ? "success"
-              : canMoveCandidate
-              ? "success"
-              : "secondary"
-          }
-          style={{ fontSize: "12px" }}
-        >
-          <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
-          {getStatusMessage()}
-        </Text>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
   const renderCustomFields = (candidate) => {
     if (
@@ -923,7 +1103,7 @@ const renderApprovalSection = (candidate) => {
                   {renderDocuments(candidate)}
 
                   {/* Approval Section */}
-                  {renderApprovalSection(candidate)}
+                  {renderApprovalSection(candidate, activeStage)}
 
                   {/* Responses Section */}
                   {candidate.responses && candidate.responses.length > 0 && (
