@@ -52,7 +52,8 @@ const CandidateSidebar = ({
   const selectedKey = location.pathname;
   const { data: notifications } = useGetCandidateNotificationQuery();
 
-  const unreadNotificationsCount = notifications?.notification?.filter(n => !n.isRead).length || 0;
+  const unreadNotificationsCount =
+    notifications?.notification?.filter((n) => !n.isRead).length || 0;
 
   const menuItems = [
     {
@@ -74,14 +75,18 @@ const CandidateSidebar = ({
       key: "/notifications",
       icon: <BellOutlined />,
       label: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span>Notifications</span>
           {unreadNotificationsCount > 0 && (
-            <Badge count={unreadNotificationsCount} size="medium" style={{ backgroundColor: "#da2c46" }} />
+            <Badge
+              count={unreadNotificationsCount}
+              size="medium"
+              style={{ backgroundColor: "#da2c46" }}
+            />
           )}
         </div>
       ),
-    }
+    },
   ];
 
   useEffect(() => {
@@ -218,10 +223,10 @@ const CandidateSidebar = ({
     if (screenSize.isMobile) return { width: "120px", height: "100px" };
     if (screenSize.isTablet)
       return collapsed
-        ? { width: "40px", height: "40px" }
+        ? { width: "40px", height: "100px" }
         : { width: "100px", height: "100px" };
     return collapsed
-      ? { width: "50px", height: "50px" }
+      ? { width: "50px", height: "100px" }
       : { width: "140px", height: "100px" };
   };
 
@@ -280,68 +285,57 @@ const CandidateSidebar = ({
           marginBottom: "32px",
         }}
       >
-        {(!collapsed || screenSize.isMobile) && (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                background:
-                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-                fontWeight: "bold",
-                fontSize: "16px",
-              }}
-            >
-              {getFirstLetter()}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <h1
-                style={{
-                  fontSize: "20px",
-                  color: "#1e293b",
-                  margin: 0,
-                  lineHeight: 1,
-                }}
-              >
-                {candidateInfo.name}
-              </h1>
-              {candidateInfo.roles && (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#64748b",
-                    marginTop: "2px",
-                  }}
-                >
-                  {candidateInfo.roles}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        {collapsed && !screenSize.isMobile && (
+        <div
+          style={{
+            padding: screenSize.isMobile
+              ? "24px 24px 16px 24px"
+              : "24px 24px 16px 24px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           <div
             style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
               display: "flex",
-              alignItems: "center",
               justifyContent: "center",
-              color: "#ffffff",
-              fontWeight: "bold",
-              fontSize: "16px",
+              alignItems: "center",
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
             }}
           >
-            {getFirstLetter()}
+            <img
+              src="/Workforce.svg"
+              alt="Company Logo"
+              style={{
+                ...getImageLogoSize(),
+                objectFit: "contain",
+                borderRadius: "4px",
+              }}
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            <div
+              style={{
+                display: "none",
+                ...getImageLogoSize(),
+                backgroundColor: "#f0f0f0",
+                borderRadius: "4px",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#666",
+                fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
+                fontWeight: "500",
+                textAlign: "center",
+                border: "2px dashed #ccc",
+              }}
+            >
+              {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <nav
@@ -407,58 +401,6 @@ const CandidateSidebar = ({
           </button>
         ))}
       </nav>
-
-      <div
-        style={{
-          padding: screenSize.isMobile
-            ? "24px 24px 16px 24px"
-            : "24px 24px 16px 24px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: "8px",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <img
-            src="/Workforce.svg"
-            alt="Company Logo"
-            style={{
-              ...getImageLogoSize(),
-              objectFit: "contain",
-              borderRadius: "4px",
-            }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "flex";
-            }}
-          />
-          <div
-            style={{
-              display: "none",
-              ...getImageLogoSize(),
-              backgroundColor: "#f0f0f0",
-              borderRadius: "4px",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#666",
-              fontSize: collapsed && !screenSize.isMobile ? "12px" : "14px",
-              fontWeight: "500",
-              textAlign: "center",
-              border: "2px dashed #ccc",
-            }}
-          >
-            {collapsed && !screenSize.isMobile ? "Logo" : "Your Logo Here"}
-          </div>
-        </div>
-      </div>
 
       <div
         style={{
