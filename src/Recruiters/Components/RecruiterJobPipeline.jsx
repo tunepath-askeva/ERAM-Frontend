@@ -571,9 +571,21 @@ const RecruiterJobPipeline = () => {
 
     const shouldHideButton = hasAnyRecruiterApproved || !isCurrentStage;
 
-    const canMoveCandidate = hasApprovalLevels
-      ? isStageApproved && !hasAnyRecruiterApproved && isCurrentStage
-      : !hasAnyRecruiterApproved && isCurrentStage && areDocumentsUploaded;
+    const canMoveCandidate = (() => {
+      if (hasAnyRecruiterApproved || !isCurrentStage) {
+        return false;
+      }
+
+      if (!areDocumentsUploaded) {
+        return false;
+      }
+
+      if (hasApprovalLevels) {
+        return isStageApproved;
+      }
+
+      return true;
+    })();
 
     const getStageStatusTag = () => {
       if (!hasApprovalLevels) {
