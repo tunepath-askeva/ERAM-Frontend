@@ -249,8 +249,12 @@ const RecruiterJobPipeline = () => {
       const isLastStage = !getNextStageId(currentStageId);
 
       const currentStageProgress =
-        stageProgress.find((stage) => stage.stageStatus === "pending") ||
-        stageProgress[stageProgress.length - 1];
+        selectedCandidate.stageProgress.find(
+          (stage) => stage.stageStatus === "pending"
+        ) ||
+        selectedCandidate.stageProgress[
+          selectedCandidate.stageProgress.length - 1
+        ];
 
       if (!currentStageProgress) {
         message.error("Cannot find stage progress for current stage");
