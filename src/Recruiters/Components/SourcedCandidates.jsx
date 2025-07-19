@@ -211,6 +211,32 @@ const SourcedCandidates = ({ jobId }) => {
   const buildQueryParams = useCallback(() => {
     const params = new URLSearchParams();
 
+    // Only add pagination if there are actual filters
+    const hasFilters =
+      filters.keywords.trim() ||
+      filters.skills.length > 0 ||
+      filters.location.trim() ||
+      filters.company.trim() ||
+      filters.qualifications.length > 0 ||
+      filters.jobRoles.length > 0 ||
+      filters.industries.length > 0 ||
+      filters.languages.length > 0 ||
+      filters.experience[0] > 0 ||
+      filters.experience[1] < 20 ||
+      filters.salary[0] > 0 ||
+      filters.salary[1] < 2000000 ||
+      filters.ageRange[0] > 18 ||
+      filters.ageRange[1] < 70 ||
+      filters.gender ||
+      filters.nationality ||
+      filters.noticePeriod ||
+      filters.profileUpdated ||
+      filters.visaStatus;
+
+    if (!hasFilters) {
+      return ""; // Return empty string if no filters
+    }
+
     params.append("page", pagination.current.toString());
     params.append("limit", pagination.pageSize.toString());
 
@@ -282,7 +308,7 @@ const SourcedCandidates = ({ jobId }) => {
     error: sourcedError,
     refetch: refetchSourced,
   } = useGetSourcedCandidateQuery(queryParams, {
-    skip: !shouldFetch || !queryParams,
+    skip: !shouldFetch || !queryParams || queryParams === "",
   });
 
   const {
@@ -418,6 +444,35 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleFilterModalOk = () => {
+    // Check if any meaningful filters are applied
+    const hasFilters =
+      tempFilters.keywords.trim() ||
+      tempFilters.skills.length > 0 ||
+      tempFilters.location.trim() ||
+      tempFilters.company.trim() ||
+      tempFilters.qualifications.length > 0 ||
+      tempFilters.jobRoles.length > 0 ||
+      tempFilters.industries.length > 0 ||
+      tempFilters.languages.length > 0 ||
+      tempFilters.experience[0] > 0 ||
+      tempFilters.experience[1] < 20 ||
+      tempFilters.salary[0] > 0 ||
+      tempFilters.salary[1] < 2000000 ||
+      tempFilters.ageRange[0] > 18 ||
+      tempFilters.ageRange[1] < 70 ||
+      tempFilters.gender ||
+      tempFilters.nationality ||
+      tempFilters.noticePeriod ||
+      tempFilters.profileUpdated ||
+      tempFilters.visaStatus;
+
+    if (!hasFilters) {
+      message.warning(
+        "Please apply at least one filter to search for candidates"
+      );
+      return;
+    }
+
     setFilters({ ...tempFilters });
     setShouldFetch(true);
     setPagination((prev) => ({ ...prev, current: 1 }));
