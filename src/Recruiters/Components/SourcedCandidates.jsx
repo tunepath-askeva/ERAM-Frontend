@@ -41,6 +41,7 @@ import {
   DollarOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
@@ -181,6 +182,7 @@ const CommentModal = ({
 };
 
 const SourcedCandidates = ({ jobId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -211,7 +213,6 @@ const SourcedCandidates = ({ jobId }) => {
   const buildQueryParams = useCallback(() => {
     const params = new URLSearchParams();
 
-    // Only add pagination if there are actual filters
     const hasFilters =
       filters.keywords.trim() ||
       filters.skills.length > 0 ||
@@ -234,7 +235,7 @@ const SourcedCandidates = ({ jobId }) => {
       filters.visaStatus;
 
     if (!hasFilters) {
-      return ""; // Return empty string if no filters
+      return "";
     }
 
     params.append("page", pagination.current.toString());
@@ -349,7 +350,6 @@ const SourcedCandidates = ({ jobId }) => {
         isApplied: true,
       })) || [];
 
-    // Use exact match data when available, otherwise use sourced candidates
     const candidateSource = isExactMatch
       ? exactMatchData
       : sourcedCandidatesData;
@@ -361,7 +361,7 @@ const SourcedCandidates = ({ jobId }) => {
         applicationId: user._id,
         isApplied: false,
         isSourced: true,
-        isExactMatch: isExactMatch, // Add this flag
+        isExactMatch: isExactMatch,
         currentCompany:
           user.workExperience?.[0]?.company || user.currentCompany,
         totalExperienceYears: user.totalExperienceYears || 0,
@@ -444,7 +444,6 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleFilterModalOk = () => {
-    // Check if any meaningful filters are applied
     const hasFilters =
       tempFilters.keywords.trim() ||
       tempFilters.skills.length > 0 ||
@@ -467,8 +466,16 @@ const SourcedCandidates = ({ jobId }) => {
       tempFilters.visaStatus;
 
     if (!hasFilters) {
-      message.warning(
-        "Please apply at least one filter to search for candidates"
+      enqueueSnackbar(
+        "Please apply at least one filter to search for candidates",
+        {
+          variant: "warning",
+          autoHideDuration: 3000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
       );
       return;
     }
