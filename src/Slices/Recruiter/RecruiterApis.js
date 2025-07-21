@@ -128,10 +128,10 @@ export const recruiterApi = createApi({
     }),
 
     moveToPipeline: builder.mutation({
-      query: ({ jobId, userId, pipelineData, applicationId }) => ({
+      query: ({ jobId, userId, pipelineData, isPipeline }) => ({
         url: "/pipeline",
         method: "PUT",
-        body: { jobId, userId, pipelineData, applicationId },
+        body: { jobId, userId, pipelineData, isPipeline },
       }),
     }),
 
