@@ -145,17 +145,19 @@ const RecruiterJobPipeline = () => {
     }
   }, [apiData, id]);
 
-useEffect(() => {
-  if (processedJobData?.workOrder?.pipelineStageTimeline?.length > 0) {
-    const currentCandidate = processedJobData.candidates[0];
-    if (currentCandidate?.currentStage) {
-      setActiveStage(currentCandidate.currentStage);
-    } else {
-      // Use the first stage from the pipeline timeline
-      setActiveStage(processedJobData.workOrder.pipelineStageTimeline[0].stageId);
+  useEffect(() => {
+    if (processedJobData?.workOrder?.pipelineStageTimeline?.length > 0) {
+      const currentCandidate = processedJobData.candidates[0];
+      if (currentCandidate?.currentStage) {
+        setActiveStage(currentCandidate.currentStage);
+      } else {
+        // Use the first stage from the pipeline timeline
+        setActiveStage(
+          processedJobData.workOrder.pipelineStageTimeline[0].stageId
+        );
+      }
     }
-  }
-}, [processedJobData]);
+  }, [processedJobData]);
 
   const getNextStageId = (currentStageId) => {
     if (!processedJobData?.workOrder?.pipelineStageTimeline) return null;
@@ -194,48 +196,52 @@ useEffect(() => {
     return date.toLocaleDateString();
   };
 
-const getStageName = (stageId) => {
-  if (!processedJobData) return "";
+  const getStageName = (stageId) => {
+    if (!processedJobData) return "";
 
-  // Check in pipeline timeline first
-  const timelineStage = processedJobData.workOrder?.pipelineStageTimeline?.find(
-    (s) => s.stageId === stageId
-  );
-  if (timelineStage) return timelineStage.stageName;
+    const isTagged = !!processedJobData.candidates[0]?.tagPipelineId;
 
-  // Fallback to other sources if needed
-  const pipelineStage = processedJobData.pipeline?.stages?.find(
-    (s) => s._id === stageId
-  );
-  if (pipelineStage) return pipelineStage.name;
-
-  return "Unknown Stage";
-};
-
-const getCandidatesInStage = (stageId) => {
-  if (!processedJobData || !processedJobData.candidates) return [];
-
-  return processedJobData.candidates.filter((candidate) => {
-    if (candidate.currentStageId === stageId || candidate.currentStage === stageId) {
-      return true;
-    }
-
-    const stageProgress = candidate.stageProgress?.find(
-      (progress) => progress.stageId === stageId
-    );
-    if (stageProgress) {
-      return true; 
-    }
-
-    if (candidate.pendingPipelineStages) {
-      return candidate.pendingPipelineStages.some(
-        (stage) => stage.stageId === stageId
+    if (isTagged) {
+      return (
+        processedJobData.pipeline?.stages?.find((s) => s._id === stageId)
+          ?.name || "Unknown Stage"
       );
     }
 
-    return false;
-  });
-};
+    return (
+      processedJobData.workOrder?.pipelineStageTimeline?.find(
+        (s) => s.stageId === stageId
+      )?.stageName || "Unknown Stage"
+    );
+  };
+
+  const getCandidatesInStage = (stageId) => {
+    if (!processedJobData || !processedJobData.candidates) return [];
+
+    return processedJobData.candidates.filter((candidate) => {
+      if (
+        candidate.currentStageId === stageId ||
+        candidate.currentStage === stageId
+      ) {
+        return true;
+      }
+
+      const stageProgress = candidate.stageProgress?.find(
+        (progress) => progress.stageId === stageId
+      );
+      if (stageProgress) {
+        return true;
+      }
+
+      if (candidate.pendingPipelineStages) {
+        return candidate.pendingPipelineStages.some(
+          (stage) => stage.stageId === stageId
+        );
+      }
+
+      return false;
+    });
+  };
 
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
@@ -820,63 +826,76 @@ const getCandidatesInStage = (stageId) => {
     );
   };
 
-const renderPipelineTabs = () => {
-  if (!processedJobData) return null;
+  const renderPipelineTabs = () => {
+    if (!processedJobData) return null;
 
-  const currentCandidate = processedJobData.candidates[0];
-  
-  // Use the pipelineStageTimeline from workOrder to determine which stages to show
-  const stagesToShow = processedJobData.workOrder?.pipelineStageTimeline || [];
+    const currentCandidate = processedJobData.candidates[0];
 
-  return (
-    <Tabs
-      activeKey={activeStage}
-      onChange={setActiveStage}
-      tabPosition="top"
-      type={screens.xs ? "line" : "card"}
-      style={{
-        minWidth: screens.xs ? "100%" : "max-content",
-        width: screens.xs ? "100%" : "auto",
-      }}
-    >
-      {stagesToShow.map((stage) => {
-        const stageId = stage.stageId;
-        const stageName = stage.stageName;
-        
-        // Check if this is the current stage for the candidate
-        const isCurrentStage = currentCandidate.currentStage === stageId || 
-          currentCandidate.stageProgress?.some(sp => sp.stageId === stageId) ||
-          currentCandidate.pendingPipelineStages?.some(pps => pps.stageId === stageId);
+    const isTaggedPipeline = !!currentCandidate.tagPipelineId;
 
-        return (
-          <TabPane
-            key={stageId}
-            tab={
-              <Badge
-                count={getCandidatesInStage(stageId).length}
-                offset={[10, -5]}
-                style={{
-                  backgroundColor: isCurrentStage ? primaryColor : "#d9d9d9",
-                }}
-              >
-                <span
+    const stagesToShow = isTaggedPipeline
+      ? processedJobData.pipeline?.stages?.map((stage) => ({
+          stageId: stage._id,
+          stageName: stage.name,
+        }))
+      : processedJobData.workOrder?.pipelineStageTimeline?.map((stage) => ({
+          stageId: stage.stageId,
+          stageName: stage.stageName,
+        })) || [];
+
+    return (
+      <Tabs
+        activeKey={activeStage}
+        onChange={setActiveStage}
+        tabPosition="top"
+        type={screens.xs ? "line" : "card"}
+        style={{
+          minWidth: screens.xs ? "100%" : "max-content",
+          width: screens.xs ? "100%" : "auto",
+        }}
+      >
+        {stagesToShow.map((stage) => {
+          const stageId = stage.stageId;
+          const stageName = stage.stageName;
+
+          const isCurrentStage =
+            currentCandidate.currentStage === stageId ||
+            currentCandidate.stageProgress?.some(
+              (sp) => sp.stageId === stageId
+            ) ||
+            currentCandidate.pendingPipelineStages?.some(
+              (pps) => pps.stageId === stageId
+            );
+
+          return (
+            <TabPane
+              key={stageId}
+              tab={
+                <Badge
+                  count={getCandidatesInStage(stageId).length}
+                  offset={[10, -5]}
                   style={{
-                    padding: screens.xs ? "0 4px" : "0 8px",
-                    fontSize: screens.xs ? "12px" : "14px",
-                    fontWeight: isCurrentStage ? "bold" : "normal",
-                    color: isCurrentStage ? primaryColor : undefined,
+                    backgroundColor: isCurrentStage ? primaryColor : "#d9d9d9",
                   }}
                 >
-                  {stageName}
-                </span>
-              </Badge>
-            }
-          />
-        );
-      })}
-    </Tabs>
-  );
-};
+                  <span
+                    style={{
+                      padding: screens.xs ? "0 4px" : "0 8px",
+                      fontSize: screens.xs ? "12px" : "14px",
+                      fontWeight: isCurrentStage ? "bold" : "normal",
+                      color: isCurrentStage ? primaryColor : undefined,
+                    }}
+                  >
+                    {stageName}
+                  </span>
+                </Badge>
+              }
+            />
+          );
+        })}
+      </Tabs>
+    );
+  };
 
   if (isLoading) {
     return (
