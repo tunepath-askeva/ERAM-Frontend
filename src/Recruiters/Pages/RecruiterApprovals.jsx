@@ -308,8 +308,6 @@ const RecruiterApprovals = () => {
         width: isMobile ? 150 : isTablet ? 160 : 200,
         ellipsis: true,
         render: (text, record) => {
-          const recruiter =
-            record.workOrder?.pipelineStageTimeline[0]?.recruiterIds || "N/A";
           return (
             <div style={{ minWidth: 0 }}>
               <Tooltip title={text}>

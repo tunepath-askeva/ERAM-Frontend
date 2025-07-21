@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Form, Input, Button, Row, Col, Select } from "antd";
 import {
   UserOutlined,
@@ -29,6 +29,7 @@ const CandidateFormModal = ({
   form,
   editingCandidate,
 }) => {
+  const [candidateTypeInput, setCandidateTypeInput] = useState("");
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
   const { enqueueSnackbar } = useSnackbar();
@@ -61,7 +62,8 @@ const CandidateFormModal = ({
           specialization: editingCandidate.specialization || "",
           experience: editingCandidate.experience || "",
           qualifications: editingCandidate.qualifications || "",
-          supplierId: editingCandidate.supplierId || undefined, // Add supplierId
+          supplierId: editingCandidate.supplierId || undefined,
+          candidateType: editingCandidate.candidateType || "",
         });
       } else {
         form.resetFields();
@@ -290,7 +292,7 @@ const CandidateFormModal = ({
 
         {/* Add Supplier Field */}
         <Row gutter={16}>
-          <Col span={24}>
+          <Col span={12}>
             <Form.Item
               label="Supplier (Optional)"
               name="supplierId"
@@ -325,6 +327,54 @@ const CandidateFormModal = ({
                       supplier.companyName ||
                       `Supplier (ID: ${supplier._id})`}
                   </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              label="Candidate Type"
+              name="candidateType"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select or enter candidate type",
+                },
+              ]}
+            >
+              <Select
+                showSearch
+                allowClear
+                placeholder="Select or type candidate type"
+                value={form.getFieldValue("candidateType")}
+                onSearch={(val) => setCandidateTypeInput(val)}
+                onChange={(value) => {
+                  form.setFieldsValue({ candidateType: value });
+                }}
+                onBlur={() => {
+                  const currentValue = form.getFieldValue("candidateType");
+                  if (!currentValue && candidateTypeInput) {
+                    form.setFieldsValue({ candidateType: candidateTypeInput });
+                  }
+                }}
+                filterOption={(input, option) =>
+                  (option?.children ?? "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+              >
+                {[
+                  "General",
+                  "Supplier",
+                  "Own",
+                  "SponserTransfer",
+                  "Khafalath",
+                  "Others",
+                ].map((type) => (
+                  <Select.Option key={type} value={type}>
+                    {type}
+                  </Select.Option>
                 ))}
               </Select>
             </Form.Item>
