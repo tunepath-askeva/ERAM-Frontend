@@ -64,6 +64,31 @@ const { Panel } = Collapse;
 const { TextArea } = Input;
 const { Step } = Steps;
 
+const fieldTypes = [
+  { label: "Text", value: "text" },
+  { label: "Textarea", value: "textarea" },
+  { label: "Number", value: "number" },
+  { label: "Date", value: "date" },
+  { label: "Time", value: "time" },
+  { label: "Date & Time", value: "datetime" },
+  { label: "Dropdown", value: "select" },
+  { label: "Multi-select", value: "multi_select" },
+  { label: "Checkbox", value: "checkbox" },
+  { label: "Radio Buttons", value: "radio" },
+  { label: "Email", value: "email" },
+  { label: "Phone", value: "phone" },
+  { label: "File Upload", value: "file" },
+  { label: "URL", value: "url" },
+  { label: "Currency", value: "currency" },
+  { label: "Boolean Switch", value: "switch" },
+  { label: "Rating (1–5)", value: "rating" },
+  { label: "Slider", value: "slider" },
+  { label: "Password", value: "password" },
+  { label: "Color Picker", value: "color" },
+];
+
+const typesWithOptions = ["select", "multi_select", "checkbox", "radio"];
+
 const ScreeningCandidates = ({ jobId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -140,6 +165,25 @@ const ScreeningCandidates = ({ jobId }) => {
       }));
     }
   }, [screeningData]);
+
+  useEffect(() => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+    if (!pipelineStageDates[pipelineId]) {
+      const initialDates = selectedPipeline.stages.map((stage) => ({
+        stageId: stage._id,
+        startDate: null,
+        endDate: null,
+        dependencyType: "independent",
+      }));
+
+      setPipelineStageDates((prev) => ({
+        ...prev,
+        [pipelineId]: initialDates,
+      }));
+    }
+  }, [selectedPipeline]);
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({
@@ -351,22 +395,58 @@ const ScreeningCandidates = ({ jobId }) => {
     try {
       if (!selectedCandidate || !selectedPipeline) return;
 
+      const pipelineId = selectedPipeline._id;
+      const defaultStages = selectedPipeline.stages || [];
+      const customStagesList = customStages[pipelineId] || [];
+
+      const allStages = [...defaultStages, ...customStagesList];
+
+      const formattedStages = allStages.map((stage, index) => {
+        const stageId = stage._id || stage.id;
+        const isCustomStage = stage.isCustom || false;
+
+        const stageDate =
+          (pipelineStageDates[pipelineId] || []).find(
+            (d) => d.stageId === stageId
+          ) || {};
+
+        return {
+          pipelineId,
+          stageId,
+          stageName: stage.name,
+          stageOrder: index,
+          startDate: stageDate.startDate,
+          endDate: stageDate.endDate,
+          dependencyType: stageDate.dependencyType || "independent",
+          approvalId: stageDate.approvalId || null,
+          recruiterIds:
+            (stageRecruiterAssignments[pipelineId] || {})[stageId] || [],
+          staffIds: (stageStaffAssignments[pipelineId] || {})[stageId] || [],
+          isCustomStage,
+          _id: stageId,
+          customFields: (stageCustomFields[pipelineId] || {})[stageId] || [],
+          requiredDocuments:
+            (stageRequiredDocuments[pipelineId] || {})[stageId] || [],
+          isPipeline: true, // ✅ Add this flag here only once
+        };
+      });
+
       await moveToPipeline({
-        applicationId: selectedCandidate.applicationId,
-        jobId: jobId,
+        jobId,
         userId: selectedCandidate._id,
-        pipelineId: selectedPipeline._id, // Use the explicitly selected pipeline
+        applicationId: selectedCandidate.applicationId,
+        stages: formattedStages,
       }).unwrap();
 
       message.success(
-        `Candidate moved to ${selectedPipeline.name} pipeline successfully`
+        `Candidate moved to ${selectedPipeline.name} successfully`
       );
       refetch();
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to move candidate to selected pipeline:", error);
       message.error(
-        error.data?.message || "Failed to move candidate to selected pipeline"
+        error.data?.message || "Failed to move candidate to pipeline"
       );
     }
   };
@@ -385,7 +465,7 @@ const ScreeningCandidates = ({ jobId }) => {
           applicationId: candidate.applicationId,
           jobId: jobId,
           userId: candidate._id,
-          pipelineId: candidate.tagPipelineId?._id || null, // Use tagPipelineId if available
+          pipelineId: candidate.tagPipelineId?._id || null,
         }).unwrap();
       });
 
@@ -740,12 +820,12 @@ const ScreeningCandidates = ({ jobId }) => {
           <Button
             key="submit"
             type="primary"
-            onClick={handleMoveToPipeline}
+            onClick={() => setPipelineModalVisible(false)}
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
           >
-            Confirm Pipeline
+            Save Configuration
           </Button>,
         ]}
         bodyStyle={{
@@ -989,11 +1069,18 @@ const ScreeningCandidates = ({ jobId }) => {
                         <Col span={12}>
                           <Select
                             value={field.type}
-                            onChange={(value) =>
+                            onChange={(value) => {
+                              const shouldHaveOptions =
+                                typesWithOptions.includes(value);
                               updateStageCustomField(stageId, field.id, {
                                 type: value,
-                              })
-                            }
+                                options: shouldHaveOptions
+                                  ? field.options?.length
+                                    ? field.options
+                                    : [""]
+                                  : [],
+                              });
+                            }}
                             style={{ width: "100%" }}
                           >
                             {fieldTypes.map((type) => (
@@ -1011,10 +1098,44 @@ const ScreeningCandidates = ({ jobId }) => {
                             required: e.target.checked,
                           })
                         }
-                        style={{ marginTop: 8 }}
                       >
                         Required
                       </Checkbox>
+
+                      {typesWithOptions.includes(field.type) && (
+                        <div style={{ marginTop: 12 }}>
+                          <strong style={{ fontSize: "12px" }}>Options:</strong>
+
+                          {(field.options || []).map((option, idx) => (
+                            <Input
+                              key={idx}
+                              value={option}
+                              size="small"
+                              placeholder={`Option ${idx + 1}`}
+                              style={{ marginBottom: 8 }}
+                              onChange={(e) => {
+                                const newOptions = [...field.options];
+                                newOptions[idx] = e.target.value;
+                                updateStageCustomField(stageId, field.id, {
+                                  options: newOptions,
+                                });
+                              }}
+                            />
+                          ))}
+
+                          <Button
+                            size="small"
+                            icon={<PlusOutlined />}
+                            onClick={() =>
+                              updateStageCustomField(stageId, field.id, {
+                                options: [...(field.options || []), ""],
+                              })
+                            }
+                          >
+                            Add Option
+                          </Button>
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>
