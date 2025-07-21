@@ -116,7 +116,7 @@ export const recruiterApi = createApi({
       query: ({ Id, status, jobId, isSourced, comment, pipelineId }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status, jobId, isSourced, comment,pipelineId },
+        body: { status, jobId, isSourced, comment, pipelineId },
       }),
     }),
 
@@ -128,10 +128,10 @@ export const recruiterApi = createApi({
     }),
 
     moveToPipeline: builder.mutation({
-      query: ({ jobId, userId }) => ({
+      query: ({ jobId, userId, pipelineData, applicationId }) => ({
         url: "/pipeline",
         method: "PUT",
-        body: { jobId, userId },
+        body: { jobId, userId, pipelineData, applicationId },
       }),
     }),
 
@@ -251,7 +251,7 @@ export const recruiterApi = createApi({
         url: `/requisition/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Requisition"], 
+      invalidatesTags: ["Requisition"],
     }),
   }),
 });
@@ -287,5 +287,5 @@ export const {
   useGetClientsQuery,
   useGetRequisitionsQuery,
   useEditRequisitionMutation,
-  useDeleteRequisitionMutation
+  useDeleteRequisitionMutation,
 } = recruiterApi;
