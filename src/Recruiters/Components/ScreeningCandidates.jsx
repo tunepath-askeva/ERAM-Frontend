@@ -39,12 +39,21 @@ import {
   BankOutlined,
   EnvironmentOutlined,
   ToolOutlined,
+  PlusOutlined,
+  MinusCircleOutlined,
+  FormOutlined,
+  SafetyCertificateOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import {
   useUpdateCandidateStatusMutation,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
   useGetScreeningCandidatesQuery,
+  useGetPipelinesQuery,
+  useGetAllRecruitersQuery,
+  useGetAllLevelsQuery,
+  useGetAllStaffsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 
@@ -63,6 +72,18 @@ const ScreeningCandidates = ({ jobId }) => {
   const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
   const [isBulkMoving, setIsBulkMoving] = useState(false);
+  const [pipelineModalVisible, setPipelineModalVisible] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState(null);
+  const [pipelineStageDates, setPipelineStageDates] = useState({});
+  const [stageApprovers, setStageApprovers] = useState({});
+  const [stageCustomFields, setStageCustomFields] = useState({});
+  const [stageRequiredDocuments, setStageRequiredDocuments] = useState({});
+  const [stageStaffAssignments, setStageStaffAssignments] = useState({});
+  const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
+    {}
+  );
+  const [customStages, setCustomStages] = useState({});
+
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -70,6 +91,16 @@ const ScreeningCandidates = ({ jobId }) => {
   });
 
   const [form] = Form.useForm();
+
+  const { data: pipelineData } = useGetPipelinesQuery();
+  const activePipelines = pipelineData?.pipelines || [];
+
+  const { data: recruiterData } = useGetAllRecruitersQuery();
+  const recruiters = recruiterData?.otherRecruiters;
+  const { data: staffData } = useGetAllStaffsQuery();
+  const staffs = staffData?.otherRecruiters;
+  const { data: levelData } = useGetAllLevelsQuery();
+  const levels = levelData?.otherRecruiters;
 
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
@@ -128,6 +159,7 @@ const ScreeningCandidates = ({ jobId }) => {
         image: response.user?.image,
         workOrder: response.workOrder,
         interviewDetails: response.interviewDetails,
+        tagPipelineId: response.tagPipelineId,
         createdAt: response.createdAt,
         updatedAt: response.updatedAt,
       })) || []
@@ -301,6 +333,7 @@ const ScreeningCandidates = ({ jobId }) => {
         applicationId: selectedCandidate.applicationId,
         jobId: jobId,
         userId: selectedCandidate._id,
+        pipelineId: selectedCandidate.tagPipelineId?._id || null, // Use tagPipelineId if available
       }).unwrap();
 
       message.success("Candidate moved to pipeline successfully");
@@ -310,6 +343,30 @@ const ScreeningCandidates = ({ jobId }) => {
       console.error("Failed to move candidate to pipeline:", error);
       message.error(
         error.data?.message || "Failed to move candidate to pipeline"
+      );
+    }
+  };
+
+  const handleMoveToSelectedPipeline = async () => {
+    try {
+      if (!selectedCandidate || !selectedPipeline) return;
+
+      await moveToPipeline({
+        applicationId: selectedCandidate.applicationId,
+        jobId: jobId,
+        userId: selectedCandidate._id,
+        pipelineId: selectedPipeline._id, // Use the explicitly selected pipeline
+      }).unwrap();
+
+      message.success(
+        `Candidate moved to ${selectedPipeline.name} pipeline successfully`
+      );
+      refetch();
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error("Failed to move candidate to selected pipeline:", error);
+      message.error(
+        error.data?.message || "Failed to move candidate to selected pipeline"
       );
     }
   };
@@ -328,6 +385,7 @@ const ScreeningCandidates = ({ jobId }) => {
           applicationId: candidate.applicationId,
           jobId: jobId,
           userId: candidate._id,
+          pipelineId: candidate.tagPipelineId?._id || null, // Use tagPipelineId if available
         }).unwrap();
       });
 
@@ -372,6 +430,645 @@ const ScreeningCandidates = ({ jobId }) => {
     }
   };
 
+  const showPipelineModal = (pipelineId) => {
+    const pipeline = activePipelines.find((p) => p._id === pipelineId);
+    if (pipeline) {
+      setSelectedPipeline(pipeline);
+
+      // Initialize stage dates if not already set
+      if (!pipelineStageDates[pipelineId]) {
+        const initialDates = pipeline.stages.map((stage) => ({
+          stageId: stage._id,
+          startDate: null,
+          endDate: null,
+          dependencyType: "independent",
+        }));
+
+        setPipelineStageDates((prev) => ({
+          ...prev,
+          [pipelineId]: initialDates,
+        }));
+      }
+
+      setPipelineModalVisible(true);
+    }
+  };
+
+  const handleStageDateChange = (stageId, field, value) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      const stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+
+      if (stageIndex === -1) {
+        newDates[pipelineId].push({
+          stageId,
+          startDate: null,
+          endDate: null,
+          dependencyType: "independent",
+        });
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          [field]: value ? value.format("YYYY-MM-DD") : null,
+        };
+      }
+
+      return newDates;
+    });
+  };
+
+  const addCustomStage = () => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+    const newStage = {
+      id: `temp-${Date.now()}`,
+      name: "New Stage",
+      description: "",
+      isCustom: true,
+    };
+
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: [...(prev[pipelineId] || []), newStage],
+    }));
+
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: [
+        ...(prev[pipelineId] || []),
+        {
+          stageId: newStage.id,
+          startDate: null,
+          endDate: null,
+          dependencyType: "independent",
+        },
+      ],
+    }));
+  };
+
+  const updateCustomStage = (stageId, updates) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].map((stage) =>
+        (stage._id || stage.id) === stageId ? { ...stage, ...updates } : stage
+      ),
+    }));
+  };
+
+  const removeCustomStage = (stageId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setCustomStages((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => (stage._id || stage.id) !== stageId
+      ),
+    }));
+
+    setPipelineStageDates((prev) => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId].filter(
+        (stage) => stage.stageId !== stageId
+      ),
+    }));
+  };
+
+  const addStageCustomField = (stageId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+    const newField = {
+      id: `field_${Date.now()}`,
+      label: "New Field",
+      type: "text",
+      required: false,
+    };
+
+    setStageCustomFields((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: [...(prev[pipelineId]?.[stageId] || []), newField],
+      },
+    }));
+  };
+
+  const addStageRequiredDocument = (stageId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+    const newDoc = {
+      id: `doc_${Date.now()}`,
+      title: "New Document",
+    };
+
+    setStageRequiredDocuments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: [...(prev[pipelineId]?.[stageId] || []), newDoc],
+      },
+    }));
+  };
+
+  const updateStageCustomField = (stageId, fieldId, updates) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageCustomFields((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: (prev[pipelineId]?.[stageId] || []).map((field) =>
+          field.id === fieldId ? { ...field, ...updates } : field
+        ),
+      },
+    }));
+  };
+
+  const removeStageCustomField = (stageId, fieldId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageCustomFields((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: (prev[pipelineId]?.[stageId] || []).filter(
+          (field) => field.id !== fieldId
+        ),
+      },
+    }));
+  };
+
+  const updateStageRequiredDocument = (stageId, docId, updates) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageRequiredDocuments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: (prev[pipelineId]?.[stageId] || []).map((doc) =>
+          doc.id === docId ? { ...doc, ...updates } : doc
+        ),
+      },
+    }));
+  };
+
+  const removeStageRequiredDocument = (stageId, docId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageRequiredDocuments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: (prev[pipelineId]?.[stageId] || []).filter(
+          (doc) => doc.id !== docId
+        ),
+      },
+    }));
+  };
+
+  const handleStaffAssignmentChange = (stageId, staffIds) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageStaffAssignments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: staffIds,
+      },
+    }));
+  };
+
+  const handleRecruiterAssignmentChange = (stageId, recruiterIds) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setStageRecruiterAssignments((prev) => ({
+      ...prev,
+      [pipelineId]: {
+        ...prev[pipelineId],
+        [stageId]: recruiterIds,
+      },
+    }));
+  };
+
+  const handleLevelChange = (stageId, levelId) => {
+    if (!selectedPipeline) return;
+
+    const pipelineId = selectedPipeline._id;
+
+    setPipelineStageDates((prev) => {
+      const newDates = { ...prev };
+
+      if (!newDates[pipelineId]) {
+        newDates[pipelineId] = [];
+      }
+
+      const stageIndex = newDates[pipelineId].findIndex(
+        (s) => s.stageId === stageId
+      );
+
+      if (stageIndex === -1) {
+        newDates[pipelineId].push({
+          stageId,
+          approvalId: levelId,
+          startDate: null,
+          endDate: null,
+          dependencyType: "independent",
+        });
+      } else {
+        newDates[pipelineId][stageIndex] = {
+          ...newDates[pipelineId][stageIndex],
+          approvalId: levelId,
+        };
+      }
+
+      return newDates;
+    });
+  };
+
+  const renderPipelineModal = () => {
+    if (!selectedPipeline) return null;
+
+    const pipelineId = selectedPipeline._id;
+    const pipelineStages = selectedPipeline.stages || [];
+    const pipelineCustomStages = customStages[pipelineId] || [];
+    const allStages = [
+      ...pipelineStages.map((stage) => ({ ...stage, isCustom: false })),
+      ...pipelineCustomStages.map((stage) => ({ ...stage, isCustom: true })),
+    ];
+
+    return (
+      <Modal
+        title={`Configure Pipeline Stages for ${selectedPipeline.name}`}
+        visible={pipelineModalVisible}
+        onCancel={() => setPipelineModalVisible(false)}
+        width={900}
+        footer={[
+          <Button key="back" onClick={() => setPipelineModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleMoveToPipeline}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+            }}
+          >
+            Confirm Pipeline
+          </Button>,
+        ]}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+        }}
+      >
+        {allStages.map((stage) => {
+          const stageId = stage._id || stage.id;
+          const dateEntry = pipelineStageDates[pipelineId]?.find(
+            (d) => d.stageId === stageId
+          );
+
+          const stageFields = stageCustomFields[pipelineId]?.[stageId] || [];
+          const stageDocs = stageRequiredDocuments[pipelineId]?.[stageId] || [];
+          const assignedStaff =
+            stageStaffAssignments[pipelineId]?.[stageId] || [];
+          const assignedRecruiters =
+            stageRecruiterAssignments[pipelineId]?.[stageId] || [];
+
+          return (
+            <Card
+              key={stageId}
+              title={
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  {stage.isCustom ? (
+                    <Input
+                      value={stage.name}
+                      onChange={(e) =>
+                        updateCustomStage(stageId, { name: e.target.value })
+                      }
+                      style={{ maxWidth: "200px" }}
+                    />
+                  ) : (
+                    <span>{stage.name}</span>
+                  )}
+                  {stage.isCustom && <Tag color="orange">Custom</Tag>}
+                  {dateEntry?.dependencyType && (
+                    <Tag color="green">{dateEntry.dependencyType}</Tag>
+                  )}
+                  {stage.isCustom && (
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeCustomStage(stageId)}
+                    />
+                  )}
+                </div>
+              }
+              style={{ marginBottom: 16 }}
+            >
+              <Row gutter={[16, 16]} align="bottom">
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="Start Date">
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      value={
+                        dateEntry?.startDate ? dayjs(dateEntry.startDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(stageId, "startDate", date)
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="End Date">
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      value={
+                        dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                      }
+                      onChange={(date) =>
+                        handleStageDateChange(stageId, "endDate", date)
+                      }
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="Dependency Type">
+                    <Select
+                      value={dateEntry?.dependencyType || "independent"}
+                      onChange={(value) => {
+                        setPipelineStageDates((prev) => {
+                          const newDates = { ...prev };
+                          if (!newDates[pipelineId]) {
+                            newDates[pipelineId] = [];
+                          }
+
+                          const stageIndex = newDates[pipelineId].findIndex(
+                            (s) => s.stageId === stageId
+                          );
+
+                          if (stageIndex === -1) {
+                            newDates[pipelineId].push({
+                              stageId,
+                              dependencyType: value,
+                              startDate: null,
+                              endDate: null,
+                            });
+                          } else {
+                            newDates[pipelineId][stageIndex] = {
+                              ...newDates[pipelineId][stageIndex],
+                              dependencyType: value,
+                            };
+                          }
+
+                          return newDates;
+                        });
+                      }}
+                      style={{ width: "100%" }}
+                    >
+                      <Option value="independent">Independent</Option>
+                      <Option value="dependent">Dependent</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="Assigned Recruiters">
+                    <Select
+                      mode="multiple"
+                      value={assignedRecruiters}
+                      onChange={(value) =>
+                        handleRecruiterAssignmentChange(stageId, value)
+                      }
+                      style={{ width: "100%" }}
+                      placeholder="Select recruiters"
+                    >
+                      {recruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName || recruiter.email}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="Assigned Staff">
+                    <Select
+                      mode="multiple"
+                      value={assignedStaff}
+                      onChange={(value) =>
+                        handleStaffAssignmentChange(stageId, value)
+                      }
+                      style={{ width: "100%" }}
+                      placeholder="Select staff"
+                    >
+                      {staffs.map((staff) => (
+                        <Option key={staff._id} value={staff._id}>
+                          {staff.fullName || staff.email}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} md={8}>
+                  <Form.Item label="Approval Level">
+                    <Select
+                      style={{ width: "100%" }}
+                      placeholder="Select approval level"
+                      value={dateEntry?.approvalId || undefined}
+                      onChange={(value) => handleLevelChange(stageId, value)}
+                    >
+                      {levels.map((group) => (
+                        <Option key={group._id} value={group._id}>
+                          {group.groupName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider orientation="left" plain style={{ margin: "16px 0" }}>
+                Stage Requirements
+              </Divider>
+
+              <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Col span={12}>
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    block
+                    onClick={() => addStageCustomField(stageId)}
+                  >
+                    Add Custom Field
+                  </Button>
+                </Col>
+                <Col span={12}>
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    block
+                    onClick={() => addStageRequiredDocument(stageId)}
+                  >
+                    Add Required Document
+                  </Button>
+                </Col>
+              </Row>
+
+              {stageFields.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <h4>Custom Fields:</h4>
+                  {stageFields.map((field) => (
+                    <Card
+                      key={field.id}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      extra={
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          onClick={() =>
+                            removeStageCustomField(stageId, field.id)
+                          }
+                        />
+                      }
+                    >
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Input
+                            value={field.label}
+                            onChange={(e) =>
+                              updateStageCustomField(stageId, field.id, {
+                                label: e.target.value,
+                              })
+                            }
+                            placeholder="Field Label"
+                          />
+                        </Col>
+                        <Col span={12}>
+                          <Select
+                            value={field.type}
+                            onChange={(value) =>
+                              updateStageCustomField(stageId, field.id, {
+                                type: value,
+                              })
+                            }
+                            style={{ width: "100%" }}
+                          >
+                            {fieldTypes.map((type) => (
+                              <Option key={type.value} value={type.value}>
+                                {type.label}
+                              </Option>
+                            ))}
+                          </Select>
+                        </Col>
+                      </Row>
+                      <Checkbox
+                        checked={field.required}
+                        onChange={(e) =>
+                          updateStageCustomField(stageId, field.id, {
+                            required: e.target.checked,
+                          })
+                        }
+                        style={{ marginTop: 8 }}
+                      >
+                        Required
+                      </Checkbox>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {stageDocs.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <h4>Required Documents:</h4>
+                  {stageDocs.map((doc) => (
+                    <Card
+                      key={doc.id}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      extra={
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          onClick={() =>
+                            removeStageRequiredDocument(stageId, doc.id)
+                          }
+                        />
+                      }
+                    >
+                      <Input
+                        value={doc.title}
+                        onChange={(e) =>
+                          updateStageRequiredDocument(stageId, doc.id, {
+                            title: e.target.value,
+                          })
+                        }
+                        placeholder="Document Title"
+                      />
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </Card>
+          );
+        })}
+
+        <Button
+          type="dashed"
+          onClick={addCustomStage}
+          icon={<PlusOutlined />}
+          block
+        >
+          Add Custom Stage
+        </Button>
+      </Modal>
+    );
+  };
+
   if (isLoading || recruiterStagesLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -410,7 +1107,7 @@ const ScreeningCandidates = ({ jobId }) => {
                 loading={isBulkMoving}
                 style={{ background: "#da2c46" }}
               >
-                Move Pipeline ({selectedCandidates.length})
+                Move to Assigned Pipelines ({selectedCandidates.length})
               </Button>
             )}
           </Col>
@@ -713,6 +1410,8 @@ const ScreeningCandidates = ({ jobId }) => {
                 pageSizeOptions={[10, 20, 50, 100]}
               />
             </div>
+
+            {renderPipelineModal()}
           </>
         ) : (
           <Empty
@@ -822,12 +1521,73 @@ const ScreeningCandidates = ({ jobId }) => {
                 )}
               </Descriptions.Item>
             </Descriptions>
+            <Divider orientation="left" style={{ margin: "16px 0" }}>
+              Pipeline Configuration
+            </Divider>
+            {selectedCandidate?.tagPipelineId ? (
+              <div>
+                <Descriptions
+                  bordered
+                  column={window.innerWidth < 768 ? 1 : 2}
+                  size="small"
+                >
+                  <Descriptions.Item label="Tagged Pipeline">
+                    <Tag color="blue">
+                      {selectedCandidate.tagPipelineId.name}
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+
+                <Button
+                  type="primary"
+                  icon={<FormOutlined />}
+                  onClick={() =>
+                    showPipelineModal(selectedCandidate.tagPipelineId._id)
+                  }
+                  style={{ marginTop: 16, background: "#da2c46" }}
+                >
+                  Configure Pipeline Stages
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <Text type="secondary">
+                  No pipeline tagged for this candidate
+                </Text>
+                <Select
+                  placeholder="Select a pipeline"
+                  style={{ width: "100%", marginTop: 16 }}
+                  onChange={(value) => {
+                    const pipeline = activePipelines.find(
+                      (p) => p._id === value
+                    );
+                    setSelectedPipeline(pipeline);
+                  }}
+                >
+                  {activePipelines.map((pipeline) => (
+                    <Option key={pipeline._id} value={pipeline._id}>
+                      {pipeline.name}
+                    </Option>
+                  ))}
+                </Select>
+
+                {selectedPipeline && (
+                  <Button
+                    type="primary"
+                    icon={<FormOutlined />}
+                    onClick={() => showPipelineModal(selectedPipeline._id)}
+                    style={{ marginTop: 16, background: "#da2c46" }}
+                  >
+                    Configure Pipeline Stages
+                  </Button>
+                )}
+              </div>
+            )}
 
             <Divider orientation="left" style={{ margin: "16px 0" }}>
-              {/* Move to Pipeline */}
+              Pipeline Actions
             </Divider>
-
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: "16px", display: "flex", gap: 8 }}>
               <Button
                 type="primary"
                 icon={<ArrowRightOutlined />}
@@ -835,12 +1595,22 @@ const ScreeningCandidates = ({ jobId }) => {
                 loading={isMovingToPipeline}
                 style={{ background: "#da2c46" }}
               >
-                Move to Pipeline
+                Move to Work Order Pipeline
               </Button>
+
+              {selectedPipeline && (
+                <Button
+                  type="primary"
+                  icon={<ArrowRightOutlined />}
+                  onClick={handleMoveToSelectedPipeline}
+                  loading={isMovingToPipeline}
+                  style={{ background: "#da2c46" }}
+                >
+                  Move to Selected Pipeline
+                </Button>
+              )}
             </div>
-
             <Divider />
-
             <div
               style={{
                 display: "flex",
