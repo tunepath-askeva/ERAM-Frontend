@@ -427,25 +427,21 @@ const ScreeningCandidates = ({ jobId }) => {
           customFields: (stageCustomFields[pipelineId] || {})[stageId] || [],
           requiredDocuments:
             (stageRequiredDocuments[pipelineId] || {})[stageId] || [],
-          isPipeline: true,
         };
       });
 
-      // Create the full pipeline data object
       const pipelineData = {
         _id: selectedPipeline._id,
         name: selectedPipeline.name,
         description: selectedPipeline.description,
         stages: formattedStages,
-        isPipeline: true,
-        // Include any other pipeline properties you need
       };
 
       await moveToPipeline({
         jobId,
         userId: selectedCandidate._id,
-        applicationId: selectedCandidate.applicationId,
-        pipelineData, // Send the full pipeline data object
+        pipelineData,
+        isPipeline: true,
       }).unwrap();
 
       message.success(
