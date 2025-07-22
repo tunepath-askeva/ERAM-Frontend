@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Card,
@@ -57,22 +57,30 @@ const RecruiterApprovals = () => {
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("workOrder");
+  const [hasLoadedWorkOrders, setHasLoadedWorkOrders] = useState(false);
+  const [hasLoadedSeparateApprovals, setHasLoadedSeparateApprovals] =
+    useState(false);
+
   const [approvalComments, setApprovalComments] = useState("");
   const screens = useBreakpoint();
 
   const {
     data: workOrders = [],
     isLoading: loadingWorkOrders,
-    error: workOrdersError,
     refetch: refetchWorkOrders,
-  } = useGetApprovalInfoQuery();
+  } = useGetApprovalInfoQuery(undefined, {
+    skip: activeTab !== "workOrder",
+    refetchOnMountOrArgChange: true,
+  });
 
   const {
     data: separateApprovals = [],
     isLoading: loadingSeparateApprovals,
-    error: separateApprovalsError,
     refetch: refetchSeparateApprovals,
-  } = useGetSeperateApprovalsQuery();
+  } = useGetSeperateApprovalsQuery(undefined, {
+    skip: activeTab !== "separate",
+    refetchOnMountOrArgChange: true,
+  });
 
   const [approveCandidateDocuments, { isLoading: isApproving }] =
     useApproveCandidateDocumentsMutation();
@@ -81,21 +89,31 @@ const RecruiterApprovals = () => {
   const isTablet = screens.sm || screens.md;
   const isDesktop = screens.lg || screens.xl;
 
+  useEffect(() => {
+    if (activeTab === "workOrder" && !hasLoadedWorkOrders) {
+      refetchWorkOrders().then(() => setHasLoadedWorkOrders(true));
+    } else if (activeTab === "separate" && !hasLoadedSeparateApprovals) {
+      refetchSeparateApprovals().then(() =>
+        setHasLoadedSeparateApprovals(true)
+      );
+    }
+  }, [activeTab]);
+
   const getWorkOrderTableData = () => {
     const tableData = [];
 
-    // Extract all separate approval stage IDs to filter out
     const separateStageIds = new Set();
     separateApprovals.forEach((approval) => {
       approval.pipelineStageTimeline.forEach((stage) => {
-        separateStageIds.add(stage.stageId); // or stage._id if that's unique
+        separateStageIds.add(stage.stageId);
       });
     });
 
     workOrders.forEach((workOrder) => {
       workOrder.pipelineStageTimeline.forEach((stage) => {
-        // ❌ Skip if it's part of separate approvals
-        if (separateStageIds.has(stage.stageId)) return;
+        // ✅ Skip if stage is a separate approval
+        const isSeparateApproval = stage.separateApprovalId && !stage.levelInfo;
+        if (isSeparateApproval) return;
 
         if (!stage.uploadedDocuments || stage.uploadedDocuments.length === 0)
           return;
@@ -111,10 +129,10 @@ const RecruiterApprovals = () => {
             candidateEmail: candidate.candidateEmail,
             stageName: stage.stageName,
             stageOrder: stage.stageOrder,
-            recruiterName: stage.recruiterIds
-              ?.map((r) => r.fullName)
-              .join(", "),
-            recruiterEmail: stage.recruiterIds?.map((r) => r.email).join(", "),
+            recruiterName:
+              stage.recruiterIds?.map((r) => r.fullName).join(", ") || "N/A",
+            recruiterEmail:
+              stage.recruiterIds?.map((r) => r.email).join(", ") || "N/A",
             documentsCount: candidate.documents?.length || 0,
             documents: candidate.documents || [],
             uploadedAt: candidate.documents?.[0]?.uploadedAt,
@@ -139,39 +157,70 @@ const RecruiterApprovals = () => {
     const tableData = [];
 
     separateApprovals.forEach((workOrder) => {
-      workOrder.pipelineStageTimeline.forEach((stage) => {
-        // Check if there are uploaded documents
-        if (stage.uploadedDocuments && stage.uploadedDocuments.length > 0) {
-          stage.uploadedDocuments.forEach((candidateDoc) => {
-            tableData.push({
-              key: `${workOrder._id}-${stage._id}-${candidateDoc.candidateId}`,
-              workOrderId: workOrder._id,
-              workOrderTitle: workOrder.title,
-              jobCode: workOrder.jobCode,
-              candidateId: candidateDoc.candidateId,
-              candidateName: candidateDoc.candidateName,
-              candidateEmail: candidateDoc.candidateEmail,
-              stageName: stage.stageName,
-              recruiterName: stage.recruiterId, // You might want to fetch recruiter name
-              documentsCount: candidateDoc.documents?.length || 0,
-              documents: candidateDoc.documents || [],
-              uploadedAt: candidateDoc.documents?.[0]?.uploadedAt,
-              status: stage.levelInfo?.levelStatus || "pending",
-              workOrder: workOrder,
-              stage: stage,
-              candidate: {
-                candidateId: candidateDoc.candidateId,
-                candidateName: candidateDoc.candidateName,
-                candidateEmail: candidateDoc.candidateEmail,
-                documents: candidateDoc.documents || [],
-              },
-              levelStatus: stage.levelInfo?.levelStatus,
-              levelName: stage.levelInfo?.levelName,
-              separateApprovalId: stage.separateApprovalId,
-              isSeparateApproval: true,
-            });
+      const {
+        _id: workOrderId,
+        title,
+        jobCode,
+        pipelineStageTimeline,
+      } = workOrder;
+
+      pipelineStageTimeline.forEach((stage) => {
+        const {
+          stageId,
+          stageName,
+          recruiterId,
+          recruiterIds,
+          approvalId,
+          separateApprovalId,
+          uploadedDocuments = [],
+          levelInfo,
+          stageStatus,
+          recruiterReviews = [],
+        } = stage;
+
+        uploadedDocuments.forEach((candidateDoc) => {
+          const {
+            candidateId,
+            candidateName,
+            candidateEmail,
+            documents = [],
+          } = candidateDoc;
+
+          tableData.push({
+            key: `${workOrderId}-${stageId}-${candidateId}`,
+            workOrderId,
+            workOrderTitle: title,
+            jobCode,
+            stageId,
+            stageName,
+            recruiterName:
+              recruiterIds?.map((r) => r.fullName || r.name).join(", ") ||
+              recruiterId ||
+              "N/A",
+            recruiterEmail:
+              recruiterIds?.map((r) => r.email).join(", ") || "N/A",
+            candidateId,
+            candidateName,
+            candidateEmail,
+            documents,
+            documentsCount: documents.length,
+            uploadedAt: documents?.[0]?.uploadedAt,
+            status: stageStatus,
+            levelStatus: levelInfo?.levelStatus,
+            levelName: levelInfo?.levelName,
+            levelId: levelInfo?.levelId,
+            separateApprovalId,
+            approvalId,
+            stage,
+            candidate: {
+              candidateId,
+              candidateName,
+              candidateEmail,
+              documents,
+            },
+            isSeparateApproval: true,
           });
-        }
+        });
       });
     });
 
@@ -389,23 +438,25 @@ const RecruiterApprovals = () => {
                   {text || "N/A"}
                 </div>
               </Tooltip>
-              {!isMobile && (
-                <Tooltip title={record.recruiterEmail}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: isTablet ? "11px" : "12px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      display: "block",
-                      lineHeight: "1.2",
-                    }}
-                  >
-                    {record.recruiterEmail || "N/A"}
-                  </Text>
-                </Tooltip>
-              )}
+              {!isMobile &&
+                record.recruiterEmail &&
+                record.recruiterEmail !== "N/A" && (
+                  <Tooltip title={record.recruiterEmail}>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: isTablet ? "11px" : "12px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "block",
+                        lineHeight: "1.2",
+                      }}
+                    >
+                      {record.recruiterEmail}
+                    </Text>
+                  </Tooltip>
+                )}
             </div>
           );
         },
@@ -446,7 +497,8 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
-          const displayStatus = record.levelStatus || status;
+          const displayStatus =
+            record.stage?.levelInfo?.approverStatus || "pending";
           const statusText = getStatusText(displayStatus);
           const statusColor = getStatusColor(displayStatus);
 
@@ -684,7 +736,15 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
-          const displayStatus = record.levelStatus || status;
+          let displayStatus = "pending";
+          if (record.approval?.isApproved === true) {
+            displayStatus = "approved";
+          } else if (record.approval?.isApproved === false) {
+            displayStatus = "pending"; 
+          } else {
+            displayStatus = record.status || "pending";
+          }
+
           const statusText = getStatusText(displayStatus);
           const statusColor = getStatusColor(displayStatus);
 
@@ -865,13 +925,14 @@ const RecruiterApprovals = () => {
 
       <Tabs
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={(key) => setActiveTab(key)}
         style={{ marginBottom: 16 }}
+        destroyInactiveTabPane={true}
       >
         <TabPane tab="Work Order Approvals" key="workOrder">
           <Table
             columns={getWorkOrderColumns()}
-            dataSource={getWorkOrderTableData()}
+            dataSource={hasLoadedWorkOrders ? getWorkOrderTableData() : []}
             loading={loadingWorkOrders}
             pagination={{
               pageSize: 10,
@@ -887,7 +948,9 @@ const RecruiterApprovals = () => {
         <TabPane tab="Separate Approvals" key="separate">
           <Table
             columns={getSeparateApprovalsColumns()}
-            dataSource={getSeparateApprovalsTableData()}
+            dataSource={
+              hasLoadedSeparateApprovals ? getSeparateApprovalsTableData() : []
+            }
             loading={loadingSeparateApprovals}
             pagination={{
               pageSize: 10,
