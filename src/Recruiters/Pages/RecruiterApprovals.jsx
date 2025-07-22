@@ -126,33 +126,38 @@ const RecruiterApprovals = () => {
 
     separateApprovals.forEach((workOrder) => {
       workOrder.pipelineStageTimeline.forEach((stage) => {
-        tableData.push({
-          key: `${workOrder._id}-${stage._id}-${stage.levelInfo?.candidateId}`,
-          workOrderId: workOrder._id,
-          workOrderTitle: workOrder.title,
-          jobCode: workOrder.jobCode,
-          candidateId: stage.levelInfo?.candidateId,
-          candidateName: stage.candidateName,
-          candidateEmail: stage.candidateEmail,
-          stageName: stage.stageName,
-          recruiterName: stage.recruiterId, // You might want to fetch recruiter name
-          documentsCount: stage.uploadedDocuments?.length || 0,
-          documents: stage.uploadedDocuments || [],
-          uploadedAt: stage.uploadedDocuments?.[0]?.uploadedAt,
-          status: stage.levelInfo?.levelStatus || "pending",
-          workOrder: workOrder,
-          stage: stage,
-          candidate: {
-            candidateId: stage.levelInfo?.candidateId,
-            candidateName: stage.candidateName,
-            candidateEmail: stage.candidateEmail,
-            documents: stage.uploadedDocuments || [],
-          },
-          levelStatus: stage.levelInfo?.levelStatus,
-          levelName: stage.levelInfo?.levelName,
-          separateApprovalId: stage.separateApprovalId,
-          isSeparateApproval: true,
-        });
+        // Check if there are uploaded documents
+        if (stage.uploadedDocuments && stage.uploadedDocuments.length > 0) {
+          stage.uploadedDocuments.forEach((candidateDoc) => {
+            tableData.push({
+              key: `${workOrder._id}-${stage._id}-${candidateDoc.candidateId}`,
+              workOrderId: workOrder._id,
+              workOrderTitle: workOrder.title,
+              jobCode: workOrder.jobCode,
+              candidateId: candidateDoc.candidateId,
+              candidateName: candidateDoc.candidateName,
+              candidateEmail: candidateDoc.candidateEmail,
+              stageName: stage.stageName,
+              recruiterName: stage.recruiterId, // You might want to fetch recruiter name
+              documentsCount: candidateDoc.documents?.length || 0,
+              documents: candidateDoc.documents || [],
+              uploadedAt: candidateDoc.documents?.[0]?.uploadedAt,
+              status: stage.levelInfo?.levelStatus || "pending",
+              workOrder: workOrder,
+              stage: stage,
+              candidate: {
+                candidateId: candidateDoc.candidateId,
+                candidateName: candidateDoc.candidateName,
+                candidateEmail: candidateDoc.candidateEmail,
+                documents: candidateDoc.documents || [],
+              },
+              levelStatus: stage.levelInfo?.levelStatus,
+              levelName: stage.levelInfo?.levelName,
+              separateApprovalId: stage.separateApprovalId,
+              isSeparateApproval: true,
+            });
+          });
+        }
       });
     });
 
@@ -160,6 +165,8 @@ const RecruiterApprovals = () => {
   };
 
   const getFileIcon = (fileName) => {
+    if (!fileName) return <FileOutlined style={{ color: "#1890ff" }} />;
+
     const extension = fileName.split(".").pop().toLowerCase();
     switch (extension) {
       case "pdf":
@@ -759,7 +766,7 @@ const RecruiterApprovals = () => {
       }
 
       await approveCandidateDocuments({
-        workOrderid: selectedWorkOrder.workOrderId,
+        workOrderId: selectedWorkOrder.workOrderId,
         userId: selectedCandidate.candidateId,
         approvalId,
         levelId,
@@ -969,7 +976,7 @@ const RecruiterApprovals = () => {
               getFileIcon={getFileIcon}
               handleDownloadDocument={handleDownloadDocument}
               formatDate={formatDate}
-               hasDocuments={selectedCandidate?.documents?.length > 0}
+              hasDocuments={selectedCandidate?.documents?.length > 0}
             />
           )}
         </Modal>
@@ -1186,7 +1193,6 @@ const DetailsContent = ({
   getFileIcon,
   handleDownloadDocument,
   formatDate,
-  hasDocuments,
 }) => (
   <div>
     {/* Work Order Information */}
@@ -1247,66 +1253,72 @@ const DetailsContent = ({
     >
       Uploaded Documents
     </Title>
-    <List
-      dataSource={selectedCandidate.documents || []}
-      renderItem={(document) => (
-        <List.Item
-          actions={[
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => handleDownloadDocument(document)}
-              size="small"
-              style={{ color: "#da2c46" }}
-            >
-              View
-            </Button>,
-            <Button
-              type="link"
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownloadDocument(document)}
-              size="small"
-              style={{ color: "#da2c46" }}
-            >
-              Download
-            </Button>,
-          ]}
-        >
-          <List.Item.Meta
-            avatar={getFileIcon(document.fileName)}
-            title={
-              <Text
-                ellipsis={{ tooltip: document.fileName }}
-                style={{
-                  fontSize: isMobile ? "12px" : "14px",
-                  fontWeight: 500,
-                }}
+    {selectedCandidate.documents?.length > 0 ? (
+      <List
+        dataSource={selectedCandidate.documents}
+        renderItem={(document) => (
+          <List.Item
+            actions={[
+              <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => handleDownloadDocument(document)}
+                size="small"
+                style={{ color: "#da2c46" }}
               >
-                {document.fileName}
-              </Text>
-            }
-            description={
-              <Space size="small">
+                View
+              </Button>,
+              <Button
+                type="link"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadDocument(document)}
+                size="small"
+                style={{ color: "#da2c46" }}
+              >
+                Download
+              </Button>,
+            ]}
+          >
+            <List.Item.Meta
+              avatar={getFileIcon(document.fileName)}
+              title={
                 <Text
-                  type="secondary"
-                  style={{ fontSize: isMobile ? "10px" : "12px" }}
+                  ellipsis={{ tooltip: document.fileName }}
+                  style={{
+                    fontSize: isMobile ? "12px" : "14px",
+                    fontWeight: 500,
+                  }}
                 >
-                  {formatDate(document.uploadedAt)}
+                  {document.fileName}
                 </Text>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: isMobile ? "10px" : "12px" }}
-                >
-                  {document.fileSize ? `(${document.fileSize})` : ""}
-                </Text>
-              </Space>
-            }
-          />
-        </List.Item>
-      )}
-      style={{ marginBottom: "24px" }}
-      size={isMobile ? "small" : "default"}
-    />
+              }
+              description={
+                <Space size="small">
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: isMobile ? "10px" : "12px" }}
+                  >
+                    {formatDate(document.uploadedAt)}
+                  </Text>
+                  {document.fileSize && (
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: isMobile ? "10px" : "12px" }}
+                    >
+                      ({document.fileSize})
+                    </Text>
+                  )}
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+        style={{ marginBottom: "24px" }}
+        size={isMobile ? "small" : "default"}
+      />
+    ) : (
+      <Text type="secondary">No documents uploaded</Text>
+    )}
   </div>
 );
 
