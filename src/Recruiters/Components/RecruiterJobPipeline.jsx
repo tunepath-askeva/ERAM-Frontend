@@ -151,7 +151,6 @@ const RecruiterJobPipeline = () => {
       if (currentCandidate?.currentStage) {
         setActiveStage(currentCandidate.currentStage);
       } else {
-        // Use the first stage from the pipeline timeline
         setActiveStage(
           processedJobData.workOrder.pipelineStageTimeline[0].stageId
         );
@@ -160,27 +159,53 @@ const RecruiterJobPipeline = () => {
   }, [processedJobData]);
 
   const getNextStageId = (currentStageId) => {
-    if (!processedJobData?.workOrder?.pipelineStageTimeline) return null;
+    if (!processedJobData) return null;
 
-    const stages = processedJobData.workOrder.pipelineStageTimeline;
-    const currentIndex = stages.findIndex(
-      (stage) => stage.stageId === currentStageId
-    );
+    const currentCandidate = processedJobData.candidates[0];
+    const isTagged = !!currentCandidate?.tagPipelineId;
 
-    if (currentIndex >= 0 && currentIndex < stages.length - 1) {
-      return stages[currentIndex + 1].stageId;
+    if (isTagged) {
+      const stages = processedJobData.pipeline?.stages || [];
+      const currentIndex = stages.findIndex(
+        (stage) => stage._id === currentStageId
+      );
+
+      if (currentIndex >= 0 && currentIndex < stages.length - 1) {
+        return stages[currentIndex + 1]._id;
+      }
+    } else {
+      const stages = processedJobData.workOrder?.pipelineStageTimeline || [];
+      const currentIndex = stages.findIndex(
+        (stage) => stage.stageId === currentStageId
+      );
+
+      if (currentIndex >= 0 && currentIndex < stages.length - 1) {
+        return stages[currentIndex + 1].stageId;
+      }
     }
 
     return null;
   };
 
   const getReviewerIdForStage = (stageId) => {
-    if (!processedJobData?.workOrder?.pipelineStageTimeline) return null;
+    if (!processedJobData) return null;
 
-    const stageTimeline = processedJobData.workOrder.pipelineStageTimeline.find(
-      (timeline) => timeline.stageId === stageId
-    );
-    return stageTimeline?.recruiterIds?.[0] || null;
+    const currentCandidate = processedJobData.candidates[0];
+    const isTagged = !!currentCandidate?.tagPipelineId;
+
+    if (isTagged) {
+      return (
+        currentCandidate.stageProgress?.find(
+          (progress) => progress.stageId === stageId
+        )?.recruiterId || null
+      );
+    } else {
+      const stageTimeline =
+        processedJobData.workOrder?.pipelineStageTimeline?.find(
+          (timeline) => timeline.stageId === stageId
+        );
+      return stageTimeline?.recruiterIds?.[0] || null;
+    }
   };
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -273,15 +298,12 @@ const RecruiterJobPipeline = () => {
         return;
       }
 
+      const isTagged = !!selectedCandidate.tagPipelineId;
       const isLastStage = !getNextStageId(currentStageId);
 
-      const currentStageProgress =
-        selectedCandidate.stageProgress.find(
-          (stage) => stage.stageStatus === "pending"
-        ) ||
-        selectedCandidate.stageProgress[
-          selectedCandidate.stageProgress.length - 1
-        ];
+      const currentStageProgress = selectedCandidate.stageProgress.find(
+        (stage) => stage.stageId === currentStageId
+      );
 
       if (!currentStageProgress) {
         message.error("Cannot find stage progress for current stage");
@@ -433,13 +455,11 @@ const RecruiterJobPipeline = () => {
         (timeline) => timeline.stageId === candidate.currentStage
       );
 
-    // Combine required documents from both sources
     const allRequiredDocuments = [
       ...(currentStage?.requiredDocuments || []),
       ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
     ];
 
-    // Remove duplicates
     const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
 
     if (
@@ -830,7 +850,6 @@ const RecruiterJobPipeline = () => {
     if (!processedJobData) return null;
 
     const currentCandidate = processedJobData.candidates[0];
-
     const isTaggedPipeline = !!currentCandidate.tagPipelineId;
 
     const stagesToShow = isTaggedPipeline
