@@ -84,8 +84,22 @@ const RecruiterApprovals = () => {
   const getWorkOrderTableData = () => {
     const tableData = [];
 
+    // Extract all separate approval stage IDs to filter out
+    const separateStageIds = new Set();
+    separateApprovals.forEach((approval) => {
+      approval.pipelineStageTimeline.forEach((stage) => {
+        separateStageIds.add(stage.stageId); // or stage._id if that's unique
+      });
+    });
+
     workOrders.forEach((workOrder) => {
       workOrder.pipelineStageTimeline.forEach((stage) => {
+        // ❌ Skip if it's part of separate approvals
+        if (separateStageIds.has(stage.stageId)) return;
+
+        if (!stage.uploadedDocuments || stage.uploadedDocuments.length === 0)
+          return;
+
         stage.uploadedDocuments.forEach((candidate) => {
           tableData.push({
             key: `${workOrder._id}-${stage._id}-${candidate.candidateId}`,
@@ -108,9 +122,9 @@ const RecruiterApprovals = () => {
             customFields: stage.customFields,
             requiredDocuments: stage.requiredDocuments,
             status: stage.levelInfo?.levelStatus || "pending",
-            workOrder: workOrder,
-            stage: stage,
-            candidate: candidate,
+            workOrder,
+            stage,
+            candidate,
             levelStatus: stage.levelInfo?.levelStatus,
             levelName: stage.levelInfo?.levelName,
           });

@@ -438,113 +438,96 @@ const RecruiterJobPipeline = () => {
     window.open(fileUrl, "_blank");
   };
 
-  const renderDocuments = (candidate) => {
-    if (
-      !processedJobData ||
-      !processedJobData.pipeline ||
-      !processedJobData.pipeline.stages
-    ) {
-      return null;
-    }
+const renderDocuments = (candidate, stageId) => {
+  if (!processedJobData) return null;
 
-    const currentStage = processedJobData.pipeline.stages.find(
-      (stage) => stage._id === candidate.currentStage
-    );
+  const isTagged = !!candidate?.tagPipelineId;
 
-    const stageTimeline =
-      processedJobData.workOrder?.pipelineStageTimeline?.find(
-        (timeline) => timeline.stageId === candidate.currentStage
-      );
+  const stageTimeline = isTagged
+    ? processedJobData.pipeline.stages.find((s) => s._id === stageId)
+    : processedJobData.workOrder.pipelineStageTimeline.find((s) => s.stageId === stageId);
 
-    const allRequiredDocuments = [
-      ...(currentStage?.requiredDocuments || []),
-      ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
-    ];
+  const stageProgress = candidate.stageProgress.find((sp) => sp.stageId === stageId);
 
-    const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+  const uploadedDocs = stageProgress?.uploadedDocuments || [];
 
-    if (
-      !candidate.uploadedDocuments ||
-      candidate.uploadedDocuments.length === 0
-    ) {
-      return (
-        <Empty
-          description="No documents uploaded"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          style={{ margin: "20px 0" }}
-        />
-      );
-    }
+  const allRequiredDocs = [
+    ...(stageTimeline?.requiredDocuments || []),
+  ];
 
+  const uniqueRequiredDocuments = [...new Set(allRequiredDocs.map((doc) => typeof doc === 'string' ? doc : doc.title))];
+
+  if (uploadedDocs.length === 0) {
     return (
-      <div style={{ marginTop: "16px" }}>
-        <Title level={5} style={{ marginBottom: "12px" }}>
-          <FileOutlined style={{ marginRight: "8px" }} />
-          Uploaded Documents ({candidate.uploadedDocuments.length})
-        </Title>
-
-        <div style={{ marginBottom: "16px" }}>
-          <Text strong>Required Documents: </Text>
-          {uniqueRequiredDocuments.length > 0 ? (
-            uniqueRequiredDocuments.map((doc, index) => (
-              <Tag key={index} color="blue" style={{ margin: "2px" }}>
-                {doc}
-              </Tag>
-            ))
-          ) : (
-            <Text type="secondary">None specified</Text>
-          )}
-        </div>
-
-        <Row gutter={[16, 16]}>
-          {candidate.uploadedDocuments.map((doc, index) => (
-            <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
-              <Card
-                size="small"
-                hoverable
-                style={{
-                  borderRadius: "8px",
-                  border: "1px solid #f0f0f0",
-                }}
-                actions={[
-                  <Button
-                    type="text"
-                    icon={<EyeOutlined />}
-                    onClick={() =>
-                      handleViewDocument(doc.fileUrl, doc.fileName)
-                    }
-                    style={{ color: primaryColor }}
-                  >
-                    View
-                  </Button>,
-                ]}
-              >
-                <Card.Meta
-                  avatar={
-                    <FileOutlined
-                      style={{ fontSize: "24px", color: primaryColor }}
-                    />
-                  }
-                  title={
-                    <Tooltip title={doc.fileName}>
-                      <Text style={{ fontSize: "12px" }} ellipsis>
-                        {doc.fileName}
-                      </Text>
-                    </Tooltip>
-                  }
-                  description={
-                    <Text type="secondary" style={{ fontSize: "11px" }}>
-                      Uploaded: {formatDate(doc.uploadedAt)}
-                    </Text>
-                  }
-                />
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </div>
+      <Empty
+        description="No documents uploaded"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        style={{ margin: "20px 0" }}
+      />
     );
-  };
+  }
+
+  return (
+    <div style={{ marginTop: "16px" }}>
+      <Title level={5} style={{ marginBottom: "12px" }}>
+        <FileOutlined style={{ marginRight: "8px" }} />
+        Uploaded Documents ({uploadedDocs.length})
+      </Title>
+
+      <div style={{ marginBottom: "16px" }}>
+        <Text strong>Required Documents: </Text>
+        {uniqueRequiredDocuments.length > 0 ? (
+          uniqueRequiredDocuments.map((doc, index) => (
+            <Tag key={index} color="blue" style={{ margin: "2px" }}>
+              {doc}
+            </Tag>
+          ))
+        ) : (
+          <Text type="secondary">None specified</Text>
+        )}
+      </div>
+
+      <Row gutter={[16, 16]}>
+        {uploadedDocs.map((doc, index) => (
+          <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
+            <Card
+              size="small"
+              hoverable
+              style={{ borderRadius: "8px", border: "1px solid #f0f0f0" }}
+              actions={[
+                <Button
+                  type="text"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewDocument(doc.fileUrl, doc.fileName)}
+                  style={{ color: primaryColor }}
+                >
+                  View
+                </Button>,
+              ]}
+            >
+              <Card.Meta
+                avatar={<FileOutlined style={{ fontSize: "24px", color: primaryColor }} />}
+                title={
+                  <Tooltip title={doc.fileName}>
+                    <Text style={{ fontSize: "12px" }} ellipsis>
+                      {doc.fileName}
+                    </Text>
+                  </Tooltip>
+                }
+                description={
+                  <Text type="secondary" style={{ fontSize: "11px" }}>
+                    Uploaded: {formatDate(doc.uploadedAt)}
+                  </Text>
+                }
+              />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+};
+
 
   const renderApprovalSection = (candidate, stageId = null) => {
     const targetStageId = stageId || candidate.currentStageId;
@@ -1184,7 +1167,7 @@ const RecruiterJobPipeline = () => {
                   {renderCustomFields(candidate)}
 
                   {/* Documents Section */}
-                  {renderDocuments(candidate)}
+                  {renderDocuments(candidate, activeStage)}
 
                   {/* Approval Section */}
                   {renderApprovalSection(candidate, activeStage)}
