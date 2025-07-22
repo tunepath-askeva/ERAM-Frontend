@@ -153,7 +153,12 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
-
+    getSeperateApprovals: builder.query({
+      query: () => ({
+        url: `/seperatePipeline`,
+        method: "GET",
+      }),
+    }),
     approveCandidateDocuments: builder.mutation({
       query: ({
         approvalId,
@@ -288,4 +293,5 @@ export const {
   useGetRequisitionsQuery,
   useEditRequisitionMutation,
   useDeleteRequisitionMutation,
+  useGetSeperateApprovalsQuery,
 } = recruiterApi;
