@@ -84,8 +84,9 @@ const RecruiterJobPipeline = () => {
       const stageProgress = pipelineData.stageProgress || [];
 
       const fullPipeline = pipelineData.tagPipelineId
-        ? pipelineData.fullPipeline
-        : stageProgress[0]?.pipelineId || {};
+        ? pipelineData.fullPipeline ||
+          stageProgress[0]?.pipelineId || { stages: [] }
+        : stageProgress[0]?.pipelineId || { stages: [] };
 
       const currentStageProgress =
         stageProgress.find((stage) => stage.stageStatus !== "approved") ||
