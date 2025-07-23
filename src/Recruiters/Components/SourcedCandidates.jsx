@@ -431,10 +431,10 @@ const SourcedCandidates = ({ jobId }) => {
       setTempFilters(initialFilters);
       setPagination((prev) => ({ ...prev, current: 1 }));
 
-      message.info("Fetching exact match candidates...");
+      message.info("Fetching suggestion match candidates...");
     } catch (error) {
-      console.error("Failed to fetch exact match candidates:", error);
-      message.error("Failed to fetch exact match candidates");
+      console.error("Failed to fetch suggestion match candidates:", error);
+      message.error("Failed to fetch suggestion match candidates");
     }
   };
 
@@ -542,7 +542,7 @@ const SourcedCandidates = ({ jobId }) => {
       case "industries":
         clearedFilters.industries = [];
         break;
-      case "exactMatch":
+      case "suggestionMatch":
         setIsExactMatch(false);
         setShouldFetch(false);
         return;
@@ -870,7 +870,7 @@ const SourcedCandidates = ({ jobId }) => {
                           color="purple"
                           closable
                           onClose={() =>
-                            handleClearSpecificFilter("exactMatch")
+                            handleClearSpecificFilter("suggestionMatch")
                           }
                         >
                           Suggestion Match
@@ -1106,7 +1106,7 @@ const SourcedCandidates = ({ jobId }) => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                Use the advanced filters or exact match to find candidates
+                Use the advanced filters or suggestion match to find candidates
               </span>
             }
           />
@@ -1119,10 +1119,10 @@ const SourcedCandidates = ({ jobId }) => {
         ) : sourcedError || exactMatchError ? (
           <Alert
             message={`Failed to load ${
-              isExactMatch ? "exact match" : "sourced"
+              isExactMatch ? "suggestion match" : "sourced"
             } candidates`}
             description={`Unable to fetch ${
-              isExactMatch ? "exact match" : "sourced"
+              isExactMatch ? "suggestion match" : "sourced"
             } candidates data`}
             type="error"
             showIcon
@@ -1166,7 +1166,7 @@ const SourcedCandidates = ({ jobId }) => {
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
                 {isExactMatch
-                  ? "No exact match candidates found for this job"
+                  ? "No suggestion match candidates found for this job"
                   : "No candidates found matching your search criteria"}
               </span>
             }
