@@ -18,7 +18,7 @@ import {
   List,
   Badge,
   Descriptions,
-  Pagination 
+  Pagination,
 } from "antd";
 import {
   UserOutlined,
@@ -304,7 +304,7 @@ const CandidateCard = ({
                       color: "#da2c46",
                     }}
                   >
-                    {timelineData.totalCount}
+                    {timelineData?.totalCount || 0}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>
                     Total Work Orders
@@ -318,10 +318,9 @@ const CandidateCard = ({
                       color: "#52c41a",
                     }}
                   >
-                    {
-                      timelineData.filter((wo) => wo.status === "completed")
-                        .length
-                    }
+                    {timelineData?.data?.filter(
+                      (wo) => wo.status === "completed"
+                    ).length || 0}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>Completed</div>
                 </div>
@@ -333,10 +332,9 @@ const CandidateCard = ({
                       color: "#1890ff",
                     }}
                   >
-                    {
-                      timelineData.filter((wo) => wo.status === "pipeline")
-                        .length
-                    }
+                    {timelineData?.data?.filter(
+                      (wo) => wo.status === "pipeline"
+                    ).length || 0}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>In Pipeline</div>
                 </div>
@@ -344,10 +342,10 @@ const CandidateCard = ({
                   <div
                     style={{ fontSize: 24, fontWeight: "bold", color: "#666" }}
                   >
-                    {timelineData.reduce(
+                    {timelineData?.data?.reduce(
                       (total, wo) => total + (wo.stages?.length || 0),
                       0
-                    )}
+                    ) || 0}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>
                     Total Stages
@@ -357,7 +355,7 @@ const CandidateCard = ({
 
               <Collapse
                 accordion={false}
-                defaultActiveKey={timelineData.length === 1 ? ["0"] : []}
+                defaultActiveKey={timelineData?.data?.length === 1 ? ["0"] : []}
                 style={{ backgroundColor: "transparent" }}
                 expandIcon={({ isActive }) => (
                   <div
@@ -384,7 +382,7 @@ const CandidateCard = ({
                   </div>
                 )}
               >
-                {timelineData.map((workOrder, woIndex) => (
+                {timelineData?.data?.map((workOrder, woIndex) => (
                   <Panel
                     key={woIndex}
                     header={
