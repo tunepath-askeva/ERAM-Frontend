@@ -186,6 +186,8 @@ const RecruiterApprovals = () => {
             documents = [],
           } = candidateDoc;
 
+          const status = levelInfo?.approverStatus || stageStatus;
+
           tableData.push({
             key: `${workOrderId}-${stageId}-${candidateId}`,
             workOrderId,
@@ -205,7 +207,7 @@ const RecruiterApprovals = () => {
             documents,
             documentsCount: documents.length,
             uploadedAt: documents?.[0]?.uploadedAt,
-            status: stageStatus,
+            status: status,
             levelStatus: levelInfo?.levelStatus,
             levelName: levelInfo?.levelName,
             levelId: levelInfo?.levelId,
@@ -736,17 +738,8 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
-          let displayStatus = "pending";
-          if (record.approval?.isApproved === true) {
-            displayStatus = "approved";
-          } else if (record.approval?.isApproved === false) {
-            displayStatus = "pending"; 
-          } else {
-            displayStatus = record.status || "pending";
-          }
-
-          const statusText = getStatusText(displayStatus);
-          const statusColor = getStatusColor(displayStatus);
+          const statusText = getStatusText(status);
+          const statusColor = getStatusColor(status);
 
           return (
             <Space>
