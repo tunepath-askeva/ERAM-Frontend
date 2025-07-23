@@ -113,10 +113,18 @@ export const recruiterApi = createApi({
     }),
 
     updateCandidateStatus: builder.mutation({
-      query: ({ Id, status, jobId, isSourced, comment, pipelineId }) => ({
+      query: ({
+        Id,
+        status,
+        jobId,
+        isSourced,
+        comment,
+        pipelineId,
+        candidateType,
+      }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status, jobId, isSourced, comment, pipelineId },
+        body: { status, jobId, isSourced, comment, pipelineId, candidateType },
       }),
     }),
 
