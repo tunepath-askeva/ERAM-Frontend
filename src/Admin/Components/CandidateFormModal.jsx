@@ -60,7 +60,7 @@ const CandidateFormModal = ({
           phone: editingCandidate.phone || "",
           companyName: editingCandidate.companyName || "",
           specialization: editingCandidate.specialization || "",
-          experience: editingCandidate.experience || "",
+          experience: editingCandidate.totalExperienceYears || "",
           qualifications: editingCandidate.qualifications || "",
           supplierId: editingCandidate.supplierId || undefined,
           candidateType: editingCandidate.candidateType || "",
