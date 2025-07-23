@@ -19,7 +19,7 @@ const { Title, Text, Paragraph } = Typography;
 const Branches = () => {
     const { data: branches, isLoading, error } = useGetBranchesQuery();
 
-    console.log(branches,'hi branches=-==-=')
+    console.log(branches, 'hi branches=-==-=')
     const navigate = useNavigate();
 
     if (isLoading) return <div>Loading branches...</div>;
@@ -125,7 +125,7 @@ const Branches = () => {
                                             }}>
                                                 <img
                                                     alt={branch.name}
-                                                   src={branch.brand_logo}
+                                                    src={branch.brand_logo}
                                                     style={{
                                                         maxHeight: '100%',
                                                         maxWidth: '100%',

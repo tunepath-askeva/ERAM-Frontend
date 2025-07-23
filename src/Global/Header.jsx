@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Drawer, Space } from 'antd';
-import { MenuOutlined, UserOutlined, HomeOutlined, InfoCircleOutlined, CustomerServiceOutlined, ContactsOutlined, BankOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-
+import { MenuOutlined, UserOutlined, HomeOutlined, InfoCircleOutlined, CustomerServiceOutlined, ContactsOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const { Header: AntHeader } = Layout;
 
 const Header = () => {
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 992);
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const getActiveKey = () => {
+    if (location.pathname.includes('branches')) return 'branch';
+    if (location.pathname.includes('contacts')) return 'contacts';
+    if (location.pathname.includes('services')) return 'services';
+    if (location.pathname.includes('about')) return 'about';
+    return 'home';
+  };
 
   const menuItems = [
     {
@@ -27,36 +46,51 @@ const Header = () => {
       label: 'Services',
     },
     {
-      key: 'contact',
+      key: 'contacts',
       icon: <ContactsOutlined />,
       label: 'Contact Us',
     },
     {
       key: 'branch',
       icon: <BankOutlined />,
-      label: 'branches',
+      label: 'Branches',
     },
   ];
 
   const handleMenuClick = (e) => {
-    console.log('Menu clicked:', e.key);
-    if(e.key === 'branch'){
-      navigate('/branches')
+    if (e.key === 'home') {
+      navigate('/');
+    } else if (e.key === 'about') {
+      navigate('/about');
+    } else if (e.key === 'services') {
+      navigate('/services');
+    } else if (e.key === 'contacts') {
+      navigate('/contacts');
+    } else if (e.key === 'branch') {
+      navigate('/branches');
     }
   };
 
   const showMobileMenu = () => {
     setMobileMenuVisible(true);
+    // Disable body scroll when mobile menu is open
+    document.body.style.overflow = 'hidden';
   };
 
   const closeMobileMenu = () => {
     setMobileMenuVisible(false);
+    // Re-enable body scroll when mobile menu is closed
+    document.body.style.overflow = 'auto';
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
   };
 
   return (
     <>
       {/* Spacer div to account for fixed header */}
-      <div style={{ height: '70px' }}></div>
+      <div style={{ height: '80px' }}></div>
 
       <AntHeader
         style={{
@@ -64,11 +98,13 @@ const Header = () => {
           zIndex: 1000,
           width: '100%',
           top: 0,
-          backgroundColor: '#4a5568',
+          left: 0,
+          right: 0,
+          backgroundColor: '#fff',
           boxShadow: '0 2px 15px rgba(0,0,0,0.1)',
           padding: '0 20px',
-          height: '70px',
-          lineHeight: '70px',
+          height: '80px',
+          lineHeight: '80px',
           borderBottom: 'none'
         }}
       >
@@ -76,25 +112,25 @@ const Header = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          maxWidth: '1250px',
+          width: '100%',
+          height: '100%',
+          maxWidth: '1200px',
           margin: '0 auto',
-          height: '100%'
+          padding: '0'
         }}>
 
           {/* Logo Section */}
           <div style={{
-            minWidth: 'fit-content',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '12px'
-          }}>
-            {/* Company Logo Image */}
+          }} onClick={() => navigate('/')}>
             <img
-              src="/Eram-Logo.png" // Replace with your actual logo path
+              src="/Workforce.svg"
               alt="ERAM TALENT Logo"
               style={{
-                height: '45px',
+                height: '100px',
                 width: 'auto',
                 objectFit: 'contain'
               }}
@@ -102,68 +138,68 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation Menu */}
-          <div className="desktop-menu" style={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            maxWidth: '800px',
-            marginLeft: '40px'
-          }}>
-            <Menu
-              mode="horizontal"
-              selectedKeys={['home']}
-              items={menuItems.map(item => ({
-                ...item,
-                icon: null // Remove icons for desktop menu to match design
-              }))}
-              onClick={handleMenuClick}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                fontSize: '15px',
-                fontWeight: '400',
-                color: '#fff',
-                flex: 1,
-                justifyContent: 'space-between',
-                minWidth: '400px'
-              }}
-              theme="dark"
-            />
-          </div>
+          {!isMobile && (
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              margin: '0 40px'
+            }}>
+              <Menu
+                mode="horizontal"
+                selectedKeys={[getActiveKey()]}
+                items={menuItems.map(item => ({
+                  ...item,
+                  icon: null // Remove icons for desktop menu
+                }))}
+                onClick={handleMenuClick}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  color: '#333',
+                  flex: 1,
+                  justifyContent: 'center',
+                  minWidth: '400px'
+                }}
+              />
+            </div>
+          )}
 
-          {/* Desktop Login Button */}
-          <div className="desktop-login" style={{ minWidth: 'fit-content' }}>
-            <Button
-              type="primary"
-              icon={<UserOutlined />}
-              size="middle"
-              style={{
-                backgroundColor: '#ff4757',
-                borderColor: '#ff4757',
-                borderRadius: '25px',
-                fontWeight: '500',
-                padding: '0 25px',
-                height: '40px'
-              }}
-            >
-              Login
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="mobile-menu-btn" style={{ display: 'none' }}>
+          {/* Login Button */}
+          {!isMobile ? (
+            <div>
+              <Button
+                type="primary"
+                icon={<LoginOutlined />}
+                onClick={handleLogin}
+                style={{
+                  backgroundColor: '#da2c46',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontWeight: '500',
+                  height: '40px',
+                  padding: '0 20px'
+                }}
+              >
+                Login
+              </Button>
+            </div>
+          ) : (
             <Button
               type="text"
               icon={<MenuOutlined />}
               onClick={showMobileMenu}
               style={{
                 fontSize: '20px',
-                color: '#fff',
+                color: '#333',
                 height: '45px',
                 width: '45px'
               }}
             />
-          </div>
+          )}
         </div>
       </AntHeader>
 
@@ -172,39 +208,45 @@ const Header = () => {
         title={
           <div style={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start'
+            alignItems: 'center',
+            gap: '10px'
           }}>
-            <div style={{
-              color: '#ff4757',
-              fontSize: '28px',
-              fontWeight: 'bold',
-              letterSpacing: '1px',
-              lineHeight: '28px',
-              marginBottom: '2px'
-            }}>
-              ERAM
-            </div>
-            <div style={{
-              fontSize: '10px',
-              letterSpacing: '3px',
-              color: '#666',
-              fontWeight: '300'
-            }}>
-              TALENT
-            </div>
+            <img
+              src="/Workforce.svg"
+              alt="ERAM TALENT Logo"
+              style={{
+                height: '40px',
+                width: 'auto',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         }
         placement="right"
         onClose={closeMobileMenu}
         open={mobileMenuVisible}
-        width={320}
-        bodyStyle={{ padding: 0, backgroundColor: '#f8f9fa' }}
-        headerStyle={{ backgroundColor: '#fff', borderBottom: '1px solid #eee' }}
+        width={300}
+        bodyStyle={{ 
+          padding: 0, 
+          backgroundColor: '#f8f9fa',
+          overflowY: 'auto',
+          height: 'calc(100% - 55px)' // Adjust for header height
+        }}
+        headerStyle={{
+          backgroundColor: '#fff',
+          borderBottom: '1px solid #eee',
+          padding: '16px 24px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1
+        }}
+        style={{
+          overflow: 'hidden'
+        }}
       >
         <Menu
           mode="vertical"
-          selectedKeys={['home']}
+          selectedKeys={[getActiveKey()]}
           items={menuItems}
           onClick={(e) => {
             handleMenuClick(e);
@@ -213,27 +255,26 @@ const Header = () => {
           style={{
             border: 'none',
             fontSize: '16px',
-            backgroundColor: 'transparent'
+            backgroundColor: 'transparent',
+            padding: '10px'
           }}
         />
-
-        <div style={{
-          padding: '25px',
-          borderTop: '1px solid #eee',
-          marginTop: '20px',
-          backgroundColor: '#fff'
-        }}>
+        <div style={{ padding: '20px' }}>
           <Button
-            type="primary"
-            icon={<UserOutlined />}
             block
-            size="large"
+            type="primary"
+            icon={<LoginOutlined />}
+            onClick={() => {
+              handleLogin();
+              closeMobileMenu();
+            }}
             style={{
-              backgroundColor: '#ff4757',
-              borderColor: '#ff4757',
-              borderRadius: '25px',
+              backgroundColor: '#da2c46',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
               fontWeight: '500',
-              height: '45px'
+              height: '40px'
             }}
           >
             Login
@@ -243,25 +284,59 @@ const Header = () => {
 
       {/* Responsive CSS */}
       <style jsx>{`
-        /* Mobile Styles */
-        @media (max-width: 992px) {
-          .desktop-menu {
-            display: none !important;
-          }
-          .desktop-login {
-            display: none !important;
-          }
-          .mobile-menu-btn {
-            display: block !important;
-          }
+        /* Desktop menu item styling */
+        .ant-menu-horizontal {
+          display: flex !important;
+          justify-content: center !important;
         }
         
-        @media (min-width: 993px) {
-          .mobile-menu-btn {
-            display: none !important;
-          }
+        .ant-menu-horizontal .ant-menu-item {
+          padding: 0 15px !important;
+          margin: 0 5px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: #000 !important;
+          transition: none !important;
         }
         
+        .ant-menu-horizontal .ant-menu-item:hover {
+          color: #da2c46 !important;
+          background-color: transparent !important;
+        }
+        
+        .ant-menu-horizontal .ant-menu-item-selected {
+          color: #da2c46 !important;
+          background-color: transparent !important;
+        }
+        
+        .ant-menu-horizontal > .ant-menu-item-selected::after {
+          border-bottom: 2px solid #da2c46 !important;
+        }
+
+        /* Mobile menu customization */
+        .ant-drawer-body .ant-menu-item {
+          padding: 15px 25px !important;
+          margin: 5px 0 !important;
+          border-radius: 8px !important;
+          height: auto !important;
+        }
+
+        .ant-drawer-body .ant-menu-item:hover {
+          background-color: #f0f0f0 !important;
+          color: #da2c46 !important;
+        }
+
+        .ant-drawer-body .ant-menu-item-selected {
+          background-color: #da2c46 !important;
+          color: #fff !important;
+        }
+
+        /* Smooth transitions */
+        .ant-menu-item, .ant-btn {
+          transition: all 0.3s ease !important;
+        }
+
         /* Tablet adjustments */
         @media (max-width: 768px) {
           .ant-layout-header {
@@ -276,74 +351,9 @@ const Header = () => {
           }
         }
 
-        /* Desktop menu item spacing */
-        @media (min-width: 993px) {
-          .ant-menu-horizontal {
-            display: flex !important;
-            justify-content: center !important;
-          }
-          
-          .ant-menu-horizontal .ant-menu-item {
-            padding: 0 30px !important;
-            margin: 0 10px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-          }
-          
-          .ant-menu-horizontal .ant-menu-item:hover {
-            color: #ff4757 !important;
-            background-color: transparent !important;
-          }
-          
-          .ant-menu-horizontal .ant-menu-item-selected {
-            color: #ff4757 !important;
-            background-color: transparent !important;
-          }
-          
-          .ant-menu-horizontal > .ant-menu-item::after,
-          .ant-menu-horizontal > .ant-menu-submenu::after {
-            border-bottom: 2px solid #ff4757;
-          }
-        }
-
-        /* Large desktop optimizations */
-        @media (min-width: 1200px) {
-          .ant-menu-horizontal .ant-menu-item {
-            padding: 0 20px;
-            margin: 0 8px;
-          }
-        }
-
-        /* Extra large screens */
-        @media (min-width: 1400px) {
-          .ant-menu-horizontal .ant-menu-item {
-            padding: 0 25px;
-            margin: 0 10px;
-          }
-        }
-
-        /* Mobile menu customization */
-        .ant-drawer-body .ant-menu-item {
-          padding: 15px 25px !important;
-          margin: 5px 0 !important;
-          border-radius: 8px !important;
-          height: auto !important;
-        }
-
-        .ant-drawer-body .ant-menu-item:hover {
-          background-color: #f0f0f0 !important;
-          color: #ff4757 !important;
-        }
-
-        .ant-drawer-body .ant-menu-item-selected {
-          background-color: #ff4757 !important;
-          color: #fff !important;
-        }
-
-        /* Smooth transitions */
-        .ant-menu-item, .ant-btn {
-          transition: all 0.3s ease !important;
+        /* Prevent scroll when mobile menu is open */
+        body.ant-drawer-open {
+          overflow: hidden;
         }
       `}</style>
     </>
