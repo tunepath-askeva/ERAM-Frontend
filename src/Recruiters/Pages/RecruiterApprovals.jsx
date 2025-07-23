@@ -178,6 +178,8 @@ const RecruiterApprovals = () => {
           recruiterReviews = [],
         } = stage;
 
+        const recruiters = recruiterIds || (recruiterId ? [recruiterId] : []);
+
         uploadedDocuments.forEach((candidateDoc) => {
           const {
             candidateId,
@@ -196,11 +198,8 @@ const RecruiterApprovals = () => {
             stageId,
             stageName,
             recruiterName:
-              recruiterIds?.map((r) => r.fullName || r.name).join(", ") ||
-              recruiterId ||
-              "N/A",
-            recruiterEmail:
-              recruiterIds?.map((r) => r.email).join(", ") || "N/A",
+              recruiters.map((r) => r.fullName || r.name).join(", ") || "N/A",
+            recruiterEmail: recruiters.map((r) => r.email).join(", ") || "N/A",
             candidateId,
             candidateName,
             candidateEmail,
@@ -708,11 +707,46 @@ const RecruiterApprovals = () => {
         key: "recruiterName",
         width: isMobile ? 150 : isTablet ? 160 : 200,
         ellipsis: true,
-        render: (text) => (
-          <Tooltip title={text}>
-            <Text strong>{text || "N/A"}</Text>
-          </Tooltip>
-        ),
+        render: (text, record) => {
+          return (
+            <div style={{ minWidth: 0 }}>
+              <Tooltip title={text}>
+                <div
+                  style={{
+                    fontWeight: 500,
+                    fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    lineHeight: "1.3",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {text || "N/A"}
+                </div>
+              </Tooltip>
+              {!isMobile &&
+                record.recruiterEmail &&
+                record.recruiterEmail !== "N/A" && (
+                  <Tooltip title={record.recruiterEmail}>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: isTablet ? "11px" : "12px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "block",
+                        lineHeight: "1.2",
+                      }}
+                    >
+                      {record.recruiterEmail}
+                    </Text>
+                  </Tooltip>
+                )}
+            </div>
+          );
+        },
       },
       {
         title: "Docs",
