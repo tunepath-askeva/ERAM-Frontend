@@ -845,7 +845,7 @@ const SourcedCandidates = ({ jobId }) => {
                 borderColor: isExactMatch ? "#722ed1" : "#d9d9d9",
               }}
             >
-              Exact Match
+              Suggestion Match
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -873,7 +873,7 @@ const SourcedCandidates = ({ jobId }) => {
                             handleClearSpecificFilter("exactMatch")
                           }
                         >
-                          Exact Match
+                          Suggestion Match
                         </Tag>
                       )}
 

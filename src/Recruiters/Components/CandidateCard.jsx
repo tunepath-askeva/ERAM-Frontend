@@ -192,170 +192,581 @@ const CandidateCard = ({
 
   const renderTimelineModal = () => (
     <Modal
-      title={`Work Order Timeline for ${candidate.fullName || "Candidate"}`}
+      title={
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <ClockCircleOutlined style={{ color: "#da2c46" }} />
+          <span>Work Order Timeline - {candidate.fullName || "Candidate"}</span>
+          {timelineData?.length > 0 && (
+            <Badge
+              count={timelineData.length}
+              style={{ backgroundColor: "#da2c46" }}
+            />
+          )}
+        </div>
+      }
       open={isTimelineModalVisible}
       onCancel={handleTimelineModalClose}
       footer={[
-        <Button key="close" onClick={handleTimelineModalClose}>
+        <Button
+          key="close"
+          type="primary"
+          style={{ background: "#da2c46" }}
+          onClick={handleTimelineModalClose}
+        >
           Close
         </Button>,
       ]}
-      width={800}
+      width={1000}
+      style={{ top: 20 }}
     >
       {isTimelineLoading ? (
-        <div style={{ textAlign: "center", padding: "24px" }}>
-          <Spin />
+        <div style={{ textAlign: "center", padding: "48px" }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16, color: "#666" }}>
+            Loading timeline...
+          </div>
         </div>
       ) : isTimelineError ? (
-        <Alert
-          message="Error"
-          description="Failed to load timeline data"
-          type="error"
-          showIcon
-        />
+        <div style={{ textAlign: "center", padding: "48px" }}>
+          <CloseCircleOutlined
+            style={{ fontSize: "48px", color: "#f5222d", marginBottom: 16 }}
+          />
+          <div style={{ color: "#f5222d", fontSize: "16px", marginBottom: 8 }}>
+            Error Loading Timeline
+          </div>
+          <div style={{ color: "#666" }}>
+            Failed to load timeline data. Please try again.
+          </div>
+          <Button
+            type="primary"
+            style={{ marginTop: 16, backgroundColor: "#da2c46" }}
+            onClick={() => refetchTimeline()}
+          >
+            Retry
+          </Button>
+        </div>
       ) : (
-        <div>
-          {timelineData?.map((workOrder, woIndex) => (
-            <div key={woIndex} style={{ marginBottom: 24 }}>
-              <Card
-                title={`Work Order: ${workOrder.workOrderTitle}`}
-                extra={
-                  <Tag
-                    color={
-                      workOrder.status === "completed"
-                        ? "success"
-                        : workOrder.status === "in_progress"
-                        ? "processing"
-                        : "default"
-                    }
-                  >
-                    {workOrder.status.toUpperCase()}
-                  </Tag>
-                }
+        <div style={{ maxHeight: "75vh", overflowY: "auto", padding: "8px 0" }}>
+          {timelineData?.length > 0 ? (
+            <>
+              {/* Summary Stats */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  marginBottom: 24,
+                  padding: "16px 20px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: 8,
+                  border: "1px solid #e9ecef",
+                }}
               >
-                <Descriptions bordered column={1} size="small">
-                  <Descriptions.Item label="Work Order">
-                    {workOrder.workOrderTitle}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Moving Comment">
-                    {workOrder.selectedMovingComment || "N/A"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Sourced">
-                    {workOrder.isSourced ? "Yes" : "No"}
-                  </Descriptions.Item>
-                </Descriptions>
+                <div style={{ textAlign: "center", flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: "bold",
+                      color: "#da2c46",
+                    }}
+                  >
+                    {timelineData.length}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>
+                    Total Work Orders
+                  </div>
+                </div>
+                <div style={{ textAlign: "center", flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: "bold",
+                      color: "#52c41a",
+                    }}
+                  >
+                    {
+                      timelineData.filter((wo) => wo.status === "completed")
+                        .length
+                    }
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>Completed</div>
+                </div>
+                <div style={{ textAlign: "center", flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: "bold",
+                      color: "#1890ff",
+                    }}
+                  >
+                    {
+                      timelineData.filter((wo) => wo.status === "pipeline")
+                        .length
+                    }
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>In Pipeline</div>
+                </div>
+                <div style={{ textAlign: "center", flex: 1 }}>
+                  <div
+                    style={{ fontSize: 24, fontWeight: "bold", color: "#666" }}
+                  >
+                    {timelineData.reduce(
+                      (total, wo) => total + (wo.stages?.length || 0),
+                      0
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#666" }}>
+                    Total Stages
+                  </div>
+                </div>
+              </div>
 
-                <Divider orientation="left" style={{ margin: "16px 0" }}>
-                  Stages
-                </Divider>
-
-                <Collapse accordion>
-                  {workOrder.stages?.map((stage, stageIndex) => (
-                    <Panel
-                      key={stageIndex}
-                      header={
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          {stage.stageStatus === "approved" ? (
-                            <CheckCircleOutlined
-                              style={{ color: "#52c41a", marginRight: 8 }}
-                            />
-                          ) : stage.stageStatus === "rejected" ? (
-                            <CloseCircleOutlined
-                              style={{ color: "#f5222d", marginRight: 8 }}
-                            />
-                          ) : (
-                            <MinusCircleOutlined
-                              style={{ color: "#faad14", marginRight: 8 }}
-                            />
-                          )}
-                          <span>{stage.stageName}</span>
-                          <span style={{ marginLeft: "auto", marginRight: 8 }}>
-                            {stage.stageCompletedAt
-                              ? new Date(
-                                  stage.stageCompletedAt
-                                ).toLocaleDateString()
-                              : "In Progress"}
-                          </span>
-                        </div>
-                      }
-                    >
-                      <Timeline>
-                        <Timeline.Item
-                          dot={
-                            <CalendarOutlined style={{ fontSize: "16px" }} />
-                          }
-                          color="blue"
+              {/* Collapsible Work Orders */}
+              <Collapse
+                accordion={false}
+                defaultActiveKey={timelineData.length === 1 ? ["0"] : []}
+                style={{ backgroundColor: "transparent" }}
+                expandIcon={({ isActive }) => (
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      backgroundColor: isActive ? "#da2c46" : "#f0f0f0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    {isActive ? (
+                      <MinusCircleOutlined
+                        style={{ color: "#fff", fontSize: 12 }}
+                      />
+                    ) : (
+                      <ClockCircleOutlined
+                        style={{ color: "#666", fontSize: 12 }}
+                      />
+                    )}
+                  </div>
+                )}
+              >
+                {timelineData.map((workOrder, woIndex) => (
+                  <Panel
+                    key={woIndex}
+                    header={
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                          paddingRight: 16,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            flex: 1,
+                          }}
                         >
-                          <strong>Stage Completed:</strong>{" "}
-                          {stage.stageCompletedAt
-                            ? new Date(stage.stageCompletedAt).toLocaleString()
-                            : "Pending"}
-                          <br />
-                          <strong>Status:</strong>{" "}
-                          <Tag
-                            color={
-                              stage.stageStatus === "approved"
-                                ? "success"
-                                : stage.stageStatus === "rejected"
-                                ? "error"
-                                : "warning"
-                            }
-                          >
-                            {stage.stageStatus}
-                          </Tag>
-                        </Timeline.Item>
-
-                        {stage.recruiterReviews?.map((review, reviewIndex) => (
-                          <Timeline.Item
-                            key={reviewIndex}
-                            dot={<UserOutlined style={{ fontSize: "16px" }} />}
-                            color="green"
-                          >
-                            <div style={{ marginBottom: 8 }}>
-                              <strong>Review by:</strong> {review.recruiterName}{" "}
-                              ({review.recruiterEmail})
-                            </div>
-                            <div style={{ marginBottom: 8 }}>
-                              <strong>Status:</strong>{" "}
-                              <Tag
-                                color={
-                                  review.status === "approved"
-                                    ? "success"
-                                    : review.status === "rejected"
-                                    ? "error"
-                                    : "warning"
-                                }
-                              >
-                                {review.status}
-                              </Tag>
-                            </div>
-                            <div>
-                              <CommentOutlined style={{ marginRight: 8 }} />
-                              <strong>Comments:</strong>{" "}
-                              {review.reviewComments || "No comments"}
-                            </div>
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor:
+                                workOrder.status === "completed"
+                                  ? "#52c41a"
+                                  : workOrder.status === "in_progress"
+                                  ? "#1890ff"
+                                  : "#d9d9d9",
+                            }}
+                          />
+                          <div>
                             <div
                               style={{
-                                marginTop: 4,
-                                fontSize: 12,
-                                color: "#999",
+                                fontWeight: "bold",
+                                fontSize: 15,
+                                color: "#da2c46",
                               }}
                             >
-                              Reviewed at:{" "}
-                              {new Date(review.reviewedAt).toLocaleString()}
+                              {workOrder.workOrderTitle}
                             </div>
-                          </Timeline.Item>
-                        ))}
-                      </Timeline>
-                    </Panel>
-                  ))}
-                </Collapse>
-              </Card>
-            </div>
-          ))}
+                            <div style={{ fontSize: 12, color: "#666" }}>
+                              Work Order #{woIndex + 1} •{" "}
+                              {workOrder.stages?.length || 0} stages
+                            </div>
+                          </div>
+                        </div>
 
-          {timelineData?.length === 0 && (
-            <Empty description="No work order timeline data found" />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          {workOrder.isSourced && (
+                            <Badge
+                              status="success"
+                              text="Sourced"
+                              style={{ fontSize: 11 }}
+                            />
+                          )}
+                          <Tag
+                            color={
+                              workOrder.status === "completed"
+                                ? "success"
+                                : workOrder.status === "in_progress"
+                                ? "processing"
+                                : "default"
+                            }
+                            style={{
+                              margin: 0,
+                              fontSize: 11,
+                              borderRadius: 12,
+                            }}
+                          >
+                            {workOrder.status.replace("_", " ").toUpperCase()}
+                          </Tag>
+                        </div>
+                      </div>
+                    }
+                    style={{
+                      marginBottom: 16,
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    <div style={{ padding: "0 16px 16px 16px" }}>
+                      {/* Work Order Details */}
+                      {workOrder.selectedMovingComment && (
+                        <div
+                          style={{
+                            marginBottom: 20,
+                            padding: 12,
+                            backgroundColor: "#f8f9fa",
+                            borderRadius: 8,
+                            borderLeft: "4px solid #da2c46",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              marginBottom: 6,
+                            }}
+                          >
+                            <CommentOutlined
+                              style={{ color: "#da2c46", fontSize: 14 }}
+                            />
+                            <Text strong style={{ fontSize: 13 }}>
+                              Moving Comment
+                            </Text>
+                          </div>
+                          <Text style={{ fontSize: 13, fontStyle: "italic" }}>
+                            "{workOrder.selectedMovingComment}"
+                          </Text>
+                        </div>
+                      )}
+
+                      {/* Stages Timeline */}
+                      {workOrder.stages && workOrder.stages.length > 0 ? (
+                        <div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              marginBottom: 16,
+                              paddingBottom: 8,
+                              borderBottom: "1px solid #f0f0f0",
+                            }}
+                          >
+                            <TrophyOutlined
+                              style={{ color: "#da2c46", fontSize: 16 }}
+                            />
+                            <Text strong style={{ color: "#da2c46" }}>
+                              Interview Stages Progress
+                            </Text>
+                            <Tag style={{ marginLeft: "auto", fontSize: 11 }}>
+                              {
+                                workOrder.stages.filter(
+                                  (s) => s.stageStatus === "approved"
+                                ).length
+                              }{" "}
+                              / {workOrder.stages.length} Completed
+                            </Tag>
+                          </div>
+
+                          <Timeline size="small" style={{ marginLeft: 8 }}>
+                            {workOrder.stages.map((stage, stageIndex) => (
+                              <Timeline.Item
+                                key={stageIndex}
+                                dot={
+                                  <div
+                                    style={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: "50%",
+                                      backgroundColor:
+                                        stage.stageStatus === "approved"
+                                          ? "#52c41a"
+                                          : stage.stageStatus === "rejected"
+                                          ? "#f5222d"
+                                          : "#faad14",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      border: "2px solid #fff",
+                                      boxShadow:
+                                        "0 0 0 1px " +
+                                        (stage.stageStatus === "approved"
+                                          ? "#52c41a"
+                                          : stage.stageStatus === "rejected"
+                                          ? "#f5222d"
+                                          : "#faad14"),
+                                    }}
+                                  >
+                                    {stage.stageStatus === "approved" ? (
+                                      <CheckCircleOutlined
+                                        style={{ fontSize: 8, color: "#fff" }}
+                                      />
+                                    ) : stage.stageStatus === "rejected" ? (
+                                      <CloseCircleOutlined
+                                        style={{ fontSize: 8, color: "#fff" }}
+                                      />
+                                    ) : (
+                                      <ClockCircleOutlined
+                                        style={{ fontSize: 8, color: "#fff" }}
+                                      />
+                                    )}
+                                  </div>
+                                }
+                                color="transparent"
+                              >
+                                <div style={{ paddingBottom: 12 }}>
+                                  {/* Stage Header - Compact */}
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      marginBottom: 8,
+                                    }}
+                                  >
+                                    <Text strong style={{ fontSize: 14 }}>
+                                      {stage.stageName}
+                                    </Text>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <Tag
+                                        color={
+                                          stage.stageStatus === "approved"
+                                            ? "success"
+                                            : stage.stageStatus === "rejected"
+                                            ? "error"
+                                            : "warning"
+                                        }
+                                        style={{
+                                          margin: 0,
+                                          fontSize: 10,
+                                          borderRadius: 8,
+                                        }}
+                                      >
+                                        {stage.stageStatus.toUpperCase()}
+                                      </Tag>
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: 11 }}
+                                      >
+                                        {stage.stageCompletedAt
+                                          ? new Date(
+                                              stage.stageCompletedAt
+                                            ).toLocaleDateString("en-US", {
+                                              month: "short",
+                                              day: "numeric",
+                                            })
+                                          : "Pending"}
+                                      </Text>
+                                    </div>
+                                  </div>
+
+                                  {/* Recruiter Reviews - Compact */}
+                                  {stage.recruiterReviews &&
+                                    stage.recruiterReviews.length > 0 && (
+                                      <div
+                                        style={{
+                                          backgroundColor: "#fafafa",
+                                          padding: 8,
+                                          borderRadius: 6,
+                                          marginTop: 6,
+                                          border: "1px solid #f0f0f0",
+                                        }}
+                                      >
+                                        <Collapse size="small" ghost>
+                                          <Panel
+                                            header={
+                                              <Text
+                                                style={{
+                                                  fontSize: 12,
+                                                  color: "#666",
+                                                }}
+                                              >
+                                                Reviews (
+                                                {stage.recruiterReviews.length})
+                                              </Text>
+                                            }
+                                            key="reviews"
+                                          >
+                                            {stage.recruiterReviews.map(
+                                              (review, reviewIndex) => (
+                                                <div
+                                                  key={reviewIndex}
+                                                  style={{
+                                                    marginBottom:
+                                                      reviewIndex <
+                                                      stage.recruiterReviews
+                                                        .length -
+                                                        1
+                                                        ? 8
+                                                        : 0,
+                                                    paddingBottom:
+                                                      reviewIndex <
+                                                      stage.recruiterReviews
+                                                        .length -
+                                                        1
+                                                        ? 8
+                                                        : 0,
+                                                    borderBottom:
+                                                      reviewIndex <
+                                                      stage.recruiterReviews
+                                                        .length -
+                                                        1
+                                                        ? "1px solid #e8e8e8"
+                                                        : "none",
+                                                  }}
+                                                >
+                                                  <div
+                                                    style={{
+                                                      display: "flex",
+                                                      justifyContent:
+                                                        "space-between",
+                                                      alignItems: "center",
+                                                      marginBottom: 4,
+                                                    }}
+                                                  >
+                                                    <Text
+                                                      strong
+                                                      style={{ fontSize: 12 }}
+                                                    >
+                                                      {review.recruiterName}
+                                                    </Text>
+                                                    <Tag
+                                                      color={
+                                                        review.status ===
+                                                        "approved"
+                                                          ? "success"
+                                                          : review.status ===
+                                                            "rejected"
+                                                          ? "error"
+                                                          : "warning"
+                                                      }
+                                                      style={{
+                                                        margin: 0,
+                                                        fontSize: 10,
+                                                      }}
+                                                    >
+                                                      {review.status.toUpperCase()}
+                                                    </Tag>
+                                                  </div>
+
+                                                  {review.reviewComments && (
+                                                    <div
+                                                      style={{
+                                                        fontSize: 11,
+                                                        color: "#666",
+                                                        fontStyle: "italic",
+                                                        marginBottom: 4,
+                                                        lineHeight: 1.4,
+                                                      }}
+                                                    >
+                                                      "{review.reviewComments}"
+                                                    </div>
+                                                  )}
+
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 10 }}
+                                                  >
+                                                    {new Date(
+                                                      review.reviewedAt
+                                                    ).toLocaleDateString(
+                                                      "en-US",
+                                                      {
+                                                        month: "short",
+                                                        day: "numeric",
+                                                        hour: "numeric",
+                                                        minute: "2-digit",
+                                                      }
+                                                    )}
+                                                  </Text>
+                                                </div>
+                                              )
+                                            )}
+                                          </Panel>
+                                        </Collapse>
+                                      </div>
+                                    )}
+                                </div>
+                              </Timeline.Item>
+                            ))}
+                          </Timeline>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: 20,
+                            color: "#999",
+                          }}
+                        >
+                          <MinusCircleOutlined
+                            style={{ fontSize: 24, marginBottom: 8 }}
+                          />
+                          <div>No stages defined for this work order</div>
+                        </div>
+                      )}
+                    </div>
+                  </Panel>
+                ))}
+              </Collapse>
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "48px" }}>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <div>
+                    <div style={{ fontSize: 16, marginBottom: 8 }}>
+                      No Timeline Data
+                    </div>
+                    <div style={{ color: "#666" }}>
+                      No work order timeline found for this candidate
+                    </div>
+                  </div>
+                }
+              />
+            </div>
           )}
         </div>
       )}
