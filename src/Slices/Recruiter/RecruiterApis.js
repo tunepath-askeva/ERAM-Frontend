@@ -258,9 +258,9 @@ export const recruiterApi = createApi({
       }),
       invalidatesTags: ["Requisition"],
     }),
-    getCandidateTImeline: builder.query({
-      query: (id) => ({
-        url: `/timeline/${id}`,
+    getCandidateTimeline: builder.query({
+      query: ({ id, page = 1, pageSize = 10 }) => ({
+        url: `/timeline/${id}?page=${page}&pageSize=${pageSize}`,
         method: "GET",
       }),
     }),
@@ -300,5 +300,5 @@ export const {
   useEditRequisitionMutation,
   useDeleteRequisitionMutation,
   useGetSeperateApprovalsQuery,
-  useGetCandidateTImelineQuery,
+  useGetCandidateTimelineQuery,
 } = recruiterApi;

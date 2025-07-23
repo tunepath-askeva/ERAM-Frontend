@@ -18,6 +18,7 @@ import {
   List,
   Badge,
   Descriptions,
+  Pagination 
 } from "antd";
 import {
   UserOutlined,
@@ -39,7 +40,7 @@ import {
   CommentOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useGetCandidateTImelineQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetCandidateTimelineQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -57,15 +58,26 @@ const CandidateCard = ({
 }) => {
   const navigate = useNavigate();
   const [isTimelineModalVisible, setIsTimelineModalVisible] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
 
   const {
     data: timelineData,
     isLoading: isTimelineLoading,
     isError: isTimelineError,
     refetch: refetchTimeline,
-  } = useGetCandidateTImelineQuery(candidate._id, {
-    skip: !isTimelineModalVisible,
-  });
+  } = useGetCandidateTimelineQuery(
+    {
+      id: candidate._id,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
+    {
+      skip: !isTimelineModalVisible,
+    }
+  );
 
   const calculateExperience = (workExperience) => {
     if (
@@ -151,6 +163,10 @@ const CandidateCard = ({
     setIsTimelineModalVisible(false);
   };
 
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize });
+  };
+
   const formatSalary = (salary) => {
     if (!salary || salary === "0") return null;
 
@@ -207,14 +223,34 @@ const CandidateCard = ({
       open={isTimelineModalVisible}
       onCancel={handleTimelineModalClose}
       footer={[
-        <Button
-          key="close"
-          type="primary"
-          style={{ background: "#da2c46" }}
-          onClick={handleTimelineModalClose}
+        <div
+          key="pagination"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+            alignItems: "center",
+          }}
         >
-          Close
-        </Button>,
+          <Pagination
+            current={pagination.current}
+            pageSize={pagination.pageSize}
+            total={timelineData?.totalCount || 0}
+            onChange={handlePaginationChange}
+            onShowSizeChange={handlePaginationChange}
+            showSizeChanger
+            showQuickJumper
+            style={{ margin: 0 }}
+          />
+          <Button
+            key="close"
+            type="primary"
+            style={{ background: "#da2c46" }}
+            onClick={handleTimelineModalClose}
+          >
+            Close
+          </Button>
+        </div>,
       ]}
       width={1000}
       style={{ top: 20 }}
@@ -247,9 +283,8 @@ const CandidateCard = ({
         </div>
       ) : (
         <div style={{ maxHeight: "75vh", overflowY: "auto", padding: "8px 0" }}>
-          {timelineData?.length > 0 ? (
+          {timelineData?.data?.length > 0 ? (
             <>
-              {/* Summary Stats */}
               <div
                 style={{
                   display: "flex",
@@ -269,7 +304,7 @@ const CandidateCard = ({
                       color: "#da2c46",
                     }}
                   >
-                    {timelineData.length}
+                    {timelineData.totalCount}
                   </div>
                   <div style={{ fontSize: 12, color: "#666" }}>
                     Total Work Orders
@@ -320,7 +355,6 @@ const CandidateCard = ({
                 </div>
               </div>
 
-              {/* Collapsible Work Orders */}
               <Collapse
                 accordion={false}
                 defaultActiveKey={timelineData.length === 1 ? ["0"] : []}
