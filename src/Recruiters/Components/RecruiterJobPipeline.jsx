@@ -219,6 +219,7 @@ const RecruiterJobPipeline = () => {
     if (diffDays === 1) return "1 day ago";
     if (diffDays < 30) return `${diffDays} days ago`;
     if (diffDays < 90) return `${Math.ceil(diffDays / 30)} months ago`;
+    
     return date.toLocaleDateString();
   };
 
