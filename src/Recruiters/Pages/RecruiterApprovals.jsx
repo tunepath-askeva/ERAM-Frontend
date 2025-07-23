@@ -43,6 +43,7 @@ import {
 import {
   useGetApprovalInfoQuery,
   useApproveCandidateDocumentsMutation,
+  useGetSeperateApprovalsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
@@ -55,16 +56,31 @@ const RecruiterApprovals = () => {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("workOrder");
+  const [hasLoadedWorkOrders, setHasLoadedWorkOrders] = useState(false);
+  const [hasLoadedSeparateApprovals, setHasLoadedSeparateApprovals] =
+    useState(false);
+
   const [approvalComments, setApprovalComments] = useState("");
   const screens = useBreakpoint();
 
   const {
     data: workOrders = [],
-    isLoading: loading,
-    error,
-    refetch,
-  } = useGetApprovalInfoQuery();
+    isLoading: loadingWorkOrders,
+    refetch: refetchWorkOrders,
+  } = useGetApprovalInfoQuery(undefined, {
+    skip: activeTab !== "workOrder",
+    refetchOnMountOrArgChange: true,
+  });
+
+  const {
+    data: separateApprovals = [],
+    isLoading: loadingSeparateApprovals,
+    refetch: refetchSeparateApprovals,
+  } = useGetSeperateApprovalsQuery(undefined, {
+    skip: activeTab !== "separate",
+    refetchOnMountOrArgChange: true,
+  });
 
   const [approveCandidateDocuments, { isLoading: isApproving }] =
     useApproveCandidateDocumentsMutation();
@@ -73,11 +89,35 @@ const RecruiterApprovals = () => {
   const isTablet = screens.sm || screens.md;
   const isDesktop = screens.lg || screens.xl;
 
-  const getTableData = () => {
+  useEffect(() => {
+    if (activeTab === "workOrder" && !hasLoadedWorkOrders) {
+      refetchWorkOrders().then(() => setHasLoadedWorkOrders(true));
+    } else if (activeTab === "separate" && !hasLoadedSeparateApprovals) {
+      refetchSeparateApprovals().then(() =>
+        setHasLoadedSeparateApprovals(true)
+      );
+    }
+  }, [activeTab]);
+
+  const getWorkOrderTableData = () => {
     const tableData = [];
+
+    const separateStageIds = new Set();
+    separateApprovals.forEach((approval) => {
+      approval.pipelineStageTimeline.forEach((stage) => {
+        separateStageIds.add(stage.stageId);
+      });
+    });
 
     workOrders.forEach((workOrder) => {
       workOrder.pipelineStageTimeline.forEach((stage) => {
+        // ✅ Skip if stage is a separate approval
+        const isSeparateApproval = stage.separateApprovalId && !stage.levelInfo;
+        if (isSeparateApproval) return;
+
+        if (!stage.uploadedDocuments || stage.uploadedDocuments.length === 0)
+          return;
+
         stage.uploadedDocuments.forEach((candidate) => {
           tableData.push({
             key: `${workOrder._id}-${stage._id}-${candidate.candidateId}`,
@@ -89,10 +129,10 @@ const RecruiterApprovals = () => {
             candidateEmail: candidate.candidateEmail,
             stageName: stage.stageName,
             stageOrder: stage.stageOrder,
-            recruiterName: stage.recruiterIds
-              ?.map((r) => r.fullName)
-              .join(", "),
-            recruiterEmail: stage.recruiterIds?.map((r) => r.email).join(", "),
+            recruiterName:
+              stage.recruiterIds?.map((r) => r.fullName).join(", ") || "N/A",
+            recruiterEmail:
+              stage.recruiterIds?.map((r) => r.email).join(", ") || "N/A",
             documentsCount: candidate.documents?.length || 0,
             documents: candidate.documents || [],
             uploadedAt: candidate.documents?.[0]?.uploadedAt,
@@ -100,9 +140,9 @@ const RecruiterApprovals = () => {
             customFields: stage.customFields,
             requiredDocuments: stage.requiredDocuments,
             status: stage.levelInfo?.levelStatus || "pending",
-            workOrder: workOrder,
-            stage: stage,
-            candidate: candidate,
+            workOrder,
+            stage,
+            candidate,
             levelStatus: stage.levelInfo?.levelStatus,
             levelName: stage.levelInfo?.levelName,
           });
@@ -113,7 +153,83 @@ const RecruiterApprovals = () => {
     return tableData;
   };
 
+  const getSeparateApprovalsTableData = () => {
+    const tableData = [];
+
+    separateApprovals.forEach((workOrder) => {
+      const {
+        _id: workOrderId,
+        title,
+        jobCode,
+        pipelineStageTimeline,
+      } = workOrder;
+
+      pipelineStageTimeline.forEach((stage) => {
+        const {
+          stageId,
+          stageName,
+          recruiterId,
+          recruiterIds,
+          approvalId,
+          separateApprovalId,
+          uploadedDocuments = [],
+          levelInfo,
+          stageStatus,
+          recruiterReviews = [],
+        } = stage;
+
+        uploadedDocuments.forEach((candidateDoc) => {
+          const {
+            candidateId,
+            candidateName,
+            candidateEmail,
+            documents = [],
+          } = candidateDoc;
+
+          tableData.push({
+            key: `${workOrderId}-${stageId}-${candidateId}`,
+            workOrderId,
+            workOrderTitle: title,
+            jobCode,
+            stageId,
+            stageName,
+            recruiterName:
+              recruiterIds?.map((r) => r.fullName || r.name).join(", ") ||
+              recruiterId ||
+              "N/A",
+            recruiterEmail:
+              recruiterIds?.map((r) => r.email).join(", ") || "N/A",
+            candidateId,
+            candidateName,
+            candidateEmail,
+            documents,
+            documentsCount: documents.length,
+            uploadedAt: documents?.[0]?.uploadedAt,
+            status: stageStatus,
+            levelStatus: levelInfo?.levelStatus,
+            levelName: levelInfo?.levelName,
+            levelId: levelInfo?.levelId,
+            separateApprovalId,
+            approvalId,
+            stage,
+            candidate: {
+              candidateId,
+              candidateName,
+              candidateEmail,
+              documents,
+            },
+            isSeparateApproval: true,
+          });
+        });
+      });
+    });
+
+    return tableData;
+  };
+
   const getFileIcon = (fileName) => {
+    if (!fileName) return <FileOutlined style={{ color: "#1890ff" }} />;
+
     const extension = fileName.split(".").pop().toLowerCase();
     switch (extension) {
       case "pdf":
@@ -163,8 +279,7 @@ const RecruiterApprovals = () => {
     ],
   });
 
-  // Responsive column configuration
-  const getColumns = () => {
+  const getWorkOrderColumns = () => {
     const baseColumns = [
       {
         title: "Candidate",
@@ -257,9 +372,7 @@ const RecruiterApprovals = () => {
         key: "stageName",
         width: isMobile ? 140 : isTablet ? 160 : 200,
         render: (text, record) => {
-          const levelName =
-            record.workOrder?.pipelineStageTimeline[0]?.levelInfo?.levelName ||
-            "N/A";
+          const levelName = record.levelName || "N/A";
 
           return (
             <Space direction="vertical" size={0}>
@@ -325,23 +438,25 @@ const RecruiterApprovals = () => {
                   {text || "N/A"}
                 </div>
               </Tooltip>
-              {!isMobile && (
-                <Tooltip title={record.recruiterEmail}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: isTablet ? "11px" : "12px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      display: "block",
-                      lineHeight: "1.2",
-                    }}
-                  >
-                    {record.recruiterEmail || "N/A"}
-                  </Text>
-                </Tooltip>
-              )}
+              {!isMobile &&
+                record.recruiterEmail &&
+                record.recruiterEmail !== "N/A" && (
+                  <Tooltip title={record.recruiterEmail}>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: isTablet ? "11px" : "12px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "block",
+                        lineHeight: "1.2",
+                      }}
+                    >
+                      {record.recruiterEmail}
+                    </Text>
+                  </Tooltip>
+                )}
             </div>
           );
         },
@@ -382,8 +497,8 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
-          // Use the levelStatus if available, otherwise fall back to the status
-          const displayStatus = record.levelStatus || status;
+          const displayStatus =
+            record.stage?.levelInfo?.approverStatus || "pending";
           const statusText = getStatusText(displayStatus);
           const statusColor = getStatusColor(displayStatus);
 
@@ -397,9 +512,253 @@ const RecruiterApprovals = () => {
                   color: statusColor === "default" ? undefined : statusColor,
                 }}
               >
-                {isMobile
-                  ? statusText.split(" ")[0] // Show just first word on mobile
-                  : statusText}
+                {isMobile ? statusText.split(" ")[0] : statusText}
+              </span>
+            </Space>
+          );
+        },
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        width: isMobile ? 80 : isTablet ? 140 : 180,
+        render: (_, record) => (
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            {isMobile ? (
+              <Dropdown
+                menu={getActionsMenu(record)}
+                trigger={["click"]}
+                placement="bottomRight"
+              >
+                <Button
+                  type="text"
+                  icon={<MoreOutlined />}
+                  size="small"
+                  style={{
+                    color: "#da2c46",
+                    border: "1px solid #da2c46",
+                  }}
+                />
+              </Dropdown>
+            ) : (
+              <Space size="small" wrap>
+                <Button
+                  type="primary"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewDetails(record)}
+                  size={isTablet ? "small" : "default"}
+                  style={{
+                    backgroundColor: "#da2c46",
+                    borderColor: "#da2c46",
+                    fontSize: isTablet ? "11px" : "12px",
+                  }}
+                >
+                  {isTablet ? "View" : "View Details"}
+                </Button>
+              </Space>
+            )}
+          </div>
+        ),
+      },
+    ];
+
+    return baseColumns;
+  };
+
+  const getSeparateApprovalsColumns = () => {
+    const baseColumns = [
+      {
+        title: "Candidate",
+        dataIndex: "candidateName",
+        key: "candidateName",
+        width: isMobile ? 200 : isTablet ? 220 : 260,
+        ellipsis: true,
+        render: (text, record) => (
+          <div style={{ minWidth: 0 }}>
+            <Space size="small" style={{ width: "100%" }}>
+              <Avatar
+                size={isMobile ? "small" : "default"}
+                icon={<UserOutlined />}
+                style={{ flexShrink: 0 }}
+              />
+              <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+                <Tooltip title={text}>
+                  <div
+                    style={{
+                      fontWeight: 500,
+                      fontSize: isMobile ? "12px" : isTablet ? "13px" : "14px",
+                      lineHeight: "1.3",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {text}
+                  </div>
+                </Tooltip>
+                <Tooltip title={record.candidateEmail}>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      display: "block",
+                      lineHeight: "1.2",
+                    }}
+                  >
+                    {record.candidateEmail}
+                  </Text>
+                </Tooltip>
+              </div>
+            </Space>
+          </div>
+        ),
+      },
+      {
+        title: "Work Order",
+        dataIndex: "workOrderTitle",
+        key: "workOrderTitle",
+        width: isMobile ? 180 : isTablet ? 200 : 240,
+        ellipsis: true,
+        render: (text, record) => (
+          <div style={{ minWidth: 0 }}>
+            <Tooltip title={text}>
+              <div
+                style={{
+                  fontWeight: 500,
+                  fontSize: isMobile ? "12px" : isTablet ? "13px" : "14px",
+                  lineHeight: "1.3",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  marginBottom: "2px",
+                }}
+              >
+                {text}
+              </div>
+            </Tooltip>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                lineHeight: "1.2",
+              }}
+            >
+              {record.jobCode}
+            </Text>
+          </div>
+        ),
+      },
+      {
+        title: "Stage & Level",
+        dataIndex: "stageName",
+        key: "stageName",
+        width: isMobile ? 140 : isTablet ? 160 : 200,
+        render: (text, record) => {
+          const levelName = record.levelName || "N/A";
+
+          return (
+            <Space direction="vertical" size={0}>
+              <Tooltip title={`Stage: ${text}`}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                    lineHeight: 1.3,
+                    display: "block",
+                  }}
+                >
+                  Stage:{" "}
+                  {isMobile
+                    ? text.length > 8
+                      ? `${text.substring(0, 8)}...`
+                      : text
+                    : text}
+                </Text>
+              </Tooltip>
+              <Tooltip title={`Level: ${levelName}`}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                    lineHeight: 1.2,
+                    display: "block",
+                  }}
+                >
+                  Level:{" "}
+                  {isMobile
+                    ? levelName.length > 8
+                      ? `${levelName.substring(0, 8)}...`
+                      : levelName
+                    : levelName}
+                </Text>
+              </Tooltip>
+            </Space>
+          );
+        },
+      },
+      {
+        title: "Recruiter",
+        dataIndex: "recruiterName",
+        key: "recruiterName",
+        width: isMobile ? 150 : isTablet ? 160 : 200,
+        ellipsis: true,
+        render: (text) => (
+          <Tooltip title={text}>
+            <Text strong>{text || "N/A"}</Text>
+          </Tooltip>
+        ),
+      },
+      {
+        title: "Docs",
+        dataIndex: "documentsCount",
+        key: "documentsCount",
+        width: isMobile ? 80 : isTablet ? 90 : 100,
+        align: "center",
+        render: (count) => (
+          <Tooltip title={`${count} document(s) uploaded`}>
+            <Space
+              size="small"
+              direction={isMobile ? "vertical" : "horizontal"}
+            >
+              <FileTextOutlined style={{ color: "#1890ff" }} />
+              <span style={{ fontWeight: 500 }}>{count}</span>
+            </Space>
+          </Tooltip>
+        ),
+      },
+      {
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+        width: isMobile ? 100 : isTablet ? 120 : 130,
+        render: (status, record) => {
+          let displayStatus = "pending";
+          if (record.approval?.isApproved === true) {
+            displayStatus = "approved";
+          } else if (record.approval?.isApproved === false) {
+            displayStatus = "pending"; 
+          } else {
+            displayStatus = record.status || "pending";
+          }
+
+          const statusText = getStatusText(displayStatus);
+          const statusColor = getStatusColor(displayStatus);
+
+          return (
+            <Space>
+              <Badge status={statusColor} />
+              <span
+                style={{
+                  fontSize: isMobile ? "10px" : isTablet ? "11px" : "12px",
+                  fontWeight: 500,
+                  color: statusColor === "default" ? undefined : statusColor,
+                }}
+              >
+                {isMobile ? statusText.split(" ")[0] : statusText}
               </span>
             </Space>
           );
@@ -468,10 +827,11 @@ const RecruiterApprovals = () => {
     try {
       if (!selectedWorkOrder || !selectedCandidate) return;
 
-      const approvalId = selectedWorkOrder.stage?.approvalId;
+      const approvalId = selectedWorkOrder.isSeparateApproval
+        ? selectedWorkOrder.separateApprovalId
+        : selectedWorkOrder.stage?.approvalId;
 
       const levelId = selectedWorkOrder.stage?.levelInfo?.levelId || null;
-
       const stageId = selectedWorkOrder.stage?.stageId || null;
 
       if (!approvalId) {
@@ -494,7 +854,8 @@ const RecruiterApprovals = () => {
       );
       setApproveModalVisible(false);
       setApprovalComments("");
-      refetch();
+      refetchWorkOrders();
+      refetchSeparateApprovals();
     } catch (error) {
       message.error(error.data?.message || "Failed to approve documents");
       console.error("Approval error:", error);
@@ -514,32 +875,18 @@ const RecruiterApprovals = () => {
     });
   };
 
-  const tableData = getTableData();
-
-  if (error) {
-    return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text type="danger">
-          Error loading approval data. Please try again.
-        </Text>
-      </div>
-    );
-  }
-
   const getModalWidth = () => {
     if (isMobile) return "95%";
     if (isTablet) return "85%";
     return 1000;
   };
 
-  // Calculate table height based on screen size
   const getTableHeight = () => {
     if (isMobile) return 400;
     if (isTablet) return 500;
     return 600;
   };
 
-  // Calculate scroll width based on column widths
   const getTableScrollConfig = () => {
     const totalWidth = isMobile ? 950 : isTablet ? 1070 : 1170;
     return {
@@ -576,28 +923,48 @@ const RecruiterApprovals = () => {
         </Col>
       </Row>
 
-      {/* Content */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key)}
+        style={{ marginBottom: 16 }}
+        destroyInactiveTabPane={true}
+      >
+        <TabPane tab="Work Order Approvals" key="workOrder">
+          <Table
+            columns={getWorkOrderColumns()}
+            dataSource={hasLoadedWorkOrders ? getWorkOrderTableData() : []}
+            loading={loadingWorkOrders}
+            pagination={{
+              pageSize: 10,
+              showQuickJumper: isDesktop,
+              size: isMobile ? "small" : "default",
+            }}
+            scroll={getTableScrollConfig()}
+            size={isMobile ? "small" : isTablet ? "small" : "default"}
+            rowClassName="table-row-hover"
+            className="responsive-table"
+          />
+        </TabPane>
+        <TabPane tab="Separate Approvals" key="separate">
+          <Table
+            columns={getSeparateApprovalsColumns()}
+            dataSource={
+              hasLoadedSeparateApprovals ? getSeparateApprovalsTableData() : []
+            }
+            loading={loadingSeparateApprovals}
+            pagination={{
+              pageSize: 10,
+              showQuickJumper: isDesktop,
+              size: isMobile ? "small" : "default",
+            }}
+            scroll={getTableScrollConfig()}
+            size={isMobile ? "small" : isTablet ? "small" : "default"}
+            rowClassName="table-row-hover"
+            className="responsive-table"
+          />
+        </TabPane>
+      </Tabs>
 
-      <Table
-        columns={getColumns()}
-        dataSource={tableData}
-        loading={loading}
-        pagination={{
-          pageSize: isMobile ? 10 : isTablet ? 10 : 10,
-          showQuickJumper: isDesktop,
-          size: isMobile ? "small" : "default",
-          style: {
-            marginTop: "16px",
-            textAlign: "center",
-          },
-        }}
-        scroll={getTableScrollConfig()}
-        size={isMobile ? "small" : isTablet ? "small" : "default"}
-        rowClassName="table-row-hover"
-        className="responsive-table"
-      />
-
-      {/* Details Modal/Drawer */}
       {isMobile ? (
         <Drawer
           title={
@@ -619,6 +986,7 @@ const RecruiterApprovals = () => {
                   setDetailsModalVisible(false);
                   handleApprove(selectedWorkOrder);
                 }}
+                disabled={!selectedCandidate?.documents?.length}
                 style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
               >
                 Approve
@@ -662,6 +1030,7 @@ const RecruiterApprovals = () => {
                   setDetailsModalVisible(false);
                   handleApprove(selectedWorkOrder);
                 }}
+                disabled={!selectedCandidate?.documents?.length}
                 style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
               >
                 Approve Documents
@@ -684,6 +1053,7 @@ const RecruiterApprovals = () => {
               getFileIcon={getFileIcon}
               handleDownloadDocument={handleDownloadDocument}
               formatDate={formatDate}
+              hasDocuments={selectedCandidate?.documents?.length > 0}
             />
           )}
         </Modal>
@@ -724,6 +1094,10 @@ const RecruiterApprovals = () => {
               <div>
                 <Text strong>Stage: </Text>
                 <Text>{selectedWorkOrder?.stageName}</Text>
+              </div>
+              <div>
+                <Text strong>Level: </Text>
+                <Text>{selectedWorkOrder?.levelName || "N/A"}</Text>
               </div>
               <div>
                 <Text strong>Documents: </Text>
@@ -920,8 +1294,8 @@ const DetailsContent = ({
       <Descriptions.Item label="Stage">
         {selectedWorkOrder.stageName}
       </Descriptions.Item>
-      <Descriptions.Item label="Stage Description">
-        {selectedWorkOrder.stageDetails?.description || "N/A"}
+      <Descriptions.Item label="Level">
+        {selectedWorkOrder.levelName || "N/A"}
       </Descriptions.Item>
     </Descriptions>
 
@@ -949,40 +1323,6 @@ const DetailsContent = ({
       </Descriptions.Item>
     </Descriptions>
 
-    {/* Required Documents */}
-    <Title
-      level={5}
-      style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}
-    >
-      Required Documents
-    </Title>
-    <div style={{ marginBottom: "16px" }}>
-      {selectedWorkOrder.stageDetails?.requiredDocuments?.map((doc, index) => (
-        <Tag
-          key={index}
-          color="#da2c46"
-          style={{
-            margin: "2px",
-            fontSize: isMobile ? "11px" : "12px",
-          }}
-        >
-          {doc}
-        </Tag>
-      ))}
-      {selectedWorkOrder.requiredDocuments?.map((doc, index) => (
-        <Tag
-          key={`req-${index}`}
-          color="green"
-          style={{
-            margin: "2px",
-            fontSize: isMobile ? "11px" : "12px",
-          }}
-        >
-          {doc.title}
-        </Tag>
-      ))}
-    </div>
-
     {/* Uploaded Documents */}
     <Title
       level={5}
@@ -990,66 +1330,72 @@ const DetailsContent = ({
     >
       Uploaded Documents
     </Title>
-    <List
-      dataSource={selectedCandidate.documents || []}
-      renderItem={(document) => (
-        <List.Item
-          actions={[
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => handleDownloadDocument(document)}
-              size="small"
-              style={{ color: "#da2c46" }}
-            >
-              View
-            </Button>,
-            <Button
-              type="link"
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownloadDocument(document)}
-              size="small"
-              style={{ color: "#da2c46" }}
-            >
-              Download
-            </Button>,
-          ]}
-        >
-          <List.Item.Meta
-            avatar={getFileIcon(document.fileName)}
-            title={
-              <Text
-                ellipsis={{ tooltip: document.fileName }}
-                style={{
-                  fontSize: isMobile ? "12px" : "14px",
-                  fontWeight: 500,
-                }}
+    {selectedCandidate.documents?.length > 0 ? (
+      <List
+        dataSource={selectedCandidate.documents}
+        renderItem={(document) => (
+          <List.Item
+            actions={[
+              <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => handleDownloadDocument(document)}
+                size="small"
+                style={{ color: "#da2c46" }}
               >
-                {document.fileName}
-              </Text>
-            }
-            description={
-              <Space size="small">
+                View
+              </Button>,
+              <Button
+                type="link"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadDocument(document)}
+                size="small"
+                style={{ color: "#da2c46" }}
+              >
+                Download
+              </Button>,
+            ]}
+          >
+            <List.Item.Meta
+              avatar={getFileIcon(document.fileName)}
+              title={
                 <Text
-                  type="secondary"
-                  style={{ fontSize: isMobile ? "10px" : "12px" }}
+                  ellipsis={{ tooltip: document.fileName }}
+                  style={{
+                    fontSize: isMobile ? "12px" : "14px",
+                    fontWeight: 500,
+                  }}
                 >
-                  {formatDate(document.uploadedAt)}
+                  {document.fileName}
                 </Text>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: isMobile ? "10px" : "12px" }}
-                >
-                  {document.fileSize ? `(${document.fileSize})` : ""}
-                </Text>
-              </Space>
-            }
-          />
-        </List.Item>
-      )}
-      style={{ marginBottom: "24px" }}
-      size={isMobile ? "small" : "default"}
-    />
+              }
+              description={
+                <Space size="small">
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: isMobile ? "10px" : "12px" }}
+                  >
+                    {formatDate(document.uploadedAt)}
+                  </Text>
+                  {document.fileSize && (
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: isMobile ? "10px" : "12px" }}
+                    >
+                      ({document.fileSize})
+                    </Text>
+                  )}
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+        style={{ marginBottom: "24px" }}
+        size={isMobile ? "small" : "default"}
+      />
+    ) : (
+      <Text type="secondary">No documents uploaded</Text>
+    )}
   </div>
 );
 

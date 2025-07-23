@@ -116,7 +116,7 @@ export const recruiterApi = createApi({
       query: ({ Id, status, jobId, isSourced, comment, pipelineId }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status, jobId, isSourced, comment,pipelineId },
+        body: { status, jobId, isSourced, comment, pipelineId },
       }),
     }),
 
@@ -128,10 +128,10 @@ export const recruiterApi = createApi({
     }),
 
     moveToPipeline: builder.mutation({
-      query: ({ jobId, userId }) => ({
+      query: ({ jobId, userId, pipelineData, isPipeline }) => ({
         url: "/pipeline",
         method: "PUT",
-        body: { jobId, userId },
+        body: { jobId, userId, pipelineData, isPipeline },
       }),
     }),
 
@@ -153,7 +153,12 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
-
+    getSeperateApprovals: builder.query({
+      query: () => ({
+        url: `/seperatePipeline`,
+        method: "GET",
+      }),
+    }),
     approveCandidateDocuments: builder.mutation({
       query: ({
         approvalId,
@@ -251,7 +256,7 @@ export const recruiterApi = createApi({
         url: `/requisition/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Requisition"], 
+      invalidatesTags: ["Requisition"],
     }),
   }),
 });
@@ -287,5 +292,6 @@ export const {
   useGetClientsQuery,
   useGetRequisitionsQuery,
   useEditRequisitionMutation,
-  useDeleteRequisitionMutation
+  useDeleteRequisitionMutation,
+  useGetSeperateApprovalsQuery,
 } = recruiterApi;
