@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   Tag,
@@ -10,6 +10,14 @@ import {
   Space,
   Checkbox,
   Divider,
+  Modal,
+  Timeline,
+  Spin,
+  Empty,
+  Collapse,
+  List,
+  Badge,
+  Descriptions,
 } from "antd";
 import {
   UserOutlined,
@@ -23,10 +31,18 @@ import {
   DollarOutlined,
   GlobalOutlined,
   StarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  MinusCircleOutlined,
+  CalendarOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useGetCandidateTImelineQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
+const { Panel } = Collapse;
 
 const CandidateCard = ({
   candidate,
@@ -40,6 +56,16 @@ const CandidateCard = ({
   isSelectable = false,
 }) => {
   const navigate = useNavigate();
+  const [isTimelineModalVisible, setIsTimelineModalVisible] = useState(false);
+
+  const {
+    data: timelineData,
+    isLoading: isTimelineLoading,
+    isError: isTimelineError,
+    refetch: refetchTimeline,
+  } = useGetCandidateTImelineQuery(candidate._id, {
+    skip: !isTimelineModalVisible,
+  });
 
   const calculateExperience = (workExperience) => {
     if (
@@ -52,7 +78,6 @@ const CandidateCard = ({
 
     let totalMonths = 0;
     workExperience.forEach((exp) => {
-      // Skip if startDate is null or undefined
       if (!exp.startDate) {
         return;
       }
@@ -60,13 +85,11 @@ const CandidateCard = ({
       try {
         const start = new Date(exp.startDate);
 
-        // Check if startDate is valid
         if (isNaN(start.getTime())) {
           return;
         }
 
         let end;
-        // Handle endDate - check for "Present" or null/undefined
         if (
           !exp.endDate ||
           exp.endDate === "Present" ||
@@ -75,7 +98,6 @@ const CandidateCard = ({
           end = new Date();
         } else {
           end = new Date(exp.endDate);
-          // Check if endDate is valid
           if (isNaN(end.getTime())) {
             end = new Date();
           }
@@ -85,7 +107,6 @@ const CandidateCard = ({
           (end.getFullYear() - start.getFullYear()) * 12 +
           (end.getMonth() - start.getMonth());
 
-        // Only add positive months
         if (monthsDiff > 0) {
           totalMonths += monthsDiff;
         }
@@ -99,12 +120,10 @@ const CandidateCard = ({
   };
 
   const getExperienceDisplay = () => {
-    // First check if totalExperienceYears is available
     if (candidate.totalExperienceYears) {
       return candidate.totalExperienceYears;
     }
 
-    // Otherwise calculate from work experience
     const calculatedExp = calculateExperience(candidate.workExperience);
 
     if (calculatedExp === 0) {
@@ -122,6 +141,14 @@ const CandidateCard = ({
 
   const handleViewProfile = () => {
     onViewProfile(candidate);
+  };
+
+  const handleViewTimeline = () => {
+    setIsTimelineModalVisible(true);
+  };
+
+  const handleTimelineModalClose = () => {
+    setIsTimelineModalVisible(false);
   };
 
   const formatSalary = (salary) => {
@@ -162,6 +189,178 @@ const CandidateCard = ({
       </Tag>
     );
   };
+
+  const renderTimelineModal = () => (
+    <Modal
+      title={`Work Order Timeline for ${candidate.fullName || "Candidate"}`}
+      open={isTimelineModalVisible}
+      onCancel={handleTimelineModalClose}
+      footer={[
+        <Button key="close" onClick={handleTimelineModalClose}>
+          Close
+        </Button>,
+      ]}
+      width={800}
+    >
+      {isTimelineLoading ? (
+        <div style={{ textAlign: "center", padding: "24px" }}>
+          <Spin />
+        </div>
+      ) : isTimelineError ? (
+        <Alert
+          message="Error"
+          description="Failed to load timeline data"
+          type="error"
+          showIcon
+        />
+      ) : (
+        <div>
+          {timelineData?.map((workOrder, woIndex) => (
+            <div key={woIndex} style={{ marginBottom: 24 }}>
+              <Card
+                title={`Work Order: ${workOrder.workOrderTitle}`}
+                extra={
+                  <Tag
+                    color={
+                      workOrder.status === "completed"
+                        ? "success"
+                        : workOrder.status === "in_progress"
+                        ? "processing"
+                        : "default"
+                    }
+                  >
+                    {workOrder.status.toUpperCase()}
+                  </Tag>
+                }
+              >
+                <Descriptions bordered column={1} size="small">
+                  <Descriptions.Item label="Work Order">
+                    {workOrder.workOrderTitle}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Moving Comment">
+                    {workOrder.selectedMovingComment || "N/A"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Sourced">
+                    {workOrder.isSourced ? "Yes" : "No"}
+                  </Descriptions.Item>
+                </Descriptions>
+
+                <Divider orientation="left" style={{ margin: "16px 0" }}>
+                  Stages
+                </Divider>
+
+                <Collapse accordion>
+                  {workOrder.stages?.map((stage, stageIndex) => (
+                    <Panel
+                      key={stageIndex}
+                      header={
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          {stage.stageStatus === "approved" ? (
+                            <CheckCircleOutlined
+                              style={{ color: "#52c41a", marginRight: 8 }}
+                            />
+                          ) : stage.stageStatus === "rejected" ? (
+                            <CloseCircleOutlined
+                              style={{ color: "#f5222d", marginRight: 8 }}
+                            />
+                          ) : (
+                            <MinusCircleOutlined
+                              style={{ color: "#faad14", marginRight: 8 }}
+                            />
+                          )}
+                          <span>{stage.stageName}</span>
+                          <span style={{ marginLeft: "auto", marginRight: 8 }}>
+                            {stage.stageCompletedAt
+                              ? new Date(
+                                  stage.stageCompletedAt
+                                ).toLocaleDateString()
+                              : "In Progress"}
+                          </span>
+                        </div>
+                      }
+                    >
+                      <Timeline>
+                        <Timeline.Item
+                          dot={
+                            <CalendarOutlined style={{ fontSize: "16px" }} />
+                          }
+                          color="blue"
+                        >
+                          <strong>Stage Completed:</strong>{" "}
+                          {stage.stageCompletedAt
+                            ? new Date(stage.stageCompletedAt).toLocaleString()
+                            : "Pending"}
+                          <br />
+                          <strong>Status:</strong>{" "}
+                          <Tag
+                            color={
+                              stage.stageStatus === "approved"
+                                ? "success"
+                                : stage.stageStatus === "rejected"
+                                ? "error"
+                                : "warning"
+                            }
+                          >
+                            {stage.stageStatus}
+                          </Tag>
+                        </Timeline.Item>
+
+                        {stage.recruiterReviews?.map((review, reviewIndex) => (
+                          <Timeline.Item
+                            key={reviewIndex}
+                            dot={<UserOutlined style={{ fontSize: "16px" }} />}
+                            color="green"
+                          >
+                            <div style={{ marginBottom: 8 }}>
+                              <strong>Review by:</strong> {review.recruiterName}{" "}
+                              ({review.recruiterEmail})
+                            </div>
+                            <div style={{ marginBottom: 8 }}>
+                              <strong>Status:</strong>{" "}
+                              <Tag
+                                color={
+                                  review.status === "approved"
+                                    ? "success"
+                                    : review.status === "rejected"
+                                    ? "error"
+                                    : "warning"
+                                }
+                              >
+                                {review.status}
+                              </Tag>
+                            </div>
+                            <div>
+                              <CommentOutlined style={{ marginRight: 8 }} />
+                              <strong>Comments:</strong>{" "}
+                              {review.reviewComments || "No comments"}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 4,
+                                fontSize: 12,
+                                color: "#999",
+                              }}
+                            >
+                              Reviewed at:{" "}
+                              {new Date(review.reviewedAt).toLocaleString()}
+                            </div>
+                          </Timeline.Item>
+                        ))}
+                      </Timeline>
+                    </Panel>
+                  ))}
+                </Collapse>
+              </Card>
+            </div>
+          ))}
+
+          {timelineData?.length === 0 && (
+            <Empty description="No work order timeline data found" />
+          )}
+        </div>
+      )}
+    </Modal>
+  );
 
   return (
     <div
@@ -230,6 +429,7 @@ const CandidateCard = ({
                         {experience} exp
                       </Text>
                     )}
+
                     {candidate.similarityScore && (
                       <Tag
                         icon={<StarOutlined />}
@@ -243,6 +443,12 @@ const CandidateCard = ({
                       >
                         Match Score:{" "}
                         {(candidate.similarityScore * 100).toFixed(0)}%
+                      </Tag>
+                    )}
+
+                    {candidate.candidateType && (
+                      <Tag color="blue" style={{ margin: 0 }}>
+                        Candidate Type : {candidate.candidateType || "GENERAL"}
                       </Tag>
                     )}
                   </div>
@@ -386,7 +592,6 @@ const CandidateCard = ({
                   </div>
                 )}
               </Col>
-
               <Col
                 xs={24}
                 md={6}
@@ -435,7 +640,7 @@ const CandidateCard = ({
                   style={{
                     backgroundColor: "#da2c46",
                     width: "100%",
-                    maxWidth: "100px",
+                    maxWidth: "150px",
                     fontSize: "clamp(13px, 1.5vw, 14px)",
                     padding: "6px 12px",
                   }}
@@ -444,11 +649,28 @@ const CandidateCard = ({
                 >
                   View Profile
                 </Button>
+
+                <Button
+                  type="primary"
+                  style={{
+                    backgroundColor: "#da2c46",
+                    width: "100%",
+                    maxWidth: "150px",
+                    fontSize: "clamp(13px, 1.5vw, 14px)",
+                    padding: "6px 12px",
+                  }}
+                  icon={<ClockCircleOutlined />}
+                  onClick={handleViewTimeline}
+                >
+                  View Timeline
+                </Button>
               </Col>
             </Row>
           </Col>
         </Row>
       </Card>
+
+      {renderTimelineModal()}
     </div>
   );
 };
