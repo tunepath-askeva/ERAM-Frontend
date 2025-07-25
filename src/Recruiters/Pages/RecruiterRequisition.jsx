@@ -13,6 +13,7 @@ import {
   Col,
   Select,
   DatePicker,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
@@ -37,8 +38,8 @@ const { RangePicker } = DatePicker;
 
 const RecruiterRequisition = () => {
   const navigate = useNavigate();
-  const [requisitions, setRequisitions] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
@@ -57,13 +58,23 @@ const RecruiterRequisition = () => {
     isLoading: requisitionsLoading,
     refetch,
   } = useGetRequisitionsQuery({
-    search: searchText,
+    search: debouncedSearchText,
     filters,
     pagination,
   });
 
   const [deleteRequisition, { isLoading: isDeleting }] =
     useDeleteRequisitionMutation();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const clients =
     clientData?.clients?.map((client) => ({
@@ -81,55 +92,6 @@ const RecruiterRequisition = () => {
     }
   }, [requisitionData]);
 
-  const filteredRequisitions = useMemo(() => {
-    let filtered = requisitions;
-
-    // Apply search filter
-    if (searchText.trim()) {
-      const searchLower = searchText.toLowerCase().trim();
-      filtered = filtered.filter((req) => {
-        const clientObj = clients.find((c) => c.id === req.client);
-        const clientName = clientObj?.name || "";
-
-        const searchFields = [
-          req.requisitionNo || "",
-          req.referenceNo || "",
-          req.project || "",
-          clientName,
-        ];
-
-        return searchFields.some((field) =>
-          field.toLowerCase().includes(searchLower)
-        );
-      });
-    }
-
-    if (filters.client) {
-      filtered = filtered.filter((req) => req.client === filters.client);
-    }
-    if (filters.project) {
-      filtered = filtered.filter((req) =>
-        req.project?.toLowerCase().includes(filters.project.toLowerCase())
-      );
-    }
-    if (filters.referenceNo) {
-      filtered = filtered.filter((req) =>
-        req.referenceNo
-          ?.toLowerCase()
-          .includes(filters.referenceNo.toLowerCase())
-      );
-    }
-    if (filters.requisitionNo) {
-      filtered = filtered.filter((req) =>
-        req.requisitionNo
-          ?.toLowerCase()
-          .includes(filters.requisitionNo.toLowerCase())
-      );
-    }
-
-    return filtered;
-  }, [requisitions, searchText, filters, clients]);
-
   const handleAddNew = () => {
     navigate("/recruiter/requisition/add");
   };
@@ -138,12 +100,8 @@ const RecruiterRequisition = () => {
     navigate(`/recruiter/requisition/edit/${record._id}`);
   };
 
-  const handleTableChange = (newPagination) => {
-    setPagination({
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
-      total: newPagination.total,
-    });
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize });
   };
 
   const formattedRequisitions = useMemo(() => {
@@ -213,22 +171,6 @@ const RecruiterRequisition = () => {
       Object.keys(filters).some((key) => filters[key] !== undefined)
     );
   };
-
-  const getFilterOptions = () => {
-    const employmentTypes = [
-      ...new Set(requisitions.map((req) => req.EmploymentType).filter(Boolean)),
-    ];
-    const statuses = [
-      ...new Set(requisitions.map((req) => req.isActive).filter(Boolean)),
-    ];
-
-    return {
-      employmentTypes,
-      statuses,
-    };
-  };
-
-  const { employmentTypes, statuses } = getFilterOptions();
 
   const formatSalary = (record) => {
     if (
@@ -431,27 +373,16 @@ const RecruiterRequisition = () => {
         >
           {/* Search and Filter Section */}
           <div className="search-container">
-            {/* Search Bar */}
             <Row gutter={[16, 8]} align="middle" style={{ marginBottom: 12 }}>
               <Col xs={24} sm={16} md={12} lg={10}>
-                <Input
-                  placeholder="Search by requisition no, reference no, project, client, or job title..."
+                <Input.Search
+                  placeholder="Search requisitions..."
                   value={searchText}
                   onChange={handleSearchChange}
-                  prefix={<SearchOutlined />}
-                  suffix={
-                    searchText && (
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<ClearOutlined />}
-                        onClick={handleSearchClear}
-                        style={{ padding: 0, minWidth: "auto" }}
-                      />
-                    )
-                  }
                   allowClear
-                  size="small"
+                  enterButton={<SearchOutlined />}
+                  onSearch={() => setDebouncedSearchText(searchText)}
+                  style={{ width: "100%" }}
                 />
               </Col>
               <Col xs={24} sm={8} md={6} lg={4}>
@@ -477,23 +408,11 @@ const RecruiterRequisition = () => {
                     </Button>
                   )}
                   <div className="search-info">
-                    {(searchText || hasActiveFilters()) && (
+                    {searchText && (
                       <span>
-                        Showing {filteredRequisitions.length} of{" "}
-                        {requisitions.length} requisitions
-                        {filteredRequisitions.length === 0 && (
-                          <span style={{ color: "#ff4d4f" }}>
-                            {" "}
-                            - No matches found
-                          </span>
-                        )}
+                        Searching for: <strong>{searchText}</strong>
                       </span>
                     )}
-                    {!searchText &&
-                      !hasActiveFilters() &&
-                      requisitions.length > 0 && (
-                        <span>Total: {requisitions.length} requisitions</span>
-                      )}
                   </div>
                 </Space>
               </Col>
@@ -591,17 +510,7 @@ const RecruiterRequisition = () => {
             dataSource={formattedRequisitions}
             loading={requisitionsLoading}
             rowKey="key"
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              responsive: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            onChange={handleTableChange}
+            pagination={false}
             scroll={{ x: 1200 }}
             size="small"
             locale={{
@@ -610,6 +519,18 @@ const RecruiterRequisition = () => {
                 : "No requisitions available",
             }}
           />
+
+          <div style={{ marginTop: 16, textAlign: "right" }}>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={handlePaginationChange}
+              showSizeChanger
+              showQuickJumper
+              pageSizeOptions={["10", "20", "50", "100"]}
+            />
+          </div>
         </Card>
 
         {/* Detail View Modal */}
