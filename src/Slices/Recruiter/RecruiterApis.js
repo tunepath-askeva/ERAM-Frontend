@@ -239,16 +239,27 @@ export const recruiterApi = createApi({
       }),
     }),
     getRequisitions: builder.query({
-      query: ({ search = "", filters = {}, pagination = {} }) => ({
-        url: "/requisition",
-        method: "GET",
-        params: {
-          ...(search && { search }), 
-          ...filters,
-          page: pagination?.page || 1,
-          pageSize: pagination?.pageSize || 10,
-        },
-      }),
+      query: ({ search = "", filters = {}, pagination = {} }) => {
+        const params = new URLSearchParams();
+
+        if (search) params.append("search", search);
+
+        // Add filters
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            params.append(key, value);
+          }
+        });
+
+        // Add pagination
+        params.append("page", pagination.page || 1);
+        params.append("limit", pagination.pageSize || 10);
+
+        return {
+          url: `/requisition?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getProjects: builder.query({
       query: () => ({

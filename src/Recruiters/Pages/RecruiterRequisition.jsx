@@ -53,14 +53,17 @@ const RecruiterRequisition = () => {
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
 
   const { data: clientData } = useGetClientsQuery();
-  const {
+const {
     data: requisitionData,
     isLoading: requisitionsLoading,
     refetch,
   } = useGetRequisitionsQuery({
     search: debouncedSearchText,
     filters,
-    pagination,
+    pagination: {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
   });
 
   const [deleteRequisition, { isLoading: isDeleting }] =
@@ -83,11 +86,13 @@ const RecruiterRequisition = () => {
       email: client.email,
     })) || [];
 
-  useEffect(() => {
-    if (requisitionData?.total) {
+ useEffect(() => {
+    if (requisitionData) {
       setPagination((prev) => ({
         ...prev,
-        total: requisitionData.total,
+        current: requisitionData.page || 1,
+        pageSize: requisitionData.limit || 10,
+        total: requisitionData.total || 0,
       }));
     }
   }, [requisitionData]);
@@ -100,16 +105,15 @@ const RecruiterRequisition = () => {
     navigate(`/recruiter/requisition/edit/${record._id}`);
   };
 
-  const handlePaginationChange = (page, pageSize) => {
-    setPagination({ current: page, pageSize });
-  };
+const handlePaginationChange = (page, pageSize) => {
+  setPagination({ current: page, pageSize });
+};
 
   const formattedRequisitions = useMemo(() => {
-    if (!requisitionData?.requisitions) return [];
-
-    return requisitionData.requisitions.map((req, index) => ({
+    if (!requisitionData?.requisition) return [];
+    return requisitionData.requisition.map((req) => ({
       ...req,
-      key: req._id || index,
+      key: req._id,
       status: req.isActive || "draft",
     }));
   }, [requisitionData]);
@@ -141,9 +145,9 @@ const RecruiterRequisition = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleSearchChange = (e) => {
-    setSearchText(e.target.value);
-  };
+const handleSearchChange = (e) => {
+  setSearchText(e.target.value);
+};
 
   const handleSearchClear = () => {
     setSearchText("");
@@ -151,13 +155,13 @@ const RecruiterRequisition = () => {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  const handleFilterChange = (filterType, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterType]: value || undefined,
-    }));
-    setPagination((prev) => ({ ...prev, current: 1 }));
-  };
+const handleFilterChange = (filterType, value) => {
+  setFilters((prev) => ({
+    ...prev,
+    [filterType]: value || undefined,
+  }));
+  setPagination((prev) => ({ ...prev, current: 1 }));
+};
 
   const handleClearAllFilters = () => {
     setSearchText("");
