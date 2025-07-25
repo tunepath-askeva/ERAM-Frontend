@@ -239,9 +239,15 @@ export const recruiterApi = createApi({
       }),
     }),
     getRequisitions: builder.query({
-      query: () => ({
+      query: ({ search = "", filters = {}, pagination = {} }) => ({
         url: "/requisition",
         method: "GET",
+        params: {
+          ...(search && { search }), 
+          ...filters,
+          page: pagination?.page || 1,
+          pageSize: pagination?.pageSize || 10,
+        },
       }),
     }),
     getProjects: builder.query({

@@ -150,13 +150,11 @@ const EditRequisition = () => {
               Edit Requisition
             </Space>
           }
-          size="small"
         >
-          <Form form={form} layout="vertical" size="small">
+          <Form form={form} layout="vertical" >
             {/* Common Fields Section */}
             <Card
               title="Common Information"
-              size="small"
               style={{ marginBottom: 16 }}
             >
               <Row gutter={16}>

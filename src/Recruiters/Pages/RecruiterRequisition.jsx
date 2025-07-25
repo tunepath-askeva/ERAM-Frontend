@@ -39,11 +39,11 @@ const RecruiterRequisition = () => {
   const navigate = useNavigate();
   const [requisitions, setRequisitions] = useState([]);
   const [searchText, setSearchText] = useState("");
-  const [filters, setFilters] = useState({
-    client: null,
-    project: null,
-    referenceNo: null,
-    requisitionNo: null,
+  const [filters, setFilters] = useState({});
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
   });
   const [showFilters, setShowFilters] = useState(false);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -56,7 +56,11 @@ const RecruiterRequisition = () => {
     data: requisitionData,
     isLoading: requisitionsLoading,
     refetch,
-  } = useGetRequisitionsQuery();
+  } = useGetRequisitionsQuery({
+    search: searchText,
+    filters,
+    pagination,
+  });
 
   const [deleteRequisition, { isLoading: isDeleting }] =
     useDeleteRequisitionMutation();
@@ -68,17 +72,12 @@ const RecruiterRequisition = () => {
       email: client.email,
     })) || [];
 
-  // Update local state when API data changes
   useEffect(() => {
-    if (requisitionData?.requisition) {
-      const formattedRequisitions = requisitionData.requisition.map(
-        (req, index) => ({
-          ...req,
-          key: req._id || index,
-          status: req.isActive || "draft",
-        })
-      );
-      setRequisitions(formattedRequisitions);
+    if (requisitionData?.total) {
+      setPagination((prev) => ({
+        ...prev,
+        total: requisitionData.total,
+      }));
     }
   }, [requisitionData]);
 
@@ -105,7 +104,6 @@ const RecruiterRequisition = () => {
       });
     }
 
-    // Apply individual filters
     if (filters.client) {
       filtered = filtered.filter((req) => req.client === filters.client);
     }
@@ -140,6 +138,24 @@ const RecruiterRequisition = () => {
     navigate(`/recruiter/requisition/edit/${record._id}`);
   };
 
+  const handleTableChange = (newPagination) => {
+    setPagination({
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+      total: newPagination.total,
+    });
+  };
+
+  const formattedRequisitions = useMemo(() => {
+    if (!requisitionData?.requisitions) return [];
+
+    return requisitionData.requisitions.map((req, index) => ({
+      ...req,
+      key: req._id || index,
+      status: req.isActive || "draft",
+    }));
+  }, [requisitionData]);
+
   const handleDelete = async (id) => {
     try {
       await deleteRequisition(id).unwrap();
@@ -173,32 +189,28 @@ const RecruiterRequisition = () => {
 
   const handleSearchClear = () => {
     setSearchText("");
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({
       ...prev,
-      [filterType]: value,
+      [filterType]: value || undefined,
     }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleClearAllFilters = () => {
     setSearchText("");
-    setFilters({
-      client: null,
-      employmentType: null,
-      status: null,
-      dateRange: null,
-    });
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const hasActiveFilters = () => {
     return (
       searchText ||
-      filters.client ||
-      filters.project ||
-      filters.referenceNo ||
-      filters.requisitionNo
+      Object.keys(filters).some((key) => filters[key] !== undefined)
     );
   };
 
@@ -268,6 +280,7 @@ const RecruiterRequisition = () => {
       dataIndex: "project",
       key: "project",
       width: 150,
+      render: (project) => project?.name || "N/A",
     },
     {
       title: "Job Title",
@@ -575,24 +588,26 @@ const RecruiterRequisition = () => {
 
           <Table
             columns={columns}
-            dataSource={filteredRequisitions}
+            dataSource={formattedRequisitions}
             loading={requisitionsLoading}
             rowKey="key"
             pagination={{
-              pageSize: 10,
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
               showSizeChanger: true,
               showQuickJumper: true,
               responsive: true,
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} of ${total} items`,
             }}
+            onChange={handleTableChange}
             scroll={{ x: 1200 }}
             size="small"
             locale={{
-              emptyText:
-                searchText || hasActiveFilters()
-                  ? `No requisitions found matching the applied filters`
-                  : "No requisitions available",
+              emptyText: hasActiveFilters()
+                ? `No requisitions found matching the applied filters`
+                : "No requisitions available",
             }}
           />
         </Card>
@@ -632,7 +647,7 @@ const RecruiterRequisition = () => {
                   ?.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Project" span={2}>
-                {selectedRequisition.project || "N/A"}
+                {selectedRequisition.project.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Job Title">
                 {selectedRequisition.title}
