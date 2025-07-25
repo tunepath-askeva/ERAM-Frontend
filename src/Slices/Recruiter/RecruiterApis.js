@@ -244,11 +244,23 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    getProjects: builder.query({
+      query: () => ({
+        url: "/projects",
+        method: "GET",
+      }),
+    }),
+    getRequisitionsById: builder.query({
+      query: (id) => ({
+        url: `/get-requisition/${id}`,
+        method: "GET",
+      }),
+    }),
     submitRequisition: builder.mutation({
-      query: (requisitionData) => ({
+      query: (requisition) => ({
         url: "/requisition",
         method: "POST",
-        body: requisitionData,
+        body: requisition,
       }),
     }),
     editRequisition: builder.mutation({
@@ -309,4 +321,6 @@ export const {
   useDeleteRequisitionMutation,
   useGetSeperateApprovalsQuery,
   useGetCandidateTimelineQuery,
+  useGetRequisitionsByIdQuery,
+  useGetProjectsQuery,
 } = recruiterApi;

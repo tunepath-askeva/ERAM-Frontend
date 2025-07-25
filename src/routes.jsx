@@ -61,6 +61,8 @@ import Notifications from "./Pages/Notifications";
 import AdminRequisition from "./Admin/Pages/AdminRequisition";
 import RecruiterRequisition from "./Recruiters/Pages/RecruiterRequisition";
 import CandidateDocuments from "./Pages/CandidateDocuments";
+import AddRequisition from "./Recruiters/Components/AddRequisition";
+import EditRequisition from "./Recruiters/Components/EditRequisition";
 
 const AppRoutes = () => {
   return (
@@ -125,6 +127,7 @@ const AppRoutes = () => {
           path="/admin/requisitions"
           element={<ProtectedAdmin element={<AdminRequisition />} />}
         />
+
         <Route
           path="/admin/candidates"
           element={<ProtectedAdmin element={<AdminCandidates />} />}
@@ -209,6 +212,14 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/requisition"
           element={<ProtectedRecruiter element={<RecruiterRequisition />} />}
+        />
+        <Route
+          path="/recruiter/requisition/add"
+          element={<ProtectedRecruiter element={<AddRequisition />} />}
+        />
+        <Route
+          path="/recruiter/requisition/edit/:id"
+          element={<ProtectedRecruiter element={<EditRequisition />} />}
         />
         <Route
           path="/recruiter-jobs/:id"
