@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   useGetPipelineJobsByIdQuery,
   useMoveToNextStageMutation,
+  useStagedCandidateNotifyMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import {
   Card,
@@ -75,6 +76,7 @@ const RecruiterJobPipeline = () => {
   } = useGetPipelineJobsByIdQuery(id);
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
+    const [remainder] = useStagedCandidateNotifyMutation()
 
   useEffect(() => {
     if (apiData?.data) {
@@ -438,6 +440,24 @@ const RecruiterJobPipeline = () => {
   const handleViewDocument = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
   };
+
+ const handleNotify = async () => {
+  const workOrderId = apiData?.data?.workOrder?._id;
+  const userId = apiData?.data?.user?._id;
+
+  if (!workOrderId || !userId) {
+    console.warn("Missing work order or user ID");
+    return;
+  }
+
+  try {
+    await remainder({ workOrderId, userId }); 
+    console.log("Reminder sent successfully");
+  } catch (error) {
+    console.error("Error sending reminder:", error);
+  }
+};
+
 
   const renderDocuments = (candidate, stageId) => {
     if (!processedJobData) return null;
@@ -1094,7 +1114,7 @@ const RecruiterJobPipeline = () => {
               {getCandidatesInStage(activeStage).length})
             </Title>
 
-            <Button type="primary" style={{ background: "#da2c46" }}>
+            <Button type="primary" style={{ background: "#da2c46" }} onClick={()=> handleNotify()}>
               Notify
             </Button>
           </div>

@@ -81,7 +81,13 @@ const RecruiterSidebar = ({
     {
       key: "/recruiter/candidates",
       icon: <UsergroupAddOutlined />,
-      label: "Candidates",
+      label: "Completed Candidates",
+      permission: "candidates",
+    },
+    {
+      key: "/recruiter/allcandidates",
+      icon: <UsergroupAddOutlined />,
+      label: "All Candidates",
       permission: "candidates",
     },
     {

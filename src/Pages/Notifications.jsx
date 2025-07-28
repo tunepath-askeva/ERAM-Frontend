@@ -24,7 +24,10 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import { useGetCandidateNotificationQuery } from "../Slices/Users/UserApis";
+import {
+  useClearAllNotificationMutation,
+  useGetCandidateNotificationQuery,
+} from "../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -41,8 +44,10 @@ const Notifications = () => {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
-    refetch
+    refetch,
   } = useGetCandidateNotificationQuery();
+
+  const [clearAll] = useClearAllNotificationMutation();
 
   useEffect(() => {
     if (apiData) {
@@ -56,25 +61,23 @@ const Notifications = () => {
   }, [apiData, apiError]);
 
   const handleMarkAsRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification._id === id ? { ...notification, isRead: true } : notification
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification._id === id
+          ? { ...notification, isRead: true }
+          : notification
       )
     );
   };
 
-  const handleDeleteNotification = (id) => {
-    setNotifications(prev => prev.filter(notification => notification._id !== id));
-  };
-
   const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, isRead: true }))
+    setNotifications((prev) =>
+      prev.map((notification) => ({ ...notification, isRead: true }))
     );
   };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const clearAllNotifications = async() => {
+    await clearAll()
   };
 
   const getNotificationIcon = (type) => {
@@ -107,7 +110,7 @@ const Notifications = () => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (loading || apiLoading) {
     return (
@@ -130,7 +133,8 @@ const Notifications = () => {
               type="primary"
               onClick={() => refetch()}
               style={{
-                background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                background:
+                  "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               }}
             >
               Retry
@@ -185,10 +189,13 @@ const Notifications = () => {
             marginBottom: "16px",
           }}
         >
-          <Text strong style={{ fontSize: "16px", display: "flex", alignItems: "center" }}>
+          <Text
+            strong
+            style={{ fontSize: "16px", display: "flex", alignItems: "center" }}
+          >
             Recent Notifications
             {unreadCount > 0 && (
-              <span 
+              <span
                 style={{
                   marginLeft: "8px",
                   backgroundColor: "#da2c46",
@@ -197,7 +204,7 @@ const Notifications = () => {
                   padding: "2px 8px",
                   fontSize: "12px",
                   fontWeight: "bold",
-                  animation: unreadCount > 0 ? "pulse 1.5s infinite" : "none"
+                  animation: unreadCount > 0 ? "pulse 1.5s infinite" : "none",
                 }}
               >
                 {unreadCount} new
@@ -243,36 +250,6 @@ const Notifications = () => {
                   borderRadius: "8px",
                   transition: "all 0.3s ease",
                 }}
-                actions={[
-                  <Dropdown
-                    overlay={
-                      <Menu>
-                        <Menu.Item
-                          key="mark-read"
-                          onClick={() => handleMarkAsRead(item._id)}
-                          disabled={item.isRead}
-                        >
-                          Mark as read
-                        </Menu.Item>
-                        <Menu.Item
-                          key="delete"
-                          danger
-                          onClick={() => handleDeleteNotification(item._id)}
-                        >
-                          Delete
-                        </Menu.Item>
-                      </Menu>
-                    }
-                    trigger={["click"]}
-                    placement="bottomRight"
-                  >
-                    <Button
-                      type="text"
-                      icon={<MoreOutlined />}
-                      size="small"
-                    />
-                  </Dropdown>,
-                ]}
               >
                 <List.Item.Meta
                   avatar={

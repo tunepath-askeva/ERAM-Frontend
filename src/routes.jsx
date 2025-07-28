@@ -63,6 +63,7 @@ import RecruiterRequisition from "./Recruiters/Pages/RecruiterRequisition";
 import CandidateDocuments from "./Pages/CandidateDocuments";
 import AddRequisition from "./Recruiters/Components/AddRequisition";
 import EditRequisition from "./Recruiters/Components/EditRequisition";
+import AllCandidates from "./Recruiters/Pages/AllCandidates";
 
 const AppRoutes = () => {
   return (
@@ -240,6 +241,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/candidates"
           element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
+        />
+        <Route
+          path="/recruiter/allcandidates"
+          element={<ProtectedRecruiter element={<AllCandidates />} />}
         />
         <Route
           path="/recruiter/staged-candidates"

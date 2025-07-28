@@ -280,6 +280,13 @@ export const recruiterApi = createApi({
         body: requisition,
       }),
     }),
+    stagedCandidateNotify: builder.mutation({
+      query: ({workOrderId,userId}) => ({
+        url: `/remainder/${workOrderId}`,
+        method: "POST",
+        body: {userId},
+      }),
+    }),
     editRequisition: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/requisition/${id}`,
@@ -300,6 +307,20 @@ export const recruiterApi = createApi({
         url: `/timeline/${id}?page=${page}&pageSize=${pageSize}`,
         method: "GET",
       }),
+    }),
+    getAllBranchedCandidate: builder.query({
+      query: () => ({
+        url: `/all-candidate`,
+        method: "GET",
+      }),
+    }),
+    updateBranchedCandidate: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/branched-candidates/${id}`, 
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["BranchedCandidate"], 
     }),
   }),
 });
@@ -340,4 +361,7 @@ export const {
   useGetCandidateTimelineQuery,
   useGetRequisitionsByIdQuery,
   useGetProjectsQuery,
+  useGetAllBranchedCandidateQuery,
+  useUpdateBranchedCandidateMutation,
+  useStagedCandidateNotifyMutation
 } = recruiterApi;
