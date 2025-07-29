@@ -67,6 +67,41 @@ const accessPermissions = [
   { key: "view-job-declined", label: "View Declined Candidates" },
   { key: "view-job-pending", label: "View Pending Candidates" },
   { key: "view-job-screening", label: "View Screening Candidates" },
+
+  // General Candidate Permissions
+  { key: "view-candidates", label: "View Candidates" },
+  { key: "add-candidate", label: "Add Candidate" },
+  { key: "bulk-upload", label: "Bulk Upload Candidates" },
+
+  // Candidate Actions
+  { key: "download-documents", label: "Download Documents" },
+  { key: "send-messages", label: "Send Messages" },
+  { key: "view-profile", label: "View Candidate Profile" },
+
+  // Status Change Permissions
+  { key: "move-to-interview", label: "Move to Interview" },
+  { key: "make-offer", label: "Make Offer" },
+  { key: "reject-candidate", label: "Reject Candidate" },
+
+  // Interview Permissions
+  { key: "schedule-interview", label: "Schedule Interview" },
+  { key: "reschedule-interview", label: "Reschedule Interview" },
+  { key: "view-interviews", label: "View Interviews" },
+  { key: "change-interview-status", label: "Change Interview Status" },
+
+  // Tab View Permissions
+  { key: "view-all-tab", label: "View All Tab" },
+  { key: "view-completed-tab", label: "View Completed Tab" },
+  { key: "view-interview-tab", label: "View Interview Tab" },
+  { key: "view-offer-tab", label: "View Offer Tab" },
+  { key: "view-rejected-tab", label: "View Rejected Tab" },
+
+  // Profile Tab Permissions
+  { key: "view-overview-tab", label: "View Overview Tab" },
+  { key: "view-activity-tab", label: "View Activity Tab" },
+  { key: "view-documents-tab", label: "View Documents Tab" },
+
+  { key: "notify-candidate", label: "Notify Candidate" },
 ];
 
 const RecruiterForm = ({
@@ -112,7 +147,7 @@ const RecruiterForm = ({
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
-          experience: initialValues.experience || 0,
+          experience: initialValues.totalExperienceYears || 0,
           recruiterType: initialValues.recruiterType || "Recruiter",
           permissions: initialValues.permissions || [],
         });

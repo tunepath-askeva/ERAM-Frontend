@@ -46,6 +46,7 @@ import {
   ArrowRightOutlined,
   CommentOutlined,
 } from "@ant-design/icons";
+import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
@@ -69,6 +70,14 @@ const RecruiterJobPipeline = () => {
   const screens = useBreakpoint();
 
   const primaryColor = "#da2c46";
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const {
     data: apiData,
@@ -1121,14 +1130,15 @@ const RecruiterJobPipeline = () => {
               {getStageName(activeStage)} Candidates (
               {getCandidatesInStage(activeStage).length})
             </Title>
-
-            <Button
-              type="primary"
-              style={{ background: "#da2c46" }}
-              onClick={() => handleNotify()}
-            >
-              Notify
-            </Button>
+            {hasPermission("notify-candidate") && (
+              <Button
+                type="primary"
+                style={{ background: "#da2c46" }}
+                onClick={() => handleNotify()}
+              >
+                Notify
+              </Button>
+            )}
           </div>
           {getCandidatesInStage(activeStage).length > 0 ? (
             <List

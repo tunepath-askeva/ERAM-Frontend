@@ -61,6 +61,7 @@ import {
   useChangeInterviewStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -147,6 +148,14 @@ const RecruiterCandidates = () => {
     rejected: { color: "red", label: "Rejected" },
     completed: { color: "green", label: "Completed" },
     default: { color: "gray", label: "Unknown" },
+  };
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
   };
 
   const filterCounts = {
@@ -329,24 +338,28 @@ const RecruiterCandidates = () => {
 
     switch (candidate.status) {
       case "completed":
-        actions.push({
-          key: "interview",
-          label: "Move to Interview",
-          icon: <ArrowRightOutlined style={iconTextStyle} />,
-          onClick: () => handleMoveToInterview(candidate),
-          style: { color: "#722ed1" },
-        });
+        if (hasPermission("move-to-interview")) {
+          actions.push({
+            key: "interview",
+            label: "Move to Interview",
+            icon: <ArrowRightOutlined style={iconTextStyle} />,
+            onClick: () => handleMoveToInterview(candidate),
+            style: { color: "#722ed1" },
+          });
+        }
         break;
       case "interview":
         if ((candidate.interviewDetails?.length || 0) === 0) {
-          actions.push({
-            key: "schedule",
-            label: "Schedule Interview",
-            icon: <CalendarOutlined style={iconTextStyle} />,
-            onClick: () => handleScheduleInterview(candidate),
-            style: { color: "#722ed1" },
-          });
-        } else {
+          if (hasPermission("schedule-interview")) {
+            actions.push({
+              key: "schedule",
+              label: "Schedule Interview",
+              icon: <CalendarOutlined style={iconTextStyle} />,
+              onClick: () => handleScheduleInterview(candidate),
+              style: { color: "#722ed1" },
+            });
+          }
+        } else if (hasPermission("view-interviews")) {
           actions.push({
             key: "view-interviews",
             label: "View Interviews",
@@ -355,19 +368,21 @@ const RecruiterCandidates = () => {
             style: { color: "#722ed1" },
           });
         }
-        actions.push({
-          key: "offer",
-          label: "Make Offer",
-          icon: <GiftOutlined style={iconTextStyle} />,
-          onClick: () => handleMakeOffer(candidate),
-          style: { color: "#52c41a" },
-        });
+        if (hasPermission("make-offer")) {
+          actions.push({
+            key: "offer",
+            label: "Make Offer",
+            icon: <GiftOutlined style={iconTextStyle} />,
+            onClick: () => handleMakeOffer(candidate),
+            style: { color: "#52c41a" },
+          });
+        }
         break;
       default:
         break;
     }
 
-    if (candidate.status !== "rejected") {
+    if (candidate.status !== "rejected" && hasPermission("reject-candidate")) {
       actions.push({
         key: "reject",
         label: "Reject",
@@ -531,77 +546,93 @@ const RecruiterCandidates = () => {
       key: "actions",
       render: (text, record) => (
         <Space size="small">
-          <Tooltip title="View Profile">
-            <Button
-              type="text"
-              icon={<EyeOutlined style={iconTextStyle} />}
-              size="small"
-              onClick={() => handleViewProfile(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Send Message">
-            <Button
-              type="text"
-              icon={<MessageOutlined style={iconTextStyle} />}
-              size="small"
-              onClick={() => handleSendMessage(record)}
-            />
-          </Tooltip>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: "view",
-                  label: "View Profile",
-                  icon: <EyeOutlined style={iconTextStyle} />,
-                  onClick: () => handleViewProfile(record),
-                },
-                {
-                  key: "message",
-                  label: "Send Message",
-                  icon: <MessageOutlined style={iconTextStyle} />,
-                  onClick: () => handleSendMessage(record),
-                },
-                {
-                  key: "download",
-                  label: "Download Documents",
-                  icon: <DownloadOutlined style={iconTextStyle} />,
-                  onClick: () => handleDownloadResume(record),
-                },
-                {
-                  type: "divider",
-                },
-                ...getAvailableActions(record).map((action) => ({
-                  key: action.key,
-                  label: action.label,
-                  icon: action.icon,
-                  onClick: action.onClick,
-                  style: action.style,
-                })),
-              ],
-            }}
-            trigger={["click"]}
-            placement="bottomRight"
-          >
-            <Button
-              type="text"
-              icon={<MoreOutlined style={iconTextStyle} />}
-              size="small"
-            />
-          </Dropdown>
+          {hasPermission("view-profile") && (
+            <Tooltip title="View Profile">
+              <Button
+                type="text"
+                icon={<EyeOutlined style={iconTextStyle} />}
+                size="small"
+                onClick={() => handleViewProfile(record)}
+              />
+            </Tooltip>
+          )}
+          {hasPermission("send-messages") && (
+            <Tooltip title="Send Message">
+              <Button
+                type="text"
+                icon={<MessageOutlined style={iconTextStyle} />}
+                size="small"
+                onClick={() => handleSendMessage(record)}
+              />
+            </Tooltip>
+          )}
+          {(hasPermission("download-documents") ||
+            getAvailableActions(record).length > 0) && (
+            <Dropdown
+              menu={{
+                items: [
+                  hasPermission("view-profile") && {
+                    key: "view",
+                    label: "View Profile",
+                    icon: <EyeOutlined style={iconTextStyle} />,
+                    onClick: () => handleViewProfile(record),
+                  },
+                  hasPermission("send-messages") && {
+                    key: "message",
+                    label: "Send Message",
+                    icon: <MessageOutlined style={iconTextStyle} />,
+                    onClick: () => handleSendMessage(record),
+                  },
+                  hasPermission("download-documents") && {
+                    key: "download",
+                    label: "Download Documents",
+                    icon: <DownloadOutlined style={iconTextStyle} />,
+                    onClick: () => handleDownloadResume(record),
+                  },
+                  ...(getAvailableActions(record).length > 0
+                    ? [
+                        {
+                          type: "divider",
+                        },
+                      ]
+                    : []),
+                  ...getAvailableActions(record).map((action) => ({
+                    key: action.key,
+                    label: action.label,
+                    icon: action.icon,
+                    onClick: action.onClick,
+                    style: action.style,
+                  })),
+                ].filter(Boolean), // Remove any falsey values from the array
+              }}
+              trigger={["click"]}
+              placement="bottomRight"
+            >
+              <Button
+                type="text"
+                icon={<MoreOutlined style={iconTextStyle} />}
+                size="small"
+              />
+            </Dropdown>
+          )}
         </Space>
       ),
     },
   ];
 
-  const tabItems = Object.entries(filterCounts).map(([status, count]) => ({
-    key: status,
-    label: (
-      <Badge count={count} size="small" offset={[10, 0]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    ),
-  }));
+  const tabItems = Object.entries(filterCounts)
+    .filter(([status]) => {
+      if (status === "all") return hasPermission("view-all-tab");
+      return hasPermission(`view-${status}-tab`);
+    })
+    .map(([status, count]) => ({
+      key: status,
+      label: (
+        <Badge count={count} size="small" offset={[10, 0]}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+      ),
+    }));
 
   // Mobile card view for candidates
   const CandidateCard = ({ candidate }) => (
@@ -828,21 +859,25 @@ const RecruiterCandidates = () => {
               size="small"
               style={{ width: "100%", justifyContent: "flex-end" }}
             >
-              <Button
-                icon={<UploadOutlined />}
-                size="large"
-                onClick={() => setBulkUploadModalVisible(true)}
-              >
-                Bulk Upload
-              </Button>
-              <Button
-                style={buttonStyle}
-                icon={<PlusOutlined />}
-                size="large"
-                onClick={() => setAddCandidateModalVisible(true)}
-              >
-                Add Candidate
-              </Button>
+              {hasPermission("bulk-upload") && (
+                <Button
+                  icon={<UploadOutlined />}
+                  size="large"
+                  onClick={() => setBulkUploadModalVisible(true)}
+                >
+                  Bulk Upload
+                </Button>
+              )}
+              {hasPermission("add-candidate") && (
+                <Button
+                  style={buttonStyle}
+                  icon={<PlusOutlined />}
+                  size="large"
+                  onClick={() => setAddCandidateModalVisible(true)}
+                >
+                  Add Candidate
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>
@@ -1008,318 +1043,332 @@ const RecruiterCandidates = () => {
             </div>
 
             <Tabs defaultActiveKey="1">
-              <TabPane tab="Overview" key="1">
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Contact Information</Title>
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <Text>
-                      <MailOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedCandidate.email}
-                    </Text>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Stage Reviews</Title>
-                  {selectedCandidate.stageProgress?.map((stage, index) => (
-                    <div key={`stage-${index}`} style={{ marginBottom: 16 }}>
-                      <Text strong>{stage.stageName}</Text>
-                      {renderStageReviews(stage)}
-                    </div>
-                  ))}
-                </div>
-              </TabPane>
-              <TabPane tab="Activity" key="2">
-                <List
-                  itemLayout="horizontal"
-                  dataSource={renderActivityTimeline(
-                    selectedCandidate.stageProgress
-                  )}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar
-                            icon={item.icon}
-                            style={{
-                              backgroundColor: "#f0f0f0",
-                              color: "#da2c46",
-                            }}
-                          />
-                        }
-                        title={<Text strong>{item.title}</Text>}
-                        description={
-                          <>
-                            <Text>{item.description}</Text>
-                            <br />
-                            <Text type="secondary">{item.date}</Text>
-                          </>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </TabPane>
-              <TabPane tab="Documents" key="3">
-                {renderDocuments(selectedCandidate.stageProgress)}
-              </TabPane>
-              <TabPane
-                tab={
-                  <span>
-                    Interviews{" "}
-                    <Badge
-                      count={selectedCandidate.interviewDetails?.length || 0}
-                    />
-                  </span>
-                }
-                key="4"
-              >
-                {selectedCandidate.status === "interview" && (
-                  <div style={{ marginBottom: 16 }}>
-                    <Button
-                      type="primary"
-                      style={{ background: "#da2c46" }}
-                      onClick={() => {
-                        form.resetFields();
-                        setScheduleInterviewModalVisible(true);
+              {hasPermission("view-overview-tab") && (
+                <TabPane tab="Overview" key="1">
+                  <div style={{ marginBottom: 24 }}>
+                    <Title level={5}>Contact Information</Title>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
                       }}
-                      icon={<PlusOutlined />}
                     >
-                      Schedule New Interview
-                    </Button>
+                      <Text>
+                        <MailOutlined
+                          style={{ marginRight: 8, ...iconTextStyle }}
+                        />
+                        {selectedCandidate.email}
+                      </Text>
+                    </div>
                   </div>
-                )}
-                {selectedCandidate.interviewDetails?.length > 0 ? (
-                  <Collapse accordion>
-                    {selectedCandidate.interviewDetails.map((interview) => (
-                      <Panel
-                        header={`${interview.title} (${interview.status})`}
-                        key={interview._id}
-                        extra={
-                          <Space>
-                            <Tag
-                              color={
-                                interview.status === "scheduled"
-                                  ? "blue"
-                                  : interview.status === "interview_completed"
-                                  ? "green"
-                                  : interview.status === "interview_hold"
-                                  ? "orange"
-                                  : "red"
-                              }
-                            >
-                              {interview.status}
-                            </Tag>
-                            <Button
-                              size="small"
-                              disabled={
-                                interview.status !== "scheduled" &&
-                                interview.status !== "interview_hold"
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRescheduleInterview(interview);
+
+                  <div style={{ marginBottom: 24 }}>
+                    <Title level={5}>Stage Reviews</Title>
+                    {selectedCandidate.stageProgress?.map((stage, index) => (
+                      <div key={`stage-${index}`} style={{ marginBottom: 16 }}>
+                        <Text strong>{stage.stageName}</Text>
+                        {renderStageReviews(stage)}
+                      </div>
+                    ))}
+                  </div>
+                </TabPane>
+              )}
+              {hasPermission("view-activity-tab") && (
+                <TabPane tab="Activity" key="2">
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={renderActivityTimeline(
+                      selectedCandidate.stageProgress
+                    )}
+                    renderItem={(item) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar
+                              icon={item.icon}
+                              style={{
+                                backgroundColor: "#f0f0f0",
+                                color: "#da2c46",
                               }}
-                            >
-                              Reschedule
-                            </Button>
-                          </Space>
-                        }
-                      >
-                        <Descriptions bordered column={1} size="small">
-                          <Descriptions.Item label="Date & Time">
-                            {new Date(interview.date).toLocaleString()}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Mode">
-                            {interview.mode === "online"
-                              ? "Online"
-                              : "In-Person"}
-                          </Descriptions.Item>
-                          {interview.mode === "online" && (
-                            <Descriptions.Item label="Meeting Link">
-                              <a
-                                href={interview.meetingLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Join Meeting
-                              </a>
-                            </Descriptions.Item>
-                          )}
-                          <Descriptions.Item label="Interviewers">
-                            {allRecruiters ? (
-                              <List
-                                size="small"
-                                dataSource={interview?.interviewerIds?.map(
-                                  (id) =>
-                                    allRecruiters.otherRecruiters.find(
-                                      (r) => r._id === id
-                                    )
-                                )}
-                                renderItem={(recruiter) => (
-                                  <List.Item>
-                                    <List.Item.Meta
-                                      avatar={
-                                        <Avatar
-                                          src={recruiter?.image}
-                                          size="small"
-                                        />
-                                      }
-                                      title={recruiter?.fullName || "Unknown"}
-                                      description={recruiter?.specialization}
-                                    />
-                                  </List.Item>
-                                )}
-                              />
-                            ) : (
-                              <Text>Loading interviewers...</Text>
-                            )}
-                          </Descriptions.Item>
-                          {interview.notes && (
-                            <Descriptions.Item label="Notes">
-                              {interview.notes}
-                            </Descriptions.Item>
-                          )}
-                        </Descriptions>
-
-                        {/* Action buttons */}
-                        <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                          {interview.status === "scheduled" && (
+                            />
+                          }
+                          title={<Text strong>{item.title}</Text>}
+                          description={
                             <>
-                              <Button
-                                type="primary"
-                                style={{ background: "#52c41a" }}
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_completed",
-                                    interview._id
-                                  )
-                                }
-                                loading={isChangingStatus}
-                              >
-                                Mark as Completed
-                              </Button>
-                              <Button
-                                type="primary"
-                                style={{ background: "#faad14" }}
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_hold",
-                                    interview._id
-                                  )
-                                }
-                                loading={isChangingStatus}
-                              >
-                                Hold
-                              </Button>
-                              <Button
-                                danger
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_rejected",
-                                    interview._id
-                                  )
-                                }
-                                loading={isChangingStatus}
-                              >
-                                Reject
-                              </Button>
-                              <Button
-                                danger
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_cancelled",
-                                    interview._id
-                                  )
-                                }
-                                loading={isChangingStatus}
-                              >
-                                Cancel
-                              </Button>
+                              <Text>{item.description}</Text>
+                              <br />
+                              <Text type="secondary">{item.date}</Text>
                             </>
-                          )}
-
-                          {interview.status === "interview_hold" && (
-                            <>
-                              <Button
-                                type="primary"
-                                style={{ backgroundColor: "#da2c46" }}
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_completed",
-                                    interview._id
-                                  )
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </TabPane>
+              )}
+              {hasPermission("view-documents-tab") && (
+                <TabPane tab="Documents" key="3">
+                  {renderDocuments(selectedCandidate.stageProgress)}
+                </TabPane>
+              )}
+              {hasPermission("view-interviews") && (
+                <TabPane
+                  tab={
+                    <span>
+                      Interviews{" "}
+                      <Badge
+                        count={selectedCandidate.interviewDetails?.length || 0}
+                      />
+                    </span>
+                  }
+                  key="4"
+                >
+                  {selectedCandidate.status === "interview" && (
+                    <div style={{ marginBottom: 16 }}>
+                      <Button
+                        type="primary"
+                        style={{ background: "#da2c46" }}
+                        onClick={() => {
+                          form.resetFields();
+                          setScheduleInterviewModalVisible(true);
+                        }}
+                        icon={<PlusOutlined />}
+                      >
+                        Schedule New Interview
+                      </Button>
+                    </div>
+                  )}
+                  {selectedCandidate.interviewDetails?.length > 0 ? (
+                    <Collapse accordion>
+                      {selectedCandidate.interviewDetails.map((interview) => (
+                        <Panel
+                          header={`${interview.title} (${interview.status})`}
+                          key={interview._id}
+                          extra={
+                            <Space>
+                              <Tag
+                                color={
+                                  interview.status === "scheduled"
+                                    ? "blue"
+                                    : interview.status === "interview_completed"
+                                    ? "green"
+                                    : interview.status === "interview_hold"
+                                    ? "orange"
+                                    : "red"
                                 }
-                                loading={isChangingStatus}
                               >
-                                Mark as Completed
-                              </Button>
+                                {interview.status}
+                              </Tag>
                               <Button
-                                danger
-                                onClick={() =>
-                                  handleChangeInterviewStatus(
-                                    "interview_rejected",
-                                    interview._id
-                                  )
+                                size="small"
+                                disabled={
+                                  interview.status !== "scheduled" &&
+                                  interview.status !== "interview_hold"
                                 }
-                                loading={isChangingStatus}
-                              >
-                                Reject
-                              </Button>
-                              <Button
-                                type="primary"
-                                style={{ backgroundColor: "#da2c46" }}
                                 onClick={(e) => {
+                                  e.stopPropagation();
                                   handleRescheduleInterview(interview);
                                 }}
                               >
                                 Reschedule
                               </Button>
-                            </>
-                          )}
+                            </Space>
+                          }
+                        >
+                          <Descriptions bordered column={1} size="small">
+                            <Descriptions.Item label="Date & Time">
+                              {new Date(interview.date).toLocaleString()}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Mode">
+                              {interview.mode === "online"
+                                ? "Online"
+                                : "In-Person"}
+                            </Descriptions.Item>
+                            {interview.mode === "online" && (
+                              <Descriptions.Item label="Meeting Link">
+                                <a
+                                  href={interview.meetingLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Join Meeting
+                                </a>
+                              </Descriptions.Item>
+                            )}
+                            <Descriptions.Item label="Interviewers">
+                              {allRecruiters ? (
+                                <List
+                                  size="small"
+                                  dataSource={interview?.interviewerIds?.map(
+                                    (id) =>
+                                      allRecruiters.otherRecruiters.find(
+                                        (r) => r._id === id
+                                      )
+                                  )}
+                                  renderItem={(recruiter) => (
+                                    <List.Item>
+                                      <List.Item.Meta
+                                        avatar={
+                                          <Avatar
+                                            src={recruiter?.image}
+                                            size="small"
+                                          />
+                                        }
+                                        title={recruiter?.fullName || "Unknown"}
+                                        description={recruiter?.specialization}
+                                      />
+                                    </List.Item>
+                                  )}
+                                />
+                              ) : (
+                                <Text>Loading interviewers...</Text>
+                              )}
+                            </Descriptions.Item>
+                            {interview.notes && (
+                              <Descriptions.Item label="Notes">
+                                {interview.notes}
+                              </Descriptions.Item>
+                            )}
+                          </Descriptions>
 
-                          {interview.status === "interview_completed" && (
-                            <Button
-                              danger
-                              onClick={() =>
-                                handleChangeInterviewStatus(
-                                  "interview_rejected",
-                                  interview._id
-                                )
-                              }
-                              loading={isChangingStatus}
-                            >
-                              Reject
-                            </Button>
-                          )}
-                        </div>
-                      </Panel>
-                    ))}
-                  </Collapse>
-                ) : (
-                  <Empty
-                    description={
-                      selectedCandidate.status === "interview"
-                        ? "No interviews scheduled yet"
-                        : "No interviews were scheduled for this candidate"
-                    }
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  >
-                    {selectedCandidate.status === "interview" && (
-                      <Button
-                        type="primary"
-                        onClick={() => setScheduleInterviewModalVisible(true)}
-                      >
-                        Schedule Interview
-                      </Button>
-                    )}
-                  </Empty>
-                )}
-              </TabPane>
+                          {/* Action buttons */}
+                          <div
+                            style={{ marginTop: 16, display: "flex", gap: 8 }}
+                          >
+                            {interview.status === "scheduled" && (
+                              <>
+                                <Button
+                                  type="primary"
+                                  style={{ background: "#52c41a" }}
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_completed",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Mark as Completed
+                                </Button>
+                                <Button
+                                  type="primary"
+                                  style={{ background: "#faad14" }}
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_hold",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Hold
+                                </Button>
+                                <Button
+                                  danger
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_rejected",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Reject
+                                </Button>
+                                <Button
+                                  danger
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_cancelled",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Cancel
+                                </Button>
+                              </>
+                            )}
+
+                            {interview.status === "interview_hold" && (
+                              <>
+                                <Button
+                                  type="primary"
+                                  style={{ backgroundColor: "#da2c46" }}
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_completed",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Mark as Completed
+                                </Button>
+                                <Button
+                                  danger
+                                  onClick={() =>
+                                    handleChangeInterviewStatus(
+                                      "interview_rejected",
+                                      interview._id
+                                    )
+                                  }
+                                  loading={isChangingStatus}
+                                >
+                                  Reject
+                                </Button>
+                                <Button
+                                  type="primary"
+                                  style={{ backgroundColor: "#da2c46" }}
+                                  onClick={(e) => {
+                                    handleRescheduleInterview(interview);
+                                  }}
+                                >
+                                  Reschedule
+                                </Button>
+                              </>
+                            )}
+
+                            {interview.status === "interview_completed" && (
+                              <Button
+                                danger
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_rejected",
+                                    interview._id
+                                  )
+                                }
+                                loading={isChangingStatus}
+                              >
+                                Reject
+                              </Button>
+                            )}
+                          </div>
+                        </Panel>
+                      ))}
+                    </Collapse>
+                  ) : (
+                    <Empty
+                      description={
+                        selectedCandidate.status === "interview"
+                          ? "No interviews scheduled yet"
+                          : "No interviews were scheduled for this candidate"
+                      }
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    >
+                      {selectedCandidate.status === "interview" && (
+                        <Button
+                          type="primary"
+                          onClick={() => setScheduleInterviewModalVisible(true)}
+                        >
+                          Schedule Interview
+                        </Button>
+                      )}
+                    </Empty>
+                  )}
+                </TabPane>
+              )}
             </Tabs>
           </div>
         )}
