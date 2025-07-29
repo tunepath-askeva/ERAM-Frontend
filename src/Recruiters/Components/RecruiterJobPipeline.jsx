@@ -46,6 +46,7 @@ import {
   ArrowRightOutlined,
   CommentOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -64,6 +65,7 @@ const RecruiterJobPipeline = () => {
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
   const [reviewerComments, setReviewerComments] = useState("");
+  const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
   const primaryColor = "#da2c46";
@@ -76,7 +78,7 @@ const RecruiterJobPipeline = () => {
   } = useGetPipelineJobsByIdQuery(id);
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
-    const [remainder] = useStagedCandidateNotifyMutation()
+  const [remainder] = useStagedCandidateNotifyMutation();
 
   useEffect(() => {
     if (apiData?.data) {
@@ -221,7 +223,7 @@ const RecruiterJobPipeline = () => {
     if (diffDays === 1) return "1 day ago";
     if (diffDays < 30) return `${diffDays} days ago`;
     if (diffDays < 90) return `${Math.ceil(diffDays / 30)} months ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -441,23 +443,29 @@ const RecruiterJobPipeline = () => {
     window.open(fileUrl, "_blank");
   };
 
- const handleNotify = async () => {
-  const workOrderId = apiData?.data?.workOrder?._id;
-  const userId = apiData?.data?.user?._id;
+  const handleNotify = async () => {
+    const workOrderId = apiData?.data?.workOrder?._id;
+    const userId = apiData?.data?.user?._id;
 
-  if (!workOrderId || !userId) {
-    console.warn("Missing work order or user ID");
-    return;
-  }
+    if (!workOrderId || !userId) {
+      console.warn("Missing work order or user ID");
+      return;
+    }
 
-  try {
-    await remainder({ workOrderId, userId }); 
-    console.log("Reminder sent successfully");
-  } catch (error) {
-    console.error("Error sending reminder:", error);
-  }
-};
-
+    try {
+      await remainder({ workOrderId, userId });
+      enqueueSnackbar("Notification send successfully...!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      enqueueSnackbar("Error sending notification", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
+    }
+  };
 
   const renderDocuments = (candidate, stageId) => {
     if (!processedJobData) return null;
@@ -1114,7 +1122,11 @@ const RecruiterJobPipeline = () => {
               {getCandidatesInStage(activeStage).length})
             </Title>
 
-            <Button type="primary" style={{ background: "#da2c46" }} onClick={()=> handleNotify()}>
+            <Button
+              type="primary"
+              style={{ background: "#da2c46" }}
+              onClick={() => handleNotify()}
+            >
               Notify
             </Button>
           </div>
