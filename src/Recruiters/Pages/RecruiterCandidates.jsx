@@ -1107,6 +1107,8 @@ const RecruiterCandidates = () => {
                                   ? "blue"
                                   : interview.status === "interview_completed"
                                   ? "green"
+                                  : interview.status === "interview_hold"
+                                  ? "orange"
                                   : "red"
                               }
                             >
@@ -1114,7 +1116,10 @@ const RecruiterCandidates = () => {
                             </Tag>
                             <Button
                               size="small"
-                              disabled={interview.status !== "scheduled"}
+                              disabled={
+                                interview.status !== "scheduled" &&
+                                interview.status !== "interview_hold"
+                              }
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRescheduleInterview(interview);
@@ -1187,7 +1192,62 @@ const RecruiterCandidates = () => {
                             <>
                               <Button
                                 type="primary"
-                                style={{ background: "#da2c46" }}
+                                style={{ background: "#52c41a" }}
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_completed",
+                                    interview._id
+                                  )
+                                }
+                                loading={isChangingStatus}
+                              >
+                                Mark as Completed
+                              </Button>
+                              <Button
+                                type="primary"
+                                style={{ background: "#faad14" }}
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_hold",
+                                    interview._id
+                                  )
+                                }
+                                loading={isChangingStatus}
+                              >
+                                Hold
+                              </Button>
+                              <Button
+                                danger
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_rejected",
+                                    interview._id
+                                  )
+                                }
+                                loading={isChangingStatus}
+                              >
+                                Reject
+                              </Button>
+                              <Button
+                                danger
+                                onClick={() =>
+                                  handleChangeInterviewStatus(
+                                    "interview_cancelled",
+                                    interview._id
+                                  )
+                                }
+                                loading={isChangingStatus}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          )}
+
+                          {interview.status === "interview_hold" && (
+                            <>
+                              <Button
+                                type="primary"
+                                style={{ backgroundColor: "#da2c46" }}
                                 onClick={() =>
                                   handleChangeInterviewStatus(
                                     "interview_completed",
@@ -1202,28 +1262,39 @@ const RecruiterCandidates = () => {
                                 danger
                                 onClick={() =>
                                   handleChangeInterviewStatus(
-                                    "interview_cancelled",
+                                    "interview_rejected",
                                     interview._id
                                   )
                                 }
                                 loading={isChangingStatus}
                               >
-                                Cancel Interview
+                                Reject
                               </Button>
                               <Button
                                 type="primary"
-                                style={{ background: "#da2c46" }}
-                                onClick={() => {
-                                  setSelectedCandidate({
-                                    ...selectedCandidate,
-                                    interviewDetails: [interview],
-                                  });
+                                style={{ backgroundColor: "#da2c46" }}
+                                onClick={(e) => {
                                   handleRescheduleInterview(interview);
                                 }}
                               >
                                 Reschedule
                               </Button>
                             </>
+                          )}
+
+                          {interview.status === "interview_completed" && (
+                            <Button
+                              danger
+                              onClick={() =>
+                                handleChangeInterviewStatus(
+                                  "interview_rejected",
+                                  interview._id
+                                )
+                              }
+                              loading={isChangingStatus}
+                            >
+                              Reject
+                            </Button>
                           )}
                         </div>
                       </Panel>
