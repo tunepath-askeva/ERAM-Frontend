@@ -40,6 +40,7 @@ import {
   PoweroffOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useGetRecruiterJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -56,6 +57,9 @@ const RecruiterJobs = () => {
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
   const navigate = useNavigate();
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
 
   const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
 
@@ -113,6 +117,10 @@ const RecruiterJobs = () => {
 
   const handleJobClick = (job) => {
     navigate(`/recruiter-jobs/${job._id}`);
+  };
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
   };
 
   const handleDeactivateJob = (job, e) => {
@@ -474,32 +482,42 @@ const RecruiterJobs = () => {
                       <Space>
                         {/* Only show edit button if recruiter is in the main assignedRecruiters array */}
                         {isRecruiterAssigned(job.assignedRecruiters) && (
-                          <Tooltip title="Edit Job">
-                            <Button
-                              type="text"
-                              icon={<EditOutlined />}
-                              onClick={(e) => handleEditJob(job, e)}
-                            />
-                          </Tooltip>
-                        )}
-                        {job.isActive ? (
-                          <Tooltip title="Deactivate Job">
-                            <Button
-                              type="text"
-                              icon={<PoweroffOutlined />}
-                              danger
-                              onClick={(e) => handleDeactivateJob(job, e)}
-                            />
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Activate Job">
-                            <Button
-                              type="text"
-                              icon={<CheckCircleOutlined />}
-                              style={{ color: "#52c41a" }}
-                              onClick={(e) => handleActivateJob(job, e)}
-                            />
-                          </Tooltip>
+                          <>
+                            {hasPermission("edit-job") && (
+                              <Tooltip title="Edit Job">
+                                <Button
+                                  type="text"
+                                  icon={<EditOutlined />}
+                                  onClick={(e) => handleEditJob(job, e)}
+                                />
+                              </Tooltip>
+                            )}
+                            {hasPermission("deactivate-job") && (
+                              <>
+                                {job.isActive ? (
+                                  <Tooltip title="Deactivate Job">
+                                    <Button
+                                      type="text"
+                                      icon={<PoweroffOutlined />}
+                                      danger
+                                      onClick={(e) =>
+                                        handleDeactivateJob(job, e)
+                                      }
+                                    />
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Activate Job">
+                                    <Button
+                                      type="text"
+                                      icon={<CheckCircleOutlined />}
+                                      style={{ color: "#52c41a" }}
+                                      onClick={(e) => handleActivateJob(job, e)}
+                                    />
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                          </>
                         )}
                       </Space>
                       <Tag

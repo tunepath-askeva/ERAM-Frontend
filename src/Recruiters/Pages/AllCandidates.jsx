@@ -39,6 +39,7 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import CandidateEditModal from "./CandidateEditModal";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -61,6 +62,9 @@ const useDebounce = (value, delay) => {
 };
 
 function AllCandidates() {
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
@@ -163,6 +167,10 @@ function AllCandidates() {
     setEditModalVisible(true);
   }, []);
 
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
+
   const handleEditSubmit = async (updatedData) => {
     try {
       await updateCandidate({
@@ -172,7 +180,7 @@ function AllCandidates() {
       message.success("Candidate updated successfully");
       setEditModalVisible(false);
       setCandidateToEdit(null);
-      refetch(); 
+      refetch();
     } catch (error) {
       message.error("Failed to update candidate");
       console.error("Update error:", error);
@@ -184,7 +192,7 @@ function AllCandidates() {
       setCurrentPage(page);
       if (size !== pageSize) {
         setPageSize(size);
-        setCurrentPage(1); 
+        setCurrentPage(1);
       }
     },
     [pageSize]
@@ -279,11 +287,13 @@ function AllCandidates() {
             icon={<EyeOutlined />}
             onClick={() => showCandidateDetails(record)}
           />
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEditCandidate(record)}
-          />
+          {hasPermission("edit-candidate-details") && (
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEditCandidate(record)}
+            />
+          )}
         </Space>
       ),
     },
