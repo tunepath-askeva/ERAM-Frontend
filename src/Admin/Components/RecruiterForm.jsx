@@ -52,11 +52,18 @@ const accessPermissions = [
   { key: "dashboard", label: "Dashboard" },
   { key: "jobs", label: "Jobs" },
   { key: "candidates", label: "Candidates" },
+  { key: "all-candidates", label: "All Candidates" },
   { key: "staged-candidates", label: "Staged Candidates" },
   { key: "approvals", label: "Approvals" },
   { key: "employees", label: "Employees" },
   { key: "payroll", label: "Payroll" },
   { key: "requisition", label: "Requisition" },
+  { key: "view-job-sourced", label: "View Sourced Candidates" },
+  { key: "view-job-selected", label: "View Selected Candidates" },
+  { key: "view-job-applied", label: "View Applied Candidates" },
+  { key: "view-job-declined", label: "View Declined Candidates" },
+  { key: "view-job-pending", label: "View Pending Candidates" },
+  { key: "view-job-screening", label: "View Screening Candidates" },
 ];
 
 const RecruiterForm = ({
