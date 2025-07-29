@@ -54,6 +54,7 @@ import {
   MoreOutlined,
 } from "@ant-design/icons";
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { useSnackbar } from "notistack";
 
 import {
@@ -95,7 +96,7 @@ const AdminCandidates = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); 
+      setCurrentPage(1);
     }, 700);
 
     return () => clearTimeout(timer);
@@ -254,12 +255,12 @@ const AdminCandidates = () => {
   const beforeUpload = (file) => {
     const isCSVorExcel =
       file.type === "text/csv" ||
-      file.type === "application/vnd.ms-excel" ||
+      file.type === "application/vnd.ms-excel" || // .xls
       file.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; // .xlsx
 
     if (!isCSVorExcel) {
-      enqueueSnackbar("You can only upload CSV or Excel files!", {
+      enqueueSnackbar("You can only upload CSV or Excel (.xls/.xlsx) files!", {
         variant: "error",
       });
       return false;
@@ -296,8 +297,22 @@ const AdminCandidates = () => {
     });
   };
 
+  const parseExcel = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const workbook = XLSX.read(e.target.result, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        resolve(data);
+      };
+      reader.onerror = reject;
+      reader.readAsBinaryString(file);
+    });
+
   const handleFileChange = (info) => {
-    setFileList(info.fileList.slice(-1)); // Keep only the latest file
+    setFileList(info.fileList.slice(-1));
   };
 
   const processImport = async () => {
@@ -310,15 +325,59 @@ const AdminCandidates = () => {
 
     try {
       const file = fileList[0].originFileObj || fileList[0];
+      const fileName = file.name.toLowerCase();
 
-      const fileContent = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-      });
+      let parsedData = [];
 
-      const parsedData = await parseCSV(fileContent);
+      if (fileName.endsWith(".csv")) {
+        const fileContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+
+        parsedData = await new Promise((resolve, reject) => {
+          Papa.parse(fileContent, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                reject(
+                  new Error("CSV parsing error: " + results.errors[0].message)
+                );
+              } else {
+                resolve(results.data);
+              }
+            },
+            error: reject,
+          });
+        });
+      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        const data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const workbook = XLSX.read(e.target.result, { type: "binary" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+              defval: "",
+            });
+            resolve(jsonData);
+          };
+          reader.onerror = reject;
+          reader.readAsBinaryString(file);
+        });
+
+        parsedData = data;
+      } else {
+        enqueueSnackbar(
+          "Unsupported file type. Please upload a .csv or .xlsx file.",
+          { variant: "error" }
+        );
+        setIsImporting(false);
+        return;
+      }
 
       if (parsedData.length === 0) {
         enqueueSnackbar("No valid data found in the file", {
@@ -328,41 +387,54 @@ const AdminCandidates = () => {
         return;
       }
 
-      const candidates = parsedData
-        .map((row) => {
-          const fullName =
-            row["Full Name"] ||
-            row["fullName"] ||
-            row["Name"] ||
-            `${row["First Name"] || row["firstName"] || ""} ${
-              row["Last Name"] || row["lastName"] || ""
-            }`.trim();
+      const candidates = [];
+      let skippedRows = 0;
 
-          return {
-            fullName,
-            email: row["Email"] || row["email"],
-            phone: row["Phone"] || row["phone"],
-            password: row["Password"] || row["password"],
+      parsedData.forEach((row) => {
+        const fullName =
+          row["Full Name"]?.trim() ||
+          [row["First Name"], row["Middle Name"], row["Last Name"]]
+            .filter(Boolean)
+            .map((s) => s.trim())
+            .join(" ");
+
+        const email = row["Email"]?.trim();
+        const password = row["Password"]?.trim();
+
+        if (fullName && email && password) {
+          candidates.push({
+            fullName: fullName || "",
+            email: email?.toLowerCase() || "",
+            phone: row["Phone"]?.trim() || "",
+            password: password || "",
             companyName:
-              row["Company Name"] || row["companyName"] || row["Company"],
-            specialization: row["Specialization"] || row["specialization"],
-            qualifications: row["Qualifications"] || row["qualifications"],
-          };
-        })
-        .filter((candidate) => {
-          return candidate.fullName && candidate.email && candidate.password;
-        });
+              row["Company Name"]?.trim() || row["Company"]?.trim() || "",
+            specialization: row["Specialization"]?.trim() || "",
+            qualifications: row["Qualifications"]?.trim() || "",
+          });
+        }
+        if (!(fullName && email && password)) {
+          console.log("Skipped Row:", row);
+        } else {
+          skippedRows++;
+        }
+      });
 
       if (candidates.length === 0) {
         enqueueSnackbar(
-          "No valid candidates found. Please check required fields: Full Name, Email, Password",
+          "No valid candidates found (Full Name, Email, Password required)",
           { variant: "error" }
         );
         setIsImporting(false);
         return;
       }
 
-      console.log("Candidates to import:", candidates);
+      if (skippedRows > 0) {
+        enqueueSnackbar(
+          `${skippedRows} row(s) skipped due to missing required fields.`,
+          { variant: "warning" }
+        );
+      }
 
       const response = await bulkImportCandidates({
         candidates,
@@ -377,17 +449,12 @@ const AdminCandidates = () => {
       setFileList([]);
     } catch (error) {
       console.error("Import error:", error);
-
-      if (error?.data?.message) {
-        enqueueSnackbar(error.data.message, { variant: "error" });
-      } else if (error?.message) {
-        enqueueSnackbar(error.message, { variant: "error" });
-      } else {
-        enqueueSnackbar(
-          "Failed to import candidates. Please check the file format and try again.",
-          { variant: "error" }
-        );
-      }
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to import candidates. Please check the file format.",
+        { variant: "error" }
+      );
     } finally {
       setIsImporting(false);
     }
@@ -943,7 +1010,7 @@ const AdminCandidates = () => {
             fileList={fileList}
             beforeUpload={beforeUpload}
             onChange={handleFileChange}
-            accept=".csv"
+            accept=".csv,.xls,.xlsx"
             showUploadList={{
               showRemoveIcon: true,
             }}
@@ -952,10 +1019,10 @@ const AdminCandidates = () => {
               <UploadOutlined style={{ fontSize: "32px", color: "#da2c46" }} />
             </p>
             <p className="ant-upload-text">
-              Click or drag CSV file to this area to upload
+              Click or drag CSV, XLSX file to this area to upload
             </p>
             <p className="ant-upload-hint">
-              Support for a single CSV file upload only.
+              Support for a single CSV, XLSX file upload only.
             </p>
           </Upload.Dragger>
 
