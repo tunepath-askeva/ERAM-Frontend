@@ -281,10 +281,10 @@ export const recruiterApi = createApi({
       }),
     }),
     stagedCandidateNotify: builder.mutation({
-      query: ({workOrderId,userId}) => ({
+      query: ({ workOrderId, userId }) => ({
         url: `/remainder/${workOrderId}`,
         method: "POST",
-        body: {userId},
+        body: { userId },
       }),
     }),
     editRequisition: builder.mutation({
@@ -309,18 +309,49 @@ export const recruiterApi = createApi({
       }),
     }),
     getAllBranchedCandidate: builder.query({
-      query: () => ({
-        url: `/all-candidate`,
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", params.page || 1);
+        queryParams.append("limit", params.limit || 10);
+
+        if (params.search) {
+          queryParams.append("search", params.search);
+        }
+
+        if (params.skills) {
+          queryParams.append("skills", params.skills);
+        }
+
+        if (params.location) {
+          queryParams.append("location", params.location);
+        }
+
+        if (params.experience) {
+          queryParams.append("experience", params.experience);
+        }
+
+        if (params.industry) {
+          queryParams.append("industry", params.industry);
+        }
+
+        return {
+          url: `/all-candidate?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
+
+      transformResponse: (response) => {
+        return response;
+      },
     }),
     updateBranchedCandidate: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/branched-candidates/${id}`, 
+        url: `/branched-candidates/${id}`,
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["BranchedCandidate"], 
+      invalidatesTags: ["BranchedCandidate"],
     }),
   }),
 });
@@ -363,5 +394,5 @@ export const {
   useGetProjectsQuery,
   useGetAllBranchedCandidateQuery,
   useUpdateBranchedCandidateMutation,
-  useStagedCandidateNotifyMutation
+  useStagedCandidateNotifyMutation,
 } = recruiterApi;

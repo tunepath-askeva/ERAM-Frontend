@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Card,
   Row,
@@ -14,8 +14,8 @@ import {
   Tooltip,
   Empty,
   Spin,
-  Dropdown,
-  Menu,
+  Table,
+  Pagination,
   message,
 } from "antd";
 import {
@@ -32,8 +32,6 @@ import {
   FilterOutlined,
   EyeOutlined,
   EditOutlined,
-  MoreOutlined,
-  DeleteOutlined,
 } from "@ant-design/icons";
 import {
   useGetAllBranchedCandidateQuery,
@@ -42,110 +40,128 @@ import {
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import CandidateEditModal from "./CandidateEditModal";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 function AllCandidates() {
-  const {
-    data: allcandidates,
-    isLoading,
-    error,
-    refetch,
-  } = useGetAllBranchedCandidateQuery();
-  const [updateCandidate, { isLoading: isUpdating }] =
-    useUpdateBranchedCandidateMutation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedExperience, setSelectedExperience] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
-
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [candidateToEdit, setCandidateToEdit] = useState(null);
 
-  const filterOptions = useMemo(() => {
-    if (!allcandidates?.users)
-      return { skills: [], locations: [], industries: [] };
+  const debouncedSearchTerm = useDebounce(searchTerm, 700);
 
-    const skills = [
-      ...new Set(allcandidates.users.flatMap((user) => user.skills || [])),
-    ];
-    const locations = [
-      ...new Set(
-        allcandidates.users.map((user) => user.location).filter(Boolean)
-      ),
-    ];
-    const industries = [
-      ...new Set(allcandidates.users.flatMap((user) => user.industry || [])),
-    ];
+  const queryParams = useMemo(() => {
+    const params = {
+      page: currentPage,
+      limit: pageSize,
+    };
 
-    return { skills, locations, industries };
-  }, [allcandidates]);
+    if (debouncedSearchTerm) {
+      params.search = debouncedSearchTerm;
+    }
 
-  const filteredCandidates = useMemo(() => {
-    if (!allcandidates?.users) return [];
+    if (selectedSkills.length > 0) {
+      params.skills = selectedSkills.join(",");
+    }
 
-    return allcandidates.users.filter((candidate) => {
-      const matchesSearch =
-        !searchTerm ||
-        candidate.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.skills?.some((skill) =>
-          skill.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    if (selectedLocation) {
+      params.location = selectedLocation;
+    }
 
-      const matchesSkills =
-        selectedSkills.length === 0 ||
-        selectedSkills.some((skill) => candidate.skills?.includes(skill));
+    if (selectedExperience) {
+      params.experience = selectedExperience;
+    }
 
-      const matchesLocation =
-        !selectedLocation || candidate.location === selectedLocation;
+    if (selectedIndustry) {
+      params.industry = selectedIndustry;
+    }
 
-      const matchesExperience =
-        !selectedExperience ||
-        candidate.totalExperienceYears === selectedExperience;
-
-      const matchesIndustry =
-        !selectedIndustry || candidate.industry?.includes(selectedIndustry);
-
-      return (
-        matchesSearch &&
-        matchesSkills &&
-        matchesLocation &&
-        matchesExperience &&
-        matchesIndustry
-      );
-    });
+    return params;
   }, [
-    allcandidates,
-    searchTerm,
+    currentPage,
+    pageSize,
+    debouncedSearchTerm,
     selectedSkills,
     selectedLocation,
     selectedExperience,
     selectedIndustry,
   ]);
 
-  const clearFilters = () => {
+  const {
+    data: candidatesResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useGetAllBranchedCandidateQuery(queryParams);
+
+  const [updateCandidate, { isLoading: isUpdating }] =
+    useUpdateBranchedCandidateMutation();
+
+  const candidates = candidatesResponse?.users || [];
+  const totalCandidates = candidatesResponse?.total || 0;
+  const filterOptions = candidatesResponse?.filterOptions || {
+    skills: [],
+    locations: [],
+    industries: [],
+  };
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [
+    debouncedSearchTerm,
+    selectedSkills,
+    selectedLocation,
+    selectedExperience,
+    selectedIndustry,
+  ]);
+
+  const clearFilters = useCallback(() => {
     setSearchTerm("");
     setSelectedSkills([]);
     setSelectedLocation("");
     setSelectedExperience("");
     setSelectedIndustry("");
-  };
+    setCurrentPage(1);
+  }, []);
 
-  const showCandidateDetails = (candidate) => {
+  const showCandidateDetails = useCallback((candidate) => {
     setSelectedCandidate(candidate);
     setDrawerVisible(true);
-  };
+  }, []);
 
-  const handleEditCandidate = (candidate) => {
+  const handleEditCandidate = useCallback((candidate) => {
     setCandidateToEdit(candidate);
     setEditModalVisible(true);
-  };
+  }, []);
 
   const handleEditSubmit = async (updatedData) => {
     try {
@@ -156,327 +172,124 @@ function AllCandidates() {
       message.success("Candidate updated successfully");
       setEditModalVisible(false);
       setCandidateToEdit(null);
+      refetch(); 
     } catch (error) {
       message.error("Failed to update candidate");
       console.error("Update error:", error);
     }
   };
 
-  const getSocialIcon = (platform) => {
-    const icons = {
-      linkedin: <LinkedinOutlined />,
-      github: <GithubOutlined />,
-      twitter: <TwitterOutlined />,
-      facebook: <FacebookOutlined />,
-    };
-    return icons[platform] || null;
-  };
-
-  const CandidateCard = ({ candidate }) => (
-    <div style={{ height: 420, marginBottom: 16 }}>
-      <Card
-        hoverable
-        className="candidate-card"
-        style={{
-          borderRadius: 8,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
-        bodyStyle={{
-          padding: 16,
-          height: "calc(100% - 57px)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-        actions={[
-          <Button
-            type="primary"
-            icon={<EyeOutlined />}
-            onClick={() => showCandidateDetails(candidate)}
-          >
-            View Details
-          </Button>,
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => handleEditCandidate(candidate)}
-          >
-            Edit
-          </Button>,
-        ]}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            marginBottom: 16,
-            height: 70,
-          }}
-        >
-          <Avatar
-            size={64}
-            src={candidate.image}
-            icon={<UserOutlined />}
-            style={{
-              backgroundColor: "#1890ff",
-              flexShrink: 0,
-              marginRight: 12,
-            }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Title
-              level={4}
-              style={{
-                margin: 0,
-                fontSize: "16px",
-                lineHeight: "20px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-              title={candidate.fullName}
-            >
-              {candidate.fullName}
-            </Title>
-            <Text
-              type="secondary"
-              style={{
-                display: "block",
-                fontSize: "14px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                marginTop: 2,
-              }}
-              title={candidate.title || "Position not specified"}
-            >
-              {candidate.title || "Position not specified"}
-            </Text>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: 6,
-              overflow: "hidden",
-            }}
-          >
-            <MailOutlined
-              style={{ color: "#666", fontSize: "12px", marginRight: 8 }}
-            />
-            <Text
-              style={{
-                fontSize: "12px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-              title={candidate.email}
-            >
-              {candidate.email}
-            </Text>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: 6,
-              overflow: "hidden",
-            }}
-          >
-            <PhoneOutlined
-              style={{ color: "#666", fontSize: "12px", marginRight: 8 }}
-            />
-            <Text style={{ fontSize: "12px" }}>{candidate.phone}</Text>
-          </div>
-
-          {candidate.location && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 6,
-                overflow: "hidden",
-              }}
-            >
-              <EnvironmentOutlined
-                style={{ color: "#666", fontSize: "12px", marginRight: 8 }}
-              />
-              <Text
-                style={{
-                  fontSize: "12px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                title={candidate.location}
-              >
-                {candidate.location}
-              </Text>
-            </div>
-          )}
-
-          {candidate.totalExperienceYears && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
-            >
-              <CalendarOutlined
-                style={{ color: "#666", fontSize: "12px", marginRight: 8 }}
-              />
-              <Text style={{ fontSize: "12px" }}>
-                {candidate.totalExperienceYears} years experience
-              </Text>
-            </div>
-          )}
-        </div>
-
-        <div style={{ height: 60, marginBottom: 12 }}>
-          <Text
-            strong
-            style={{ fontSize: "12px", display: "block", marginBottom: 6 }}
-          >
-            Skills:
-          </Text>
-          <div style={{ height: 40, overflow: "hidden" }}>
-            {candidate.skills && candidate.skills.length > 0 ? (
-              <>
-                {candidate.skills.slice(0, 2).map((skill) => (
-                  <Tag
-                    key={skill}
-                    color="blue"
-                    style={{
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      marginBottom: 4,
-                      marginRight: 4,
-                      height: "auto",
-                      lineHeight: "14px",
-                    }}
-                  >
-                    {skill.length > 10 ? `${skill.substring(0, 10)}...` : skill}
-                  </Tag>
-                ))}
-                {candidate.skills.length > 2 && (
-                  <Tag
-                    color="default"
-                    style={{
-                      fontSize: "10px",
-                      padding: "2px 6px",
-                      height: "auto",
-                      lineHeight: "14px",
-                    }}
-                  >
-                    +{candidate.skills.length - 2}
-                  </Tag>
-                )}
-              </>
-            ) : (
-              <Text type="secondary" style={{ fontSize: "12px" }}>
-                No skills listed
-              </Text>
-            )}
-          </div>
-        </div>
-
-        {/* Status Section - Fixed at Bottom */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 45,
-            left: 16,
-            right: 16,
-            height: 25,
-          }}
-        >
-          <Space wrap size="small">
-            <Badge
-              status={
-                candidate.accountStatus === "active" ? "success" : "error"
-              }
-              text={
-                <span style={{ fontSize: "11px" }}>
-                  {candidate.accountStatus}
-                </span>
-              }
-            />
-            <Tag
-              color={candidate.candidateType === "Khafalath" ? "gold" : "green"}
-              style={{
-                fontSize: "10px",
-                padding: "1px 4px",
-                height: "18px",
-                lineHeight: "16px",
-              }}
-            >
-              {candidate.candidateType}
-            </Tag>
-            {candidate.noticePeriod && (
-              <Tag
-                color="orange"
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 4px",
-                  height: "18px",
-                  lineHeight: "16px",
-                }}
-              >
-                {candidate.noticePeriod === "Immediate"
-                  ? "Immediate"
-                  : "Notice"}
-              </Tag>
-            )}
-          </Space>
-        </div>
-
-        {candidate.socialLinks &&
-          Object.entries(candidate.socialLinks).some(([_, link]) => link) && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 16,
-                left: 16,
-                right: 16,
-                height: 20,
-              }}
-            >
-              <Space size="small">
-                {Object.entries(candidate.socialLinks).map(([platform, link]) =>
-                  link ? (
-                    <Tooltip key={platform} title={`${platform} profile`}>
-                      <Button
-                        type="text"
-                        icon={getSocialIcon(platform)}
-                        size="small"
-                        href={
-                          link.startsWith("http") ? link : `https://${link}`
-                        }
-                        target="_blank"
-                        style={{
-                          padding: "2px 2px",
-                          minWidth: "auto",
-                          height: "20px",
-                          width: "20px",
-                        }}
-                      />
-                    </Tooltip>
-                  ) : null
-                )}
-              </Space>
-            </div>
-          )}
-      </Card>
-    </div>
+  const handlePageChange = useCallback(
+    (page, size) => {
+      setCurrentPage(page);
+      if (size !== pageSize) {
+        setPageSize(size);
+        setCurrentPage(1); 
+      }
+    },
+    [pageSize]
   );
 
-  if (isLoading) {
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const columns = [
+    {
+      title: "Candidate",
+      dataIndex: "fullName",
+      render: (text, record) => (
+        <Space>
+          <Avatar src={record.image} icon={<UserOutlined />} />
+          <div>
+            <div>{text}</div>
+            <Text type="secondary">{record.title || "No title"}</Text>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: "Contact",
+      dataIndex: "email",
+      render: (text, record) => (
+        <div>
+          <div>{text}</div>
+          <Text type="secondary">{record.phone || "No phone"}</Text>
+        </div>
+      ),
+    },
+    {
+      title: "Location",
+      dataIndex: "location",
+      render: (text) => text || "Not specified",
+    },
+    {
+      title: "Experience",
+      dataIndex: "totalExperienceYears",
+      render: (text) => (text ? `${text} years` : "Not specified"),
+    },
+    {
+      title: "Skills",
+      dataIndex: "skills",
+      render: (skills) => (
+        <div style={{ maxWidth: 200 }}>
+          {skills && skills.length > 0 ? (
+            <Space wrap size={[4, 4]}>
+              {skills.slice(0, 3).map((skill) => (
+                <Tag
+                  key={skill}
+                  color="blue"
+                  style={{ fontSize: 10, margin: 0 }}
+                >
+                  {skill.length > 10 ? `${skill.substring(0, 10)}...` : skill}
+                </Tag>
+              ))}
+              {skills.length > 3 && (
+                <Tag style={{ fontSize: 10, margin: 0 }}>
+                  +{skills.length - 3}
+                </Tag>
+              )}
+            </Space>
+          ) : (
+            <Text type="secondary">No skills</Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "accountStatus",
+      render: (status, record) => (
+        <Space>
+          <Badge status={status === "active" ? "success" : "error"} />
+          <Tag color={record.candidateType === "Khafalath" ? "gold" : "green"}>
+            {record.candidateType}
+          </Tag>
+        </Space>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 120,
+      render: (_, record) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => showCandidateDetails(record)}
+          />
+          <Button
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEditCandidate(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  if (isLoading && currentPage === 1) {
     return (
       <div style={{ textAlign: "center", padding: "50px" }}>
         <Spin size="large" />
@@ -492,23 +305,19 @@ function AllCandidates() {
           Error loading candidates
         </Title>
         <Text>Please try again later.</Text>
+        <Button onClick={refetch} style={{ marginLeft: 8 }}>
+          Retry
+        </Button>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        padding: "24px",
-        backgroundColor: "#f5f5f5",
-        minHeight: "100vh",
-      }}
-    >
+    <div style={{ padding: "24px", minHeight: "100vh" }}>
       <div style={{ marginBottom: "24px" }}>
         <Title level={2}>All Candidates</Title>
         <Text type="secondary">
-          Showing {filteredCandidates.length} of{" "}
-          {allcandidates?.users?.length || 0} candidates
+          Showing {candidates.length} of {totalCandidates} candidates
         </Text>
       </div>
 
@@ -516,11 +325,12 @@ function AllCandidates() {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={8} lg={6}>
             <Search
-              placeholder="Search candidates..."
+              placeholder="Search candidates, skills, email, title..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               prefix={<SearchOutlined />}
               allowClear
+              loading={isLoading && searchTerm !== debouncedSearchTerm}
             />
           </Col>
           <Col xs={24} sm={12} md={8} lg={6}>
@@ -531,6 +341,7 @@ function AllCandidates() {
               onChange={setSelectedSkills}
               style={{ width: "100%" }}
               maxTagCount={2}
+              loading={isLoading}
             >
               {filterOptions.skills.map((skill) => (
                 <Option key={skill} value={skill}>
@@ -546,6 +357,7 @@ function AllCandidates() {
               onChange={setSelectedLocation}
               style={{ width: "100%" }}
               allowClear
+              loading={isLoading}
             >
               {filterOptions.locations.map((location) => (
                 <Option key={location} value={location}>
@@ -575,6 +387,7 @@ function AllCandidates() {
               onChange={setSelectedIndustry}
               style={{ width: "100%" }}
               allowClear
+              loading={isLoading}
             >
               {filterOptions.industries.map((industry) => (
                 <Option key={industry} value={industry}>
@@ -591,19 +404,45 @@ function AllCandidates() {
         </Row>
       </Card>
 
-      {filteredCandidates.length === 0 ? (
+      {candidates.length === 0 && !isLoading ? (
         <Empty
-          description="No candidates found"
+          description={
+            debouncedSearchTerm ||
+            selectedSkills.length > 0 ||
+            selectedLocation ||
+            selectedExperience ||
+            selectedIndustry
+              ? "No candidates found matching your criteria"
+              : "No candidates found"
+          }
           style={{ marginTop: "50px" }}
         />
       ) : (
-        <Row gutter={[16, 16]}>
-          {filteredCandidates.map((candidate) => (
-            <Col xs={24} sm={12} lg={8} xl={6} key={candidate._id}>
-              <CandidateCard candidate={candidate} />
-            </Col>
-          ))}
-        </Row>
+        <>
+          <Table
+            columns={columns}
+            dataSource={candidates}
+            rowKey="_id"
+            pagination={false}
+            scroll={{ x: true }}
+            bordered
+            loading={isLoading}
+          />
+          <div style={{ marginTop: 16, textAlign: "right" }}>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalCandidates}
+              onChange={handlePageChange}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} of ${total} candidates`
+              }
+              pageSizeOptions={["10", "20", "50", "100"]}
+            />
+          </div>
+        </>
       )}
 
       <CandidateDetailsDrawer

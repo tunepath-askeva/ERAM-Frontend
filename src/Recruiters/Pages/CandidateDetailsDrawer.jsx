@@ -9,20 +9,13 @@ import {
   Descriptions,
   List,
   Timeline,
-  Button
-} from 'antd';
-import {
-  UserOutlined,
-  FileTextOutlined
-} from '@ant-design/icons';
+  Button,
+} from "antd";
+import { UserOutlined, FileTextOutlined } from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
 
-function CandidateDetailsDrawer({ 
-  visible, 
-  onClose, 
-  candidate 
-}) {
+function CandidateDetailsDrawer({ visible, onClose, candidate }) {
   if (!candidate) return null;
 
   return (
@@ -34,28 +27,34 @@ function CandidateDetailsDrawer({
       open={visible}
       style={{ borderRadius: 8 }}
     >
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <Space direction="vertical" size="large" style={{ width: "100%" }}>
         <Card>
           <Space align="start" size="large">
-            <Avatar 
-              size={80} 
-              src={candidate.image} 
+            <Avatar
+              size={80}
+              src={candidate.image}
               icon={<UserOutlined />}
-              style={{ backgroundColor: '#1890ff' }}
+              style={{ backgroundColor: "#da2c46" }}
             />
             <Space direction="vertical" size={0}>
               <Title level={3} style={{ margin: 0 }}>
                 {candidate.fullName}
               </Title>
-              <Text type="secondary" style={{ fontSize: '16px' }}>
+              <Text type="secondary" style={{ fontSize: "16px" }}>
                 {candidate.title}
               </Text>
               <Space wrap style={{ marginTop: 8 }}>
-                <Tag color={candidate.candidateType === 'Khafalath' ? 'gold' : 'green'}>
+                <Tag
+                  color={
+                    candidate.candidateType === "Khafalath" ? "gold" : "green"
+                  }
+                >
                   {candidate.candidateType}
                 </Tag>
-                <Badge 
-                  status={candidate.accountStatus === 'active' ? 'success' : 'error'} 
+                <Badge
+                  status={
+                    candidate.accountStatus === "active" ? "success" : "error"
+                  }
                   text={candidate.accountStatus}
                 />
               </Space>
@@ -65,17 +64,29 @@ function CandidateDetailsDrawer({
 
         <Card title="Contact Information">
           <Descriptions column={1}>
-            <Descriptions.Item label="Email">{candidate.email}</Descriptions.Item>
-            <Descriptions.Item label="Phone">{candidate.phone}</Descriptions.Item>
-            <Descriptions.Item label="Location">{candidate.location}</Descriptions.Item>
+            <Descriptions.Item label="Email">
+              {candidate.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phone">
+              {candidate.phone}
+            </Descriptions.Item>
+            <Descriptions.Item label="Location">
+              {candidate.location}
+            </Descriptions.Item>
             {candidate.city && (
-              <Descriptions.Item label="City">{candidate.city}</Descriptions.Item>
+              <Descriptions.Item label="City">
+                {candidate.city}
+              </Descriptions.Item>
             )}
             {candidate.state && (
-              <Descriptions.Item label="State">{candidate.state}</Descriptions.Item>
+              <Descriptions.Item label="State">
+                {candidate.state}
+              </Descriptions.Item>
             )}
             {candidate.country && (
-              <Descriptions.Item label="Country">{candidate.country}</Descriptions.Item>
+              <Descriptions.Item label="Country">
+                {candidate.country}
+              </Descriptions.Item>
             )}
           </Descriptions>
         </Card>
@@ -83,20 +94,28 @@ function CandidateDetailsDrawer({
         <Card title="Personal Information">
           <Descriptions column={1}>
             {candidate.age && (
-              <Descriptions.Item label="Age">{candidate.age} years</Descriptions.Item>
+              <Descriptions.Item label="Age">
+                {candidate.age} years
+              </Descriptions.Item>
             )}
             {candidate.gender && (
-              <Descriptions.Item label="Gender">{candidate.gender}</Descriptions.Item>
+              <Descriptions.Item label="Gender">
+                {candidate.gender}
+              </Descriptions.Item>
             )}
             {candidate.maritalStatus && (
-              <Descriptions.Item label="Marital Status">{candidate.maritalStatus}</Descriptions.Item>
+              <Descriptions.Item label="Marital Status">
+                {candidate.maritalStatus}
+              </Descriptions.Item>
             )}
             {candidate.nationality && (
-              <Descriptions.Item label="Nationality">{candidate.nationality}</Descriptions.Item>
+              <Descriptions.Item label="Nationality">
+                {candidate.nationality}
+              </Descriptions.Item>
             )}
             {candidate.languages && candidate.languages.length > 0 && (
               <Descriptions.Item label="Languages">
-                {candidate.languages.join(', ')}
+                {candidate.languages.join(", ")}
               </Descriptions.Item>
             )}
           </Descriptions>
@@ -124,8 +143,10 @@ function CandidateDetailsDrawer({
             )}
             {candidate.industry && candidate.industry.length > 0 && (
               <Descriptions.Item label="Industry">
-                {candidate.industry.map(ind => (
-                  <Tag key={ind} color="blue">{ind}</Tag>
+                {candidate.industry.map((ind) => (
+                  <Tag key={ind} color="blue">
+                    {ind}
+                  </Tag>
                 ))}
               </Descriptions.Item>
             )}
@@ -135,7 +156,7 @@ function CandidateDetailsDrawer({
         {candidate.skills && candidate.skills.length > 0 && (
           <Card title="Skills">
             <Space wrap>
-              {candidate.skills.map(skill => (
+              {candidate.skills.map((skill) => (
                 <Tag key={skill} color="blue" style={{ marginBottom: 8 }}>
                   {skill}
                 </Tag>
@@ -165,9 +186,11 @@ function CandidateDetailsDrawer({
             <Timeline>
               {candidate.workExperience.map((exp, index) => (
                 <Timeline.Item key={index}>
-                  <Title level={5} style={{ margin: 0 }}>{exp.company}</Title>
+                  <Title level={5} style={{ margin: 0 }}>
+                    {exp.company}
+                  </Title>
                   <Text type="secondary">
-                    {exp.startDate} - {exp.endDate || 'Present'}
+                    {exp.startDate} - {exp.endDate || "Present"}
                   </Text>
                   {exp.description && (
                     <Paragraph style={{ marginTop: 8 }}>
@@ -188,8 +211,9 @@ function CandidateDetailsDrawer({
 
         {candidate.resumeUrl && (
           <Card title="Resume">
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
+              style={{ backgroundColor: "#da2c46" }}
               icon={<FileTextOutlined />}
               href={candidate.resumeUrl}
               target="_blank"
