@@ -353,6 +353,9 @@ export const recruiterApi = createApi({
       }),
       invalidatesTags: ["BranchedCandidate"],
     }),
+    getRecruiterJobTimelineId: builder.query({
+      query: (id) => `/job-timeline/${id}`,
+    }),
   }),
 });
 
@@ -395,4 +398,5 @@ export const {
   useGetAllBranchedCandidateQuery,
   useUpdateBranchedCandidateMutation,
   useStagedCandidateNotifyMutation,
+  useGetRecruiterJobTimelineIdQuery,
 } = recruiterApi;

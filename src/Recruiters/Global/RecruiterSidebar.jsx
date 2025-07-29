@@ -79,6 +79,12 @@ const RecruiterSidebar = ({
       permission: "jobs",
     },
     {
+      key: "/recruiter/jobs-timeline",
+      icon: <UnorderedListOutlined />,
+      label: "Jobs Timeline",
+      permission: "jobs-timeline",
+    },
+    {
       key: "/recruiter/allcandidates",
       icon: <UsergroupAddOutlined />,
       label: "All Candidates",

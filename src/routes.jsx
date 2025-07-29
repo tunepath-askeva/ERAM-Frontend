@@ -64,6 +64,8 @@ import CandidateDocuments from "./Pages/CandidateDocuments";
 import AddRequisition from "./Recruiters/Components/AddRequisition";
 import EditRequisition from "./Recruiters/Components/EditRequisition";
 import AllCandidates from "./Recruiters/Pages/AllCandidates";
+import RecruiterJobsTimeline from "./Recruiters/Pages/RecruiterJobsTimeline";
+import RecruiterViewTimeline from "./Recruiters/Components/RecruiterViewTimeline";
 
 const AppRoutes = () => {
   return (
@@ -211,6 +213,10 @@ const AppRoutes = () => {
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
         />
         <Route
+          path="/recruiter/jobs-timeline"
+          element={<ProtectedRecruiter element={<RecruiterJobsTimeline />} />}
+        />
+        <Route
           path="/recruiter/requisition"
           element={<ProtectedRecruiter element={<RecruiterRequisition />} />}
         />
@@ -225,6 +231,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter-jobs/:id"
           element={<ProtectedRecruiter element={<RecruiterViewJob />} />}
+        />
+        <Route
+          path="/recruiter-jobs-timeline/:id"
+          element={<ProtectedRecruiter element={<RecruiterViewTimeline />} />}
         />
         <Route
           path="/recruiter-jobs/edit/:id"
