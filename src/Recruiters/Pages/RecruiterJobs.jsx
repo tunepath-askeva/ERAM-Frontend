@@ -54,6 +54,11 @@ const RecruiterJobs = () => {
   const [pageSize] = useState(6);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filters, setFilters] = useState({
+    location: "",
+    workType: "",
+    employmentType: "",
+  });
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
   const navigate = useNavigate();
@@ -61,7 +66,19 @@ const RecruiterJobs = () => {
     (state) => state.userAuth.recruiterPermissions
   );
 
-  const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
+  const queryParams = {
+    page: currentPage,
+    limit: pageSize,
+    search: searchText,
+    status: filterStatus,
+    ...filters,
+  };
+
+  const {
+    data: apiData,
+    isLoading,
+    error,
+  } = useGetRecruiterJobsQuery(queryParams);
 
   const primaryColor = "#da2c46";
 
@@ -71,6 +88,13 @@ const RecruiterJobs = () => {
       setFilteredJobs(transformedJobs);
     }
   }, [apiData]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page when filters change
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchText, filterStatus, filters]);
 
   useEffect(() => {
     const recruiterInfo = JSON.parse(
@@ -121,6 +145,14 @@ const RecruiterJobs = () => {
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setCurrentPage(1);
   };
 
   const handleDeactivateJob = (job, e) => {
