@@ -59,6 +59,7 @@ import {
   useGetAllRecruitersQuery,
   useAddInterviewDetailsMutation,
   useChangeInterviewStatusMutation,
+  useConvertEmployeeMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
@@ -100,6 +101,8 @@ const RecruiterCandidates = () => {
     useAddInterviewDetailsMutation();
   const [changeInterviewStatus, { isLoading: isChangingStatus }] =
     useChangeInterviewStatusMutation();
+  const [convertEmployee, { isLoading: isAddingEmployee }] =
+    useConvertEmployeeMutation();
 
   const { data: allRecruiters } = useGetAllRecruitersQuery();
 
@@ -107,6 +110,7 @@ const RecruiterCandidates = () => {
     apiData?.data?.map((candidate) => ({
       id: candidate._id,
       _id: candidate._id,
+      candidateId: candidate.user._id,
       name: candidate.user.fullName,
       email: candidate.user.email,
       position: candidate.workOrder.title,
@@ -314,7 +318,7 @@ const RecruiterCandidates = () => {
 
   const handleConvertToEmployee = (candidate) => {
     setCandidateToConvert(candidate);
-    convertForm.setFieldsValue({ fullName: candidate.name }); // auto-fill name
+    convertForm.setFieldsValue({ fullName: candidate.name });
     setConvertModalVisible(true);
   };
 
@@ -1910,20 +1914,36 @@ const RecruiterCandidates = () => {
           layout="vertical"
           onFinish={async (values) => {
             try {
+              if (!candidateToConvert) {
+                throw new Error("No candidate selected");
+              }
+
+              console.log("Candidate object structure:", {
+                candidateId: candidateToConvert._id,
+                userId: candidateToConvert.candidateId,
+                fullObject: candidateToConvert,
+              });
+
+              if (!candidateToConvert.candidateId) {
+                throw new Error("Candidate user information is incomplete");
+              }
+
               const payload = {
                 ...values,
-                candidateId: candidateToConvert._id,
+                candidateId: candidateToConvert.candidateId,
               };
+
               console.log("Submit to API:", payload);
-              // TODO: Call your API to convert candidate to employee
+              await convertEmployee(payload).unwrap();
 
               message.success("Candidate successfully converted to employee!");
               setConvertModalVisible(false);
               convertForm.resetFields();
-              refetch(); // refresh list
+              setCandidateToConvert(null);
+              refetch();
             } catch (error) {
               console.error("Conversion failed:", error);
-              message.error("Failed to convert candidate.");
+              message.error(error.message || "Failed to convert candidate.");
             }
           }}
         >
@@ -1940,7 +1960,7 @@ const RecruiterCandidates = () => {
             <Col span={12}>
               <Form.Item
                 label="Date of Join"
-                name="dateOfJoin"
+                name="dateOfJoining"
                 rules={[{ required: true }]}
               >
                 <DatePicker style={{ width: "100%" }} />
@@ -1961,7 +1981,7 @@ const RecruiterCandidates = () => {
             <Col span={12}>
               <Form.Item
                 label="Assigned Job Title"
-                name="jobTitle"
+                name="assignedJobTitle"
                 rules={[{ required: true }]}
               >
                 <Input />
@@ -1973,7 +1993,7 @@ const RecruiterCandidates = () => {
             <Col span={12}>
               <Form.Item
                 label="ERAMID"
-                name="eramid"
+                name="eramId"
                 rules={[{ required: true }]}
               >
                 <Input />
@@ -2022,7 +2042,7 @@ const RecruiterCandidates = () => {
 
           <Form.Item
             label="Basic Asset MGT: Laptop, Vehicle, etc (Reporting and Documentation)"
-            name="assetManagement"
+            name="basicAssets"
           >
             <Input.TextArea rows={3} />
           </Form.Item>

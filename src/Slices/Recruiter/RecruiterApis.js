@@ -356,6 +356,13 @@ export const recruiterApi = createApi({
     getRecruiterJobTimelineId: builder.query({
       query: (id) => `/job-timeline/${id}`,
     }),
+    convertEmployee: builder.mutation({
+      query: (payload) => ({
+        url: "/employee",
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -399,4 +406,5 @@ export const {
   useUpdateBranchedCandidateMutation,
   useStagedCandidateNotifyMutation,
   useGetRecruiterJobTimelineIdQuery,
+  useConvertEmployeeMutation,
 } = recruiterApi;
