@@ -79,6 +79,7 @@ const accessPermissions = [
 
   { key: "move-to-interview", label: "Move to Interview" },
   { key: "make-offer", label: "Make Offer" },
+  { key: "convert-to-employee", label: "Convert to Employee" },
   { key: "reject-candidate", label: "Reject Candidate" },
 
   { key: "schedule-interview", label: "Schedule Interview" },

@@ -85,6 +85,9 @@ const RecruiterCandidates = () => {
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
   const [addCandidateForm] = Form.useForm();
+  const [convertModalVisible, setConvertModalVisible] = useState(false);
+  const [convertForm] = Form.useForm();
+  const [candidateToConvert, setCandidateToConvert] = useState(null);
 
   const {
     data: apiData,
@@ -309,6 +312,12 @@ const RecruiterCandidates = () => {
     setScheduleInterviewModalVisible(true);
   };
 
+  const handleConvertToEmployee = (candidate) => {
+    setCandidateToConvert(candidate);
+    convertForm.setFieldsValue({ fullName: candidate.name }); // auto-fill name
+    setConvertModalVisible(true);
+  };
+
   const handleScheduleInterviewSubmit = async (values) => {
     try {
       const payload = {
@@ -409,6 +418,16 @@ const RecruiterCandidates = () => {
         confirm: true,
         confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
         confirmDescription: "This action cannot be undone.",
+      });
+    }
+
+    if (hasPermission("convert-to-employee")) {
+      actions.push({
+        key: "convert",
+        label: "Convert to Employee",
+        icon: <CheckOutlined style={iconTextStyle} />,
+        onClick: () => handleConvertToEmployee(candidate),
+        style: { color: "#52c41a" },
       });
     }
 
@@ -1871,6 +1890,160 @@ const RecruiterCandidates = () => {
               rows={4}
               placeholder="Add any additional notes or instructions"
             />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`Convert ${candidateToConvert?.name || ""} to Employee`}
+        open={convertModalVisible}
+        onCancel={() => {
+          setConvertModalVisible(false);
+          convertForm.resetFields();
+          setCandidateToConvert(null);
+        }}
+        footer={null}
+        width={700}
+      >
+        <Form
+          form={convertForm}
+          layout="vertical"
+          onFinish={async (values) => {
+            try {
+              const payload = {
+                ...values,
+                candidateId: candidateToConvert._id,
+              };
+              console.log("Submit to API:", payload);
+              // TODO: Call your API to convert candidate to employee
+
+              message.success("Candidate successfully converted to employee!");
+              setConvertModalVisible(false);
+              convertForm.resetFields();
+              refetch(); // refresh list
+            } catch (error) {
+              console.error("Conversion failed:", error);
+              message.error("Failed to convert candidate.");
+            }
+          }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Full Name"
+                name="fullName"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Date of Join"
+                name="dateOfJoin"
+                rules={[{ required: true }]}
+              >
+                <DatePicker style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Category"
+                name="category"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Assigned Job Title"
+                name="jobTitle"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="ERAMID"
+                name="eramid"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Badge No"
+                name="badgeNo"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="Gate Pass ID" name="gatePassId">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Aramco ID" name="aramcoId">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="Other ID" name="otherId">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Plant ID" name="plantId">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Official E-Mail Account" name="officialEmail">
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            label="Basic Asset MGT: Laptop, Vehicle, etc (Reporting and Documentation)"
+            name="assetManagement"
+          >
+            <Input.TextArea rows={3} />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right" }}>
+            <Button
+              onClick={() => {
+                setConvertModalVisible(false);
+                convertForm.resetFields();
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              style={{ backgroundColor: "#da2c46" }}
+              htmlType="submit"
+            >
+              Convert to Employee
+            </Button>
           </Form.Item>
         </Form>
       </Modal>
