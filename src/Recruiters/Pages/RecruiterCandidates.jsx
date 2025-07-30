@@ -158,6 +158,12 @@ const RecruiterCandidates = () => {
     return recruiterPermissions.includes(permissionKey);
   };
 
+  const recruiterInfo = JSON.parse(
+    localStorage.getItem("recruiterInfo") || "{}"
+  );
+
+  console.log(recruiterInfo, "Recruiter info");
+
   const filterCounts = {
     all: candidates.length,
     completed: candidates.filter((c) => c.status === "completed").length,
@@ -205,6 +211,17 @@ const RecruiterCandidates = () => {
 
       message.success(`Offer sent to ${candidate.name} successfully!`);
       refetch();
+
+      const recruiterEmail = recruiterInfo?.email || "";
+      const candidateEmail = candidate.email;
+      const subject = encodeURIComponent(`Job Offer for ${candidate.position}`);
+      const body = encodeURIComponent(
+        `Dear ${candidate.name},\n\nWe are pleased to offer you the position of ${candidate.position}.\n\nBest regards,\n${recruiterEmail}`
+      );
+
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${candidateEmail}&su=${subject}&body=${body}&bcc=${recruiterEmail}`;
+
+      window.open(gmailUrl, "_blank");
     } catch (error) {
       message.error(
         `Failed to send offer to ${candidate.name}. Please try again.`
