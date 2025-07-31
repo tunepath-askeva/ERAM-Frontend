@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Button,
   Card,
@@ -61,9 +61,41 @@ const RecruiterJobsTimeline = () => {
     (state) => state.userAuth.recruiterPermissions
   );
 
-  const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
+  const searchTimerRef = useRef(null);
+
+  const {
+    data: apiData,
+    isLoading,
+    error,
+  } = useGetRecruiterJobsQuery({
+    page: currentPage,
+    limit: pageSize,
+    searchText: searchText,
+    status: filterStatus !== "all" ? filterStatus : undefined,
+  });
 
   const primaryColor = "#da2c46";
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      setCurrentPage(1);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (apiData?.jobs) {
@@ -94,12 +126,22 @@ const RecruiterJobsTimeline = () => {
           ? "Remote"
           : "Hybrid",
       employmentType: job.EmploymentType || "Full-time",
-      experience: job.Experience ? `${job.Experience} years` : "Not specified",
+      experience: job.experienceMin
+        ? `${job.experienceMin}${
+            job.experienceMax ? `-${job.experienceMax}` : ""
+          } years`
+        : "Not specified",
       salary:
-        job.salaryType === "annual" && job.annualSalary
-          ? `$${parseInt(job.annualSalary).toLocaleString()}/year`
-          : job.salaryType === "monthly" && job.monthlySalary
-          ? `$${job.monthlySalary}/month`
+        job.salaryType === "annual"
+          ? `$${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
+              job.salaryMax
+                ? `-${parseInt(job.salaryMax).toLocaleString()}`
+                : ""
+            }/year`
+          : job.salaryType === "monthly"
+          ? `$${job.salaryMin ? job.salaryMin : ""}${
+              job.salaryMax ? `-${job.salaryMax}` : ""
+            }/month`
           : "Salary not disclosed",
       postedDate: job.createdAt,
       skills: job.requiredSkills || [],
@@ -123,13 +165,12 @@ const RecruiterJobsTimeline = () => {
     return recruiterPermissions.includes(permissionKey);
   };
 
-   const isRecruiterAssigned = (assignedRecruiters) => {
+  const isRecruiterAssigned = (assignedRecruiters) => {
     return assignedRecruiters.some(
       (recruiter) =>
         recruiter.email.toLowerCase() === currentRecruiterEmail.toLowerCase()
     );
   };
-
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -242,7 +283,7 @@ const RecruiterJobsTimeline = () => {
               size="large"
               prefix={<SearchOutlined style={{ color: primaryColor }} />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ width: "100%" }}
             />
           </Col>
@@ -437,7 +478,6 @@ const RecruiterJobsTimeline = () => {
                         )}
                       </div>
                     </div>
-
                   </div>
                   <div
                     style={{

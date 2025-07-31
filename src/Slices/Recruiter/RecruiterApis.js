@@ -41,29 +41,15 @@ export const recruiterApi = createApi({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
 
-        // Always include pagination
         queryParams.append("page", params.page || 1);
         queryParams.append("limit", params.limit || 6);
 
-        // Optional filters
-        if (params.search) {
-          queryParams.append("search", params.search);
+        if (params.searchText) {
+          queryParams.append("search", params.searchText);
         }
 
         if (params.status && params.status !== "all") {
           queryParams.append("status", params.status);
-        }
-
-        if (params.location) {
-          queryParams.append("location", params.location);
-        }
-
-        if (params.workType) {
-          queryParams.append("workType", params.workType);
-        }
-
-        if (params.employmentType) {
-          queryParams.append("employmentType", params.employmentType);
         }
 
         return {
@@ -73,8 +59,8 @@ export const recruiterApi = createApi({
       },
       transformResponse: (response) => {
         return {
-          jobs: response.data, // Array of job objects
-          totalCount: response.total, // Total count for pagination
+          jobs: response.jobs,
+          totalCount: response.totalJobs,
         };
       },
     }),

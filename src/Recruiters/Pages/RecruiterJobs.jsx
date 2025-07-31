@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Button,
   Card,
@@ -54,11 +54,6 @@ const RecruiterJobs = () => {
   const [pageSize] = useState(6);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filters, setFilters] = useState({
-    location: "",
-    workType: "",
-    employmentType: "",
-  });
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
   const navigate = useNavigate();
@@ -66,21 +61,41 @@ const RecruiterJobs = () => {
     (state) => state.userAuth.recruiterPermissions
   );
 
-  const queryParams = {
-    page: currentPage,
-    limit: pageSize,
-    search: searchText,
-    status: filterStatus,
-    ...filters,
-  };
+  const searchTimerRef = useRef(null);
 
   const {
     data: apiData,
     isLoading,
     error,
-  } = useGetRecruiterJobsQuery(queryParams);
+  } = useGetRecruiterJobsQuery({
+    page: currentPage,
+    limit: pageSize,
+    searchText: searchText,
+    status: filterStatus !== "all" ? filterStatus : undefined,
+  });
 
   const primaryColor = "#da2c46";
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      setCurrentPage(1);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (apiData?.jobs) {
@@ -88,13 +103,6 @@ const RecruiterJobs = () => {
       setFilteredJobs(transformedJobs);
     }
   }, [apiData]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCurrentPage(1); // Reset to first page when filters change
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchText, filterStatus, filters]);
 
   useEffect(() => {
     const recruiterInfo = JSON.parse(
@@ -118,12 +126,22 @@ const RecruiterJobs = () => {
           ? "Remote"
           : "Hybrid",
       employmentType: job.EmploymentType || "Full-time",
-      experience: job.Experience ? `${job.Experience} years` : "Not specified",
+      experience: job.experienceMin
+        ? `${job.experienceMin}${
+            job.experienceMax ? `-${job.experienceMax}` : ""
+          } years`
+        : "Not specified",
       salary:
-        job.salaryType === "annual" && job.annualSalary
-          ? `$${parseInt(job.annualSalary).toLocaleString()}/year`
-          : job.salaryType === "monthly" && job.monthlySalary
-          ? `$${job.monthlySalary}/month`
+        job.salaryType === "annual"
+          ? `$${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
+              job.salaryMax
+                ? `-${parseInt(job.salaryMax).toLocaleString()}`
+                : ""
+            }/year`
+          : job.salaryType === "monthly"
+          ? `$${job.salaryMin ? job.salaryMin : ""}${
+              job.salaryMax ? `-${job.salaryMax}` : ""
+            }/month`
           : "Salary not disclosed",
       postedDate: job.createdAt,
       skills: job.requiredSkills || [],
@@ -145,14 +163,6 @@ const RecruiterJobs = () => {
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
-  };
-
-  const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setCurrentPage(1);
   };
 
   const handleDeactivateJob = (job, e) => {
@@ -308,7 +318,7 @@ const RecruiterJobs = () => {
               size="large"
               prefix={<SearchOutlined style={{ color: primaryColor }} />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ width: "100%" }}
             />
           </Col>
