@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Table,
   Input,
@@ -72,6 +72,7 @@ const { Panel } = Collapse;
 
 const RecruiterCandidates = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -91,6 +92,17 @@ const RecruiterCandidates = () => {
     total: 0,
   });
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchTerm]);
+
   const {
     data: apiData,
     isLoading,
@@ -98,7 +110,7 @@ const RecruiterCandidates = () => {
   } = useGetPipelineCompletedCandidatesQuery({
     page: pagination.current,
     limit: pagination.pageSize,
-    search: searchTerm,
+    search: debouncedSearchTerm,
     status: selectedStatus === "all" ? undefined : selectedStatus,
   });
   const [moveToNextStage, { isLoading: isMovingStage }] =
