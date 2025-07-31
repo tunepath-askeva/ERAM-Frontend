@@ -17,6 +17,9 @@ import {
   Table,
   Pagination,
   message,
+  Form,
+  Modal,
+  Upload,
 } from "antd";
 import {
   UserOutlined,
@@ -25,13 +28,14 @@ import {
   EnvironmentOutlined,
   CalendarOutlined,
   LinkedinOutlined,
-  GithubOutlined,
-  TwitterOutlined,
-  FacebookOutlined,
+DownloadOutlined ,
+  InboxOutlined,
+  PlusOutlined,
   SearchOutlined,
   FilterOutlined,
   EyeOutlined,
   EditOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   useGetAllBranchedCandidateQuery,
@@ -44,6 +48,7 @@ import { useSelector } from "react-redux";
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
+const { Dragger } = Upload;
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -78,6 +83,10 @@ function AllCandidates() {
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [candidateToEdit, setCandidateToEdit] = useState(null);
+  const [addCandidateModalVisible, setAddCandidateModalVisible] =
+    useState(false);
+  const [bulkUploadModalVisible, setBulkUploadModalVisible] = useState(false);
+  const [addCandidateForm] = Form.useForm();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 700);
 
@@ -202,6 +211,12 @@ function AllCandidates() {
     setSearchTerm(e.target.value);
   }, []);
 
+  const buttonStyle = {
+    background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+    border: "none",
+    color: "white",
+  };
+
   const columns = [
     {
       title: "Candidate",
@@ -324,12 +339,47 @@ function AllCandidates() {
 
   return (
     <div style={{ padding: "24px", minHeight: "100vh" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <Title level={2}>All Candidates</Title>
-        <Text type="secondary">
-          Showing {candidates.length} of {totalCandidates} candidates
-        </Text>
-      </div>
+      <Card style={{ marginBottom: 16 }}>
+        <Row justify="space-between" align="middle" gutter={[16, 16]}>
+          <Col xs={24} sm={16} md={12}>
+            <Title
+              level={2}
+              style={{ margin: 0, fontSize: "clamp(1.2rem, 4vw, 2rem)" }}
+            >
+              All Candidates
+            </Title>
+            <Text type="secondary">
+              Manage and track your candidates in branch
+            </Text>
+          </Col>
+          <Col xs={24} sm={8} md={12}>
+            <Space
+              size="small"
+              style={{ width: "100%", justifyContent: "flex-end" }}
+            >
+              {hasPermission("bulk-upload") && (
+                <Button
+                  icon={<UploadOutlined />}
+                  size="large"
+                  onClick={() => setBulkUploadModalVisible(true)}
+                >
+                  Bulk Upload
+                </Button>
+              )}
+              {hasPermission("add-candidate") && (
+                <Button
+                  style={buttonStyle}
+                  icon={<PlusOutlined />}
+                  size="large"
+                  onClick={() => setAddCandidateModalVisible(true)}
+                >
+                  Add Candidate
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
+      </Card>
 
       <Card style={{ marginBottom: "24px" }}>
         <Row gutter={[16, 16]}>
@@ -470,6 +520,251 @@ function AllCandidates() {
         onSubmit={handleEditSubmit}
         candidate={candidateToEdit}
       />
+
+      {/* Add Candidate Modal */}
+      <Modal
+        title="Add New Candidate"
+        open={addCandidateModalVisible}
+        onCancel={() => {
+          setAddCandidateModalVisible(false);
+          addCandidateForm.resetFields();
+        }}
+        footer={null}
+        width={window.innerWidth < 768 ? "95%" : 700}
+      >
+        <Form
+          form={addCandidateForm}
+          layout="vertical"
+          initialValues={{
+            status: "new",
+          }}
+        >
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Full Name"
+                name="name"
+                rules={[
+                  { required: true, message: "Please enter candidate's name" },
+                ]}
+              >
+                <Input placeholder="Enter full name" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: "Please enter email" },
+                  { type: "email", message: "Please enter a valid email" },
+                ]}
+              >
+                <Input placeholder="Enter email address" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Phone"
+                name="phone"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter phone number",
+                  },
+                  {
+                    pattern: /^[0-9+\- ]+$/,
+                    message: "Please enter a valid phone number",
+                  },
+                ]}
+              >
+                <Input placeholder="Enter phone number" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Position"
+                name="position"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a position",
+                  },
+                ]}
+              >
+                <Select placeholder="Select position">
+                  <Option value="frontend">Frontend Developer</Option>
+                  <Option value="backend">Backend Developer</Option>
+                  <Option value="fullstack">Full Stack Developer</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea rows={4} placeholder="Add any additional notes" />
+          </Form.Item>
+
+          <Form.Item
+            label="Resume"
+            name="resume"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) {
+                return e;
+              }
+              return e?.fileList;
+            }}
+          >
+            <Upload.Dragger
+              name="resume"
+              multiple={false}
+              action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+              beforeUpload={(file) => {
+                const isPDF = file.type === "application/pdf";
+                const isDOC =
+                  file.type === "application/msword" ||
+                  file.type ===
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+                if (!isPDF && !isDOC) {
+                  message.error("You can only upload PDF/DOC files!");
+                  return Upload.LIST_IGNORE;
+                }
+
+                const isLt2M = file.size / 1024 / 1024 < 2;
+                if (!isLt2M) {
+                  message.error("File must smaller than 2MB!");
+                  return Upload.LIST_IGNORE;
+                }
+
+                return isPDF || isDOC;
+              }}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Click or drag file to this area to upload
+              </p>
+              <p className="ant-upload-hint">
+                Support for a single PDF or DOC file upload (max 2MB)
+              </p>
+            </Upload.Dragger>
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right", marginTop: 24 }}>
+            <Space>
+              <Button
+                onClick={() => {
+                  setAddCandidateModalVisible(false);
+                  addCandidateForm.resetFields();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                style={buttonStyle}
+                onClick={() => {
+                  addCandidateForm
+                    .validateFields()
+                    .then((values) => {
+                      // Handle form submission
+                      message.success("Candidate added successfully!");
+                      setAddCandidateModalVisible(false);
+                      addCandidateForm.resetFields();
+                      refetch(); // Refresh the candidate list
+                    })
+                    .catch((info) => {
+                      console.log("Validate Failed:", info);
+                    });
+                }}
+              >
+                Add Candidate
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Bulk Upload Modal */}
+      <Modal
+        title="Bulk Upload Candidates"
+        open={bulkUploadModalVisible}
+        onCancel={() => setBulkUploadModalVisible(false)}
+        footer={null}
+        width={window.innerWidth < 768 ? "95%" : 700}
+      >
+        <div style={{ marginBottom: 24 }}>
+          <Text>
+            Upload an Excel file with candidate details. Download our template
+            file to ensure proper formatting.
+          </Text>
+        </div>
+
+        <Dragger
+          name="file"
+          multiple={false}
+          action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+          accept=".xlsx,.xls"
+          beforeUpload={(file) => {
+            const isExcel =
+              file.type ===
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+              file.type === "application/vnd.ms-excel";
+
+            if (!isExcel) {
+              message.error("You can only upload Excel files!");
+              return Upload.LIST_IGNORE;
+            }
+
+            const isLt5M = file.size / 1024 / 1024 < 5;
+            if (!isLt5M) {
+              message.error("File must smaller than 5MB!");
+              return Upload.LIST_IGNORE;
+            }
+
+            return isExcel;
+          }}
+          onChange={(info) => {
+            const { status } = info.file;
+            if (status === "done") {
+              message.success(`${info.file.name} file uploaded successfully.`);
+              setBulkUploadModalVisible(false);
+              refetch(); // Refresh the candidate list
+            } else if (status === "error") {
+              message.error(`${info.file.name} file upload failed.`);
+            }
+          }}
+        >
+          <p className="ant-upload-drag-icon">
+            <UploadOutlined />
+          </p>
+          <p className="ant-upload-text">
+            Click or drag file to this area to upload
+          </p>
+          <p className="ant-upload-hint">
+            Support for a single Excel file upload (max 5MB)
+          </p>
+        </Dragger>
+
+        <div style={{ marginTop: 24, textAlign: "center" }}>
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              // Handle template download
+              message.info("Downloading template file...");
+            }}
+          >
+            Download Template File
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
