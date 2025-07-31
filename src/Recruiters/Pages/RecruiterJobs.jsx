@@ -51,7 +51,7 @@ const RecruiterJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);

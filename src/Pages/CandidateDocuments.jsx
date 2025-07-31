@@ -17,6 +17,7 @@ import {
   Avatar,
   Collapse,
   Progress,
+  Result,
 } from "antd";
 import {
   FileTextOutlined,
@@ -55,7 +56,7 @@ const CandidateDocuments = () => {
   });
   const [expandedWorkOrders, setExpandedWorkOrders] = useState([]);
 
-  const { data, isLoading, error } = useGetCandidateDocumentsQuery();
+  const { data, isLoading, error, refetch } = useGetCandidateDocumentsQuery();
 
   const getFileIcon = (fileName) => {
     const extension = fileName.split(".").pop().toLowerCase();
@@ -205,18 +206,27 @@ const CandidateDocuments = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text type="danger">Error loading documents. Please try again.</Text>
-      </div>
-    );
-  }
-
   if (!data || !data.data || data.data.length === 0) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text type="secondary">No documents found.</Text>
+        <Result
+          status="404"
+          title="No Employees Found"
+          subTitle="We couldn't find any employees matching your criteria."
+          extra={
+            <Button
+              type="primary"
+              style={{ background: "#da2c46", borderColor: "#da2c46" }}
+              onClick={refetch}
+            >
+              Refresh
+            </Button>
+          }
+          style={{
+            "--antd-result-404-title-color": "#da2c46",
+            "--antd-result-404-subtitle-color": "#da2c46",
+          }}
+        />
       </div>
     );
   }
