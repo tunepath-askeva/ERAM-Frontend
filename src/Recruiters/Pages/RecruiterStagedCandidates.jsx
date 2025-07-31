@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   Typography,
@@ -50,27 +50,51 @@ const { Option } = Select;
 
 const RecruiterStagedCandidates = () => {
   const navigate = useNavigate();
-  const [filteredCandidates, setFilteredCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [activeStage, setActiveStage] = useState(null);
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [movingCandidate, setMovingCandidate] = useState(null);
   const [targetStage, setTargetStage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterJob, setFilterJob] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
 
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+
   const primaryColor = "#da2c46";
 
-  // Use RTK Query hook
-  const { data: apiData, isLoading, error } = useGetPipelineJobsQuery();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+      setCurrentPage(1);
+    }, 500);
 
-  // Process API data to extract candidates
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterJob]);
+
+  const {
+    data: apiData,
+    isLoading,
+    error,
+    isFetching,
+  } = useGetPipelineJobsQuery({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchText,
+    status: filterStatus,
+    jobId: filterJob,
+  });
+
   const processedData = useMemo(() => {
-    if (!apiData?.pipelineCandidates) return { candidates: [], jobs: [] };
+    if (!apiData?.pipelineCandidates)
+      return { candidates: [], jobs: [], totalCount: 0 };
 
     const candidates = [];
     const jobsMap = new Map();
@@ -80,7 +104,6 @@ const RecruiterStagedCandidates = () => {
       const user = candidateData.user;
       const stageProgress = candidateData.stageProgress || [];
 
-      // Track unique jobs
       if (!jobsMap.has(workOrder._id)) {
         jobsMap.set(workOrder._id, {
           _id: workOrder._id,
@@ -112,7 +135,6 @@ const RecruiterStagedCandidates = () => {
         },
         appliedDate: new Date().toISOString(),
         stageProgress: stageProgress,
-        // Extract pipeline stages from this candidate's progress
         pipeline: {
           _id: stageProgress[0]?.pipelineId || "default-pipeline",
           name: "Hiring Pipeline",
@@ -129,14 +151,18 @@ const RecruiterStagedCandidates = () => {
 
     const jobs = Array.from(jobsMap.values());
 
-    return { candidates, jobs };
-  }, [apiData]);
+    return {
+      candidates,
+      jobs,
+      totalCount: apiData.totalCount || candidates.length,
+      currentPage: apiData.currentPage || currentPage,
+      totalPages:
+        apiData.totalPages ||
+        Math.ceil((apiData.totalCount || candidates.length) / pageSize),
+    };
+  }, [apiData, currentPage, pageSize]);
 
-  const { candidates, jobs } = processedData;
-
-  useEffect(() => {
-    setFilteredCandidates(candidates);
-  }, [candidates]);
+  const { candidates, jobs, totalCount, totalPages } = processedData;
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -149,32 +175,6 @@ const RecruiterStagedCandidates = () => {
     if (diffDays < 30) return `${diffDays} days ago`;
     if (diffDays < 90) return `${Math.ceil(diffDays / 30)} months ago`;
     return date.toLocaleDateString();
-  };
-
-  const getCurrentPageCandidates = () => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredCandidates
-      .filter((candidate) => {
-        const matchesSearch =
-          searchText === "" ||
-          candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
-          candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
-
-        const matchesStatus =
-          filterStatus === "all" ||
-          (filterStatus === "active" && candidate.status === "Active") ||
-          (filterStatus === "inactive" && candidate.status === "Inactive");
-
-        const matchesJob =
-          filterJob === "all" ||
-          candidate.appliedJob._id === filterJob;
-
-        return matchesSearch && matchesStatus && matchesJob;
-      })
-      .slice(startIndex, endIndex);
   };
 
   const handleCandidateSelect = (candidate) => {
@@ -211,18 +211,29 @@ const RecruiterStagedCandidates = () => {
 
   const getStageName = (stageId) => {
     if (!selectedCandidate) return "";
-    const stage = selectedCandidate.pipeline.stages.find((s) => s._id === stageId);
+    const stage = selectedCandidate.pipeline.stages.find(
+      (s) => s._id === stageId
+    );
     return stage ? stage.name : "";
   };
 
   const getCandidatesInStage = (stageId) => {
     if (!selectedCandidate) return [];
-    // For the detailed view, we'd need to get all candidates for the same job
-    // For now, return empty array as this view shows individual candidate details
     return [];
   };
 
-  if (isLoading) {
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleClearFilters = () => {
+    setSearchText("");
+    setFilterStatus("all");
+    setFilterJob("all");
+    setCurrentPage(1);
+  };
+
+  if (isLoading && !isFetching) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
         <Spin size="large" tip="Loading candidates..." />
@@ -300,6 +311,7 @@ const RecruiterStagedCandidates = () => {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{ width: "100%" }}
+                loading={isFetching}
               />
             </Col>
 
@@ -310,6 +322,7 @@ const RecruiterStagedCandidates = () => {
                 value={filterJob}
                 onChange={setFilterJob}
                 size="large"
+                loading={isFetching}
               >
                 <Option value="all">All Jobs</Option>
                 {jobs.map((job) => (
@@ -390,11 +403,7 @@ const RecruiterStagedCandidates = () => {
             <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
               <Button
                 type="link"
-                onClick={() => {
-                  setFilterStatus("all");
-                  setFilterJob("all");
-                  setSearchText("");
-                }}
+                onClick={handleClearFilters}
                 style={{ flex: 1 }}
               >
                 Clear All
@@ -414,7 +423,14 @@ const RecruiterStagedCandidates = () => {
           </div>
         </Drawer>
 
-        <div style={{ marginBottom: "16px" }}>
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Text
             style={{
               fontSize: "clamp(14px, 2.5vw, 16px)",
@@ -422,48 +438,30 @@ const RecruiterStagedCandidates = () => {
               color: "#374151",
             }}
           >
-            {
-              filteredCandidates.filter((candidate) => {
-                const matchesSearch =
-                  searchText === "" ||
-                  candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                  candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
-                  candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                  candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
-
-                const matchesStatus =
-                  filterStatus === "all" ||
-                  (filterStatus === "active" && candidate.status === "Active") ||
-                  (filterStatus === "inactive" && candidate.status === "Inactive");
-
-                const matchesJob =
-                  filterJob === "all" ||
-                  candidate.appliedJob._id === filterJob;
-
-                return matchesSearch && matchesStatus && matchesJob;
-              }).length
-            }{" "}
-            candidates found
+            {totalCount} candidates found
             {filterStatus !== "all" && ` (${filterStatus})`}
           </Text>
+          {isFetching && <Spin size="small" />}
         </div>
 
-        {getCurrentPageCandidates().length > 0 ? (
+        {candidates.length > 0 ? (
           <>
             <div
               style={{
                 background: "#fff",
                 borderRadius: "12px",
                 boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                opacity: isFetching ? 0.7 : 1,
+                transition: "opacity 0.3s ease",
               }}
             >
-              {getCurrentPageCandidates().map((candidate, index) => (
+              {candidates.map((candidate, index) => (
                 <div
                   key={candidate._id}
                   style={{
                     padding: "16px",
                     borderBottom:
-                      index === getCurrentPageCandidates().length - 1
+                      index === candidates.length - 1
                         ? "none"
                         : "1px solid #f0f0f0",
                     cursor: "pointer",
@@ -477,7 +475,10 @@ const RecruiterStagedCandidates = () => {
                     (e.currentTarget.style.backgroundColor = "transparent")
                   }
                 >
-                  <div className="mobile-candidate-card" style={{ display: "block" }}>
+                  <div
+                    className="mobile-candidate-card"
+                    style={{ display: "block" }}
+                  >
                     <div
                       style={{
                         display: "flex",
@@ -565,7 +566,9 @@ const RecruiterStagedCandidates = () => {
                         }}
                       >
                         <Tag
-                          color={candidate.status === "Active" ? "green" : "red"}
+                          color={
+                            candidate.status === "Active" ? "green" : "red"
+                          }
                           style={{
                             fontSize: "10px",
                             textTransform: "uppercase",
@@ -752,29 +755,13 @@ const RecruiterStagedCandidates = () => {
               <Pagination
                 current={currentPage}
                 pageSize={pageSize}
-                total={
-                  filteredCandidates.filter((candidate) => {
-                    const matchesSearch =
-                      searchText === "" ||
-                      candidate.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                      candidate.email.toLowerCase().includes(searchText.toLowerCase()) ||
-                      candidate.appliedJob.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                      candidate.appliedJob.company.toLowerCase().includes(searchText.toLowerCase());
-
-                    const matchesStatus =
-                      filterStatus === "all" ||
-                      (filterStatus === "active" && candidate.status === "Active") ||
-                      (filterStatus === "inactive" && candidate.status === "Inactive");
-
-                    const matchesJob =
-                      filterJob === "all" ||
-                      candidate.appliedJob._id === filterJob;
-
-                    return matchesSearch && matchesStatus && matchesJob;
-                  }).length
-                }
-                onChange={(page) => setCurrentPage(page)}
+                total={totalCount}
+                onChange={handlePageChange}
                 showSizeChanger={false}
+                showQuickJumper={totalPages > 10}
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} candidates`
+                }
                 itemRender={(current, type, originalElement) => {
                   if (type === "prev") {
                     return (
@@ -784,6 +771,7 @@ const RecruiterStagedCandidates = () => {
                           color: primaryColor,
                           borderColor: "#d9d9d9",
                         }}
+                        disabled={isFetching}
                       >
                         Previous
                       </Button>
@@ -797,6 +785,7 @@ const RecruiterStagedCandidates = () => {
                           color: primaryColor,
                           borderColor: "#d9d9d9",
                         }}
+                        disabled={isFetching}
                       >
                         Next
                       </Button>
@@ -812,6 +801,7 @@ const RecruiterStagedCandidates = () => {
                             current === currentPage ? "#fff" : primaryColor,
                           borderColor: "#d9d9d9",
                         }}
+                        disabled={isFetching}
                       >
                         {current}
                       </Button>
@@ -849,11 +839,7 @@ const RecruiterStagedCandidates = () => {
               {searchText || filterStatus !== "all" || filterJob !== "all" ? (
                 <Button
                   type="primary"
-                  onClick={() => {
-                    setSearchText("");
-                    setFilterStatus("all");
-                    setFilterJob("all");
-                  }}
+                  onClick={handleClearFilters}
                   style={{
                     background: primaryColor,
                     border: "none",
@@ -869,7 +855,6 @@ const RecruiterStagedCandidates = () => {
     );
   }
 
-  // Individual candidate detailed view (this part can remain similar to your original pipeline view)
   return (
     <div style={{ padding: "16px", minHeight: "100vh" }}>
       <div style={{ marginBottom: "16px" }}>
@@ -883,10 +868,11 @@ const RecruiterStagedCandidates = () => {
         </Button>
       </div>
 
-      {/* Individual candidate details view would go here */}
       <Card>
         <Title level={3}>Individual Candidate Pipeline View</Title>
-        <Text>This would show the detailed pipeline view for the selected candidate.</Text>
+        <Text>
+          This would show the detailed pipeline view for the selected candidate.
+        </Text>
       </Card>
     </div>
   );

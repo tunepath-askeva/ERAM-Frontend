@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Input,
@@ -85,12 +85,22 @@ const RecruiterCandidates = () => {
   const [convertModalVisible, setConvertModalVisible] = useState(false);
   const [convertForm] = Form.useForm();
   const [candidateToConvert, setCandidateToConvert] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const {
     data: apiData,
     isLoading,
     refetch,
-  } = useGetPipelineCompletedCandidatesQuery();
+  } = useGetPipelineCompletedCandidatesQuery({
+    page: pagination.current,
+    limit: pagination.pageSize,
+    search: searchTerm,
+    status: selectedStatus === "all" ? undefined : selectedStatus,
+  });
   const [moveToNextStage, { isLoading: isMovingStage }] =
     useMoveCandidateStatusMutation();
   const [addInterviewDetails, { isLoading: isSchedulingInterview }] =
@@ -101,6 +111,38 @@ const RecruiterCandidates = () => {
     useConvertEmployeeMutation();
 
   const { data: allRecruiters } = useGetAllRecruitersQuery();
+
+  useEffect(() => {
+    if (apiData?.total) {
+      setPagination((prev) => ({
+        ...prev,
+        total: apiData.total,
+      }));
+    }
+  }, [apiData]);
+
+  const tablePagination = {
+    ...pagination,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) =>
+      `${range[0]}-${range[1]} of ${total} candidates`,
+    responsive: true,
+    onChange: (page, pageSize) => {
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize,
+      }));
+    },
+    onShowSizeChange: (current, size) => {
+      setPagination((prev) => ({
+        ...prev,
+        current: 1, // Reset to first page when changing page size
+        pageSize: size,
+      }));
+    },
+  };
 
   const candidates =
     apiData?.data?.map((candidate) => ({
@@ -203,6 +245,16 @@ const RecruiterCandidates = () => {
       );
       console.error("Move to interview error:", error);
     }
+  };
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page when searching
+  };
+
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page when changing status
   };
 
   const handleMakeOffer = async (candidate) => {
@@ -887,7 +939,6 @@ const RecruiterCandidates = () => {
               Manage and track your compelted candidates in pipeline
             </Text>
           </Col>
-
         </Row>
       </Card>
 
@@ -899,8 +950,10 @@ const RecruiterCandidates = () => {
               placeholder="Search candidates, positions, or job codes..."
               prefix={<SearchOutlined style={iconTextStyle} />}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               size="large"
+              allowClear
+              onPressEnter={(e) => handleSearch(e.target.value)}
             />
           </Col>
           <Col xs={24} md={6}>
@@ -924,7 +977,7 @@ const RecruiterCandidates = () => {
         >
           <Tabs
             activeKey={selectedStatus}
-            onChange={setSelectedStatus}
+            onChange={handleStatusChange}
             items={tabItems}
             size="small"
             tabBarStyle={{ margin: 0 }}
@@ -941,17 +994,10 @@ const RecruiterCandidates = () => {
         >
           <Table
             columns={columns}
-            dataSource={filteredCandidates}
+            dataSource={candidates} // Use candidates directly instead of filteredCandidates
             rowKey="id"
             loading={isLoading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} candidates`,
-              responsive: true,
-            }}
+            pagination={tablePagination}
             scroll={{ x: 1400 }}
             locale={{
               emptyText: (

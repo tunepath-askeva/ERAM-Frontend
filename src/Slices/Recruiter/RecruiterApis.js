@@ -165,10 +165,35 @@ export const recruiterApi = createApi({
     }),
 
     getPipelineJobs: builder.query({
-      query: () => ({
-        url: "pipelineJobs",
-        method: "GET",
-      }),
+      query: ({
+        page = 1,
+        limit = 6,
+        search = "",
+        status = "all",
+        jobId = "all",
+      } = {}) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+
+        if (search) {
+          params.append("search", search);
+        }
+
+        if (status && status !== "all") {
+          params.append("status", status);
+        }
+
+        if (jobId && jobId !== "all") {
+          params.append("jobId", jobId);
+        }
+
+        return {
+          url: `/pipelineJobs?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getPipelineJobsById: builder.query({
       query: (id) => ({
@@ -220,10 +245,28 @@ export const recruiterApi = createApi({
     }),
 
     getPipelineCompletedCandidates: builder.query({
-      query: () => ({
-        url: `/candidate`,
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", params.page || 1);
+        queryParams.append("limit", params.limit || 10);
+
+        if (params.search) {
+          queryParams.append("search", params.search);
+        }
+
+        if (params.status) {
+          queryParams.append("status", params.status);
+        }
+
+        return {
+          url: `/candidate?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return response;
+      },
     }),
     moveCandidateStatus: builder.mutation({
       query: ({ id, ...payload }) => ({
