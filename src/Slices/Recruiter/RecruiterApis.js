@@ -384,6 +384,9 @@ export const recruiterApi = createApi({
         body: payload,
       }),
     }),
+    getBranchEmployess: builder.query({
+      query: (id) => `/employees`,
+    }),
   }),
 });
 
@@ -428,4 +431,5 @@ export const {
   useStagedCandidateNotifyMutation,
   useGetRecruiterJobTimelineIdQuery,
   useConvertEmployeeMutation,
+  useGetBranchEmployessQuery,
 } = recruiterApi;

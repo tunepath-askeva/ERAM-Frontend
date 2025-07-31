@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Input,
@@ -25,6 +25,8 @@ import {
   Divider,
   Upload,
   Switch,
+  Spin,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -51,6 +53,7 @@ import {
   SettingOutlined,
   EditOutlined,
 } from "@ant-design/icons";
+import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -64,11 +67,63 @@ const RecruiterEmployee = () => {
   const [employeeDrawerVisible, setEmployeeDrawerVisible] = useState(false);
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [addEmployeeModalVisible, setAddEmployeeModalVisible] = useState(false);
-  const [editEmployeeModalVisible, setEditEmployeeModalVisible] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [editEmployeeModalVisible, setEditEmployeeModalVisible] =
+    useState(false);
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
   const [addEmployeeForm] = Form.useForm();
   const [editEmployeeForm] = Form.useForm();
+
+  const { data, isLoading, error } = useGetBranchEmployessQuery();
+
+  useEffect(() => {
+    if (data?.data) {
+      const transformedEmployees = data.data.map((item, index) => ({
+        id: item._id,
+        name: item.user.fullName,
+        email: item.user.email,
+        phone: item.user.employmentDetails?.phoneNumber || "N/A", // Add if available in API
+        position: item.user.employmentDetails.assignedJobTitle,
+        department: item.user.employmentDetails.category,
+        location: "N/A", // Not available in API response
+        status: item.status === "hired" ? "active" : item.status,
+        employmentType: "full-time", // Default, not available in API
+        manager: "N/A", // Not available in API response
+        hireDate: new Date(
+          item.user.employmentDetails.dateOfJoining
+        ).toLocaleDateString(),
+        salary: "N/A", // Not available in API response
+        skills: [], // Not available in API response
+        avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${item.user.fullName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")}`,
+        lastActivity: new Date(item.updatedAt).toLocaleDateString(),
+        starred: false,
+        summary:
+          item.user.employmentDetails.basicAssets || "No summary provided.",
+        documents: item.stageProgress.flatMap(
+          (stage) =>
+            stage.uploadedDocuments?.map((doc) => ({
+              name: doc.fileName,
+              type: doc.documentName.toLowerCase().replace(/\s+/g, "-"),
+            })) || []
+        ),
+        performanceRating: 0, // Not available in API
+        isAdmin: false, // Not available in API
+        // Additional fields from API
+        workOrderTitle: item.workOrder.title,
+        eramId: item.user.employmentDetails.eramId,
+        badgeNo: item.user.employmentDetails.badgeNo,
+        aramcoId: item.user.employmentDetails.aramcoId,
+        officialEmail: item.user.employmentDetails.officialEmail,
+        stageProgress: item.stageProgress,
+        interviewDetails: item.interviewDetails,
+      }));
+      setEmployees(transformedEmployees);
+    }
+  }, [data]);
 
   // Custom styles
   const buttonStyle = {
@@ -80,136 +135,6 @@ const RecruiterEmployee = () => {
   const iconTextStyle = {
     color: "#da2c46",
   };
-
-  // Mock employee data
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      name: "Sarah Chen",
-      email: "sarah.chen@company.com",
-      phone: "+1 (555) 123-4567",
-      position: "Senior Frontend Developer",
-      department: "Engineering",
-      location: "San Francisco, CA",
-      status: "active",
-      employmentType: "full-time",
-      manager: "John Smith",
-      hireDate: "2023-05-15",
-      salary: "$120,000",
-      skills: ["React", "TypeScript", "Node.js"],
-      avatar: "https://via.placeholder.com/40x40/1890ff/ffffff?text=SC",
-      lastActivity: "2 hours ago",
-      starred: true,
-      summary: "Experienced frontend developer with strong React expertise.",
-      documents: [
-        { name: "Employment_Contract.pdf", type: "contract" },
-        { name: "NDA_Agreement.pdf", type: "nda" },
-      ],
-      performanceRating: 4.5,
-      isAdmin: false,
-    },
-    {
-      id: 2,
-      name: "Marcus Johnson",
-      email: "marcus.j@company.com",
-      phone: "+1 (555) 987-6543",
-      position: "Product Manager",
-      department: "Product",
-      location: "New York, NY",
-      status: "active",
-      employmentType: "full-time",
-      manager: "Lisa Wong",
-      hireDate: "2022-11-10",
-      salary: "$110,000",
-      skills: ["Product Strategy", "Analytics", "Agile"],
-      avatar: "https://via.placeholder.com/40x40/52c41a/ffffff?text=MJ",
-      lastActivity: "1 day ago",
-      starred: false,
-      summary: "Senior product manager with extensive experience in B2B SaaS.",
-      documents: [
-        { name: "Employment_Contract.pdf", type: "contract" },
-        { name: "Stock_Options.pdf", type: "stock" },
-      ],
-      performanceRating: 4.2,
-      isAdmin: true,
-    },
-    {
-      id: 3,
-      name: "Emma Rodriguez",
-      email: "emma.rodriguez@company.com",
-      phone: "+1 (555) 456-7890",
-      position: "UX Designer",
-      department: "Design",
-      location: "Austin, TX",
-      status: "on-leave",
-      employmentType: "full-time",
-      manager: "Sarah Johnson",
-      hireDate: "2023-08-22",
-      salary: "$95,000",
-      skills: ["Figma", "User Research", "Prototyping"],
-      avatar: "https://via.placeholder.com/40x40/722ed1/ffffff?text=ER",
-      lastActivity: "30 minutes ago",
-      starred: true,
-      summary: "Creative UX designer with strong user research background.",
-      documents: [
-        { name: "Employment_Contract.pdf", type: "contract" },
-        { name: "Leave_Request.pdf", type: "leave" },
-      ],
-      performanceRating: 4.7,
-      isAdmin: false,
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      email: "david.kim@company.com",
-      phone: "+1 (555) 321-0987",
-      position: "Backend Engineer",
-      department: "Engineering",
-      location: "Seattle, WA",
-      status: "active",
-      employmentType: "contract",
-      manager: "John Smith",
-      hireDate: "2024-01-05",
-      salary: "$90/hour",
-      skills: ["Python", "Django", "PostgreSQL"],
-      avatar: "https://via.placeholder.com/40x40/fa8c16/ffffff?text=DK",
-      lastActivity: "3 days ago",
-      starred: false,
-      summary: "Backend developer with Python expertise.",
-      documents: [
-        { name: "Contract_Agreement.pdf", type: "contract" },
-        { name: "Confidentiality_Agreement.pdf", type: "nda" },
-      ],
-      performanceRating: 3.8,
-      isAdmin: false,
-    },
-    {
-      id: 5,
-      name: "Lisa Thompson",
-      email: "lisa.thompson@company.com",
-      phone: "+1 (555) 654-3210",
-      position: "Data Scientist",
-      department: "Data",
-      location: "Boston, MA",
-      status: "inactive",
-      employmentType: "full-time",
-      manager: "Mike Brown",
-      hireDate: "2021-09-18",
-      terminationDate: "2024-05-20",
-      salary: "$105,000",
-      skills: ["Python", "Machine Learning", "SQL"],
-      avatar: "https://via.placeholder.com/40x40/eb2f96/ffffff?text=LT",
-      lastActivity: "2 weeks ago",
-      starred: false,
-      summary: "Data scientist with strong ML background.",
-      documents: [
-        { name: "Employment_Contract.pdf", type: "contract" },
-        { name: "Termination_Letter.pdf", type: "termination" },
-      ],
-      performanceRating: 4.1,
-      isAdmin: false,
-    },
-  ]);
 
   const statusConfig = {
     active: { color: "green", label: "Active" },
@@ -663,6 +588,28 @@ const RecruiterEmployee = () => {
     </Card>
   );
 
+  if (isLoading) {
+    return (
+      <div style={{ padding: "12px", textAlign: "center" }}>
+        <Spin size="large" />
+        <p>Loading employees...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "12px", textAlign: "center" }}>
+        <Alert
+          message="Error"
+          description="Failed to load employees. Please try again."
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -944,7 +891,9 @@ const RecruiterEmployee = () => {
               <Form.Item
                 label="Hire Date"
                 name="hireDate"
-                rules={[{ required: false, message: "Please select hire date" }]}
+                rules={[
+                  { required: false, message: "Please select hire date" },
+                ]}
               >
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
@@ -1148,7 +1097,9 @@ const RecruiterEmployee = () => {
               <Form.Item
                 label="Hire Date"
                 name="hireDate"
-                rules={[{ required: false, message: "Please select hire date" }]}
+                rules={[
+                  { required: false, message: "Please select hire date" },
+                ]}
               >
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
@@ -1228,10 +1179,7 @@ const RecruiterEmployee = () => {
         footer={null}
         width={window.innerWidth < 768 ? "95%" : 600}
       >
-        <Form
-          form={messageForm}
-          layout="vertical"
-        >
+        <Form form={messageForm} layout="vertical">
           <Form.Item
             label="Subject"
             name="subject"
@@ -1347,11 +1295,15 @@ const RecruiterEmployee = () => {
                   </Tag>
                   <Tag
                     color={
-                      employmentTypeConfig[selectedEmployee.employmentType].color
+                      employmentTypeConfig[selectedEmployee.employmentType]
+                        .color
                     }
                     style={{ marginLeft: 8 }}
                   >
-                    {employmentTypeConfig[selectedEmployee.employmentType].label}
+                    {
+                      employmentTypeConfig[selectedEmployee.employmentType]
+                        .label
+                    }
                   </Tag>
                 </div>
               </div>

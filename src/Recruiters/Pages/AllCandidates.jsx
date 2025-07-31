@@ -28,7 +28,7 @@ import {
   EnvironmentOutlined,
   CalendarOutlined,
   LinkedinOutlined,
-DownloadOutlined ,
+  DownloadOutlined,
   InboxOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -383,7 +383,7 @@ function AllCandidates() {
 
       <Card style={{ marginBottom: "24px" }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={18}>
             <Search
               placeholder="Search candidates, skills, email, title..."
               value={searchTerm}
@@ -393,72 +393,10 @@ function AllCandidates() {
               loading={isLoading && searchTerm !== debouncedSearchTerm}
             />
           </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Select
-              mode="multiple"
-              placeholder="Select skills"
-              value={selectedSkills}
-              onChange={setSelectedSkills}
-              style={{ width: "100%" }}
-              maxTagCount={2}
-              loading={isLoading}
-            >
-              {filterOptions.skills.map((skill) => (
-                <Option key={skill} value={skill}>
-                  {skill}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Select
-              placeholder="Select location"
-              value={selectedLocation}
-              onChange={setSelectedLocation}
-              style={{ width: "100%" }}
-              allowClear
-              loading={isLoading}
-            >
-              {filterOptions.locations.map((location) => (
-                <Option key={location} value={location}>
-                  {location}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Select
-              placeholder="Experience"
-              value={selectedExperience}
-              onChange={setSelectedExperience}
-              style={{ width: "100%" }}
-              allowClear
-            >
-              <Option value="0-1">0-1 years</Option>
-              <Option value="1-2">1-2 years</Option>
-              <Option value="2-5">2-5 years</Option>
-              <Option value="5+">5+ years</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Select
-              placeholder="Industry"
-              value={selectedIndustry}
-              onChange={setSelectedIndustry}
-              style={{ width: "100%" }}
-              allowClear
-              loading={isLoading}
-            >
-              {filterOptions.industries.map((industry) => (
-                <Option key={industry} value={industry}>
-                  {industry}
-                </Option>
-              ))}
-            </Select>
-          </Col>
+
           <Col xs={24} sm={12} md={8} lg={6}>
             <Button onClick={clearFilters} icon={<FilterOutlined />}>
-              Clear Filters
+              Clear Search
             </Button>
           </Col>
         </Row>
