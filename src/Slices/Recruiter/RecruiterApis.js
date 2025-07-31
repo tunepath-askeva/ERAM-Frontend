@@ -428,7 +428,19 @@ export const recruiterApi = createApi({
       }),
     }),
     getBranchEmployess: builder.query({
-      query: (id) => `/employees`,
+      query: ({ page = 1, pageSize = 10, search = "" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pageSize.toString(),
+        });
+
+        if (search) params.append("search", search);
+
+        return {
+          url: `/employees?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
   }),
 });

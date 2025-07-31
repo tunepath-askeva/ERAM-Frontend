@@ -68,6 +68,13 @@ const RecruiterEmployee = () => {
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [addEmployeeModalVisible, setAddEmployeeModalVisible] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [editEmployeeModalVisible, setEditEmployeeModalVisible] =
     useState(false);
   const [form] = Form.useForm();
@@ -75,7 +82,21 @@ const RecruiterEmployee = () => {
   const [addEmployeeForm] = Form.useForm();
   const [editEmployeeForm] = Form.useForm();
 
-  const { data, isLoading, error } = useGetBranchEmployessQuery();
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchQuery);
+    }, 700);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchQuery]);
+
+  const { data, isLoading, error } = useGetBranchEmployessQuery({
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+    search: debouncedSearchTerm,
+  });
 
   useEffect(() => {
     if (data?.data) {
@@ -122,10 +143,13 @@ const RecruiterEmployee = () => {
         interviewDetails: item.interviewDetails,
       }));
       setEmployees(transformedEmployees);
+      setPagination((prev) => ({
+        ...prev,
+        total: data.totalCount || data.data.length,
+      }));
     }
   }, [data]);
 
-  // Custom styles
   const buttonStyle = {
     background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
     border: "none",
@@ -154,6 +178,28 @@ const RecruiterEmployee = () => {
     active: employees.filter((e) => e.status === "active").length,
     "on-leave": employees.filter((e) => e.status === "on-leave").length,
     inactive: employees.filter((e) => e.status === "inactive").length,
+  };
+
+  const tablePagination = {
+    ...pagination,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) =>
+      `${range[0]}-${range[1]} of ${total} employees`,
+    onChange: (page, pageSize) => {
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize,
+      }));
+    },
+    onShowSizeChange: (current, size) => {
+      setPagination((prev) => ({
+        ...prev,
+        current: 1,
+        pageSize: size,
+      }));
+    },
   };
 
   const filteredEmployees = employees.filter((employee) => {
@@ -655,7 +701,10 @@ const RecruiterEmployee = () => {
               placeholder="Search employees, positions, departments, or skills..."
               prefix={<SearchOutlined style={iconTextStyle} />}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value); // This drives UI
+                setSearchQuery(e.target.value); // This triggers API debounce
+              }}
               size="large"
             />
           </Col>
@@ -699,14 +748,7 @@ const RecruiterEmployee = () => {
             columns={columns}
             dataSource={filteredEmployees}
             rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} employees`,
-              responsive: true,
-            }}
+            pagination={tablePagination}
             scroll={{ x: 1200 }}
             locale={{
               emptyText: (
