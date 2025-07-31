@@ -674,7 +674,6 @@ const RecruiterCandidates = () => {
       ),
     }));
 
-  // Mobile card view for candidates
   const CandidateCard = ({ candidate }) => (
     <Card
       size="small"
@@ -776,7 +775,6 @@ const RecruiterCandidates = () => {
     </Card>
   );
 
-  // Helper to render stage reviews
   const renderStageReviews = (stage) => {
     return (
       <Collapse>
@@ -812,7 +810,6 @@ const RecruiterCandidates = () => {
     );
   };
 
-  // Helper to render activity timeline
   const renderActivityTimeline = (stageProgress) => {
     return stageProgress?.map((stage) => ({
       title: stage.stageName,
@@ -888,10 +885,10 @@ const RecruiterCandidates = () => {
               level={2}
               style={{ margin: 0, fontSize: "clamp(1.2rem, 4vw, 2rem)" }}
             >
-              Candidates
+              Completed Candidates
             </Title>
             <Text type="secondary">
-              Manage and track your candidate pipeline
+              Manage and track your compelted candidates in pipeline
             </Text>
           </Col>
           <Col xs={24} sm={8} md={12}>
@@ -1931,6 +1928,7 @@ const RecruiterCandidates = () => {
               const payload = {
                 ...values,
                 candidateId: candidateToConvert.candidateId,
+                customFieldId: candidateToConvert._id,
               };
 
               console.log("Submit to API:", payload);
