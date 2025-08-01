@@ -140,7 +140,7 @@ const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
       message.error("File must be smaller than 5MB!");
       return Upload.LIST_IGNORE;
     }
-    return false; 
+    return false;
   };
 
   return (
@@ -289,8 +289,9 @@ const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
               size="large"
               style={{ width: mobileView ? "100%" : "auto" }}
               icon={<SaveOutlined />}
+              onClick={() => form.resetFields()}
             >
-              Save as Draft
+              Cancel
             </Button>
             <Button
               type="primary"
