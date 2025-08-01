@@ -38,6 +38,8 @@ const { Option } = Select;
 const recruiterTypes = [
   "Recruiter",
   "Admin Recruiter",
+  "Employee Admin",
+  "HR Admin",
   "HR",
   "Visa",
   "Vehicle",

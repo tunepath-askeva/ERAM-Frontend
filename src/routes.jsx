@@ -66,6 +66,7 @@ import EditRequisition from "./Recruiters/Components/EditRequisition";
 import AllCandidates from "./Recruiters/Pages/AllCandidates";
 import RecruiterJobsTimeline from "./Recruiters/Pages/RecruiterJobsTimeline";
 import RecruiterViewTimeline from "./Recruiters/Components/RecruiterViewTimeline";
+import ProtectedEmployee from "./Employee/Auth/ProtectedEmployee";
 
 const AppRoutes = () => {
   return (
@@ -275,18 +276,21 @@ const AppRoutes = () => {
       {/* Employee */}
 
       <Route element={<EmployeeLayout />}>
-        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+        <Route
+          path="/employee/dashboard"
+          element={<ProtectedEmployee element={<EmployeeDashboard />} />}
+        />
         <Route
           path="/employee/raise-request"
-          element={<EmployeeRaiseRequest />}
+          element={<ProtectedEmployee element={<EmployeeRaiseRequest />} />}
         />
         <Route
           path="/employee/leave-request"
-          element={<EmployeeLeaveRequest />}
+          element={<ProtectedEmployee element={<EmployeeLeaveRequest />} />}
         />
         <Route
           path="/employee/profile-settings"
-          element={<EmployeeProfileSettings />}
+          element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
         />
       </Route>
 

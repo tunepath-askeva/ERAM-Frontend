@@ -5,6 +5,7 @@ import { userApi } from "./Slices/Users/UserApis.js";
 import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminApis.js";
 import { adminApi } from "./Slices/Admin/AdminApis.js";
 import { recruiterApi } from "./Slices/Recruiter/RecruiterApis.js";
+import { employeeApi } from "./Slices/Employee/EmployeeApis.js";
 
 const store = configureStore({
   reducer: {
@@ -14,13 +15,15 @@ const store = configureStore({
     [superAdminApi.reducerPath]: superAdminApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
     [recruiterApi.reducerPath]: recruiterApi.reducer,
+    [employeeApi.reducerPath]: employeeApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat(userApi.middleware)
       .concat(superAdminApi.middleware)
       .concat(adminApi.middleware)
-      .concat(recruiterApi.middleware),
+      .concat(recruiterApi.middleware)
+      .concat(employeeApi.middleware),
   devTools: true,
 });
 

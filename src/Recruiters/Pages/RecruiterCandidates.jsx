@@ -73,7 +73,7 @@ const { Panel } = Collapse;
 const RecruiterCandidates = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("completed");
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [candidateDrawerVisible, setCandidateDrawerVisible] = useState(false);
@@ -720,15 +720,12 @@ const RecruiterCandidates = () => {
     },
   ];
 
-  const tabItems = Object.entries(filterCounts)
-    .filter(([status]) => {
-      if (status === "all") return hasPermission("view-all-tab");
-      return hasPermission(`view-${status}-tab`);
-    })
-    .map(([status, count]) => ({
+  const tabItems = ["completed", "interview", "offer", "rejected"]
+    .filter((status) => hasPermission(`view-${status}-tab`))
+    .map((status) => ({
       key: status,
       label: (
-        <Badge count={count} size="small" offset={[10, 0]}>
+        <Badge count={filterCounts[status]} size="small" offset={[10, 0]}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </Badge>
       ),
@@ -1306,7 +1303,7 @@ const RecruiterCandidates = () => {
                               <>
                                 <Button
                                   type="primary"
-                                  style={{ background: "#52c41a" }}
+                                  style={{ background: "#da2c46" }}
                                   onClick={() =>
                                     handleChangeInterviewStatus(
                                       "interview_completed",

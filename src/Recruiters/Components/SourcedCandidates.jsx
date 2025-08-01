@@ -532,24 +532,20 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleClearSearch = () => {
-    // Clear all filters
     setFilters(initialFilters);
     setTempFilters(initialFilters);
     setSkillInput("");
 
-    // Clear search states
     setShouldFetch(false);
     setIsExactMatch(false);
     setQueryParams("");
 
-    // Reset pagination
     setPagination((prev) => ({
       ...prev,
       current: 1,
       total: 0,
     }));
 
-    // Clear selections
     setSelectedCandidates([]);
     setSelectAll(false);
     message.success("All filters cleared successfully");

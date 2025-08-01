@@ -676,7 +676,6 @@ const CandidateJobs = () => {
           </div>
         </Card>
 
-        {/* Update the search results indicator */}
         {showingSearchResults && (
           <Card style={{ marginBottom: "16px", borderRadius: "8px" }}>
             <div
