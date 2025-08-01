@@ -21,7 +21,16 @@ export const employeeApi = createApi({
         methid: "GET",
       }),
     }),
+    submitLeaveRequest: builder.mutation({
+      query: (formData) => ({
+        url: "/leave-request",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Leave"],
+    }),
   }),
 });
 
-export const { useGetEmployeeProfileQuery } = employeeApi;
+export const { useGetEmployeeProfileQuery, useSubmitLeaveRequestMutation } =
+  employeeApi;
