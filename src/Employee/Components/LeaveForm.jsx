@@ -196,9 +196,10 @@ const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
               label="Urgency Level"
               name="urgency"
               initialValue="Normal"
+              
             >
-              <Radio.Group size="large" buttonStyle="solid">
-                <Radio.Button value="Low">Low</Radio.Button>
+              <Radio.Group size="large" buttonStyle="solid" >
+                <Radio.Button  value="Low">Low</Radio.Button>
                 <Radio.Button value="Normal">Normal</Radio.Button>
                 <Radio.Button value="High">High</Radio.Button>
                 <Radio.Button value="Critical">Critical</Radio.Button>
