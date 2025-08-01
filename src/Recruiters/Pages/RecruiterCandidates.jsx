@@ -819,8 +819,8 @@ const RecruiterCandidates = () => {
             </Text>
           )}
           <div style={{ marginBottom: 8 }}>
-            <Tag color={statusConfig[candidate.status].color} size="small">
-              {statusConfig[candidate.status].label}
+            <Tag color={statusConfig[candidate.status]?.color} size="small">
+              {statusConfig[candidate.status]?.label}
             </Tag>
           </div>
 
