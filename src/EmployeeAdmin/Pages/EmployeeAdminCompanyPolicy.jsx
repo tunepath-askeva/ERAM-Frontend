@@ -163,32 +163,20 @@ const EmployeeAdminCompanyPolicy = () => {
 
   const handleCreatePolicy = async (values) => {
     try {
-      const formData = new FormData();
-
-      formData.append("title", values.title);
-      formData.append("createdAt", new Date().toISOString());
-      formData.append("status", "active");
-
-      if (uploadedFile) {
-        formData.append("file", uploadedFile); // binary file here
-      }
-
-      let contentToSend = "";
-
-      if (parsedData?.paragraphs && Array.isArray(parsedData.paragraphs)) {
-        contentToSend = parsedData.paragraphs.join("\n\n");
-      } else {
-        contentToSend =
+      const payload = {
+        title: values.title,
+        createdAt: new Date().toISOString(),
+        status: "active",
+        content:
+          (parsedData?.paragraphs && parsedData.paragraphs.join("\n\n")) ||
           parsedData?.content ||
           parsedData?.text ||
           parsedData?.extractedText ||
-          "";
-      }
+          "",
+      };
 
-      formData.append("content", contentToSend);
-      console.log("Sending content:", contentToSend);
-
-      await createPolicy(formData).unwrap();
+      await createPolicy(payload).unwrap();
+      
 
       notification.success({
         message: "Policy Created Successfully",
@@ -579,7 +567,7 @@ const EmployeeAdminCompanyPolicy = () => {
   return (
     <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
       <Card style={{ marginBottom: "24px" }}>
-        <Title level={2} style={{ marginBottom: "8px", color: "#1890ff" }}>
+        <Title level={2} style={{ marginBottom: "8px", color: "#da2c46" }}>
           <FileTextOutlined /> Company Policy Management
         </Title>
         <Paragraph type="secondary">
@@ -602,7 +590,7 @@ const EmployeeAdminCompanyPolicy = () => {
                 >
                   <p className="ant-upload-drag-icon">
                     <InboxOutlined
-                      style={{ fontSize: "48px", color: "#1890ff" }}
+                      style={{ fontSize: "48px", color: "#da2c46" }}
                     />
                   </p>
                   <p

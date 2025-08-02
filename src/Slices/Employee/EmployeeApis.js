@@ -74,10 +74,11 @@ export const employeeApi = createApi({
     }),
 
     createPolicy: builder.mutation({
-      query: (formData) => ({
-        url: "policy",
+      query: (data) => ({
+        url: "/policy",
         method: "POST",
-        body: formData,
+        
+        body: data,
       }),
     }),
 
