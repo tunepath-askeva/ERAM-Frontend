@@ -129,7 +129,7 @@ const LeaveDetailsDrawer = ({
         <Descriptions column={1} bordered size="small">
           <Descriptions.Item label="Leave Type">
             <Tag color={leaveType?.color} icon={leaveType?.icon}>
-              {leave.type}
+              {leave.leaveType}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Duration">

@@ -29,8 +29,17 @@ export const employeeApi = createApi({
       }),
       invalidatesTags: ["Leave"],
     }),
+    getEmployeeLeaveHistory: builder.query({
+      query: () => ({
+        url: "/leave-history",
+        methid: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useGetEmployeeProfileQuery, useSubmitLeaveRequestMutation } =
-  employeeApi;
+export const {
+  useGetEmployeeProfileQuery,
+  useSubmitLeaveRequestMutation,
+  useGetEmployeeLeaveHistoryQuery,
+} = employeeApi;

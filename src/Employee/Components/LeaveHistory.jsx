@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import LeaveDetailsDrawer from "./LeaveDetailsDrawer";
+import { useGetEmployeeLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 const { Option } = Select;
@@ -32,6 +33,24 @@ const LeaveHistory = ({ mobileView, leaveRequests = [], setLeaveRequests }) => {
   const [filterType, setFilterType] = useState("all");
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [viewLeaveDrawer, setViewLeaveDrawer] = useState(false);
+
+  const { data } = useGetEmployeeLeaveHistoryQuery();
+  const normalizedLeaves = data?.leaves?.map((leave) => ({
+    id: leave._id,
+    type:
+      leave.leaveType.charAt(0).toUpperCase() +
+      leave.leaveType.slice(1) +
+      " Leave",
+    startDate: leave.startDate,
+    endDate: leave.endDate,
+    reason: leave.reason,
+    isHalfDay: leave.isHalfDay,
+    days: dayjs(leave.endDate).diff(dayjs(leave.startDate), "day") + 1,
+    status: leave.status.charAt(0).toUpperCase() + leave.status.slice(1),
+    urgency: leave.urgency,
+    documents: leave.uploadedDocuments || [],
+    fullData: leave, // to pass into drawer if needed
+  }));
 
   const leaveTypes = [
     { value: "annual", label: "Annual Leave", color: "blue" },
@@ -62,15 +81,15 @@ const LeaveHistory = ({ mobileView, leaveRequests = [], setLeaveRequests }) => {
   };
 
   const getFilteredRequests = () => {
-    return leaveRequests.filter((req) => {
-      const statusMatch =
-        filterStatus === "all" || req.status.toLowerCase() === filterStatus;
-      const typeMatch =
-        filterType === "all" || 
-        req.type.toLowerCase().includes(filterType) ||
-        leaveTypes.find(t => t.label === req.type)?.value === filterType;
-      return statusMatch && typeMatch;
-    });
+    return (
+      normalizedLeaves?.filter((req) => {
+        const statusMatch =
+          filterStatus === "all" || req.status.toLowerCase() === filterStatus;
+        const typeMatch =
+          filterType === "all" || req.type.toLowerCase().includes(filterType);
+        return statusMatch && typeMatch;
+      }) || []
+    );
   };
 
   const columns = [
@@ -141,7 +160,7 @@ const LeaveHistory = ({ mobileView, leaveRequests = [], setLeaveRequests }) => {
             type="link"
             icon={<EyeOutlined />}
             onClick={() => {
-              setSelectedLeave(record);
+              setSelectedLeave(record.fullData || record);
               setViewLeaveDrawer(true);
             }}
           >
