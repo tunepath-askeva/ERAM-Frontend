@@ -4,14 +4,11 @@ import {
   Button,
   Tag,
   Space,
-  Modal,
-  Descriptions,
   Card,
   Typography,
   message,
   Popconfirm,
   Badge,
-  Divider,
   Row,
   Col,
   Spin,
@@ -20,286 +17,27 @@ import {
   EyeOutlined,
   CheckOutlined,
   CloseOutlined,
-  DownloadOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  FileTextOutlined,
   AlertOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
-
+import LeaveRequestModal from "../Components/LeaveRequestModal";
 const { Title, Text } = Typography;
-
-const LeaveRequestModal = ({ visible, onClose, leaveData }) => {
-  if (!leaveData) return null;
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "processing";
-      case "approved":
-        return "success";
-      case "rejected":
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
-  const getUrgencyColor = (urgency) => {
-    switch (urgency.toLowerCase()) {
-      case "high":
-        return "red";
-      case "medium":
-        return "orange";
-      case "low":
-        return "green";
-      default:
-        return "default";
-    }
-  };
-
-  const handleDocumentDownload = (doc) => {
-    window.open(doc.fileUrl, "_blank");
-    message.success(`Downloading ${doc.documentName}`);
-  };
-
-  return (
-    <Modal
-      title={
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <FileTextOutlined />
-          <span>Leave Request Details</span>
-        </div>
-      }
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={700}
-      style={{ top: 20 }}
-    >
-      <div style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <Card>
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "16px",
-                }}
-              >
-                <Title
-                  level={4}
-                  style={{
-                    margin: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <UserOutlined />
-                  {leaveData.employee.fullName}
-                </Title>
-                <Space>
-                  <Tag
-                    color={getStatusColor(leaveData.status)}
-                    style={{ fontSize: "12px", padding: "4px 8px" }}
-                  >
-                    {leaveData.status.toUpperCase()}
-                  </Tag>
-                  <Tag
-                    color={getUrgencyColor(leaveData.urgency)}
-                    style={{ fontSize: "12px", padding: "4px 8px" }}
-                  >
-                    {leaveData.urgency} Priority
-                  </Tag>
-                </Space>
-              </div>
-              <Divider />
-            </Col>
-
-            <Col span={12}>
-              <Card
-                size="small"
-                title="Employee Information"
-                style={{ height: "100%" }}
-              >
-                <Space
-                  direction="vertical"
-                  size="small"
-                  style={{ width: "100%" }}
-                >
-                  <div>
-                    <Text strong>Email: </Text>
-                    <Text>{leaveData.employee.email}</Text>
-                  </div>
-                  <div>
-                    <Text strong>Phone: </Text>
-                    <Text>{leaveData.employee.phone}</Text>
-                  </div>
-                  <div>
-                    <Text strong>Employee ID: </Text>
-                    <Text code>{leaveData.employee._id}</Text>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-
-            <Col span={12}>
-              <Card
-                size="small"
-                title="Leave Information"
-                style={{ height: "100%" }}
-              >
-                <Space
-                  direction="vertical"
-                  size="small"
-                  style={{ width: "100%" }}
-                >
-                  <div>
-                    <Text strong>Leave Type: </Text>
-                    <Tag color="blue">
-                      {leaveData.leaveType.charAt(0).toUpperCase() +
-                        leaveData.leaveType.slice(1)}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>Half Day: </Text>
-                    <Tag color={leaveData.isHalfDay ? "orange" : "default"}>
-                      {leaveData.isHalfDay ? "Yes" : "No"}
-                    </Tag>
-                  </div>
-                  <div>
-                    <Text strong>Medical Certificate: </Text>
-                    <Tag
-                      color={leaveData.medicalCertificate ? "green" : "default"}
-                    >
-                      {leaveData.medicalCertificate
-                        ? "Required"
-                        : "Not Required"}
-                    </Tag>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-
-            <Col span={24}>
-              <Card
-                size="small"
-                title={
-                  <>
-                    <CalendarOutlined /> Duration
-                  </>
-                }
-              >
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <div>
-                      <Text strong>Start Date: </Text>
-                      <Text>{formatDate(leaveData.startDate)}</Text>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div>
-                      <Text strong>End Date: </Text>
-                      <Text>{formatDate(leaveData.endDate)}</Text>
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-            </Col>
-
-            <Col span={24}>
-              <Card size="small" title="Reason">
-                <Text>{leaveData.reason}</Text>
-              </Card>
-            </Col>
-
-            {leaveData.uploadedDocuments &&
-              leaveData.uploadedDocuments.length > 0 && (
-                <Col span={24}>
-                  <Card size="small" title="Uploaded Documents">
-                    <Space direction="vertical" style={{ width: "100%" }}>
-                      {leaveData.uploadedDocuments.map((doc) => (
-                        <div
-                          key={doc._id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "8px",
-                            background: "#f5f5f5",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          <div>
-                            <Text strong>{doc.documentName}</Text>
-                            <br />
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              Uploaded: {formatDate(doc.uploadedAt)}
-                            </Text>
-                          </div>
-                          <Button
-                            type="primary"
-                            icon={<EyeOutlined />}
-                            size="small"
-                            style={{ backgroundColor: "#da2c46" }}
-                            onClick={() => handleDocumentDownload(doc)}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      ))}
-                    </Space>
-                  </Card>
-                </Col>
-              )}
-
-            <Col span={24}>
-              <Card size="small" title="Request Timeline">
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <div>
-                      <Text strong>Requested Date: </Text>
-                      <Text>{formatDate(leaveData.createdAt)}</Text>
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
-      </div>
-    </Modal>
-  );
-};
 
 const EmployeeAdminLeaveRequest = () => {
   const { data, isLoading, error } = useGetEmployeeAdminLeaveHistoryQuery();
-  const [selectedLeave, setSelectedLeave] = useState(null);
+  const [selectedLeaveId, setSelectedLeaveId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeaveData] = useState([]);
+  const [selectedEramId, setSelectedEramId] = useState(null);
 
   React.useEffect(() => {
     if (data?.leaves) {
-      setLeaveData(data.leaves);
+      const transformedData = data.leaves.map((leave) => ({
+        ...leave,
+      }));
+      setLeaveData(transformedData);
     }
   }, [data]);
-
-  const handleViewRequest = (record) => {
-    setSelectedLeave(record);
-    setModalVisible(true);
-  };
 
   const handleApproveRequest = (record) => {
     const updatedData = leaveData.map((leave) =>
@@ -312,7 +50,7 @@ const EmployeeAdminLeaveRequest = () => {
         : leave
     );
     setLeaveData(updatedData);
-    message.success(`Leave request approved for ${record.employee.fullName}`);
+    message.success(`Leave request approved for ${record.fullName}`);
   };
 
   const handleRejectRequest = (record) => {
@@ -326,7 +64,19 @@ const EmployeeAdminLeaveRequest = () => {
         : leave
     );
     setLeaveData(updatedData);
-    message.error(`Leave request rejected for ${record.employee.fullName}`);
+    message.error(`Leave request rejected for ${record.fullName}`);
+  };
+
+  const handleViewRequest = (record) => {
+    setSelectedLeaveId(record._id);
+    setSelectedEramId(record.eramId);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedLeaveId(null);
+    setSelectedEramId(null);
   };
 
   const formatDate = (dateString) => {
@@ -351,7 +101,7 @@ const EmployeeAdminLeaveRequest = () => {
   };
 
   const getUrgencyColor = (urgency) => {
-    switch (urgency.toLowerCase()) {
+    switch (urgency?.toLowerCase()) {
       case "high":
         return "red";
       case "medium":
@@ -366,15 +116,13 @@ const EmployeeAdminLeaveRequest = () => {
   const columns = [
     {
       title: "Employee",
-      dataIndex: ["employee", "fullName"],
+      dataIndex: "fullName",
       key: "employee",
       align: "center",
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: "bold" }}>{text}</div>
-          <div style={{ fontSize: "12px", color: "#666" }}>
-            {record.employee.email}
-          </div>
+          <div style={{ fontSize: "12px", color: "#666" }}>{record.email}</div>
         </div>
       ),
     },
@@ -383,16 +131,14 @@ const EmployeeAdminLeaveRequest = () => {
       dataIndex: "leaveType",
       key: "leaveType",
       align: "center",
-
       render: (type) => (
-        <Tag color="blue">{type.charAt(0).toUpperCase() + type.slice(1)}</Tag>
+        <Tag color="blue">{type?.charAt(0).toUpperCase() + type?.slice(1)}</Tag>
       ),
     },
     {
       title: "Duration",
       key: "duration",
       align: "center",
-
       render: (_, record) => (
         <div>
           <div>{formatDate(record.startDate)}</div>
@@ -409,7 +155,7 @@ const EmployeeAdminLeaveRequest = () => {
       render: (status) => (
         <Badge
           status={getStatusColor(status)}
-          text={status.charAt(0).toUpperCase() + status.slice(1)}
+          text={status?.charAt(0).toUpperCase() + status?.slice(1)}
         />
       ),
     },
@@ -417,23 +163,25 @@ const EmployeeAdminLeaveRequest = () => {
       title: "Urgency",
       dataIndex: "urgency",
       key: "urgency",
-      render: (urgency) => (
-        <Tag color={getUrgencyColor(urgency)} icon={<AlertOutlined />}>
-          {urgency}
-        </Tag>
-      ),
+      render: (urgency) => {
+        if (!urgency) return <Tag color="default">Normal</Tag>;
+        return (
+          <Tag color={getUrgencyColor(urgency)} icon={<AlertOutlined />}>
+            {urgency}
+          </Tag>
+        );
+      },
     },
     {
       title: "Submitted",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (date) => formatDate(date),
+      dataIndex: "decisionDate",
+      key: "decisionDate",
+      render: (date) => (date ? formatDate(date) : "N/A"),
     },
     {
       title: "Actions",
       key: "actions",
       align: "center",
-
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -568,11 +316,9 @@ const EmployeeAdminLeaveRequest = () => {
 
       <LeaveRequestModal
         visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedLeave(null);
-        }}
-        leaveData={selectedLeave}
+        onClose={handleCloseModal}
+        leaveId={selectedLeaveId}
+        eramId={selectedEramId}
       />
     </div>
   );
