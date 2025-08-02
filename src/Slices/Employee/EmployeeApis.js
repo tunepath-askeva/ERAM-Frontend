@@ -116,7 +116,7 @@ export const employeeApi = createApi({
 
     archivePolicy: builder.mutation({
       query: (id) => ({
-        url: `/archive-policy/${id}`,
+        url: `/policy-status/${id}`,
         method: "PATCH",
         body: {
           status: "inactive",
