@@ -200,7 +200,7 @@ const EmployeeAdminCompanyPolicy = () => {
       };
 
       await updatePolicy({
-        id: selectedPolicy.id,
+        id: selectedPolicy._id,
         ...updateData,
       }).unwrap();
 
