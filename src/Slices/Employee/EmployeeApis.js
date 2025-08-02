@@ -46,6 +46,16 @@ export const employeeApi = createApi({
     getLeaveRequestById: builder.query({
       query: (id) => `/leaves/${id}`,
     }),
+    updateLeaveStatus: builder.mutation({
+      query: ({ leaveId, status, comments }) => ({
+        url: `/leave-status/${leaveId}`,
+        method: "PATCH",
+        body: {
+          status,
+          comments,
+        },
+      }),
+    }),
   }),
 });
 
@@ -57,4 +67,5 @@ export const {
   //employee admin
   useGetEmployeeAdminLeaveHistoryQuery,
   useGetLeaveRequestByIdQuery,
+  useUpdateLeaveStatusMutation,
 } = employeeApi;

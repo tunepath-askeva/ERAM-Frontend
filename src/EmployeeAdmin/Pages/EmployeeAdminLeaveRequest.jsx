@@ -7,24 +7,19 @@ import {
   Card,
   Typography,
   message,
-  Popconfirm,
   Badge,
   Row,
   Col,
   Spin,
 } from "antd";
-import {
-  EyeOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  AlertOutlined,
-} from "@ant-design/icons";
+import { EyeOutlined, AlertOutlined } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 import LeaveRequestModal from "../Components/LeaveRequestModal";
 const { Title, Text } = Typography;
 
 const EmployeeAdminLeaveRequest = () => {
-  const { data, isLoading, error } = useGetEmployeeAdminLeaveHistoryQuery();
+  const { data, isLoading, error, refetch } =
+    useGetEmployeeAdminLeaveHistoryQuery();
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeaveData] = useState([]);
@@ -39,34 +34,6 @@ const EmployeeAdminLeaveRequest = () => {
     }
   }, [data]);
 
-  const handleApproveRequest = (record) => {
-    const updatedData = leaveData.map((leave) =>
-      leave._id === record._id
-        ? {
-            ...leave,
-            status: "approved",
-            decisionDate: new Date().toISOString(),
-          }
-        : leave
-    );
-    setLeaveData(updatedData);
-    message.success(`Leave request approved for ${record.fullName}`);
-  };
-
-  const handleRejectRequest = (record) => {
-    const updatedData = leaveData.map((leave) =>
-      leave._id === record._id
-        ? {
-            ...leave,
-            status: "rejected",
-            decisionDate: new Date().toISOString(),
-          }
-        : leave
-    );
-    setLeaveData(updatedData);
-    message.error(`Leave request rejected for ${record.fullName}`);
-  };
-
   const handleViewRequest = (record) => {
     setSelectedLeaveId(record._id);
     setSelectedEramId(record.eramId);
@@ -77,6 +44,8 @@ const EmployeeAdminLeaveRequest = () => {
     setModalVisible(false);
     setSelectedLeaveId(null);
     setSelectedEramId(null);
+    // Refetch data when modal closes to get updated status
+    refetch();
   };
 
   const formatDate = (dateString) => {
@@ -193,37 +162,6 @@ const EmployeeAdminLeaveRequest = () => {
           >
             View
           </Button>
-          {record.status === "pending" && (
-            <>
-              <Popconfirm
-                title="Approve Leave Request"
-                description="Are you sure you want to approve this leave request?"
-                onConfirm={() => handleApproveRequest(record)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  size="small"
-                  style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
-                >
-                  Approve
-                </Button>
-              </Popconfirm>
-              <Popconfirm
-                title="Reject Leave Request"
-                description="Are you sure you want to reject this leave request?"
-                onConfirm={() => handleRejectRequest(record)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button danger icon={<CloseOutlined />} size="small">
-                  Reject
-                </Button>
-              </Popconfirm>
-            </>
-          )}
         </Space>
       ),
     },
