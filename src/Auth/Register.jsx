@@ -29,11 +29,6 @@ const Register = () => {
 
   const [registerUser, { isLoading }] = useRegisterUserMutation();
 
-  const roles = [
-    { value: "candidate", label: "Candidate" },
-    { value: "employee", label: "Employee" },
-  ];
-
   // Validation functions
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,12 +38,13 @@ const Register = () => {
   const validatePhone = (phone) => {
     // Basic phone validation - adjust regex as needed for your requirements
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ""));
   };
 
   const validateStrongPassword = (password) => {
     // Strong password: at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return strongPasswordRegex.test(password);
   };
 
@@ -95,16 +91,6 @@ const Register = () => {
 
       if (!validateName(values.lastName)) {
         enqueueSnackbar("Last name should contain only letters.", {
-          variant: "error",
-          anchorOrigin: { vertical: "top", horizontal: "right" },
-          autoHideDuration: 3000,
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (!values.role) {
-        enqueueSnackbar("Please select your role.", {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
           autoHideDuration: 3000,
@@ -164,11 +150,14 @@ const Register = () => {
       }
 
       if (!validateStrongPassword(values.password)) {
-        enqueueSnackbar("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.", {
-          variant: "error",
-          anchorOrigin: { vertical: "top", horizontal: "right" },
-          autoHideDuration: 4000,
-        });
+        enqueueSnackbar(
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+          {
+            variant: "error",
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            autoHideDuration: 4000,
+          }
+        );
         setLoading(false);
         return;
       }
@@ -199,7 +188,7 @@ const Register = () => {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         fullName: fullName,
-        role: values.role,
+        role: "candidate",
         email: values.email.trim().toLowerCase(),
         phone: values.phone.trim(),
         cPassword: values.cPassword,
@@ -221,7 +210,9 @@ const Register = () => {
     } catch (error) {
       console.error("Registration failed:", error);
       enqueueSnackbar(
-        error?.data?.message || error?.message || "Registration failed. Please try again.",
+        error?.data?.message ||
+          error?.message ||
+          "Registration failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -411,36 +402,6 @@ const Register = () => {
                 </Form.Item>
               </Col>
             </Row>
-
-            <Form.Item
-              name="role"
-              label={
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#2c3e50",
-                  }}
-                >
-                  Register As
-                </span>
-              }
-            >
-              <Select
-                placeholder="Select your role"
-                size="large"
-                style={{
-                  borderRadius: "12px",
-                }}
-                suffixIcon={<TeamOutlined style={{ color: "#bdc3c7" }} />}
-              >
-                {roles.map((role) => (
-                  <Option key={role.value} value={role.value}>
-                    {role.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
 
             <Form.Item
               name="email"

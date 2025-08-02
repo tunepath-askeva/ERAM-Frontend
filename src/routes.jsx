@@ -67,6 +67,10 @@ import AllCandidates from "./Recruiters/Pages/AllCandidates";
 import RecruiterJobsTimeline from "./Recruiters/Pages/RecruiterJobsTimeline";
 import RecruiterViewTimeline from "./Recruiters/Components/RecruiterViewTimeline";
 import ProtectedEmployee from "./Employee/Auth/ProtectedEmployee";
+import EmployeeAdminLayout from "./EmployeeAdmin/Global/EmployeeAdminLayout";
+import EmployeeAdminDashboard from "./EmployeeAdmin/Pages/EmployeeAdminDashboard";
+import ProtectedEmployeeAdmin from "./EmployeeAdmin/Auth/ProtectedEmployeeAdmin";
+import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveRequest";
 
 const AppRoutes = () => {
   return (
@@ -291,6 +295,21 @@ const AppRoutes = () => {
         <Route
           path="/employee/profile-settings"
           element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
+        />
+      </Route>
+
+      <Route element={<EmployeeAdminLayout />}>
+        <Route
+          path="/employee-admin/dashboard"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminDashboard />} />
+          }
+        />
+        <Route
+          path="/employee-admin/leave-request"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminLeaveRequest />} />
+          }
         />
       </Route>
 
