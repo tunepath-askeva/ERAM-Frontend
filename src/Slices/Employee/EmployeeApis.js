@@ -71,7 +71,6 @@ export const employeeApi = createApi({
           },
         };
       },
-      invalidatesTags: ["PolicyList"],
     }),
 
     createPolicy: builder.mutation({
@@ -84,7 +83,6 @@ export const employeeApi = createApi({
           status: "active",
         },
       }),
-      invalidatesTags: ["Policy", "PolicyList"],
     }),
 
     getPolicies: builder.query({
@@ -100,18 +98,11 @@ export const employeeApi = createApi({
 
         return `policy?${queryParams}`;
       },
-      providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.map(({ id }) => ({ type: "Policy", id })),
-              { type: "PolicyList", id: "LIST" },
-            ]
-          : [{ type: "PolicyList", id: "LIST" }],
+
     }),
 
     getPolicyById: builder.query({
       query: (id) => `policy/${id}`,
-      providesTags: (result, error, id) => [{ type: "Policy", id }],
     }),
 
     updatePolicy: builder.mutation({
@@ -123,10 +114,7 @@ export const employeeApi = createApi({
           updatedAt: new Date().toISOString(),
         },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Policy", id },
-        { type: "PolicyList", id: "LIST" },
-      ],
+     
     }),
 
     deletePolicy: builder.mutation({
@@ -134,10 +122,7 @@ export const employeeApi = createApi({
         url: `policy/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: "Policy", id },
-        { type: "PolicyList", id: "LIST" },
-      ],
+      
     }),
 
     archivePolicy: builder.mutation({
@@ -149,10 +134,7 @@ export const employeeApi = createApi({
           archivedAt: new Date().toISOString(),
         },
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: "Policy", id },
-        { type: "PolicyList", id: "LIST" },
-      ],
+     
     }),
 
     searchPolicies: builder.query({
@@ -163,7 +145,6 @@ export const employeeApi = createApi({
         });
         return `policy/search?${params}`;
       },
-      providesTags: ["PolicyList"],
     }),
   }),
 });
