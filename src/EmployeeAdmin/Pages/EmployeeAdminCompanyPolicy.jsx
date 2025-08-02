@@ -64,6 +64,8 @@ const EmployeeAdminCompanyPolicy = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
   const [previewMode, setPreviewMode] = useState(false);
+  const [archiveId, setArchiveId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const [uploadPolicyDocument, { isLoading: isUploading }] =
     useUploadPolicyDocumentMutation();
@@ -223,6 +225,7 @@ const EmployeeAdminCompanyPolicy = () => {
   const handleDeletePolicy = async (policyId) => {
     try {
       await deletePolicy(policyId).unwrap();
+      console.log(policyId, "Policy");
       notification.success({
         message: "Policy Deleted",
         description: "The policy has been permanently deleted.",
@@ -255,6 +258,14 @@ const EmployeeAdminCompanyPolicy = () => {
   const handleViewPolicy = (policy) => {
     setSelectedPolicy(policy);
     setViewModalVisible(true);
+  };
+
+  const showArchiveConfirm = (id) => {
+    setArchiveId(id);
+  };
+
+  const showDeleteConfirm = (id) => {
+    setDeleteId(id);
   };
 
   const handleEditPolicy = (policy) => {
@@ -559,23 +570,19 @@ const EmployeeAdminCompanyPolicy = () => {
           </Button>
           <Button
             size="small"
-            onClick={() => handleArchivePolicy(record.id)}
+            onClick={() => showArchiveConfirm(record._id)}
             disabled={record.status === "archived"}
           >
             Archive
           </Button>
-          <Popconfirm
-            title="Delete Policy"
-            description="Are you sure you want to permanently delete this policy?"
-            onConfirm={() => handleDeletePolicy(record.id)}
-            okText="Yes"
-            cancelText="No"
-            icon={<ExclamationCircleOutlined style={{ color: "red" }} />}
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => showDeleteConfirm(record._id)}
           >
-            <Button size="small" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
+            Delete
+          </Button>
         </Space>
       ),
     },
@@ -723,7 +730,7 @@ const EmployeeAdminCompanyPolicy = () => {
         <Table
           columns={columns}
           dataSource={policies}
-          rowKey="id"
+          rowKey="_id"
           loading={isLoadingPolicies}
           pagination={{
             pageSize: 10,
@@ -878,6 +885,35 @@ const EmployeeAdminCompanyPolicy = () => {
             })()}
           </div>
         </div>
+      </Modal>
+      <Modal
+        title="Confirm Archive"
+        open={!!archiveId}
+        onOk={async () => {
+          await handleArchivePolicy(archiveId);
+          setArchiveId(null);
+        }}
+        onCancel={() => setArchiveId(null)}
+        okText="Yes, Archive"
+        cancelText="Cancel"
+        okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+      >
+        <p>Are you sure you want to archive this policy?</p>
+      </Modal>
+
+      <Modal
+        title="Confirm Delete"
+        open={!!deleteId}
+        onOk={async () => {
+          await handleDeletePolicy(deleteId);
+          setDeleteId(null);
+        }}
+        onCancel={() => setDeleteId(null)}
+        okText="Yes, Delete"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Are you sure you want to permanently delete this policy?</p>
       </Modal>
     </div>
   );
