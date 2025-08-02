@@ -77,7 +77,7 @@ export const employeeApi = createApi({
       query: (data) => ({
         url: "/policy",
         method: "POST",
-        
+
         body: data,
       }),
     }),
@@ -98,7 +98,7 @@ export const employeeApi = createApi({
     }),
     updatePolicy: builder.mutation({
       query: ({ id, ...updateData }) => ({
-        url: `policy/${id}`,
+        url: `/policy/${id}`,
         method: "PUT",
         body: {
           ...updateData,
@@ -109,17 +109,17 @@ export const employeeApi = createApi({
 
     deletePolicy: builder.mutation({
       query: (id) => ({
-        url: `policy/${id}`,
+        url: `/delete-policy/${id}`,
         method: "DELETE",
       }),
     }),
 
     archivePolicy: builder.mutation({
       query: (id) => ({
-        url: `policy/${id}/archive`,
+        url: `/archive-policy/${id}`,
         method: "PATCH",
         body: {
-          status: "archived",
+          status: "inactive",
           archivedAt: new Date().toISOString(),
         },
       }),
@@ -131,7 +131,7 @@ export const employeeApi = createApi({
           q: searchTerm,
           limit: "20",
         });
-        return `policy/search?${params}`;
+        return `/policy/search?${params}`;
       },
     }),
   }),
