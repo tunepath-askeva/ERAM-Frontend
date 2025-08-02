@@ -56,6 +56,115 @@ export const employeeApi = createApi({
         },
       }),
     }),
+    uploadPolicyDocument: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        return {
+          url: "/doc-parse",
+          method: "POST",
+          body: formData,
+          prepareHeaders: (headers) => {
+            headers.delete("content-type");
+            return headers;
+          },
+        };
+      },
+      invalidatesTags: ["PolicyList"],
+    }),
+
+    createPolicy: builder.mutation({
+      query: (policyData) => ({
+        url: "policy",
+        method: "POST",
+        body: {
+          ...policyData,
+          createdAt: new Date().toISOString(),
+          status: "active",
+        },
+      }),
+      invalidatesTags: ["Policy", "PolicyList"],
+    }),
+
+    getPolicies: builder.query({
+      query: (params = {}) => {
+        const { page = 1, limit = 10, search = "", status = "active" } = params;
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          search,
+          status,
+        });
+
+        return `policy?${queryParams}`;
+      },
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map(({ id }) => ({ type: "Policy", id })),
+              { type: "PolicyList", id: "LIST" },
+            ]
+          : [{ type: "PolicyList", id: "LIST" }],
+    }),
+
+    getPolicyById: builder.query({
+      query: (id) => `policy/${id}`,
+      providesTags: (result, error, id) => [{ type: "Policy", id }],
+    }),
+
+    updatePolicy: builder.mutation({
+      query: ({ id, ...updateData }) => ({
+        url: `policy/${id}`,
+        method: "PUT",
+        body: {
+          ...updateData,
+          updatedAt: new Date().toISOString(),
+        },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Policy", id },
+        { type: "PolicyList", id: "LIST" },
+      ],
+    }),
+
+    deletePolicy: builder.mutation({
+      query: (id) => ({
+        url: `policy/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Policy", id },
+        { type: "PolicyList", id: "LIST" },
+      ],
+    }),
+
+    archivePolicy: builder.mutation({
+      query: (id) => ({
+        url: `policy/${id}/archive`,
+        method: "PATCH",
+        body: {
+          status: "archived",
+          archivedAt: new Date().toISOString(),
+        },
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Policy", id },
+        { type: "PolicyList", id: "LIST" },
+      ],
+    }),
+
+    searchPolicies: builder.query({
+      query: (searchTerm) => {
+        const params = new URLSearchParams({
+          q: searchTerm,
+          limit: "20",
+        });
+        return `policy/search?${params}`;
+      },
+      providesTags: ["PolicyList"],
+    }),
   }),
 });
 
@@ -68,4 +177,12 @@ export const {
   useGetEmployeeAdminLeaveHistoryQuery,
   useGetLeaveRequestByIdQuery,
   useUpdateLeaveStatusMutation,
+  useUpdatePolicyMutation,
+  useUploadPolicyDocumentMutation,
+  useCreatePolicyMutation,
+  useGetPoliciesQuery,
+  useGetPolicyByIdQuery,
+  useSearchPoliciesQuery,
+  useArchivePolicyMutation,
+  useDeletePolicyMutation,
 } = employeeApi;
