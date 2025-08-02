@@ -96,11 +96,6 @@ export const employeeApi = createApi({
         return `policy?${queryParams}`;
       },
     }),
-
-    getPolicyById: builder.query({
-      query: (id) => `policy/${id}`,
-    }),
-
     updatePolicy: builder.mutation({
       query: ({ id, ...updateData }) => ({
         url: `policy/${id}`,
@@ -155,7 +150,6 @@ export const {
   useUploadPolicyDocumentMutation,
   useCreatePolicyMutation,
   useGetPoliciesQuery,
-  useGetPolicyByIdQuery,
   useSearchPoliciesQuery,
   useArchivePolicyMutation,
   useDeletePolicyMutation,

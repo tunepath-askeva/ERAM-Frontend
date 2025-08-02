@@ -40,7 +40,6 @@ import {
   useUploadPolicyDocumentMutation,
   useCreatePolicyMutation,
   useGetPoliciesQuery,
-  useGetPolicyByIdQuery,
   useUpdatePolicyMutation,
   useDeletePolicyMutation,
   useArchivePolicyMutation,
@@ -176,7 +175,6 @@ const EmployeeAdminCompanyPolicy = () => {
       };
 
       await createPolicy(payload).unwrap();
-      
 
       notification.success({
         message: "Policy Created Successfully",
@@ -197,7 +195,8 @@ const EmployeeAdminCompanyPolicy = () => {
   const handleUpdatePolicy = async (values) => {
     try {
       const updateData = {
-        ...values,
+        title: values.title,
+        content: values.content,
       };
 
       await updatePolicy({
@@ -261,7 +260,8 @@ const EmployeeAdminCompanyPolicy = () => {
   const handleEditPolicy = (policy) => {
     setSelectedPolicy(policy);
     editForm.setFieldsValue({
-      ...policy,
+      title: policy.title,
+      content: policy.content,
     });
     setEditModalVisible(true);
   };
@@ -291,21 +291,11 @@ const EmployeeAdminCompanyPolicy = () => {
 
     return (
       <Card
-        title="Parsed Document Content"
+        title="Document Preview"
         size="small"
-        extra={
-          <Button
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={resetForm}
-          >
-            Clear
-          </Button>
-        }
-        style={{ marginBottom: 16 }}
+        style={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
-        <div>
+        <div style={{ flex: 1, overflow: "auto" }}>
           {parsedData.message && (
             <div style={{ marginBottom: 12 }}>
               <Text strong>Parse Status: </Text>
@@ -329,7 +319,6 @@ const EmployeeAdminCompanyPolicy = () => {
 
           {contentText && (
             <div>
-              <Text strong>Formatted Content Preview:</Text>
               <div
                 style={{
                   marginTop: 8,
@@ -470,6 +459,43 @@ const EmployeeAdminCompanyPolicy = () => {
             </div>
           )}
         </div>
+        <div style={{ marginTop: "16px" }}>
+          <Form form={form} layout="vertical" onFinish={handleCreatePolicy}>
+            <Form.Item
+              name="title"
+              label="Policy Title"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter policy title",
+                },
+              ]}
+            >
+              <Input placeholder="Enter policy title" />
+            </Form.Item>
+
+            <Form.Item>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  loading={isCreating}
+                  style={{ backgroundColor: "#da2c46" }}
+                >
+                  Create Policy
+                </Button>
+                <Button
+                  onClick={() => setPreviewMode(true)}
+                  icon={<EyeOutlined />}
+                >
+                  Preview
+                </Button>
+                <Button onClick={resetForm}>Cancel</Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </div>
       </Card>
     );
   };
@@ -576,12 +602,10 @@ const EmployeeAdminCompanyPolicy = () => {
         </Paragraph>
       </Card>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={10}>
-          <Card
-            title="Upload New Policy Document"
-            style={{ marginBottom: "24px" }}
-          >
+      {/* Upload and Preview Section */}
+      <Row gutter={[24, 24]} style={{ marginBottom: "24px" }}>
+        <Col xs={24} md={12}>
+          <Card title="Upload Policy Document" style={{ height: "100%" }}>
             {uploadStatus === "idle" && !parsedData && (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
                 <Upload.Dragger
@@ -621,19 +645,6 @@ const EmployeeAdminCompanyPolicy = () => {
               </div>
             )}
 
-            {uploadStatus === "success" && parsedData && (
-              <div>
-                <Alert
-                  message="Upload Successful"
-                  description="Document has been uploaded and parsed successfully."
-                  type="success"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-                {renderParsedDataDisplay()}
-              </div>
-            )}
-
             {uploadStatus === "error" && (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
                 <Alert
@@ -647,94 +658,83 @@ const EmployeeAdminCompanyPolicy = () => {
               </div>
             )}
 
-            {parsedData && (
-              <div style={{ marginTop: 16 }}>
-                <Divider>Create Policy</Divider>
-
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={handleCreatePolicy}
-                >
-                  <Form.Item
-                    name="title"
-                    label="Policy Title"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter policy title",
-                      },
-                    ]}
-                  >
-                    <Input placeholder="Enter policy title" />
-                  </Form.Item>
-
-                  <Form.Item>
-                    <Space>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<SaveOutlined />}
-                        loading={isCreating}
-                        style={{ backgroundColor: "#da2c46" }}
-                      >
-                        Create Policy
-                      </Button>
-                      <Button
-                        onClick={() => setPreviewMode(true)}
-                        icon={<EyeOutlined />}
-                      >
-                        Preview
-                      </Button>
-                      <Button onClick={resetForm}>Cancel</Button>
-                    </Space>
-                  </Form.Item>
-                </Form>
-              </div>
+            {uploadStatus === "success" && parsedData && (
+              <Alert
+                message="Upload Successful"
+                description="Document has been uploaded and parsed successfully."
+                type="success"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
             )}
           </Card>
         </Col>
 
-        <Col xs={24} lg={14}>
-          <Card
-            title="Existing Policies"
-            extra={
-              <Space>
-                <Input
-                  placeholder="Search policies..."
-                  prefix={<SearchOutlined />}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ width: 200 }}
-                />
-                <Select
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  style={{ width: 120 }}
-                >
-                  <Option value="active">Active</Option>
-                  <Option value="archived">Archived</Option>
-                  <Option value="">All</Option>
-                </Select>
-              </Space>
-            }
-          >
-            <Table
-              columns={columns}
-              dataSource={policies}
-              rowKey="id"
-              loading={isLoadingPolicies}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total) => `Total ${total} policies`,
-              }}
-            />
-          </Card>
+        <Col xs={24} md={12}>
+          {uploadStatus === "success" && parsedData ? (
+            renderParsedDataDisplay()
+          ) : (
+            <Card title="Document Preview" style={{ height: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
+                  minHeight: "300px",
+                  color: "#bfbfbf",
+                }}
+              >
+                <Text type="secondary">
+                  {uploadStatus === "idle"
+                    ? "Upload a document to see the preview"
+                    : "Processing document..."}
+                </Text>
+              </div>
+            </Card>
+          )}
         </Col>
       </Row>
 
+      {/* Policies Table Section */}
+      <Card
+        title="Existing Policies"
+        extra={
+          <Space>
+            <Input
+              placeholder="Search policies..."
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: 200 }}
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+            >
+              <Option value="active">Active</Option>
+              <Option value="archived">Archived</Option>
+              <Option value="">All</Option>
+            </Select>
+          </Space>
+        }
+      >
+        <Table
+          columns={columns}
+          dataSource={policies}
+          rowKey="id"
+          loading={isLoadingPolicies}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Total ${total} policies`,
+          }}
+        />
+      </Card>
+
+      {/* Modals */}
       <Modal
         title="View Policy"
         open={viewModalVisible}
@@ -746,6 +746,7 @@ const EmployeeAdminCompanyPolicy = () => {
           <Button
             key="edit"
             type="primary"
+            style={{ backgroundColor: "#da2c46" }}
             onClick={() => {
               setViewModalVisible(false);
               handleEditPolicy(selectedPolicy);
@@ -801,9 +802,26 @@ const EmployeeAdminCompanyPolicy = () => {
             <Input placeholder="Enter policy title" />
           </Form.Item>
 
+          <Form.Item
+            name="content"
+            label="Policy Content"
+            rules={[{ required: true, message: "Please enter policy content" }]}
+          >
+            <TextArea
+              rows={10}
+              placeholder="Enter policy content"
+              style={{ whiteSpace: "pre-wrap" }}
+            />
+          </Form.Item>
+
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" loading={isUpdating}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                style={{ backgroundColor: "#da2c46" }}
+                loading={isUpdating}
+              >
                 Update Policy
               </Button>
               <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
