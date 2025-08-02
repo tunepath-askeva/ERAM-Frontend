@@ -62,7 +62,7 @@ const EmployeeAdminCompanyPolicy = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
   const [archiveId, setArchiveId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
@@ -238,19 +238,23 @@ const EmployeeAdminCompanyPolicy = () => {
       });
     }
   };
-
-  const handleArchivePolicy = async (policyId) => {
+  const handleArchivePolicy = async (id, currentStatus) => {
     try {
-      await archivePolicy(policyId).unwrap();
+      await archivePolicy({ id, currentStatus }).unwrap();
       notification.success({
-        message: "Policy Archived",
-        description: "The policy has been archived.",
+        message: `Policy ${
+          currentStatus === "active" ? "Archived" : "Unarchived"
+        }`,
+        description: `The policy has been ${
+          currentStatus === "active" ? "archived" : "made active again"
+        }.`,
       });
       refetchPolicies();
     } catch (error) {
       notification.error({
-        message: "Archive Failed",
-        description: error.data?.message || "Failed to archive the policy.",
+        message: "Status Update Failed",
+        description:
+          error.data?.message || "Failed to update the policy status.",
       });
     }
   };
@@ -260,8 +264,8 @@ const EmployeeAdminCompanyPolicy = () => {
     setViewModalVisible(true);
   };
 
-  const showArchiveConfirm = (id) => {
-    setArchiveId(id);
+  const showArchiveConfirm = (id, status) => {
+    setArchiveId({ id, status });
   };
 
   const showDeleteConfirm = (id) => {
@@ -570,11 +574,11 @@ const EmployeeAdminCompanyPolicy = () => {
           </Button>
           <Button
             size="small"
-            onClick={() => showArchiveConfirm(record._id)}
-            disabled={record.status === "archived"}
+            onClick={() => showArchiveConfirm(record._id, record.status)}
           >
-            Archive
+            {record.status === "active" ? "Archive" : "Unarchive"}
           </Button>
+
           <Button
             size="small"
             danger
@@ -721,7 +725,7 @@ const EmployeeAdminCompanyPolicy = () => {
               style={{ width: 120 }}
             >
               <Option value="active">Active</Option>
-              <Option value="archived">Archived</Option>
+              <Option value="inactive">Inactive</Option>
               <Option value="">All</Option>
             </Select>
           </Space>
@@ -887,18 +891,26 @@ const EmployeeAdminCompanyPolicy = () => {
         </div>
       </Modal>
       <Modal
-        title="Confirm Archive"
+        title={`Confirm ${
+          archiveId?.status === "active" ? "Archive" : "Unarchive"
+        }`}
         open={!!archiveId}
         onOk={async () => {
-          await handleArchivePolicy(archiveId);
+          await handleArchivePolicy(archiveId.id, archiveId.status);
           setArchiveId(null);
         }}
         onCancel={() => setArchiveId(null)}
-        okText="Yes, Archive"
+        okText={`Yes, ${
+          archiveId?.status === "active" ? "Archive" : "Unarchive"
+        }`}
         cancelText="Cancel"
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
-        <p>Are you sure you want to archive this policy?</p>
+        <p>
+          Are you sure you want to{" "}
+          {archiveId?.status === "active" ? "archive" : "unarchive"} this
+          policy?
+        </p>
       </Modal>
 
       <Modal

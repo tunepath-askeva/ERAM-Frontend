@@ -115,11 +115,11 @@ export const employeeApi = createApi({
     }),
 
     archivePolicy: builder.mutation({
-      query: (id) => ({
+      query: ({ id, currentStatus }) => ({
         url: `/policy-status/${id}`,
         method: "PATCH",
         body: {
-          status: "inactive",
+          status: currentStatus === "active" ? "inactive" : "active",
           archivedAt: new Date().toISOString(),
         },
       }),
