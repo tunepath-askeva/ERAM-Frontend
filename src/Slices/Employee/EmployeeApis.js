@@ -35,6 +35,14 @@ export const employeeApi = createApi({
         methid: "GET",
       }),
     }),
+
+    //EmployeeAdmin Apis
+    getEmployeeAdminLeaveHistory: builder.query({
+      query: () => ({
+        url: "/leaves",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -42,4 +50,7 @@ export const {
   useGetEmployeeProfileQuery,
   useSubmitLeaveRequestMutation,
   useGetEmployeeLeaveHistoryQuery,
+
+  //employee admin
+  useGetEmployeeAdminLeaveHistoryQuery,
 } = employeeApi;
