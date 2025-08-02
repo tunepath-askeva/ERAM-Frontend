@@ -18,6 +18,9 @@ import {
   Select,
   Popconfirm,
   Badge,
+  Alert,
+  Descriptions,
+  Collapse,
 } from "antd";
 import {
   UploadOutlined,
@@ -47,22 +50,22 @@ import {
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 const EmployeeAdminCompanyPolicy = () => {
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
-  // State management
   const [uploadedFile, setUploadedFile] = useState(null);
   const [parsedData, setParsedData] = useState(null);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle");
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
+  const [previewMode, setPreviewMode] = useState(false);
 
-  // RTK Query hooks
   const [uploadPolicyDocument, { isLoading: isUploading }] =
     useUploadPolicyDocumentMutation();
   const [createPolicy, { isLoading: isCreating }] = useCreatePolicyMutation();
@@ -70,93 +73,122 @@ const EmployeeAdminCompanyPolicy = () => {
   const [deletePolicy] = useDeletePolicyMutation();
   const [archivePolicy] = useArchivePolicyMutation();
 
-  // Queries
   const {
     data: policiesResponse,
     isLoading: isLoadingPolicies,
     refetch: refetchPolicies,
   } = useGetPoliciesQuery({
     page: 1,
-    limit: 100,
+    limit: 50,
     search: searchTerm,
     status: statusFilter,
   });
 
   const policies = policiesResponse?.data || [];
 
-  // Handle file upload and parsing
   const handleFileUpload = async (file) => {
     try {
+      setUploadStatus("uploading");
       setUploadedFile(file);
 
-      // Validate file
       const allowedTypes = [
         "application/pdf",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
       ];
+
       if (!allowedTypes.includes(file.type)) {
         throw new Error(
-          "Invalid file type. Please upload PDF, DOC, or DOCX files only."
+          "Invalid file type. Please upload PDF, DOC, DOCX, or TXT files only."
         );
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        // 10MB limit
         throw new Error(
           "File size too large. Please upload files smaller than 10MB."
         );
       }
 
-      // Upload and parse document
-      const result = await uploadPolicyDocument(file).unwrap();
-      setParsedData(result.data);
+      console.log(
+        "Uploading file:",
+        file.name,
+        "Size:",
+        file.size,
+        "Type:",
+        file.type
+      );
 
-      // Pre-fill form with parsed data
+      const result = await uploadPolicyDocument(file).unwrap();
+
+      console.log("Upload result:", result);
+
+      const data = result.data || result;
+      setParsedData(data);
+      setUploadStatus("success");
+
       form.setFieldsValue({
-        title: result.data.title || "",
-        version: result.data.version || "1.0",
-        description: result.data.description || "",
-        content: result.data.content || "",
-        department: result.data.department || "",
-        tags: result.data.tags?.join(", ") || "",
+        title:
+          data.title ||
+          data.documentTitle ||
+          file.name.replace(/\.[^/.]+$/, ""),
+        version: data.version || "1.0",
+        content: data.content || data.text || data.extractedText || "",
+        department: data.department || "",
       });
 
       notification.success({
         message: "Document Uploaded Successfully",
-        description:
-          "The policy document has been parsed and is ready for review.",
+        description: `The document "${file.name}" has been parsed successfully.`,
         icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
       });
     } catch (error) {
+      console.error("Upload error:", error);
+      setUploadStatus("error");
+
       notification.error({
         message: "Upload Failed",
         description:
           error.message ||
           error.data?.message ||
-          "Failed to upload and parse the document.",
+          `Failed to upload "${file.name}".`,
       });
+
       setUploadedFile(null);
+      setParsedData(null);
     }
 
     return false;
   };
 
-  // Handle create new policy
   const handleCreatePolicy = async (values) => {
     try {
-      const policyData = {
-        ...values,
-        tags: values.tags
-          ? values.tags.split(",").map((tag) => tag.trim())
-          : [],
-        originalFileName: uploadedFile?.name,
-        fileSize: uploadedFile?.size,
-        fileType: uploadedFile?.type,
-        parsedData,
-      };
+      const formData = new FormData();
 
-      await createPolicy(policyData).unwrap();
+      formData.append("title", values.title);
+      formData.append("createdAt", new Date().toISOString());
+      formData.append("status", "active");
+
+      if (uploadedFile) {
+        formData.append("file", uploadedFile); // binary file here
+      }
+
+      let contentToSend = "";
+
+      if (parsedData?.paragraphs && Array.isArray(parsedData.paragraphs)) {
+        contentToSend = parsedData.paragraphs.join("\n\n");
+      } else {
+        contentToSend =
+          parsedData?.content ||
+          parsedData?.text ||
+          parsedData?.extractedText ||
+          "";
+      }
+
+      formData.append("content", contentToSend);
+      console.log("Sending content:", contentToSend);
+
+      await createPolicy(formData).unwrap();
 
       notification.success({
         message: "Policy Created Successfully",
@@ -164,7 +196,6 @@ const EmployeeAdminCompanyPolicy = () => {
         icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
       });
 
-      // Reset form and state
       resetForm();
       refetchPolicies();
     } catch (error) {
@@ -175,14 +206,10 @@ const EmployeeAdminCompanyPolicy = () => {
     }
   };
 
-  // Handle update policy
   const handleUpdatePolicy = async (values) => {
     try {
       const updateData = {
         ...values,
-        tags: values.tags
-          ? values.tags.split(",").map((tag) => tag.trim())
-          : [],
       };
 
       await updatePolicy({
@@ -206,7 +233,6 @@ const EmployeeAdminCompanyPolicy = () => {
     }
   };
 
-  // Handle delete policy
   const handleDeletePolicy = async (policyId) => {
     try {
       await deletePolicy(policyId).unwrap();
@@ -223,7 +249,6 @@ const EmployeeAdminCompanyPolicy = () => {
     }
   };
 
-  // Handle archive policy
   const handleArchivePolicy = async (policyId) => {
     try {
       await archivePolicy(policyId).unwrap();
@@ -240,33 +265,227 @@ const EmployeeAdminCompanyPolicy = () => {
     }
   };
 
-  // Handle view policy
   const handleViewPolicy = (policy) => {
     setSelectedPolicy(policy);
     setViewModalVisible(true);
   };
 
-  // Handle edit policy
   const handleEditPolicy = (policy) => {
     setSelectedPolicy(policy);
     editForm.setFieldsValue({
       ...policy,
-      tags: Array.isArray(policy.tags)
-        ? policy.tags.join(", ")
-        : policy.tags || "",
     });
     setEditModalVisible(true);
   };
 
-  // Reset form
   const resetForm = () => {
     form.resetFields();
     setUploadedFile(null);
     setParsedData(null);
+    setUploadStatus("idle");
     setPreviewMode(false);
   };
 
-  // Table columns
+  const renderParsedDataDisplay = () => {
+    if (!parsedData) return null;
+
+    const getContentText = () => {
+      if (parsedData.paragraphs && Array.isArray(parsedData.paragraphs)) {
+        return parsedData.paragraphs.join("\n\n");
+      }
+      return (
+        parsedData.content || parsedData.text || parsedData.extractedText || ""
+      );
+    };
+
+    const contentText = getContentText();
+    const totalLength = contentText.length;
+
+    return (
+      <Card
+        title="Parsed Document Content"
+        size="small"
+        extra={
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={resetForm}
+          >
+            Clear
+          </Button>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        <div>
+          {parsedData.message && (
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>Parse Status: </Text>
+              <Tag color="green">{parsedData.message}</Tag>
+            </div>
+          )}
+
+          {parsedData.paragraphs && (
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>Paragraphs Found: </Text>
+              <Tag color="blue">{parsedData.paragraphs.length}</Tag>
+            </div>
+          )}
+
+          {totalLength > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>Total Content Length: </Text>
+              <Tag color="green">{totalLength} characters</Tag>
+            </div>
+          )}
+
+          {contentText && (
+            <div>
+              <Text strong>Formatted Content Preview:</Text>
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: "16px",
+                  background: "#fafafa",
+                  border: "1px solid #d9d9d9",
+                  borderRadius: "6px",
+                  maxHeight: "400px",
+                  overflow: "auto",
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                }}
+              >
+                {contentText.split("\n").map((line, index) => {
+                  const trimmedLine = line.trim();
+
+                  if (!trimmedLine) {
+                    return <br key={index} />;
+                  }
+                  if (
+                    trimmedLine.match(
+                      /^[A-Z][A-Za-z\s]+(Document|Policy|Manual)$/
+                    )
+                  ) {
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          fontWeight: "bold",
+                          fontSize: "18px",
+                          color: "#1890ff",
+                          textAlign: "center",
+                          marginBottom: "20px",
+                          marginTop: "10px",
+                          borderBottom: "2px solid #1890ff",
+                          paddingBottom: "8px",
+                        }}
+                      >
+                        {trimmedLine}
+                      </div>
+                    );
+                  }
+
+                  if (trimmedLine.match(/^\d+\.\s+[A-Z]/)) {
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          fontWeight: "bold",
+                          fontSize: "16px",
+                          color: "#1890ff",
+                          marginTop: "20px",
+                          marginBottom: "12px",
+                          paddingLeft: "0px",
+                        }}
+                      >
+                        {trimmedLine}
+                      </div>
+                    );
+                  }
+
+                  if (trimmedLine.endsWith(":") && trimmedLine.length < 100) {
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          fontWeight: "600",
+                          fontSize: "15px",
+                          color: "#595959",
+                          marginTop: "12px",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {trimmedLine}
+                      </div>
+                    );
+                  }
+
+                  if (trimmedLine.match(/^[-•\*]\s/)) {
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          marginLeft: "20px",
+                          marginBottom: "6px",
+                          color: "#333",
+                          position: "relative",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#1890ff",
+                            fontWeight: "bold",
+                            marginRight: "8px",
+                          }}
+                        >
+                          •
+                        </span>
+                        {trimmedLine.substring(2)}
+                      </div>
+                    );
+                  }
+
+                  if (
+                    trimmedLine.match(/^\d+\.\s/) &&
+                    !trimmedLine.match(/^\d+\.\s+[A-Z][A-Za-z\s]+$/)
+                  ) {
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          marginLeft: "20px",
+                          marginBottom: "6px",
+                          color: "#333",
+                        }}
+                      >
+                        {trimmedLine}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        marginBottom: "10px",
+                        textAlign: "justify",
+                        color: "#333",
+                        textIndent: "0px",
+                      }}
+                    >
+                      {trimmedLine}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
   const columns = [
     {
       title: "Title",
@@ -287,12 +506,6 @@ const EmployeeAdminCompanyPolicy = () => {
           </Text>
         </div>
       ),
-    },
-    {
-      title: "Department",
-      dataIndex: "department",
-      key: "department",
-      render: (text) => (text ? <Tag color="blue">{text}</Tag> : "-"),
     },
     {
       title: "Status",
@@ -357,14 +570,14 @@ const EmployeeAdminCompanyPolicy = () => {
   const uploadProps = {
     name: "file",
     multiple: false,
-    accept: ".pdf,.doc,.docx",
+    accept: ".pdf,.doc,.docx,.txt",
     beforeUpload: handleFileUpload,
     showUploadList: false,
+    disabled: isUploading,
   };
 
   return (
     <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
-      {/* Header */}
       <Card style={{ marginBottom: "24px" }}>
         <Title level={2} style={{ marginBottom: "8px", color: "#1890ff" }}>
           <FileTextOutlined /> Company Policy Management
@@ -377,12 +590,11 @@ const EmployeeAdminCompanyPolicy = () => {
 
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={10}>
-          {/* Upload Section */}
           <Card
             title="Upload New Policy Document"
             style={{ marginBottom: "24px" }}
           >
-            {!parsedData ? (
+            {uploadStatus === "idle" && !parsedData && (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
                 <Upload.Dragger
                   {...uploadProps}
@@ -400,161 +612,102 @@ const EmployeeAdminCompanyPolicy = () => {
                     Click or drag file to upload
                   </p>
                   <p className="ant-upload-hint" style={{ color: "#666" }}>
-                    Supports PDF, DOC, DOCX (max 10MB)
+                    Supports PDF, DOC, DOCX, TXT (max 10MB)
                   </p>
                 </Upload.Dragger>
-
-                {isUploading && (
-                  <div style={{ marginTop: "16px" }}>
-                    <Spin size="large" />
-                    <p style={{ marginTop: "12px", color: "#1890ff" }}>
-                      Uploading and parsing document...
-                    </p>
-                  </div>
-                )}
               </div>
-            ) : (
-              <div>
-                <div
+            )}
+
+            {uploadStatus === "uploading" && (
+              <div style={{ textAlign: "center", padding: "60px 0" }}>
+                <Spin size="large" />
+                <p
                   style={{
-                    marginBottom: "16px",
-                    padding: "12px",
-                    background: "#f6ffed",
-                    border: "1px solid #b7eb8f",
-                    borderRadius: "6px",
+                    marginTop: "16px",
+                    color: "#1890ff",
+                    fontSize: "16px",
                   }}
                 >
-                  <CheckCircleOutlined
-                    style={{ color: "#52c41a", marginRight: "8px" }}
-                  />
-                  <Text>Document parsed successfully: </Text>
-                  <Tag color="blue">{uploadedFile?.name}</Tag>
-                </div>
+                  Uploading and parsing document...
+                </p>
+              </div>
+            )}
 
-                {previewMode ? (
-                  <div
-                    style={{
-                      padding: "16px",
-                      background: "#fafafa",
-                      borderRadius: "6px",
-                      marginBottom: "16px",
-                    }}
+            {uploadStatus === "success" && parsedData && (
+              <div>
+                <Alert
+                  message="Upload Successful"
+                  description="Document has been uploaded and parsed successfully."
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+                {renderParsedDataDisplay()}
+              </div>
+            )}
+
+            {uploadStatus === "error" && (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <Alert
+                  message="Upload Failed"
+                  description="There was an error uploading or parsing your document."
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+                <Button onClick={resetForm}>Try Again</Button>
+              </div>
+            )}
+
+            {parsedData && (
+              <div style={{ marginTop: 16 }}>
+                <Divider>Create Policy</Divider>
+
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleCreatePolicy}
+                >
+                  <Form.Item
+                    name="title"
+                    label="Policy Title"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter policy title",
+                      },
+                    ]}
                   >
-                    <Title level={4}>{form.getFieldValue("title")}</Title>
-                    <Space style={{ marginBottom: "12px" }}>
-                      <Tag>Version: {form.getFieldValue("version")}</Tag>
-                      <Tag>Department: {form.getFieldValue("department")}</Tag>
+                    <Input placeholder="Enter policy title" />
+                  </Form.Item>
+
+                  <Form.Item>
+                    <Space>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        icon={<SaveOutlined />}
+                        loading={isCreating}
+                        style={{ backgroundColor: "#da2c46" }}
+                      >
+                        Create Policy
+                      </Button>
+                      <Button
+                        onClick={() => setPreviewMode(true)}
+                        icon={<EyeOutlined />}
+                      >
+                        Preview
+                      </Button>
+                      <Button onClick={resetForm}>Cancel</Button>
                     </Space>
-                    <Paragraph>{form.getFieldValue("description")}</Paragraph>
-                    <Divider />
-                    <div
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        maxHeight: "300px",
-                        overflow: "auto",
-                      }}
-                    >
-                      {form.getFieldValue("content")}
-                    </div>
-                  </div>
-                ) : (
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleCreatePolicy}
-                  >
-                    <Form.Item
-                      name="title"
-                      label="Policy Title"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please enter policy title",
-                        },
-                      ]}
-                    >
-                      <Input placeholder="Enter policy title" />
-                    </Form.Item>
-
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item
-                          name="version"
-                          label="Version"
-                          rules={[
-                            { required: true, message: "Please enter version" },
-                          ]}
-                        >
-                          <Input placeholder="e.g., 1.0" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item name="department" label="Department">
-                          <Select placeholder="Select department">
-                            <Option value="HR">Human Resources</Option>
-                            <Option value="IT">Information Technology</Option>
-                            <Option value="Finance">Finance</Option>
-                            <Option value="Operations">Operations</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Form.Item name="description" label="Description">
-                      <TextArea
-                        rows={3}
-                        placeholder="Brief description of the policy"
-                      />
-                    </Form.Item>
-
-                    <Form.Item name="tags" label="Tags (comma separated)">
-                      <Input placeholder="e.g., HR, Security, Compliance" />
-                    </Form.Item>
-
-                    <Form.Item
-                      name="content"
-                      label="Policy Content"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please enter policy content",
-                        },
-                      ]}
-                    >
-                      <TextArea
-                        rows={8}
-                        placeholder="Detailed policy content..."
-                      />
-                    </Form.Item>
-
-                    <Form.Item>
-                      <Space>
-                        <Button
-                          type="primary"
-                          htmlType="submit"
-                          icon={<SaveOutlined />}
-                          loading={isCreating}
-                        >
-                          Create Policy
-                        </Button>
-                        <Button
-                          onClick={() => setPreviewMode(!previewMode)}
-                          icon={<EyeOutlined />}
-                        >
-                          {previewMode ? "Edit" : "Preview"}
-                        </Button>
-                        <Button onClick={resetForm}>Clear</Button>
-                      </Space>
-                    </Form.Item>
-                  </Form>
-                )}
+                  </Form.Item>
+                </Form>
               </div>
             )}
           </Card>
         </Col>
 
         <Col xs={24} lg={14}>
-          {/* Policy List */}
           <Card
             title="Existing Policies"
             extra={
@@ -594,7 +747,6 @@ const EmployeeAdminCompanyPolicy = () => {
         </Col>
       </Row>
 
-      {/* View Policy Modal */}
       <Modal
         title="View Policy"
         open={viewModalVisible}
@@ -620,8 +772,6 @@ const EmployeeAdminCompanyPolicy = () => {
           <div>
             <Title level={3}>{selectedPolicy.title}</Title>
             <Space style={{ marginBottom: "16px" }}>
-              <Tag>Version: {selectedPolicy.version}</Tag>
-              <Tag>Department: {selectedPolicy.department}</Tag>
               <Badge
                 status={
                   selectedPolicy.status === "active" ? "success" : "default"
@@ -647,7 +797,6 @@ const EmployeeAdminCompanyPolicy = () => {
         )}
       </Modal>
 
-      {/* Edit Policy Modal */}
       <Modal
         title="Edit Policy"
         open={editModalVisible}
@@ -664,44 +813,6 @@ const EmployeeAdminCompanyPolicy = () => {
             <Input placeholder="Enter policy title" />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="version"
-                label="Version"
-                rules={[{ required: true, message: "Please enter version" }]}
-              >
-                <Input placeholder="e.g., 1.0" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="department" label="Department">
-                <Select placeholder="Select department">
-                  <Option value="HR">Human Resources</Option>
-                  <Option value="IT">Information Technology</Option>
-                  <Option value="Finance">Finance</Option>
-                  <Option value="Operations">Operations</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="description" label="Description">
-            <TextArea rows={3} placeholder="Brief description of the policy" />
-          </Form.Item>
-
-          <Form.Item name="tags" label="Tags (comma separated)">
-            <Input placeholder="e.g., HR, Security, Compliance" />
-          </Form.Item>
-
-          <Form.Item
-            name="content"
-            label="Policy Content"
-            rules={[{ required: true, message: "Please enter policy content" }]}
-          >
-            <TextArea rows={10} placeholder="Detailed policy content..." />
-          </Form.Item>
-
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit" loading={isUpdating}>
@@ -711,6 +822,56 @@ const EmployeeAdminCompanyPolicy = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Policy Preview"
+        open={previewMode}
+        onCancel={() => setPreviewMode(false)}
+        footer={[
+          <Button key="close" onClick={() => setPreviewMode(false)}>
+            Close
+          </Button>,
+        ]}
+        width={800}
+      >
+        <div>
+          <Title level={3}>
+            {form.getFieldValue("title") || "Untitled Policy"}
+          </Title>
+          <Divider />
+          <div
+            style={{
+              whiteSpace: "pre-wrap",
+              maxHeight: "400px",
+              overflow: "auto",
+              padding: "16px",
+              background: "#fafafa",
+              borderRadius: "6px",
+              fontSize: "14px",
+              lineHeight: "1.6",
+              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            }}
+          >
+            {(() => {
+              if (!parsedData) return "No content available";
+
+              if (
+                parsedData.paragraphs &&
+                Array.isArray(parsedData.paragraphs)
+              ) {
+                return parsedData.paragraphs.join("\n\n");
+              }
+
+              return (
+                parsedData.content ||
+                parsedData.text ||
+                parsedData.extractedText ||
+                "No content available"
+              );
+            })()}
+          </div>
+        </div>
       </Modal>
     </div>
   );

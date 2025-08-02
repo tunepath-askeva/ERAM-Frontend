@@ -74,14 +74,10 @@ export const employeeApi = createApi({
     }),
 
     createPolicy: builder.mutation({
-      query: (policyData) => ({
+      query: (formData) => ({
         url: "policy",
         method: "POST",
-        body: {
-          ...policyData,
-          createdAt: new Date().toISOString(),
-          status: "active",
-        },
+        body: formData,
       }),
     }),
 
@@ -98,7 +94,6 @@ export const employeeApi = createApi({
 
         return `policy?${queryParams}`;
       },
-
     }),
 
     getPolicyById: builder.query({
@@ -114,7 +109,6 @@ export const employeeApi = createApi({
           updatedAt: new Date().toISOString(),
         },
       }),
-     
     }),
 
     deletePolicy: builder.mutation({
@@ -122,7 +116,6 @@ export const employeeApi = createApi({
         url: `policy/${id}`,
         method: "DELETE",
       }),
-      
     }),
 
     archivePolicy: builder.mutation({
@@ -134,7 +127,6 @@ export const employeeApi = createApi({
           archivedAt: new Date().toISOString(),
         },
       }),
-     
     }),
 
     searchPolicies: builder.query({
