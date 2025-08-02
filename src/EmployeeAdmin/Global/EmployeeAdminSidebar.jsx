@@ -61,11 +61,11 @@ const EmployeeAdminSidebar = ({
       icon: <FormOutlined />,
       label: "Leave Request",
     },
-    // {
-    //   key: "/employee-admin/profile-settings",
-    //   icon: <SettingOutlined />,
-    //   label: "Profile-Settings",
-    // },
+    {
+      key: "/employee-admin/company-policy",
+      icon: <SolutionOutlined />,
+      label: "Company Policies",
+    },
   ];
 
   useEffect(() => {

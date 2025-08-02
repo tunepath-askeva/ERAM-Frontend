@@ -71,6 +71,8 @@ import EmployeeAdminLayout from "./EmployeeAdmin/Global/EmployeeAdminLayout";
 import EmployeeAdminDashboard from "./EmployeeAdmin/Pages/EmployeeAdminDashboard";
 import ProtectedEmployeeAdmin from "./EmployeeAdmin/Auth/ProtectedEmployeeAdmin";
 import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveRequest";
+import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
+import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
 
 const AppRoutes = () => {
   return (
@@ -293,6 +295,10 @@ const AppRoutes = () => {
           element={<ProtectedEmployee element={<EmployeeLeaveRequest />} />}
         />
         <Route
+          path="/employee/company-policy"
+          element={<ProtectedEmployee element={<EmployeeCompanyPolicy />} />}
+        />
+        <Route
           path="/employee/profile-settings"
           element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
         />
@@ -309,6 +315,12 @@ const AppRoutes = () => {
           path="/employee-admin/leave-request"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminLeaveRequest />} />
+          }
+        />
+        <Route
+          path="/employee-admin/company-policy"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminCompanyPolicy />} />
           }
         />
       </Route>

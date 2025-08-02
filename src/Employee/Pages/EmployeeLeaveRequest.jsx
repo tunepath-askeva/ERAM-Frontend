@@ -25,7 +25,10 @@ import {
 import dayjs from "dayjs";
 import LeaveForm from "../Components/LeaveForm";
 import LeaveHistory from "../Components/LeaveHistory";
-import { useGetEmployeeProfileQuery } from "../../Slices/Employee/EmployeeApis";
+import {
+  useGetEmployeeProfileQuery,
+  useGetEmployeeLeaveHistoryQuery,
+} from "../../Slices/Employee/EmployeeApis";
 const { Title, Text } = Typography;
 
 const EmployeeLeaveRequest = () => {
@@ -34,6 +37,7 @@ const EmployeeLeaveRequest = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
 
   const { data } = useGetEmployeeProfileQuery();
+  const { data: leaveHistoryData } = useGetEmployeeLeaveHistoryQuery();
 
   const user = data?.employee;
 
@@ -41,7 +45,8 @@ const EmployeeLeaveRequest = () => {
     firstName: user?.firstName || "John",
     lastName: user?.lastName || "Doe",
     fullName: user?.fullName || "John Doe",
-    designation: user?.employmentDetails?.assignedJobTitle || "Software Engineer",
+    designation:
+      user?.employmentDetails?.assignedJobTitle || "Software Engineer",
     eramId: user?.employmentDetails?.eramId || "ERAM-123",
     email: user?.email || "john.doe@company.com",
     phone: user?.phone || "+1 234 567 8900",
@@ -69,7 +74,8 @@ const EmployeeLeaveRequest = () => {
   }, []);
 
   const getLeaveStats = () => {
-    if (!leaveRequests.length)
+    const leaves = leaveHistoryData?.leaves || [];
+    if (!leaves.length)
       return {
         totalRequests: 0,
         approved: 0,
@@ -79,20 +85,27 @@ const EmployeeLeaveRequest = () => {
       };
 
     const currentYear = dayjs().year();
-    const yearlyRequests = leaveRequests.filter(
+
+    const yearlyRequests = leaves.filter(
       (req) => dayjs(req.appliedDate).year() === currentYear
     );
 
     return {
       totalRequests: yearlyRequests.length,
-      approved: yearlyRequests.filter((req) => req.status === "Approved")
+      approved: yearlyRequests.filter((req) => req.status === "approved")
         .length,
-      pending: yearlyRequests.filter((req) => req.status === "Pending").length,
-      rejected: yearlyRequests.filter((req) => req.status === "Rejected")
+      pending: yearlyRequests.filter((req) => req.status === "pending").length,
+      rejected: yearlyRequests.filter((req) => req.status === "rejected")
         .length,
       totalDays: yearlyRequests
-        .filter((req) => req.status === "Approved")
-        .reduce((sum, req) => sum + req.days, 0),
+        .filter((req) => req.status === "approved")
+        .reduce(
+          (sum, req) =>
+            sum +
+            (dayjs(req.endDate).diff(dayjs(req.startDate), "day") +
+              (req.isHalfDay ? 0.5 : 1)),
+          0
+        ),
     };
   };
 
@@ -222,7 +235,7 @@ const EmployeeLeaveRequest = () => {
             children: (
               <LeaveHistory
                 mobileView={mobileView}
-                leaveRequests={leaveRequests}
+                leaveRequests={leaveHistoryData?.leaves || []}
                 setLeaveRequests={setLeaveRequests}
               />
             ),

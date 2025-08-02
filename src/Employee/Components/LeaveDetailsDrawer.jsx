@@ -23,6 +23,7 @@ import {
   TeamOutlined,
   GiftOutlined,
   WarningOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -108,16 +109,16 @@ const LeaveDetailsDrawer = ({
       <Alert
         message={`Leave Request ${leave.status}`}
         description={
-          leave.status === "Approved"
+          leave.status === "approved"
             ? "Your leave request has been approved."
-            : leave.status === "Rejected"
+            : leave.status === "rejected"
             ? "Your leave request has been rejected."
             : "Your leave request is pending approval."
         }
         type={
-          leave.status === "Approved"
+          leave.status === "approved"
             ? "success"
-            : leave.status === "Rejected"
+            : leave.status === "rejected"
             ? "error"
             : "warning"
         }
@@ -149,11 +150,17 @@ const LeaveDetailsDrawer = ({
           </Descriptions.Item>
           {leave.urgency && (
             <Descriptions.Item label="Urgency">
-              <Tag color={
-                leave.urgency === "Critical" ? "red" :
-                leave.urgency === "High" ? "orange" :
-                leave.urgency === "Normal" ? "blue" : "green"
-              }>
+              <Tag
+                color={
+                  leave.urgency === "Critical"
+                    ? "red"
+                    : leave.urgency === "High"
+                    ? "orange"
+                    : leave.urgency === "Normal"
+                    ? "blue"
+                    : "green"
+                }
+              >
                 {leave.urgency}
               </Tag>
             </Descriptions.Item>
@@ -173,7 +180,7 @@ const LeaveDetailsDrawer = ({
               {leave.approvedBy || "System"}
             </Descriptions.Item>
             <Descriptions.Item label="Date">
-              {leave.approvedDate 
+              {leave.approvedDate
                 ? dayjs(leave.approvedDate).format("DD MMM YYYY, HH:mm")
                 : "N/A"}
             </Descriptions.Item>
@@ -186,7 +193,7 @@ const LeaveDetailsDrawer = ({
         </Card>
       )}
 
-      <Card title="Additional Information">
+      <Card title="Additional Information" style={{ marginBottom: 16 }}>
         <Space direction="vertical" size="middle">
           {leave.medicalCertificate && (
             <div>
@@ -204,10 +211,19 @@ const LeaveDetailsDrawer = ({
               <Text>Half day leave</Text>
             </div>
           )}
-          <div>
-            <CalendarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-            <Text>Request ID: #{leave.id}</Text>
-          </div>
+        </Space>
+      </Card>
+
+      <Card title="Admin Comments">
+        <Space direction="vertical" size="middle">
+          {leave.adminComment ? (
+            <div>
+              <CommentOutlined style={{ color: "#da2c46", marginRight: 8 }} />
+              Admin Comment: {leave.adminComment}
+            </div>
+          ) : (
+            <Text type="secondary">No comments from admin yet</Text>
+          )}
         </Space>
       </Card>
     </Drawer>

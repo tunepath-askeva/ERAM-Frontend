@@ -23,7 +23,6 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import LeaveDetailsDrawer from "./LeaveDetailsDrawer";
-import { useGetEmployeeLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 const { Option } = Select;
@@ -34,8 +33,7 @@ const LeaveHistory = ({ mobileView, leaveRequests = [], setLeaveRequests }) => {
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [viewLeaveDrawer, setViewLeaveDrawer] = useState(false);
 
-  const { data } = useGetEmployeeLeaveHistoryQuery();
-  const normalizedLeaves = data?.leaves?.map((leave) => ({
+  const normalizedLeaves = leaveRequests?.map((leave) => ({
     id: leave._id,
     type:
       leave.leaveType.charAt(0).toUpperCase() +

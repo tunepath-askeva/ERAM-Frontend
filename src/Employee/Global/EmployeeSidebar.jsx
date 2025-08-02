@@ -67,6 +67,11 @@ const EmployeeSidebar = ({
       label: "Leave Request",
     },
     {
+      key: "/employee/company-policy",
+      icon: <SolutionOutlined />,
+      label: "Company Policies",
+    },
+    {
       key: "/employee/profile-settings",
       icon: <SettingOutlined />,
       label: "Profile-Settings",
