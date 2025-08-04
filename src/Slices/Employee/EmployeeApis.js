@@ -146,7 +146,12 @@ export const employeeApi = createApi({
           body: formData,
         };
       },
-      invalidatesTags: ["PayrollUpload"],
+    }),
+    getPayroll: builder.query({
+      query: () => ({
+        url: "/payroll",
+        method: "GET",
+      }),
     }),
 
     getEmployeePolicies: builder.query({
@@ -176,4 +181,5 @@ export const {
   useArchivePolicyMutation,
   useDeletePolicyMutation,
   useUploadPayrollFileMutation,
+  useGetPayrollQuery,
 } = employeeApi;
