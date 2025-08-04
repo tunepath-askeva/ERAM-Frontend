@@ -28,6 +28,7 @@ import {
   useUploadPayrollFileMutation,
   useGetPayrollQuery,
   useEditPayrollMutation,
+  useGetPayrollByIdQuery,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Dragger } = Upload;
@@ -55,6 +56,10 @@ const EmployeeAdminPayroll = () => {
 
   const { data: payrollData, refetch: refetchPayroll } = useGetPayrollQuery();
   const [editPayroll, { isLoading: isEditing }] = useEditPayrollMutation();
+  const { data: singlePayrollData, isLoading: isSinglePayrollLoading } =
+    useGetPayrollByIdQuery(selectedRecord?._id, {
+      skip: !selectedRecord, // Only fetch when we have a selected record
+    });
 
   const handleFileUpload = async (file) => {
     setSelectedFile(file);
@@ -215,282 +220,323 @@ const EmployeeAdminPayroll = () => {
 
   // Render View Modal Content
   const renderViewContent = () => {
-    if (!selectedRecord) return null;
+    const recordToDisplay = singlePayrollData?.payroll || selectedRecord;
+    if (!recordToDisplay) return null;
 
     return (
       <Tabs defaultActiveKey="1">
-        <TabPane tab="Basic Information" key="1">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>
+              Basic Information
+            </span>
+          }
+          key="1"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Year">
-              {selectedRecord.U_year}
+              {recordToDisplay.U_year}
             </Descriptions.Item>
             <Descriptions.Item label="Month">
-              {selectedRecord.U_month}
+              {recordToDisplay.U_month}
             </Descriptions.Item>
             <Descriptions.Item label="Pay Group">
-              {selectedRecord.U_paygroup}
+              {recordToDisplay.U_paygroup}
             </Descriptions.Item>
             <Descriptions.Item label="Project Name">
-              {selectedRecord.U_PrjNM}
+              {recordToDisplay.U_PrjNM}
             </Descriptions.Item>
             <Descriptions.Item label="Employee Name">
-              {selectedRecord.U_empname}
+              {recordToDisplay.U_empname}
             </Descriptions.Item>
             <Descriptions.Item label="Employee Code">
-              {selectedRecord.U_empcode}
+              {recordToDisplay.U_empcode}
             </Descriptions.Item>
             <Descriptions.Item label="Email">
-              {selectedRecord.U_email}
+              {recordToDisplay.U_email}
             </Descriptions.Item>
             <Descriptions.Item label="ERAM ID">
-              {selectedRecord.U_EramId}
+              {recordToDisplay.U_EramId}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
-        <TabPane tab="Salary Components" key="2">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>
+              Salary Components
+            </span>
+          }
+          key="2"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Basic Salary">
-              {selectedRecord.U_basic}
+              {recordToDisplay.U_basic}
             </Descriptions.Item>
             <Descriptions.Item label="Food Allowance">
-              {selectedRecord.U_food}
+              {recordToDisplay.U_food}
             </Descriptions.Item>
             <Descriptions.Item label="HRA">
-              {selectedRecord.U_hra}
+              {recordToDisplay.U_hra}
             </Descriptions.Item>
             <Descriptions.Item label="Telephone Allowance">
-              {selectedRecord.U_tel}
+              {recordToDisplay.U_tel}
             </Descriptions.Item>
             <Descriptions.Item label="TPA">
-              {selectedRecord.U_tpa}
+              {recordToDisplay.U_tpa}
             </Descriptions.Item>
             <Descriptions.Item label="Fuel Allowance">
-              {selectedRecord.U_fuel}
+              {recordToDisplay.U_fuel}
             </Descriptions.Item>
             <Descriptions.Item label="Shift Allowance">
-              {selectedRecord.U_shftallow}
+              {recordToDisplay.U_shftallow}
             </Descriptions.Item>
             <Descriptions.Item label="Other Allowance">
-              {selectedRecord.U_othrallow}
+              {recordToDisplay.U_othrallow}
             </Descriptions.Item>
             <Descriptions.Item label="OT Allowance">
-              {selectedRecord.U_otallow}
+              {recordToDisplay.U_otallow}
             </Descriptions.Item>
             <Descriptions.Item label="Special Allowance">
-              {selectedRecord.U_specallow}
+              {recordToDisplay.U_specallow}
             </Descriptions.Item>
             <Descriptions.Item label="Act. Allowance">
-              {selectedRecord.U_actallow}
+              {recordToDisplay.U_actallow}
             </Descriptions.Item>
             <Descriptions.Item label="Project Allowance">
-              {selectedRecord.U_projallow}
+              {recordToDisplay.U_projallow}
             </Descriptions.Item>
             <Descriptions.Item label="Offshore Allowance">
-              {selectedRecord.U_offsallow}
+              {recordToDisplay.U_offsallow}
             </Descriptions.Item>
             <Descriptions.Item label="Air Ticket Allowance">
-              {selectedRecord.U_airtallow}
+              {recordToDisplay.U_airtallow}
             </Descriptions.Item>
             <Descriptions.Item label="Extra Effort Allowance">
-              {selectedRecord.U_exefallow}
+              {recordToDisplay.U_exefallow}
             </Descriptions.Item>
             <Descriptions.Item label="Other Earning">
-              {selectedRecord.U_OEARN}
+              {recordToDisplay.U_OEARN}
             </Descriptions.Item>
             <Descriptions.Item label="Overseas Allowance">
-              {selectedRecord.U_OVSAL}
+              {recordToDisplay.U_OVSAL}
             </Descriptions.Item>
             <Descriptions.Item label="Transfer Allowance">
-              {selectedRecord.U_TRFAL}
+              {recordToDisplay.U_TRFAL}
             </Descriptions.Item>
             <Descriptions.Item label="Competitive Allowance">
-              {selectedRecord.U_COMAL}
+              {recordToDisplay.U_COMAL}
             </Descriptions.Item>
             <Descriptions.Item label="Hardship Allowance">
-              {selectedRecord.U_HSHIP}
+              {recordToDisplay.U_HSHIP}
             </Descriptions.Item>
             <Descriptions.Item label="Benefit Adj Allowance">
-              {selectedRecord.U_BENAL}
+              {recordToDisplay.U_BENAL}
             </Descriptions.Item>
             <Descriptions.Item label="Over Base Allowance">
-              {selectedRecord.U_OBASE}
+              {recordToDisplay.U_OBASE}
             </Descriptions.Item>
             <Descriptions.Item label="Remote Area Allowance">
-              {selectedRecord.U_RAAL}
+              {recordToDisplay.U_RAAL}
             </Descriptions.Item>
             <Descriptions.Item label="Fixed OT Allowance">
-              {selectedRecord.U_FOTA}
+              {recordToDisplay.U_FOTA}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
-        <TabPane tab="Overtime & Days" key="3">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>
+              Overtime & Days
+            </span>
+          }
+          key="3"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Normal OT Hours">
-              {selectedRecord.U_OTHOUR1}
+              {recordToDisplay.U_OTHOUR1}
             </Descriptions.Item>
             <Descriptions.Item label="PH OT Hours">
-              {selectedRecord.U_OTHOUR2}
+              {recordToDisplay.U_OTHOUR2}
             </Descriptions.Item>
             <Descriptions.Item label="Ramadan OT Hours">
-              {selectedRecord.U_OTHOUR3}
+              {recordToDisplay.U_OTHOUR3}
             </Descriptions.Item>
             <Descriptions.Item label="Total OT Hours">
-              {selectedRecord.U_TOTHR}
+              {recordToDisplay.U_TOTHR}
             </Descriptions.Item>
             <Descriptions.Item label="OT Rate">
-              {selectedRecord.U_OTRT}
+              {recordToDisplay.U_OTRT}
             </Descriptions.Item>
             <Descriptions.Item label="Out Living Exp">
-              {selectedRecord.U_OTLV}
+              {recordToDisplay.U_OTLV}
             </Descriptions.Item>
             <Descriptions.Item label="Total Absent Days">
-              {selectedRecord.U_TABDays}
+              {recordToDisplay.U_TABDays}
             </Descriptions.Item>
             <Descriptions.Item label="Absent Days Deduction">
-              {selectedRecord.U_absdays}
+              {recordToDisplay.U_absdays}
             </Descriptions.Item>
             <Descriptions.Item label="Stand By Days">
-              {selectedRecord.U_stddays}
+              {recordToDisplay.U_stddays}
             </Descriptions.Item>
             <Descriptions.Item label="Total UnPaid Days">
-              {selectedRecord.U_TUPDays}
+              {recordToDisplay.U_TUPDays}
             </Descriptions.Item>
             <Descriptions.Item label="UnPaid Days">
-              {selectedRecord.U_unpddays}
+              {recordToDisplay.U_unpddays}
             </Descriptions.Item>
             <Descriptions.Item label="UMRAH/HAJJ Days">
-              {selectedRecord.U_umhjdays}
+              {recordToDisplay.U_umhjdays}
             </Descriptions.Item>
             <Descriptions.Item label="Medical Days">
-              {selectedRecord.U_medidays}
+              {recordToDisplay.U_medidays}
             </Descriptions.Item>
             <Descriptions.Item label="Shift Days">
-              {selectedRecord.U_SFDAY}
+              {recordToDisplay.U_SFDAY}
             </Descriptions.Item>
             <Descriptions.Item label="Remote Area Days">
-              {selectedRecord.U_RADAY}
+              {recordToDisplay.U_RADAY}
             </Descriptions.Item>
             <Descriptions.Item label="Site Activation Days">
-              {selectedRecord.U_SADAY}
+              {recordToDisplay.U_SADAY}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
-        <TabPane tab="Deductions" key="4">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>
+              Deductions
+            </span>
+          }
+          key="4"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="TPA Deduction">
-              {selectedRecord.U_TPAD}
+              {recordToDisplay.U_TPAD}
             </Descriptions.Item>
             <Descriptions.Item label="Other Deduction">
-              {selectedRecord.U_ODED}
+              {recordToDisplay.U_ODED}
             </Descriptions.Item>
             <Descriptions.Item label="Other Deduction Staff Accounts">
-              {selectedRecord.U_ODEDSA}
+              {recordToDisplay.U_ODEDSA}
             </Descriptions.Item>
             <Descriptions.Item label="Advance">
-              {selectedRecord.U_adv}
+              {recordToDisplay.U_adv}
             </Descriptions.Item>
             <Descriptions.Item label="Loan">
-              {selectedRecord.U_loan}
+              {recordToDisplay.U_loan}
             </Descriptions.Item>
             <Descriptions.Item label="GOSI">
-              {selectedRecord.U_gosi}
+              {recordToDisplay.U_gosi}
             </Descriptions.Item>
             <Descriptions.Item label="TPA Deduction (Alt)">
-              {selectedRecord.U_TPAD_1}
+              {recordToDisplay.U_TPAD_1}
             </Descriptions.Item>
             <Descriptions.Item label="Admin Charge">
-              {selectedRecord.U_ADMC}
+              {recordToDisplay.U_ADMC}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
-        <TabPane tab="Actual Values" key="5">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>
+              Actual Values
+            </span>
+          }
+          key="5"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Actual Basic">
-              {selectedRecord.U_albasic}
+              {recordToDisplay.U_albasic}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Food">
-              {selectedRecord.U_alfood}
+              {recordToDisplay.U_alfood}
             </Descriptions.Item>
             <Descriptions.Item label="Actual HRA">
-              {selectedRecord.U_alhra}
+              {recordToDisplay.U_alhra}
             </Descriptions.Item>
             <Descriptions.Item label="Actual TEL">
-              {selectedRecord.U_altel}
+              {recordToDisplay.U_altel}
             </Descriptions.Item>
             <Descriptions.Item label="Actual TPA">
-              {selectedRecord.U_altpa}
+              {recordToDisplay.U_altpa}
             </Descriptions.Item>
             <Descriptions.Item label="Actual FUEL">
-              {selectedRecord.U_alfuel}
+              {recordToDisplay.U_alfuel}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Shift Allowance">
-              {selectedRecord.U_alshftallow}
+              {recordToDisplay.U_alshftallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Other Allowance">
-              {selectedRecord.U_alothrallow}
+              {recordToDisplay.U_alothrallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual OT Allowance">
-              {selectedRecord.U_alotallow}
+              {recordToDisplay.U_alotallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Special Allowance">
-              {selectedRecord.U_alspecallow}
+              {recordToDisplay.U_alspecallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Act. Allowance">
-              {selectedRecord.U_alactallow}
+              {recordToDisplay.U_alactallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Project Allowance">
-              {selectedRecord.U_alprojallow}
+              {recordToDisplay.U_alprojallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Offshore Allowance">
-              {selectedRecord.U_aloffsallow}
+              {recordToDisplay.U_aloffsallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Air Ticket Allowance">
-              {selectedRecord.U_alairtallow}
+              {recordToDisplay.U_alairtallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Extra Effort Allowance">
-              {selectedRecord.U_alexefallow}
+              {recordToDisplay.U_alexefallow}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Total Salary">
-              {selectedRecord.U_altotalsal}
+              {recordToDisplay.U_altotalsal}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Overseas Allowance">
-              {selectedRecord.U_alover}
+              {recordToDisplay.U_alover}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Transfer Allowance">
-              {selectedRecord.U_altran}
+              {recordToDisplay.U_altran}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Competitive Allowance">
-              {selectedRecord.U_alcomp}
+              {recordToDisplay.U_alcomp}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Hardship Allowance">
-              {selectedRecord.U_alhard}
+              {recordToDisplay.U_alhard}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Benefit Adj Allowance">
-              {selectedRecord.U_albene}
+              {recordToDisplay.U_albene}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Fixed OT Allowance">
-              {selectedRecord.U_alFOTA}
+              {recordToDisplay.U_alFOTA}
             </Descriptions.Item>
             <Descriptions.Item label="Actual Out Living Exp">
-              {selectedRecord.U_alOTLV}
+              {recordToDisplay.U_alOTLV}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
-        <TabPane tab="Summary" key="6">
+        <TabPane
+          tab={
+            <span style={{ fontSize: "13px", color: " #da2c46" }}>Summary</span>
+          }
+          key="6"
+        >
           <Descriptions bordered column={2} size="small">
             <Descriptions.Item label="Total Earnings" span={2}>
               <strong style={{ fontSize: "16px", color: "#52c41a" }}>
-                {selectedRecord.U_totalearn}
+                {recordToDisplay.U_totalearn}
               </strong>
             </Descriptions.Item>
             <Descriptions.Item label="Overall Net Payable" span={2}>
               <strong style={{ fontSize: "16px", color: "#1890ff" }}>
-                {selectedRecord.U_ONP}
+                {recordToDisplay.U_ONP}
               </strong>
             </Descriptions.Item>
           </Descriptions>
@@ -504,7 +550,14 @@ const EmployeeAdminPayroll = () => {
     return (
       <Form form={form} layout="vertical">
         <Tabs defaultActiveKey="1">
-          <TabPane tab="Basic Information" key="1">
+          <TabPane
+            tab={
+              <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                Basic Information
+              </span>
+            }
+            key="1"
+          >
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="U_year" label="Year">
@@ -549,7 +602,14 @@ const EmployeeAdminPayroll = () => {
             </Row>
           </TabPane>
 
-          <TabPane tab="Salary Components" key="2">
+          <TabPane
+            tab={
+              <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                Salary Components
+              </span>
+            }
+            key="2"
+          >
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="U_basic" label="Basic Salary">
@@ -674,7 +734,14 @@ const EmployeeAdminPayroll = () => {
             </Row>
           </TabPane>
 
-          <TabPane tab="Overtime & Days" key="3">
+          <TabPane
+            tab={
+              <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                Overtime & Days
+              </span>
+            }
+            key="3"
+          >
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="U_OTHOUR1" label="Normal OT Hours">
@@ -759,7 +826,14 @@ const EmployeeAdminPayroll = () => {
             </Row>
           </TabPane>
 
-          <TabPane tab="Deductions" key="4">
+          <TabPane
+            tab={
+              <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                Deductions
+              </span>
+            }
+            key="4"
+          >
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="U_TPAD" label="TPA Deduction">
@@ -807,7 +881,14 @@ const EmployeeAdminPayroll = () => {
             </Row>
           </TabPane>
 
-          <TabPane tab="Summary" key="5">
+          <TabPane
+            tab={
+              <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                Summary
+              </span>
+            }
+            key="5"
+          >
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="U_totalearn" label="Total Earnings">
@@ -920,10 +1001,14 @@ const EmployeeAdminPayroll = () => {
             Close
           </Button>,
         ]}
-        width="90%"
+        width="50%"
         style={{ top: 20 }}
       >
-        {renderViewContent()}
+        {isSinglePayrollLoading ? (
+          <Spin tip="Loading payroll details..." />
+        ) : (
+          renderViewContent()
+        )}
       </Modal>
 
       {/* Edit Modal */}
@@ -932,7 +1017,7 @@ const EmployeeAdminPayroll = () => {
         visible={isEditModalVisible}
         onOk={handleEditSubmit}
         onCancel={() => setIsEditModalVisible(false)}
-        width="90%"
+        width="50%"
         style={{ top: 20 }}
         okText="Save Changes"
         okButtonProps={{
