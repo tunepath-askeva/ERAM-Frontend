@@ -27,6 +27,7 @@ import {
 import {
   useUploadPayrollFileMutation,
   useGetPayrollQuery,
+  useEditPayrollMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Dragger } = Upload;
@@ -53,6 +54,7 @@ const EmployeeAdminPayroll = () => {
   ] = useUploadPayrollFileMutation();
 
   const { data: payrollData, refetch: refetchPayroll } = useGetPayrollQuery();
+  const [editPayroll, { isLoading: isEditing }] = useEditPayrollMutation();
 
   const handleFileUpload = async (file) => {
     setSelectedFile(file);
@@ -105,7 +107,10 @@ const EmployeeAdminPayroll = () => {
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
-      // Here you would typically call an API to update the record
+      await editPayroll({
+        id: selectedRecord._id,
+        payload: values,
+      }).unwrap();
       console.log("Updated values:", values);
       message.success("Payroll record updated successfully");
       setIsEditModalVisible(false);
@@ -149,13 +154,35 @@ const EmployeeAdminPayroll = () => {
     },
     {
       title: "Month/Year",
-      dataIndex: "uploadedAt",
       key: "monthYear",
-      render: (date) =>
-        new Date(date).toLocaleDateString("en-US", {
+      render: (_, record) => {
+        if (record.U_month && record.U_year) {
+          const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ];
+          const monthName =
+            typeof record.U_month === "number"
+              ? monthNames[record.U_month - 1]
+              : record.U_month;
+
+          return `${monthName}/${record.U_year}`;
+        }
+        return new Date(record.uploadedAt).toLocaleDateString("en-US", {
           month: "long",
           year: "numeric",
-        }),
+        });
+      },
     },
     {
       title: "Actions",
@@ -197,6 +224,9 @@ const EmployeeAdminPayroll = () => {
             <Descriptions.Item label="Year">
               {selectedRecord.U_year}
             </Descriptions.Item>
+            <Descriptions.Item label="Month">
+              {selectedRecord.U_month}
+            </Descriptions.Item>
             <Descriptions.Item label="Pay Group">
               {selectedRecord.U_paygroup}
             </Descriptions.Item>
@@ -214,13 +244,6 @@ const EmployeeAdminPayroll = () => {
             </Descriptions.Item>
             <Descriptions.Item label="ERAM ID">
               {selectedRecord.U_EramId}
-            </Descriptions.Item>
-            <Descriptions.Item label="Upload Date">
-              {new Date(selectedRecord.uploadedAt).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-                day: "numeric",
-              })}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
@@ -489,11 +512,16 @@ const EmployeeAdminPayroll = () => {
                 </Form.Item>
               </Col>
               <Col span={12}>
+                <Form.Item name="U_month" label="Month">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
                 <Form.Item name="U_paygroup" label="Pay Group">
                   <Input />
                 </Form.Item>
               </Col>
-              <Col span={24}>
+              <Col span={12}>
                 <Form.Item name="U_PrjNM" label="Project Name">
                   <Input />
                 </Form.Item>
@@ -913,6 +941,7 @@ const EmployeeAdminPayroll = () => {
           },
         }}
         cancelText="Cancel"
+        confirmLoading={isEditing}
       >
         {renderEditForm()}
       </Modal>

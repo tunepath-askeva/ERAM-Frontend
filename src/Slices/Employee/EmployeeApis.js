@@ -153,6 +153,13 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    editPayroll: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/payroll/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
 
     getEmployeePolicies: builder.query({
       query: () => ({
@@ -182,4 +189,5 @@ export const {
   useDeletePolicyMutation,
   useUploadPayrollFileMutation,
   useGetPayrollQuery,
+  useEditPayrollMutation
 } = employeeApi;
