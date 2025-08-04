@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Upload,
   Button,
@@ -34,6 +34,7 @@ import {
   SearchOutlined,
   PlusOutlined,
   InboxOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -62,10 +63,13 @@ const EmployeeAdminCompanyPolicy = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
   const [archiveId, setArchiveId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [uploadPolicyDocument, { isLoading: isUploading }] =
     useUploadPolicyDocumentMutation();
@@ -79,13 +83,26 @@ const EmployeeAdminCompanyPolicy = () => {
     isLoading: isLoadingPolicies,
     refetch: refetchPolicies,
   } = useGetPoliciesQuery({
-    page: 1,
-    limit: 50,
-    search: searchTerm,
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchTerm,
     status: statusFilter,
   });
 
   const policies = policiesResponse?.data || [];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, statusFilter]);
 
   const handleFileUpload = async (file) => {
     try {
@@ -715,6 +732,24 @@ const EmployeeAdminCompanyPolicy = () => {
             <Input
               placeholder="Search policies..."
               prefix={<SearchOutlined />}
+              suffix={
+                searchTerm ? (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={() => setSearchTerm("")}
+                    style={{
+                      border: "none",
+                      boxShadow: "none",
+                      minWidth: "auto",
+                      width: "auto",
+                      height: "auto",
+                      padding: "2px",
+                    }}
+                  />
+                ) : null
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: 200 }}
@@ -737,10 +772,19 @@ const EmployeeAdminCompanyPolicy = () => {
           rowKey="_id"
           loading={isLoadingPolicies}
           pagination={{
-            pageSize: 10,
+            current: currentPage,
+            pageSize: pageSize,
+            total: policiesResponse?.totalCount || 0,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `Total ${total} policies`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              if (size !== pageSize) {
+                setPageSize(size);
+                setCurrentPage(1); // Reset to first page when page size changes
+              }
+            },
           }}
         />
       </Card>
