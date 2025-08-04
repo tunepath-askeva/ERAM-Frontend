@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { message, Upload, Button, Table, Card, Spin, Divider } from "antd";
-import { UploadOutlined, InboxOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  UploadOutlined,
+  InboxOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import { useUploadPayrollFileMutation } from "../../Slices/Employee/EmployeeApis";
 
 const { Dragger } = Upload;
 
-const EmployeeAdminPolicy = () => {
+const EmployeeAdminPayroll = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
   const [
@@ -45,7 +49,7 @@ const EmployeeAdminPolicy = () => {
       }
     }
 
-    return false; 
+    return false;
   };
 
   const handleRemoveFile = () => {
@@ -154,4 +158,4 @@ const EmployeeAdminPolicy = () => {
   );
 };
 
-export default EmployeeAdminPolicy;
+export default EmployeeAdminPayroll;
