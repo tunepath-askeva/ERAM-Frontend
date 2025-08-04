@@ -6,6 +6,7 @@ import {
   LogoutOutlined,
   FormOutlined,
   DashboardOutlined,
+  PayCircleOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -60,6 +61,11 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/leave-request",
       icon: <FormOutlined />,
       label: "Leave Request",
+    },
+    {
+      key: "/employee-admin/payroll",
+      icon: <PayCircleOutlined />,
+      label: "Payroll",
     },
     {
       key: "/employee-admin/company-policy",

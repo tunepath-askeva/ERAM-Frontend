@@ -134,6 +134,27 @@ export const employeeApi = createApi({
         return `/policy/search?${params}`;
       },
     }),
+
+    uploadPayrollFile: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("payrollFile", file);
+
+        return {
+          url: "/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["PayrollUpload"],
+    }),
+
+    getEmployeePolicies: builder.query({
+      query: () => ({
+        url: "/employee-policy",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -141,6 +162,7 @@ export const {
   useGetEmployeeProfileQuery,
   useSubmitLeaveRequestMutation,
   useGetEmployeeLeaveHistoryQuery,
+  useGetEmployeePoliciesQuery,
 
   //employee admin
   useGetEmployeeAdminLeaveHistoryQuery,
@@ -153,4 +175,5 @@ export const {
   useSearchPoliciesQuery,
   useArchivePolicyMutation,
   useDeletePolicyMutation,
+  useUploadPayrollFileMutation,
 } = employeeApi;

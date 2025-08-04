@@ -73,6 +73,7 @@ import ProtectedEmployeeAdmin from "./EmployeeAdmin/Auth/ProtectedEmployeeAdmin"
 import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveRequest";
 import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
 import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
+import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
 
 const AppRoutes = () => {
   return (
@@ -321,6 +322,12 @@ const AppRoutes = () => {
           path="/employee-admin/company-policy"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminCompanyPolicy />} />
+          }
+        />
+        <Route
+          path="/employee-admin/payroll"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminPayroll />} />
           }
         />
       </Route>
