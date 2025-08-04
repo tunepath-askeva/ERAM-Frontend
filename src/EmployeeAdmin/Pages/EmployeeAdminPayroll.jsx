@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { message, Upload, Button, Table, Card, Spin, Divider } from "antd";
-import { UploadOutlined, InboxOutlined } from "@ant-design/icons";
+import { UploadOutlined, InboxOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useUploadPayrollFileMutation } from "../../Slices/Employee/EmployeeApis";
 
 const { Dragger } = Upload;
@@ -8,7 +8,6 @@ const { Dragger } = Upload;
 const EmployeeAdminPolicy = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // RTK Query hooks
   const [
     uploadFile,
     {
@@ -20,17 +19,14 @@ const EmployeeAdminPolicy = () => {
     },
   ] = useUploadPayrollFileMutation();
 
-  // Handle file upload with validation
   const handleFileUpload = async (file) => {
     setSelectedFile(file);
 
     try {
-      // Upload the file
       const result = await uploadFile(file).unwrap();
 
       message.success(`File uploaded successfully! ${result.message || ""}`);
 
-      // Refresh the upload history
       refetchHistory();
     } catch (error) {
       console.error("Upload failed:", error);
@@ -49,10 +45,14 @@ const EmployeeAdminPolicy = () => {
       }
     }
 
-    return false; // Prevent default upload behavior
+    return false; 
   };
 
-  // Upload component props
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    message.info("File removed");
+  };
+
   const uploadProps = {
     name: "payrollFile",
     multiple: false,
@@ -62,7 +62,6 @@ const EmployeeAdminPolicy = () => {
     disabled: isUploading,
   };
 
-  // Columns for upload history table
   const historyColumns = [
     {
       title: "File Name",
@@ -102,9 +101,16 @@ const EmployeeAdminPolicy = () => {
   return (
     <div style={{ padding: "24px" }}>
       <Card title="Upload Payroll File" style={{ marginBottom: "24px" }}>
-        <Dragger {...uploadProps}>
-          <p className="ant-upload-drag-icon">
-            <InboxOutlined />
+        <Dragger
+          {...uploadProps}
+          style={{
+            borderColor: "#da2c46", // Color for the dashed border
+            borderWidth: "2px",
+            borderStyle: "dashed",
+          }}
+        >
+          <p className="ant-upload-drag-icon" style={{ color: "#da2c46" }}>
+            <InboxOutlined style={{ color: "inherit" }} />
           </p>
           <p className="ant-upload-text">
             Click or drag payroll file to this area to upload
@@ -115,42 +121,35 @@ const EmployeeAdminPolicy = () => {
           {selectedFile && (
             <p>
               Selected file: <strong>{selectedFile.name}</strong> (
-              {selectedFile.size} bytes)
+              {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
             </p>
           )}
         </Dragger>
 
         <div style={{ marginTop: "16px", textAlign: "right" }}>
+          {selectedFile && (
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleRemoveFile}
+              disabled={isUploading}
+              style={{ marginRight: "8px" }}
+            >
+              Remove File
+            </Button>
+          )}
           <Button
             type="primary"
             icon={<UploadOutlined />}
             loading={isUploading}
             onClick={() => selectedFile && handleFileUpload(selectedFile)}
             disabled={!selectedFile || isUploading}
+            style={{ backgroundColor: "#da2c46" }}
           >
             {isUploading ? "Uploading..." : "Start Upload"}
           </Button>
         </div>
       </Card>
-
-      <Divider />
-
-      {/* Upload status messages */}
-      {uploadSuccess && (
-        <div style={{ marginTop: "16px" }}>
-          <p>Upload successful!</p>
-          {uploadResult && <pre>{JSON.stringify(uploadResult, null, 2)}</pre>}
-        </div>
-      )}
-
-      {uploadError && (
-        <div style={{ marginTop: "16px", color: "red" }}>
-          <p>Upload failed!</p>
-          {uploadErrorData && (
-            <pre>{JSON.stringify(uploadErrorData, null, 2)}</pre>
-          )}
-        </div>
-      )}
     </div>
   );
 };
