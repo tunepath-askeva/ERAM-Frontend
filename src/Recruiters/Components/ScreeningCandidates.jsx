@@ -436,7 +436,7 @@ const ScreeningCandidates = ({ jobId }) => {
   //   }
   // };
 
-  const handleBulkMoveToPipeline = async () => {
+  const handleBulkChangeStatus = async (newStatus) => {
     if (selectedCandidates.length === 0) {
       message.warning("Please select at least one candidate");
       return;
@@ -446,25 +446,22 @@ const ScreeningCandidates = ({ jobId }) => {
     try {
       const promises = selectedCandidates.map((candidateId) => {
         const candidate = allCandidates.find((c) => c._id === candidateId);
-        return moveToPipeline({
-          applicationId: candidate.applicationId,
-          jobId: jobId,
-          userId: candidate._id,
-          pipelineId: candidate.tagPipelineId?._id || null,
+        return statusChange({
+          id: candidate.applicationId,
+          status: newStatus,
         }).unwrap();
       });
 
       await Promise.all(promises);
+
       message.success(
-        `Moved ${selectedCandidates.length} candidates to pipeline successfully`
+        `Updated status to "${newStatus}" for ${selectedCandidates.length} candidate(s)`
       );
       setSelectedCandidates([]);
       refetch();
     } catch (error) {
-      console.error("Failed to move candidates to pipeline:", error);
-      message.error(
-        error.data?.message || "Failed to move candidates to pipeline"
-      );
+      console.error("Failed to change status for candidates:", error);
+      message.error(error?.data?.message || "Bulk status update failed");
     } finally {
       setIsBulkMoving(false);
     }
@@ -1204,19 +1201,30 @@ const ScreeningCandidates = ({ jobId }) => {
               Screening Candidates ({screeningCount})
             </Title>
           </Col>
-          {/* <Col>
+          <Col>
             {selectedCandidates.length > 0 && (
-              <Button
-                type="primary"
-                icon={<ArrowRightOutlined />}
-                onClick={handleBulkMoveToPipeline}
-                loading={isBulkMoving}
-                style={{ background: "#da2c46" }}
-              >
-                Move to Assigned Pipelines ({selectedCandidates.length})
-              </Button>
+              <Space style={{ marginBottom: 16 }}>
+                <Button
+                  type="default"
+                  icon={<CheckOutlined />}
+                  loading={isBulkMoving}
+                  onClick={() => handleBulkChangeStatus("interview")}
+                >
+                  Move to interview
+                </Button>
+
+                <Button
+                  type="default"
+                  danger
+                  icon={<CloseOutlined />}
+                  loading={isBulkMoving}
+                  onClick={() => handleBulkChangeStatus("rejected")}
+                >
+                  Reject
+                </Button>
+              </Space>
             )}
-          </Col> */}
+          </Col>
         </Row>
       </div>
 
