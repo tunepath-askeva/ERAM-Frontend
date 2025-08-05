@@ -180,10 +180,20 @@ export const employeeApi = createApi({
       }),
     }),
     generatePayslip: builder.mutation({
-      query: (id) => ({
+      query: (body) => ({
         url: "/payslip",
         method: "POST",
-        body: id,
+        body,
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "Payslip.pdf";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        },
       }),
     }),
   }),

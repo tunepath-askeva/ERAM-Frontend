@@ -202,13 +202,14 @@ const EmployeePayroll = () => {
     setViewModalVisible(true);
   };
 
-  const handleDownload = async (record) => {
-    try {
-      await generatePayslip({ id: record.id }).unwrap();
-    } catch (error) {
-      console.error("Error generating payslip:", error);
-    }
-  };
+ const handleDownload = async (record) => {
+  try {
+    await generatePayslip({ id: record.id }); 
+  } catch (error) {
+    console.error("Error generating payslip:", error);
+  }
+};
+
 
   const handleMonthChange = (value) => {
     setSelectedMonth(value);
