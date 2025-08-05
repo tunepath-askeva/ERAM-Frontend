@@ -148,10 +148,16 @@ export const employeeApi = createApi({
       },
     }),
     getPayroll: builder.query({
-      query: () => ({
+      query: ({ page = 1, limit = 10, search = "" } = {}) => ({
         url: "/payroll",
         method: "GET",
+        params: {
+          page,
+          limit,
+          search,
+        },
       }),
+      providesTags: ["Payroll"],
     }),
     editPayroll: builder.mutation({
       query: ({ id, payload }) => ({
