@@ -274,7 +274,6 @@ const EmployeeCompanyPolicy = () => {
                 </Text>
               </Space>
             </Col>
-
           </Row>
         </div>
 
@@ -422,7 +421,7 @@ const EmployeeCompanyPolicy = () => {
                       {index < sections.length - 1 && <Divider />}
                     </div>
                   );
-                })}                
+                })}
               </Card>
             </Col>
           </Row>
@@ -439,23 +438,18 @@ const EmployeeCompanyPolicy = () => {
         style={{
           background: "#fff",
           padding: "24px 50px",
-          borderBottom: "1px solid #f0f0f0",
         }}
       >
-        <Row justify="space-between" align="middle">
+        <Row align="middle" justify="space-between">
           <Col>
-            <Space direction="vertical" size={4}>
-              <Title level={1} style={{ margin: 0, fontSize: "32px" }}>
-                Company Policies
-              </Title>
-              <Text type="secondary" style={{ fontSize: "16px" }}>
-                Review company policies and procedures
-              </Text>
-            </Space>
+            <Title level={2} style={{ margin: 0, color: "#da2c46" }}>
+              <FileTextOutlined style={{ marginRight: 12 }} />
+              Company Policies
+            </Title>
+            <Text type="secondary">Review company policies and procedures</Text>
           </Col>
           <Col>
             <Space align="center">
-              <FileTextOutlined style={{ fontSize: 32, color: "#1890ff" }} />
               <Space direction="vertical" size={0} align="center">
                 <Text strong style={{ fontSize: "20px" }}>
                   {policiesData.length}

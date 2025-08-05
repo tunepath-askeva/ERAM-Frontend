@@ -74,6 +74,7 @@ import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveR
 import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
 import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
 import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
+import EmployeePayroll from "./Employee/Pages/EmployeePayroll";
 
 const AppRoutes = () => {
   return (
@@ -294,6 +295,10 @@ const AppRoutes = () => {
         <Route
           path="/employee/leave-request"
           element={<ProtectedEmployee element={<EmployeeLeaveRequest />} />}
+        />
+        <Route
+          path="/employee/payroll"
+          element={<ProtectedEmployee element={<EmployeePayroll />} />}
         />
         <Route
           path="/employee/company-policy"

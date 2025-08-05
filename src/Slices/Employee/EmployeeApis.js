@@ -173,6 +173,12 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    getEmployeePayroll: builder.query({
+      query: () => ({
+        url: "/employee-payroll",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -197,4 +203,5 @@ export const {
   useGetPayrollQuery,
   useEditPayrollMutation,
   useGetPayrollByIdQuery,
+  useGetEmployeePayrollQuery,
 } = employeeApi;
