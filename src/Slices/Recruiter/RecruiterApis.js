@@ -442,6 +442,7 @@ export const recruiterApi = createApi({
         };
       },
     }),
+   
   }),
 });
 

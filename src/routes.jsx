@@ -75,6 +75,7 @@ import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
 import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
 import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
 import EmployeePayroll from "./Employee/Pages/EmployeePayroll";
+import CompletedCandidates from "./Recruiters/Pages/CompletedCandidates";
 
 const AppRoutes = () => {
   return (
@@ -260,6 +261,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/candidates"
           element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
+        />
+        <Route
+          path="/recruiter/completed-candidates"
+          element={<ProtectedRecruiter element={<CompletedCandidates />} />}
         />
         <Route
           path="/recruiter/allcandidates"

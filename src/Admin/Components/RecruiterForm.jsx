@@ -55,6 +55,7 @@ const accessPermissions = [
   { key: "jobs", label: "Jobs" },
   { key: "jobs-timeline", label: "Jobs Timeline" },
   { key: "candidates", label: "Candidates" },
+  { key: "completed-candidates", label: "Completed Candidates" },
   { key: "all-candidates", label: "All Candidates" },
   { key: "staged-candidates", label: "Staged Candidates" },
   { key: "approvals", label: "Approvals" },
@@ -81,6 +82,7 @@ const accessPermissions = [
 
   { key: "move-to-interview", label: "Move to Interview" },
   { key: "make-offer", label: "Make Offer" },
+  { key: "move-to-pipeline", label: "Move to Pipeline" },
   { key: "convert-to-employee", label: "Convert to Employee" },
   { key: "reject-candidate", label: "Reject Candidate" },
 

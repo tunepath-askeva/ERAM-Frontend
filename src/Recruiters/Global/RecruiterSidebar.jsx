@@ -93,7 +93,7 @@ const RecruiterSidebar = ({
     {
       key: "/recruiter/candidates",
       icon: <UsergroupAddOutlined />,
-      label: "Completed Candidates",
+      label: "Interview Candidates",
       permission: "candidates",
     },
 
@@ -102,6 +102,12 @@ const RecruiterSidebar = ({
       icon: <UsergroupAddOutlined />,
       label: "Staged Candidates",
       permission: "staged-candidates",
+    },
+    {
+      key: "/recruiter/completed-candidates",
+      icon: <UsergroupAddOutlined />,
+      label: "Completed Candidates",
+      permission: "completed-candidates",
     },
     {
       key: "/recruiter/approvals",

@@ -73,7 +73,7 @@ const { Panel } = Collapse;
 const RecruiterCandidates = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("completed");
+  const [selectedStatus, setSelectedStatus] = useState("interview");
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [candidateDrawerVisible, setCandidateDrawerVisible] = useState(false);
@@ -261,12 +261,12 @@ const RecruiterCandidates = () => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page when searching
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
-    setPagination((prev) => ({ ...prev, current: 1 })); // Reset to first page when changing status
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleMakeOffer = async (candidate) => {
@@ -427,17 +427,6 @@ const RecruiterCandidates = () => {
     const actions = [];
 
     switch (candidate.status) {
-      case "completed":
-        if (hasPermission("move-to-interview")) {
-          actions.push({
-            key: "interview",
-            label: "Move to Interview",
-            icon: <ArrowRightOutlined style={iconTextStyle} />,
-            onClick: () => handleMoveToInterview(candidate),
-            style: { color: "#722ed1" },
-          });
-        }
-        break;
       case "interview":
         if ((candidate.interviewDetails?.length || 0) === 0) {
           if (hasPermission("schedule-interview")) {
@@ -472,7 +461,11 @@ const RecruiterCandidates = () => {
         break;
     }
 
-    if (candidate.status !== "rejected" && hasPermission("reject-candidate")) {
+    if (
+      candidate.status !== "rejected" &&
+      candidate.status !== "offer" &&
+      hasPermission("reject-candidate")
+    ) {
       actions.push({
         key: "reject",
         label: "Reject",
@@ -485,12 +478,12 @@ const RecruiterCandidates = () => {
       });
     }
 
-    if (hasPermission("convert-to-employee")) {
+    if (hasPermission("move-to-pipeline")) {
       actions.push({
-        key: "convert",
-        label: "Convert to Employee",
+        key: "move",
+        label: "Move to Pipeline",
         icon: <CheckOutlined style={iconTextStyle} />,
-        onClick: () => handleConvertToEmployee(candidate),
+        onClick: () => handleMoveToPipeline(candidate),
         style: { color: "#52c41a" },
       });
     }
@@ -499,6 +492,11 @@ const RecruiterCandidates = () => {
   };
 
   const handleViewProfile = (candidate) => {
+    setSelectedCandidate(candidate);
+    setCandidateDrawerVisible(true);
+  };
+
+  const handleMoveToPipeline = (candidate) => {
     setSelectedCandidate(candidate);
     setCandidateDrawerVisible(true);
   };
@@ -625,10 +623,6 @@ const RecruiterCandidates = () => {
         return (
           <div>
             <Tag color={statusInfo.color}>{statusInfo.label}</Tag>
-            <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.stageProgress?.length || 0} stages completed
-            </Text>
           </div>
         );
       },
@@ -703,7 +697,7 @@ const RecruiterCandidates = () => {
                     onClick: action.onClick,
                     style: action.style,
                   })),
-                ].filter(Boolean), // Remove any falsey values from the array
+                ].filter(Boolean),
               }}
               trigger={["click"]}
               placement="bottomRight"
@@ -720,7 +714,7 @@ const RecruiterCandidates = () => {
     },
   ];
 
-  const tabItems = ["completed", "interview", "offer", "rejected"]
+  const tabItems = ["interview", "offer", "rejected"]
     .filter((status) => hasPermission(`view-${status}-tab`))
     .map((status) => ({
       key: status,
@@ -1106,75 +1100,6 @@ const RecruiterCandidates = () => {
             </div>
 
             <Tabs defaultActiveKey="1">
-              {hasPermission("view-overview-tab") && (
-                <TabPane tab="Overview" key="1">
-                  <div style={{ marginBottom: 24 }}>
-                    <Title level={5}>Contact Information</Title>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                      }}
-                    >
-                      <Text>
-                        <MailOutlined
-                          style={{ marginRight: 8, ...iconTextStyle }}
-                        />
-                        {selectedCandidate.email}
-                      </Text>
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: 24 }}>
-                    <Title level={5}>Stage Reviews</Title>
-                    {selectedCandidate.stageProgress?.map((stage, index) => (
-                      <div key={`stage-${index}`} style={{ marginBottom: 16 }}>
-                        <Text strong>{stage.stageName}</Text>
-                        {renderStageReviews(stage)}
-                      </div>
-                    ))}
-                  </div>
-                </TabPane>
-              )}
-              {hasPermission("view-activity-tab") && (
-                <TabPane tab="Activity" key="2">
-                  <List
-                    itemLayout="horizontal"
-                    dataSource={renderActivityTimeline(
-                      selectedCandidate.stageProgress
-                    )}
-                    renderItem={(item) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          avatar={
-                            <Avatar
-                              icon={item.icon}
-                              style={{
-                                backgroundColor: "#f0f0f0",
-                                color: "#da2c46",
-                              }}
-                            />
-                          }
-                          title={<Text strong>{item.title}</Text>}
-                          description={
-                            <>
-                              <Text>{item.description}</Text>
-                              <br />
-                              <Text type="secondary">{item.date}</Text>
-                            </>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
-                </TabPane>
-              )}
-              {hasPermission("view-documents-tab") && (
-                <TabPane tab="Documents" key="3">
-                  {renderDocuments(selectedCandidate.stageProgress)}
-                </TabPane>
-              )}
               {hasPermission("view-interviews") && (
                 <TabPane
                   tab={
@@ -1185,7 +1110,7 @@ const RecruiterCandidates = () => {
                       />
                     </span>
                   }
-                  key="4"
+                  key="1"
                 >
                   {selectedCandidate.status === "interview" && (
                     <div style={{ marginBottom: 16 }}>
@@ -1432,6 +1357,43 @@ const RecruiterCandidates = () => {
                   )}
                 </TabPane>
               )}
+              {selectedCandidate.status === "offer" && (
+                <TabPane tab="Pipeline" key="2">
+                  <div style={{ padding: 16 }}>
+                    <Title level={4}>Pipeline Information</Title>
+                    <Text>
+                      This candidate is in the offer stage of the pipeline.
+                    </Text>
+
+                    {/* Add your pipeline-specific content here */}
+                    <Divider />
+
+                    <Title level={5}>Next Steps</Title>
+                    <List>
+                      <List.Item>1. Prepare employment contract</List.Item>
+                      <List.Item>2. Schedule onboarding</List.Item>
+                      <List.Item>3. Assign employee ID</List.Item>
+                    </List>
+
+                    <Divider />
+
+                    <Button
+                      type="primary"
+                      style={{ marginRight: 8 }}
+                      onClick={() => handleConvertToEmployee(selectedCandidate)}
+                    >
+                      Convert to Employee
+                    </Button>
+
+                    <Button
+                      danger
+                      onClick={() => handleRejectCandidate(selectedCandidate)}
+                    >
+                      Reject Candidate
+                    </Button>
+                  </div>
+                </TabPane>
+              )}
             </Tabs>
           </div>
         )}
@@ -1676,7 +1638,7 @@ const RecruiterCandidates = () => {
         </Form>
       </Modal>
 
-      <Modal
+      {/* <Modal
         title={`Convert ${candidateToConvert?.name || ""} to Employee`}
         open={convertModalVisible}
         onCancel={() => {
@@ -1845,7 +1807,7 @@ const RecruiterCandidates = () => {
             </Button>
           </Form.Item>
         </Form>
-      </Modal>
+      </Modal> */}
     </div>
   );
 };
