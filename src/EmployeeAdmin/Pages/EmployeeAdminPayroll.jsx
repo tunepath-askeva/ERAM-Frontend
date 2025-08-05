@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   message,
   Upload,
@@ -30,6 +30,7 @@ import {
   useEditPayrollMutation,
   useGetPayrollByIdQuery,
 } from "../../Slices/Employee/EmployeeApis";
+import { debounce } from "lodash";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -42,6 +43,25 @@ const EmployeeAdminPayroll = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [form] = Form.useForm();
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const debouncedSearch = useCallback(
+    debounce((searchValue) => {
+      setDebouncedSearchText(searchValue);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500),
+    []
+  );
+
+  // Effect to handle search debouncing
+  useEffect(() => {
+    debouncedSearch(searchText);
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [searchText, debouncedSearch]);
 
   const [
     uploadFile,
@@ -54,12 +74,26 @@ const EmployeeAdminPayroll = () => {
     },
   ] = useUploadPayrollFileMutation();
 
-  const { data: payrollData, refetch: refetchPayroll } = useGetPayrollQuery();
+  const {
+    data: payrollData,
+    refetch: refetchPayroll,
+    isLoading: isPayrollLoading,
+  } = useGetPayrollQuery({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchText,
+  });
   const [editPayroll, { isLoading: isEditing }] = useEditPayrollMutation();
   const { data: singlePayrollData, isLoading: isSinglePayrollLoading } =
     useGetPayrollByIdQuery(selectedRecord?._id, {
-      skip: !selectedRecord, // Only fetch when we have a selected record
+      skip: !selectedRecord,
     });
+
+  useEffect(() => {
+    if (singlePayrollData?.payroll && isEditModalVisible) {
+      form.setFieldsValue(singlePayrollData.payroll);
+    }
+  }, [singlePayrollData, isEditModalVisible, form]);
 
   const handleFileUpload = async (file) => {
     setSelectedFile(file);
@@ -105,6 +139,7 @@ const EmployeeAdminPayroll = () => {
 
   const handleEdit = (record) => {
     setSelectedRecord(record);
+    form.resetFields();
     form.setFieldsValue(record);
     setIsEditModalVisible(true);
   };
@@ -125,6 +160,11 @@ const EmployeeAdminPayroll = () => {
     }
   };
 
+  const handleTableChange = (pagination) => {
+    setCurrentPage(pagination.current);
+    setPageSize(pagination.pageSize);
+  };
+
   const filteredData = payrollData?.payroll?.filter(
     (item) =>
       item.U_empname?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -139,11 +179,6 @@ const EmployeeAdminPayroll = () => {
       dataIndex: "U_empname",
       key: "U_empname",
       sorter: (a, b) => a.U_empname.localeCompare(b.U_empname),
-    },
-    {
-      title: "Email",
-      dataIndex: "U_email",
-      key: "U_email",
     },
     {
       title: "ERAM ID",
@@ -251,9 +286,6 @@ const EmployeeAdminPayroll = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Employee Code">
               {recordToDisplay.U_empcode}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email">
-              {recordToDisplay.U_email}
             </Descriptions.Item>
             <Descriptions.Item label="ERAM ID">
               {recordToDisplay.U_EramId}
@@ -587,11 +619,6 @@ const EmployeeAdminPayroll = () => {
               <Col span={12}>
                 <Form.Item name="U_empcode" label="Employee Code">
                   <Input />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="U_email" label="Email">
-                  <Input type="email" />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -968,23 +995,27 @@ const EmployeeAdminPayroll = () => {
             prefix={<SearchOutlined />}
             onChange={(e) => handleSearch(e.target.value)}
             style={{ width: 300 }}
+            value={searchText}
           />
         }
       >
         {payrollData?.payroll ? (
           <Table
             columns={payrollColumns}
-            dataSource={filteredData}
+            dataSource={payrollData?.payroll || []}
             rowKey="_id"
             scroll={{ x: true }}
             pagination={{
-              pageSize: 10,
+              current: currentPage,
+              pageSize: pageSize,
+              total: payrollData?.total || 0,
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50", "100"],
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} of ${total} records`,
             }}
-            loading={!payrollData}
+            loading={isPayrollLoading}
+            onChange={handleTableChange}
           />
         ) : (
           <Spin tip="Loading payroll data..." />
