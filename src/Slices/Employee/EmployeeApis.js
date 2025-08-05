@@ -179,6 +179,13 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    generatePayslip: builder.mutation({
+      query: (id) => ({
+        url: "/payslip",
+        method: "POST",
+        body: id,
+      }),
+    }),
   }),
 });
 
@@ -204,4 +211,5 @@ export const {
   useEditPayrollMutation,
   useGetPayrollByIdQuery,
   useGetEmployeePayrollQuery,
+  useGeneratePayslipMutation,
 } = employeeApi;
