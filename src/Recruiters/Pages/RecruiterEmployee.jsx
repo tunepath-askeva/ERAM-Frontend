@@ -5,26 +5,15 @@ import {
   Button,
   Tag,
   Avatar,
-  Rate,
   Space,
   Dropdown,
-  Modal,
-  Form,
-  Select,
-  DatePicker,
-  Tabs,
-  Badge,
+  Drawer,
   Typography,
   Card,
   Row,
   Col,
   Tooltip,
   message,
-  Drawer,
-  List,
-  Divider,
-  Upload,
-  Switch,
   Spin,
   Alert,
 } from "antd";
@@ -32,41 +21,24 @@ import {
   SearchOutlined,
   FilterOutlined,
   MoreOutlined,
-  CalendarOutlined,
-  StarOutlined,
-  StarFilled,
-  UserOutlined,
   MailOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
   EyeOutlined,
-  MessageOutlined,
-  PlusOutlined,
-  DownloadOutlined,
-  CloseOutlined,
-  UploadOutlined,
-  InboxOutlined,
-  TeamOutlined,
-  IdcardOutlined,
   BankOutlined,
-  DollarOutlined,
-  SettingOutlined,
-  EditOutlined,
+  CalendarOutlined,
+  StarOutlined,
+  StarFilled,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
-const { Option } = Select;
-const { Dragger } = Upload;
 
 const RecruiterEmployee = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeDrawerVisible, setEmployeeDrawerVisible] = useState(false);
-  const [messageModalVisible, setMessageModalVisible] = useState(false);
-  const [addEmployeeModalVisible, setAddEmployeeModalVisible] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -75,12 +47,6 @@ const RecruiterEmployee = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [editEmployeeModalVisible, setEditEmployeeModalVisible] =
-    useState(false);
-  const [form] = Form.useForm();
-  const [messageForm] = Form.useForm();
-  const [addEmployeeForm] = Form.useForm();
-  const [editEmployeeForm] = Form.useForm();
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -100,52 +66,40 @@ const RecruiterEmployee = () => {
 
   useEffect(() => {
     if (data?.data) {
-      const transformedEmployees = data.data.map((item, index) => ({
+      const transformedEmployees = data.data.map((item) => ({
         id: item._id,
-        name: item.user.fullName,
-        email: item.user.email,
-        phone: item.user.employmentDetails?.phoneNumber || "N/A", // Add if available in API
-        position: item.user.employmentDetails.assignedJobTitle,
-        department: item.user.employmentDetails.category,
-        location: "N/A", // Not available in API response
-        status: item.status === "hired" ? "active" : item.status,
-        employmentType: "full-time", // Default, not available in API
-        manager: "N/A", // Not available in API response
-        hireDate: new Date(
-          item.user.employmentDetails.dateOfJoining
-        ).toLocaleDateString(),
-        salary: "N/A", // Not available in API response
-        skills: [], // Not available in API response
-        avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${item.user.fullName
+        name: item.fullName,
+        email: item.email,
+        phone: item.phone || "N/A",
+        position: item.employmentDetails?.assignedJobTitle || "N/A",
+        department: item.employmentDetails?.category || "N/A",
+        location: "N/A",
+        status: "active",
+        employmentType: "full-time",
+        manager: "N/A",
+        hireDate: item.employmentDetails?.dateOfJoining
+          ? new Date(item.employmentDetails.dateOfJoining).toLocaleDateString()
+          : "N/A",
+        salary: "N/A",
+        skills: [],
+        avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${item.fullName
           .split(" ")
           .map((n) => n[0])
           .join("")}`,
-        lastActivity: new Date(item.updatedAt).toLocaleDateString(),
+        lastActivity: new Date().toLocaleDateString(),
         starred: false,
-        summary:
-          item.user.employmentDetails.basicAssets || "No summary provided.",
-        documents: item.stageProgress.flatMap(
-          (stage) =>
-            stage.uploadedDocuments?.map((doc) => ({
-              name: doc.fileName,
-              type: doc.documentName.toLowerCase().replace(/\s+/g, "-"),
-            })) || []
-        ),
-        performanceRating: 0, // Not available in API
-        isAdmin: false, // Not available in API
-        // Additional fields from API
-        workOrderTitle: item.workOrder.title,
-        eramId: item.user.employmentDetails.eramId,
-        badgeNo: item.user.employmentDetails.badgeNo,
-        aramcoId: item.user.employmentDetails.aramcoId,
-        officialEmail: item.user.employmentDetails.officialEmail,
-        stageProgress: item.stageProgress,
-        interviewDetails: item.interviewDetails,
+        summary: item.employmentDetails?.basicAssets || "No summary provided.",
+        performanceRating: 0,
+        workOrderTitle: item.employmentDetails?.workorderId?.title || "N/A",
+        eramId: item.employmentDetails?.eramId || "N/A",
+        badgeNo: item.employmentDetails?.badgeNo || "N/A",
+        aramcoId: item.employmentDetails?.aramcoId || "N/A",
+        officialEmail: item.employmentDetails?.officialEmail || "N/A",
       }));
       setEmployees(transformedEmployees);
       setPagination((prev) => ({
         ...prev,
-        total: data.totalCount || data.data.length,
+        total: data.total || data.data.length,
       }));
     }
   }, [data]);
@@ -173,13 +127,6 @@ const RecruiterEmployee = () => {
     intern: { color: "gold", label: "Intern" },
   };
 
-  const filterCounts = {
-    all: employees.length,
-    active: employees.filter((e) => e.status === "active").length,
-    "on-leave": employees.filter((e) => e.status === "on-leave").length,
-    inactive: employees.filter((e) => e.status === "inactive").length,
-  };
-
   const tablePagination = {
     ...pagination,
     showSizeChanger: true,
@@ -203,16 +150,11 @@ const RecruiterEmployee = () => {
   };
 
   const filteredEmployees = employees.filter((employee) => {
-    const matchesFilter =
-      selectedStatus === "all" || employee.status === selectedStatus;
     const matchesSearch =
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.skills.some((skill) =>
-        skill.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    return matchesFilter && matchesSearch;
+      employee.department.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const toggleStar = (employeeId) => {
@@ -226,155 +168,14 @@ const RecruiterEmployee = () => {
     message.success("Employee starred status updated!");
   };
 
-  const updateEmployeeStatus = (employeeId, newStatus) => {
-    setEmployees(
-      employees.map((employee) =>
-        employee.id === employeeId
-          ? { ...employee, status: newStatus }
-          : employee
-      )
-    );
-    message.success(`Employee status updated to ${newStatus}`);
-  };
-
   const handleViewProfile = (employee) => {
     setSelectedEmployee(employee);
     setEmployeeDrawerVisible(true);
   };
 
-  const handleSendMessage = (employee) => {
-    setSelectedEmployee(employee);
-    setMessageModalVisible(true);
-  };
-
-  const handleEditEmployee = (employee) => {
-    setSelectedEmployee(employee);
-    editEmployeeForm.setFieldsValue({
-      name: employee.name,
-      email: employee.email,
-      phone: employee.phone,
-      position: employee.position,
-      department: employee.department,
-      location: employee.location,
-      status: employee.status,
-      employmentType: employee.employmentType,
-      manager: employee.manager,
-      hireDate: employee.hireDate,
-      salary: employee.salary,
-      skills: employee.skills,
-      summary: employee.summary,
-      isAdmin: employee.isAdmin,
-    });
-    setEditEmployeeModalVisible(true);
-  };
-
-  const handleAddEmployee = (values) => {
-    const newEmployee = {
-      id: employees.length + 1,
-      name: values.name,
-      email: values.email,
-      phone: values.phone,
-      position: values.position,
-      department: values.department,
-      location: values.location,
-      status: values.status || "active",
-      employmentType: values.employmentType || "full-time",
-      manager: values.manager || "",
-      hireDate: values.hireDate || new Date().toISOString().split("T")[0],
-      salary: values.salary || "",
-      skills: values.skills || [],
-      avatar: `https://via.placeholder.com/40x40/1890ff/ffffff?text=${values.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")}`,
-      lastActivity: "Just now",
-      starred: false,
-      summary: values.summary || "No summary provided.",
-      documents: [],
-      performanceRating: 0,
-      isAdmin: values.isAdmin || false,
-    };
-
-    setEmployees([newEmployee, ...employees]);
-    setAddEmployeeModalVisible(false);
-    addEmployeeForm.resetFields();
-    message.success(`${values.name} has been added successfully!`);
-  };
-
-  const handleEditEmployeeSubmit = (values) => {
-    setEmployees(
-      employees.map((employee) =>
-        employee.id === selectedEmployee.id
-          ? {
-              ...employee,
-              name: values.name,
-              email: values.email,
-              phone: values.phone,
-              position: values.position,
-              department: values.department,
-              location: values.location,
-              status: values.status,
-              employmentType: values.employmentType,
-              manager: values.manager,
-              hireDate: values.hireDate,
-              salary: values.salary,
-              skills: values.skills,
-              summary: values.summary,
-              isAdmin: values.isAdmin,
-            }
-          : employee
-      )
-    );
-    setEditEmployeeModalVisible(false);
-    editEmployeeForm.resetFields();
-    message.success(`${values.name}'s profile has been updated!`);
-  };
-
-  const getActionMenuItems = (employee) => [
-    {
-      key: "view",
-      label: "View Profile",
-      icon: <EyeOutlined style={iconTextStyle} />,
-      onClick: () => handleViewProfile(employee),
-    },
-    {
-      key: "message",
-      label: "Send Message",
-      icon: <MessageOutlined style={iconTextStyle} />,
-      onClick: () => handleSendMessage(employee),
-    },
-    {
-      key: "edit",
-      label: "Edit Profile",
-      icon: <EditOutlined style={iconTextStyle} />,
-      onClick: () => handleEditEmployee(employee),
-    },
-    { type: "divider" },
-    {
-      key: "activate",
-      label: "Activate",
-      onClick: () => updateEmployeeStatus(employee.id, "active"),
-      disabled: employee.status === "active",
-    },
-    {
-      key: "leave",
-      label: "Mark as On Leave",
-      onClick: () => updateEmployeeStatus(employee.id, "on-leave"),
-      disabled: employee.status === "on-leave",
-    },
-    {
-      key: "deactivate",
-      label: "Deactivate",
-      danger: true,
-      onClick: () => updateEmployeeStatus(employee.id, "inactive"),
-      disabled: employee.status === "inactive",
-    },
-  ];
-
   const columns = [
     {
       title: "Employee",
-
       dataIndex: "name",
       key: "name",
       responsive: ["md"],
@@ -401,18 +202,13 @@ const RecruiterEmployee = () => {
                 }
                 onClick={() => toggleStar(record.id)}
               />
-              {record.isAdmin && (
-                <Tag color="red" style={{ fontSize: 10, padding: "0 4px" }}>
-                  Admin
-                </Tag>
-              )}
             </div>
             <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 <MailOutlined style={iconTextStyle} /> {record.email}
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                <EnvironmentOutlined style={iconTextStyle} /> {record.location}
+                <PhoneOutlined style={iconTextStyle} /> {record.phone}
               </Text>
             </div>
           </div>
@@ -420,71 +216,34 @@ const RecruiterEmployee = () => {
       ),
     },
     {
-      title: "Position & Department",
+      title: "Position",
       dataIndex: "position",
       key: "position",
+      responsive: ["md"],
+      render: (text) => <Text strong>{text}</Text>,
+    },
+    {
+      title: "Department",
+      dataIndex: "department",
+      key: "department",
+      responsive: ["md"],
+      render: (text) => <Text>{text}</Text>,
+    },
+    {
+      title: "Hire Date",
+      dataIndex: "hireDate",
+      key: "hireDate",
       responsive: ["lg"],
-      render: (text, record) => (
-        <div>
-          <Text strong>{record.position}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <BankOutlined style={{ marginRight: 4 }} /> {record.department}
-          </Text>
-          <div style={{ marginTop: 8 }}>
-            <Tag color={employmentTypeConfig[record.employmentType].color}>
-              {employmentTypeConfig[record.employmentType].label}
-            </Tag>
-          </div>
-        </div>
-      ),
+      render: (text) => <Text>{text}</Text>,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status, record) => (
-        <div>
-          <Tag color={statusConfig[status].color}>
-            {statusConfig[status].label}
-          </Tag>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Hired: {record.hireDate}
-          </Text>
-          {record.terminationDate && (
-            <Text type="secondary" style={{ fontSize: 12, display: "block" }}>
-              Terminated: {record.terminationDate}
-            </Text>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Performance",
-      dataIndex: "performanceRating",
-      key: "performance",
-      responsive: ["lg"],
-      render: (rating) => (
-        <div>
-          <Rate disabled allowHalf value={rating} style={{ fontSize: 14 }} />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {rating.toFixed(1)}/5
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: "Salary",
-      dataIndex: "salary",
-      key: "salary",
-      responsive: ["xl"],
-      render: (salary) => (
-        <div>
-          <Text strong>
-            <DollarOutlined style={{ marginRight: 4 }} /> {salary}
-          </Text>
-        </div>
+      render: (status) => (
+        <Tag color={statusConfig[status].color}>
+          {statusConfig[status].label}
+        </Tag>
       ),
     },
     {
@@ -500,38 +259,10 @@ const RecruiterEmployee = () => {
               onClick={() => handleViewProfile(record)}
             />
           </Tooltip>
-          <Tooltip title="Send Message">
-            <Button
-              type="text"
-              icon={<MessageOutlined style={iconTextStyle} />}
-              size="small"
-              onClick={() => handleSendMessage(record)}
-            />
-          </Tooltip>
-          <Dropdown
-            menu={{ items: getActionMenuItems(record) }}
-            trigger={["click"]}
-            placement="bottomRight"
-          >
-            <Button
-              type="text"
-              icon={<MoreOutlined style={iconTextStyle} />}
-              size="small"
-            />
-          </Dropdown>
         </Space>
       ),
     },
   ];
-
-  const tabItems = Object.entries(filterCounts).map(([status, count]) => ({
-    key: status,
-    label: (
-      <Badge count={count} size="small" offset={[10, 0]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    ),
-  }));
 
   // Mobile card view for employees
   const EmployeeCard = ({ employee }) => (
@@ -544,18 +275,6 @@ const RecruiterEmployee = () => {
           style={iconTextStyle}
           onClick={() => handleViewProfile(employee)}
         />,
-        <MessageOutlined
-          key="message"
-          style={iconTextStyle}
-          onClick={() => handleSendMessage(employee)}
-        />,
-        <Dropdown
-          menu={{ items: getActionMenuItems(employee) }}
-          trigger={["click"]}
-          placement="bottomRight"
-        >
-          <MoreOutlined style={iconTextStyle} />
-        </Dropdown>,
       ]}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -587,11 +306,6 @@ const RecruiterEmployee = () => {
               }
               onClick={() => toggleStar(employee.id)}
             />
-            {employee.isAdmin && (
-              <Tag color="red" style={{ fontSize: 10, padding: "0 4px" }}>
-                Admin
-              </Tag>
-            )}
           </div>
           <Text style={{ display: "block", marginBottom: 4 }}>
             {employee.position}
@@ -600,35 +314,22 @@ const RecruiterEmployee = () => {
             <Tag color={statusConfig[employee.status].color} size="small">
               {statusConfig[employee.status].label}
             </Tag>
-            <Tag
-              color={employmentTypeConfig[employee.employmentType].color}
-              size="small"
-              style={{ marginLeft: 4 }}
-            >
-              {employmentTypeConfig[employee.employmentType].label}
-            </Tag>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {employee.skills.slice(0, 3).map((skill) => (
-              <Tag key={skill} size="small">
-                {skill}
-              </Tag>
-            ))}
           </div>
           <div style={{ marginTop: 8 }}>
             <Text>
               <BankOutlined style={{ marginRight: 4 }} /> {employee.department}
             </Text>
             <Text style={{ display: "block" }}>
-              <DollarOutlined style={{ marginRight: 4 }} /> {employee.salary}
+              <CalendarOutlined style={{ marginRight: 4 }} />{" "}
+              {employee.hireDate}
+            </Text>
+            <Text style={{ display: "block" }}>
+              <MailOutlined style={{ marginRight: 4 }} /> {employee.email}
+            </Text>
+            <Text style={{ display: "block" }}>
+              <PhoneOutlined style={{ marginRight: 4 }} /> {employee.phone}
             </Text>
           </div>
-          <Rate
-            disabled
-            allowHalf
-            value={employee.performanceRating}
-            style={{ fontSize: 12, marginTop: 8 }}
-          />
         </div>
       </div>
     </Card>
@@ -673,68 +374,28 @@ const RecruiterEmployee = () => {
             >
               Employees
             </Title>
-            <Text type="secondary">Manage your organization's employees</Text>
-          </Col>
-          <Col xs={24} sm={8} md={12}>
-            <Space
-              size="small"
-              style={{ width: "100%", justifyContent: "flex-end" }}
-            >
-              <Button
-                style={buttonStyle}
-                icon={<PlusOutlined />}
-                size="large"
-                onClick={() => setAddEmployeeModalVisible(true)}
-              >
-                Add Employee
-              </Button>
-            </Space>
+            <Text type="secondary">View your organization's employees</Text>
           </Col>
         </Row>
       </Card>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} md={18}>
+          <Col xs={24}>
             <Input
-              placeholder="Search employees, positions, departments, or skills..."
+            allowClear
+              placeholder="Search employees, positions, or departments..."
               prefix={<SearchOutlined style={iconTextStyle} />}
               value={searchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value); // This drives UI
-                setSearchQuery(e.target.value); // This triggers API debounce
+                setSearchTerm(e.target.value);
+                setSearchQuery(e.target.value);
               }}
               size="large"
             />
           </Col>
-          <Col xs={24} md={6}>
-            <Button
-              icon={<FilterOutlined style={iconTextStyle} />}
-              size="large"
-              block
-            >
-              More Filters
-            </Button>
-          </Col>
         </Row>
-
-        {/* Status Filter Tabs */}
-        <div
-          style={{
-            marginTop: 16,
-            paddingTop: 16,
-            borderTop: "1px solid #f0f0f0",
-          }}
-        >
-          <Tabs
-            activeKey={selectedStatus}
-            onChange={setSelectedStatus}
-            items={tabItems}
-            size="small"
-            tabBarStyle={{ margin: 0 }}
-          />
-        </div>
       </Card>
 
       {/* Employees Table/Cards */}
@@ -753,14 +414,14 @@ const RecruiterEmployee = () => {
             locale={{
               emptyText: (
                 <div style={{ textAlign: "center", padding: "48px 0" }}>
-                  <TeamOutlined
+                  <UsergroupAddOutlined
                     style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
                   />
                   <Title level={4} type="secondary">
                     No employees found
                   </Title>
                   <Text type="secondary">
-                    Try adjusting your search or filters to find employees.
+                    Try adjusting your search to find employees.
                   </Text>
                 </div>
               ),
@@ -779,488 +440,19 @@ const RecruiterEmployee = () => {
             ))
           ) : (
             <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <TeamOutlined
+              <UsergroupAddOutlined
                 style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
               />
               <Title level={4} type="secondary">
                 No employees found
               </Title>
               <Text type="secondary">
-                Try adjusting your search or filters to find employees.
+                Try adjusting your search to find employees.
               </Text>
             </div>
           )}
         </div>
       </Card>
-
-      {/* Add Employee Modal */}
-      <Modal
-        title="Add New Employee"
-        open={addEmployeeModalVisible}
-        onCancel={() => {
-          setAddEmployeeModalVisible(false);
-          addEmployeeForm.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <Form
-          form={addEmployeeForm}
-          layout="vertical"
-          onFinish={handleAddEmployee}
-          initialValues={{
-            status: "active",
-            employmentType: "full-time",
-            isAdmin: false,
-          }}
-        >
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Full Name"
-                name="name"
-                rules={[
-                  { required: true, message: "Please enter employee's name" },
-                ]}
-              >
-                <Input placeholder="Enter full name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: "Please enter email" },
-                  { type: "email", message: "Please enter a valid email" },
-                ]}
-              >
-                <Input placeholder="Enter email address" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Phone"
-                name="phone"
-                rules={[
-                  { required: true, message: "Please enter phone number" },
-                ]}
-              >
-                <Input placeholder="Enter phone number" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Location"
-                name="location"
-                rules={[{ required: true, message: "Please enter location" }]}
-              >
-                <Input placeholder="Enter location" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Position"
-                name="position"
-                rules={[{ required: true, message: "Please enter position" }]}
-              >
-                <Input placeholder="Enter position/role" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Department"
-                name="department"
-                rules={[{ required: true, message: "Please enter department" }]}
-              >
-                <Input placeholder="Enter department" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Employment Type"
-                name="employmentType"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select employment type",
-                  },
-                ]}
-              >
-                <Select>
-                  <Option value="full-time">Full-time</Option>
-                  <Option value="part-time">Part-time</Option>
-                  <Option value="contract">Contract</Option>
-                  <Option value="intern">Intern</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Status"
-                name="status"
-                rules={[{ required: true, message: "Please select status" }]}
-              >
-                <Select>
-                  <Option value="active">Active</Option>
-                  <Option value="on-leave">On Leave</Option>
-                  <Option value="inactive">Inactive</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Manager"
-                name="manager"
-                rules={[{ required: false, message: "Please enter manager" }]}
-              >
-                <Input placeholder="Enter manager's name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Hire Date"
-                name="hireDate"
-                rules={[
-                  { required: false, message: "Please select hire date" },
-                ]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Salary"
-                name="salary"
-                rules={[{ required: false, message: "Please enter salary" }]}
-              >
-                <Input placeholder="Enter salary (e.g., $100,000 or $50/hour)" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Admin Access"
-                name="isAdmin"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Skills" name="skills">
-            <Select
-              mode="tags"
-              placeholder="Enter skills (press Enter to add)"
-              style={{ width: "100%" }}
-            >
-              <Option value="React">React</Option>
-              <Option value="JavaScript">JavaScript</Option>
-              <Option value="Python">Python</Option>
-              <Option value="Node.js">Node.js</Option>
-              <Option value="SQL">SQL</Option>
-              <Option value="Product Management">Product Management</Option>
-              <Option value="UX Design">UX Design</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Summary" name="summary">
-            <Input.TextArea
-              rows={3}
-              placeholder="Brief summary about the employee..."
-            />
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button
-                onClick={() => {
-                  setAddEmployeeModalVisible(false);
-                  addEmployeeForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button style={buttonStyle} htmlType="submit">
-                Add Employee
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Edit Employee Modal */}
-      <Modal
-        title={`Edit ${selectedEmployee?.name}'s Profile`}
-        open={editEmployeeModalVisible}
-        onCancel={() => {
-          setEditEmployeeModalVisible(false);
-          editEmployeeForm.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <Form
-          form={editEmployeeForm}
-          layout="vertical"
-          onFinish={handleEditEmployeeSubmit}
-        >
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Full Name"
-                name="name"
-                rules={[
-                  { required: true, message: "Please enter employee's name" },
-                ]}
-              >
-                <Input placeholder="Enter full name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: "Please enter email" },
-                  { type: "email", message: "Please enter a valid email" },
-                ]}
-              >
-                <Input placeholder="Enter email address" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Phone"
-                name="phone"
-                rules={[
-                  { required: true, message: "Please enter phone number" },
-                ]}
-              >
-                <Input placeholder="Enter phone number" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Location"
-                name="location"
-                rules={[{ required: true, message: "Please enter location" }]}
-              >
-                <Input placeholder="Enter location" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Position"
-                name="position"
-                rules={[{ required: true, message: "Please enter position" }]}
-              >
-                <Input placeholder="Enter position/role" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Department"
-                name="department"
-                rules={[{ required: true, message: "Please enter department" }]}
-              >
-                <Input placeholder="Enter department" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Employment Type"
-                name="employmentType"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select employment type",
-                  },
-                ]}
-              >
-                <Select>
-                  <Option value="full-time">Full-time</Option>
-                  <Option value="part-time">Part-time</Option>
-                  <Option value="contract">Contract</Option>
-                  <Option value="intern">Intern</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Status"
-                name="status"
-                rules={[{ required: true, message: "Please select status" }]}
-              >
-                <Select>
-                  <Option value="active">Active</Option>
-                  <Option value="on-leave">On Leave</Option>
-                  <Option value="inactive">Inactive</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Manager"
-                name="manager"
-                rules={[{ required: false, message: "Please enter manager" }]}
-              >
-                <Input placeholder="Enter manager's name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Hire Date"
-                name="hireDate"
-                rules={[
-                  { required: false, message: "Please select hire date" },
-                ]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Salary"
-                name="salary"
-                rules={[{ required: false, message: "Please enter salary" }]}
-              >
-                <Input placeholder="Enter salary (e.g., $100,000 or $50/hour)" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Admin Access"
-                name="isAdmin"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Skills" name="skills">
-            <Select
-              mode="tags"
-              placeholder="Enter skills (press Enter to add)"
-              style={{ width: "100%" }}
-            >
-              <Option value="React">React</Option>
-              <Option value="JavaScript">JavaScript</Option>
-              <Option value="Python">Python</Option>
-              <Option value="Node.js">Node.js</Option>
-              <Option value="SQL">SQL</Option>
-              <Option value="Product Management">Product Management</Option>
-              <Option value="UX Design">UX Design</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Summary" name="summary">
-            <Input.TextArea
-              rows={3}
-              placeholder="Brief summary about the employee..."
-            />
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button
-                onClick={() => {
-                  setEditEmployeeModalVisible(false);
-                  editEmployeeForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button style={buttonStyle} htmlType="submit">
-                Save Changes
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Send Message Modal */}
-      <Modal
-        title={`Message ${selectedEmployee?.name}`}
-        open={messageModalVisible}
-        onCancel={() => {
-          setMessageModalVisible(false);
-          messageForm.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 600}
-      >
-        <Form form={messageForm} layout="vertical">
-          <Form.Item
-            label="Subject"
-            name="subject"
-            rules={[{ required: true, message: "Please enter subject" }]}
-          >
-            <Input placeholder="Enter message subject" />
-          </Form.Item>
-
-          <Form.Item
-            label="Message"
-            name="message"
-            rules={[{ required: true, message: "Please enter your message" }]}
-          >
-            <Input.TextArea rows={6} placeholder="Write your message here..." />
-          </Form.Item>
-
-          <Form.Item label="Attachment" name="attachment">
-            <Upload>
-              <Button icon={<UploadOutlined />}>Add Attachment</Button>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button
-                onClick={() => {
-                  setMessageModalVisible(false);
-                  messageForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button style={buttonStyle} htmlType="submit">
-                Send Message
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* Employee Profile Drawer */}
       <Drawer
@@ -1269,28 +461,6 @@ const RecruiterEmployee = () => {
         width={window.innerWidth < 768 ? "100%" : 600}
         onClose={() => setEmployeeDrawerVisible(false)}
         open={employeeDrawerVisible}
-        extra={
-          <Space>
-            <Button
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEmployeeDrawerVisible(false);
-                handleEditEmployee(selectedEmployee);
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              icon={<MessageOutlined />}
-              onClick={() => {
-                setEmployeeDrawerVisible(false);
-                handleSendMessage(selectedEmployee);
-              }}
-            >
-              Message
-            </Button>
-          </Space>
-        }
       >
         {selectedEmployee && (
           <div>
@@ -1321,14 +491,6 @@ const RecruiterEmployee = () => {
                     }
                     onClick={() => toggleStar(selectedEmployee.id)}
                   />
-                  {selectedEmployee.isAdmin && (
-                    <Tag
-                      color="red"
-                      style={{ marginLeft: 8, fontSize: 12, padding: "0 4px" }}
-                    >
-                      Admin
-                    </Tag>
-                  )}
                 </Title>
                 <Text type="secondary">{selectedEmployee.position}</Text>
                 <div style={{ marginTop: 8 }}>
@@ -1351,198 +513,70 @@ const RecruiterEmployee = () => {
               </div>
             </div>
 
-            <Tabs defaultActiveKey="1">
-              <TabPane tab="Overview" key="1">
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Contact Information</Title>
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <Text>
-                      <MailOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedEmployee.email}
-                    </Text>
-                    <Text>
-                      <PhoneOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedEmployee.phone}
-                    </Text>
-                    <Text>
-                      <EnvironmentOutlined
-                        style={{ marginRight: 8, ...iconTextStyle }}
-                      />
-                      {selectedEmployee.location}
-                    </Text>
-                  </div>
-                </div>
+            <div style={{ marginBottom: 24 }}>
+              <Title level={5}>Contact Information</Title>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <Text>
+                  <MailOutlined style={{ marginRight: 8, ...iconTextStyle }} />
+                  {selectedEmployee.email}
+                </Text>
+                <Text>
+                  <PhoneOutlined style={{ marginRight: 8, ...iconTextStyle }} />
+                  {selectedEmployee.phone}
+                </Text>
+              </div>
+            </div>
 
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Employment Details</Title>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Text strong>Department</Text>
-                      <br />
-                      <Text>{selectedEmployee.department}</Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Manager</Text>
-                      <br />
-                      <Text>{selectedEmployee.manager || "Not specified"}</Text>
-                    </Col>
-                  </Row>
-                  <Row gutter={16} style={{ marginTop: 12 }}>
-                    <Col span={12}>
-                      <Text strong>Hire Date</Text>
-                      <br />
-                      <Text>{selectedEmployee.hireDate}</Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Salary</Text>
-                      <br />
-                      <Text>{selectedEmployee.salary}</Text>
-                    </Col>
-                  </Row>
-                  {selectedEmployee.terminationDate && (
-                    <Row gutter={16} style={{ marginTop: 12 }}>
-                      <Col span={24}>
-                        <Text strong>Termination Date</Text>
-                        <br />
-                        <Text>{selectedEmployee.terminationDate}</Text>
-                      </Col>
-                    </Row>
-                  )}
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Performance</Title>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Rate
-                      disabled
-                      allowHalf
-                      value={selectedEmployee.performanceRating}
-                    />
-                    <Text style={{ marginLeft: 8 }}>
-                      {selectedEmployee.performanceRating.toFixed(1)}/5
-                    </Text>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Title level={5}>Skills</Title>
-                  <Space size={[8, 8]} wrap>
-                    {selectedEmployee.skills.map((skill) => (
-                      <Tag key={skill}>{skill}</Tag>
-                    ))}
-                  </Space>
-                </div>
-
-                <div>
-                  <Title level={5}>Summary</Title>
-                  <Text>{selectedEmployee.summary}</Text>
-                </div>
-              </TabPane>
-
-              <TabPane tab="Documents" key="2">
-                <Card>
-                  <List
-                    dataSource={selectedEmployee.documents}
-                    renderItem={(item) => (
-                      <List.Item>
-                        <List.Item.Meta
-                          avatar={<IdcardOutlined />}
-                          title={<Text strong>{item.name}</Text>}
-                          description={
-                            <Text type="secondary">
-                              {item.type
-                                .split("-")
-                                .map(
-                                  (word) =>
-                                    word.charAt(0).toUpperCase() + word.slice(1)
-                                )
-                                .join(" ")}
-                            </Text>
-                          }
-                        />
-                        <Button
-                          type="text"
-                          icon={<DownloadOutlined style={iconTextStyle} />}
-                        />
-                      </List.Item>
-                    )}
-                  />
-                  <Divider />
-                  <div style={{ textAlign: "center", padding: "24px 0" }}>
-                    <Upload>
-                      <Button icon={<UploadOutlined />}>
-                        Upload Additional Documents
-                      </Button>
-                    </Upload>
-                  </div>
-                </Card>
-              </TabPane>
-
-              <TabPane tab="Activity" key="3">
-                <List
-                  itemLayout="horizontal"
-                  dataSource={[
-                    {
-                      title: "Hired",
-                      description: "Employee was hired",
-                      date: selectedEmployee.hireDate,
-                      icon: <UserOutlined />,
-                    },
-                    {
-                      title: "Onboarding Completed",
-                      description: "Completed all onboarding tasks",
-                      date: "2023-05-22",
-                      icon: <SettingOutlined />,
-                    },
-                    selectedEmployee.terminationDate
-                      ? {
-                          title: "Terminated",
-                          description: "Employee was terminated",
-                          date: selectedEmployee.terminationDate,
-                          icon: <CloseOutlined />,
-                        }
-                      : {
-                          title: "Last Performance Review",
-                          description: "Annual performance review completed",
-                          date: "2024-01-15",
-                          icon: <StarOutlined />,
-                        },
-                  ]}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar
-                            icon={item.icon}
-                            style={{
-                              backgroundColor: "#f0f0f0",
-                              color: "#da2c46",
-                            }}
-                          />
-                        }
-                        title={<Text strong>{item.title}</Text>}
-                        description={
-                          <>
-                            <Text>{item.description}</Text>
-                            <br />
-                            <Text type="secondary">{item.date}</Text>
-                          </>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </TabPane>
-            </Tabs>
+            <div style={{ marginBottom: 24 }}>
+              <Title level={5}>Employment Details</Title>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Text strong>Department</Text>
+                  <br />
+                  <Text>{selectedEmployee.department}</Text>
+                </Col>
+                <Col span={12}>
+                  <Text strong>ERAM ID</Text>
+                  <br />
+                  <Text>{selectedEmployee.eramId || "Not specified"}</Text>
+                </Col>
+              </Row>
+              <Row gutter={16} style={{ marginTop: 12 }}>
+                <Col span={12}>
+                  <Text strong>Hire Date</Text>
+                  <br />
+                  <Text>{selectedEmployee.hireDate}</Text>
+                </Col>
+              </Row>
+            </div>
           </div>
         )}
       </Drawer>
+      <style jsx>{`
+        .ant-table-thead > tr > th {
+          background-color: #fafafa !important;
+          font-weight: 600 !important;
+        }
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-ink-bar {
+          background-color: #da2c46 !important;
+        }
+      `}</style>
     </div>
   );
 };

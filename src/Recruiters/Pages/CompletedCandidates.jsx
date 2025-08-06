@@ -604,13 +604,13 @@ const CompletedCandidates = () => {
               View all candidates who have completed the pipeline process
             </Text>
           </div>
-          <Button
+          {/* <Button
             type="primary"
             onClick={refetch}
             style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
           >
             Refresh
-          </Button>
+          </Button> */}
         </Space>
 
         {/* Search Bar */}
