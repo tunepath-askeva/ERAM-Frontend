@@ -504,9 +504,8 @@ const CompletedCandidates = () => {
           icon={<CheckCircleOutlined />}
           color="success"
           style={{ 
-            borderColor: '#da2c46',
-            color: '#da2c46',
-            backgroundColor: '#fff2f4'
+            borderColor: '#32da2cff',
+            color: '#32da2cff',
           }}
         >
           {status?.toUpperCase()}
@@ -529,17 +528,6 @@ const CompletedCandidates = () => {
           </div>
         );
       },
-    },
-    {
-      title: 'Last Updated',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      width: 150,
-      render: (date) => {
-        if (!date) return 'N/A';
-        return formatDate(date);
-      },
-      sorter: true,
     },
     {
       title: 'Actions',
