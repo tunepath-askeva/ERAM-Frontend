@@ -1145,13 +1145,13 @@ const handleMoveToSeparatePipeline = async () => {
       },
     },
 
-    {
-      title: "Last Updated",
-      dataIndex: "updatedAt",
-      key: "updatedAt",
-      responsive: ["md"],
-      render: (date) => <Text>{new Date(date).toLocaleDateString()}</Text>,
-    },
+    // {
+    //   title: "Last Updated",
+    //   dataIndex: "updatedAt",
+    //   key: "updatedAt",
+    //   responsive: ["md"],
+    //   render: (date) => <Text>{new Date(date).toLocaleDateString()}</Text>,
+    // },
     {
       title: "Actions",
       key: "actions",
