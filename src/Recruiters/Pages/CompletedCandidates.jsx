@@ -178,7 +178,7 @@ const CompletedCandidates = () => {
 
   const renderCandidateDetails = () => {
     const candidate = candidateDetails?.data || selectedCandidate;
-    const saCan = selectedCandidate
+    const saCan = selectedCandidate;
     if (!candidate) return <Spin />;
 
     return (
@@ -189,16 +189,15 @@ const CompletedCandidates = () => {
               <Space size="large">
                 <Avatar
                   size={64}
+                  src={saCan?.user?.image}
                   icon={<UserOutlined />}
                   style={{ backgroundColor: "#da2c46" }}
                 />
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {saCan.user?.fullName || "N/A"}
+                    {saCan?.user?.fullName || "N/A"}
                   </Title>
-                  <Text type="secondary">
-                    {saCan.user?.email || "N/A"}
-                  </Text>
+                  <Text type="secondary">{saCan?.user?.email || "N/A"}</Text>
                   <br />
                   {candidate.selectedMovingComment && (
                     <Paragraph style={{ marginTop: 8 }}>
@@ -219,7 +218,7 @@ const CompletedCandidates = () => {
         >
           <Descriptions column={2} size="small">
             <Descriptions.Item label="Work Order">
-              {saCan.workOrder.title || "N/A"}
+              {saCan?.workOrder?.title || "N/A"}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
               <Tag color={getStatusColor(candidate.status)}>
@@ -477,6 +476,7 @@ const CompletedCandidates = () => {
         <Space>
           <Avatar
             size={40}
+            src={record.user?.image}
             icon={<UserOutlined />}
             style={{ backgroundColor: "#da2c46" }}
           />
@@ -666,6 +666,7 @@ const CompletedCandidates = () => {
           <Space>
             <Avatar
               icon={<UserOutlined />}
+              src={selectedCandidate?.user?.image}
               style={{ backgroundColor: "#da2c46" }}
             />
             <span>{selectedCandidate?.user?.fullName}</span>

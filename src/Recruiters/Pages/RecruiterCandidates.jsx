@@ -562,75 +562,76 @@ const RecruiterCandidates = () => {
     }
   };
 
-const handleMoveToSeparatePipeline = async () => {
-  try {
-    if (!selectedCandidate || !selectedCandidate.tagPipeline) {
-      message.warning("No tagged pipeline found for this candidate");
-      return;
-    }
+  const handleMoveToSeparatePipeline = async () => {
+    try {
+      if (!selectedCandidate || !selectedCandidate.tagPipeline) {
+        message.warning("No tagged pipeline found for this candidate");
+        return;
+      }
 
-    const pipelineId = selectedCandidate.tagPipeline._id; // Use tagPipeline ID
-    const jobId = selectedCandidate.workOrder._id;
-    const userId = selectedCandidate.candidateId;
+      const pipelineId = selectedCandidate.tagPipeline._id; // Use tagPipeline ID
+      const jobId = selectedCandidate.workOrder._id;
+      const userId = selectedCandidate.candidateId;
 
-    const defaultStages = selectedCandidate.tagPipeline.stages || [];
-    const customStagesList = customStages[pipelineId] || [];
-    const allStages = [...defaultStages, ...customStagesList];
+      const defaultStages = selectedCandidate.tagPipeline.stages || [];
+      const customStagesList = customStages[pipelineId] || [];
+      const allStages = [...defaultStages, ...customStagesList];
 
-    const formattedStages = allStages.map((stage, index) => {
-      const stageId = stage._id || stage.id;
-      const isCustomStage = stage.isCustom || false;
+      const formattedStages = allStages.map((stage, index) => {
+        const stageId = stage._id || stage.id;
+        const isCustomStage = stage.isCustom || false;
 
-      const stageDate = 
-        (pipelineStageDates[pipelineId] || []).find(
-          (d) => d.stageId === stageId
-        ) || {};
+        const stageDate =
+          (pipelineStageDates[pipelineId] || []).find(
+            (d) => d.stageId === stageId
+          ) || {};
 
-      return {
-        pipelineId,
-        stageId,
-        stageName: stage.name,
-        stageOrder: index,
-        startDate: stageDate.startDate,
-        endDate: stageDate.endDate,
-        dependencyType: stageDate.dependencyType || "independent",
-        approvalId: stageDate.approvalId || null,
-        recruiterIds: stageRecruiterAssignments[pipelineId]?.[stageId] || [],
-        staffIds: stageStaffAssignments[pipelineId]?.[stageId] || [],
-        isCustomStage,
-        _id: stageId,
-        customFields: stageCustomFields[pipelineId]?.[stageId] || [],
-        requiredDocuments: stageRequiredDocuments[pipelineId]?.[stageId] || [],
+        return {
+          pipelineId,
+          stageId,
+          stageName: stage.name,
+          stageOrder: index,
+          startDate: stageDate.startDate,
+          endDate: stageDate.endDate,
+          dependencyType: stageDate.dependencyType || "independent",
+          approvalId: stageDate.approvalId || null,
+          recruiterIds: stageRecruiterAssignments[pipelineId]?.[stageId] || [],
+          staffIds: stageStaffAssignments[pipelineId]?.[stageId] || [],
+          isCustomStage,
+          _id: stageId,
+          customFields: stageCustomFields[pipelineId]?.[stageId] || [],
+          requiredDocuments:
+            stageRequiredDocuments[pipelineId]?.[stageId] || [],
+        };
+      });
+
+      const pipelineData = {
+        _id: pipelineId,
+        name: selectedCandidate.tagPipeline.name,
+        description: selectedCandidate.tagPipeline.description || "",
+        stages: formattedStages,
       };
-    });
 
-    const pipelineData = {
-      _id: pipelineId,
-      name: selectedCandidate.tagPipeline.name,
-      description: selectedCandidate.tagPipeline.description || "",
-      stages: formattedStages,
-    };
+      await moveToPipeline({
+        jobId,
+        userId,
+        pipelineData,
+        isPipeline: true,
+      }).unwrap();
 
-    await moveToPipeline({
-      jobId,
-      userId,
-      pipelineData,
-      isPipeline: true,
-    }).unwrap();
-
-    message.success(
-      `${selectedCandidate.name} moved to ${selectedCandidate.tagPipeline.name} successfully`
-    );
-    refetch();
-    setCandidateDrawerVisible(false);
-    setPipelineModalVisible(false);
-  } catch (error) {
-    console.error("Failed to move candidate to tagged pipeline:", error);
-    message.error(
-      error.data?.message || "Failed to move candidate to tagged pipeline"
-    );
-  }
-};
+      message.success(
+        `${selectedCandidate.name} moved to ${selectedCandidate.tagPipeline.name} successfully`
+      );
+      refetch();
+      setCandidateDrawerVisible(false);
+      setPipelineModalVisible(false);
+    } catch (error) {
+      console.error("Failed to move candidate to tagged pipeline:", error);
+      message.error(
+        error.data?.message || "Failed to move candidate to tagged pipeline"
+      );
+    }
+  };
 
   const handleTagPipelineClick = (tagPipeline) => {
     setSelectedPipeline(tagPipeline);
@@ -2989,6 +2990,32 @@ const handleMoveToSeparatePipeline = async () => {
           </div>
         )}
       </Modal>
+
+      <style jsx>{`
+        .ant-table-thead > tr > th {
+          background-color: #fafafa !important;
+          font-weight: 600 !important;
+        }
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-ink-bar {
+          background-color: #da2c46 !important;
+        }
+      `}</style>
     </div>
   );
 };
