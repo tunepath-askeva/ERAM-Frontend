@@ -1453,10 +1453,10 @@ const handleMoveToSeparatePipeline = async () => {
               level={2}
               style={{ margin: 0, fontSize: "clamp(1.2rem, 4vw, 2rem)" }}
             >
-              Completed Candidates
+              Interview Candidates
             </Title>
             <Text type="secondary">
-              Manage and track your compelted candidates in pipeline
+              Manage and track your interview candidates in pipeline
             </Text>
           </Col>
         </Row>
