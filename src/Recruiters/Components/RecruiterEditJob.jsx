@@ -1985,6 +1985,186 @@ const RecruiterEditJob = () => {
     </div>
   );
 
+  const renderFieldTypeControls = (field, pipelineId, stageId) => {
+    const updateOptions = (options) => {
+      updateStageCustomField(pipelineId, stageId, field.id, { options });
+    };
+
+    const addOption = () => {
+      const newOptions = [...(field.options || []), ""];
+      updateOptions(newOptions);
+    };
+
+    const updateOption = (index, value) => {
+      const newOptions = [...(field.options || [])];
+      newOptions[index] = value;
+      updateOptions(newOptions);
+    };
+
+    const removeOption = (index) => {
+      const newOptions = (field.options || []).filter((_, i) => i !== index);
+      updateOptions(newOptions);
+    };
+
+    switch (field.type) {
+      case "text":
+      case "textarea":
+        return (
+          <Row gutter={16} style={{ marginTop: 8 }}>
+            <Col span={12}>
+              <Input
+                placeholder="Min Length"
+                type="number"
+                value={field.minLength || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    minLength: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              />
+            </Col>
+            <Col span={12}>
+              <Input
+                placeholder="Max Length"
+                type="number"
+                value={field.maxLength || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    maxLength: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              />
+            </Col>
+          </Row>
+        );
+
+      case "number":
+        return (
+          <Row gutter={16} style={{ marginTop: 8 }}>
+            <Col span={12}>
+              <Input
+                placeholder="Min Value"
+                type="number"
+                value={field.minValue || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    minValue: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              />
+            </Col>
+            <Col span={12}>
+              <Input
+                placeholder="Max Value"
+                type="number"
+                value={field.maxValue || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    maxValue: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              />
+            </Col>
+          </Row>
+        );
+
+      case "file":
+        return (
+          <Row gutter={16} style={{ marginTop: 8 }}>
+            <Col span={12}>
+              <Input
+                placeholder="Max File Size (MB)"
+                type="number"
+                value={field.maxFileSize || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    maxFileSize: e.target.value
+                      ? parseInt(e.target.value)
+                      : null,
+                  })
+                }
+              />
+            </Col>
+            <Col span={12}>
+              <Input
+                placeholder="Accepted Formats (comma-separated)"
+                value={field.acceptedFormats || ""}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    acceptedFormats: e.target.value,
+                  })
+                }
+              />
+            </Col>
+          </Row>
+        );
+
+      case "date":
+        return (
+          <Row gutter={16} style={{ marginTop: 8 }}>
+            <Col span={12}>
+              <Checkbox
+                checked={field.allowPastDates}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    allowPastDates: e.target.checked,
+                  })
+                }
+              >
+                Allow Past Dates
+              </Checkbox>
+            </Col>
+            <Col span={12}>
+              <Checkbox
+                checked={field.allowFutureDates}
+                onChange={(e) =>
+                  updateStageCustomField(pipelineId, stageId, field.id, {
+                    allowFutureDates: e.target.checked,
+                  })
+                }
+              >
+                Allow Future Dates
+              </Checkbox>
+            </Col>
+          </Row>
+        );
+
+      case "select":
+      case "radio":
+      case "checkbox":
+        return (
+          <div style={{ marginTop: 8 }}>
+            <h4 style={{ fontSize: "12px", fontWeight: "600" }}>Options</h4>
+            {(field.options || []).map((option, index) => (
+              <Row key={index} gutter={8} style={{ marginBottom: 6 }}>
+                <Col span={20}>
+                  <Input
+                    value={option}
+                    placeholder={`Option ${index + 1}`}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                  />
+                </Col>
+                <Col span={4}>
+                  <Button
+                    type="text"
+                    danger
+                    onClick={() => removeOption(index)}
+                    icon={<DeleteOutlined />}
+                  />
+                </Col>
+              </Row>
+            ))}
+            <Button type="dashed" onClick={addOption} size="small">
+              Add Option
+            </Button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   if (isLoading) {
     return (
       <div
