@@ -268,6 +268,11 @@ export const recruiterApi = createApi({
         return response;
       },
     }),
+
+    getPipelineCompletedCandidateById: builder.query({
+      query: (id) => `/candidate/${id}`,
+    }),
+
     moveCandidateStatus: builder.mutation({
       query: ({ id, ...payload }) => ({
         url: `/stage/${id}`,
@@ -442,7 +447,6 @@ export const recruiterApi = createApi({
         };
       },
     }),
-   
   }),
 });
 
@@ -488,4 +492,5 @@ export const {
   useGetRecruiterJobTimelineIdQuery,
   useConvertEmployeeMutation,
   useGetBranchEmployessQuery,
+  useGetPipelineCompletedCandidateByIdQuery,
 } = recruiterApi;

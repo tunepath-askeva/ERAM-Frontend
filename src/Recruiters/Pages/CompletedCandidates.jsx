@@ -44,6 +44,7 @@ import {
 import {
   useGetPipelineCompletedCandidatesQuery,
   useConvertEmployeeMutation,
+  useGetPipelineCompletedCandidateByIdQuery,
 } from "../../Slices/Recruiter/RecruiterApis"; // Update this path
 import { debounce } from "lodash";
 
@@ -97,6 +98,14 @@ const CompletedCandidates = () => {
     status: "completed",
   });
 
+  const {
+    data: candidateDetails,
+    isLoading: isCandidateDetailsLoading,
+    isFetching: isCandidateDetailsFetching,
+  } = useGetPipelineCompletedCandidateByIdQuery(selectedCandidate?._id, {
+    skip: !selectedCandidate?._id, // Skip the query if no candidate is selected
+  });
+
   const [convertEmployee, { isLoading: isConverting }] =
     useConvertEmployeeMutation();
 
@@ -118,7 +127,8 @@ const CompletedCandidates = () => {
   };
 
   const handleViewCandidate = (candidate) => {
-    setSelectedCandidate(candidate);
+    setSelectedCandidate(null); // Reset first to trigger a fresh fetch
+    setTimeout(() => setSelectedCandidate(candidate), 0);
     setDrawerVisible(true);
   };
 
@@ -167,7 +177,9 @@ const CompletedCandidates = () => {
   };
 
   const renderCandidateDetails = () => {
-    if (!selectedCandidate) return null;
+    const candidate = candidateDetails?.data || selectedCandidate;
+    const saCan = selectedCandidate
+    if (!candidate) return <Spin />;
 
     return (
       <div style={{ padding: "16px 0" }}>
@@ -182,168 +194,141 @@ const CompletedCandidates = () => {
                 />
                 <div>
                   <Title level={4} style={{ margin: 0 }}>
-                    {selectedCandidate.user?.fullName}
+                    {saCan.user?.fullName || "N/A"}
                   </Title>
-                  <Text type="secondary">{selectedCandidate.user?.email}</Text>
+                  <Text type="secondary">
+                    {saCan.user?.email || "N/A"}
+                  </Text>
                   <br />
-                  <Tag color="success" style={{ marginTop: "8px" }}>
-                    {selectedCandidate.workOrder?.title}
-                  </Tag>
-                  <Tag color="blue">{selectedCandidate.workOrder?.jobCode}</Tag>
+                  {candidate.selectedMovingComment && (
+                    <Paragraph style={{ marginTop: 8 }}>
+                      <Text strong>Pipeline Comments: </Text>
+                      {candidate.selectedMovingComment}
+                    </Paragraph>
+                  )}
                 </div>
               </Space>
             </Col>
           </Row>
         </Card>
 
-        {/* Work Order Details */}
         <Card
           size="small"
           title="Work Order Details"
           style={{ marginBottom: "16px" }}
         >
           <Descriptions column={2} size="small">
-            <Descriptions.Item label="Job Code">
-              {selectedCandidate.workOrder?.jobCode}
-            </Descriptions.Item>
-            <Descriptions.Item label="Pipeline">
-              {selectedCandidate.workOrder?.pipelineName}
+            <Descriptions.Item label="Work Order">
+              {saCan.workOrder.title || "N/A"}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={getStatusColor(selectedCandidate.status)}>
-                {selectedCandidate.status?.toUpperCase()}
+              <Tag color={getStatusColor(candidate.status)}>
+                {candidate.status?.toUpperCase()}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Sourced">
               <Tag
-                color={
-                  selectedCandidate.isSourced === "true" ? "success" : "default"
-                }
+                color={candidate.isSourced === "true" ? "success" : "default"}
               >
-                {selectedCandidate.isSourced === "true" ? "YES" : "NO"}
+                {candidate.isSourced === "true" ? "YES" : "NO"}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
         </Card>
 
-        {/* Stages Progress */}
-        <Card size="small" title="Stages Progress">
-          {selectedCandidate.stageProgress?.map((stage, index) => (
-            <Card
-              key={stage._id}
-              size="small"
-              type="inner"
-              title={
-                <Space>
-                  <Badge
-                    status={getStatusColor(stage.stageStatus)}
-                    text={stage.stageName}
-                  />
-                  <Tag color={getStatusColor(stage.stageStatus)}>
-                    {stage.stageStatus?.toUpperCase()}
-                  </Tag>
-                </Space>
-              }
-              style={{
-                marginBottom:
-                  index < selectedCandidate.stageProgress.length - 1
-                    ? "12px"
-                    : 0,
-              }}
-            >
-              {/* Recruiter Reviews */}
-              {stage.recruiterReviews?.length > 0 && (
-                <div style={{ marginBottom: "12px" }}>
-                  <Text strong>Recruiter Reviews:</Text>
-                  {stage.recruiterReviews.map((review, idx) => (
-                    <div
-                      key={review._id}
-                      style={{ marginLeft: "16px", marginTop: "8px" }}
-                    >
-                      <Space direction="vertical" size="small">
-                        <div>
-                          <Text strong>{review.reviewerName}</Text>
-                          <Tag
-                            color={getStatusColor(review.status)}
-                            style={{ marginLeft: "8px" }}
-                          >
-                            {review.status?.toUpperCase()}
-                          </Tag>
-                        </div>
-                        {review.reviewComments && (
-                          <Text italic>"{review.reviewComments}"</Text>
-                        )}
-                        {review.reviewedAt && (
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            Reviewed at: {formatDate(review.reviewedAt)}
-                          </Text>
-                        )}
-                      </Space>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Stage Completion */}
-              {stage.stageCompletedAt && (
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  <ClockCircleOutlined /> Completed at:{" "}
-                  {formatDate(stage.stageCompletedAt)}
-                </Text>
-              )}
-            </Card>
-          ))}
-        </Card>
-
-        {/* Interview Details */}
-        {selectedCandidate.interviewDetails?.length > 0 && (
-          <Card
-            size="small"
-            title="Interview Details"
-            style={{ marginTop: "16px" }}
-          >
-            {selectedCandidate.interviewDetails.map((interview, index) => (
+        {candidate.stageProgress?.length > 0 && (
+          <Card size="small" title="Stages Progress">
+            {candidate.stageProgress.map((stage, index) => (
               <Card
-                key={interview._id}
+                key={stage._id}
                 size="small"
                 type="inner"
-                style={{ marginBottom: "8px" }}
-              >
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Text strong>{interview.title}</Text>
-                  </Col>
-                  <Col span={12}>
-                    <Tag color={getStatusColor(interview.status)}>
-                      {interview.status?.replace("_", " ").toUpperCase()}
+                title={
+                  <Space>
+                    <Badge
+                      status={getStatusColor(stage.stageStatus)}
+                      text={stage.stageName}
+                    />
+                    <Tag color={getStatusColor(stage.stageStatus)}>
+                      {stage.stageStatus?.toUpperCase()}
                     </Tag>
-                  </Col>
-                  <Col span={12}>
-                    <Text type="secondary">
-                      <CalendarOutlined /> {formatDate(interview.date)}
-                    </Text>
-                  </Col>
-                  <Col span={12}>
-                    <Text type="secondary">Mode: {interview.mode}</Text>
-                  </Col>
-                </Row>
+                  </Space>
+                }
+                style={{
+                  marginBottom:
+                    index < candidate.stageProgress.length - 1 ? "12px" : 0,
+                }}
+              >
+                {stage.recruiterReviews?.length > 0 && (
+                  <div style={{ marginBottom: "12px" }}>
+                    <Text strong>Recruiter Reviews:</Text>
+                    {stage.recruiterReviews.map((review) => (
+                      <div
+                        key={review._id}
+                        style={{ marginLeft: "16px", marginTop: "8px" }}
+                      >
+                        <Space direction="vertical" size="small">
+                          <div>
+                            <Text strong>{review.reviewerName}</Text>
+                            <Tag
+                              color={getStatusColor(review.status)}
+                              style={{ marginLeft: "8px" }}
+                            >
+                              {review.status?.toUpperCase()}
+                            </Tag>
+                          </div>
+                          {review.reviewComments && (
+                            <Text italic>"{review.reviewComments}"</Text>
+                          )}
+                          {review.reviewedAt && (
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              Reviewed at: {formatDate(review.reviewedAt)}
+                            </Text>
+                          )}
+                        </Space>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {stage.stageCompletedAt && (
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    <ClockCircleOutlined /> Completed at:{" "}
+                    {formatDate(stage.stageCompletedAt)}
+                  </Text>
+                )}
               </Card>
             ))}
+          </Card>
+        )}
+
+        {candidate.separatePipelineApprovals?.length > 0 && (
+          <Card
+            size="small"
+            title="Separate Pipeline Approvals"
+            style={{ marginTop: "16px" }}
+          >
+            <List
+              dataSource={candidate.separatePipelineApprovals}
+              renderItem={(approval) => (
+                <List.Item>
+                  <Text>{approval}</Text>
+                </List.Item>
+              )}
+            />
           </Card>
         )}
       </div>
     );
   };
 
-  // Render timeline tab
   const renderTimeline = () => {
-    if (!selectedCandidate?.stageProgress) return null;
+    const candidate = candidateDetails?.data || selectedCandidate;
+    if (!candidate?.stageProgress) return null;
 
     const timelineItems = [];
 
-    // Add stage progress items
-    selectedCandidate.stageProgress.forEach((stage) => {
-      // Stage completion
+    candidate.stageProgress.forEach((stage) => {
       if (stage.stageCompletedAt) {
         timelineItems.push({
           dot: <CheckCircleOutlined style={{ color: "#da2c46" }} />,
@@ -363,7 +348,6 @@ const CompletedCandidates = () => {
         });
       }
 
-      // Recruiter reviews
       stage.recruiterReviews?.forEach((review) => {
         if (review.reviewedAt) {
           timelineItems.push({
@@ -393,28 +377,6 @@ const CompletedCandidates = () => {
       });
     });
 
-    // Add interview items
-    selectedCandidate.interviewDetails?.forEach((interview) => {
-      timelineItems.push({
-        dot: <CalendarOutlined style={{ color: "#722ed1" }} />,
-        children: (
-          <div>
-            <Text strong>Interview: {interview.title}</Text>
-            <br />
-            <Text type="secondary">{formatDate(interview.date)}</Text>
-            <br />
-            <Text>Mode: {interview.mode}</Text>
-            <br />
-            <Tag color={getStatusColor(interview.status)} size="small">
-              {interview.status?.replace("_", " ").toUpperCase()}
-            </Tag>
-          </div>
-        ),
-        time: interview.date,
-      });
-    });
-
-    // Sort by time (most recent first)
     timelineItems.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     return (
@@ -430,12 +392,12 @@ const CompletedCandidates = () => {
     );
   };
 
-  // Render documents tab
   const renderDocuments = () => {
-    if (!selectedCandidate?.stageProgress) return null;
+    const candidate = candidateDetails?.data || selectedCandidate;
+    if (!candidate?.stageProgress) return null;
 
     const allDocuments = [];
-    selectedCandidate.stageProgress.forEach((stage) => {
+    candidate.stageProgress.forEach((stage) => {
       stage.uploadedDocuments?.forEach((doc) => {
         allDocuments.push({
           ...doc,
@@ -444,6 +406,16 @@ const CompletedCandidates = () => {
         });
       });
     });
+
+    if (candidate.workOrderuploadedDocuments?.length > 0) {
+      candidate.workOrderuploadedDocuments.forEach((doc) => {
+        allDocuments.push({
+          ...doc,
+          stageName: "Work Order",
+          stageId: "work-order",
+        });
+      });
+    }
 
     return (
       <div style={{ padding: "16px 0" }}>
@@ -495,7 +467,6 @@ const CompletedCandidates = () => {
     );
   };
 
-  // Table columns configuration
   const columns = [
     {
       title: "Candidate",
@@ -562,29 +533,6 @@ const CompletedCandidates = () => {
           {status?.toUpperCase()}
         </Tag>
       ),
-    },
-    {
-      title: "Stages Completed",
-      dataIndex: "stageProgress",
-      key: "stagesCompleted",
-      width: 150,
-      render: (stageProgress) => {
-        const completed =
-          stageProgress?.filter((stage) => stage.stageStatus === "approved")
-            .length || 0;
-        const total = stageProgress?.length || 0;
-        return (
-          <div>
-            <Text strong>
-              {completed}/{total}
-            </Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: "12px" }}>
-              stages
-            </Text>
-          </div>
-        );
-      },
     },
     {
       title: "Actions",
