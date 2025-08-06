@@ -38,7 +38,6 @@ import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
 import RecruiterCandidates from "./Recruiters/Pages/RecruiterCandidates";
 import RecruiterJobs from "./Recruiters/Pages/RecruiterJobs";
 import RecruiterEmployee from "./Recruiters/Pages/RecruiterEmployee";
-import RecruiterPayroll from "./Recruiters/Pages/RecruiterPayroll";
 import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
 import RecruiterEditJob from "./Recruiters/Components/RecruiterEditJob";
 import RecruiterViewJob from "./Recruiters/Components/RecruiterViewJob";
@@ -254,10 +253,7 @@ const AppRoutes = () => {
           path="/recruiter/employees"
           element={<ProtectedRecruiter element={<RecruiterEmployee />} />}
         />
-        <Route
-          path="/recruiter/payroll"
-          element={<ProtectedRecruiter element={<RecruiterPayroll />} />}
-        />
+        
         <Route
           path="/recruiter/candidates"
           element={<ProtectedRecruiter element={<RecruiterCandidates />} />}

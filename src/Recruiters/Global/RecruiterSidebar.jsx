@@ -121,12 +121,7 @@ const RecruiterSidebar = ({
       label: "Employees",
       permission: "employees",
     },
-    {
-      key: "/recruiter/payroll",
-      icon: <TranslationOutlined />,
-      label: "Payroll",
-      permission: "payroll",
-    },
+    
   ];
 
   useEffect(() => {

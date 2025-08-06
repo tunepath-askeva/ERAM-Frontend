@@ -60,7 +60,6 @@ const accessPermissions = [
   { key: "staged-candidates", label: "Staged Candidates" },
   { key: "approvals", label: "Approvals" },
   { key: "employees", label: "Employees" },
-  { key: "payroll", label: "Payroll" },
   { key: "requisition", label: "Requisition" },
   { key: "edit-job", label: "Edit Job" },
   { key: "edit-candidate-details", label: "Edit Candidate" },
