@@ -11,6 +11,7 @@ import {
   UsergroupAddOutlined,
   BorderOuterOutlined,
   DiffOutlined,
+  SendOutlined
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -96,6 +97,11 @@ const AdminSidebar = ({
       icon: <DeploymentUnitOutlined />,
       label: "Masters",
     },
+    // {
+    //   key: "/admin/whatsapp",
+    //   icon: <SendOutlined />,
+    //   label: "Whatsapp API",
+    // },
     {
       key: "/admin/branches",
       icon: <AppstoreOutlined />,

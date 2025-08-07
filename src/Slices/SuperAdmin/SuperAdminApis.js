@@ -144,6 +144,13 @@ export const superAdminApi = createApi({
       }),
       invalidatesTags: ["SuperAdmin"],
     }),
+    submitWhatsappApi: builder.mutation({
+      query: (clientData) => ({
+        url: "/whatsapp-api",
+        method: "POST",
+        body: clientData,
+      }),
+    }),
   }),
 });
 
@@ -170,4 +177,8 @@ export const {
   //super admin profile
   useRequestUpdateProfileMutation,
   useVerifyUpdateProfileMutation,
+
+
+  //whatsapp
+  useSubmitWhatsappApiMutation
 } = superAdminApi;

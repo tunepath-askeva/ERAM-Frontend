@@ -75,6 +75,8 @@ import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompa
 import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
 import EmployeePayroll from "./Employee/Pages/EmployeePayroll";
 import CompletedCandidates from "./Recruiters/Pages/CompletedCandidates";
+import WhatsAppConfigPanel from "./Admin/Pages/WhatsappapiIntegration";
+import SuperAdminWhatsappApi from "./SuperAdmin/Pages/SuperAdminWhatsappApi";
 
 const AppRoutes = () => {
   return (
@@ -93,6 +95,10 @@ const AppRoutes = () => {
         <Route
           path="/superadmin"
           element={<ProtectedSuperAdmin element={<SuperDashboard />} />}
+        />
+        <Route
+          path="/superadmin/whatsapp"
+          element={<ProtectedSuperAdmin element={<SuperAdminWhatsappApi />} />}
         />
         <Route
           path="/superadmin/branches"
@@ -172,6 +178,10 @@ const AppRoutes = () => {
           path="/admin/masters"
           element={<ProtectedAdmin element={<Master />} />}
         />
+        {/* <Route
+          path="/admin/whatsapp"
+          element={<ProtectedAdmin element={<WhatsAppConfigPanel />} />}
+        /> */}
       </Route>
 
       {/* Candidate */}
