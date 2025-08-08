@@ -73,11 +73,6 @@ const CandidateSidebar = ({
       label: "Documents",
     },
     {
-      key: "/candidate-settings",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    },
-    {
       key: "/notifications",
       icon: <BellOutlined />,
       label: (
@@ -92,6 +87,11 @@ const CandidateSidebar = ({
           )}
         </div>
       ),
+    },
+    {
+      key: "/candidate-settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
     },
   ];
 

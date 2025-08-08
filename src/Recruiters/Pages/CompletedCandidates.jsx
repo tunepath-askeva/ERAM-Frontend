@@ -103,7 +103,7 @@ const CompletedCandidates = () => {
     isLoading: isCandidateDetailsLoading,
     isFetching: isCandidateDetailsFetching,
   } = useGetPipelineCompletedCandidateByIdQuery(selectedCandidate?._id, {
-    skip: !selectedCandidate?._id, // Skip the query if no candidate is selected
+    skip: !selectedCandidate?._id, 
   });
 
   const [convertEmployee, { isLoading: isConverting }] =
@@ -127,7 +127,7 @@ const CompletedCandidates = () => {
   };
 
   const handleViewCandidate = (candidate) => {
-    setSelectedCandidate(null); // Reset first to trigger a fresh fetch
+    setSelectedCandidate(null);
     setTimeout(() => setSelectedCandidate(candidate), 0);
     setDrawerVisible(true);
   };

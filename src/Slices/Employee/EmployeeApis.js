@@ -202,6 +202,18 @@ export const employeeApi = createApi({
         },
       }),
     }),
+    getEmployeeNotification: builder.query({
+      query: () => ({
+        url: `/notify`,
+        method: "GET",
+      }),
+    }),
+    clearAllNotification: builder.mutation({
+      query: () => ({
+        url: `/clear-notification`,
+        method: "POST",
+      }),
+    }),
   }),
 });
 
@@ -228,4 +240,6 @@ export const {
   useGetPayrollByIdQuery,
   useGetEmployeePayrollQuery,
   useGeneratePayslipMutation,
+  useGetEmployeeNotificationQuery,
+  useClearAllNotificationMutation,
 } = employeeApi;

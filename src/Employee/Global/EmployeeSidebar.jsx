@@ -7,6 +7,7 @@ import {
   FormOutlined,
   DashboardOutlined,
   MoneyCollectOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -76,6 +77,11 @@ const EmployeeSidebar = ({
       key: "/employee/company-policy",
       icon: <SolutionOutlined />,
       label: "Company Policies",
+    },
+    {
+      key: "/employee/notifications",
+      icon: <BellOutlined />,
+      label: "Notifications",
     },
     {
       key: "/employee/profile-settings",
