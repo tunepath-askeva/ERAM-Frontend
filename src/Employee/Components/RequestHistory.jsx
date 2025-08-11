@@ -36,6 +36,7 @@ const RequestHistory = ({
   requests = [],
   isLoading = false,
   onRefresh,
+  onTicketSubmit 
 }) => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -334,6 +335,7 @@ const RequestHistory = ({
         onClose={() => setViewRequestDrawer(false)}
         request={selectedRequest}
         mobileView={mobileView}
+         onTicketSubmit={onTicketSubmit}
       />
 
      

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Drawer,
   Descriptions,
@@ -12,6 +12,11 @@ import {
   Space,
   List,
   Divider,
+  Radio,
+  Row,
+  Col,
+  message,
+  Spin,
 } from "antd";
 import {
   DeleteOutlined,
@@ -24,6 +29,8 @@ import {
   SolutionOutlined,
   CalendarOutlined,
   LinkOutlined,
+  DollarOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -33,9 +40,12 @@ const RequestDetailsDrawer = ({
   visible,
   onClose,
   request,
-
   mobileView,
+  onTicketSubmit,
 }) => {
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
   if (!request) return null;
 
   const getRequestTypeIcon = (type) => {
@@ -65,6 +75,30 @@ const RequestDetailsDrawer = ({
   const handleDocumentDownload = (document) => {
     if (document.fileUrl) {
       window.open(document.fileUrl, "_blank");
+    }
+  };
+
+  const handleTicketSelection = (ticketId) => {
+    setSelectedTicket(selectedTicket === ticketId ? null : ticketId);
+  };
+
+  const handleTicketSubmit = async () => {
+    if (!selectedTicket) {
+      message.warning("Please select a ticket to submit.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (onTicketSubmit) {
+        await onTicketSubmit(request._id, selectedTicket);
+        message.success("Ticket submitted successfully!");
+        setSelectedTicket("");
+      }
+    } catch (error) {
+      message.error("Failed to submit ticket. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -110,16 +144,96 @@ const RequestDetailsDrawer = ({
     );
   };
 
+  const renderTicketDetails = () => {
+    if (!request.ticketDetails || request.ticketDetails.length === 0) {
+      return null;
+    }
+
+    return (
+      <Card title="Available Tickets" style={{ marginBottom: 16 }}>
+        <List
+          dataSource={request.ticketDetails}
+          renderItem={(ticket) => (
+            <List.Item
+              style={{
+                border: "1px solid #f0f0f0",
+                borderRadius: "8px",
+                marginBottom: "12px",
+                padding: "16px",
+                backgroundColor:
+                  selectedTicket === ticket._id ? "#f6ffed" : "#fafafa",
+              }}
+            >
+              <List.Item.Meta
+                avatar={
+                  <Radio
+                    checked={selectedTicket === ticket._id}
+                    onChange={() => handleTicketSelection(ticket._id)}
+                  />
+                }
+                title={
+                  <Row gutter={[16, 8]}>
+                    <Col xs={24} sm={12}>
+                      <Space>
+                        <CalendarOutlined style={{ color: "#1890ff" }} />
+                        <Text strong>
+                          {dayjs(ticket.date).format("DD MMM YYYY")}
+                        </Text>
+                      </Space>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Space>
+                        <DollarOutlined style={{ color: "#52c41a" }} />
+                        <Text strong style={{ color: "#52c41a" }}>
+                          ₹{ticket.ticketPrice.toLocaleString()}
+                        </Text>
+                      </Space>
+                    </Col>
+                  </Row>
+                }
+                description={
+                  <div style={{ marginTop: 8 }}>
+                    <Paragraph style={{ margin: 0, color: "#666" }}>
+                      {ticket.description}
+                    </Paragraph>
+                  </div>
+                }
+              />
+            </List.Item>
+          )}
+        />
+
+        <Button
+          type="primary"
+          size="large"
+          icon={<SendOutlined />}
+          onClick={handleTicketSubmit}
+          loading={submitting}
+          disabled={!selectedTicket} // Changed from selectedTicket.length === 0
+          block={mobileView}
+          style={{
+            backgroundColor: "#da2c46",
+            borderColor: "#da2c46",
+            marginTop: 16,
+          }}
+        >
+          Submit Selected Ticket
+        </Button>
+      </Card>
+    );
+  };
+
   return (
     <Drawer
       title="Request Details"
       width={mobileView ? "90%" : "50%"}
       onClose={onClose}
       open={visible}
-     
     >
       <Alert
-        message={`Request ${request.status?.charAt(0).toUpperCase() + request.status?.slice(1)}`}
+        message={`Request ${
+          request.status?.charAt(0).toUpperCase() + request.status?.slice(1)
+        }`}
         description={
           request.status === "approved"
             ? "Your request has been approved."
@@ -158,7 +272,9 @@ const RequestDetailsDrawer = ({
             </Paragraph>
           </Descriptions.Item>
           <Descriptions.Item label="Submitted On">
-            {dayjs(request.createdAt || new Date()).format("DD MMM YYYY, HH:mm")}
+            {dayjs(request.createdAt || new Date()).format(
+              "DD MMM YYYY, HH:mm"
+            )}
           </Descriptions.Item>
           <Descriptions.Item label="Request ID">
             <Text code>{request._id}</Text>
@@ -169,6 +285,11 @@ const RequestDetailsDrawer = ({
       <Card title="Supporting Documents" style={{ marginBottom: 16 }}>
         {renderDocuments()}
       </Card>
+
+      {/* Render ticket details only if they exist */}
+      {request.ticketDetails &&
+        request.ticketDetails.length > 0 &&
+        renderTicketDetails()}
 
       {(request.status === "approved" || request.status === "rejected") && (
         <Card title="Admin Response" style={{ marginBottom: 16 }}>
@@ -251,7 +372,7 @@ const RequestDetailsDrawer = ({
         </Space>
       </Card>
 
-      {request.status === "pending" && (
+      {request.status === "pending" && !request.ticketDetails && (
         <Card>
           <Alert
             message="Request Processing Time"

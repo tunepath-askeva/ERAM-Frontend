@@ -10,6 +10,7 @@ import {
   Avatar,
   Typography,
   Space,
+  message,
 } from "antd";
 import {
   PlusOutlined,
@@ -29,6 +30,7 @@ import RequestHistory from "../Components/RequestHistory";
 import {
   useGetEmployeeProfileQuery,
   useGetRequestHistoryQuery,
+  useSubmitSelectedTicketsMutation, // Import the new mutation
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text } = Typography;
@@ -38,11 +40,15 @@ const EmployeeRaiseRequest = () => {
   const [mobileView, setMobileView] = useState(false);
 
   const { data } = useGetEmployeeProfileQuery();
-  const { 
-    data: requestHistoryData, 
+  const {
+    data: requestHistoryData,
     refetch: refetchRequestHistory,
-    isLoading: isLoadingHistory 
+    isLoading: isLoadingHistory,
   } = useGetRequestHistoryQuery();
+
+  // RTK mutation hook for ticket submission
+  const [submitSelectedTickets, { isLoading: isSubmittingTickets }] =
+    useSubmitSelectedTicketsMutation();
 
   const user = data?.employee;
 
@@ -103,11 +109,28 @@ const EmployeeRaiseRequest = () => {
   const stats = getRequestStats();
 
   const handleRequestSubmit = async () => {
-    // Refetch the request history to get the latest data
     await refetchRequestHistory();
-    // Switch to history tab to show the new request
     setActiveTab("history");
   };
+
+ const handleTicketSubmit = async (requestId, ticketId) => {
+  try {
+    const result = await submitSelectedTickets({
+      requestId,
+      ticketId, 
+    }).unwrap();
+
+    message.success(result.message || "Ticket submitted successfully!");
+    await refetchRequestHistory();
+    return result;
+  } catch (error) {
+    const errorMessage = error?.data?.message || 
+                        error?.message || 
+                        "Failed to submit ticket. Please try again.";
+    message.error(errorMessage);
+    throw error;
+  }
+};
 
   return (
     <div style={{ padding: mobileView ? 16 : 24 }}>
@@ -205,6 +228,7 @@ const EmployeeRaiseRequest = () => {
               <EmployeeRaiseRequestForm
                 onRequestSubmit={handleRequestSubmit}
                 mobileView={mobileView}
+                onTicketSubmit={handleTicketSubmit}
               />
             ),
           },
@@ -227,6 +251,7 @@ const EmployeeRaiseRequest = () => {
                 requests={requestHistoryData?.requests || []}
                 isLoading={isLoadingHistory}
                 onRefresh={refetchRequestHistory}
+                onTicketSubmit={handleTicketSubmit}
               />
             ),
           },

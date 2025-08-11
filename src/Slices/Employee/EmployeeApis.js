@@ -247,6 +247,13 @@ export const employeeApi = createApi({
         body: { ticketDetails },
       }),
     }),
+submitSelectedTickets: builder.mutation({
+  query: ({ requestId, ticketId }) => ({ 
+    url: `/submit-ticket/${requestId}`, 
+    method: 'POST',
+    body: { ticketId } 
+  }),
+}),
   }),
 });
 
@@ -256,6 +263,7 @@ export const {
   useGetEmployeeLeaveHistoryQuery,
   useGetEmployeePoliciesQuery,
   useGetRequestHistoryQuery,
+  useSubmitSelectedTicketsMutation,
 
   //employee admin
   useGetEmployeeAdminLeaveHistoryQuery,
