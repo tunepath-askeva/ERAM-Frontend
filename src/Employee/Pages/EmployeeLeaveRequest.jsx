@@ -118,7 +118,6 @@ const EmployeeLeaveRequest = () => {
 
   return (
     <div style={{ padding: mobileView ? 16 : 24 }}>
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={12} md={8}>
@@ -154,7 +153,6 @@ const EmployeeLeaveRequest = () => {
         </Row>
       </div>
 
-      {/* Quick Stats */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
           <Card hoverable size="small">
@@ -198,7 +196,6 @@ const EmployeeLeaveRequest = () => {
         </Col>
       </Row>
 
-      {/* Main Content */}
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -245,7 +242,6 @@ const EmployeeLeaveRequest = () => {
         ]}
       />
 
-      {/* Floating Action Button for Mobile */}
       {mobileView && activeTab !== "apply" && (
         <Button
           type="primary"

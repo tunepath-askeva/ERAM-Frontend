@@ -49,8 +49,8 @@ const EmployeePayroll = () => {
         empId: payroll.U_EramId,
         month: getMonthName(payroll.U_month),
         year: payroll.U_year,
-        designation: "", // Not in API response
-        nationality: "", // Not in API response
+        designation: "", 
+        nationality: "", 
         basicSalary: parseFloat(payroll.U_basic || 0),
         hra: parseFloat(payroll.U_hra || 0),
         transportation: parseFloat(payroll.U_tpa || 0),
@@ -64,22 +64,21 @@ const EmployeePayroll = () => {
           parseFloat(payroll.U_loan || 0) +
           parseFloat(payroll.U_gosi || 0),
         netPay: parseFloat(payroll.U_ONP || 0),
-        status: "Paid", // Assuming paid status
-        payDate: new Date().toISOString().split("T")[0], // Current date as fallback
-        iqamaNo: "", // Not in API response
-        gosiNo: "", // Not in API response
-        daysInMonth: 30, // Default value
-        presentDays: 30, // Default value
+        status: "Paid", 
+        payDate: new Date().toISOString().split("T")[0],
+        iqamaNo: "", 
+        gosiNo: "", 
+        daysInMonth: 30, 
+        presentDays: 30,
         absVacDays: parseFloat(payroll.U_absdays || 0),
         sapId: payroll.U_empcode,
         workArea: payroll.U_PrjNM,
-        iban: "", // Not in API response
-        bankName: "", // Not in API response
-        iqamaExp: "", // Not in API response
-        doj: "", // Not in API response
+        iban: "",
+        bankName: "",
+        iqamaExp: "",
+        doj: "",
         otHours: parseFloat(payroll.U_OTHOUR1 || 0),
-        remarks: "", // Not in API response
-        // Additional fields from API
+        remarks: "",
         email: payroll.U_email,
         paygroup: payroll.U_paygroup,
         advance: parseFloat(payroll.U_adv || 0),
@@ -115,7 +114,6 @@ const EmployeePayroll = () => {
     return months[parseInt(monthNumber) - 1] || "";
   };
 
-  // Use transformed data or mock data as fallback
   const payrollData = data ? transformPayrollData(data) : [];
 
   const columns = [
@@ -331,7 +329,6 @@ const EmployeePayroll = () => {
   };
 
   const PayslipContent = ({ payroll }) => {
-    // Helper function to render salary structure items (only if value > 0)
     const renderSalaryItem = (label, value) => {
       if (value > 0) {
         return (
@@ -350,7 +347,6 @@ const EmployeePayroll = () => {
       return null;
     };
 
-    // Helper function to render earnings items (only if value > 0)
     const renderEarningsItem = (label, value) => {
       if (value > 0) {
         return (
@@ -369,7 +365,6 @@ const EmployeePayroll = () => {
       return null;
     };
 
-    // Helper function to render deduction items (only if value > 0)
     const renderDeductionItem = (label, value) => {
       if (value > 0) {
         return (
@@ -403,7 +398,6 @@ const EmployeePayroll = () => {
           position: "relative",
         }}
       >
-        {/* Red triangle in top-left corner */}
         <div
           style={{
             position: "absolute",
@@ -416,7 +410,6 @@ const EmployeePayroll = () => {
           }}
         ></div>
 
-        {/* Logo in top-right corner */}
         <div
           style={{
             position: "absolute",
@@ -433,7 +426,6 @@ const EmployeePayroll = () => {
           <div style={{ fontSize: "10px", letterSpacing: "2px" }}>TALENT</div>
         </div>
 
-        {/* Header */}
         <div
           style={{
             textAlign: "center",
@@ -454,14 +446,13 @@ const EmployeePayroll = () => {
             style={{ borderBottom: "2px solid #000", marginBottom: "8px" }}
           ></div>
           <div style={{ fontSize: "14px", fontWeight: "bold" }}>
-            GGI PAYSLIP FOR {payroll.month} - {payroll.year}
+            PAYSLIP FOR {payroll.month} - {payroll.year}
           </div>
           <div
             style={{ borderBottom: "1px solid #000", marginTop: "8px" }}
           ></div>
         </div>
 
-        {/* Employee Details Grid */}
         <table
           style={{
             width: "100%",
@@ -634,7 +625,6 @@ const EmployeePayroll = () => {
           </tbody>
         </table>
 
-        {/* Salary Structure, Earnings, and Deductions */}
         <table
           style={{
             width: "100%",
@@ -843,7 +833,6 @@ const EmployeePayroll = () => {
           </tbody>
         </table>
 
-        {/* Net Pay and Amount in Words */}
         <table
           style={{
             width: "100%",
@@ -920,7 +909,6 @@ const EmployeePayroll = () => {
           </tbody>
         </table>
 
-        {/* Note */}
         <div
           style={{
             textAlign: "center",
@@ -939,7 +927,6 @@ const EmployeePayroll = () => {
   return (
     <div style={{ padding: "24px", minHeight: "100vh" }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header */}
         <div
           style={{
             background: "white",

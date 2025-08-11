@@ -37,7 +37,6 @@ const EmployeeProfileSettings = () => {
       employeeData.image,
       employeeData.fullName,
       employeeData.middleName,
-      // Additional fields from your API response
       employeeData.location,
       employeeData.city,
       employeeData.country,
@@ -61,14 +60,11 @@ const EmployeeProfileSettings = () => {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
-      // Here you would typically call an API to update the profile
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
-      // Update the employee data with new values
       setEmployeeData(prevData => ({
         ...prevData,
         ...values,
-        // Handle nested employmentDetails updates
         employmentDetails: {
           ...prevData.employmentDetails,
           ...Object.keys(values).reduce((acc, key) => {
@@ -93,7 +89,6 @@ const EmployeeProfileSettings = () => {
   };
 
   const handleSaveAll = () => {
-    // Implement save all functionality if needed
     message.success("All changes saved successfully!");
   };
 

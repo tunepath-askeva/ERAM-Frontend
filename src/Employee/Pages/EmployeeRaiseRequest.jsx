@@ -30,7 +30,6 @@ const EmployeeRaiseRequest = () => {
   const [fileList, setFileList] = useState([]);
   const [showCustomTitle, setShowCustomTitle] = useState(false);
 
-  // RTK Query mutation hook
   const [raiseRequest, { isLoading }] = useRaiseRequestMutation();
 
   const requestTypes = [
@@ -60,7 +59,6 @@ const EmployeeRaiseRequest = () => {
       return false;
     }
 
-    // Allow common file types
     const allowedTypes = [
       "application/pdf",
       "application/msword",
@@ -136,7 +134,6 @@ const EmployeeRaiseRequest = () => {
       }}
     >
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header */}
         <div
           style={{
             background: "white",
@@ -159,7 +156,6 @@ const EmployeeRaiseRequest = () => {
           </Row>
         </div>
 
-        {/* Main Content */}
         <Card
           style={{
             borderRadius: "12px",
@@ -258,7 +254,7 @@ const EmployeeRaiseRequest = () => {
                 >
                   <Upload.Dragger {...uploadProps}>
                     <p className="ant-upload-drag-icon">
-                      <UploadOutlined />
+                      <UploadOutlined style={{color: "#da2c46"}} />
                     </p>
                     <p className="ant-upload-text">
                       Click or drag files to upload
@@ -301,7 +297,6 @@ const EmployeeRaiseRequest = () => {
           </Form>
         </Card>
 
-        {/* Additional Information */}
         <Card
           style={{
             marginTop: 24,
