@@ -36,6 +36,7 @@ import {
   useGetEmployeeRaisedRequestByIdQuery,
   useSendTicketInfoMutation,
   useApproveSelectedTicketMutation,
+  useChangeOtherRequestStatusMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -56,7 +57,8 @@ const EmployeeAdminOtherRequest = () => {
   const [viewingTickets, setViewingTickets] = useState(false);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [comment, setComment] = useState("");
-  const [actionType, setActionType] = useState(null);
+  const [actionType, setActionType] = useState(null); // 'approve' | 'reject'
+  const [actionTarget, setActionTarget] = useState(null); // 'ticket' | 'request'
 
   const {
     data: requestDetails,
@@ -71,6 +73,9 @@ const EmployeeAdminOtherRequest = () => {
 
   const [approveSelectedTicket, { isLoading: isApprovingTicket }] =
     useApproveSelectedTicketMutation();
+
+  const [changeRequestStatus, { isLoading: isChangingStatus }] =
+    useChangeOtherRequestStatusMutation();
 
   React.useEffect(() => {
     if (data?.otherRequests) {
@@ -110,34 +115,67 @@ const EmployeeAdminOtherRequest = () => {
 
   const handleApproveTicket = () => {
     setActionType("approve");
+    setActionTarget("ticket");
     setCommentModalVisible(true);
   };
 
   const handleRejectTicket = () => {
-    setActionType("rejecte");
+    setActionType("reject");
+    setActionTarget("ticket");
+    setCommentModalVisible(true);
+  };
+
+  // Request Approval
+  const handleApproveRequest = () => {
+    setActionType("approve");
+    setActionTarget("request");
+    setCommentModalVisible(true);
+  };
+
+  const handleRejectRequest = () => {
+    setActionType("reject");
+    setActionTarget("request");
     setCommentModalVisible(true);
   };
 
   const handleConfirmAction = async () => {
     try {
-      await approveSelectedTicket({
-        id: selectedRequestId,
-        status: actionType === "approve" ? "approved" : "rejected",
-        ticketApprovalNote: comment,
-      }).unwrap();
+      if (!comment.trim()) {
+        message.error("Please enter a comment before proceeding.");
+        return;
+      }
+
+      if (actionTarget === "ticket") {
+        // Use ticket approval API
+        await approveSelectedTicket({
+          id: selectedRequestId,
+          status: actionType === "approve" ? "approved" : "rejected",
+          ticketApprovalNote: comment,
+        }).unwrap();
+      } else {
+        // Use overall request approval API
+        await changeRequestStatus({
+          id: selectedRequestId,
+          status: actionType === "approve" ? "approved" : "rejected",
+          comment,
+        }).unwrap();
+      }
 
       message.success(
-        `Ticket ${
+        `${actionTarget === "ticket" ? "Ticket" : "Request"} ${
           actionType === "approve" ? "approved" : "rejected"
         } successfully!`
       );
+
       setCommentModalVisible(false);
       setComment("");
       refetch();
       handleCloseModal();
     } catch (error) {
-      message.error(`Failed to ${actionType} ticket. Please try again.`);
-      console.error(`Error ${actionType}ing ticket:`, error);
+      message.error(
+        `Failed to ${actionType} ${actionTarget}. Please try again.`
+      );
+      console.error(`Error ${actionType}ing ${actionTarget}:`, error);
     }
   };
 
@@ -542,25 +580,38 @@ const EmployeeAdminOtherRequest = () => {
               ]
             : []),
           ...(viewingTickets &&
-          requestDetails?.otherRequests?.selectedTicket &&
-          requestDetails.otherRequests.ticketApprovalStatus === "pending"
+          requestDetails?.otherRequests?.ticketApprovalStatus === "pending"
             ? [
-                <Button
-                  key="reject"
-                  danger
-                  onClick={handleRejectTicket}
-                  style={{ marginRight: 8 }}
-                >
+                <Button key="rejectTicket" danger onClick={handleRejectTicket}>
                   Reject Ticket
                 </Button>,
                 <Button
-                  key="approve"
+                  key="approveTicket"
                   type="outlined"
                   onClick={handleApproveTicket}
                   loading={isApprovingTicket}
                   style={{ color: "#da2c46", borderColor: "#da2c46" }}
                 >
                   Approve Ticket
+                </Button>,
+              ]
+            : []),
+          ...(requestDetails?.otherRequests?.status === "pending"
+            ? [
+                <Button
+                  key="rejectRequest"
+                  danger
+                  onClick={handleRejectRequest}
+                >
+                  Reject Request
+                </Button>,
+                <Button
+                  key="approveRequest"
+                  type="primary"
+                  onClick={handleApproveRequest}
+                  style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+                >
+                  Approve Request
                 </Button>,
               ]
             : []),
@@ -988,7 +1039,9 @@ const EmployeeAdminOtherRequest = () => {
       </Modal>
 
       <Modal
-        title={`${actionType === "approve" ? "Approve" : "Reject"} Ticket`}
+        title={`${actionType === "approve" ? "Approve" : "Reject"} ${
+          actionTarget === "ticket" ? "Ticket" : "Request"
+        }`}
         visible={commentModalVisible}
         onCancel={() => setCommentModalVisible(false)}
         footer={[

@@ -261,6 +261,16 @@ export const employeeApi = createApi({
         body: { status, ticketApprovalNote },
       }),
     }),
+    changeOtherRequestStatus: builder.mutation({
+      query: ({ id, status, comment }) => ({
+        url: `/request-status/${id}`,
+        method: "PATCH",
+        body: {
+          status,
+          approvalNote: comment,
+        },
+      }),
+    }),
   }),
 });
 
@@ -296,4 +306,5 @@ export const {
   useGetEmployeeRaisedRequestByIdQuery,
   useSendTicketInfoMutation,
   useApproveSelectedTicketMutation,
+  useChangeOtherRequestStatusMutation
 } = employeeApi;
