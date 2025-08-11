@@ -1,339 +1,255 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  Tabs,
   Card,
-  Form,
-  Input,
-  Select,
-  Button,
-  Typography,
-  message,
   Row,
   Col,
+  Statistic,
+  Badge,
+  Button,
+  Avatar,
+  Typography,
   Space,
-  Upload,
 } from "antd";
 import {
+  PlusOutlined,
+  HistoryOutlined,
+  HourglassOutlined,
+  CheckCircleOutlined,
   SolutionOutlined,
-  FormOutlined,
-  SendOutlined,
-  UploadOutlined,
-  PaperClipOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
-import { useRaiseRequestMutation } from "../../Slices/Employee/EmployeeApis";
+import dayjs from "dayjs";
+import EmployeeRaiseRequestForm from "../Components/EmployeeRaiseRequestForm";
+import RequestHistory from "../Components/RequestHistory";
+import {
+  useGetEmployeeProfileQuery,
+  useGetRequestHistoryQuery,
+} from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text } = Typography;
-const { Option } = Select;
-const { TextArea } = Input;
 
 const EmployeeRaiseRequest = () => {
-  const [form] = Form.useForm();
-  const [fileList, setFileList] = useState([]);
-  const [showCustomTitle, setShowCustomTitle] = useState(false);
+  const [activeTab, setActiveTab] = useState("submit");
+  const [mobileView, setMobileView] = useState(false);
 
-  const [raiseRequest, { isLoading }] = useRaiseRequestMutation();
+  const { data } = useGetEmployeeProfileQuery();
+  const { 
+    data: requestHistoryData, 
+    refetch: refetchRequestHistory,
+    isLoading: isLoadingHistory 
+  } = useGetRequestHistoryQuery();
 
-  const requestTypes = [
-    "Travel Request",
-    "Exit Reentry",
-    "Vehicle Related Request",
-    "Payslip Request",
-    "General Request",
-    "New/Other Request",
-  ];
+  const user = data?.employee;
 
-  const handleRequestTypeChange = (value) => {
-    setShowCustomTitle(value === "New/Other Request");
-    if (value !== "New/Other Request") {
-      form.setFieldsValue({ customTitle: undefined });
-    }
+  const employeeData = {
+    firstName: user?.firstName || "John",
+    lastName: user?.lastName || "Doe",
+    fullName: user?.fullName || "John Doe",
+    designation:
+      user?.employmentDetails?.assignedJobTitle || "Software Engineer",
+    eramId: user?.employmentDetails?.eramId || "ERAM-123",
+    email: user?.email || "john.doe@company.com",
+    phone: user?.phone || "+1 234 567 8900",
+    avatar: user?.image || null,
   };
 
-  const handleFileChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      setMobileView(window.innerWidth < 768);
+    };
 
-  const beforeUpload = (file) => {
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      message.error("File must be smaller than 10MB!");
-      return false;
-    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
 
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "text/plain",
-    ];
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    if (!allowedTypes.includes(file.type)) {
-      message.error(
-        "Please upload PDF, DOC, DOCX, images, or text files only!"
-      );
-      return false;
-    }
+  const getRequestStats = () => {
+    const requestList = requestHistoryData?.requests || [];
+    if (!requestList.length)
+      return {
+        totalRequests: 0,
+        approved: 0,
+        pending: 0,
+        rejected: 0,
+        cancelled: 0,
+      };
 
-    return false;
-  };
+    const currentYear = dayjs().year();
 
-const handleSubmit = async (values) => {
-  try {
-    const formData = new FormData();
-
-    if (values.requestType === "New/Other Request" && values.customTitle) {
-      formData.append("requestType", values.customTitle);
-    } else {
-      formData.append("requestType", values.requestType);
-    }
-
-    Object.keys(values).forEach((key) => {
-      if (
-        key !== "requestType" &&
-        key !== "customTitle" &&
-        key !== "attachments" &&
-        values[key] !== undefined
-      ) {
-        formData.append(key, values[key]);
-      }
+    // Filter requests for current year if createdAt is available
+    const yearlyRequests = requestList.filter((req) => {
+      const requestDate = req.createdAt || new Date().toISOString();
+      return dayjs(requestDate).year() === currentYear;
     });
 
-    fileList.forEach((file) => {
-      if (file.originFileObj) {
-        formData.append("attachments", file.originFileObj);
-      }
-    });
+    return {
+      totalRequests: yearlyRequests.length,
+      approved: yearlyRequests.filter((req) => req.status === "approved")
+        .length,
+      pending: yearlyRequests.filter((req) => req.status === "pending").length,
+      rejected: yearlyRequests.filter((req) => req.status === "rejected")
+        .length,
+      cancelled: yearlyRequests.filter((req) => req.status === "cancelled")
+        .length,
+    };
+  };
 
-    const response = await raiseRequest(formData).unwrap();
+  const stats = getRequestStats();
 
-    message.success("Your request has been submitted successfully!");
-    form.resetFields();
-    setFileList([]);
-    setShowCustomTitle(false);
-  } catch (error) {
-    console.error("Request submission failed:", error);
-    const errorMessage =
-      error?.data?.message ||
-      error?.message ||
-      "Failed to submit request. Please try again.";
-    message.error(errorMessage);
-  }
-};
-
-
-  const uploadProps = {
-    multiple: true,
-    fileList,
-    onChange: handleFileChange,
-    beforeUpload,
-    onRemove: (file) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-    },
+  const handleRequestSubmit = async () => {
+    // Refetch the request history to get the latest data
+    await refetchRequestHistory();
+    // Switch to history tab to show the new request
+    setActiveTab("history");
   };
 
   return (
-    <div
-      style={{
-        padding: "24px",
-        minHeight: "100vh",
-      }}
-    >
-      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        <div
-          style={{
-            background: "white",
-            padding: "24px",
-            borderRadius: "12px",
-            marginBottom: "24px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
-        >
-          <Row align="middle" justify="space-between">
-            <Col>
-              <Title level={2} style={{ margin: 0, color: "#da2c46" }}>
-                <SolutionOutlined style={{ marginRight: 12 }} />
-                Employee Request Submission
-              </Title>
-              <Text type="secondary">
-                Submit your requests with supporting documents
-              </Text>
-            </Col>
-          </Row>
-        </div>
-
-        <Card
-          style={{
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
-        >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Row gutter={24}>
-              <Col xs={24} md={12}>
-                <Form.Item
-                  name="requestType"
-                  label="Request Type"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please select request type",
-                    },
-                  ]}
-                >
-                  <Select
-                    placeholder="Select request type"
-                    suffixIcon={<FormOutlined />}
-                    onChange={handleRequestTypeChange}
-                  >
-                    {requestTypes.map((type, index) => (
-                      <Option key={index} value={type}>
-                        {type}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              {showCustomTitle && (
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="customTitle"
-                    label="Request Title"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter request title",
-                      },
-                      {
-                        min: 3,
-                        message: "Title should be at least 3 characters",
-                      },
-                    ]}
-                  >
-                    <Input
-                      placeholder="Enter your request title"
-                      maxLength={100}
-                      showCount
-                    />
-                  </Form.Item>
-                </Col>
-              )}
-            </Row>
-
-            <Row gutter={24}>
-              <Col span={24}>
-                <Form.Item
-                  name="description"
-                  label="Request Description"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please provide details about your request",
-                    },
-                    {
-                      min: 20,
-                      message: "Description should be at least 20 characters",
-                    },
-                  ]}
-                >
-                  <TextArea
-                    rows={6}
-                    placeholder="Please provide detailed information about your request..."
-                    showCount
-                    maxLength={1000}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={24}>
-              <Col span={24}>
-                <Form.Item
-                  name="attachments"
-                  label={
-                    <span>
-                      <PaperClipOutlined style={{ marginRight: 8 }} />
-                      Attachments (Optional)
-                    </span>
-                  }
-                >
-                  <Upload.Dragger {...uploadProps}>
-                    <p className="ant-upload-drag-icon">
-                      <UploadOutlined style={{color: "#da2c46"}} />
-                    </p>
-                    <p className="ant-upload-text">
-                      Click or drag files to upload
-                    </p>
-                    <p className="ant-upload-hint">
-                      Support PDF, DOC, DOCX, images, and text files. Maximum
-                      10MB per file.
-                    </p>
-                  </Upload.Dragger>
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <div style={{ textAlign: "right", marginTop: 24 }}>
-              <Space>
-                <Button
-                  onClick={() => {
-                    form.resetFields();
-                    setFileList([]);
-                    setShowCustomTitle(false);
-                  }}
-                  disabled={isLoading}
-                >
-                  Clear All
+    <div style={{ padding: mobileView ? 16 : 24 }}>
+      <div style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={12} md={8}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Avatar
+                src={employeeData.avatar}
+                size={mobileView ? 48 : 64}
+                icon={<UserOutlined />}
+                style={{ marginRight: 16 }}
+              />
+              <div>
+                <Title level={mobileView ? 4 : 3} style={{ margin: 0 }}>
+                  {employeeData.fullName}
+                </Title>
+                <Text type="secondary">
+                  {employeeData.designation} • {employeeData.eramId}
+                </Text>
+              </div>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={16}>
+            <div style={{ textAlign: mobileView ? "left" : "right" }}>
+              <Space direction={mobileView ? "vertical" : "horizontal"} wrap>
+                <Button icon={<MailOutlined />} type="text">
+                  {employeeData.email}
                 </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={isLoading}
-                  icon={<SendOutlined />}
-                  style={{
-                    background: "#da2c46",
-                    border: "none",
-                  }}
-                >
-                  Submit Request
+                <Button icon={<PhoneOutlined />} type="text">
+                  {employeeData.phone}
                 </Button>
               </Space>
             </div>
-          </Form>
-        </Card>
-
-        <Card
-          style={{
-            marginTop: 24,
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
-        >
-          <Title level={4} style={{ color: "#da2c46" }}>
-            <SolutionOutlined style={{ marginRight: 8 }} />
-            Request Process Information
-          </Title>
-          <div>
-            <Text type="secondary">
-              <ul style={{ paddingLeft: 20 }}>
-                <li>Requests typically take 3-5 business days to process</li>
-                <li>You will receive email notifications for status updates</li>
-                <li>
-                  HR or relevant department may contact you for additional
-                  information
-                </li>
-                <li>All requests and attachments are kept confidential</li>
-                <li>For urgent requests, please contact HR directly</li>
-              </ul>
-            </Text>
-          </div>
-        </Card>
+          </Col>
+        </Row>
       </div>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Pending"
+              value={stats.pending}
+              prefix={<HourglassOutlined style={{ color: "#faad14" }} />}
+              valueStyle={{ color: "#faad14" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Approved"
+              value={stats.approved}
+              prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
+              valueStyle={{ color: "#52c41a" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Rejected"
+              value={stats.rejected}
+              prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
+              valueStyle={{ color: "#ff4d4f" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="This Year"
+              value={stats.totalRequests}
+              prefix={<FileTextOutlined style={{ color: "#722ed1" }} />}
+              valueStyle={{ color: "#722ed1" }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: "submit",
+            label: (
+              <span style={{ color: "#da2c46" }}>
+                <PlusOutlined />
+                {!mobileView && " Submit Request"}
+              </span>
+            ),
+            children: (
+              <EmployeeRaiseRequestForm
+                onRequestSubmit={handleRequestSubmit}
+                mobileView={mobileView}
+              />
+            ),
+          },
+          {
+            key: "history",
+            label: (
+              <span style={{ color: "#da2c46" }}>
+                <HistoryOutlined />
+                {!mobileView && " Request History"}
+                <Badge
+                  count={stats.pending}
+                  size="small"
+                  style={{ marginLeft: 8 }}
+                />
+              </span>
+            ),
+            children: (
+              <RequestHistory
+                mobileView={mobileView}
+                requests={requestHistoryData?.requests || []}
+                isLoading={isLoadingHistory}
+                onRefresh={refetchRequestHistory}
+              />
+            ),
+          },
+        ]}
+      />
+
+      {mobileView && activeTab !== "submit" && (
+        <Button
+          type="primary"
+          shape="circle"
+          size="large"
+          icon={<PlusOutlined />}
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            background: "#da2c46",
+            border: "none",
+          }}
+          onClick={() => setActiveTab("submit")}
+        />
+      )}
     </div>
   );
 };

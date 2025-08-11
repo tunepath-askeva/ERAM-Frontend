@@ -14,20 +14,23 @@ import {
   Modal,
   Tooltip,
 } from "antd";
-import { 
-  EyeOutlined, 
-  FileTextOutlined, 
+import {
+  EyeOutlined,
+  FileTextOutlined,
   DownloadOutlined,
   UserOutlined,
   PhoneOutlined,
-  MailOutlined
+  MailOutlined,
+  IdcardOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeeRaisedRequestsQuery } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
 
 const EmployeeAdminOtherRequest = () => {
-  const { data, isLoading, error, refetch } = useGetEmployeeRaisedRequestsQuery();
+  const { data, isLoading, error, refetch } =
+    useGetEmployeeRaisedRequestsQuery();
+
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestData, setRequestData] = useState([]);
@@ -53,10 +56,10 @@ const EmployeeAdminOtherRequest = () => {
   };
 
   const handleDownloadDocument = (fileUrl, documentName) => {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = fileUrl;
     link.download = documentName;
-    link.target = '_blank';
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -88,10 +91,17 @@ const EmployeeAdminOtherRequest = () => {
 
   const getRequestTypeColor = (requestType) => {
     const colors = [
-      "blue", "green", "orange", "purple", "cyan", "magenta", "volcano", "geekblue"
+      "blue",
+      "green",
+      "orange",
+      "purple",
+      "cyan",
+      "magenta",
+      "volcano",
+      "geekblue",
     ];
-    const hash = requestType?.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+    const hash = requestType?.split("").reduce((a, b) => {
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
     return colors[Math.abs(hash) % colors.length];
@@ -105,15 +115,53 @@ const EmployeeAdminOtherRequest = () => {
       align: "center",
       render: (text, record) => (
         <div>
-          <div style={{ fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div
+            style={{
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <UserOutlined style={{ marginRight: "4px", color: "#da2c46" }} />
             {text}
           </div>
-          <div style={{ fontSize: "12px", color: "#666", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#666",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "2px",
+            }}
+          >
+            <IdcardOutlined style={{ marginRight: "4px" }} />
+            {record.employee?.employmentDetails?.eramId || "N/A"}
+          </div>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#666",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "2px",
+            }}
+          >
             <MailOutlined style={{ marginRight: "4px" }} />
             {record.employee?.email}
           </div>
-          <div style={{ fontSize: "12px", color: "#666", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#666",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "2px",
+            }}
+          >
             <PhoneOutlined style={{ marginRight: "4px" }} />
             {record.employee?.phone}
           </div>
@@ -125,11 +173,7 @@ const EmployeeAdminOtherRequest = () => {
       dataIndex: "requestType",
       key: "requestType",
       align: "center",
-      render: (type) => (
-        <Tag color={getRequestTypeColor(type)}>
-          {type}
-        </Tag>
-      ),
+      render: (type) => <Tag color={getRequestTypeColor(type)}>{type}</Tag>,
     },
     {
       title: "Description",
@@ -138,12 +182,14 @@ const EmployeeAdminOtherRequest = () => {
       align: "center",
       render: (description) => (
         <Tooltip title={description}>
-          <div style={{ 
-            maxWidth: "200px", 
-            overflow: "hidden", 
-            textOverflow: "ellipsis", 
-            whiteSpace: "nowrap" 
-          }}>
+          <div
+            style={{
+              maxWidth: "200px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {description}
           </div>
         </Tooltip>
@@ -157,7 +203,11 @@ const EmployeeAdminOtherRequest = () => {
       render: (status) => (
         <Badge
           status={getStatusColor(status)}
-          text={status ? status.charAt(0).toUpperCase() + status.slice(1) : "Pending"}
+          text={
+            status
+              ? status.charAt(0).toUpperCase() + status.slice(1)
+              : "Pending"
+          }
         />
       ),
     },
@@ -170,7 +220,7 @@ const EmployeeAdminOtherRequest = () => {
         <div>
           {documents && documents.length > 0 ? (
             <Tag color="blue" icon={<FileTextOutlined />}>
-              {documents.length} file{documents.length > 1 ? 's' : ''}
+              {documents.length} file{documents.length > 1 ? "s" : ""}
             </Tag>
           ) : (
             <Tag color="default">No files</Tag>
@@ -287,7 +337,9 @@ const EmployeeAdminOtherRequest = () => {
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center" }}>
-            <FileTextOutlined style={{ marginRight: "8px", color: "#da2c46" }} />
+            <FileTextOutlined
+              style={{ marginRight: "8px", color: "#da2c46" }}
+            />
             Request Details
           </div>
         }
@@ -312,6 +364,15 @@ const EmployeeAdminOtherRequest = () => {
                       <Text>{selectedRequest.employee?.fullName}</Text>
                     </Col>
                     <Col span={8}>
+                      <Text strong>ERAM ID:</Text>
+                      <br />
+                      <Text>
+                        {selectedRequest.employee?.employmentDetails?.eramId ||
+                          "N/A"}
+                      </Text>
+                    </Col>
+
+                    <Col span={8}>
                       <Text strong>Email:</Text>
                       <br />
                       <Text>{selectedRequest.employee?.email}</Text>
@@ -324,14 +385,17 @@ const EmployeeAdminOtherRequest = () => {
                   </Row>
                 </Card>
               </Col>
-              
+
               <Col span={24}>
                 <Card size="small" title="Request Information">
                   <Row gutter={16}>
                     <Col span={12}>
                       <Text strong>Request Type:</Text>
                       <br />
-                      <Tag color={getRequestTypeColor(selectedRequest.requestType)} style={{ marginTop: "4px" }}>
+                      <Tag
+                        color={getRequestTypeColor(selectedRequest.requestType)}
+                        style={{ marginTop: "4px" }}
+                      >
                         {selectedRequest.requestType}
                       </Tag>
                     </Col>
@@ -340,9 +404,11 @@ const EmployeeAdminOtherRequest = () => {
                       <br />
                       <Badge
                         status={getStatusColor(selectedRequest.status)}
-                        text={selectedRequest.status ? 
-                          selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1) : 
-                          "Pending"
+                        text={
+                          selectedRequest.status
+                            ? selectedRequest.status.charAt(0).toUpperCase() +
+                              selectedRequest.status.slice(1)
+                            : "Pending"
                         }
                         style={{ marginTop: "4px" }}
                       />
@@ -351,7 +417,14 @@ const EmployeeAdminOtherRequest = () => {
                   <Row gutter={16} style={{ marginTop: "16px" }}>
                     <Col span={24}>
                       <Text strong>Description:</Text>
-                      <Paragraph style={{ marginTop: "8px", padding: "12px", backgroundColor: "#f5f5f5", borderRadius: "4px" }}>
+                      <Paragraph
+                        style={{
+                          marginTop: "8px",
+                          padding: "12px",
+                          backgroundColor: "#f5f5f5",
+                          borderRadius: "4px",
+                        }}
+                      >
                         {selectedRequest.description}
                       </Paragraph>
                     </Col>
@@ -359,43 +432,59 @@ const EmployeeAdminOtherRequest = () => {
                 </Card>
               </Col>
 
-              {selectedRequest.uploadedDocuments && selectedRequest.uploadedDocuments.length > 0 && (
-                <Col span={24}>
-                  <Card size="small" title="Uploaded Documents">
-                    <div>
-                      {selectedRequest.uploadedDocuments.map((doc, index) => (
-                        <div key={doc._id || index} style={{ 
-                          display: "flex", 
-                          justifyContent: "space-between", 
-                          alignItems: "center", 
-                          padding: "8px 12px", 
-                          backgroundColor: "#f9f9f9", 
-                          borderRadius: "4px", 
-                          marginBottom: "8px" 
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center" }}>
-                            <FileTextOutlined style={{ marginRight: "8px", color: "#1890ff" }} />
-                            <div>
-                              <Text strong>{doc.documentName}</Text>
-                              <br />
-                              <Text type="secondary" style={{ fontSize: "12px" }}>
-                                Uploaded: {formatDate(doc.uploadedAt)}
-                              </Text>
-                            </div>
-                          </div>
-                          <Button
-                            type="link"
-                            icon={<DownloadOutlined />}
-                            onClick={() => handleDownloadDocument(doc.fileUrl, doc.documentName)}
+              {selectedRequest.uploadedDocuments &&
+                selectedRequest.uploadedDocuments.length > 0 && (
+                  <Col span={24}>
+                    <Card size="small" title="Uploaded Documents">
+                      <div>
+                        {selectedRequest.uploadedDocuments.map((doc, index) => (
+                          <div
+                            key={doc._id || index}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "8px 12px",
+                              backgroundColor: "#f9f9f9",
+                              borderRadius: "4px",
+                              marginBottom: "8px",
+                            }}
                           >
-                            Download
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                </Col>
-              )}
+                            <div
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              <FileTextOutlined
+                                style={{ marginRight: "8px", color: "#1890ff" }}
+                              />
+                              <div>
+                                <Text strong>{doc.documentName}</Text>
+                                <br />
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  Uploaded: {formatDate(doc.uploadedAt)}
+                                </Text>
+                              </div>
+                            </div>
+                            <Button
+                              type="link"
+                              icon={<DownloadOutlined />}
+                              onClick={() =>
+                                handleDownloadDocument(
+                                  doc.fileUrl,
+                                  doc.documentName
+                                )
+                              }
+                            >
+                              Download
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </Col>
+                )}
             </Row>
           </div>
         )}

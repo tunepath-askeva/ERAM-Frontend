@@ -42,6 +42,12 @@ export const employeeApi = createApi({
         body: formData,
       }),
     }),
+    getRequestHistory: builder.query({
+      query: () => ({
+        url: "/request-history",
+        method: "GET",
+      }),
+    }),
 
     //EmployeeAdmin Apis
     getEmployeeAdminLeaveHistory: builder.query({
@@ -236,6 +242,7 @@ export const {
   useSubmitLeaveRequestMutation,
   useGetEmployeeLeaveHistoryQuery,
   useGetEmployeePoliciesQuery,
+  useGetRequestHistoryQuery,
 
   //employee admin
   useGetEmployeeAdminLeaveHistoryQuery,
