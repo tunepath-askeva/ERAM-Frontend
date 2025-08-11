@@ -13,6 +13,11 @@ import {
   Spin,
   Modal,
   Tooltip,
+  Form,
+  DatePicker,
+  Input,
+  InputNumber,
+  Divider,
 } from "antd";
 import {
   EyeOutlined,
@@ -22,18 +27,39 @@ import {
   PhoneOutlined,
   MailOutlined,
   IdcardOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
-import { useGetEmployeeRaisedRequestsQuery } from "../../Slices/Employee/EmployeeApis";
+import { 
+  useGetEmployeeRaisedRequestsQuery,
+  useGetEmployeeRaisedRequestByIdQuery,
+  useSendTicketInfoMutation
+} from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const EmployeeAdminOtherRequest = () => {
   const { data, isLoading, error, refetch } =
     useGetEmployeeRaisedRequestsQuery();
 
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestData, setRequestData] = useState([]);
+  const [ticketDetailsForm] = Form.useForm();
+  const [ticketDetails, setTicketDetails] = useState([{ id: Date.now(), date: null, price: null, description: '' }]);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+
+  const { 
+    data: requestDetails, 
+    isLoading: isLoadingDetails, 
+    error: detailsError 
+  } = useGetEmployeeRaisedRequestByIdQuery(selectedRequestId, {
+    skip: !selectedRequestId, 
+  });
+
+  const [sendTicketInfo, { isLoading: isSendingTicketInfo }] = useSendTicketInfoMutation();
 
   React.useEffect(() => {
     if (data?.otherRequests) {
@@ -46,13 +72,75 @@ const EmployeeAdminOtherRequest = () => {
   }, [data]);
 
   const handleViewRequest = (record) => {
-    setSelectedRequest(record);
+    setSelectedRequestId(record._id);
     setModalVisible(true);
+    setShowTicketForm(false);
+    setTicketDetails([{ id: Date.now(), date: null, price: null, description: '' }]);
+    ticketDetailsForm.resetFields();
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
-    setSelectedRequest(null);
+    setSelectedRequestId(null);
+    setShowTicketForm(false);
+    setTicketDetails([{ id: Date.now(), date: null, price: null, description: '' }]);
+    ticketDetailsForm.resetFields();
+  };
+
+  const handleAddTicketDetail = () => {
+    const newTicketDetail = {
+      id: Date.now(),
+      date: null,
+      price: null,
+      description: ''
+    };
+    setTicketDetails([...ticketDetails, newTicketDetail]);
+  };
+
+  const handleRemoveTicketDetail = (id) => {
+    if (ticketDetails.length > 1) {
+      setTicketDetails(ticketDetails.filter(detail => detail.id !== id));
+    }
+  };
+
+  const handleTicketDetailChange = (id, field, value) => {
+    setTicketDetails(prevDetails =>
+      prevDetails.map(detail =>
+        detail.id === id ? { ...detail, [field]: value } : detail
+      )
+    );
+  };
+
+  const handleSendTicketInfo = async () => {
+    try {
+      const isValid = ticketDetails.every(detail => 
+        detail.date && detail.price && detail.description.trim()
+      );
+
+      if (!isValid) {
+        message.error('Please fill all ticket detail fields');
+        return;
+      }
+
+      const ticketData = ticketDetails.map(detail => ({
+        date: detail.date.format('YYYY-MM-DD'),
+        ticketPrice: detail.price,
+        description: detail.description
+      }));
+
+      await sendTicketInfo({
+        requestId: selectedRequestId,
+        ticketDetails: ticketData
+      }).unwrap();
+
+      message.success('Ticket information sent successfully!');
+      setShowTicketForm(false);
+      setTicketDetails([{ id: Date.now(), date: null, price: null, description: '' }]);
+      ticketDetailsForm.resetFields();
+    } catch (error) {
+      message.error('Failed to send ticket information. Please try again.');
+      console.error('Error sending ticket info:', error);
+    }
   };
 
   const handleDownloadDocument = (fileUrl, documentName) => {
@@ -279,6 +367,8 @@ const EmployeeAdminOtherRequest = () => {
     );
   }
 
+  const isTravelRequest = requestDetails?.otherRequests?.requestType?.toLowerCase().includes('travel');
+
   return (
     <div style={{ padding: "24px" }}>
       <div style={{ marginBottom: "24px" }}>
@@ -333,7 +423,6 @@ const EmployeeAdminOtherRequest = () => {
         />
       </Card>
 
-      {/* Request Details Modal */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -346,41 +435,86 @@ const EmployeeAdminOtherRequest = () => {
         visible={modalVisible}
         onCancel={handleCloseModal}
         footer={[
+          ...(isTravelRequest && !showTicketForm ? [
+            <Button 
+              key="addTicket" 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => setShowTicketForm(true)}
+              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+            >
+              Add Ticket Details
+            </Button>
+          ] : []),
+          ...(showTicketForm ? [
+            <Button 
+              key="cancel" 
+              onClick={() => {
+                setShowTicketForm(false);
+                setTicketDetails([{ id: Date.now(), date: null, price: null, description: '' }]);
+                ticketDetailsForm.resetFields();
+              }}
+            >
+              Cancel
+            </Button>,
+            <Button 
+              key="send" 
+              type="primary" 
+              icon={<SendOutlined />}
+              loading={isSendingTicketInfo}
+              onClick={handleSendTicketInfo}
+              style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+            >
+              Send Ticket Info
+            </Button>
+          ] : []),
           <Button key="close" onClick={handleCloseModal}>
             Close
           </Button>,
         ]}
-        width={700}
+        width={800}
       >
-        {selectedRequest && (
+        {isLoadingDetails ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: "16px" }}>
+              <Text>Loading request details...</Text>
+            </div>
+          </div>
+        ) : detailsError ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <Text type="danger">
+              Error loading request details. Please try again.
+            </Text>
+          </div>
+        ) : requestDetails?.otherRequests ? (
           <div>
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <Card size="small" title="Employee Information">
                   <Row gutter={16}>
-                    <Col span={8}>
+                    <Col span={12}>
                       <Text strong>Name:</Text>
                       <br />
-                      <Text>{selectedRequest.employee?.fullName}</Text>
+                      <Text>{requestDetails.otherRequests.employee?.fullName}</Text>
                     </Col>
-                    <Col span={8}>
+                    <Col span={12}>
                       <Text strong>ERAM ID:</Text>
                       <br />
                       <Text>
-                        {selectedRequest.employee?.employmentDetails?.eramId ||
+                        {requestDetails.otherRequests.employee?.employmentDetails?.eramId ||
                           "N/A"}
                       </Text>
                     </Col>
-
-                    <Col span={8}>
+                    <Col span={12}>
                       <Text strong>Email:</Text>
                       <br />
-                      <Text>{selectedRequest.employee?.email}</Text>
+                      <Text>{requestDetails.otherRequests.employee?.email}</Text>
                     </Col>
-                    <Col span={8}>
+                    <Col span={12}>
                       <Text strong>Phone:</Text>
                       <br />
-                      <Text>{selectedRequest.employee?.phone}</Text>
+                      <Text>{requestDetails.otherRequests.employee?.phone}</Text>
                     </Col>
                   </Row>
                 </Card>
@@ -393,21 +527,21 @@ const EmployeeAdminOtherRequest = () => {
                       <Text strong>Request Type:</Text>
                       <br />
                       <Tag
-                        color={getRequestTypeColor(selectedRequest.requestType)}
+                        color={getRequestTypeColor(requestDetails.otherRequests.requestType)}
                         style={{ marginTop: "4px" }}
                       >
-                        {selectedRequest.requestType}
+                        {requestDetails.otherRequests.requestType}
                       </Tag>
                     </Col>
                     <Col span={12}>
                       <Text strong>Status:</Text>
                       <br />
                       <Badge
-                        status={getStatusColor(selectedRequest.status)}
+                        status={getStatusColor(requestDetails.otherRequests.status)}
                         text={
-                          selectedRequest.status
-                            ? selectedRequest.status.charAt(0).toUpperCase() +
-                              selectedRequest.status.slice(1)
+                          requestDetails.otherRequests.status
+                            ? requestDetails.otherRequests.status.charAt(0).toUpperCase() +
+                              requestDetails.otherRequests.status.slice(1)
                             : "Pending"
                         }
                         style={{ marginTop: "4px" }}
@@ -423,42 +557,126 @@ const EmployeeAdminOtherRequest = () => {
                           padding: "12px",
                           backgroundColor: "#f5f5f5",
                           borderRadius: "4px",
+                          minHeight: "60px",
                         }}
                       >
-                        {selectedRequest.description}
+                        {requestDetails.otherRequests.description || "No description provided"}
                       </Paragraph>
                     </Col>
                   </Row>
                 </Card>
               </Col>
 
-              {selectedRequest.uploadedDocuments &&
-                selectedRequest.uploadedDocuments.length > 0 && (
+              {showTicketForm && isTravelRequest && (
+                <Col span={24}>
+                  <Card size="small" title="Ticket Details">
+                    <Form form={ticketDetailsForm} layout="vertical">
+                      {ticketDetails.map((detail, index) => (
+                        <div key={detail.id}>
+                          <Row gutter={16} align="middle">
+                            <Col span={6}>
+                              <Form.Item 
+                                label={index === 0 ? "Date" : ""} 
+                                style={{ marginBottom: index === ticketDetails.length - 1 ? "24px" : "8px" }}
+                              >
+                                <DatePicker 
+                                  style={{ width: "100%" }}
+                                  placeholder="Select date"
+                                  value={detail.date}
+                                  onChange={(date) => handleTicketDetailChange(detail.id, 'date', date)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col span={6}>
+                              <Form.Item 
+                                label={index === 0 ? "Ticket Price" : ""} 
+                                style={{ marginBottom: index === ticketDetails.length - 1 ? "24px" : "8px" }}
+                              >
+                                <InputNumber 
+                                  style={{ width: "100%" }}
+                                  placeholder="Enter price"
+                                  min={0}
+                                  precision={2}
+                                  value={detail.price}
+                                  onChange={(value) => handleTicketDetailChange(detail.id, 'price', value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col span={10}>
+                              <Form.Item 
+                                label={index === 0 ? "Description" : ""} 
+                                style={{ marginBottom: index === ticketDetails.length - 1 ? "24px" : "8px" }}
+                              >
+                                <TextArea 
+                                  rows={1}
+                                  placeholder="Enter ticket details"
+                                  value={detail.description}
+                                  onChange={(e) => handleTicketDetailChange(detail.id, 'description', e.target.value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col span={2}>
+                              <Form.Item 
+                                label={index === 0 ? " " : ""} 
+                                style={{ marginBottom: index === ticketDetails.length - 1 ? "24px" : "8px" }}
+                              >
+                                {ticketDetails.length > 1 && (
+                                  <Button 
+                                    type="text" 
+                                    danger 
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => handleRemoveTicketDetail(detail.id)}
+                                  />
+                                )}
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                          {index < ticketDetails.length - 1 && <Divider style={{ margin: "8px 0" }} />}
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        type="dashed" 
+                        onClick={handleAddTicketDetail}
+                        icon={<PlusOutlined />}
+                        style={{ width: "100%", marginTop: "8px" }}
+                      >
+                        Add Another Ticket Detail
+                      </Button>
+                    </Form>
+                  </Card>
+                </Col>
+              )}
+
+              {requestDetails.otherRequests.uploadedDocuments &&
+                requestDetails.otherRequests.uploadedDocuments.length > 0 && (
                   <Col span={24}>
-                    <Card size="small" title="Uploaded Documents">
+                    <Card size="small" title={`Uploaded Documents (${requestDetails.otherRequests.uploadedDocuments.length})`}>
                       <div>
-                        {selectedRequest.uploadedDocuments.map((doc, index) => (
+                        {requestDetails.otherRequests.uploadedDocuments.map((doc, index) => (
                           <div
                             key={doc._id || index}
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
                               alignItems: "center",
-                              padding: "8px 12px",
+                              padding: "12px",
                               backgroundColor: "#f9f9f9",
-                              borderRadius: "4px",
-                              marginBottom: "8px",
+                              borderRadius: "6px",
+                              marginBottom: "12px",
+                              border: "1px solid #e8e8e8",
                             }}
                           >
                             <div
-                              style={{ display: "flex", alignItems: "center" }}
+                              style={{ display: "flex", alignItems: "center", flex: 1 }}
                             >
                               <FileTextOutlined
-                                style={{ marginRight: "8px", color: "#1890ff" }}
+                                style={{ marginRight: "12px", color: "#1890ff", fontSize: "16px" }}
                               />
-                              <div>
-                                <Text strong>{doc.documentName}</Text>
-                                <br />
+                              <div style={{ flex: 1 }}>
+                                <Text strong style={{ display: "block", marginBottom: "4px" }}>
+                                  {doc.documentName}
+                                </Text>
                                 <Text
                                   type="secondary"
                                   style={{ fontSize: "12px" }}
@@ -468,7 +686,8 @@ const EmployeeAdminOtherRequest = () => {
                               </div>
                             </div>
                             <Button
-                              type="link"
+                              type="primary"
+                              size="small"
                               icon={<DownloadOutlined />}
                               onClick={() =>
                                 handleDownloadDocument(
@@ -476,6 +695,10 @@ const EmployeeAdminOtherRequest = () => {
                                   doc.documentName
                                 )
                               }
+                              style={{
+                                backgroundColor: "#da2c46",
+                                borderColor: "#da2c46",
+                              }}
                             >
                               Download
                             </Button>
@@ -485,9 +708,21 @@ const EmployeeAdminOtherRequest = () => {
                     </Card>
                   </Col>
                 )}
+              
+              {(!requestDetails.otherRequests.uploadedDocuments || 
+                requestDetails.otherRequests.uploadedDocuments.length === 0) && (
+                <Col span={24}>
+                  <Card size="small" title="Documents">
+                    <div style={{ textAlign: "center", padding: "20px", color: "#999" }}>
+                      <FileTextOutlined style={{ fontSize: "24px", marginBottom: "8px" }} />
+                      <div>No documents uploaded for this request</div>
+                    </div>
+                  </Card>
+                </Col>
+              )}
             </Row>
           </div>
-        )}
+        ) : null}
       </Modal>
 
       <style jsx>{`

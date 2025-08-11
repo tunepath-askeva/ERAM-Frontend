@@ -234,6 +234,19 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    getEmployeeRaisedRequestById: builder.query({
+      query: (requestId) => ({
+        url: `/requests/${requestId}`,
+        method: "GET",
+      }),
+    }),
+    sendTicketInfo: builder.mutation({
+      query: ({ requestId, ticketDetails }) => ({
+        url: `/ticket-info/${requestId}`,
+        method: "POST",
+        body: { ticketDetails },
+      }),
+    }),
   }),
 });
 
@@ -265,4 +278,6 @@ export const {
   useClearAllNotificationMutation,
   useRaiseRequestMutation,
   useGetEmployeeRaisedRequestsQuery,
+  useGetEmployeeRaisedRequestByIdQuery,
+  useSendTicketInfoMutation,
 } = employeeApi;
