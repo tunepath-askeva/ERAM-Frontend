@@ -113,7 +113,7 @@ const EmployeeCompanyPolicy = () => {
       key: "title",
       render: (text) => (
         <Space>
-          <FileTextOutlined style={{ color: "#1890ff" }} />
+          <FileTextOutlined style={{ color: "#da2c46" }} />
           <Text strong>{text}</Text>
         </Space>
       ),
@@ -169,6 +169,7 @@ const EmployeeCompanyPolicy = () => {
               type="primary"
               icon={<EyeOutlined />}
               size="small"
+              style={{backgroundColor: "#da2c46"}}
               onClick={() => {
                 setSelectedPolicy(record);
                 setViewMode("detail");
@@ -249,7 +250,7 @@ const EmployeeCompanyPolicy = () => {
                       type="link"
                       icon={<ArrowLeftOutlined />}
                       onClick={() => setViewMode("list")}
-                      style={{ padding: 0 }}
+                      style={{ padding: 0, color: "#da2c46" }}
                     >
                       Back to Policies
                     </Button>
@@ -308,7 +309,7 @@ const EmployeeCompanyPolicy = () => {
                         <CalendarOutlined
                           style={{
                             fontSize: 24,
-                            color: "#1890ff",
+                            color: "#da2c46",
                             marginBottom: 8,
                           }}
                         />
@@ -328,7 +329,7 @@ const EmployeeCompanyPolicy = () => {
                         <SyncOutlined
                           style={{
                             fontSize: 24,
-                            color: "#52c41a",
+                            color: "#da2c46",
                             marginBottom: 8,
                           }}
                         />
@@ -348,7 +349,7 @@ const EmployeeCompanyPolicy = () => {
                         <EyeOutlined
                           style={{
                             fontSize: 24,
-                            color: "#faad14",
+                            color: "#da2c46",
                             marginBottom: 8,
                           }}
                         />
@@ -389,7 +390,7 @@ const EmployeeCompanyPolicy = () => {
                         }}
                       >
                         <IconComponent
-                          style={{ marginRight: 12, color: "#1890ff" }}
+                          style={{ marginRight: 12, color: "#da2c46" }}
                         />
                         {section.title}
                       </Title>

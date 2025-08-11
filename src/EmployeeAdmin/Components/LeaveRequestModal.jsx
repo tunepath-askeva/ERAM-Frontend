@@ -231,7 +231,7 @@ const LeaveRequestModal = ({ visible, onClose, leaveId, eramId }) => {
         style={{ top: 20 }}
       >
         <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-          <Card>
+          <Card >
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <div

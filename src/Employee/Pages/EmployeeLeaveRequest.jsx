@@ -157,7 +157,7 @@ const EmployeeLeaveRequest = () => {
       {/* Quick Stats */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
-          <Card size="small">
+          <Card hoverable size="small">
             <Statistic
               title="Pending"
               value={stats.pending}
@@ -167,7 +167,7 @@ const EmployeeLeaveRequest = () => {
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card size="small">
+          <Card hoverable size="small">
             <Statistic
               title="Approved"
               value={stats.approved}
@@ -177,7 +177,7 @@ const EmployeeLeaveRequest = () => {
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card size="small">
+          <Card hoverable size="small">
             <Statistic
               title="Total Days"
               value={stats.totalDays}
@@ -187,7 +187,7 @@ const EmployeeLeaveRequest = () => {
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card size="small">
+          <Card hoverable size="small">
             <Statistic
               title="This Year"
               value={stats.totalRequests}
@@ -205,8 +205,10 @@ const EmployeeLeaveRequest = () => {
         items={[
           {
             key: "apply",
+           
             label: (
-              <span>
+              <span          style={{color: "#da2c46"}}
+>
                 <PlusOutlined />
                 {!mobileView && " Apply Leave"}
               </span>
@@ -222,7 +224,7 @@ const EmployeeLeaveRequest = () => {
           {
             key: "history",
             label: (
-              <span>
+              <span  style={{color: "#da2c46"}}>
                 <HistoryOutlined />
                 {!mobileView && " Leave History"}
                 <Badge
