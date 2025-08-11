@@ -99,7 +99,6 @@ const RequestHistory = ({
       dataIndex: "requestType",
       key: "requestType",
       render: (text) => getRequestTypeTag(text),
-      sorter: (a, b) => a.requestType.localeCompare(b.requestType),
     },
     {
       title: "Description",
@@ -151,14 +150,7 @@ const RequestHistory = ({
           {status}
         </Tag>
       ),
-      sorter: (a, b) => a.status.localeCompare(b.status),
-      filters: [
-        { text: "Pending", value: "Pending" },
-        { text: "Approved", value: "Approved" },
-        { text: "Rejected", value: "Rejected" },
-        { text: "Cancelled", value: "Cancelled" },
-      ],
-      onFilter: (value, record) => record.status === value,
+      
     },
     {
       title: "Submitted",
@@ -172,8 +164,6 @@ const RequestHistory = ({
           </Text>
         </div>
       ),
-      sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
-      defaultSortOrder: "descend", // Show newest first
     },
     {
       title: "Actions",

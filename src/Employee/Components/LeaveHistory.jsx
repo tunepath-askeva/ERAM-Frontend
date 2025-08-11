@@ -115,7 +115,6 @@ const LeaveHistory = ({ mobileView, leaveRequests = [], setLeaveRequests }) => {
           </div>
         </div>
       ),
-      sorter: (a, b) => dayjs(a.startDate).unix() - dayjs(b.startDate).unix(),
     },
     {
       title: "Reason",

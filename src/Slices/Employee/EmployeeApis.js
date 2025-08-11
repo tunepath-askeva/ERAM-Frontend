@@ -247,13 +247,20 @@ export const employeeApi = createApi({
         body: { ticketDetails },
       }),
     }),
-submitSelectedTickets: builder.mutation({
-  query: ({ requestId, ticketId }) => ({ 
-    url: `/submit-ticket/${requestId}`, 
-    method: 'POST',
-    body: { ticketId } 
-  }),
-}),
+    submitSelectedTickets: builder.mutation({
+      query: ({ requestId, ticketId }) => ({
+        url: `/submit-ticket/${requestId}`,
+        method: "POST",
+        body: { ticketId },
+      }),
+    }),
+    approveSelectedTicket: builder.mutation({
+      query: ({ id, status, ticketApprovalNote }) => ({
+        url: `/ticket-status/${id}`,
+        method: "PATCH",
+        body: { status, ticketApprovalNote },
+      }),
+    }),
   }),
 });
 
@@ -288,4 +295,5 @@ export const {
   useGetEmployeeRaisedRequestsQuery,
   useGetEmployeeRaisedRequestByIdQuery,
   useSendTicketInfoMutation,
+  useApproveSelectedTicketMutation,
 } = employeeApi;

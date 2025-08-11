@@ -30,7 +30,7 @@ import RequestHistory from "../Components/RequestHistory";
 import {
   useGetEmployeeProfileQuery,
   useGetRequestHistoryQuery,
-  useSubmitSelectedTicketsMutation, // Import the new mutation
+  useSubmitSelectedTicketsMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text } = Typography;
@@ -46,7 +46,6 @@ const EmployeeRaiseRequest = () => {
     isLoading: isLoadingHistory,
   } = useGetRequestHistoryQuery();
 
-  // RTK mutation hook for ticket submission
   const [submitSelectedTickets, { isLoading: isSubmittingTickets }] =
     useSubmitSelectedTicketsMutation();
 
@@ -88,7 +87,6 @@ const EmployeeRaiseRequest = () => {
 
     const currentYear = dayjs().year();
 
-    // Filter requests for current year if createdAt is available
     const yearlyRequests = requestList.filter((req) => {
       const requestDate = req.createdAt || new Date().toISOString();
       return dayjs(requestDate).year() === currentYear;

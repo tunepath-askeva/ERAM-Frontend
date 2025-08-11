@@ -35,6 +35,7 @@ import {
   useGetEmployeeRaisedRequestsQuery,
   useGetEmployeeRaisedRequestByIdQuery,
   useSendTicketInfoMutation,
+  useApproveSelectedTicketMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -53,6 +54,9 @@ const EmployeeAdminOtherRequest = () => {
   ]);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [viewingTickets, setViewingTickets] = useState(false);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [comment, setComment] = useState("");
+  const [actionType, setActionType] = useState(null);
 
   const {
     data: requestDetails,
@@ -64,6 +68,9 @@ const EmployeeAdminOtherRequest = () => {
 
   const [sendTicketInfo, { isLoading: isSendingTicketInfo }] =
     useSendTicketInfoMutation();
+
+  const [approveSelectedTicket, { isLoading: isApprovingTicket }] =
+    useApproveSelectedTicketMutation();
 
   React.useEffect(() => {
     if (data?.otherRequests) {
@@ -99,6 +106,39 @@ const EmployeeAdminOtherRequest = () => {
       { id: Date.now(), date: null, price: null, description: "" },
     ]);
     ticketDetailsForm.resetFields();
+  };
+
+  const handleApproveTicket = () => {
+    setActionType("approve");
+    setCommentModalVisible(true);
+  };
+
+  const handleRejectTicket = () => {
+    setActionType("rejecte");
+    setCommentModalVisible(true);
+  };
+
+  const handleConfirmAction = async () => {
+    try {
+      await approveSelectedTicket({
+        id: selectedRequestId,
+        status: actionType === "approve" ? "approved" : "rejected",
+        ticketApprovalNote: comment,
+      }).unwrap();
+
+      message.success(
+        `Ticket ${
+          actionType === "approve" ? "approved" : "rejected"
+        } successfully!`
+      );
+      setCommentModalVisible(false);
+      setComment("");
+      refetch();
+      handleCloseModal();
+    } catch (error) {
+      message.error(`Failed to ${actionType} ticket. Please try again.`);
+      console.error(`Error ${actionType}ing ticket:`, error);
+    }
   };
 
   const handleAddTicketDetail = () => {
@@ -316,23 +356,6 @@ const EmployeeAdminOtherRequest = () => {
       ),
     },
     {
-      title: "Documents",
-      dataIndex: "uploadedDocuments",
-      key: "documents",
-      align: "center",
-      render: (documents) => (
-        <div>
-          {documents && documents.length > 0 ? (
-            <Tag color="blue" icon={<FileTextOutlined />}>
-              {documents.length} file{documents.length > 1 ? "s" : ""}
-            </Tag>
-          ) : (
-            <Tag color="default">No files</Tag>
-          )}
-        </div>
-      ),
-    },
-    {
       title: "Actions",
       key: "actions",
       align: "center",
@@ -518,6 +541,30 @@ const EmployeeAdminOtherRequest = () => {
                 </Button>,
               ]
             : []),
+          ...(viewingTickets &&
+          requestDetails?.otherRequests?.selectedTicket &&
+          requestDetails.otherRequests.ticketApprovalStatus === "pending"
+            ? [
+                <Button
+                  key="reject"
+                  danger
+                  onClick={handleRejectTicket}
+                  style={{ marginRight: 8 }}
+                >
+                  Reject Ticket
+                </Button>,
+                <Button
+                  key="approve"
+                  type="outlined"
+                  onClick={handleApproveTicket}
+                  loading={isApprovingTicket}
+                  style={{ color: "#da2c46", borderColor: "#da2c46" }}
+                >
+                  Approve Ticket
+                </Button>,
+              ]
+            : []),
+
           <Button key="close" onClick={handleCloseModal}>
             Close
           </Button>,
@@ -854,12 +901,57 @@ const EmployeeAdminOtherRequest = () => {
                 </Col>
               )}
 
-              {viewingTickets &&
-                isTravelRequest &&
-                requestDetails?.otherRequests?.ticketDetails?.length > 0 && (
-                  <Col span={24}>
-                    <Card size="small" title="Existing Ticket Details">
-                      {requestDetails.otherRequests.ticketDetails.map(
+              {viewingTickets && isTravelRequest && (
+                <Col span={24}>
+                  <Card size="small" title="Ticket Details">
+                    {requestDetails?.otherRequests?.selectedTicket ? (
+                      <div>
+                        <Row gutter={16} style={{ marginBottom: 16 }}>
+                          <Col span={6}>
+                            <Text strong>Date:</Text>
+                            <br />
+                            <Text>
+                              {formatDate(
+                                requestDetails.otherRequests.selectedTicket.date
+                              )}
+                            </Text>
+                          </Col>
+                          <Col span={6}>
+                            <Text strong>Ticket Price:</Text>
+                            <br />
+                            <Text>
+                              {
+                                requestDetails.otherRequests.selectedTicket
+                                  .ticketPrice
+                              }
+                            </Text>
+                          </Col>
+                          <Col span={12}>
+                            <Text strong>Description:</Text>
+                            <br />
+                            <Text>
+                              {
+                                requestDetails.otherRequests.selectedTicket
+                                  .description
+                              }
+                            </Text>
+                          </Col>
+                        </Row>
+                        {requestDetails.otherRequests.ticketApprovalStatus ===
+                          "pending" && (
+                          <Button
+                            key="approve"
+                            type="outlined"
+                            onClick={handleApproveTicket}
+                            loading={isApprovingTicket}
+                            style={{ color: "#da2c46", borderColor: "#da2c46" }}
+                          >
+                            Approve Ticket
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      requestDetails?.otherRequests?.ticketDetails?.map(
                         (ticket, index) => (
                           <div key={ticket._id || index}>
                             <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -885,13 +977,50 @@ const EmployeeAdminOtherRequest = () => {
                                 1 && <Divider />}
                           </div>
                         )
-                      )}
-                    </Card>
-                  </Col>
-                )}
+                      )
+                    )}
+                  </Card>
+                </Col>
+              )}
             </Row>
           </div>
         ) : null}
+      </Modal>
+
+      <Modal
+        title={`${actionType === "approve" ? "Approve" : "Reject"} Ticket`}
+        visible={commentModalVisible}
+        onCancel={() => setCommentModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setCommentModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleConfirmAction}
+            loading={isApprovingTicket}
+            style={{
+              backgroundColor: actionType === "approve" ? "#52c41a" : "#ff4d4f",
+              borderColor: actionType === "approve" ? "#52c41a" : "#ff4d4f",
+            }}
+          >
+            {actionType === "approve" ? "Approve" : "Reject"} Ticket
+          </Button>,
+        ]}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Comments">
+            <TextArea
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={`Enter your comments for this ${
+                actionType === "approve" ? "approval" : "rejection"
+              }`}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
 
       <style jsx>{`
