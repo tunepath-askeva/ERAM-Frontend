@@ -35,6 +35,13 @@ export const employeeApi = createApi({
         methid: "GET",
       }),
     }),
+    raiseRequest: builder.mutation({
+      query: (formData) => ({
+        url: "/request",
+        method: "POST",
+        body: formData,
+      }),
+    }),
 
     //EmployeeAdmin Apis
     getEmployeeAdminLeaveHistory: builder.query({
@@ -214,13 +221,13 @@ export const employeeApi = createApi({
         method: "POST",
       }),
     }),
-    raiseRequest : builder.mutation({
-      query: (formData) => ({
-        url: "/request",
-        method: "POST",
-        body: formData
-      })
-    })
+
+    getEmployeeRaisedRequests: builder.query({
+      query: () => ({
+        url: "/requests",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -249,5 +256,6 @@ export const {
   useGeneratePayslipMutation,
   useGetEmployeeNotificationQuery,
   useClearAllNotificationMutation,
-  useRaiseRequestMutation
+  useRaiseRequestMutation,
+  useGetEmployeeRaisedRequestsQuery,
 } = employeeApi;

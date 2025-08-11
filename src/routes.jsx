@@ -78,6 +78,7 @@ import CompletedCandidates from "./Recruiters/Pages/CompletedCandidates";
 import WhatsAppConfigPanel from "./Admin/Pages/WhatsappapiIntegration";
 import SuperAdminWhatsappApi from "./SuperAdmin/Pages/SuperAdminWhatsappApi";
 import EmployeeNotifications from "./Employee/Pages/EmployeeNotifications";
+import EmployeeAdminOtherRequest from "./EmployeeAdmin/Pages/EmployeeAdminOtherRequest";
 
 const AppRoutes = () => {
   return (
@@ -337,6 +338,12 @@ const AppRoutes = () => {
           path="/employee-admin/leave-request"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminLeaveRequest />} />
+          }
+        />
+         <Route
+          path="/employee-admin/other-request"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminOtherRequest />} />
           }
         />
         <Route

@@ -79,39 +79,49 @@ const EmployeeRaiseRequest = () => {
     return false;
   };
 
-  const handleSubmit = async (values) => {
-    try {
-      const formData = new FormData();
+const handleSubmit = async (values) => {
+  try {
+    const formData = new FormData();
 
-      Object.keys(values).forEach((key) => {
-        if (values[key] !== undefined && key !== "attachments") {
-          formData.append(key, values[key]);
-        }
-      });
-
-      fileList.forEach((file) => {
-        if (file.originFileObj) {
-          formData.append(`attachments`, file.originFileObj);
-        }
-      });
-
-      const response = await raiseRequest(formData).unwrap();
-
-      message.success("Your request has been submitted successfully!");
-      form.resetFields();
-      setFileList([]);
-      setShowCustomTitle(false);
-    } catch (error) {
-      console.error("Request submission failed:", error);
-
-      const errorMessage =
-        error?.data?.message ||
-        error?.message ||
-        "Failed to submit request. Please try again.";
-
-      message.error(errorMessage);
+    if (values.requestType === "New/Other Request" && values.customTitle) {
+      formData.append("requestType", values.customTitle);
+    } else {
+      formData.append("requestType", values.requestType);
     }
-  };
+
+    Object.keys(values).forEach((key) => {
+      if (
+        key !== "requestType" &&
+        key !== "customTitle" &&
+        key !== "attachments" &&
+        values[key] !== undefined
+      ) {
+        formData.append(key, values[key]);
+      }
+    });
+
+    fileList.forEach((file) => {
+      if (file.originFileObj) {
+        formData.append("attachments", file.originFileObj);
+      }
+    });
+
+    const response = await raiseRequest(formData).unwrap();
+
+    message.success("Your request has been submitted successfully!");
+    form.resetFields();
+    setFileList([]);
+    setShowCustomTitle(false);
+  } catch (error) {
+    console.error("Request submission failed:", error);
+    const errorMessage =
+      error?.data?.message ||
+      error?.message ||
+      "Failed to submit request. Please try again.";
+    message.error(errorMessage);
+  }
+};
+
 
   const uploadProps = {
     multiple: true,
