@@ -214,6 +214,13 @@ export const employeeApi = createApi({
         method: "POST",
       }),
     }),
+    raiseRequest : builder.mutation({
+      query: (formData) => ({
+        url: "/request",
+        method: "POST",
+        body: formData
+      })
+    })
   }),
 });
 
@@ -242,4 +249,5 @@ export const {
   useGeneratePayslipMutation,
   useGetEmployeeNotificationQuery,
   useClearAllNotificationMutation,
+  useRaiseRequestMutation
 } = employeeApi;
