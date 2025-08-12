@@ -54,7 +54,7 @@ const SuperSidebar = ({
       label: "Branches",
     },
     { key: "/superadmin/admins", icon: <UserOutlined />, label: "Admins" },
-    { key: "/superadmin/whatsapp", icon: <SendOutlined />, label: "Whatsapp API" },
+    // { key: "/superadmin/whatsapp", icon: <SendOutlined />, label: "Whatsapp API" },
     {
       key: "/superadmin/settings",
       icon: <SettingOutlined />,

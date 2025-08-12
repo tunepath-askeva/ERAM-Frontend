@@ -97,11 +97,11 @@ const AdminSidebar = ({
       icon: <DeploymentUnitOutlined />,
       label: "Masters",
     },
-    // {
-    //   key: "/admin/whatsapp",
-    //   icon: <SendOutlined />,
-    //   label: "Whatsapp API",
-    // },
+    {
+      key: "/admin/whatsapp",
+      icon: <SendOutlined />,
+      label: "Whatsapp API",
+    },
     {
       key: "/admin/branches",
       icon: <AppstoreOutlined />,

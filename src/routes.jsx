@@ -98,10 +98,10 @@ const AppRoutes = () => {
           path="/superadmin"
           element={<ProtectedSuperAdmin element={<SuperDashboard />} />}
         />
-        <Route
+        {/* <Route
           path="/superadmin/whatsapp"
           element={<ProtectedSuperAdmin element={<SuperAdminWhatsappApi />} />}
-        />
+        /> */}
         <Route
           path="/superadmin/branches"
           element={<ProtectedSuperAdmin element={<BranchManagement />} />}
@@ -180,10 +180,10 @@ const AppRoutes = () => {
           path="/admin/masters"
           element={<ProtectedAdmin element={<Master />} />}
         />
-        {/* <Route
+        <Route
           path="/admin/whatsapp"
           element={<ProtectedAdmin element={<WhatsAppConfigPanel />} />}
-        /> */}
+        />
       </Route>
 
       {/* Candidate */}

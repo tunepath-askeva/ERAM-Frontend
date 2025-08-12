@@ -341,6 +341,12 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    getWhatsappConfig: builder.query({
+      query: () => ({
+        url: `/config`,
+        method: "GET",
+      }),
+    }),
     disableCandidateStatus: builder.mutation({
       query: (candidateId) => ({
         url: `/candidate/${candidateId}`,
@@ -602,5 +608,6 @@ export const {
 
 
   //whatsapp
-  useSubmitWhatsappApiMutation
+  useSubmitWhatsappApiMutation,
+  useGetWhatsappConfigQuery
 } = adminApi;
