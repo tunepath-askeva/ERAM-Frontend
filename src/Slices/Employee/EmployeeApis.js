@@ -271,6 +271,13 @@ export const employeeApi = createApi({
         },
       }),
     }),
+    createNews: builder.mutation({
+      query: (newsData) => ({
+        url: "/news",
+        method: "POST",
+        body: newsData,
+      }),
+    }),
   }),
 });
 
@@ -306,5 +313,6 @@ export const {
   useGetEmployeeRaisedRequestByIdQuery,
   useSendTicketInfoMutation,
   useApproveSelectedTicketMutation,
-  useChangeOtherRequestStatusMutation
+  useChangeOtherRequestStatusMutation,
+  useCreateNewsMutation,
 } = employeeApi;

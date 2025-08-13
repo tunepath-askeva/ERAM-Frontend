@@ -27,7 +27,7 @@ import {
   UploadOutlined,
   MinusCircleOutlined,
 } from "@ant-design/icons";
-
+import { useCreateNewsMutation } from "../../Slices/Employee/EmployeeApis";
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
 
@@ -38,9 +38,9 @@ const EmployeeAdminNews = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
   const [viewingNews, setViewingNews] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  // Custom styles with your primary color
+  const [createNews, { isLoading: isCreatingNews }] = useCreateNewsMutation();
+
   const customStyles = {
     primaryColor: "#da2c46",
     cardStyle: {
@@ -56,36 +56,95 @@ const EmployeeAdminNews = () => {
   };
 
   const handleSubmit = async (values) => {
-    setLoading(true);
     try {
-      const newNews = {
-        id: editingNews ? editingNews.id : Date.now(),
-        ...values,
-        status: "draft",
-        createdAt: editingNews
-          ? editingNews.createdAt
-          : new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        coverImage:
-          values.coverImage?.fileList?.[0]?.name || "placeholder-image.jpg",
-      };
-
       if (editingNews) {
+        const updatedNews = {
+          id: editingNews.id,
+          ...values,
+          status: editingNews.status,
+          createdAt: editingNews.createdAt,
+          updatedAt: new Date().toISOString(),
+          coverImage:
+            values.coverImage?.fileList?.[0]?.name || editingNews.coverImage,
+        };
+
         setNewsData((prev) =>
-          prev.map((item) => (item.id === editingNews.id ? newNews : item))
+          prev.map((item) => (item.id === editingNews.id ? updatedNews : item))
         );
         message.success("News updated successfully!");
+        form.resetFields();
+        setEditingNews(null);
       } else {
-        setNewsData((prev) => [...prev, newNews]);
-        message.success("News created successfully!");
-      }
+        const formData = new FormData();
 
-      form.resetFields();
-      setEditingNews(null);
-      setLoading(false);
+        formData.append("title", values.title);
+        formData.append("description", values.description);
+
+        if (
+          values.coverImage &&
+          values.coverImage.fileList &&
+          values.coverImage.fileList[0]
+        ) {
+          formData.append("files", values.coverImage.fileList[0].originFileObj);
+          formData.append("coverImage", values.coverImage.fileList[0].name);
+        }
+
+        if (values.subsections && values.subsections.length > 0) {
+          const formattedSubsections = values.subsections.map(
+            (section, index) => {
+              if (
+                section.image &&
+                section.image.fileList &&
+                section.image.fileList[0]
+              ) {
+                formData.append(
+                  "files",
+                  section.image.fileList[0].originFileObj
+                );
+              }
+
+              return {
+                subtitle: section.title, 
+                subdescription: section.content, 
+                image:
+                  section.image &&
+                  section.image.fileList &&
+                  section.image.fileList[0]
+                    ? section.image.fileList[0].name
+                    : null,
+              };
+            }
+          );
+          formData.append("subsections", JSON.stringify(formattedSubsections));
+        } else {
+          formData.append("subsections", JSON.stringify([]));
+        }
+
+        const result = await createNews(formData).unwrap();
+
+        const newNewsItem = {
+          id: result.news.id,
+          title: result.news.title,
+          description: result.news.description,
+          subsections:
+            result.news.subsections?.map((sub) => ({
+              title: sub.subtitle,
+              content: sub.subdescription,
+              image: sub.image,
+            })) || [],
+          status: "published", 
+          createdAt: result.news.createdAt,
+          updatedAt: result.news.updatedAt,
+          coverImage: result.news.coverImage,
+        };
+
+        setNewsData((prev) => [...prev, newNewsItem]);
+        message.success(result.message || "News created successfully!");
+        form.resetFields();
+      }
     } catch (error) {
-      message.error("Failed to save news");
-      setLoading(false);
+      console.error("Error submitting news:", error);
+      message.error(error?.data?.message || "Failed to save news");
     }
   };
 
@@ -96,6 +155,13 @@ const EmployeeAdminNews = () => {
       coverImage: record.coverImage
         ? { fileList: [{ name: record.coverImage }] }
         : undefined,
+      subsections:
+        record.subsections?.map((section) => ({
+          ...section,
+          image: section.image
+            ? { fileList: [{ name: section.image }] }
+            : undefined,
+        })) || [],
     });
   };
 
@@ -333,6 +399,21 @@ const EmployeeAdminNews = () => {
                             placeholder="Write subsection content..."
                           />
                         </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          label="Subsection Image"
+                          name={[name, "image"]}
+                        >
+                          <Upload {...uploadProps}>
+                            <Button
+                              icon={<UploadOutlined />}
+                              style={{ borderRadius: "6px" }}
+                              size="small"
+                            >
+                              Upload Image
+                            </Button>
+                          </Upload>
+                        </Form.Item>
                       </Card>
                     ))}
                     <Form.Item>
@@ -358,7 +439,7 @@ const EmployeeAdminNews = () => {
                 <Button
                   type="primary"
                   htmlType="submit"
-                  loading={loading}
+                  loading={isCreatingNews}
                   size="large"
                   style={customStyles.buttonStyle}
                   icon={<FileTextOutlined />}
@@ -431,6 +512,11 @@ const EmployeeAdminNews = () => {
                   >
                     <Title level={5}>{section.title}</Title>
                     <Paragraph>{section.content}</Paragraph>
+                    {section.image && (
+                      <div style={{ marginTop: "8px" }}>
+                        <Text type="secondary">Image: {section.image}</Text>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </>
