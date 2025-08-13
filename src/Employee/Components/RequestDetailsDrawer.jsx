@@ -6,7 +6,6 @@ import {
   Typography,
   Avatar,
   Button,
-  Popconfirm,
   Alert,
   Card,
   Space,
@@ -17,9 +16,9 @@ import {
   Col,
   message,
   Spin,
+  Badge,
 } from "antd";
 import {
-  DeleteOutlined,
   UserOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -28,9 +27,10 @@ import {
   CommentOutlined,
   SolutionOutlined,
   CalendarOutlined,
-  LinkOutlined,
   DollarOutlined,
   SendOutlined,
+  CheckOutlined,
+  CloseCircleOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -93,7 +93,7 @@ const RequestDetailsDrawer = ({
       if (onTicketSubmit) {
         await onTicketSubmit(request._id, selectedTicket);
         message.success("Ticket submitted successfully!");
-        setSelectedTicket("");
+        setSelectedTicket(null);
       }
     } catch (error) {
       message.error("Failed to submit ticket. Please try again.");
@@ -144,11 +144,42 @@ const RequestDetailsDrawer = ({
     );
   };
 
-  const renderTicketDetails = () => {
+  const renderTicketSelection = () => {
     if (!request.ticketDetails || request.ticketDetails.length === 0) {
       return null;
     }
 
+    // If request is approved and has a selected ticket, show that instead of selection UI
+    if (request.status === "approved" && request.selectedTicket) {
+      return (
+        <Card title="Approved Ticket" style={{ marginBottom: 16 }}>
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="Date">
+              {dayjs(request.selectedTicket.date).format("DD MMM YYYY")}
+            </Descriptions.Item>
+            <Descriptions.Item label="Price">
+              <Text strong style={{ color: "#52c41a" }}>
+                ₹{request.selectedTicket.ticketPrice.toLocaleString()}
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Description" span={2}>
+              <Paragraph style={{ margin: 0 }}>
+                {request.selectedTicket.description}
+              </Paragraph>
+            </Descriptions.Item>
+            {request.ticketApprovalNote && (
+              <Descriptions.Item label="Approval Note" span={2}>
+                <Paragraph style={{ margin: 0 }}>
+                  {request.ticketApprovalNote}
+                </Paragraph>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      );
+    }
+
+    // If request is pending and has ticket details, show selection UI
     return (
       <Card title="Available Tickets" style={{ marginBottom: 16 }}>
         <List
@@ -203,22 +234,70 @@ const RequestDetailsDrawer = ({
           )}
         />
 
-        <Button
-          type="primary"
-          size="large"
-          icon={<SendOutlined />}
-          onClick={handleTicketSubmit}
-          loading={submitting}
-          disabled={!selectedTicket} // Changed from selectedTicket.length === 0
-          block={mobileView}
-          style={{
-            backgroundColor: "#da2c46",
-            borderColor: "#da2c46",
-            marginTop: 16,
-          }}
-        >
-          Submit Selected Ticket
-        </Button>
+        {request.status === "pending" && (
+          <Button
+            type="primary"
+            size="large"
+            icon={<SendOutlined />}
+            onClick={handleTicketSubmit}
+            loading={submitting}
+            disabled={!selectedTicket}
+            block={mobileView}
+            style={{
+              backgroundColor: "#da2c46",
+              borderColor: "#da2c46",
+              marginTop: 16,
+            }}
+          >
+            Submit Selected Ticket
+          </Button>
+        )}
+      </Card>
+    );
+  };
+
+  const renderTicketApprovalStatus = () => {
+    if (!request.ticketDetails || request.ticketDetails.length === 0) {
+      return null;
+    }
+
+    const statusMap = {
+      pending: {
+        color: "orange",
+        icon: <ClockCircleOutlined />,
+        text: "Ticket Pending Approval",
+      },
+      approved: {
+        color: "green",
+        icon: <CheckCircleOutlined />,
+        text: "Ticket Approved",
+      },
+      rejected: {
+        color: "red",
+        icon: <CloseCircleOutlined />,
+        text: "Ticket Rejected",
+      },
+    };
+
+    const statusInfo = statusMap[request.ticketApprovalStatus] || statusMap.pending;
+
+    return (
+      <Card title="Ticket Status" style={{ marginBottom: 16 }}>
+        <Space size="middle">
+          <Badge
+            status={statusInfo.color}
+            text={
+              <Text strong style={{ color: `var(--ant-${statusInfo.color}-6)` }}>
+                {statusInfo.text}
+              </Text>
+            }
+          />
+          {request.ticketApprovalNote && (
+            <Paragraph style={{ margin: 0 }}>
+              <Text type="secondary">{request.ticketApprovalNote}</Text>
+            </Paragraph>
+          )}
+        </Space>
       </Card>
     );
   };
@@ -276,9 +355,6 @@ const RequestDetailsDrawer = ({
               "DD MMM YYYY, HH:mm"
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="Request ID">
-            <Text code>{request._id}</Text>
-          </Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -286,10 +362,11 @@ const RequestDetailsDrawer = ({
         {renderDocuments()}
       </Card>
 
-      {/* Render ticket details only if they exist */}
-      {request.ticketDetails &&
-        request.ticketDetails.length > 0 &&
-        renderTicketDetails()}
+      {/* Render ticket details */}
+      {renderTicketSelection()}
+
+      {/* Render ticket approval status if applicable */}
+      {request.ticketDetails && request.ticketDetails.length > 0 && renderTicketApprovalStatus()}
 
       {(request.status === "approved" || request.status === "rejected") && (
         <Card title="Admin Response" style={{ marginBottom: 16 }}>
@@ -300,12 +377,7 @@ const RequestDetailsDrawer = ({
                 size="small"
                 style={{ marginRight: 8 }}
               />
-              {request.approvedBy || request.rejectedBy || "Admin"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Response Date">
-              {request.responseDate
-                ? dayjs(request.responseDate).format("DD MMM YYYY, HH:mm")
-                : "N/A"}
+              {request.approvedBy || request.rejectedBy || "Employee Admin"}
             </Descriptions.Item>
             {request.adminComments && (
               <Descriptions.Item label="Comments">
@@ -314,11 +386,18 @@ const RequestDetailsDrawer = ({
                 </Paragraph>
               </Descriptions.Item>
             )}
+            {request.approvalNote && (
+              <Descriptions.Item label="Approval Note">
+                <Paragraph style={{ margin: 0 }}>
+                  {request.approvalNote}
+                </Paragraph>
+              </Descriptions.Item>
+            )}
           </Descriptions>
         </Card>
       )}
 
-      <Card title="Request Status" style={{ marginBottom: 16 }}>
+      <Card title="Request Status Timeline" style={{ marginBottom: 16 }}>
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <CheckCircleOutlined
@@ -329,6 +408,9 @@ const RequestDetailsDrawer = ({
               }}
             />
             <Text>Request submitted successfully</Text>
+            <Text type="secondary" style={{ marginLeft: 8 }}>
+              {dayjs(request.createdAt).format("DD MMM, HH:mm")}
+            </Text>
           </div>
 
           {request.status === "pending" && (
@@ -354,6 +436,9 @@ const RequestDetailsDrawer = ({
                 }}
               />
               <Text>Request approved by admin</Text>
+              <Text type="secondary" style={{ marginLeft: 8 }}>
+                {dayjs(request.updatedAt).format("DD MMM, HH:mm")}
+              </Text>
             </div>
           )}
 
@@ -367,21 +452,13 @@ const RequestDetailsDrawer = ({
                 }}
               />
               <Text>Request rejected by admin</Text>
+              <Text type="secondary" style={{ marginLeft: 8 }}>
+                {dayjs(request.updatedAt).format("DD MMM, HH:mm")}
+              </Text>
             </div>
           )}
         </Space>
       </Card>
-
-      {request.status === "pending" && !request.ticketDetails && (
-        <Card>
-          <Alert
-            message="Request Processing Time"
-            description="Requests typically take 3-5 business days to process. You will receive email notifications for status updates."
-            type="info"
-            showIcon
-          />
-        </Card>
-      )}
     </Drawer>
   );
 };
