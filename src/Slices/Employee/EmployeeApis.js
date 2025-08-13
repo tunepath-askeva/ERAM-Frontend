@@ -48,6 +48,12 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    getCompanyNews: builder.query({
+      query: () => ({
+        url: "/employee-news",
+        method: "GET",
+      }),
+    }),
 
     //EmployeeAdmin Apis
     getEmployeeAdminLeaveHistory: builder.query({
@@ -321,6 +327,7 @@ export const {
   useGetEmployeePoliciesQuery,
   useGetRequestHistoryQuery,
   useSubmitSelectedTicketsMutation,
+  useGetCompanyNewsQuery,
 
   //employee admin
   useGetEmployeeAdminLeaveHistoryQuery,
