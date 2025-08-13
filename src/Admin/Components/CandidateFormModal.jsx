@@ -11,6 +11,7 @@ import {
   BookOutlined,
   StarOutlined,
   ShopOutlined,
+  GlobalOutlined,
 } from "@ant-design/icons";
 import {
   useAddCandidateMutation,
@@ -18,6 +19,7 @@ import {
   useGetClientsQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
+import { countryMobileLimits, phoneUtils, countryInfo } from "../../utils/countryMobileLimits.js";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -30,6 +32,8 @@ const CandidateFormModal = ({
   editingCandidate,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
+  const [selectedCountryCode, setSelectedCountryCode] = useState("91"); // Default to India
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
   const { enqueueSnackbar } = useSnackbar();
@@ -46,6 +50,29 @@ const CandidateFormModal = ({
   const isEditMode = !!editingCandidate;
   const isLoading = isAdding || isEditing;
 
+  // Parse phone number when editing
+  const parsePhoneNumber = (fullPhone) => {
+    if (!fullPhone || !fullPhone.startsWith('+')) {
+      return { countryCode: "91", phoneNumber: fullPhone || "" };
+    }
+    
+    // Try to find matching country code
+    const phoneWithoutPlus = fullPhone.substring(1);
+    const supportedCodes = phoneUtils.getSupportedCountryCodes().sort((a, b) => b.length - a.length);
+    
+    for (const code of supportedCodes) {
+      if (phoneWithoutPlus.startsWith(code)) {
+        return {
+          countryCode: code,
+          phoneNumber: phoneWithoutPlus.substring(code.length)
+        };
+      }
+    }
+    
+    // Default fallback
+    return { countryCode: "91", phoneNumber: phoneWithoutPlus };
+  };
+
   useEffect(() => {
     if (visible) {
       if (isEditMode && editingCandidate) {
@@ -53,11 +80,17 @@ const CandidateFormModal = ({
           editingCandidate.fullName.split(" ");
         const lastName = lastNameParts.join(" ");
 
+        // Parse phone number for editing
+        const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(editingCandidate.phone);
+        setSelectedCountryCode(countryCode);
+        setPhoneNumber(parsedPhone);
+
         form.setFieldsValue({
           firstName: firstName || "",
           lastName: lastName || "",
           email: editingCandidate.email || "",
-          phone: editingCandidate.phone || "",
+          countryCode: countryCode,
+          phoneNumber: parsedPhone,
           companyName: editingCandidate.companyName || "",
           specialization: editingCandidate.specialization || "",
           experience: editingCandidate.totalExperienceYears || "",
@@ -67,20 +100,27 @@ const CandidateFormModal = ({
         });
       } else {
         form.resetFields();
+        setSelectedCountryCode("91"); // Reset to default
+        setPhoneNumber("");
+        form.setFieldsValue({
+          countryCode: "91",
+        });
       }
     }
   }, [visible, form, isEditMode, editingCandidate]);
 
   const handleSubmit = async (values) => {
     try {
-      const { confirmPassword, firstName, lastName, ...payload } = values;
+      const { confirmPassword, firstName, lastName, countryCode, phoneNumber, ...payload } = values;
 
       const fullName = `${firstName} ${lastName}`.trim();
+      const fullPhoneNumber = phoneUtils.formatWithCountryCode(countryCode, phoneNumber);
 
       if (isEditMode) {
         const editPayload = {
           ...payload,
           fullName,
+          phone: fullPhoneNumber,
         };
 
         if (!payload.password) {
@@ -99,6 +139,7 @@ const CandidateFormModal = ({
         const createPayload = {
           ...payload,
           fullName,
+          phone: fullPhoneNumber,
           role: "candidate",
         };
 
@@ -114,6 +155,8 @@ const CandidateFormModal = ({
 
       onCancel();
       form.resetFields();
+      setSelectedCountryCode("91");
+      setPhoneNumber("");
     } catch (error) {
       console.error(
         `Error ${isEditMode ? "updating" : "creating"} candidate:`,
@@ -141,6 +184,56 @@ const CandidateFormModal = ({
     }
     return Promise.reject(new Error("Passwords do not match!"));
   };
+
+  const validatePhoneNumber = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please enter phone number"));
+    }
+
+    const cleanNumber = value.replace(/\D/g, "");
+    const isValid = phoneUtils.validateMobileNumber(selectedCountryCode, cleanNumber);
+    
+    if (!isValid) {
+      const limits = phoneUtils.getLimits(selectedCountryCode);
+      return Promise.reject(
+        new Error(
+          `Phone number must be between ${limits.min} and ${limits.max} digits for ${countryInfo[selectedCountryCode]?.name || 'selected country'}`
+        )
+      );
+    }
+
+    return Promise.resolve();
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const value = e.target.value;
+    const cleanValue = value.replace(/\D/g, ""); // Remove non-digits
+    
+    const limits = phoneUtils.getLimits(selectedCountryCode);
+    if (limits && cleanValue.length <= limits.max) {
+      setPhoneNumber(cleanValue);
+      form.setFieldsValue({ phoneNumber: cleanValue });
+    }
+  };
+
+  const handleCountryCodeChange = (value) => {
+    setSelectedCountryCode(value);
+    // Re-validate phone number when country code changes
+    form.validateFields(['phoneNumber']);
+  };
+
+  const getCountryOptions = () => {
+    return phoneUtils.getSupportedCountryCodes().map(code => {
+      const country = countryInfo[code];
+      return {
+        value: code,
+        label: `${country?.flag || ''} ${country?.name || `Country ${code}`} (+${code})`,
+        searchText: `${country?.name || ''} ${code}`.toLowerCase(),
+      };
+    }).sort((a, b) => a.label.localeCompare(b.label));
+  };
+
+  const countryOptions = getCountryOptions();
 
   return (
     <Modal
@@ -222,15 +315,48 @@ const CandidateFormModal = ({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              label="Phone"
-              name="phone"
-              rules={[{ required: true, message: "Please enter phone number" }]}
-            >
-              <Input
-                prefix={<PhoneOutlined />}
-                placeholder="Enter phone number"
-              />
+            <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
+              <Input.Group compact>
+                <Form.Item
+                  name="countryCode"
+                  style={{ width: "40%" }}
+                  rules={[{ required: true, message: "Select country" }]}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Country"
+                    value={selectedCountryCode}
+                    onChange={handleCountryCodeChange}
+                    filterOption={(input, option) =>
+                      option.searchText?.includes(input.toLowerCase())
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    {countryOptions.map(option => (
+                      <Option 
+                        key={option.value} 
+                        value={option.value}
+                        searchText={option.searchText}
+                      >
+                        {option.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="phoneNumber"
+                  style={{ width: "60%" }}
+                  rules={[{ validator: validatePhoneNumber }]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined />}
+                    placeholder={`Enter ${phoneUtils.getLimits(selectedCountryCode)?.min || 0}-${phoneUtils.getLimits(selectedCountryCode)?.max || 0} digits`}
+                    value={phoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    maxLength={phoneUtils.getLimits(selectedCountryCode)?.max || 15}
+                  />
+                </Form.Item>
+              </Input.Group>
             </Form.Item>
           </Col>
         </Row>
