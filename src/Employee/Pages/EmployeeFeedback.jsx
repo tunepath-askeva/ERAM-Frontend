@@ -1,23 +1,26 @@
 import React, { useState } from "react";
 import { Form, Input, Select, Button, message, Card } from "antd";
-
+import { useSubmitFeedbackMutation } from "../../Slices/Employee/EmployeeApis";
 const { Option } = Select;
 const { TextArea } = Input;
 
 const EmployeeFeedback = () => {
   const [form] = Form.useForm();
   const [feedbackType, setFeedbackType] = useState("suggestion");
+  const [submitFeedback, { isLoading }] = useSubmitFeedbackMutation();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Submitted:", values);
-      message.success("Feedback submitted successfully!");
+  const onFinish = async (values) => {
+    try {
+      const response = await submitFeedback(values).unwrap();
+      message.success(response.message || "Feedback submitted successfully!");
       form.resetFields();
-      setLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+      message.error(
+        error.data?.message || "Failed to submit feedback. Please try again."
+      );
+    }
   };
 
   const handleTypeChange = (value) => {

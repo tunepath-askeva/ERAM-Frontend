@@ -317,6 +317,19 @@ export const employeeApi = createApi({
         method: "PATCH",
       }),
     }),
+    getFeedbacks: builder.query({
+      query: () => ({
+        url: "/feedback",
+        method: "GET",
+      }),
+    }),
+    submitFeedback: builder.mutation({
+      query: (feedbackData) => ({
+        url: "/feedback",
+        method: "POST",
+        body: feedbackData,
+      }),
+    }),
   }),
 });
 
@@ -360,4 +373,6 @@ export const {
   useUpdateNewsMutation,
   useDeleteNewsMutation,
   usePublishNewsMutation,
+  useGetFeedbacksQuery,
+  useSubmitFeedbackMutation,
 } = employeeApi;
