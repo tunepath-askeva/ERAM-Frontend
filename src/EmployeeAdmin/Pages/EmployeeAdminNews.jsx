@@ -108,17 +108,14 @@ const EmployeeAdminNews = () => {
       formData.append("title", values.title);
       formData.append("description", values.description || "");
 
-      // Handle cover image
       if (values.coverImage?.fileList?.[0]) {
         const coverFile = values.coverImage.fileList[0];
         if (coverFile.originFileObj) {
-          // New file upload
           formData.append("files", coverFile.originFileObj);
           formData.append("coverImage", coverFile.name);
         }
       }
 
-      // Handle subsections
       if (values.subsections && values.subsections.length > 0) {
         values.subsections.forEach((section, index) => {
           formData.append(`subsections[${index}][subtitle]`, section.title);
@@ -127,11 +124,9 @@ const EmployeeAdminNews = () => {
             section.content
           );
 
-          // Handle subsection images
           if (section.image?.fileList?.[0]) {
             const imageFile = section.image.fileList[0];
             if (imageFile.originFileObj) {
-              // New file upload
               formData.append("files", imageFile.originFileObj);
               formData.append(`subsections[${index}][image]`, imageFile.name);
             }
@@ -542,7 +537,7 @@ const EmployeeAdminNews = () => {
         <div>
           <p>
             Are you sure you want to{" "}
-            {currentRecord?.status === "published" ? "unpublish" : "publish"}{" "}
+            {currentRecord?.status === "published" ? "draft" : "publish"}{" "}
             <strong>"{currentRecord?.title}"</strong>?
           </p>
           <p style={{ color: "#666", fontSize: "14px" }}>
