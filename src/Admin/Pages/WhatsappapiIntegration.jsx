@@ -179,6 +179,13 @@ const WhatsAppConfig = () => {
         </div>
       ),
     },
+        {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      render: (event) => <Tag color="red">{event}</Tag>,
+    },
     {
       title: "Variables",
       key: "variables",
