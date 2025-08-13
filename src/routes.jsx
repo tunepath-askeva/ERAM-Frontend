@@ -84,6 +84,7 @@ import EmployeeCompanyNews from "./Employee/Pages/EmployeeCompanyNews";
 import NewsDetailView from "./EmployeeAdmin/Components/NewsDetailView";
 import EditNews from "./EmployeeAdmin/Components/EditNews";
 import EmployeeFeedback from "./Employee/Pages/EmployeeFeedback";
+import EmployeeAdminFeedback from "./EmployeeAdmin/Pages/EmployeeAdminFeedback";
 
 const AppRoutes = () => {
   return (
@@ -370,6 +371,7 @@ const AppRoutes = () => {
           path="/employee-admin/news"
           element={<ProtectedEmployeeAdmin element={<EmployeeAdminNews />} />}
         />
+
         <Route
           path="/employee-admin/news/edit/:id"
           element={<ProtectedEmployeeAdmin element={<EditNews />} />}
@@ -377,6 +379,10 @@ const AppRoutes = () => {
         <Route
           path="/employee-admin/news/view/:id"
           element={<ProtectedEmployeeAdmin element={<NewsDetailView />} />}
+        />
+        <Route
+          path="/employee-admin/feedback"
+          element={<ProtectedEmployeeAdmin element={<EmployeeAdminFeedback />} />}
         />
         <Route
           path="/employee-admin/payroll"

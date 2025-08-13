@@ -10,6 +10,7 @@ import {
   PullRequestOutlined,
   ImportOutlined,
   PaperClipOutlined,
+  IssuesCloseOutlined
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -84,6 +85,11 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/news",
       icon: <PaperClipOutlined />,
       label: "News",
+    },
+    {
+      key: "/employee-admin/feedback",
+      icon: <IssuesCloseOutlined />,
+      label: "Feedback/Suggestion",
     },
   ];
 
