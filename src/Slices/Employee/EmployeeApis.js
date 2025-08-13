@@ -278,6 +278,32 @@ export const employeeApi = createApi({
         body: newsData,
       }),
     }),
+    getNews: builder.query({
+      query: () => ({
+        url: "/news",
+        method: "GET",
+      }),
+    }),
+    getNewsById: builder.query({
+      query: (id) => ({
+        url: `/news/${id}`,
+        method: "GET",
+      }),
+    }),
+    updateNews: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/news/${id}`,
+        method: "PUT",
+        body: formData,
+      }),
+    }),
+
+    deleteNews: builder.mutation({
+      query: (id) => ({
+        url: `/news/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -315,4 +341,8 @@ export const {
   useApproveSelectedTicketMutation,
   useChangeOtherRequestStatusMutation,
   useCreateNewsMutation,
+  useGetNewsQuery,
+  useGetNewsByIdQuery,
+  useUpdateNewsMutation,
+  useDeleteNewsMutation,
 } = employeeApi;

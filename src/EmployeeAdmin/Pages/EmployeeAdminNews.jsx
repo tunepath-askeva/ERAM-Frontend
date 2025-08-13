@@ -15,7 +15,8 @@ import {
   Col,
   message,
   Popconfirm,
-  Drawer,
+  Spin,
+  Image,
 } from "antd";
 import {
   PlusOutlined,
@@ -26,20 +27,32 @@ import {
   GlobalOutlined,
   UploadOutlined,
   MinusCircleOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useCreateNewsMutation } from "../../Slices/Employee/EmployeeApis";
+import {
+  useCreateNewsMutation,
+  useGetNewsQuery,
+  useDeleteNewsMutation,
+} from "../../Slices/Employee/EmployeeApis";
+import { useNavigate } from "react-router-dom";
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
+const { confirm } = Modal;
 
 const EmployeeAdminNews = () => {
   const [form] = Form.useForm();
-  const [newsData, setNewsData] = useState([]);
-  const [editingNews, setEditingNews] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
-  const [viewingNews, setViewingNews] = useState(null);
+  const navigate = useNavigate();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [publishModalVisible, setPublishModalVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
 
+  const {
+    data: companyNews,
+    isLoading: isLoadingNews,
+    refetch,
+  } = useGetNewsQuery();
   const [createNews, { isLoading: isCreatingNews }] = useCreateNewsMutation();
+  const [deleteNews, { isLoading: isDeletingNews }] = useDeleteNewsMutation();
 
   const customStyles = {
     primaryColor: "#da2c46",
@@ -55,127 +68,134 @@ const EmployeeAdminNews = () => {
     },
   };
 
+  const newsData =
+    companyNews?.news?.map((item) => ({
+      id: item._id,
+      title: item.title,
+      description: item.description || "",
+      subsections:
+        item.subsections?.map((sub) => ({
+          id: sub._id,
+          title: sub.subtitle,
+          content: sub.subdescription,
+          image: sub.image,
+        })) || [],
+      status: item.status || "draft",
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || new Date().toISOString(),
+      coverImage: item.coverImage || "",
+    })) || [];
+
+  const createFileList = (imageUrl, fileName = "image") => {
+    if (!imageUrl) return undefined;
+    return {
+      fileList: [
+        {
+          uid: "-1",
+          name: fileName,
+          status: "done",
+          url: imageUrl,
+          thumbUrl: imageUrl,
+        },
+      ],
+    };
+  };
+
   const handleSubmit = async (values) => {
     try {
-      if (editingNews) {
-        const updatedNews = {
-          id: editingNews.id,
-          ...values,
-          status: editingNews.status,
-          createdAt: editingNews.createdAt,
-          updatedAt: new Date().toISOString(),
-          coverImage:
-            values.coverImage?.fileList?.[0]?.name || editingNews.coverImage,
-        };
+      const formData = new FormData();
 
-        setNewsData((prev) =>
-          prev.map((item) => (item.id === editingNews.id ? updatedNews : item))
-        );
-        message.success("News updated successfully!");
-        form.resetFields();
-        setEditingNews(null);
-      } else {
-        const formData = new FormData();
+      formData.append("title", values.title);
+      formData.append("description", values.description || "");
 
-        formData.append("title", values.title);
-        formData.append("description", values.description);
-
-        if (
-          values.coverImage &&
-          values.coverImage.fileList &&
-          values.coverImage.fileList[0]
-        ) {
-          formData.append("files", values.coverImage.fileList[0].originFileObj);
-          formData.append("coverImage", values.coverImage.fileList[0].name);
+      // Handle cover image
+      if (values.coverImage?.fileList?.[0]) {
+        const coverFile = values.coverImage.fileList[0];
+        if (coverFile.originFileObj) {
+          // New file upload
+          formData.append("files", coverFile.originFileObj);
+          formData.append("coverImage", coverFile.name);
         }
-
-        if (values.subsections && values.subsections.length > 0) {
-          values.subsections.forEach((section, index) => {
-            // Append each subsection field with array notation
-            formData.append(`subsections[${index}][subtitle]`, section.title);
-            formData.append(
-              `subsections[${index}][subdescription]`,
-              section.content
-            );
-
-            if (section.image?.fileList?.[0]) {
-              formData.append("files", section.image.fileList[0].originFileObj);
-              formData.append(
-                `subsections[${index}][image]`,
-                section.image.fileList[0].name
-              );
-            } else {
-              formData.append(`subsections[${index}][image]`, "");
-            }
-          });
-        }
-        const result = await createNews(formData).unwrap();
-
-        const newNewsItem = {
-          id: result.news.id,
-          title: result.news.title,
-          description: result.news.description,
-          subsections:
-            result.news.subsections?.map((sub) => ({
-              title: sub.subtitle,
-              content: sub.subdescription,
-              image: sub.image,
-            })) || [],
-          status: "published",
-          createdAt: result.news.createdAt,
-          updatedAt: result.news.updatedAt,
-          coverImage: result.news.coverImage,
-        };
-
-        setNewsData((prev) => [...prev, newNewsItem]);
-        message.success(result.message || "News created successfully!");
-        form.resetFields();
       }
+
+      // Handle subsections
+      if (values.subsections && values.subsections.length > 0) {
+        values.subsections.forEach((section, index) => {
+          formData.append(`subsections[${index}][subtitle]`, section.title);
+          formData.append(
+            `subsections[${index}][subdescription]`,
+            section.content
+          );
+
+          // Handle subsection images
+          if (section.image?.fileList?.[0]) {
+            const imageFile = section.image.fileList[0];
+            if (imageFile.originFileObj) {
+              // New file upload
+              formData.append("files", imageFile.originFileObj);
+              formData.append(`subsections[${index}][image]`, imageFile.name);
+            }
+          } else {
+            formData.append(`subsections[${index}][image]`, "");
+          }
+        });
+      }
+
+      const result = await createNews(formData).unwrap();
+      message.success(result.message || "News created successfully!");
+      form.resetFields();
+      refetch();
     } catch (error) {
-      console.error("Error submitting news:", error);
-      message.error(error?.data?.message || "Failed to save news");
+      console.error("Error creating news:", error);
+      message.error(error?.data?.message || "Failed to create news");
     }
   };
 
   const handleEdit = (record) => {
-    setEditingNews(record);
-    form.setFieldsValue({
-      ...record,
-      coverImage: record.coverImage
-        ? { fileList: [{ name: record.coverImage }] }
-        : undefined,
-      subsections:
-        record.subsections?.map((section) => ({
-          ...section,
-          image: section.image
-            ? { fileList: [{ name: section.image }] }
-            : undefined,
-        })) || [],
-    });
+    navigate(`/employee-admin/news/edit/${record.id}`);
   };
 
-  const handleDelete = (id) => {
-    setNewsData((prev) => prev.filter((item) => item.id !== id));
-    message.success("News deleted successfully!");
+  const showDeleteConfirm = (record) => {
+    setCurrentRecord(record);
+    setDeleteModalVisible(true);
   };
 
-  const handlePublish = (id) => {
-    setNewsData((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: item.status === "published" ? "draft" : "published",
-            }
-          : item
-      )
-    );
-    message.success("News status updated!");
+  const handleDeleteNews = async () => {
+    try {
+      const result = await deleteNews(currentRecord.id).unwrap();
+      message.success(result.message || "News deleted successfully!");
+      setDeleteModalVisible(false);
+       refetch();
+    } catch (error) {
+      console.error("Error deleting news:", error);
+      message.error(error?.data?.message || "Failed to delete news");
+    }
+  };
+
+  const showPublishConfirm = (record) => {
+    setCurrentRecord(record);
+    setPublishModalVisible(true);
+  };
+
+  const handlePublishNews = async () => {
+    try {
+      // Implement your publish/unpublish logic here
+      // const result = await publishNews(currentRecord.id).unwrap();
+      message.success("News status updated successfully!");
+      setPublishModalVisible(false);
+      refetch(); 
+    } catch (error) {
+      console.error("Error updating news status:", error);
+      message.error(error?.data?.message || "Failed to update news status");
+    }
   };
 
   const handleView = (record) => {
-    setViewingNews(record);
-    setViewDrawerVisible(true);
+    navigate(`/employee-admin/news/view/${record.id}`);
+  };
+
+  const handleCancel = () => {
+    form.resetFields();
   };
 
   const columns = [
@@ -186,6 +206,16 @@ const EmployeeAdminNews = () => {
       render: (text) => (
         <Text strong style={{ color: "#da2c46" }}>
           {text}
+        </Text>
+      ),
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      render: (text) => (
+        <Text ellipsis style={{ maxWidth: 200 }}>
+          {text || "No description"}
         </Text>
       ),
     },
@@ -215,6 +245,7 @@ const EmployeeAdminNews = () => {
             onClick={() => handleView(record)}
             size="small"
             type="text"
+            title="View Details"
           />
           <Button
             icon={<EditOutlined />}
@@ -222,24 +253,26 @@ const EmployeeAdminNews = () => {
             size="small"
             type="text"
             style={{ color: "#da2c46" }}
+            title="Edit News"
           />
           <Button
             icon={<GlobalOutlined />}
-            onClick={() => handlePublish(record.id)}
+            onClick={() => showPublishConfirm(record)}
             size="small"
             type="text"
             style={{
-              color: record.status === "published" ? "#52c41a" : "#1890ff",
+              color: record.status === "published" ? "#fa8c16" : "#52c41a",
             }}
+            title={record.status === "published" ? "Unpublish" : "Publish"}
           />
-          <Popconfirm
-            title="Are you sure you want to delete this news?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button icon={<DeleteOutlined />} size="small" type="text" danger />
-          </Popconfirm>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => showDeleteConfirm(record)}
+            size="small"
+            type="text"
+            danger
+            title="Delete News"
+          />
         </Space>
       ),
     },
@@ -249,6 +282,25 @@ const EmployeeAdminNews = () => {
     beforeUpload: () => false,
     maxCount: 1,
     accept: "image/*",
+    listType: "picture-card",
+    showUploadList: {
+      showPreviewIcon: true,
+      showRemoveIcon: true,
+    },
+    onPreview: async (file) => {
+      let src = file.url || file.thumbUrl;
+      if (!src) {
+        src = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file.originFileObj);
+          reader.onload = () => resolve(reader.result);
+        });
+      }
+      const image = new Image();
+      image.src = src;
+      const imgWindow = window.open(src);
+      imgWindow?.document.write(image.outerHTML);
+    },
   };
 
   return (
@@ -267,24 +319,9 @@ const EmployeeAdminNews = () => {
         <Col span={24}>
           <Card
             title={
-              <span style={{ color: "#da2c46" }}>
-                {editingNews ? "Edit News Article" : "Create News Article"}
-              </span>
+              <span style={{ color: "#da2c46" }}>Create News Article</span>
             }
             style={customStyles.cardStyle}
-            extra={
-              editingNews && (
-                <Button
-                  onClick={() => {
-                    setEditingNews(null);
-                    form.resetFields();
-                  }}
-                  type="text"
-                >
-                  Cancel Edit
-                </Button>
-              )
-            }
           >
             <Form
               form={form}
@@ -310,24 +347,16 @@ const EmployeeAdminNews = () => {
                 <Col xs={24} md={12}>
                   <Form.Item label="Cover Image" name="coverImage">
                     <Upload {...uploadProps}>
-                      <Button
-                        icon={<UploadOutlined />}
-                        style={{ borderRadius: "6px" }}
-                      >
-                        Upload Cover Image
-                      </Button>
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>Upload Cover</div>
+                      </div>
                     </Upload>
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Form.Item
-                label="News Description"
-                name="description"
-                rules={[
-                  { required: true, message: "Please enter news description" },
-                ]}
-              >
+              <Form.Item label="News Description" name="description">
                 <TextArea
                   rows={4}
                   placeholder="Write a comprehensive description of the news..."
@@ -394,13 +423,10 @@ const EmployeeAdminNews = () => {
                           name={[name, "image"]}
                         >
                           <Upload {...uploadProps}>
-                            <Button
-                              icon={<UploadOutlined />}
-                              style={{ borderRadius: "6px" }}
-                              size="small"
-                            >
-                              Upload Image
-                            </Button>
+                            <div>
+                              <PlusOutlined />
+                              <div style={{ marginTop: 8 }}>Upload Image</div>
+                            </div>
                           </Upload>
                         </Form.Item>
                       </Card>
@@ -433,7 +459,7 @@ const EmployeeAdminNews = () => {
                   style={customStyles.buttonStyle}
                   icon={<FileTextOutlined />}
                 >
-                  {editingNews ? "Update News" : "Create News"}
+                  Create News
                 </Button>
               </Form.Item>
             </Form>
@@ -446,7 +472,7 @@ const EmployeeAdminNews = () => {
         <Col span={24}>
           <Card
             title={
-              <span style={{ color: "#da2c46" }}>Published News Articles</span>
+              <span style={{ color: "#da2c46" }}>Company News Articles</span>
             }
             style={customStyles.cardStyle}
           >
@@ -454,6 +480,7 @@ const EmployeeAdminNews = () => {
               columns={columns}
               dataSource={newsData}
               rowKey="id"
+              loading={isLoadingNews}
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
@@ -468,60 +495,103 @@ const EmployeeAdminNews = () => {
         </Col>
       </Row>
 
-      {/* View News Drawer */}
-      <Drawer
-        title={<span style={{ color: "#da2c46" }}>News Article Preview</span>}
-        placement="right"
-        width={600}
-        onClose={() => setViewDrawerVisible(false)}
-        open={viewDrawerVisible}
+      <Modal
+        title="Delete News Article"
+        visible={deleteModalVisible}
+        onOk={handleDeleteNews}
+        onCancel={() => setDeleteModalVisible(false)}
+        okText="Yes, Delete"
+        okButtonProps={{ danger: true }}
+        cancelText="Cancel"
+        confirmLoading={isDeletingNews}
+        width={450}
       >
-        {viewingNews && (
-          <div>
-            <Title level={3}>{viewingNews.title}</Title>
-            <Tag
-              color={viewingNews.status === "published" ? "green" : "orange"}
-            >
-              {viewingNews.status.toUpperCase()}
-            </Tag>
-            <Divider />
+        <div>
+          <p>
+            Are you sure you want to delete{" "}
+            <strong>"{currentRecord?.title}"</strong>?
+          </p>
+          <p style={{ color: "#666", fontSize: "14px" }}>
+            This action cannot be undone. The news article and all its content
+            will be permanently removed.
+          </p>
+        </div>
+      </Modal>
 
-            <Text strong>Description:</Text>
-            <Paragraph>{viewingNews.description}</Paragraph>
+      <Modal
+        title={`${
+          currentRecord?.status === "published" ? "Unpublish" : "Publish"
+        } News Article`}
+        visible={publishModalVisible}
+        onOk={handlePublishNews}
+        onCancel={() => setPublishModalVisible(false)}
+        okText={`Yes, ${
+          currentRecord?.status === "published" ? "Unpublish" : "Publish"
+        }`}
+        okButtonProps={{
+          style: {
+            backgroundColor:
+              currentRecord?.status === "published" ? "#fa8c16" : "#52c41a",
+            borderColor:
+              currentRecord?.status === "published" ? "#fa8c16" : "#52c41a",
+          },
+        }}
+        cancelText="Cancel"
+        width={450}
+      >
+        <div>
+          <p>
+            Are you sure you want to{" "}
+            {currentRecord?.status === "published" ? "unpublish" : "publish"}{" "}
+            <strong>"{currentRecord?.title}"</strong>?
+          </p>
+          <p style={{ color: "#666", fontSize: "14px" }}>
+            {currentRecord?.status === "published"
+              ? "This will make the news article private and remove it from public view."
+              : "This will make the news article public and visible to all employees."}
+          </p>
+        </div>
+      </Modal>
 
-            {viewingNews.subsections && viewingNews.subsections.length > 0 && (
-              <>
-                <Divider />
-                <Title level={4}>Subsections:</Title>
-                {viewingNews.subsections.map((section, index) => (
-                  <Card
-                    key={index}
-                    size="small"
-                    style={{ marginBottom: "12px" }}
-                  >
-                    <Title level={5}>{section.title}</Title>
-                    <Paragraph>{section.content}</Paragraph>
-                    {section.image && (
-                      <div style={{ marginTop: "8px" }}>
-                        <Text type="secondary">Image: {section.image}</Text>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </>
-            )}
-
-            <Divider />
-            <Text type="secondary">
-              Created: {new Date(viewingNews.createdAt).toLocaleString()}
-            </Text>
-            <br />
-            <Text type="secondary">
-              Updated: {new Date(viewingNews.updatedAt).toLocaleString()}
-            </Text>
-          </div>
-        )}
-      </Drawer>
+      <style jsx>{`
+        .ant-table-thead > tr > th {
+          background-color: #fafafa !important;
+          font-weight: 600 !important;
+        }
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-ink-bar {
+          background-color: #da2c46 !important;
+        }
+        .ant-modal-confirm .ant-modal-confirm-title {
+          font-weight: 600;
+        }
+        .ant-modal-confirm .ant-modal-confirm-content {
+          margin-top: 16px;
+        }
+        .ant-upload-select-picture-card i {
+          font-size: 32px;
+          color: #999;
+        }
+        .ant-upload-select-picture-card .ant-upload-text {
+          margin-top: 8px;
+          color: #666;
+        }
+      `}</style>
     </div>
   );
 };
