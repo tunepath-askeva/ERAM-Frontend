@@ -32,7 +32,7 @@ const CandidateFormModal = ({
   editingCandidate,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
-  const [selectedCountryCode, setSelectedCountryCode] = useState("91"); // Default to India
+  const [selectedCountryCode, setSelectedCountryCode] = useState("91"); 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
@@ -50,13 +50,11 @@ const CandidateFormModal = ({
   const isEditMode = !!editingCandidate;
   const isLoading = isAdding || isEditing;
 
-  // Parse phone number when editing
   const parsePhoneNumber = (fullPhone) => {
     if (!fullPhone || !fullPhone.startsWith('+')) {
       return { countryCode: "91", phoneNumber: fullPhone || "" };
     }
     
-    // Try to find matching country code
     const phoneWithoutPlus = fullPhone.substring(1);
     const supportedCodes = phoneUtils.getSupportedCountryCodes().sort((a, b) => b.length - a.length);
     
@@ -69,7 +67,6 @@ const CandidateFormModal = ({
       }
     }
     
-    // Default fallback
     return { countryCode: "91", phoneNumber: phoneWithoutPlus };
   };
 
@@ -80,7 +77,6 @@ const CandidateFormModal = ({
           editingCandidate.fullName.split(" ");
         const lastName = lastNameParts.join(" ");
 
-        // Parse phone number for editing
         const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(editingCandidate.phone);
         setSelectedCountryCode(countryCode);
         setPhoneNumber(parsedPhone);
@@ -100,7 +96,7 @@ const CandidateFormModal = ({
         });
       } else {
         form.resetFields();
-        setSelectedCountryCode("91"); // Reset to default
+        setSelectedCountryCode("91"); 
         setPhoneNumber("");
         form.setFieldsValue({
           countryCode: "91",

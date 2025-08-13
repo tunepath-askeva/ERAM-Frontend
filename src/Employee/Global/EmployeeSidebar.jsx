@@ -8,6 +8,7 @@ import {
   DashboardOutlined,
   MoneyCollectOutlined,
   BellOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -77,6 +78,11 @@ const EmployeeSidebar = ({
       key: "/employee/company-policy",
       icon: <SolutionOutlined />,
       label: "Company Policies",
+    },
+    {
+      key: "/employee/company-news",
+      icon: <PaperClipOutlined />,
+      label: "Company News",
     },
     {
       key: "/employee/notifications",

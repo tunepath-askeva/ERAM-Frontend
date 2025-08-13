@@ -8,6 +8,8 @@ import {
   DashboardOutlined,
   PayCircleOutlined,
   PullRequestOutlined,
+  ImportOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -77,6 +79,11 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/company-policy",
       icon: <SolutionOutlined />,
       label: "Company Policies",
+    },
+    {
+      key: "/employee-admin/news",
+      icon: <PaperClipOutlined />,
+      label: "News",
     },
   ];
 

@@ -79,6 +79,8 @@ import WhatsAppConfigPanel from "./Admin/Pages/WhatsappapiIntegration";
 import SuperAdminWhatsappApi from "./SuperAdmin/Pages/SuperAdminWhatsappApi";
 import EmployeeNotifications from "./Employee/Pages/EmployeeNotifications";
 import EmployeeAdminOtherRequest from "./EmployeeAdmin/Pages/EmployeeAdminOtherRequest";
+import EmployeeAdminNews from "./EmployeeAdmin/Pages/EmployeeAdminNews";
+import EmployeeCompanyNews from "./Employee/Pages/EmployeeCompanyNews";
 
 const AppRoutes = () => {
   return (
@@ -318,6 +320,10 @@ const AppRoutes = () => {
           element={<ProtectedEmployee element={<EmployeeCompanyPolicy />} />}
         />
         <Route
+          path="/employee/company-news"
+          element={<ProtectedEmployee element={<EmployeeCompanyNews />} />}
+        />
+        <Route
           path="/employee/profile-settings"
           element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
         />
@@ -340,7 +346,7 @@ const AppRoutes = () => {
             <ProtectedEmployeeAdmin element={<EmployeeAdminLeaveRequest />} />
           }
         />
-         <Route
+        <Route
           path="/employee-admin/other-request"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminOtherRequest />} />
@@ -351,6 +357,10 @@ const AppRoutes = () => {
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminCompanyPolicy />} />
           }
+        />
+        <Route
+          path="/employee-admin/news"
+          element={<ProtectedEmployeeAdmin element={<EmployeeAdminNews />} />}
         />
         <Route
           path="/employee-admin/payroll"
