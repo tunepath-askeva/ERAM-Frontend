@@ -304,6 +304,13 @@ export const employeeApi = createApi({
         method: "DELETE",
       }),
     }),
+
+    publishNews: builder.mutation({
+      query: (id) => ({
+        url: `/news/${id}`,
+        method: "PATCH",
+      }),
+    }),
   }),
 });
 
@@ -345,4 +352,5 @@ export const {
   useGetNewsByIdQuery,
   useUpdateNewsMutation,
   useDeleteNewsMutation,
+  usePublishNewsMutation,
 } = employeeApi;

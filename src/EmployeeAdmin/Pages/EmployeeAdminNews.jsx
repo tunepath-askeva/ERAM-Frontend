@@ -33,6 +33,7 @@ import {
   useCreateNewsMutation,
   useGetNewsQuery,
   useDeleteNewsMutation,
+  usePublishNewsMutation,
 } from "../../Slices/Employee/EmployeeApis";
 import { useNavigate } from "react-router-dom";
 const { TextArea } = Input;
@@ -53,6 +54,7 @@ const EmployeeAdminNews = () => {
   } = useGetNewsQuery();
   const [createNews, { isLoading: isCreatingNews }] = useCreateNewsMutation();
   const [deleteNews, { isLoading: isDeletingNews }] = useDeleteNewsMutation();
+  const [publishNews, { isLoading: isPublishing }] = usePublishNewsMutation();
 
   const customStyles = {
     primaryColor: "#da2c46",
@@ -160,7 +162,7 @@ const EmployeeAdminNews = () => {
       const result = await deleteNews(currentRecord.id).unwrap();
       message.success(result.message || "News deleted successfully!");
       setDeleteModalVisible(false);
-       refetch();
+      refetch();
     } catch (error) {
       console.error("Error deleting news:", error);
       message.error(error?.data?.message || "Failed to delete news");
@@ -174,11 +176,10 @@ const EmployeeAdminNews = () => {
 
   const handlePublishNews = async () => {
     try {
-      // Implement your publish/unpublish logic here
-      // const result = await publishNews(currentRecord.id).unwrap();
+       const result = await publishNews(currentRecord.id).unwrap();
       message.success("News status updated successfully!");
       setPublishModalVisible(false);
-      refetch(); 
+      refetch();
     } catch (error) {
       console.error("Error updating news status:", error);
       message.error(error?.data?.message || "Failed to update news status");
@@ -201,16 +202,6 @@ const EmployeeAdminNews = () => {
       render: (text) => (
         <Text strong style={{ color: "#da2c46" }}>
           {text}
-        </Text>
-      ),
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      render: (text) => (
-        <Text ellipsis style={{ maxWidth: 200 }}>
-          {text || "No description"}
         </Text>
       ),
     },
