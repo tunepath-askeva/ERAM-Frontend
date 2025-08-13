@@ -90,36 +90,25 @@ const EmployeeAdminNews = () => {
         }
 
         if (values.subsections && values.subsections.length > 0) {
-          const formattedSubsections = values.subsections.map(
-            (section, index) => {
-              if (
-                section.image &&
-                section.image.fileList &&
-                section.image.fileList[0]
-              ) {
-                formData.append(
-                  "files",
-                  section.image.fileList[0].originFileObj
-                );
-              }
+          values.subsections.forEach((section, index) => {
+            // Append each subsection field with array notation
+            formData.append(`subsections[${index}][subtitle]`, section.title);
+            formData.append(
+              `subsections[${index}][subdescription]`,
+              section.content
+            );
 
-              return {
-                subtitle: section.title, 
-                subdescription: section.content, 
-                image:
-                  section.image &&
-                  section.image.fileList &&
-                  section.image.fileList[0]
-                    ? section.image.fileList[0].name
-                    : null,
-              };
+            if (section.image?.fileList?.[0]) {
+              formData.append("files", section.image.fileList[0].originFileObj);
+              formData.append(
+                `subsections[${index}][image]`,
+                section.image.fileList[0].name
+              );
+            } else {
+              formData.append(`subsections[${index}][image]`, "");
             }
-          );
-          formData.append("subsections", JSON.stringify(formattedSubsections));
-        } else {
-          formData.append("subsections", JSON.stringify([]));
+          });
         }
-
         const result = await createNews(formData).unwrap();
 
         const newNewsItem = {
@@ -132,7 +121,7 @@ const EmployeeAdminNews = () => {
               content: sub.subdescription,
               image: sub.image,
             })) || [],
-          status: "published", 
+          status: "published",
           createdAt: result.news.createdAt,
           updatedAt: result.news.updatedAt,
           coverImage: result.news.coverImage,
