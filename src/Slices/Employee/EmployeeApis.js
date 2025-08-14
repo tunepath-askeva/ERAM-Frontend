@@ -363,6 +363,15 @@ export const employeeApi = createApi({
         };
       },
     }),
+    getEmployeeAdminDocuments: builder.query({
+      query: () => ({
+        url: "/admin-doc",
+        method: "GET",
+      }),
+    }),
+    getEmployeeAdminDocumentById: builder.query({
+      query: (id) => `/admin-doc/${id}`,
+    }),
   }),
 });
 
@@ -412,4 +421,6 @@ export const {
   useUploadEmployeeDocumentMutation,
   useReplaceEmployeeDocumentMutation,
   useSetEmployeeDocumentAlertDateMutation,
+  useGetEmployeeAdminDocumentsQuery,
+  useGetEmployeeAdminDocumentByIdQuery,
 } = employeeApi;

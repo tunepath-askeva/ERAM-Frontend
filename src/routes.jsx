@@ -87,6 +87,7 @@ import EmployeeFeedback from "./Employee/Pages/EmployeeFeedback";
 import EmployeeAdminFeedback from "./EmployeeAdmin/Pages/EmployeeAdminFeedback";
 import EmployeeDocuments from "./Employee/Pages/EmployeeDocuments";
 import EmployeeAdminDocuments from "./EmployeeAdmin/Pages/EmployeeAdminDocuments";
+import EmployeeDocumentDetail from "./EmployeeAdmin/Components/EmployeeDocumentDetails";
 
 const AppRoutes = () => {
   return (
@@ -381,6 +382,12 @@ const AppRoutes = () => {
           path="/employee-admin/documents"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminDocuments />} />
+          }
+        />
+        <Route
+          path="/employee-admin/documents/:id"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeDocumentDetail />} />
           }
         />
         <Route
