@@ -36,7 +36,10 @@ import {
   ExclamationCircleOutlined,
   NotificationOutlined,
 } from "@ant-design/icons";
-import { useGetEmployeeAdminDocumentByIdQuery } from "../../Slices/Employee/EmployeeApis";
+import {
+  useGetEmployeeAdminDocumentByIdQuery,
+  useNotifyEmployeeMutation,
+} from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -46,14 +49,16 @@ const EmployeeDocumentDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data, isLoading, error } = useGetEmployeeAdminDocumentByIdQuery(id);
-  
+  const [notifyEmployee, { isLoading: isNotifying }] =
+    useNotifyEmployeeMutation();
+
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
   // Get employee email from location state or from API data
-  const employeeEmail = location.state?.employeeEmail || data?.details?.user?.email;
+  const employeeEmail =
+    location.state?.employeeEmail || data?.details?.user?.email;
 
   const handleBack = () => {
     navigate("/employee-admin/documents");
@@ -62,8 +67,8 @@ const EmployeeDocumentDetail = () => {
   const showNotificationModal = () => {
     form.setFieldsValue({
       email: employeeEmail,
-      documentTitle: '',
-      description: ''
+      documentTitle: "",
+      description: "",
     });
     setIsModalVisible(true);
   };
@@ -74,21 +79,21 @@ const EmployeeDocumentDetail = () => {
   };
 
   const handleSubmitNotification = async (values) => {
-    setLoading(true);
     try {
-      // TODO: Replace this with your actual API call
-      console.log('Notification data:', values);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      message.success('Notification sent successfully!');
+      await notifyEmployee({
+        email: values.email,
+        title: values.documentTitle,
+        description: values.description,
+      }).unwrap();
+
+      message.success("Notification sent successfully!");
       setIsModalVisible(false);
       form.resetFields();
     } catch (err) {
-      message.error('Failed to send notification. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error("Notification error:", err);
+      message.error(
+        err.data?.message || "Failed to send notification. Please try again."
+      );
     }
   };
 
@@ -200,16 +205,23 @@ const EmployeeDocumentDetail = () => {
         <div>
           <Space>
             <FileTextOutlined style={{ color: "#da2c46" }} />
-            <span style={{ fontWeight: "500", fontSize: "clamp(12px, 2.5vw, 14px)" }}>
+            <span
+              style={{
+                fontWeight: "500",
+                fontSize: "clamp(12px, 2.5vw, 14px)",
+              }}
+            >
               {name}
             </span>
           </Space>
-          <div style={{ 
-            fontSize: "11px", 
-            color: "#999", 
-            marginTop: "2px",
-            display: "block"
-          }}>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "#999",
+              marginTop: "2px",
+              display: "block",
+            }}
+          >
             {record.fileName}
           </div>
         </div>
@@ -245,9 +257,14 @@ const EmployeeDocumentDetail = () => {
             <CalendarOutlined style={{ color: "#666", marginRight: "4px" }} />
             {formatDate(record.uploadedAt)}
           </div>
-          <div style={{
-            color: record.expiryDate && new Date(record.expiryDate) < new Date() ? "#ff4d4f" : "inherit",
-          }}>
+          <div
+            style={{
+              color:
+                record.expiryDate && new Date(record.expiryDate) < new Date()
+                  ? "#ff4d4f"
+                  : "inherit",
+            }}
+          >
             Exp: {formatDate(record.expiryDate)}
           </div>
         </div>
@@ -294,19 +311,19 @@ const EmployeeDocumentDetail = () => {
   return (
     <div style={{ padding: "8px 16px" }}>
       {/* Header */}
-      <Card 
-        size="small" 
-        style={{ 
+      <Card
+        size="small"
+        style={{
           marginBottom: "16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <Space 
-          align="center" 
-          style={{ 
+        <Space
+          align="center"
+          style={{
             marginBottom: "12px",
             flexWrap: "wrap",
-            width: "100%"
+            width: "100%",
           }}
         >
           <Button
@@ -320,12 +337,12 @@ const EmployeeDocumentDetail = () => {
           >
             Back
           </Button>
-          <Title 
-            level={2} 
-            style={{ 
-              margin: 0, 
+          <Title
+            level={2}
+            style={{
+              margin: 0,
               color: "#da2c46",
-              fontSize: "clamp(16px, 4vw, 24px)"
+              fontSize: "clamp(16px, 4vw, 24px)",
             }}
           >
             Employee Document Details
@@ -336,9 +353,9 @@ const EmployeeDocumentDetail = () => {
       {/* Documents Section */}
       <Card
         size="small"
-        style={{ 
+        style={{
           marginTop: "16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
         title={
           <Space>
@@ -377,11 +394,11 @@ const EmployeeDocumentDetail = () => {
       </Card>
 
       {/* Action Card */}
-      <Card 
-        size="small" 
-        style={{ 
+      <Card
+        size="small"
+        style={{
           marginTop: "16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
         <Space wrap>
@@ -424,14 +441,14 @@ const EmployeeDocumentDetail = () => {
             name="email"
             label="Employee Email"
             rules={[
-              { required: true, message: 'Email is required' },
-              { type: 'email', message: 'Please enter a valid email' }
+              { required: true, message: "Email is required" },
+              { type: "email", message: "Please enter a valid email" },
             ]}
           >
-            <Input 
+            <Input
               prefix={<MailOutlined />}
               disabled
-              style={{ backgroundColor: '#f5f5f5' }}
+              style={{ backgroundColor: "#f5f5f5" }}
             />
           </Form.Item>
 
@@ -439,11 +456,11 @@ const EmployeeDocumentDetail = () => {
             name="documentTitle"
             label="Document Title/Subject"
             rules={[
-              { required: true, message: 'Document title is required' },
-              { min: 3, message: 'Title must be at least 3 characters' }
+              { required: true, message: "Document title is required" },
+              { min: 3, message: "Title must be at least 3 characters" },
             ]}
           >
-            <Input 
+            <Input
               prefix={<FileTextOutlined />}
               placeholder="Enter document title or subject"
               maxLength={100}
@@ -455,8 +472,8 @@ const EmployeeDocumentDetail = () => {
             name="description"
             label="Message/Description"
             rules={[
-              { required: true, message: 'Message is required' },
-              { min: 10, message: 'Message must be at least 10 characters' }
+              { required: true, message: "Message is required" },
+              { min: 10, message: "Message must be at least 10 characters" },
             ]}
           >
             <TextArea
@@ -467,15 +484,13 @@ const EmployeeDocumentDetail = () => {
             />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
-              <Button onClick={handleModalCancel}>
-                Cancel
-              </Button>
+              <Button onClick={handleModalCancel}>Cancel</Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={loading}
+                loading={isNotifying}
                 style={{
                   backgroundColor: "#da2c46",
                   borderColor: "#da2c46",

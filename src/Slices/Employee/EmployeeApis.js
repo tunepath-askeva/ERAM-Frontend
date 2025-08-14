@@ -372,6 +372,13 @@ export const employeeApi = createApi({
     getEmployeeAdminDocumentById: builder.query({
       query: (id) => `/admin-doc/${id}`,
     }),
+    notifyEmployee: builder.mutation({
+      query: (notificationData) => ({
+        url: "/notify",
+        method: "POST",
+        body: notificationData,
+      }),
+    }),
   }),
 });
 
@@ -423,4 +430,5 @@ export const {
   useSetEmployeeDocumentAlertDateMutation,
   useGetEmployeeAdminDocumentsQuery,
   useGetEmployeeAdminDocumentByIdQuery,
+  useNotifyEmployeeMutation,
 } = employeeApi;
