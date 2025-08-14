@@ -335,6 +335,10 @@ const AppRoutes = () => {
           element={<ProtectedEmployee element={<EmployeeFeedback />} />}
         />
         <Route
+          path="/employee/notifications"
+          element={<ProtectedEmployee element={<EmployeeNotifications />} />}
+        />
+        <Route
           path="/employee/profile-settings"
           element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
         />

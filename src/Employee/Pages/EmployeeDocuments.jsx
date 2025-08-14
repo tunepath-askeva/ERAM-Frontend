@@ -63,7 +63,6 @@ const EmployeeDocuments = () => {
   const [replaceEmployeeDocument, { isLoading: isReplacing }] =
     useReplaceEmployeeDocumentMutation();
 
-  // Extract documents from the nested API response structure
   const documents =
     apiResponse?.documents?.length > 0
       ? apiResponse.documents.flatMap(
@@ -337,19 +336,6 @@ const EmployeeDocuments = () => {
     }
   };
 
-  const deleteDocument = async (id, documentName) => {
-    try {
-      // Here you would integrate with your delete API
-      // await deleteDocumentMutation(id);
-
-      message.success(`${documentName} deleted successfully!`);
-      refetch(); // Refresh the documents list
-    } catch (error) {
-      message.error("Failed to delete document. Please try again.");
-      console.error("Delete error:", error);
-    }
-  };
-
   const resetUploadForm = () => {
     setNewDocument({
       file: null,
@@ -410,7 +396,6 @@ const EmployeeDocuments = () => {
       },
     ];
 
-    // Add "Set Expiry" option if document doesn't have expiry date
     if (!doc.expiryDate) {
       actions.push({
         key: "setExpiry",
@@ -419,14 +404,6 @@ const EmployeeDocuments = () => {
         onClick: () => openExpiryModal(doc),
       });
     }
-
-    actions.push({
-      key: "delete",
-      label: "Delete Document",
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => deleteDocument(doc._id, doc.documentName),
-    });
 
     return actions;
   };
@@ -733,52 +710,6 @@ const EmployeeDocuments = () => {
                         Replace
                       </span>
                     </Button>,
-                    <Dropdown
-                      menu={{
-                        items: getDocumentActions(doc).map((action) => ({
-                          key: action.key,
-                          label:
-                            action.key === "delete" ? (
-                              <Popconfirm
-                                title="Delete Document"
-                                description="Are you sure you want to delete this document?"
-                                onConfirm={action.onClick}
-                                okText="Yes"
-                                cancelText="No"
-                                okButtonProps={{
-                                  style: {
-                                    backgroundColor: "#da2c46",
-                                    borderColor: "#da2c46",
-                                  },
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    color: action.danger
-                                      ? "#ff4d4f"
-                                      : "inherit",
-                                  }}
-                                >
-                                  {action.icon} {action.label}
-                                </span>
-                              </Popconfirm>
-                            ) : (
-                              <span onClick={action.onClick}>
-                                {action.icon} {action.label}
-                              </span>
-                            ),
-                          danger: action.danger,
-                        })),
-                      }}
-                      trigger={["click"]}
-                      placement="bottomRight"
-                    >
-                      <Button
-                        type="text"
-                        icon={<MoreOutlined />}
-                        size="small"
-                      />
-                    </Dropdown>,
                   ]}
                 >
                   <Card.Meta
