@@ -42,6 +42,7 @@ import {
   useGetEmployeeDocumentsQuery,
   useUploadEmployeeDocumentMutation,
   useReplaceEmployeeDocumentMutation,
+  useSetEmployeeDocumentAlertDateMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -62,6 +63,9 @@ const EmployeeDocuments = () => {
 
   const [replaceEmployeeDocument, { isLoading: isReplacing }] =
     useReplaceEmployeeDocumentMutation();
+
+  const [setEmployeeDocumentAlertDate, { isLoading: isSettingAlert }] =
+    useSetEmployeeDocumentAlertDateMutation();
 
   const documents =
     apiResponse?.documents?.length > 0
@@ -176,22 +180,28 @@ const EmployeeDocuments = () => {
         return;
       }
 
-      const payload = {
-        documentId: documentForExpiry._id,
-        hasExpiry: expiryForm.hasExpiry,
-        expiryDate:
-          expiryForm.hasExpiry && expiryForm.expiryDate
-            ? expiryForm.expiryDate.format("YYYY-MM-DD")
-            : null,
-      };
+      const documentRecordId = apiResponse?.documents?.[0]?._id;
 
-      // Replace this with your actual API call
-      // await setDocumentExpiryMutation(payload);
+      if (!documentRecordId) {
+        message.error(
+          "Document record ID not found. Please refresh and try again."
+        );
+        return;
+      }
 
-      console.log("Setting expiry for document:", payload);
+      const dateToSet =
+        expiryForm.hasExpiry && expiryForm.expiryDate
+          ? expiryForm.expiryDate.format("YYYY-MM-DD")
+          : "";
+
+      await setEmployeeDocumentAlertDate({
+        id: documentRecordId,
+        docId: documentForExpiry._id,
+        date: dateToSet,
+      }).unwrap();
 
       message.success("Document expiry updated successfully!");
-      refetch(); // Refresh the documents list
+      refetch();
       resetExpiryForm();
     } catch (error) {
       message.error("Failed to update document expiry. Please try again.");
@@ -1255,6 +1265,7 @@ const EmployeeDocuments = () => {
                   <Button
                     type="primary"
                     onClick={handleExpiryFormSubmit}
+                    loading={isSettingAlert} 
                     disabled={
                       expiryForm.hasExpiry === null ||
                       (expiryForm.hasExpiry === true && !expiryForm.expiryDate)

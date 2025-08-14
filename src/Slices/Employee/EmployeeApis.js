@@ -350,6 +350,19 @@ export const employeeApi = createApi({
         body: formData,
       }),
     }),
+    setEmployeeDocumentAlertDate: builder.mutation({
+      query: ({ id, docId, date }) => {
+        const formData = new FormData();
+        formData.append("docId", docId);
+        formData.append("date", date);
+
+        return {
+          url: `/alertDate/${id}`,
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
   }),
 });
 
@@ -397,5 +410,6 @@ export const {
   useSubmitFeedbackMutation,
   useGetEmployeeDocumentsQuery,
   useUploadEmployeeDocumentMutation,
-  useReplaceEmployeeDocumentMutation
+  useReplaceEmployeeDocumentMutation,
+  useSetEmployeeDocumentAlertDateMutation,
 } = employeeApi;
