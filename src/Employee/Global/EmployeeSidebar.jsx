@@ -10,6 +10,8 @@ import {
   BellOutlined,
   PaperClipOutlined,
   IssuesCloseOutlined,
+  FilePdfFilled,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -89,6 +91,11 @@ const EmployeeSidebar = ({
       key: "/employee/feedback",
       icon: <IssuesCloseOutlined />,
       label: "Feeback/Suggestion",
+    },
+    {
+      key: "/employee/documents",
+      icon: <FilePdfOutlined />,
+      label: "Documents",
     },
     {
       key: "/employee/notifications",

@@ -54,6 +54,12 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    getEmployeeDocuments: builder.query({
+      query: () => ({
+        url: "/doc",
+        method: "GET",
+      }),
+    }),
 
     //EmployeeAdmin Apis
     getEmployeeAdminLeaveHistory: builder.query({
@@ -375,4 +381,5 @@ export const {
   usePublishNewsMutation,
   useGetFeedbacksQuery,
   useSubmitFeedbackMutation,
+  useGetEmployeeDocumentsQuery,
 } = employeeApi;
