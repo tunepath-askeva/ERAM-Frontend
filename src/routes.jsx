@@ -86,6 +86,7 @@ import EditNews from "./EmployeeAdmin/Components/EditNews";
 import EmployeeFeedback from "./Employee/Pages/EmployeeFeedback";
 import EmployeeAdminFeedback from "./EmployeeAdmin/Pages/EmployeeAdminFeedback";
 import EmployeeDocuments from "./Employee/Pages/EmployeeDocuments";
+import EmployeeAdminDocuments from "./EmployeeAdmin/Pages/EmployeeAdminDocuments";
 
 const AppRoutes = () => {
   return (
@@ -370,6 +371,12 @@ const AppRoutes = () => {
           path="/employee-admin/company-policy"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminCompanyPolicy />} />
+          }
+        />
+        <Route
+          path="/employee-admin/documents"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminDocuments />} />
           }
         />
         <Route

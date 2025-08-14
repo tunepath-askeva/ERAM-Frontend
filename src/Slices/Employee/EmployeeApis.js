@@ -336,6 +336,20 @@ export const employeeApi = createApi({
         body: feedbackData,
       }),
     }),
+    uploadEmployeeDocument: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/employee-doc/${id}`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    replaceEmployeeDocument: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/replace-doc/${id}`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -382,4 +396,6 @@ export const {
   useGetFeedbacksQuery,
   useSubmitFeedbackMutation,
   useGetEmployeeDocumentsQuery,
+  useUploadEmployeeDocumentMutation,
+  useReplaceEmployeeDocumentMutation
 } = employeeApi;

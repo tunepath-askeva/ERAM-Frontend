@@ -19,6 +19,7 @@ import {
   Spin,
   Dropdown,
   Divider,
+  Input,
 } from "antd";
 import {
   UploadOutlined,
@@ -34,9 +35,14 @@ import {
   EditOutlined,
   MoreOutlined,
   ReloadOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useGetEmployeeDocumentsQuery } from "../../Slices/Employee/EmployeeApis";
+import {
+  useGetEmployeeDocumentsQuery,
+  useUploadEmployeeDocumentMutation,
+  useReplaceEmployeeDocumentMutation,
+} from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
@@ -51,21 +57,31 @@ const EmployeeDocuments = () => {
     refetch,
   } = useGetEmployeeDocumentsQuery();
 
+  const [uploadEmployeeDocument, { isLoading: isUploading }] =
+    useUploadEmployeeDocumentMutation();
+
+  const [replaceEmployeeDocument, { isLoading: isReplacing }] =
+    useReplaceEmployeeDocumentMutation();
+
   // Extract documents from the nested API response structure
-  const documents = apiResponse?.documents?.length > 0 
-    ? apiResponse.documents.flatMap(record => 
-        record.documents?.map(doc => ({
-          ...doc,
-          workOrderId: record.workOrder?._id,
-          workOrderTitle: record.workOrder?.title,
-          recordId: record._id
-        })) || []
-      )
-    : [];
+  const documents =
+    apiResponse?.documents?.length > 0
+      ? apiResponse.documents.flatMap(
+          (record) =>
+            record.documents?.map((doc) => ({
+              ...doc,
+              workOrderId: record.workOrder?._id,
+              workOrderTitle: record.workOrder?.title,
+              recordId: record._id,
+            })) || []
+        )
+      : [];
 
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
+  const [isExpiryModalVisible, setIsExpiryModalVisible] = useState(false);
   const [isReplaceMode, setIsReplaceMode] = useState(false);
   const [documentToReplace, setDocumentToReplace] = useState(null);
+  const [documentForExpiry, setDocumentForExpiry] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [newDocument, setNewDocument] = useState({
     file: null,
@@ -73,19 +89,10 @@ const EmployeeDocuments = () => {
     hasExpiry: null,
     expiryDate: null,
   });
-
-  const documentTypes = [
-    "Aadhar Card",
-    "PAN Card",
-    "Passport",
-    "Driving License",
-    "Portfolio",
-    "Resume",
-    "Cover Letter",
-    "Educational Certificate",
-    "Experience Letter",
-    "Other",
-  ];
+  const [expiryForm, setExpiryForm] = useState({
+    hasExpiry: null,
+    expiryDate: null,
+  });
 
   const formatDate = (dateString) => {
     return dayjs(dateString).format("DD MMM YYYY");
@@ -93,10 +100,10 @@ const EmployeeDocuments = () => {
 
   const isExpiringSoon = (expiryDate) => {
     if (!expiryDate) return false;
-    const expiry = dayjs(expiryDate);
-    const today = dayjs();
+    const expiry = dayjs(expiryDate).startOf("day");
+    const today = dayjs().startOf("day");
     const diffDays = expiry.diff(today, "day");
-    return diffDays <= 30 && diffDays > 0;
+    return diffDays >= 0 && diffDays <= 5;
   };
 
   const isExpired = (expiryDate) => {
@@ -104,11 +111,32 @@ const EmployeeDocuments = () => {
     return dayjs(expiryDate).isBefore(dayjs(), "day");
   };
 
+  const getExpiringDocuments = () => {
+    return documents.filter((doc) => {
+      if (!doc.expiryDate) return false;
+      const expiry = dayjs(doc.expiryDate).startOf("day");
+      const today = dayjs().startOf("day");
+      const diffDays = expiry.diff(today, "day");
+
+      // Include documents that expire today or within the next 5 days
+      return diffDays >= 0 && diffDays <= 5;
+    });
+  };
+
+  const getExpiredDocuments = () => {
+    return documents.filter((doc) => {
+      if (!doc.expiryDate) return false;
+      const expiry = dayjs(doc.expiryDate).startOf("day");
+      const today = dayjs().startOf("day");
+      return expiry.isBefore(today);
+    });
+  };
+
   const getExpiryTag = (expiryDate) => {
     if (!expiryDate) {
       return (
-        <Tag color="success" icon={<CheckCircleOutlined />}>
-          No Expiry
+        <Tag color="default" icon={<ClockCircleOutlined />}>
+          No Expiry Set
         </Tag>
       );
     }
@@ -132,6 +160,55 @@ const EmployeeDocuments = () => {
     return <Tag color="success">Valid</Tag>;
   };
 
+  // Set expiry date for existing document
+  const openExpiryModal = (doc) => {
+    setDocumentForExpiry(doc);
+    setExpiryForm({
+      hasExpiry: null,
+      expiryDate: null,
+    });
+    setIsExpiryModalVisible(true);
+  };
+
+  const handleExpiryFormSubmit = async () => {
+    try {
+      if (expiryForm.hasExpiry === true && !expiryForm.expiryDate) {
+        message.error("Please select an expiry date");
+        return;
+      }
+
+      const payload = {
+        documentId: documentForExpiry._id,
+        hasExpiry: expiryForm.hasExpiry,
+        expiryDate:
+          expiryForm.hasExpiry && expiryForm.expiryDate
+            ? expiryForm.expiryDate.format("YYYY-MM-DD")
+            : null,
+      };
+
+      // Replace this with your actual API call
+      // await setDocumentExpiryMutation(payload);
+
+      console.log("Setting expiry for document:", payload);
+
+      message.success("Document expiry updated successfully!");
+      refetch(); // Refresh the documents list
+      resetExpiryForm();
+    } catch (error) {
+      message.error("Failed to update document expiry. Please try again.");
+      console.error("Expiry update error:", error);
+    }
+  };
+
+  const resetExpiryForm = () => {
+    setExpiryForm({
+      hasExpiry: null,
+      expiryDate: null,
+    });
+    setDocumentForExpiry(null);
+    setIsExpiryModalVisible(false);
+  };
+
   const handleFileUpload = (info) => {
     const { file } = info;
     if (file.status !== "uploading") {
@@ -147,6 +224,7 @@ const EmployeeDocuments = () => {
       }
       setCurrentStep(1);
     } else if (currentStep === 1) {
+      // Only validate expiry date if hasExpiry is true
       if (newDocument.hasExpiry === true && !newDocument.expiryDate) {
         message.error("Please select expiry date");
         return;
@@ -163,6 +241,14 @@ const EmployeeDocuments = () => {
 
   const handleExpirySelection = (hasExpiry) => {
     setNewDocument((prev) => ({
+      ...prev,
+      hasExpiry,
+      expiryDate: hasExpiry ? prev.expiryDate : null,
+    }));
+  };
+
+  const handleExpiryFormSelection = (hasExpiry) => {
+    setExpiryForm((prev) => ({
       ...prev,
       hasExpiry,
       expiryDate: hasExpiry ? prev.expiryDate : null,
@@ -195,33 +281,59 @@ const EmployeeDocuments = () => {
 
   const confirmUpload = async () => {
     try {
-      // Here you would integrate with your upload API
+      const documentRecordId = apiResponse?.documents?.[0]?._id;
+
+      if (!documentRecordId) {
+        message.error(
+          "Document record ID not found. Please refresh and try again."
+        );
+        return;
+      }
+
       const formData = new FormData();
-      formData.append("file", newDocument.file);
+      formData.append("documents", newDocument.file);
       formData.append("documentName", newDocument.documentName);
+
+      // Add docId for replace mode
+      if (isReplaceMode && documentToReplace) {
+        formData.append("docId", documentToReplace._id);
+      }
+
       if (newDocument.hasExpiry && newDocument.expiryDate) {
         formData.append(
           "expiryDate",
           newDocument.expiryDate.format("YYYY-MM-DD")
         );
       }
+
       if (isReplaceMode && documentToReplace) {
-        formData.append("replaceDocumentId", documentToReplace._id);
+        // Use replace mutation
+        await replaceEmployeeDocument({
+          id: documentRecordId,
+          formData,
+        }).unwrap();
+
+        message.success("Document replaced successfully!");
+      } else {
+        // Use upload mutation for new documents
+        await uploadEmployeeDocument({
+          id: documentRecordId,
+          formData,
+        }).unwrap();
+
+        message.success("Document uploaded successfully!");
       }
 
-      // Replace this with your actual API call
-      // await uploadDocumentMutation(formData);
-
-      message.success(
-        isReplaceMode
-          ? "Document replaced successfully!"
-          : "Document uploaded successfully!"
-      );
-      refetch(); // Refresh the documents list
+      refetch();
       resetUploadForm();
     } catch (error) {
-      message.error("Failed to upload document. Please try again.");
-      console.error("Upload error:", error);
+      message.error(
+        error?.data?.message ||
+          `Failed to ${
+            isReplaceMode ? "replace" : "upload"
+          } document. Please try again.`
+      );
+      console.error(`${isReplaceMode ? "Replace" : "Upload"} error:`, error);
     }
   };
 
@@ -282,27 +394,42 @@ const EmployeeDocuments = () => {
     },
   ];
 
-  const getDocumentActions = (doc) => [
-    {
-      key: "view",
-      label: "View Document",
-      icon: <EyeOutlined />,
-      onClick: () => window.open(doc.fileUrl, "_blank"),
-    },
-    {
-      key: "replace",
-      label: "Replace Document",
-      icon: <EditOutlined />,
-      onClick: () => startUpload(doc),
-    },
-    {
+  const getDocumentActions = (doc) => {
+    const actions = [
+      {
+        key: "view",
+        label: "View Document",
+        icon: <EyeOutlined />,
+        onClick: () => window.open(doc.fileUrl, "_blank"),
+      },
+      {
+        key: "replace",
+        label: "Replace Document",
+        icon: <EditOutlined />,
+        onClick: () => startUpload(doc),
+      },
+    ];
+
+    // Add "Set Expiry" option if document doesn't have expiry date
+    if (!doc.expiryDate) {
+      actions.push({
+        key: "setExpiry",
+        label: "Set Expiry Date",
+        icon: <CalendarOutlined />,
+        onClick: () => openExpiryModal(doc),
+      });
+    }
+
+    actions.push({
       key: "delete",
       label: "Delete Document",
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => deleteDocument(doc._id, doc.documentName),
-    },
-  ];
+    });
+
+    return actions;
+  };
 
   if (isLoading) {
     return (
@@ -401,10 +528,11 @@ const EmployeeDocuments = () => {
                   style={{
                     fontSize: "clamp(11px, 2vw, 13px)",
                     display: "block",
-                    marginTop: "4px"
+                    marginTop: "4px",
                   }}
                 >
-                  {documents.length} document{documents.length !== 1 ? 's' : ''} uploaded
+                  {documents.length} document{documents.length !== 1 ? "s" : ""}{" "}
+                  uploaded
                 </Text>
               )}
             </Col>
@@ -438,6 +566,133 @@ const EmployeeDocuments = () => {
             </Col>
           </Row>
         </Card>
+
+        {getExpiredDocuments().length > 0 && (
+          <Card
+            style={{ marginBottom: "16px" }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <Alert
+              message={`${getExpiredDocuments().length} Document${
+                getExpiredDocuments().length > 1 ? "s" : ""
+              } Expired`}
+              description={
+                <div>
+                  <Text style={{ marginBottom: "8px", display: "block" }}>
+                    The following documents have expired and need immediate
+                    attention:
+                  </Text>
+                  <Space direction="vertical" size={4}>
+                    {getExpiredDocuments().map((doc) => (
+                      <div
+                        key={doc._id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Text strong style={{ color: "#ff4d4f" }}>
+                          {doc.documentName}
+                        </Text>
+                        <Text type="secondary">
+                          - Expired on {formatDate(doc.expiryDate)}
+                        </Text>
+                        <Text type="danger">
+                          (
+                          {Math.abs(dayjs(doc.expiryDate).diff(dayjs(), "day"))}{" "}
+                          days ago)
+                        </Text>
+                        <Button
+                          size="small"
+                          type="primary"
+                          danger
+                          onClick={() => startUpload(doc)}
+                          style={{ marginLeft: "auto" }}
+                        >
+                          Replace Now
+                        </Button>
+                      </div>
+                    ))}
+                  </Space>
+                </div>
+              }
+              type="error"
+              showIcon
+              closable
+              style={{ marginBottom: "16px" }}
+            />
+          </Card>
+        )}
+
+        {getExpiringDocuments().length > 0 && (
+          <Card
+            style={{ marginBottom: "16px" }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <Alert
+              message={`${getExpiringDocuments().length} Document${
+                getExpiringDocuments().length > 1 ? "s" : ""
+              } Expiring Soon`}
+              description={
+                <div>
+                  <Text style={{ marginBottom: "8px", display: "block" }}>
+                    The following documents will expire within 5 days:
+                  </Text>
+                  <Space direction="vertical" size={4}>
+                    {getExpiringDocuments().map((doc) => {
+                      const daysLeft = dayjs(doc.expiryDate)
+                        .startOf("day")
+                        .diff(dayjs().startOf("day"), "day");
+                      return (
+                        <div
+                          key={doc._id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Text strong>{doc.documentName}</Text>
+                          <Text type="secondary">
+                            - Expires on {formatDate(doc.expiryDate)}
+                          </Text>
+                          <Text type={daysLeft === 0 ? "danger" : "warning"}>
+                            (
+                            {daysLeft === 0
+                              ? "Expires today!"
+                              : `${daysLeft} day${
+                                  daysLeft > 1 ? "s" : ""
+                                } left`}
+                            )
+                          </Text>
+                          <Button
+                            size="small"
+                            type="primary"
+                            onClick={() => startUpload(doc)}
+                            style={{
+                              marginLeft: "auto",
+                              backgroundColor:
+                                daysLeft === 0 ? "#ff4d4f" : "#faad14",
+                              borderColor:
+                                daysLeft === 0 ? "#ff4d4f" : "#faad14",
+                            }}
+                          >
+                            Replace
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </Space>
+                </div>
+              }
+              type="error"
+              showIcon
+              closable
+              style={{ marginBottom: "16px" }}
+            />
+          </Card>
+        )}
 
         {/* Documents Grid */}
         {documents.length > 0 ? (
@@ -497,7 +752,13 @@ const EmployeeDocuments = () => {
                                   },
                                 }}
                               >
-                                <span style={{ color: "#ff4d4f" }}>
+                                <span
+                                  style={{
+                                    color: action.danger
+                                      ? "#ff4d4f"
+                                      : "inherit",
+                                  }}
+                                >
                                   {action.icon} {action.label}
                                 </span>
                               </Popconfirm>
@@ -565,9 +826,9 @@ const EmployeeDocuments = () => {
                         {doc.workOrderTitle && (
                           <Text
                             type="secondary"
-                            style={{ 
+                            style={{
                               fontSize: "clamp(9px, 1.8vw, 10px)",
-                              fontStyle: "italic"
+                              fontStyle: "italic",
                             }}
                             ellipsis
                           >
@@ -593,6 +854,21 @@ const EmployeeDocuments = () => {
                         <div style={{ marginTop: "4px" }}>
                           {getExpiryTag(doc.expiryDate)}
                         </div>
+                        {!doc.expiryDate && (
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<CalendarOutlined />}
+                            onClick={() => openExpiryModal(doc)}
+                            style={{
+                              padding: "2px 0",
+                              height: "auto",
+                              fontSize: "clamp(9px, 1.8vw, 10px)",
+                            }}
+                          >
+                            Set Expiry Date
+                          </Button>
+                        )}
                       </Space>
                     }
                   />
@@ -677,22 +953,19 @@ const EmployeeDocuments = () => {
                 <Text strong style={{ marginBottom: "8px", display: "block" }}>
                   Document Type *
                 </Text>
-                <Select
-                  placeholder="Select document type"
+                <Input
+                  placeholder="Enter document type (e.g., Aadhar Card, PAN Card, etc.)"
                   value={newDocument.documentName}
-                  onChange={(value) =>
-                    setNewDocument((prev) => ({ ...prev, documentName: value }))
+                  onChange={(e) =>
+                    setNewDocument((prev) => ({
+                      ...prev,
+                      documentName: e.target.value,
+                    }))
                   }
                   style={{ width: "100%", marginBottom: "16px" }}
                   size="large"
                   disabled={isReplaceMode}
-                >
-                  {documentTypes.map((type) => (
-                    <Option key={type} value={type}>
-                      {type}
-                    </Option>
-                  ))}
-                </Select>
+                />
               </div>
 
               <div>
@@ -913,6 +1186,7 @@ const EmployeeDocuments = () => {
                   <Button
                     type="primary"
                     onClick={confirmUpload}
+                    loading={isUploading || isReplacing} // Add isReplacing here
                     style={{
                       backgroundColor: "#da2c46",
                       borderColor: "#da2c46",
@@ -924,6 +1198,149 @@ const EmployeeDocuments = () => {
               </Row>
             </Space>
           )}
+        </Modal>
+
+        {/* Set Expiry Modal */}
+        <Modal
+          title={`Set Expiry Date - ${documentForExpiry?.documentName}`}
+          open={isExpiryModalVisible}
+          onCancel={resetExpiryForm}
+          footer={null}
+          width="90%"
+          style={{ maxWidth: "500px" }}
+          bodyStyle={{ padding: "24px" }}
+        >
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            <div style={{ textAlign: "center" }}>
+              <CalendarOutlined
+                style={{
+                  fontSize: "48px",
+                  color: "#1890ff",
+                  marginBottom: "16px",
+                }}
+              />
+              <Title level={4} style={{ fontSize: "clamp(16px, 3vw, 20px)" }}>
+                Document Expiry Information
+              </Title>
+              <Paragraph style={{ fontSize: "clamp(12px, 2.5vw, 14px)" }}>
+                Does "{documentForExpiry?.documentName}" have an expiry date?
+              </Paragraph>
+            </div>
+
+            {expiryForm.hasExpiry === null && (
+              <Row gutter={[12, 12]}>
+                <Col xs={24} sm={12}>
+                  <Button
+                    block
+                    size="large"
+                    onClick={() => handleExpiryFormSelection(true)}
+                    style={{
+                      height: "60px",
+                      borderColor: "#da2c46",
+                      color: "#da2c46",
+                      fontSize: "clamp(12px, 2.5vw, 14px)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CalendarOutlined
+                      style={{ fontSize: "20px", marginBottom: "4px" }}
+                    />
+                    Yes, it expires
+                  </Button>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Button
+                    block
+                    size="large"
+                    onClick={() => handleExpiryFormSelection(false)}
+                    style={{
+                      height: "60px",
+                      fontSize: "clamp(12px, 2.5vw, 14px)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CheckCircleOutlined
+                      style={{ fontSize: "20px", marginBottom: "4px" }}
+                    />
+                    No expiry date
+                  </Button>
+                </Col>
+              </Row>
+            )}
+
+            {expiryForm.hasExpiry === true && (
+              <div>
+                <Alert
+                  message="Set Expiry Date"
+                  description="Please select when this document expires. You'll receive notifications before it expires."
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: "16px" }}
+                />
+                <Text strong style={{ marginBottom: "8px", display: "block" }}>
+                  Expiry Date *
+                </Text>
+                <DatePicker
+                  placeholder="Select expiry date"
+                  value={expiryForm.expiryDate}
+                  onChange={(date) =>
+                    setExpiryForm((prev) => ({ ...prev, expiryDate: date }))
+                  }
+                  disabledDate={(current) =>
+                    current && current < dayjs().endOf("day")
+                  }
+                  style={{ width: "100%", marginBottom: "16px" }}
+                  size="large"
+                />
+              </div>
+            )}
+
+            {expiryForm.hasExpiry === false && (
+              <Alert
+                message="No Expiry Date"
+                description="This document will be marked as having no expiry date. You can change this later if needed."
+                type="success"
+                showIcon
+              />
+            )}
+
+            <Row justify="space-between">
+              <Col>
+                <Button onClick={resetExpiryForm}>Cancel</Button>
+              </Col>
+              <Col>
+                <Space>
+                  {expiryForm.hasExpiry !== null && (
+                    <Button onClick={() => handleExpiryFormSelection(null)}>
+                      Change
+                    </Button>
+                  )}
+                  <Button
+                    type="primary"
+                    onClick={handleExpiryFormSubmit}
+                    disabled={
+                      expiryForm.hasExpiry === null ||
+                      (expiryForm.hasExpiry === true && !expiryForm.expiryDate)
+                    }
+                    style={{
+                      backgroundColor: "#da2c46",
+                      borderColor: "#da2c46",
+                    }}
+                  >
+                    {expiryForm.hasExpiry === true
+                      ? "Set Expiry Date"
+                      : "Confirm No Expiry"}
+                  </Button>
+                </Space>
+              </Col>
+            </Row>
+          </Space>
         </Modal>
       </div>
     </div>
