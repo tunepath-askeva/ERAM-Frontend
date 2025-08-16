@@ -47,37 +47,43 @@ const AdminRequisition = () => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
-  const { data: apiResponse, isLoading, isError, refetch } = useGetAdminRequisiionQuery();
+  const {
+    data: apiResponse,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAdminRequisiionQuery();
 
-const transformRequisitionData = (data) => {
-  if (!data || !data.requisitions) return [];
-  
-  return data.requisitions.map(req => ({
-    _id: req._id,
-    title: req.title,
-    department: req.companyIndustry,
-    location: req.officeLocation,
-    employmentType: req.EmploymentType,
-    experience: `${req.experienceMin}-${req.experienceMax} years`,
-    salary: `$${req.salaryMin}-${req.salaryMax}`,
-    status: req.isActive,
-    priority: "medium",
-    positions: req.numberOfCandidate,
-    postedDate: new Date(req.createdAt).toISOString().split('T')[0],
-    deadline: new Date(req.deadlineDate).toISOString().split('T')[0],
-    hiringManager: "Manager",
-    description: req.description,
-    skills: req.requiredSkills,
-    workMode: req.workplace,
-    keyResponsibilities: req.keyResponsibilities, 
-    benefits: req.benefits, 
-    clientId: req.clientId, 
-    originalData: {
-      ...req,
-      client: req.clientId 
-    }
-  }));
-};
+  const transformRequisitionData = (data) => {
+    if (!data || !data.requisitions) return [];
+
+    return data.requisitions.map((req) => ({
+      _id: req._id,
+      title: req.title,
+      department: req.companyIndustry,
+      location: req.officeLocation,
+      employmentType: req.EmploymentType,
+      experience: `${req.experienceMin}-${req.experienceMax} years`,
+      salary: `$${req.salaryMin}-${req.salaryMax}`,
+      status: req.isActive,
+      priority: "medium",
+      positions: req.numberOfCandidate,
+      postedDate: new Date(req.createdAt).toISOString().split("T")[0],
+      deadline: new Date(req.deadlineDate).toISOString().split("T")[0],
+      hiringManager: "Manager",
+      description: req.description,
+      skills: req.requiredSkills,
+      workMode: req.workplace,
+      keyResponsibilities: req.keyResponsibilities,
+      benefits: req.benefits,
+      languages: req.languagesRequired || [],
+      clientId: req.client,
+      originalData: {
+        ...req,
+        client: req.client,
+      },
+    }));
+  };
 
   const requisitions = transformRequisitionData(apiResponse);
   const totalCount = apiResponse?.requisitions?.length || 0;
@@ -92,6 +98,7 @@ const transformRequisitionData = (data) => {
   }, [searchTerm]);
 
   const handleCreateWorkOrder = (requisition) => {
+    console.log(requisition,'hi requireuisurieusrieu siurieruie')
     navigate(`/admin/add-workorder`, {
       state: {
         requisitionData: requisition.originalData,
@@ -109,7 +116,6 @@ const transformRequisitionData = (data) => {
     setViewModalVisible(false);
     setSelectedRequisition(null);
   };
-
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
@@ -542,10 +548,27 @@ const transformRequisitionData = (data) => {
                 ))}
               </Space>
             </Card>
+            <Card
+              title="Languages Required"
+              size="small"
+              style={{ marginTop: 16 }}
+            >
+              <Space wrap>
+                {selectedRequisition.languages?.length > 0 ? (
+                  selectedRequisition.languages.map((lang, index) => (
+                    <Tag key={index} color="volcano">
+                      {lang}
+                    </Tag>
+                  ))
+                ) : (
+                  <Text type="secondary">No languages specified</Text>
+                )}
+              </Space>
+            </Card>
           </div>
         )}
       </Modal>
-            <style jsx>{`
+      <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
           font-weight: 600 !important;

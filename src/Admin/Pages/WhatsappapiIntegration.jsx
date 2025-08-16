@@ -179,7 +179,7 @@ const WhatsAppConfig = () => {
         </div>
       ),
     },
-        {
+    {
       title: "Status",
       dataIndex: "status",
       key: "status",

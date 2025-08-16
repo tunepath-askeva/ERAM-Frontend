@@ -223,6 +223,7 @@ const AddRequisition = ({ onNavigateBack }) => {
         const suffix =
           {
             hourly: "/hr",
+            daily: "/day",
             weekly: "/wk",
             monthly: "/mo",
             annual: "/yr",
@@ -418,8 +419,9 @@ const AddRequisition = ({ onNavigateBack }) => {
                         message: "Please select employment type",
                       },
                     ]}
+                    initialValue="full-time"
                   >
-                    <Select placeholder="Select Employment Type">
+                    <Select placeholder="Select Employment Type" defaultValue="full-time">
                       <Option value="full-time">Full Time</Option>
                       <Option value="part-time">Part Time</Option>
                       <Option value="contract">Contract</Option>
@@ -430,9 +432,14 @@ const AddRequisition = ({ onNavigateBack }) => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item label="Workplace" name="workplace">
-                    <Select placeholder="Select Workplace">
+                  <Form.Item 
+                    label="Workplace" 
+                    name="workplace" 
+                    initialValue="onsite"
+                  >
+                    <Select placeholder="Select Workplace" defaultValue="onsite">
                       <Option value="onsite">Onsite</Option>
+                      <Option value="offshore">Offshore</Option>
                       <Option value="remote">Remote</Option>
                       <Option value="hybrid">Hybrid</Option>
                     </Select>
@@ -451,12 +458,12 @@ const AddRequisition = ({ onNavigateBack }) => {
               </Row>
 
               <Row gutter={16}>
-                <Col span={8}>
+                <Col span={6}>
                   <Form.Item label="Industry" name="companyIndustry">
                     <Input placeholder="Enter Industry" />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Form.Item
                     label="Min Experience (Years)"
                     name="experienceMin"
@@ -468,7 +475,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                     />
                   </Form.Item>
                 </Col>
-                <Col span={8}>
+                <Col span={6}>
                   <Form.Item
                     label="Max Experience (Years)"
                     name="experienceMax"
@@ -480,13 +487,30 @@ const AddRequisition = ({ onNavigateBack }) => {
                     />
                   </Form.Item>
                 </Col>
+                <Col span={6}>
+                  <Form.Item name="Education" label="Education Requirement">
+                    <Select placeholder="Select education level">
+                      <Option value="high-school">High School</Option>
+                      <Option value="associate">Associate Degree</Option>
+                      <Option value="bachelor">Bachelor's Degree</Option>
+                      <Option value="master">Master's Degree</Option>
+                      <Option value="phd">PhD</Option>
+                      <Option value="none">None</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
               </Row>
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item label="Salary Type" name="salaryType">
-                    <Select placeholder="Select Salary Type">
+                  <Form.Item 
+                    label="Salary Type" 
+                    name="salaryType"
+                    initialValue="monthly"
+                  >
+                    <Select placeholder="Select Salary Type" defaultValue="monthly">
                       <Option value="hourly">Hourly</Option>
+                      <Option value="daily">Daily</Option>
                       <Option value="weekly">Weekly</Option>
                       <Option value="monthly">Monthly</Option>
                       <Option value="annual">Annual</Option>
@@ -610,7 +634,7 @@ const AddRequisition = ({ onNavigateBack }) => {
               <Row gutter={16}>
                 <Col span={24}>
                   <Form.Item label="Status" name="isActive">
-                    <Select placeholder="Select Status" defaultValue="draft">
+                    <Select placeholder="Select Status" >
                       <Option value="active">Active</Option>
                       <Option value="inactive">Inactive</Option>
                       <Option value="draft">Draft</Option>
