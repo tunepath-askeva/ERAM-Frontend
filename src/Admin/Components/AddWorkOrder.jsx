@@ -188,6 +188,7 @@ const AddWorkOrder = () => {
         jobFunction: reqData.jobFunction,
         salaryType: reqData.salaryType || "daily",
         Education: reqData.Education,
+        
         languagesRequired: reqData.languagesRequired || [],
       });
 
