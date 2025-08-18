@@ -81,10 +81,9 @@ const Home = () => {
     <>
       <Header />
 
-      {/* Hero Slider */}
       <section className="hero-slider">
         {slides.map((slide, index) => (
-          <div 
+          <div
             key={index}
             className={`slide ${index === currentSlide ? 'active' : ''}`}
             style={{ backgroundImage: `url(${slide.image})` }}
@@ -107,12 +106,35 @@ const Home = () => {
             </div>
           </div>
         ))}
+
+        {/* Add arrow navigation */}
+        <button
+          className="slider-arrow left"
+          onClick={() => setCurrentSlide(prev => prev === 0 ? slides.length - 1 : prev - 1)}
+          aria-label="Previous slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
+          </svg>
+        </button>
+
+        <button
+          className="slider-arrow right"
+          onClick={() => setCurrentSlide(prev => prev === slides.length - 1 ? 0 : prev + 1)}
+          aria-label="Next slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
+          </svg>
+        </button>
+
         <div className="slider-dots">
           {slides.map((_, index) => (
             <button
               key={index}
               className={`dot ${index === currentSlide ? 'active' : ''}`}
               onClick={() => setCurrentSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
@@ -123,9 +145,10 @@ const Home = () => {
         <div className="container">
           <div className="section-header">
             <h2>From the Chairman's Desk</h2>
+            <p>We believe that the strength of every company, large or small</p>
             <div className="header-underline"></div>
           </div>
-          
+
           <div className="chairman-content">
             <div className="chairman-image">
               <div className="image-frame"></div>
@@ -152,7 +175,7 @@ const Home = () => {
             <h2>Our Comprehensive Services</h2>
             <p>ERAM Workforce specializes in bulk hiring and workforce management solutions tailored to your organizational needs</p>
           </div>
-          
+
           <div className="services-grid">
             <div className="service-card">
               <div className="service-icon">👥</div>
@@ -165,7 +188,7 @@ const Home = () => {
                 </svg>
               </a>
             </div>
-            
+
             <div className="service-card">
               <div className="service-icon">👔</div>
               <h3>Executive Search</h3>
@@ -177,7 +200,7 @@ const Home = () => {
                 </svg>
               </a>
             </div>
-            
+
             <div className="service-card">
               <div className="service-icon">🔄</div>
               <h3>Managed Workforce</h3>
@@ -190,7 +213,7 @@ const Home = () => {
               </a>
             </div>
           </div>
-          
+
           <div className="section-cta">
             <a href="/services" className="cta-btn">
               View All Services
@@ -252,20 +275,20 @@ const Home = () => {
             <h2>Vision, Mission & Core Values</h2>
             <p>The foundation of our commitment to excellence in workforce solutions</p>
           </div>
-          
+
           <div className="vm-grid">
             <div className="vm-card vision">
               <div className="vm-icon">🔭</div>
               <h3>Our Vision</h3>
               <p>To spread our business reach globally with facilitating services that sustain unique value propositions for our clients. We aim to be the most trusted workforce solutions partner across all industries we serve.</p>
             </div>
-            
+
             <div className="vm-card mission">
               <div className="vm-icon">🎯</div>
               <h3>Our Mission</h3>
               <p>To get our teamwork, technology, performance and innovation converge to assure results that exceed customer satisfaction. We commit to delivering exceptional value through our comprehensive workforce solutions.</p>
             </div>
-            
+
             <div className="vm-card values">
               <div className="vm-icon">❤️</div>
               <h3>Core Values</h3>
@@ -287,11 +310,11 @@ const Home = () => {
             <h2>Why Choose ERAM Workforce?</h2>
             <p>What sets us apart in the competitive world of workforce solutions</p>
           </div>
-          
+
           <div className="wcu-grid">
             {whyChooseUs.map((item, index) => (
-              <div 
-                className="wcu-card" 
+              <div
+                className="wcu-card"
                 key={index}
                 onMouseEnter={() => setHoveredCard(index + 10)}
                 onMouseLeave={() => setHoveredCard(null)}
@@ -1130,6 +1153,160 @@ const Home = () => {
           .home-cta p {
             font-size: 1.1rem;
           }
+
+          /* Slider Arrows - Base Styles */
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  opacity: 0.7;
+}
+
+.slider-arrow:hover {
+  background: rgba(255, 255, 255, 0.3);
+  opacity: 1;
+}
+
+.slider-arrow svg {
+  width: 24px;
+  height: 24px;
+  transition: var(--transition);
+}
+
+.slider-arrow.left {
+  left: 30px;
+}
+
+.slider-arrow.right {
+  right: 30px;
+}
+
+/* XX-Large devices (1400px and up) - Default size */
+
+/* Large devices (1200px to 1399px) */
+@media (max-width: 1399.98px) {
+  .slider-arrow {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .slider-arrow svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .slider-arrow.left {
+    left: 25px;
+  }
+  
+  .slider-arrow.right {
+    right: 25px;
+  }
+}
+
+/* Medium devices (992px to 1199px) */
+@media (max-width: 1199.98px) {
+  .slider-arrow {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .slider-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .slider-arrow.left {
+    left: 20px;
+  }
+  
+  .slider-arrow.right {
+    right: 20px;
+  }
+}
+
+/* Small devices (768px to 991px) */
+@media (max-width: 991.98px) {
+  .slider-arrow {
+    width: 42px;
+    height: 42px;
+    font-size: 1.3rem;
+  }
+  
+  .slider-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .slider-arrow.left {
+    left: 18px;
+  }
+  
+  .slider-arrow.right {
+    right: 18px;
+  }
+}
+
+/* Mobile devices (576px to 767px) */
+@media (max-width: 767.98px) {
+  .slider-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+  
+  .slider-arrow svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .slider-arrow.left {
+    left: 15px;
+  }
+  
+  .slider-arrow.right {
+    right: 15px;
+  }
+}
+
+/* Extra small devices (below 576px) */
+@media (max-width: 575.98px) {
+  .slider-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+  
+  .slider-arrow svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .slider-arrow.left {
+    left: 10px;
+  }
+  
+  .slider-arrow.right {
+    right: 10px;
+  }
+  
+  .slider-arrow:hover {
+    background: rgba(255, 255, 255, 0.25); /* Slightly less prominent hover on small devices */
+  }
+}
         }
       `}</style>
     </>
