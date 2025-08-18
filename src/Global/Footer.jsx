@@ -139,26 +139,35 @@ const HomeFooter = () => {
                                 Quick Links
                             </Title>
                             <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                                {['Home', 'About', 'Services', 'Contacts', 'Branches'].map((item) => (
-                                    <Link
-                                        key={item}
-                                        to={item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`}
-                                        style={{
-                                            ...linkStyle,
-                                            textDecoration: 'none',
-                                            color: 'rgba(0, 0, 0, 0.7)',
-                                            display: 'block',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.target.style.color = '#da2c46';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.target.style.color = 'rgba(0, 0, 0, 0.7)';
-                                        }}
-                                    >
-                                        {item}
-                                    </Link>
-                                ))}
+                                {['Home', 'About', 'Services', 'Contacts', 'Branches'].map((item) => {
+                                    const path = item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`;
+                                    const isActive = window.location.pathname === path;
+
+                                    return (
+                                        <Link
+                                            key={item}
+                                            to={path}
+                                            style={{
+                                                ...linkStyle,
+                                                textDecoration: isActive ? 'underline' : 'none',
+                                                color: isActive ? '#da2c46' : 'rgba(0, 0, 0, 0.7)',
+                                                display: 'block',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isActive) {
+                                                    e.target.style.color = '#da2c46';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isActive) {
+                                                    e.target.style.color = 'rgba(0, 0, 0, 0.7)';
+                                                }
+                                            }}
+                                        >
+                                            {item}
+                                        </Link>
+                                    );
+                                })}
                             </Space>
                         </div>
                     </Col>

@@ -46,32 +46,58 @@ const Branches = () => {
         <>
             <Header />
 
-            {/* Hero Section */}
-            <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                padding: '60px 0 40px 0',
+            <section style={{
+                position: 'relative',
+                height: '450px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
                 color: 'white',
-                textAlign: 'center'
+                overflow: 'hidden'
             }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-                    <Title level={1} style={{
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundImage: 'linear-gradient(135deg, rgba(218, 44, 70, 0.9) 0%, rgba(0, 0, 0, 0.9) 100%)',
+                    zIndex: 1
+                }}></div>
+
+                <div style={{
+                    position: 'relative',
+                    zIndex: 2,
+                    maxWidth: '900px',
+                    width: '100%',
+                    padding: '0 20px',
+                    animation: 'fadeInUp 1s ease'
+                }}>
+                    <h1 style={{
                         color: 'white',
-                        marginBottom: '16px',
-                        fontSize: 'clamp(28px, 5vw, 48px)'
+                        marginBottom: '1.5rem',
+                        fontSize: '3.5rem',
+                        fontWeight: '500',
+                        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+                        lineHeight: '1.2'
                     }}>
                         Our Branch Locations
-                    </Title>
-                    <Text style={{
+                    </h1>
+                    <p style={{
                         color: 'rgba(255,255,255,0.9)',
-                        fontSize: '18px',
-                        display: 'block'
+                        fontSize: '1.5rem',
+                        display: 'block',
+                        maxWidth: '800px',
+                        margin: '0 auto 2rem',
+                        textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)'
                     }}>
                         Find our offices across India - We're here to serve you better
-                    </Text>
+                    </p>
                 </div>
-            </div>
+            </section>
 
-            {/* Main Content */}
+            {/* Main Content - unchanged */}
             <div style={{
                 backgroundColor: '#f8fafc',
                 minHeight: '60vh',

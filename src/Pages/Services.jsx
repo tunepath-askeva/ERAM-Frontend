@@ -398,20 +398,17 @@ const Services = () => {
         /* Hero Section */
         .services-hero {
           position: relative;
-          height: 80vh;
-          min-height: 500px;
-          background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+          height: 30vh;
+          min-height: 450px;
+          background: linear-gradient(135deg, rgba(218, 44, 70, 0.9) 0%, rgba(0, 0, 0, 0.9) 100%), 
                       url('https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
           background-size: cover;
           background-position: center;
-          background-attachment: fixed;
           display: flex;
           align-items: center;
           justify-content: center;
           text-align: center;
           color: var(--white);
-          padding: 0 20px;
-          overflow: hidden;
         }
         
         .hero-overlay {
@@ -457,6 +454,7 @@ const Services = () => {
         .section-header {
           text-align: center;
           margin-bottom: 4rem;
+          margin-top: 4em;
         }
         
         .section-header h2 {

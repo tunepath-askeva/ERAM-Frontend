@@ -155,6 +155,7 @@ const About = () => {
             <div className="container">
               <div className="section-header">
                 <h2 id="about-heading">Our Story</h2>
+                <p>ERAM Talent is an independent Human Capital Management company</p>
                 <div className="header-underline"></div>
               </div>
 
