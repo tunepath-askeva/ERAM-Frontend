@@ -323,9 +323,10 @@ export const employeeApi = createApi({
       }),
     }),
     getNews: builder.query({
-      query: () => ({
+      query: ({ page = 1, pageSize = 10, search = "" }) => ({
         url: "/news",
         method: "GET",
+        params: { page, pageSize, search },
       }),
     }),
     getNewsById: builder.query({

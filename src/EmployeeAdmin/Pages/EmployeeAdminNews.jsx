@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect  } from "react";
 import {
   Card,
   Form,
@@ -36,6 +36,8 @@ import {
   usePublishNewsMutation,
 } from "../../Slices/Employee/EmployeeApis";
 import { useNavigate } from "react-router-dom";
+import { debounce } from "lodash";
+
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
 const { confirm } = Modal;
@@ -46,15 +48,37 @@ const EmployeeAdminNews = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+  const [searchText, setSearchText] = useState("");
 
   const {
     data: companyNews,
     isLoading: isLoadingNews,
     refetch,
-  } = useGetNewsQuery();
+  } = useGetNewsQuery({
+    page: pagination.current,
+    pageSize: pagination.pageSize,
+    search: searchText,
+  });
+
   const [createNews, { isLoading: isCreatingNews }] = useCreateNewsMutation();
   const [deleteNews, { isLoading: isDeletingNews }] = useDeleteNewsMutation();
   const [publishNews, { isLoading: isPublishing }] = usePublishNewsMutation();
+
+  const debouncedSearch = React.useMemo(
+    () =>
+      debounce((value) => {
+        setPagination((prev) => ({ ...prev, current: 1 }));
+        setSearchText(value);
+      }, 2500),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const customStyles = {
     primaryColor: "#da2c46",
@@ -176,7 +200,7 @@ const EmployeeAdminNews = () => {
 
   const handlePublishNews = async () => {
     try {
-       const result = await publishNews(currentRecord.id).unwrap();
+      const result = await publishNews(currentRecord.id).unwrap();
       message.success("News status updated successfully!");
       setPublishModalVisible(false);
       refetch();
@@ -462,19 +486,28 @@ const EmployeeAdminNews = () => {
             }
             style={customStyles.cardStyle}
           >
+            <Input
+              placeholder="Search news..."
+              allowClear
+              onChange={(e) => debouncedSearch(e.target.value)}
+              style={{ width: 300, marginBottom: 16 }}
+            />
+
             <Table
               columns={columns}
               dataSource={newsData}
               rowKey="id"
               loading={isLoadingNews}
               pagination={{
-                pageSize: 10,
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: companyNews?.total || 0,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total) => `Total ${total} articles`,
               }}
-              locale={{
-                emptyText: "No news articles created yet",
+              onChange={(pagination) => {
+                setPagination(pagination);
               }}
             />
           </Card>
