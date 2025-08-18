@@ -356,10 +356,24 @@ export const employeeApi = createApi({
       }),
     }),
     getFeedbacks: builder.query({
-      query: () => ({
-        url: "/feedback",
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const { page = 1, limit = 10, type, ...otherParams } = params;
+
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          ...otherParams,
+        });
+
+        if (type && type !== "all") {
+          queryParams.append("type", type);
+        }
+
+        return {
+          url: `/feedback?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     submitFeedback: builder.mutation({
       query: (feedbackData) => ({
@@ -422,7 +436,6 @@ export const employeeApi = createApi({
         if (search && search.trim()) {
           params.append("search", search.trim());
         }
-
         return {
           url: `/expired?${params.toString()}`,
           method: "GET",
