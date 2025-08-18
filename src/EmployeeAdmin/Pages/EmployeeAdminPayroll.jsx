@@ -190,7 +190,6 @@ const EmployeeAdminPayroll = () => {
       title: "Employee Name",
       dataIndex: "U_empname",
       key: "U_empname",
-      sorter: (a, b) => a.U_empname.localeCompare(b.U_empname),
     },
     {
       title: "ERAM ID",
@@ -201,7 +200,6 @@ const EmployeeAdminPayroll = () => {
       title: "Total Earnings",
       dataIndex: "U_totalearn",
       key: "U_totalearn",
-      sorter: (a, b) => a.U_totalearn - b.U_totalearn,
       render: (text) => `${text}`,
     },
     {
