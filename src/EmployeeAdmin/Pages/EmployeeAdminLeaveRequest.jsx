@@ -101,12 +101,12 @@ const EmployeeAdminLeaveRequest = () => {
   };
 
   const getUrgencyColor = (urgency) => {
-    switch (urgency?.toLowerCase()) {
-      case "high":
+    switch (urgency) {
+      case "High":
         return "red";
-      case "medium":
+      case "Medium":
         return "orange";
-      case "low":
+      case "Low":
         return "green";
       default:
         return "default";
@@ -299,9 +299,10 @@ const EmployeeAdminLeaveRequest = () => {
             style={{ width: "100%" }}
           >
             <Option value="">All</Option>
-            <Option value="high">High</Option>
-            <Option value="medium">Medium</Option>
-            <Option value="low">Low</Option>
+            <Option value="High">High</Option>
+            <Option value="Medium">Medium</Option>
+            <Option value="Low">Low</Option>
+            <Option value="Critical">Critical</Option>
           </Select>
         </Col>
         <Col span={6}>
