@@ -65,7 +65,7 @@ export const employeeApi = createApi({
     getEmployeeAdminLeaveHistory: builder.query({
       query: ({ eramId, urgency, status, page, pageSize }) => {
         const params = new URLSearchParams();
-        if (eramId) params.append("eramId", eramId);
+        if (eramId) params.append("search", eramId);
         if (urgency) params.append("urgency", urgency);
         if (status) params.append("status", status);
         if (page) params.append("page", page);
@@ -243,7 +243,7 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
-    
+
     clearAllNotification: builder.mutation({
       query: () => ({
         url: `/clear-notification`,
@@ -252,11 +252,21 @@ export const employeeApi = createApi({
     }),
 
     getEmployeeRaisedRequests: builder.query({
-      query: () => ({
-        url: "/requests",
-        method: "GET",
-      }),
+      query: ({ requestType, eramId, status, page, pageSize }) => {
+        const params = new URLSearchParams();
+        if (requestType) params.append("requestType", requestType);
+        if (eramId) params.append("search", eramId);
+        if (status) params.append("status", status);
+        if (page) params.append("page", page);
+        if (pageSize) params.append("pageSize", pageSize);
+
+        return {
+          url: `/requests?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
+
     getEmployeeRaisedRequestById: builder.query({
       query: (requestId) => ({
         url: `/requests/${requestId}`,

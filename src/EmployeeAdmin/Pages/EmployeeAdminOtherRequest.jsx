@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useCallback} from "react";
 import {
   Table,
   Button,
@@ -18,6 +18,7 @@ import {
   Input,
   InputNumber,
   Divider,
+  Select,
 } from "antd";
 import {
   EyeOutlined,
@@ -31,6 +32,7 @@ import {
   DeleteOutlined,
   SendOutlined,
 } from "@ant-design/icons";
+import { debounce } from "lodash";
 import {
   useGetEmployeeRaisedRequestsQuery,
   useGetEmployeeRaisedRequestByIdQuery,
@@ -41,11 +43,18 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
+
+const requestTypes = [
+  "Travel Request",
+  "Exit Reentry",
+  "Vehicle Related Request",
+  "Payslip Request",
+  "General Request",
+  "New/Other Request",
+];
 
 const EmployeeAdminOtherRequest = () => {
-  const { data, isLoading, error, refetch } =
-    useGetEmployeeRaisedRequestsQuery();
-
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestData, setRequestData] = useState([]);
@@ -59,6 +68,16 @@ const EmployeeAdminOtherRequest = () => {
   const [comment, setComment] = useState("");
   const [actionType, setActionType] = useState(null); // 'approve' | 'reject'
   const [actionTarget, setActionTarget] = useState(null); // 'ticket' | 'request'
+  const [filters, setFilters] = useState({
+    requestType: "",
+    eramId: "",
+    status: "",
+    page: 1,
+    pageSize: 10,
+  });
+
+  const { data, isLoading, error, refetch } =
+    useGetEmployeeRaisedRequestsQuery(filters);
 
   const {
     data: requestDetails,
@@ -86,6 +105,17 @@ const EmployeeAdminOtherRequest = () => {
       setRequestData(transformedData);
     }
   }, [data]);
+
+  const debouncedSearch = useCallback(
+    debounce((value) => {
+      setFilters((prev) => ({ ...prev, eramId: value, page: 1 }));
+    }, 2000),
+    []
+  );
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 })); // Reset page on filter change
+  };
 
   const handleViewRequest = (record) => {
     setSelectedRequestId(record._id);
@@ -291,6 +321,13 @@ const EmployeeAdminOtherRequest = () => {
 
   const columns = [
     {
+      title: "ERAM ID",
+      dataIndex: ["employee", "employmentDetails", "eramId"],
+      key: "eramId",
+      align: "center",
+      render: (eramId) => eramId || "N/A",
+    },
+    {
       title: "Employee",
       dataIndex: ["employee", "fullName"],
       key: "employee",
@@ -307,19 +344,6 @@ const EmployeeAdminOtherRequest = () => {
           >
             <UserOutlined style={{ marginRight: "4px", color: "#da2c46" }} />
             {text}
-          </div>
-          <div
-            style={{
-              fontSize: "12px",
-              color: "#666",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: "2px",
-            }}
-          >
-            <IdcardOutlined style={{ marginRight: "4px" }} />
-            {record.employee?.employmentDetails?.eramId || "N/A"}
           </div>
           <div
             style={{
@@ -486,13 +510,56 @@ const EmployeeAdminOtherRequest = () => {
         </Row>
       </div>
 
+      <Row gutter={16} style={{ marginBottom: "16px" }}>
+        <Col span={6}>
+          <Input
+            placeholder="Filter by ERAM ID"
+            onChange={(e) => debouncedSearch(e.target.value)}
+          />
+        </Col>
+        <Col span={6}>
+          <Select
+            placeholder="Filter by Request Type"
+            value={filters.requestType}
+            onChange={(val) => handleFilterChange("requestType", val)}
+            style={{ width: "100%" }}
+          >
+            <Option value="">All</Option>
+            {requestTypes.map((type) => (
+              <Option key={type} value={type}>
+                {type}
+              </Option>
+            ))}
+          </Select>
+        </Col>
+
+        <Col span={6}>
+          <Select
+            placeholder="Select Status"
+            value={filters.status}
+            onChange={(val) => handleFilterChange("status", val)}
+            style={{ width: "100%" }}
+          >
+            <Option value="">All</Option>
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="rejected">Rejected</Option>
+          </Select>
+        </Col>
+      </Row>
+
       <Card>
         <Table
           columns={columns}
           dataSource={requestData}
           rowKey="_id"
           pagination={{
-            pageSize: 10,
+            current: filters.page,
+            pageSize: filters.pageSize,
+            total: data?.total || 0,
+            onChange: (page, pageSize) => {
+              setFilters((prev) => ({ ...prev, page, pageSize }));
+            },
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
@@ -682,11 +749,11 @@ const EmployeeAdminOtherRequest = () => {
                       <br />
                       <Tag
                         color={getRequestTypeColor(
-                          requestDetails.otherRequests.requestType
+                          requestDetails.otherRequests?.requestType
                         )}
                         style={{ marginTop: "4px" }}
                       >
-                        {requestDetails.otherRequests.requestType}
+                        {requestDetails.otherRequests?.requestType}
                       </Tag>
                     </Col>
                     <Col span={12}>

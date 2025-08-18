@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Table,
   Button,
@@ -14,6 +14,7 @@ import {
   Select,
   Input,
 } from "antd";
+import { debounce } from "lodash";
 import { EyeOutlined, AlertOutlined } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 import LeaveRequestModal from "../Components/LeaveRequestModal";
@@ -44,6 +45,13 @@ const EmployeeAdminLeaveRequest = () => {
       setLeaveData(transformedData);
     }
   }, [data]);
+
+  const debouncedSearch = useCallback(
+    debounce((value) => {
+      setFilters((prev) => ({ ...prev, eramId: value, page: 1 }));
+    }, 2000),
+    []
+  );
 
   const handleViewRequest = (record) => {
     setSelectedLeaveId(record._id);
@@ -279,9 +287,8 @@ const EmployeeAdminLeaveRequest = () => {
       <Row gutter={16} style={{ marginBottom: "16px" }}>
         <Col span={6}>
           <Input
-            placeholder="Filter by Eram ID"
-            value={filters.eramId}
-            onChange={(e) => handleFilterChange("eramId", e.target.value)}
+            placeholder="Filter by ERAM ID"
+            onChange={(e) => debouncedSearch(e.target.value)}
           />
         </Col>
         <Col span={6}>
