@@ -183,17 +183,28 @@ export const employeeApi = createApi({
       },
     }),
     getPayroll: builder.query({
-      query: ({ page = 1, limit = 10, search = "" } = {}) => ({
+      query: ({
+        page = 1,
+        limit = 10,
+        search = "",
+        project = "",
+        month = "",
+        year = "",
+      } = {}) => ({
         url: "/payroll",
         method: "GET",
         params: {
           page,
           limit,
-          search,
+          search, // For ERAM ID or name search
+          project,
+          month,
+          year,
         },
       }),
       providesTags: ["Payroll"],
     }),
+
     editPayroll: builder.mutation({
       query: ({ id, payload }) => ({
         url: `/payroll/${id}`,

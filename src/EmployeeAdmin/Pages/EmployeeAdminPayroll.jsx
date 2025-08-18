@@ -15,6 +15,7 @@ import {
   Row,
   Col,
   Tabs,
+  Select,
 } from "antd";
 import {
   UploadOutlined,
@@ -46,12 +47,15 @@ const EmployeeAdminPayroll = () => {
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [project, setProject] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
 
   const debouncedSearch = useCallback(
     debounce((searchValue) => {
       setDebouncedSearchText(searchValue);
-      setCurrentPage(1); // Reset to first page when searching
-    }, 500),
+      setCurrentPage(1);
+    }, 2500),
     []
   );
 
@@ -74,15 +78,17 @@ const EmployeeAdminPayroll = () => {
     },
   ] = useUploadPayrollFileMutation();
 
-  const {
-    data: payrollData,
-    refetch: refetchPayroll,
-    isLoading: isPayrollLoading,
-  } = useGetPayrollQuery({
-    page: currentPage,
-    limit: pageSize,
-    search: debouncedSearchText,
-  });
+  const { data: payrollData, isLoading: isPayrollLoading } = useGetPayrollQuery(
+    {
+      page: currentPage,
+      limit: pageSize,
+      search: debouncedSearchText,
+      project,
+      month,
+      year,
+    }
+  );
+
   const [editPayroll, { isLoading: isEditing }] = useEditPayrollMutation();
   const { data: singlePayrollData, isLoading: isSinglePayrollLoading } =
     useGetPayrollByIdQuery(selectedRecord?._id, {
@@ -122,6 +128,12 @@ const EmployeeAdminPayroll = () => {
 
     return false;
   };
+
+  const projectOptions = [
+    ...new Set(
+      payrollData?.payroll?.map((item) => item.U_PrjNM).filter(Boolean)
+    ),
+  ];
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
@@ -990,13 +1002,48 @@ const EmployeeAdminPayroll = () => {
       <Card
         title="Payroll Data"
         extra={
-          <Input
-            placeholder="Search by name, email or ERAM ID"
-            prefix={<SearchOutlined />}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={{ width: 300 }}
-            value={searchText}
-          />
+          <Row gutter={16} style={{ marginBottom: 16 }}>
+            <Col>
+              <Input
+                placeholder="Search by ERAM ID"
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={(e) => handleSearch(e.target.value)}
+                style={{ width: 200 }}
+              />
+            </Col>
+            <Col>
+              <Select
+                placeholder="Select Project"
+                style={{ width: 180 }}
+                allowClear
+                value={project}
+                onChange={(value) => setProject(value)}
+              >
+                {projectOptions.map((proj) => (
+                  <Select.Option key={proj} value={proj}>
+                    {proj}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col>
+              <DatePicker
+                picker="month"
+                placeholder="Select Month"
+                onChange={(date) => setMonth(date ? date.month() + 1 : "")}
+                style={{ width: 150 }}
+              />
+            </Col>
+            <Col>
+              <DatePicker
+                picker="year"
+                placeholder="Select Year"
+                onChange={(date) => setYear(date ? date.year() : "")}
+                style={{ width: 150 }}
+              />
+            </Col>
+          </Row>
         }
       >
         {payrollData?.payroll ? (
@@ -1061,7 +1108,7 @@ const EmployeeAdminPayroll = () => {
       >
         {renderEditForm()}
       </Modal>
-            <style jsx>{`
+      <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
           font-weight: 600 !important;
