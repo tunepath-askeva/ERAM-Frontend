@@ -63,11 +63,21 @@ export const employeeApi = createApi({
 
     //EmployeeAdmin Apis
     getEmployeeAdminLeaveHistory: builder.query({
-      query: () => ({
-        url: "/leaves",
-        method: "GET",
-      }),
+      query: ({ eramId, urgency, status, page, pageSize }) => {
+        const params = new URLSearchParams();
+        if (eramId) params.append("eramId", eramId);
+        if (urgency) params.append("urgency", urgency);
+        if (status) params.append("status", status);
+        if (page) params.append("page", page);
+        if (pageSize) params.append("pageSize", pageSize);
+
+        return {
+          url: `/leaves?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
+
     getLeaveRequestById: builder.query({
       query: (id) => `/leaves/${id}`,
     }),

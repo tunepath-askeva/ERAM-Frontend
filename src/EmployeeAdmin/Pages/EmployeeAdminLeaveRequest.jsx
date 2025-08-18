@@ -11,19 +11,30 @@ import {
   Row,
   Col,
   Spin,
+  Select,
+  Input,
 } from "antd";
 import { EyeOutlined, AlertOutlined } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 import LeaveRequestModal from "../Components/LeaveRequestModal";
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const EmployeeAdminLeaveRequest = () => {
-  const { data, isLoading, error, refetch } =
-    useGetEmployeeAdminLeaveHistoryQuery();
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeaveData] = useState([]);
   const [selectedEramId, setSelectedEramId] = useState(null);
+  const [filters, setFilters] = useState({
+    eramId: "",
+    urgency: "",
+    status: "",
+    page: 1,
+    pageSize: 10,
+  });
+
+  const { data, isLoading, error, refetch } =
+    useGetEmployeeAdminLeaveHistoryQuery(filters);
 
   React.useEffect(() => {
     if (data?.leaves) {
@@ -48,12 +59,24 @@ const EmployeeAdminLeaveRequest = () => {
     refetch();
   };
 
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter change
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const calculateDueDays = (submittedDate) => {
+    if (!submittedDate) return "N/A";
+    const now = new Date();
+    const submitted = new Date(submittedDate);
+    const diffTime = Math.abs(now - submitted);
+    return `${Math.floor(diffTime / (1000 * 60 * 60 * 24))} days`;
   };
 
   const getStatusColor = (status) => {
@@ -83,6 +106,17 @@ const EmployeeAdminLeaveRequest = () => {
   };
 
   const columns = [
+    {
+      title: "Eram Id",
+      dataIndex: "eramId",
+      key: "eramId",
+      align: "center",
+      render: (_, record) => (
+        <div>
+          <div style={{ fontWeight: "bold" }}>{record.eramId}</div>
+        </div>
+      ),
+    },
     {
       title: "Employee",
       dataIndex: "fullName",
@@ -167,6 +201,12 @@ const EmployeeAdminLeaveRequest = () => {
     },
   ];
 
+  columns.splice(7, 0, {
+    title: "Due Days",
+    key: "dueDays",
+    render: (_, record) => calculateDueDays(record.decisionDate),
+  });
+
   const pendingCount = leaveData.filter(
     (leave) => leave.status === "pending"
   ).length;
@@ -236,13 +276,54 @@ const EmployeeAdminLeaveRequest = () => {
         </Row>
       </div>
 
+      <Row gutter={16} style={{ marginBottom: "16px" }}>
+        <Col span={6}>
+          <Input
+            placeholder="Filter by Eram ID"
+            value={filters.eramId}
+            onChange={(e) => handleFilterChange("eramId", e.target.value)}
+          />
+        </Col>
+        <Col span={6}>
+          <Select
+            placeholder="Select Urgency"
+            value={filters.urgency}
+            onChange={(val) => handleFilterChange("urgency", val)}
+            style={{ width: "100%" }}
+          >
+            <Option value="">All</Option>
+            <Option value="high">High</Option>
+            <Option value="medium">Medium</Option>
+            <Option value="low">Low</Option>
+          </Select>
+        </Col>
+        <Col span={6}>
+          <Select
+            placeholder="Select Status"
+            value={filters.status}
+            onChange={(val) => handleFilterChange("status", val)}
+            style={{ width: "100%" }}
+          >
+            <Option value="">All</Option>
+            <Option value="pending">Pending</Option>
+            <Option value="approved">Approved</Option>
+            <Option value="rejected">Rejected</Option>
+          </Select>
+        </Col>
+      </Row>
+
       <Card>
         <Table
           columns={columns}
           dataSource={leaveData}
           rowKey="_id"
           pagination={{
-            pageSize: 10,
+            current: filters.page,
+            pageSize: filters.pageSize,
+            total: data?.total || 0,
+            onChange: (page, pageSize) => {
+              setFilters((prev) => ({ ...prev, page, pageSize }));
+            },
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
@@ -258,7 +339,7 @@ const EmployeeAdminLeaveRequest = () => {
         leaveId={selectedLeaveId}
         eramId={selectedEramId}
       />
-            <style jsx>{`
+      <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
           font-weight: 600 !important;

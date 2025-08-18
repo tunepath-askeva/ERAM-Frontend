@@ -1239,27 +1239,6 @@ const RecruiterJobPipeline = () => {
 
                   {/* Approval Section */}
                   {renderApprovalSection(candidate, activeStage)}
-
-                  {/* Responses Section */}
-                  {candidate.responses && candidate.responses.length > 0 && (
-                    <div style={{ marginTop: "16px" }}>
-                      <Title level={5} style={{ marginBottom: "12px" }}>
-                        <CommentOutlined style={{ marginRight: "8px" }} />
-                        Responses
-                      </Title>
-                      <Collapse bordered={false}>
-                        {candidate.responses.map((response, index) => (
-                          <Panel
-                            header={`Response ${index + 1}`}
-                            key={index}
-                            style={{ border: "none" }}
-                          >
-                            <Text>{response.answer}</Text>
-                          </Panel>
-                        ))}
-                      </Collapse>
-                    </div>
-                  )}
                 </List.Item>
               )}
             />

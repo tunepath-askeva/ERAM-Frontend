@@ -16,6 +16,12 @@ export const recruiterApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    getDashboardData: builder.query({
+      query: () => ({
+        url: "/dashboard",
+        methid: "GET",
+      }),
+    }),
     getPipelines: builder.query({
       query: () => "/Pipeline",
     }),
@@ -451,6 +457,7 @@ export const recruiterApi = createApi({
 });
 
 export const {
+  useGetDashboardDataQuery,
   useGetPipelinesQuery,
   useGetRecruiterJobsQuery,
   useUpdateRecruiterJobMutation,
