@@ -38,7 +38,6 @@ import RecruiterDashboard from "./Recruiters/Pages/RecruiterDashboard";
 import RecruiterCandidates from "./Recruiters/Pages/RecruiterCandidates";
 import RecruiterJobs from "./Recruiters/Pages/RecruiterJobs";
 import RecruiterEmployee from "./Recruiters/Pages/RecruiterEmployee";
-import RecruiterPayroll from "./Recruiters/Pages/RecruiterPayroll";
 import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
 import RecruiterEditJob from "./Recruiters/Components/RecruiterEditJob";
 import RecruiterViewJob from "./Recruiters/Components/RecruiterViewJob";
@@ -61,6 +60,34 @@ import Notifications from "./Pages/Notifications";
 import AdminRequisition from "./Admin/Pages/AdminRequisition";
 import RecruiterRequisition from "./Recruiters/Pages/RecruiterRequisition";
 import CandidateDocuments from "./Pages/CandidateDocuments";
+import AddRequisition from "./Recruiters/Components/AddRequisition";
+import EditRequisition from "./Recruiters/Components/EditRequisition";
+import AllCandidates from "./Recruiters/Pages/AllCandidates";
+import RecruiterJobsTimeline from "./Recruiters/Pages/RecruiterJobsTimeline";
+import RecruiterViewTimeline from "./Recruiters/Components/RecruiterViewTimeline";
+import ProtectedEmployee from "./Employee/Auth/ProtectedEmployee";
+import EmployeeAdminLayout from "./EmployeeAdmin/Global/EmployeeAdminLayout";
+import EmployeeAdminDashboard from "./EmployeeAdmin/Pages/EmployeeAdminDashboard";
+import ProtectedEmployeeAdmin from "./EmployeeAdmin/Auth/ProtectedEmployeeAdmin";
+import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveRequest";
+import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
+import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
+import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
+import EmployeePayroll from "./Employee/Pages/EmployeePayroll";
+import CompletedCandidates from "./Recruiters/Pages/CompletedCandidates";
+import WhatsAppConfigPanel from "./Admin/Pages/WhatsappapiIntegration";
+import SuperAdminWhatsappApi from "./SuperAdmin/Pages/SuperAdminWhatsappApi";
+import EmployeeNotifications from "./Employee/Pages/EmployeeNotifications";
+import EmployeeAdminOtherRequest from "./EmployeeAdmin/Pages/EmployeeAdminOtherRequest";
+import EmployeeAdminNews from "./EmployeeAdmin/Pages/EmployeeAdminNews";
+import EmployeeCompanyNews from "./Employee/Pages/EmployeeCompanyNews";
+import NewsDetailView from "./EmployeeAdmin/Components/NewsDetailView";
+import EditNews from "./EmployeeAdmin/Components/EditNews";
+import EmployeeFeedback from "./Employee/Pages/EmployeeFeedback";
+import EmployeeAdminFeedback from "./EmployeeAdmin/Pages/EmployeeAdminFeedback";
+import EmployeeDocuments from "./Employee/Pages/EmployeeDocuments";
+import EmployeeAdminDocuments from "./EmployeeAdmin/Pages/EmployeeAdminDocuments";
+import EmployeeDocumentDetail from "./EmployeeAdmin/Components/EmployeeDocumentDetails";
 
 const AppRoutes = () => {
   return (
@@ -80,6 +107,10 @@ const AppRoutes = () => {
           path="/superadmin"
           element={<ProtectedSuperAdmin element={<SuperDashboard />} />}
         />
+        {/* <Route
+          path="/superadmin/whatsapp"
+          element={<ProtectedSuperAdmin element={<SuperAdminWhatsappApi />} />}
+        /> */}
         <Route
           path="/superadmin/branches"
           element={<ProtectedSuperAdmin element={<BranchManagement />} />}
@@ -125,6 +156,7 @@ const AppRoutes = () => {
           path="/admin/requisitions"
           element={<ProtectedAdmin element={<AdminRequisition />} />}
         />
+
         <Route
           path="/admin/candidates"
           element={<ProtectedAdmin element={<AdminCandidates />} />}
@@ -156,6 +188,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/masters"
           element={<ProtectedAdmin element={<Master />} />}
+        />
+        <Route
+          path="/admin/whatsapp"
+          element={<ProtectedAdmin element={<WhatsAppConfigPanel />} />}
         />
       </Route>
 
@@ -207,12 +243,28 @@ const AppRoutes = () => {
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
         />
         <Route
+          path="/recruiter/jobs-timeline"
+          element={<ProtectedRecruiter element={<RecruiterJobsTimeline />} />}
+        />
+        <Route
           path="/recruiter/requisition"
           element={<ProtectedRecruiter element={<RecruiterRequisition />} />}
         />
         <Route
+          path="/recruiter/requisition/add"
+          element={<ProtectedRecruiter element={<AddRequisition />} />}
+        />
+        <Route
+          path="/recruiter/requisition/edit/:id"
+          element={<ProtectedRecruiter element={<EditRequisition />} />}
+        />
+        <Route
           path="/recruiter-jobs/:id"
           element={<ProtectedRecruiter element={<RecruiterViewJob />} />}
+        />
+        <Route
+          path="/recruiter-jobs-timeline/:id"
+          element={<ProtectedRecruiter element={<RecruiterViewTimeline />} />}
         />
         <Route
           path="/recruiter-jobs/edit/:id"
@@ -222,13 +274,18 @@ const AppRoutes = () => {
           path="/recruiter/employees"
           element={<ProtectedRecruiter element={<RecruiterEmployee />} />}
         />
-        <Route
-          path="/recruiter/payroll"
-          element={<ProtectedRecruiter element={<RecruiterPayroll />} />}
-        />
+
         <Route
           path="/recruiter/candidates"
           element={<ProtectedRecruiter element={<RecruiterCandidates />} />}
+        />
+        <Route
+          path="/recruiter/completed-candidates"
+          element={<ProtectedRecruiter element={<CompletedCandidates />} />}
+        />
+        <Route
+          path="/recruiter/allcandidates"
+          element={<ProtectedRecruiter element={<AllCandidates />} />}
         />
         <Route
           path="/recruiter/staged-candidates"
@@ -249,18 +306,114 @@ const AppRoutes = () => {
       {/* Employee */}
 
       <Route element={<EmployeeLayout />}>
-        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+        <Route
+          path="/employee/dashboard"
+          element={<ProtectedEmployee element={<EmployeeDashboard />} />}
+        />
         <Route
           path="/employee/raise-request"
-          element={<EmployeeRaiseRequest />}
+          element={<ProtectedEmployee element={<EmployeeRaiseRequest />} />}
         />
         <Route
           path="/employee/leave-request"
-          element={<EmployeeLeaveRequest />}
+          element={<ProtectedEmployee element={<EmployeeLeaveRequest />} />}
+        />
+        <Route
+          path="/employee/payroll"
+          element={<ProtectedEmployee element={<EmployeePayroll />} />}
+        />
+        <Route
+          path="/employee/company-policy"
+          element={<ProtectedEmployee element={<EmployeeCompanyPolicy />} />}
+        />
+
+        <Route
+          path="/employee/company-news"
+          element={<ProtectedEmployee element={<EmployeeCompanyNews />} />}
+        />
+        <Route
+          path="/employee/feedback"
+          element={<ProtectedEmployee element={<EmployeeFeedback />} />}
+        />
+        <Route
+          path="/employee/notifications"
+          element={<ProtectedEmployee element={<EmployeeNotifications />} />}
         />
         <Route
           path="/employee/profile-settings"
-          element={<EmployeeProfileSettings />}
+          element={<ProtectedEmployee element={<EmployeeProfileSettings />} />}
+        />
+        <Route
+          path="/employee/documents"
+          element={<ProtectedEmployee element={<EmployeeDocuments />} />}
+        />
+        <Route
+          path="/employee/feedback"
+          element={<ProtectedEmployee element={<EmployeeFeedback />} />}
+        />
+      </Route>
+
+      <Route element={<EmployeeAdminLayout />}>
+        <Route
+          path="/employee-admin/dashboard"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminDashboard />} />
+          }
+        />
+        <Route
+          path="/employee-admin/leave-request"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminLeaveRequest />} />
+          }
+        />
+        <Route
+          path="/employee-admin/other-request"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminOtherRequest />} />
+          }
+        />
+        <Route
+          path="/employee-admin/company-policy"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminCompanyPolicy />} />
+          }
+        />
+        <Route
+          path="/employee-admin/documents"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminDocuments />} />
+          }
+        />
+        <Route
+          path="/employee-admin/documents/:id"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeDocumentDetail />} />
+          }
+        />
+        <Route
+          path="/employee-admin/news"
+          element={<ProtectedEmployeeAdmin element={<EmployeeAdminNews />} />}
+        />
+
+        <Route
+          path="/employee-admin/news/edit/:id"
+          element={<ProtectedEmployeeAdmin element={<EditNews />} />}
+        />
+        <Route
+          path="/employee-admin/news/view/:id"
+          element={<ProtectedEmployeeAdmin element={<NewsDetailView />} />}
+        />
+        <Route
+          path="/employee-admin/feedback"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminFeedback />} />
+          }
+        />
+        <Route
+          path="/employee-admin/payroll"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminPayroll />} />
+          }
         />
       </Route>
 

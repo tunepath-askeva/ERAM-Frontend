@@ -142,7 +142,11 @@ const CommentModal = ({
   pipelines = [],
   selectedPipeline,
   setSelectedPipeline,
+  candidateType,
+  setCandidateType,
 }) => {
+  const [candidateTypeInput, setCandidateTypeInput] = useState("");
+
   return (
     <Modal
       title="Add Comment and Select Pipeline"
@@ -154,14 +158,42 @@ const CommentModal = ({
       okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
     >
       <Form layout="vertical">
-        <Form.Item label="Comment">
-          <Input.TextArea
-            rows={4}
-            placeholder="Enter your comments for this candidate..."
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
+        <Form.Item label="Candidate Type (Optional)" name="candidateType">
+          <Select
+            showSearch
+            allowClear
+            placeholder="Select or type candidate type"
+            value={candidateType}
+            onSearch={(val) => setCandidateTypeInput(val)}
+            onChange={(value) => {
+              setCandidateType(value);
+            }}
+            onBlur={() => {
+              if (!candidateType && candidateTypeInput) {
+                setCandidateType(candidateTypeInput);
+              }
+            }}
+            filterOption={(input, option) =>
+              (option?.children ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          >
+            {[
+              "General",
+              "Supplier",
+              "Own",
+              "SponserTransfer",
+              "Khafalath",
+              "Others",
+            ].map((type) => (
+              <Option key={type} value={type}>
+                {type}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
+
         <Form.Item label="Pipeline (Optional)">
           <Select
             placeholder="Select a pipeline"
@@ -175,6 +207,15 @@ const CommentModal = ({
               </Option>
             ))}
           </Select>
+        </Form.Item>
+
+        <Form.Item label="Comment">
+          <Input.TextArea
+            rows={4}
+            placeholder="Enter your comments for this candidate..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
         </Form.Item>
       </Form>
     </Modal>
@@ -431,10 +472,10 @@ const SourcedCandidates = ({ jobId }) => {
       setTempFilters(initialFilters);
       setPagination((prev) => ({ ...prev, current: 1 }));
 
-      message.info("Fetching exact match candidates...");
+      message.info("Fetching suggestion match candidates...");
     } catch (error) {
-      console.error("Failed to fetch exact match candidates:", error);
-      message.error("Failed to fetch exact match candidates");
+      console.error("Failed to fetch suggestion match candidates:", error);
+      message.error("Failed to fetch suggestion match candidates");
     }
   };
 
@@ -491,24 +532,20 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleClearSearch = () => {
-    // Clear all filters
     setFilters(initialFilters);
     setTempFilters(initialFilters);
     setSkillInput("");
 
-    // Clear search states
     setShouldFetch(false);
     setIsExactMatch(false);
     setQueryParams("");
 
-    // Reset pagination
     setPagination((prev) => ({
       ...prev,
       current: 1,
       total: 0,
     }));
 
-    // Clear selections
     setSelectedCandidates([]);
     setSelectAll(false);
     message.success("All filters cleared successfully");
@@ -542,7 +579,7 @@ const SourcedCandidates = ({ jobId }) => {
       case "industries":
         clearedFilters.industries = [];
         break;
-      case "exactMatch":
+      case "suggestionMatch":
         setIsExactMatch(false);
         setShouldFetch(false);
         return;
@@ -659,6 +696,7 @@ const SourcedCandidates = ({ jobId }) => {
         isSourced: candidate.isSourced,
         comment: commentText,
         pipelineId: selectedPipeline,
+        candidateType: candidate.candidateType,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
@@ -845,7 +883,7 @@ const SourcedCandidates = ({ jobId }) => {
                 borderColor: isExactMatch ? "#722ed1" : "#d9d9d9",
               }}
             >
-              Exact Match
+              Suggestion Match
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -870,10 +908,10 @@ const SourcedCandidates = ({ jobId }) => {
                           color="purple"
                           closable
                           onClose={() =>
-                            handleClearSpecificFilter("exactMatch")
+                            handleClearSpecificFilter("suggestionMatch")
                           }
                         >
-                          Exact Match
+                          Suggestion Match
                         </Tag>
                       )}
 
@@ -1106,7 +1144,7 @@ const SourcedCandidates = ({ jobId }) => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                Use the advanced filters or exact match to find candidates
+                Use the advanced filters or suggestion match to find candidates
               </span>
             }
           />
@@ -1119,10 +1157,10 @@ const SourcedCandidates = ({ jobId }) => {
         ) : sourcedError || exactMatchError ? (
           <Alert
             message={`Failed to load ${
-              isExactMatch ? "exact match" : "sourced"
+              isExactMatch ? "suggestion match" : "sourced"
             } candidates`}
             description={`Unable to fetch ${
-              isExactMatch ? "exact match" : "sourced"
+              isExactMatch ? "suggestion match" : "sourced"
             } candidates data`}
             type="error"
             showIcon
@@ -1166,7 +1204,7 @@ const SourcedCandidates = ({ jobId }) => {
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
                 {isExactMatch
-                  ? "No exact match candidates found for this job"
+                  ? "No suggestion match candidates found for this job"
                   : "No candidates found matching your search criteria"}
               </span>
             }
@@ -1602,7 +1640,7 @@ const SourcedCandidates = ({ jobId }) => {
         visible={isCommentModalVisible}
         onCancel={() => {
           setIsCommentModalVisible(false);
-          setSelectedPipeline(null); // Reset on cancel
+          setSelectedPipeline(null);
         }}
         onOk={handleCommentConfirm}
         comment={comment}
@@ -1610,6 +1648,10 @@ const SourcedCandidates = ({ jobId }) => {
         pipelines={activePipelines}
         selectedPipeline={selectedPipeline}
         setSelectedPipeline={setSelectedPipeline}
+        candidateType={candidateToUpdate?.candidateType} 
+        setCandidateType={(type) => {
+          setCandidateToUpdate((prev) => ({ ...prev, candidateType: type }));
+        }}
       />
     </div>
   );

@@ -38,10 +38,31 @@ export const recruiterApi = createApi({
       }),
     }),
     getRecruiterJobs: builder.query({
-      query: () => ({
-        url: "/recruiter",
-        methid: "GET",
-      }),
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", params.page || 1);
+        queryParams.append("limit", params.limit || 6);
+
+        if (params.searchText) {
+          queryParams.append("search", params.searchText);
+        }
+
+        if (params.status && params.status !== "all") {
+          queryParams.append("status", params.status);
+        }
+
+        return {
+          url: `/recruiter?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return {
+          jobs: response.jobs,
+          totalCount: response.totalJobs,
+        };
+      },
     }),
     updateRecruiterJob: builder.mutation({
       query: ({ id, ...patch }) => ({
@@ -113,10 +134,18 @@ export const recruiterApi = createApi({
     }),
 
     updateCandidateStatus: builder.mutation({
-      query: ({ Id, status, jobId, isSourced, comment, pipelineId }) => ({
+      query: ({
+        Id,
+        status,
+        jobId,
+        isSourced,
+        comment,
+        pipelineId,
+        candidateType,
+      }) => ({
         url: `/candidate/status/${Id}`,
         method: "POST",
-        body: { status, jobId, isSourced, comment, pipelineId },
+        body: { status, jobId, isSourced, comment, pipelineId, candidateType },
       }),
     }),
 
@@ -136,10 +165,35 @@ export const recruiterApi = createApi({
     }),
 
     getPipelineJobs: builder.query({
-      query: () => ({
-        url: "pipelineJobs",
-        method: "GET",
-      }),
+      query: ({
+        page = 1,
+        limit = 6,
+        search = "",
+        status = "all",
+        jobId = "all",
+      } = {}) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+
+        if (search) {
+          params.append("search", search);
+        }
+
+        if (status && status !== "all") {
+          params.append("status", status);
+        }
+
+        if (jobId && jobId !== "all") {
+          params.append("jobId", jobId);
+        }
+
+        return {
+          url: `/pipelineJobs?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getPipelineJobsById: builder.query({
       query: (id) => ({
@@ -191,11 +245,34 @@ export const recruiterApi = createApi({
     }),
 
     getPipelineCompletedCandidates: builder.query({
-      query: () => ({
-        url: `/candidate`,
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", params.page || 1);
+        queryParams.append("limit", params.limit || 10);
+
+        if (params.search) {
+          queryParams.append("search", params.search);
+        }
+
+        if (params.status) {
+          queryParams.append("status", params.status);
+        }
+
+        return {
+          url: `/candidate?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
+      transformResponse: (response) => {
+        return response;
+      },
     }),
+
+    getPipelineCompletedCandidateById: builder.query({
+      query: (id) => `/candidate/${id}`,
+    }),
+
     moveCandidateStatus: builder.mutation({
       query: ({ id, ...payload }) => ({
         url: `/stage/${id}`,
@@ -231,16 +308,52 @@ export const recruiterApi = createApi({
       }),
     }),
     getRequisitions: builder.query({
+      query: ({ search = "", filters = {}, pagination = {} }) => {
+        const params = new URLSearchParams();
+
+        if (search) params.append("search", search);
+
+        // Add filters
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            params.append(key, value);
+          }
+        });
+
+        // Add pagination
+        params.append("page", pagination.page || 1);
+        params.append("limit", pagination.pageSize || 10);
+
+        return {
+          url: `/requisition?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
+    getProjects: builder.query({
       query: () => ({
-        url: "/requisition",
+        url: "/projects",
+        method: "GET",
+      }),
+    }),
+    getRequisitionsById: builder.query({
+      query: (id) => ({
+        url: `/get-requisition/${id}`,
         method: "GET",
       }),
     }),
     submitRequisition: builder.mutation({
-      query: (requisitionData) => ({
+      query: (requisition) => ({
         url: "/requisition",
         method: "POST",
-        body: requisitionData,
+        body: requisition,
+      }),
+    }),
+    stagedCandidateNotify: builder.mutation({
+      query: ({ workOrderId, userId }) => ({
+        url: `/remainder/${workOrderId}`,
+        method: "POST",
+        body: { userId },
       }),
     }),
     editRequisition: builder.mutation({
@@ -257,6 +370,82 @@ export const recruiterApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: ["Requisition"],
+    }),
+    getCandidateTimeline: builder.query({
+      query: ({ id, page = 1, pageSize = 10 }) => ({
+        url: `/timeline/${id}?page=${page}&pageSize=${pageSize}`,
+        method: "GET",
+      }),
+    }),
+    getAllBranchedCandidate: builder.query({
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("page", params.page || 1);
+        queryParams.append("limit", params.limit || 10);
+
+        if (params.search) {
+          queryParams.append("search", params.search);
+        }
+
+        if (params.skills) {
+          queryParams.append("skills", params.skills);
+        }
+
+        if (params.location) {
+          queryParams.append("location", params.location);
+        }
+
+        if (params.experience) {
+          queryParams.append("experience", params.experience);
+        }
+
+        if (params.industry) {
+          queryParams.append("industry", params.industry);
+        }
+
+        return {
+          url: `/all-candidate?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
+
+      transformResponse: (response) => {
+        return response;
+      },
+    }),
+    updateBranchedCandidate: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/branched-candidates/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["BranchedCandidate"],
+    }),
+    getRecruiterJobTimelineId: builder.query({
+      query: (id) => `/job-timeline/${id}`,
+    }),
+    convertEmployee: builder.mutation({
+      query: (payload) => ({
+        url: "/employee",
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    getBranchEmployess: builder.query({
+      query: ({ page = 1, pageSize = 10, search = "" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pageSize.toString(),
+        });
+
+        if (search) params.append("search", search);
+
+        return {
+          url: `/employees?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
   }),
 });
@@ -294,4 +483,14 @@ export const {
   useEditRequisitionMutation,
   useDeleteRequisitionMutation,
   useGetSeperateApprovalsQuery,
+  useGetCandidateTimelineQuery,
+  useGetRequisitionsByIdQuery,
+  useGetProjectsQuery,
+  useGetAllBranchedCandidateQuery,
+  useUpdateBranchedCandidateMutation,
+  useStagedCandidateNotifyMutation,
+  useGetRecruiterJobTimelineIdQuery,
+  useConvertEmployeeMutation,
+  useGetBranchEmployessQuery,
+  useGetPipelineCompletedCandidateByIdQuery,
 } = recruiterApi;

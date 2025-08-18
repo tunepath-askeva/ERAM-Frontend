@@ -15,6 +15,7 @@ import { useRegisterUserMutation } from "../Slices/Users/UserApis.js";
 import OtpModal from "../Modal/OtpModal";
 import Header from "../Global/Header";
 import HomeFooter from "../Global/Footer";
+import { phoneUtils, countryInfo } from "../utils/countryMobileLimits.js";
 
 const { Option } = Select;
 
@@ -26,34 +27,61 @@ const Register = () => {
 
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [selectedCountryCode, setSelectedCountryCode] = useState("966");
 
   const [registerUser, { isLoading }] = useRegisterUserMutation();
 
-  const roles = [
-    { value: "candidate", label: "Candidate" },
-    { value: "employee", label: "Employee" },
-  ];
+  const generateCountryOptions = () => {
+    const supportedCodes = phoneUtils.getSupportedCountryCodes();
 
-  // Validation functions
+    return supportedCodes
+      .map((code) => {
+        const info = countryInfo[code];
+        const limits = phoneUtils.getLimits(code);
+
+        return {
+          value: code,
+          label: info ? `${info.flag} +${code} ${info.name}` : `+${code}`,
+          searchText: info
+            ? `${code} ${info.name} +${code}`.toLowerCase()
+            : code,
+          limits: limits,
+        };
+      })
+      .sort((a, b) => {
+        if (a.value === "966") return -1;
+        if (b.value === "966") return 1;
+        const aName = countryInfo[a.value]?.name || "";
+        const bName = countryInfo[b.value]?.name || "";
+        return aName.localeCompare(bName);
+      });
+  };
+
+  const getSelectedCountryDisplay = (countryCode) => {
+    const info = countryInfo[countryCode];
+    return info ? `${info.flag} +${countryCode}` : `+${countryCode}`;
+  };
+
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const validatePhone = (phone) => {
-    // Basic phone validation - adjust regex as needed for your requirements
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+  const validatePhone = (phone, countryCode = selectedCountryCode) => {
+    if (!phone || !phone.trim()) return false;
+
+    const cleanPhone = phone.replace(/\D/g, "");
+
+    return phoneUtils.validateMobileNumber(countryCode, cleanPhone);
   };
 
   const validateStrongPassword = (password) => {
-    // Strong password: at least 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return strongPasswordRegex.test(password);
   };
 
   const validateName = (name) => {
-    // Name should contain only letters and spaces, at least 2 characters
     const nameRegex = /^[a-zA-Z\s]{1,}$/;
     return nameRegex.test(name.trim());
   };
@@ -62,7 +90,6 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Comprehensive validation
       if (!values.firstName || !values.firstName.trim()) {
         enqueueSnackbar("Please enter your first name.", {
           variant: "error",
@@ -103,16 +130,6 @@ const Register = () => {
         return;
       }
 
-      if (!values.role) {
-        enqueueSnackbar("Please select your role.", {
-          variant: "error",
-          anchorOrigin: { vertical: "top", horizontal: "right" },
-          autoHideDuration: 3000,
-        });
-        setLoading(false);
-        return;
-      }
-
       if (!values.email || !values.email.trim()) {
         enqueueSnackbar("Please enter your email address.", {
           variant: "error",
@@ -133,7 +150,7 @@ const Register = () => {
         return;
       }
 
-      if (!values.phone || !values.phone.trim()) {
+      if (!values.phoneNumber || !values.phoneNumber.trim()) {
         enqueueSnackbar("Please enter your phone number.", {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -143,8 +160,15 @@ const Register = () => {
         return;
       }
 
-      if (!validatePhone(values.phone)) {
-        enqueueSnackbar("Please enter a valid phone number.", {
+      if (!validatePhone(values.phoneNumber, selectedCountryCode)) {
+        const limits = phoneUtils.getLimits(selectedCountryCode);
+        const countryName =
+          countryInfo[selectedCountryCode]?.name || "selected country";
+        const errorMessage = limits
+          ? `Please enter a valid phone number for ${countryName} (${limits.min}-${limits.max} digits).`
+          : "Please enter a valid phone number.";
+
+        enqueueSnackbar(errorMessage, {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
           autoHideDuration: 3000,
@@ -164,11 +188,14 @@ const Register = () => {
       }
 
       if (!validateStrongPassword(values.password)) {
-        enqueueSnackbar("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.", {
-          variant: "error",
-          anchorOrigin: { vertical: "top", horizontal: "right" },
-          autoHideDuration: 4000,
-        });
+        enqueueSnackbar(
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+          {
+            variant: "error",
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            autoHideDuration: 4000,
+          }
+        );
         setLoading(false);
         return;
       }
@@ -195,13 +222,16 @@ const Register = () => {
 
       const fullName = `${values.firstName.trim()} ${values.lastName.trim()}`;
 
+      const cleanPhoneNumber = values.phoneNumber.replace(/\D/g, "");
+      const formattedPhone = `+${selectedCountryCode}${cleanPhoneNumber}`;
+
       const userData = {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         fullName: fullName,
-        role: values.role,
+        role: "candidate",
         email: values.email.trim().toLowerCase(),
-        phone: values.phone.trim(),
+        phone: formattedPhone,
         cPassword: values.cPassword,
       };
 
@@ -221,7 +251,9 @@ const Register = () => {
     } catch (error) {
       console.error("Registration failed:", error);
       enqueueSnackbar(
-        error?.data?.message || error?.message || "Registration failed. Please try again.",
+        error?.data?.message ||
+          error?.message ||
+          "Registration failed. Please try again.",
         {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
@@ -236,7 +268,6 @@ const Register = () => {
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
 
-    // Get the first error message
     const firstError = errorInfo.errorFields[0];
     if (firstError && firstError.errors.length > 0) {
       enqueueSnackbar(firstError.errors[0], {
@@ -413,36 +444,6 @@ const Register = () => {
             </Row>
 
             <Form.Item
-              name="role"
-              label={
-                <span
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "#2c3e50",
-                  }}
-                >
-                  Register As
-                </span>
-              }
-            >
-              <Select
-                placeholder="Select your role"
-                size="large"
-                style={{
-                  borderRadius: "12px",
-                }}
-                suffixIcon={<TeamOutlined style={{ color: "#bdc3c7" }} />}
-              >
-                {roles.map((role) => (
-                  <Option key={role.value} value={role.value}>
-                    {role.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
               name="email"
               label={
                 <span
@@ -482,16 +483,55 @@ const Register = () => {
                 </span>
               }
             >
-              <Input
-                prefix={<PhoneOutlined style={{ color: "#bdc3c7" }} />}
-                placeholder="+1 (555) 123-4567"
-                size="large"
-                style={{
-                  borderRadius: "12px",
-                  border: "1px solid #e1e5e9",
-                  fontSize: "16px",
-                }}
-              />
+              <Input.Group compact>
+                <Select
+                  value={selectedCountryCode}
+                  onChange={setSelectedCountryCode}
+                  style={{ width: "35%" }}
+                  size="large"
+                  showSearch
+                  placeholder="Country"
+                  optionFilterProp="searchtext"
+                  filterOption={(input, option) =>
+                    option.searchtext
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {generateCountryOptions().map((option) => (
+                    <Option
+                      key={option.value}
+                      value={option.value}
+                      searchtext={option.searchText}
+                      label={getSelectedCountryDisplay(option.value)}
+                    >
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+                <Form.Item name="phoneNumber" noStyle>
+                  <Input
+                    prefix={<PhoneOutlined style={{ color: "#bdc3c7" }} />}
+                    placeholder={`Enter ${
+                      phoneUtils.getLimits(selectedCountryCode)?.min
+                    }-${phoneUtils.getLimits(selectedCountryCode)?.max} digits`}
+                    size="large"
+                    maxLength={
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 15
+                    }
+                    onInput={(e) => {
+                      // Only allow digits
+                      e.target.value = e.target.value.replace(/\D/g, "");
+                    }}
+                    style={{
+                      width: "65%",
+                      borderRadius: "0 12px 12px 0",
+                      border: "1px solid #e1e5e9",
+                      fontSize: "16px",
+                    }}
+                  />
+                </Form.Item>
+              </Input.Group>
             </Form.Item>
 
             <Form.Item

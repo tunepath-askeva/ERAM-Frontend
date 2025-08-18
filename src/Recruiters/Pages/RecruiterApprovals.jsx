@@ -178,6 +178,8 @@ const RecruiterApprovals = () => {
           recruiterReviews = [],
         } = stage;
 
+        const recruiters = recruiterIds || (recruiterId ? [recruiterId] : []);
+
         uploadedDocuments.forEach((candidateDoc) => {
           const {
             candidateId,
@@ -185,6 +187,8 @@ const RecruiterApprovals = () => {
             candidateEmail,
             documents = [],
           } = candidateDoc;
+
+          const status = levelInfo?.approverStatus || stageStatus;
 
           tableData.push({
             key: `${workOrderId}-${stageId}-${candidateId}`,
@@ -194,18 +198,15 @@ const RecruiterApprovals = () => {
             stageId,
             stageName,
             recruiterName:
-              recruiterIds?.map((r) => r.fullName || r.name).join(", ") ||
-              recruiterId ||
-              "N/A",
-            recruiterEmail:
-              recruiterIds?.map((r) => r.email).join(", ") || "N/A",
+              recruiters.map((r) => r.fullName || r.name).join(", ") || "N/A",
+            recruiterEmail: recruiters.map((r) => r.email).join(", ") || "N/A",
             candidateId,
             candidateName,
             candidateEmail,
             documents,
             documentsCount: documents.length,
             uploadedAt: documents?.[0]?.uploadedAt,
-            status: stageStatus,
+            status: status,
             levelStatus: levelInfo?.levelStatus,
             levelName: levelInfo?.levelName,
             levelId: levelInfo?.levelId,
@@ -706,11 +707,46 @@ const RecruiterApprovals = () => {
         key: "recruiterName",
         width: isMobile ? 150 : isTablet ? 160 : 200,
         ellipsis: true,
-        render: (text) => (
-          <Tooltip title={text}>
-            <Text strong>{text || "N/A"}</Text>
-          </Tooltip>
-        ),
+        render: (text, record) => {
+          return (
+            <div style={{ minWidth: 0 }}>
+              <Tooltip title={text}>
+                <div
+                  style={{
+                    fontWeight: 500,
+                    fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    lineHeight: "1.3",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {text || "N/A"}
+                </div>
+              </Tooltip>
+              {!isMobile &&
+                record.recruiterEmail &&
+                record.recruiterEmail !== "N/A" && (
+                  <Tooltip title={record.recruiterEmail}>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: isTablet ? "11px" : "12px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "block",
+                        lineHeight: "1.2",
+                      }}
+                    >
+                      {record.recruiterEmail}
+                    </Text>
+                  </Tooltip>
+                )}
+            </div>
+          );
+        },
       },
       {
         title: "Docs",
@@ -736,17 +772,8 @@ const RecruiterApprovals = () => {
         key: "status",
         width: isMobile ? 100 : isTablet ? 120 : 130,
         render: (status, record) => {
-          let displayStatus = "pending";
-          if (record.approval?.isApproved === true) {
-            displayStatus = "approved";
-          } else if (record.approval?.isApproved === false) {
-            displayStatus = "pending"; 
-          } else {
-            displayStatus = record.status || "pending";
-          }
-
-          const statusText = getStatusText(displayStatus);
-          const statusColor = getStatusColor(displayStatus);
+          const statusText = getStatusText(status);
+          const statusColor = getStatusColor(status);
 
           return (
             <Space>

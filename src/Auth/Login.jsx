@@ -43,7 +43,6 @@ const Login = () => {
         return;
       }
 
-      // Validate password length
       if (values.password.length < 6) {
         enqueueSnackbar("Password must be at least 6 characters long.", {
           variant: "error",
@@ -61,7 +60,6 @@ const Login = () => {
 
       console.log("Login Response:", response);
 
-      // 👉 Log token if it exists in the response
       console.log("Token:", response.token);
 
       if (response.requireOtp) {
@@ -95,6 +93,7 @@ const Login = () => {
         email: response.user.email,
         name: response.user.name,
         roles: response.user.roles,
+        employeeAdmin: response.user.employeeAdmin || null,
       };
 
       const payload = {
@@ -120,8 +119,13 @@ const Login = () => {
           navigate("/employee/dashboard");
           break;
         case "recruiter":
-          navigate("/recruiter/dashboard");
+          if (response.user.employeeAdmin === "Employee Admin") {
+            navigate("/employee-admin/dashboard");
+          } else {
+            navigate("/recruiter/dashboard");
+          }
           break;
+
         case "super_admin":
           navigate("/super-admin/dashboard");
           break;
@@ -151,7 +155,6 @@ const Login = () => {
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
 
-    // Get the first error message
     const firstError = errorInfo.errorFields[0];
     if (firstError && firstError.errors.length > 0) {
       enqueueSnackbar(firstError.errors[0], {

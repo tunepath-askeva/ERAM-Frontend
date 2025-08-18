@@ -199,7 +199,7 @@ const CandidateViewModal = ({ visible, onCancel, candidateId }) => {
             }
           >
             <Text strong>
-              {candidate.experience + " Years" || "Not specified"}
+              {candidate.totalExperienceYears + " Years" || "Not specified"}
             </Text>
           </Descriptions.Item>
 

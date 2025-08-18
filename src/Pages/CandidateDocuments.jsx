@@ -17,6 +17,7 @@ import {
   Avatar,
   Collapse,
   Progress,
+  Result,
 } from "antd";
 import {
   FileTextOutlined,
@@ -55,7 +56,7 @@ const CandidateDocuments = () => {
   });
   const [expandedWorkOrders, setExpandedWorkOrders] = useState([]);
 
-  const { data, isLoading, error } = useGetCandidateDocumentsQuery();
+  const { data, isLoading, error, refetch } = useGetCandidateDocumentsQuery();
 
   const getFileIcon = (fileName) => {
     const extension = fileName.split(".").pop().toLowerCase();
@@ -111,7 +112,7 @@ const CandidateDocuments = () => {
 
     return apiData.data.map((workOrder) => {
       const stages = {};
-      
+
       workOrder.uploadedDocuments?.forEach((doc) => {
         if (!stages[doc.stageName]) {
           stages[doc.stageName] = {
@@ -157,8 +158,8 @@ const CandidateDocuments = () => {
     : [];
 
   const filteredWorkOrders = workOrdersData.filter((workOrder) => {
-    const matchesWorkOrder = 
-      filters.workOrder === "all" || 
+    const matchesWorkOrder =
+      filters.workOrder === "all" ||
       workOrder.workOrderId === filters.workOrder;
 
     const hasMatchingStages = workOrder.stages.some((stage) => {
@@ -168,14 +169,18 @@ const CandidateDocuments = () => {
         stage.documents.some(
           (doc) =>
             doc.fileName.toLowerCase().includes(filters.search.toLowerCase()) ||
-            doc.documentType.toLowerCase().includes(filters.search.toLowerCase())
+            doc.documentType
+              .toLowerCase()
+              .includes(filters.search.toLowerCase())
         );
 
       const matchesStage =
         filters.stage === "all" || stage.name === filters.stage;
       const matchesDocType =
         filters.documentType === "all" ||
-        stage.documents.some((doc) => doc.documentType === filters.documentType);
+        stage.documents.some(
+          (doc) => doc.documentType === filters.documentType
+        );
 
       return matchesSearch && matchesStage && matchesDocType;
     });
@@ -187,7 +192,9 @@ const CandidateDocuments = () => {
     if (expanded) {
       setExpandedWorkOrders([...expandedWorkOrders, workOrderId]);
     } else {
-      setExpandedWorkOrders(expandedWorkOrders.filter(id => id !== workOrderId));
+      setExpandedWorkOrders(
+        expandedWorkOrders.filter((id) => id !== workOrderId)
+      );
     }
   };
 
@@ -199,18 +206,27 @@ const CandidateDocuments = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text type="danger">Error loading documents. Please try again.</Text>
-      </div>
-    );
-  }
-
   if (!data || !data.data || data.data.length === 0) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text type="secondary">No documents found.</Text>
+        <Result
+          status="404"
+          title="No Employees Found"
+          subTitle="We couldn't find any employees matching your criteria."
+          extra={
+            <Button
+              type="primary"
+              style={{ background: "#da2c46", borderColor: "#da2c46" }}
+              onClick={refetch}
+            >
+              Refresh
+            </Button>
+          }
+          style={{
+            "--antd-result-404-title-color": "#da2c46",
+            "--antd-result-404-subtitle-color": "#da2c46",
+          }}
+        />
       </div>
     );
   }
@@ -236,7 +252,6 @@ const CandidateDocuments = () => {
           align-items: center !important;
         }
         .work-order-collapse .ant-collapse-header {
-          background-color: #f0f2f5;
           border-radius: 8px !important;
           padding: 12px 16px !important;
         }
@@ -287,7 +302,8 @@ const CandidateDocuments = () => {
                         My Document Stages
                       </Title>
                       <Text type="secondary" style={{ fontSize: "12px" }}>
-                        Track all your uploaded documents grouped by work orders and stages
+                        Track all your uploaded documents grouped by work orders
+                        and stages
                       </Text>
                     </div>
                   </Space>
@@ -300,7 +316,10 @@ const CandidateDocuments = () => {
                 style={{ textAlign: "center", marginTop: "8px" }}
               >
                 <Badge
-                  count={workOrdersData.reduce((total, wo) => total + wo.totalDocuments, 0)}
+                  count={workOrdersData.reduce(
+                    (total, wo) => total + wo.totalDocuments,
+                    0
+                  )}
                   style={{ backgroundColor: "#da2c46" }}
                   showZero
                 >
@@ -339,12 +358,17 @@ const CandidateDocuments = () => {
                   placeholder="Filter by Work Order"
                   style={{ width: "100%" }}
                   value={filters.workOrder}
-                  onChange={(value) => setFilters({ ...filters, workOrder: value })}
+                  onChange={(value) =>
+                    setFilters({ ...filters, workOrder: value })
+                  }
                   size="middle"
                 >
                   <Option value="all">All Work Orders</Option>
                   {workOrdersData.map((workOrder) => (
-                    <Option key={workOrder.workOrderId} value={workOrder.workOrderId}>
+                    <Option
+                      key={workOrder.workOrderId}
+                      value={workOrder.workOrderId}
+                    >
                       {workOrder.workOrderTitle}
                     </Option>
                   ))}
@@ -361,7 +385,10 @@ const CandidateDocuments = () => {
                   <Option value="all">All Stages</Option>
                   {workOrdersData.flatMap((workOrder) =>
                     workOrder.stages.map((stage) => (
-                      <Option key={`${workOrder.workOrderId}-${stage.name}`} value={stage.name}>
+                      <Option
+                        key={`${workOrder.workOrderId}-${stage.name}`}
+                        value={stage.name}
+                      >
                         {stage.name}
                       </Option>
                     ))
@@ -414,7 +441,14 @@ const CandidateDocuments = () => {
           <Panel
             key={workOrder.workOrderId}
             header={
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
                 <Text strong>{workOrder.workOrderTitle}</Text>
                 <Badge
                   count={workOrder.totalDocuments}
@@ -423,15 +457,25 @@ const CandidateDocuments = () => {
               </div>
             }
             extra={
-              <Tag color={
-                workOrder.stages.every(s => s.status === "approved") ? "green" :
-                workOrder.stages.some(s => s.status === "rejected") ? "red" : "orange"
-              }>
-                {workOrder.stages.every(s => s.status === "approved") ? "Completed" :
-                 workOrder.stages.some(s => s.status === "rejected") ? "Rejected" : "In Progress"}
+              <Tag
+                color={
+                  workOrder.stages.every((s) => s.status === "approved")
+                    ? "green"
+                    : workOrder.stages.some((s) => s.status === "rejected")
+                    ? "red"
+                    : "orange"
+                }
+              >
+                {workOrder.stages.every((s) => s.status === "approved")
+                  ? "Completed"
+                  : workOrder.stages.some((s) => s.status === "rejected")
+                  ? "Rejected"
+                  : "In Progress"}
               </Tag>
             }
-            onExpand={(expanded) => handleWorkOrderExpand(workOrder.workOrderId, expanded)}
+            onExpand={(expanded) =>
+              handleWorkOrderExpand(workOrder.workOrderId, expanded)
+            }
           >
             {/* Stages Timeline */}
             <Row gutter={[8, 8]} style={{ marginBottom: "16px" }}>
@@ -461,9 +505,14 @@ const CandidateDocuments = () => {
                                 : "In Progress"}
                             </Text>
                             {stage.completedAt && (
-                              <Text type="secondary" style={{ fontSize: "12px" }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
                                 <CalendarOutlined />{" "}
-                                {new Date(stage.completedAt).toLocaleDateString()}
+                                {new Date(
+                                  stage.completedAt
+                                ).toLocaleDateString()}
                               </Text>
                             )}
                             <Progress
@@ -495,7 +544,10 @@ const CandidateDocuments = () => {
             {/* Documents by Stage */}
             <Row gutter={[8, 8]}>
               <Col span={24}>
-                <Card size="small" title={<Text strong>Documents by Stage</Text>}>
+                <Card
+                  size="small"
+                  title={<Text strong>Documents by Stage</Text>}
+                >
                   <Collapse accordion>
                     {workOrder.stages.map((stage) => (
                       <Panel

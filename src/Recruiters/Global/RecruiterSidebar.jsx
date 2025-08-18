@@ -79,16 +79,35 @@ const RecruiterSidebar = ({
       permission: "jobs",
     },
     {
+      key: "/recruiter/jobs-timeline",
+      icon: <UnorderedListOutlined />,
+      label: "Jobs Timeline",
+      permission: "jobs-timeline",
+    },
+    {
+      key: "/recruiter/allcandidates",
+      icon: <UsergroupAddOutlined />,
+      label: "All Candidates",
+      permission: "all-candidates",
+    },
+    {
       key: "/recruiter/candidates",
       icon: <UsergroupAddOutlined />,
-      label: "Candidates",
+      label: "Interview Candidates",
       permission: "candidates",
     },
+
     {
       key: "/recruiter/staged-candidates",
       icon: <UsergroupAddOutlined />,
       label: "Staged Candidates",
       permission: "staged-candidates",
+    },
+    {
+      key: "/recruiter/completed-candidates",
+      icon: <UsergroupAddOutlined />,
+      label: "Completed Candidates",
+      permission: "completed-candidates",
     },
     {
       key: "/recruiter/approvals",
@@ -102,12 +121,7 @@ const RecruiterSidebar = ({
       label: "Employees",
       permission: "employees",
     },
-    {
-      key: "/recruiter/payroll",
-      icon: <TranslationOutlined />,
-      label: "Payroll",
-      permission: "payroll",
-    },
+    
   ];
 
   useEffect(() => {

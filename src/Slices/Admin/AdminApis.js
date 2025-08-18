@@ -341,6 +341,12 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    getWhatsappConfig: builder.query({
+      query: () => ({
+        url: `/config`,
+        method: "GET",
+      }),
+    }),
     disableCandidateStatus: builder.mutation({
       query: (candidateId) => ({
         url: `/candidate/${candidateId}`,
@@ -417,7 +423,7 @@ export const adminApi = createApi({
           clients: response.data?.clients || response.clients || [],
           total: response.total,
           totalPages: response.totalPages,
-           currentPage: response.page,
+          currentPage: response.page,
           pageSize: response.limit,
         };
       },
@@ -485,7 +491,7 @@ export const adminApi = createApi({
           staffs: response.data?.staffs || response.staffs || [],
           total: response.total,
           totalPages: response.totalPages,
-           currentPage: response.page,
+          currentPage: response.page,
           pageSize: response.limit,
         };
       },
@@ -516,6 +522,13 @@ export const adminApi = createApi({
       query: () => ({
         url: "/requisition",
         method: "GET",
+      }),
+    }),
+    submitWhatsappApi: builder.mutation({
+      query: (clientData) => ({
+        url: "/whatsapp-api",
+        method: "POST",
+        body: clientData,
       }),
     }),
   }),
@@ -592,4 +605,9 @@ export const {
 
   //Requisition
   useGetAdminRequisiionQuery,
+
+
+  //whatsapp
+  useSubmitWhatsappApiMutation,
+  useGetWhatsappConfigQuery
 } = adminApi;

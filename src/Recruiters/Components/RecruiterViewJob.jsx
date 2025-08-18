@@ -27,6 +27,7 @@ import SourcedCandidates from "./SourcedCandidates";
 import ScreeningCandidates from "./ScreeningCandidates";
 import SelectedCandidates from "./SelelctedCandidates";
 import PendingCandidates from "./PendingCandidates";
+import { useSelector } from "react-redux";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -37,6 +38,9 @@ const RecruiterViewJob = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, error, isLoading } = useGetRecruiterJobIdQuery(id);
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
 
   if (isLoading) {
     return (
@@ -59,6 +63,10 @@ const RecruiterViewJob = () => {
   }
 
   const workOrder = data?.workOrder;
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const renderJobOverview = () => (
     <div style={{ padding: "0", fontSize: "14px", lineHeight: "1.4" }}>
@@ -909,67 +917,83 @@ const RecruiterViewJob = () => {
             >
               {renderPipelineStages()}
             </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Source Candidates
-                </span>
-              }
-              key="source"
-            >
-              <SourcedCandidates jobId={id} candidateType="source" />
-            </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Selected Candidates
-                </span>
-              }
-              key="selected"
-            >
-              <SelectedCandidates jobId={id} />
-            </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Applied Candidates
-                </span>
-              }
-              key="candidates"
-            >
-              <AppliedCandidates jobId={id} candidateType="applied" />
-            </TabPane>
+            {hasPermission("view-job-sourced") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Source Candidates
+                  </span>
+                }
+                key="source"
+              >
+                <SourcedCandidates jobId={id} candidateType="source" />
+              </TabPane>
+            )}
 
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Declined Candidates
-                </span>
-              }
-              key="declined"
-            >
-              <AppliedCandidates jobId={id} candidateType="declined" />
-            </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Pending Candidates
-                </span>
-              }
-              key="pending"
-            >
-              <PendingCandidates jobId={id} />
-            </TabPane>
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Screening Candidates
-                </span>
-              }
-              key="screening"
-            >
-              <ScreeningCandidates jobId={id} candidateType="screening" />
-            </TabPane>
+            {hasPermission("view-job-selected") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Selected Candidates
+                  </span>
+                }
+                key="selected"
+              >
+                <SelectedCandidates jobId={id} />
+              </TabPane>
+            )}
+
+            {hasPermission("view-job-applied") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Applied Candidates
+                  </span>
+                }
+                key="candidates"
+              >
+                <AppliedCandidates jobId={id} candidateType="applied" />
+              </TabPane>
+            )}
+
+            {hasPermission("view-job-declined") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Declined Candidates
+                  </span>
+                }
+                key="declined"
+              >
+                <AppliedCandidates jobId={id} candidateType="declined" />
+              </TabPane>
+            )}
+
+            {hasPermission("view-job-pending") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Pending Candidates
+                  </span>
+                }
+                key="pending"
+              >
+                <PendingCandidates jobId={id} />
+              </TabPane>
+            )}
+
+            {hasPermission("view-job-screening") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Screening Candidates
+                  </span>
+                }
+                key="screening"
+              >
+                <ScreeningCandidates jobId={id} candidateType="screening" />
+              </TabPane>
+            )}
           </Tabs>
         </div>
       </div>

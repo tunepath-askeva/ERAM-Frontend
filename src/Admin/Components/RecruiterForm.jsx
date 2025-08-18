@@ -38,6 +38,8 @@ const { Option } = Select;
 const recruiterTypes = [
   "Recruiter",
   "Admin Recruiter",
+  "Employee Admin",
+  "HR Admin",
   "HR",
   "Visa",
   "Vehicle",
@@ -51,12 +53,54 @@ const recruiterTypes = [
 const accessPermissions = [
   { key: "dashboard", label: "Dashboard" },
   { key: "jobs", label: "Jobs" },
+  { key: "jobs-timeline", label: "Jobs Timeline" },
   { key: "candidates", label: "Candidates" },
+  { key: "completed-candidates", label: "Completed Candidates" },
+  { key: "all-candidates", label: "All Candidates" },
   { key: "staged-candidates", label: "Staged Candidates" },
   { key: "approvals", label: "Approvals" },
   { key: "employees", label: "Employees" },
-  { key: "payroll", label: "Payroll" },
   { key: "requisition", label: "Requisition" },
+  { key: "edit-job", label: "Edit Job" },
+  { key: "edit-candidate-details", label: "Edit Candidate" },
+  { key: "deactivate-job", label: "Deactivate/Activate Job" },
+  { key: "view-job-sourced", label: "View Sourced Candidates" },
+  { key: "view-job-selected", label: "View Selected Candidates" },
+  { key: "view-job-applied", label: "View Applied Candidates" },
+  { key: "view-job-declined", label: "View Declined Candidates" },
+  { key: "view-job-pending", label: "View Pending Candidates" },
+  { key: "view-job-screening", label: "View Screening Candidates" },
+
+  { key: "view-candidates", label: "View Candidates" },
+  { key: "add-candidate", label: "Add Candidate" },
+  { key: "bulk-upload", label: "Bulk Upload Candidates" },
+
+  { key: "download-documents", label: "Download Documents" },
+  { key: "send-messages", label: "Send Messages" },
+  { key: "view-profile", label: "View Candidate Profile" },
+
+  { key: "move-to-interview", label: "Move to Interview" },
+  { key: "make-offer", label: "Make Offer" },
+  { key: "move-to-pipeline", label: "Move to Pipeline" },
+  { key: "convert-to-employee", label: "Convert to Employee" },
+  { key: "reject-candidate", label: "Reject Candidate" },
+
+  { key: "schedule-interview", label: "Schedule Interview" },
+  { key: "reschedule-interview", label: "Reschedule Interview" },
+  { key: "view-interviews", label: "View Interviews" },
+  { key: "change-interview-status", label: "Change Interview Status" },
+
+  { key: "view-all-tab", label: "View All Tab" },
+  { key: "view-completed-tab", label: "View Completed Tab" },
+  { key: "view-interview-tab", label: "View Interview Tab" },
+  { key: "view-offer-tab", label: "View Offer Tab" },
+  { key: "view-rejected-tab", label: "View Rejected Tab" },
+
+  { key: "view-overview-tab", label: "View Overview Tab" },
+  { key: "view-activity-tab", label: "View Activity Tab" },
+  { key: "view-documents-tab", label: "View Documents Tab" },
+
+  { key: "notify-candidate", label: "Notify Candidate" },
 ];
 
 const RecruiterForm = ({
@@ -102,7 +146,7 @@ const RecruiterForm = ({
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
-          experience: initialValues.experience || 0,
+          experience: initialValues.totalExperienceYears || 0,
           recruiterType: initialValues.recruiterType || "Recruiter",
           permissions: initialValues.permissions || [],
         });

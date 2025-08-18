@@ -151,6 +151,7 @@ const AddWorkOrder = () => {
   useEffect(() => {
     if (location.state?.requisitionData) {
       const reqData = location.state.requisitionData;
+      console.log(reqData,'ooooooooooooooi')
       setIsPrefilled(true);
 
       const startDate = reqData.createdAt ? dayjs(reqData.createdAt) : dayjs();
@@ -173,7 +174,6 @@ const AddWorkOrder = () => {
         workplace: reqData.workplace,
         requiredSkills: reqData.requiredSkills,
         numberOfCandidate: reqData.numberOfCandidate,
-
         startDate: startDate,
         endDate: endDate,
         alertDate: alertDate,
@@ -183,31 +183,32 @@ const AddWorkOrder = () => {
         jobRequirements: reqData.jobRequirements,
         qualification: reqData.qualification,
         benefits: reqData.benefits,
-
-        client: reqData.clientId,
-
+        client: reqData.client._id,
+        project: reqData.project._id,
         jobFunction: reqData.jobFunction,
-        salaryType: reqData.salaryType || "monthly",
+        salaryType: reqData.salaryType || "daily",
         Education: reqData.Education,
+        
+        languagesRequired: reqData.languagesRequired || [],
       });
 
       setRequiredDocuments(reqData.requiredDocuments || []);
     }
   }, [location.state, jobForm]);
 
-  useEffect(() => {
-    if (location.state?.requisitionData?.clientId && clientsData?.clients) {
-      const clientExists = clientsData.clients.some(
-        (client) => client._id === location.state.requisitionData.clientId
-      );
+  // useEffect(() => {
+  //   if (location.state?.requisitionData?.clientId && clientsData?.clients) {
+  //     const clientExists = clientsData.clients.some(
+  //       (client) => client._id === location.state.requisitionData.clientId._id
+  //     );
 
-      if (!clientExists) {
-        enqueueSnackbar("Client from requisition not found", {
-          variant: "warning",
-        });
-      }
-    }
-  }, [clientsData, location.state, enqueueSnackbar]);
+  //     if (!clientExists) {
+  //       enqueueSnackbar("Client from requisition not found", {
+  //         variant: "warning",
+  //       });
+  //     }
+  //   }
+  // }, [clientsData, location.state, enqueueSnackbar]);
 
   const handleApproverChange = (pipelineId, stageId, recruiterId) => {
     handleStageDateChange(pipelineId, stageId, "recruiterId", recruiterId);
@@ -467,9 +468,6 @@ const AddWorkOrder = () => {
     jobForm
       .validateFields()
       .then((values) => {
-        console.log("Form values:", values); // Debug log
-        console.log("Selected pipelines:", selectedPipelines); // Debug log
-
         const formattedData = {
           ...values,
           startDate: values.startDate?.format("YYYY-MM-DD"),
@@ -479,7 +477,6 @@ const AddWorkOrder = () => {
           branchId: branchId,
         };
 
-        console.log("Formatted data:", formattedData); // Debug log
         setJobData(formattedData);
         setCurrentStep(1);
       })
@@ -672,7 +669,7 @@ const AddWorkOrder = () => {
             {jobData?.EmploymentType || "Full-time"}
           </Tag>
           <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
-            {jobData?.workplace || "Remote"}
+            {jobData?.workplace || "workplace"}
           </Tag>
           {jobData?.officeLocation && (
             <Tag style={{ fontSize: "11px", margin: "0" }}>
@@ -1670,6 +1667,9 @@ const AddWorkOrder = () => {
             layout="vertical"
             initialValues={{
               isCommon: false,
+              workplace: "on-site",
+              EmploymentType: "full-time",
+              salaryType: "monthly",
             }}
           >
             {/* Job Title and Project Assignment */}
@@ -1843,9 +1843,9 @@ const AddWorkOrder = () => {
                       showSearch
                       optionFilterProp="children"
                       filterOption={(input, option) =>
-                        option.children
-                          .toLowerCase()
-                          .indexOf(input.toLowerCase()) >= 0
+                        option?.children
+                          ?.toLowerCase()
+                          .includes(input.toLowerCase())
                       }
                     >
                       {activeClients.map((client) => (
@@ -1856,6 +1856,7 @@ const AddWorkOrder = () => {
                     </Select>
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="languagesRequired"
@@ -1889,10 +1890,14 @@ const AddWorkOrder = () => {
                       },
                     ]}
                   >
-                    <Select placeholder="Select workplace type">
+                    <Select
+                      placeholder="Select workplace type"
+                      defaultValue="on-site"
+                    >
                       <Option value="remote">Remote</Option>
                       <Option value="on-site">On-site</Option>
                       <Option value="hybrid">Hybrid</Option>
+                      <Option value="offshore">OffShore</Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -1961,7 +1966,10 @@ const AddWorkOrder = () => {
                       },
                     ]}
                   >
-                    <Select placeholder="Select employment type">
+                    <Select
+                      placeholder="Select employment type"
+                      defaultValue="full-time"
+                    >
                       <Option value="full-time">Full-time</Option>
                       <Option value="part-time">Part-time</Option>
                       <Option value="contract">Contract</Option>
@@ -2039,11 +2047,15 @@ const AddWorkOrder = () => {
                       },
                     ]}
                   >
-                    <Select placeholder="Select salary type">
-                      <Option value="annual">Annual</Option>
-                      <Option value="monthly">Monthly</Option>
-                      <Option value="weekly">Weekly</Option>
+                    <Select
+                      placeholder="Select salary type"
+                      defaultValue="monthly"
+                    >
                       <Option value="hourly">Hourly</Option>
+                      <Option value="daily">Daily</Option>
+                      <Option value="weekly">Weekly</Option>
+                      <Option value="monthly">Monthly</Option>
+                      <Option value="annual">Annual</Option>
                     </Select>
                   </Form.Item>
                 </Col>

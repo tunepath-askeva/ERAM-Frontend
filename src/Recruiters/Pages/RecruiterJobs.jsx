@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Button,
   Card,
@@ -40,6 +40,7 @@ import {
   PoweroffOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useGetRecruiterJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -50,16 +51,51 @@ const RecruiterJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
   const navigate = useNavigate();
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
 
-  const { data: apiData, isLoading, error } = useGetRecruiterJobsQuery();
+  const searchTimerRef = useRef(null);
+
+  const {
+    data: apiData,
+    isLoading,
+    error,
+  } = useGetRecruiterJobsQuery({
+    page: currentPage,
+    limit: pageSize,
+    searchText: searchText,
+    status: filterStatus !== "all" ? filterStatus : undefined,
+  });
 
   const primaryColor = "#da2c46";
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchText(value);
+
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    searchTimerRef.current = setTimeout(() => {
+      setCurrentPage(1);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (apiData?.jobs) {
@@ -90,12 +126,22 @@ const RecruiterJobs = () => {
           ? "Remote"
           : "Hybrid",
       employmentType: job.EmploymentType || "Full-time",
-      experience: job.Experience ? `${job.Experience} years` : "Not specified",
+      experience: job.experienceMin
+        ? `${job.experienceMin}${
+            job.experienceMax ? `-${job.experienceMax}` : ""
+          } years`
+        : "Not specified",
       salary:
-        job.salaryType === "annual" && job.annualSalary
-          ? `$${parseInt(job.annualSalary).toLocaleString()}/year`
-          : job.salaryType === "monthly" && job.monthlySalary
-          ? `$${job.monthlySalary}/month`
+        job.salaryType === "annual"
+          ? `$${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
+              job.salaryMax
+                ? `-${parseInt(job.salaryMax).toLocaleString()}`
+                : ""
+            }/year`
+          : job.salaryType === "monthly"
+          ? `$${job.salaryMin ? job.salaryMin : ""}${
+              job.salaryMax ? `-${job.salaryMax}` : ""
+            }/month`
           : "Salary not disclosed",
       postedDate: job.createdAt,
       skills: job.requiredSkills || [],
@@ -113,6 +159,10 @@ const RecruiterJobs = () => {
 
   const handleJobClick = (job) => {
     navigate(`/recruiter-jobs/${job._id}`);
+  };
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
   };
 
   const handleDeactivateJob = (job, e) => {
@@ -268,7 +318,7 @@ const RecruiterJobs = () => {
               size="large"
               prefix={<SearchOutlined style={{ color: primaryColor }} />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ width: "100%" }}
             />
           </Col>
@@ -474,32 +524,42 @@ const RecruiterJobs = () => {
                       <Space>
                         {/* Only show edit button if recruiter is in the main assignedRecruiters array */}
                         {isRecruiterAssigned(job.assignedRecruiters) && (
-                          <Tooltip title="Edit Job">
-                            <Button
-                              type="text"
-                              icon={<EditOutlined />}
-                              onClick={(e) => handleEditJob(job, e)}
-                            />
-                          </Tooltip>
-                        )}
-                        {job.isActive ? (
-                          <Tooltip title="Deactivate Job">
-                            <Button
-                              type="text"
-                              icon={<PoweroffOutlined />}
-                              danger
-                              onClick={(e) => handleDeactivateJob(job, e)}
-                            />
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Activate Job">
-                            <Button
-                              type="text"
-                              icon={<CheckCircleOutlined />}
-                              style={{ color: "#52c41a" }}
-                              onClick={(e) => handleActivateJob(job, e)}
-                            />
-                          </Tooltip>
+                          <>
+                            {hasPermission("edit-job") && (
+                              <Tooltip title="Edit Job">
+                                <Button
+                                  type="text"
+                                  icon={<EditOutlined />}
+                                  onClick={(e) => handleEditJob(job, e)}
+                                />
+                              </Tooltip>
+                            )}
+                            {hasPermission("deactivate-job") && (
+                              <>
+                                {job.isActive ? (
+                                  <Tooltip title="Deactivate Job">
+                                    <Button
+                                      type="text"
+                                      icon={<PoweroffOutlined />}
+                                      danger
+                                      onClick={(e) =>
+                                        handleDeactivateJob(job, e)
+                                      }
+                                    />
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Activate Job">
+                                    <Button
+                                      type="text"
+                                      icon={<CheckCircleOutlined />}
+                                      style={{ color: "#52c41a" }}
+                                      onClick={(e) => handleActivateJob(job, e)}
+                                    />
+                                  </Tooltip>
+                                )}
+                              </>
+                            )}
+                          </>
                         )}
                       </Space>
                       <Tag

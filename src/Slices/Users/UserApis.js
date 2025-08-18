@@ -150,6 +150,7 @@ export const userApi = createApi({
         url: `/notify`,
         method: "GET",
       }),
+      providesTags: ["Notifications"],
     }),
 
     uploadStageDocuments: builder.mutation({
@@ -192,6 +193,13 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    clearAllNotification: builder.mutation({
+      query: () => ({
+        url: `/clear-notification`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Notifications"],
+    }),
   }),
 });
 
@@ -219,4 +227,5 @@ export const {
   useUploadStageDocumentsMutation,
   useSubmitWorkOrderDocumentsMutation,
   useGetCandidateDocumentsQuery,
+  useClearAllNotificationMutation,
 } = userApi;

@@ -1,193 +1,280 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-    Card,
-    Form,
-    Input,
-    Select,
-    Button,
-    Typography,
-    message,
-    Row,
-    Col,
-    Space
+  Tabs,
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Badge,
+  Button,
+  Avatar,
+  Typography,
+  Space,
+  message,
 } from "antd";
 import {
-    SolutionOutlined,
-    FormOutlined,
-    SendOutlined,
+  PlusOutlined,
+  HistoryOutlined,
+  HourglassOutlined,
+  CheckCircleOutlined,
+  SolutionOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+import EmployeeRaiseRequestForm from "../Components/EmployeeRaiseRequestForm";
+import RequestHistory from "../Components/RequestHistory";
+import {
+  useGetEmployeeProfileQuery,
+  useGetRequestHistoryQuery,
+  useSubmitSelectedTicketsMutation,
+} from "../../Slices/Employee/EmployeeApis";
 
 const { Title, Text } = Typography;
-const { Option } = Select;
-const { TextArea } = Input;
 
 const EmployeeRaiseRequest = () => {
-    const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("submit");
+  const [mobileView, setMobileView] = useState(false);
 
-    const requestTypes = [
-        "Leave Request",
-        "Salary Increase",
-        "Promotion",
-        "Title Change",
-        "Bonus Request",
-        "Work Condition Adjustment",
-        "Other",
-    ];
+  const { data } = useGetEmployeeProfileQuery();
+  const {
+    data: requestHistoryData,
+    refetch: refetchRequestHistory,
+    isLoading: isLoadingHistory,
+  } = useGetRequestHistoryQuery();
 
-    const handleSubmit = async (values) => {
-        setLoading(true);
-        try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            message.success("Your request has been submitted successfully!");
-            form.resetFields();
-        } catch (error) {
-            message.error("Failed to submit request. Please try again.");
-        }
-        setLoading(false);
+  const [submitSelectedTickets, { isLoading: isSubmittingTickets }] =
+    useSubmitSelectedTicketsMutation();
+
+  const user = data?.employee;
+
+  const employeeData = {
+    firstName: user?.firstName || "John",
+    lastName: user?.lastName || "Doe",
+    fullName: user?.fullName || "John Doe",
+    designation:
+      user?.employmentDetails?.assignedJobTitle || "Software Engineer",
+    eramId: user?.employmentDetails?.eramId || "ERAM-123",
+    email: user?.email || "john.doe@company.com",
+    phone: user?.phone || "+1 234 567 8900",
+    avatar: user?.image || null,
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setMobileView(window.innerWidth < 768);
     };
 
-    return (
-        <div style={{
-            padding: "24px",
-            minHeight: "100vh"
-        }}>
-            <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-                {/* Header */}
-                <div style={{
-                    background: "white",
-                    padding: "24px",
-                    borderRadius: "12px",
-                    marginBottom: "24px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                }}>
-                    <Row align="middle" justify="space-between">
-                        <Col>
-                            <Title level={2} style={{ margin: 0, color: "#da2c46" }}>
-                                <SolutionOutlined style={{ marginRight: 12 }} />
-                                Raise Request
-                            </Title>
-                            <Text type="secondary">
-                                Submit a formal request for salary increase, promotion, or other adjustments
-                            </Text>
-                        </Col>
-                    </Row>
-                </div>
+    handleResize();
+    window.addEventListener("resize", handleResize);
 
-                {/* Main Content */}
-                <Card 
-                    style={{ 
-                        borderRadius: "12px",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                    }}
-                >
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        onFinish={handleSubmit}
-                    >
-                        <Row gutter={24}>
-                            <Col xs={24} md={12}>
-                                <Form.Item
-                                    name="requestType"
-                                    label="Request Type"
-                                    rules={[
-                                        { 
-                                            required: true, 
-                                            message: 'Please select request type'
-                                        }
-                                    ]}
-                                >
-                                    <Select
-                                        placeholder="Select request type"
-                                        suffixIcon={<FormOutlined />}
-                                    >
-                                        {requestTypes.map((type, index) => (
-                                            <Option key={index} value={type}>
-                                                {type}
-                                            </Option>
-                                        ))}
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                        </Row>
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-                        <Row gutter={24}>
-                            <Col span={24}>
-                                <Form.Item
-                                    name="description"
-                                    label="Description"
-                                    rules={[
-                                        { 
-                                            required: true, 
-                                            message: 'Please provide details about your request'
-                                        },
-                                        {
-                                            min: 20,
-                                            message: 'Description should be at least 20 characters'
-                                        }
-                                    ]}
-                                >
-                                    <TextArea
-                                        rows={6}
-                                        placeholder="Please provide detailed justification for your request..."
-                                        showCount
-                                        maxLength={1000}
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
+  const getRequestStats = () => {
+    const requestList = requestHistoryData?.requests || [];
+    if (!requestList.length)
+      return {
+        totalRequests: 0,
+        approved: 0,
+        pending: 0,
+        rejected: 0,
+        cancelled: 0,
+      };
 
-                        <div style={{ textAlign: "right", marginTop: 24 }}>
-                            <Space>
-                                <Button 
-                                    onClick={() => form.resetFields()}
-                                    disabled={loading}
-                                >
-                                    Clear
-                                </Button>
-                                <Button
-                                    type="primary"
-                                    htmlType="submit"
-                                    loading={loading}
-                                    icon={<SendOutlined />}
-                                    style={{ 
-                                        background: "#da2c46", 
-                                        border: "none" 
-                                    }}
-                                >
-                                    Submit Request
-                                </Button>
-                            </Space>
-                        </div>
-                    </Form>
-                </Card>
+    const currentYear = dayjs().year();
 
-                {/* Additional Information */}
-                {/* <Card 
-                    style={{ 
-                        marginTop: 24,
-                        borderRadius: "12px", 
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
-                    }}
-                >
-                    <Title level={4} style={{ color: "#da2c46" }}>
-                        <SolutionOutlined style={{ marginRight: 8 }} />
-                        Request Process Information
-                    </Title>
-                    <Text type="secondary">
-                        <ul>
-                            <li>Requests typically take 5-7 business days to process</li>
-                            <li>You will receive a notification when your request is reviewed</li>
-                            <li>HR may contact you for additional information</li>
-                            <li>All requests are confidential</li>
-                        </ul>
-                    </Text>
-                </Card> */}
+    const yearlyRequests = requestList.filter((req) => {
+      const requestDate = req.createdAt || new Date().toISOString();
+      return dayjs(requestDate).year() === currentYear;
+    });
+
+    return {
+      totalRequests: yearlyRequests.length,
+      approved: yearlyRequests.filter((req) => req.status === "approved")
+        .length,
+      pending: yearlyRequests.filter((req) => req.status === "pending").length,
+      rejected: yearlyRequests.filter((req) => req.status === "rejected")
+        .length,
+      cancelled: yearlyRequests.filter((req) => req.status === "cancelled")
+        .length,
+    };
+  };
+
+  const stats = getRequestStats();
+
+  const handleRequestSubmit = async () => {
+    await refetchRequestHistory();
+    setActiveTab("history");
+  };
+
+ const handleTicketSubmit = async (requestId, ticketId) => {
+  try {
+    const result = await submitSelectedTickets({
+      requestId,
+      ticketId, 
+    }).unwrap();
+
+    message.success(result.message || "Ticket submitted successfully!");
+    await refetchRequestHistory();
+    return result;
+  } catch (error) {
+    const errorMessage = error?.data?.message || 
+                        error?.message || 
+                        "Failed to submit ticket. Please try again.";
+    message.error(errorMessage);
+    throw error;
+  }
+};
+
+  return (
+    <div style={{ padding: mobileView ? 16 : 24 }}>
+      <div style={{ marginBottom: 24 }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={12} md={8}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Avatar
+                src={employeeData.avatar}
+                size={mobileView ? 48 : 64}
+                icon={<UserOutlined />}
+                style={{ marginRight: 16 }}
+              />
+              <div>
+                <Title level={mobileView ? 4 : 3} style={{ margin: 0 }}>
+                  {employeeData.fullName}
+                </Title>
+                <Text type="secondary">
+                  {employeeData.designation} • {employeeData.eramId}
+                </Text>
+              </div>
             </div>
-        </div>
-    );
+          </Col>
+          <Col xs={24} sm={12} md={16}>
+            <div style={{ textAlign: mobileView ? "left" : "right" }}>
+              <Space direction={mobileView ? "vertical" : "horizontal"} wrap>
+                <Button icon={<MailOutlined />} type="text">
+                  {employeeData.email}
+                </Button>
+                <Button icon={<PhoneOutlined />} type="text">
+                  {employeeData.phone}
+                </Button>
+              </Space>
+            </div>
+          </Col>
+        </Row>
+      </div>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Pending"
+              value={stats.pending}
+              prefix={<HourglassOutlined style={{ color: "#faad14" }} />}
+              valueStyle={{ color: "#faad14" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Approved"
+              value={stats.approved}
+              prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
+              valueStyle={{ color: "#52c41a" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="Rejected"
+              value={stats.rejected}
+              prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
+              valueStyle={{ color: "#ff4d4f" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card hoverable size="small">
+            <Statistic
+              title="This Year"
+              value={stats.totalRequests}
+              prefix={<FileTextOutlined style={{ color: "#722ed1" }} />}
+              valueStyle={{ color: "#722ed1" }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: "submit",
+            label: (
+              <span style={{ color: "#da2c46" }}>
+                <PlusOutlined />
+                {!mobileView && " Submit Request"}
+              </span>
+            ),
+            children: (
+              <EmployeeRaiseRequestForm
+                onRequestSubmit={handleRequestSubmit}
+                mobileView={mobileView}
+                onTicketSubmit={handleTicketSubmit}
+              />
+            ),
+          },
+          {
+            key: "history",
+            label: (
+              <span style={{ color: "#da2c46" }}>
+                <HistoryOutlined />
+                {!mobileView && " Request History"}
+                <Badge
+                  count={stats.pending}
+                  size="small"
+                  style={{ marginLeft: 8 }}
+                />
+              </span>
+            ),
+            children: (
+              <RequestHistory
+                mobileView={mobileView}
+                requests={requestHistoryData?.requests || []}
+                isLoading={isLoadingHistory}
+                onRefresh={refetchRequestHistory}
+                onTicketSubmit={handleTicketSubmit}
+              />
+            ),
+          },
+        ]}
+      />
+
+      {mobileView && activeTab !== "submit" && (
+        <Button
+          type="primary"
+          shape="circle"
+          size="large"
+          icon={<PlusOutlined />}
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            background: "#da2c46",
+            border: "none",
+          }}
+          onClick={() => setActiveTab("submit")}
+        />
+      )}
+    </div>
+  );
 };
 
 export default EmployeeRaiseRequest;

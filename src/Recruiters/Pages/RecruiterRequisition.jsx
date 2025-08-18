@@ -1,66 +1,83 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  Form,
-  Input,
-  Select,
-  Button,
   Card,
+  Button,
+  Table,
+  Space,
+  Tag,
+  message,
+  Modal,
+  Descriptions,
+  Input,
   Row,
   Col,
-  Space,
-  Divider,
-  message,
-  Tag,
+  Select,
   DatePicker,
-  InputNumber,
-  Table,
-  Modal,
-  Spin,
-  Descriptions,
+  Pagination,
 } from "antd";
 import {
   PlusOutlined,
-  MinusCircleOutlined,
   DeleteOutlined,
-  UserOutlined,
-  LoadingOutlined,
   EyeOutlined,
+  EditOutlined,
+  SearchOutlined,
+  ClearOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
-  useSubmitRequisitionMutation,
   useGetClientsQuery,
   useGetRequisitionsQuery,
-  useEditRequisitionMutation,
   useDeleteRequisitionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import { useNavigate } from "react-router-dom";
 
-const { TextArea } = Input;
+const { Search } = Input;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const RecruiterRequisition = () => {
-  const [form] = Form.useForm();
-  const [requisitions, setRequisitions] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const navigate = useNavigate();
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState("");
+  const [filters, setFilters] = useState({});
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [showFilters, setShowFilters] = useState(false);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [editingRequisition, setEditingRequisition] = useState(null);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
 
-  const { data: clientData, isLoading: clientsLoading } = useGetClientsQuery();
-  const {
+  const { data: clientData } = useGetClientsQuery();
+const {
     data: requisitionData,
     isLoading: requisitionsLoading,
     refetch,
-  } = useGetRequisitionsQuery();
+  } = useGetRequisitionsQuery({
+    search: debouncedSearchText,
+    filters,
+    pagination: {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
+  });
 
-  const [submitRequisition] = useSubmitRequisitionMutation();
-  const [editRequisition] = useEditRequisitionMutation();
   const [deleteRequisition, { isLoading: isDeleting }] =
     useDeleteRequisitionMutation();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const clients =
     clientData?.clients?.map((client) => ({
@@ -69,89 +86,37 @@ const RecruiterRequisition = () => {
       email: client.email,
     })) || [];
 
-  // Update local state when API data changes
-  useEffect(() => {
-    if (requisitionData?.requisition) {
-      const formattedRequisitions = requisitionData.requisition.map(
-        (req, index) => ({
-          ...req,
-          key: req._id || index,
-          status: req.isActive || "draft",
-        })
-      );
-      setRequisitions(formattedRequisitions);
+ useEffect(() => {
+    if (requisitionData) {
+      setPagination((prev) => ({
+        ...prev,
+        current: requisitionData.page || 1,
+        pageSize: requisitionData.limit || 10,
+        total: requisitionData.total || 0,
+      }));
     }
   }, [requisitionData]);
 
-  const handleSubmit = async (values) => {
-    setIsSubmitting(true);
-    try {
-      const clientObj = clients.find((c) => c.id === selectedClient);
-      const formattedValues = {
-        ...values,
-        startDate: values.startDate?.format("YYYY-MM-DD"),
-        endDate: values.endDate?.format("YYYY-MM-DD"),
-        deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
-        alertDate: values.alertDate?.format("YYYY-MM-DD"),
-        client: selectedClient,
-        clientName: clientObj?.name,
-        clientEmail: clientObj?.email,
-        isActive: values.isActive || "inactive",
-        numberOfCandidate: values.numberOfCandidate || 1,
-      };
-
-      // Check if editing or creating
-      if (editingRequisition) {
-        await editRequisition({
-          id: editingRequisition._id,
-          ...formattedValues,
-        }).unwrap();
-        message.success("Requisition updated successfully");
-      } else {
-        await submitRequisition(formattedValues).unwrap();
-        message.success("Requisition created successfully");
-      }
-
-      // Refetch data to get updated list
-      refetch();
-
-      form.resetFields();
-      setSelectedClient(null);
-      setEditingRequisition(null);
-      setIsModalVisible(false);
-    } catch (error) {
-      console.error("Error submitting requisition:", error);
-      if (error.status === 401) {
-        message.error("Authentication failed. Please log in again.");
-      } else if (error.status === 403) {
-        message.error("You don't have permission to submit requisitions.");
-      } else if (error.status === 400) {
-        message.error("Invalid requisition data. Please check the form.");
-      } else if (error.data?.message) {
-        message.error(`Submission failed: ${error.data.message}`);
-      } else {
-        message.error("Failed to submit requisition. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleAddNew = () => {
+    navigate("/recruiter/requisition/add");
   };
 
   const handleEdit = (record) => {
-    setEditingRequisition(record);
-    setSelectedClient(record.client);
-    form.setFieldsValue({
-      ...record,
-      startDate: record.startDate ? dayjs(record.startDate) : null,
-      endDate: record.endDate ? dayjs(record.endDate) : null,
-      deadlineDate: record.deadlineDate ? dayjs(record.deadlineDate) : null,
-      alertDate: record.alertDate ? dayjs(record.alertDate) : null,
-      client: record.client,
-      isActive: record.isActive,
-      numberOfCandidate: record.numberOfCandidate,
-    });
-    setIsModalVisible(true);
+    navigate(`/recruiter/requisition/edit/${record._id}`);
   };
+
+const handlePaginationChange = (page, pageSize) => {
+  setPagination({ current: page, pageSize });
+};
+
+  const formattedRequisitions = useMemo(() => {
+    if (!requisitionData?.requisition) return [];
+    return requisitionData.requisition.map((req) => ({
+      ...req,
+      key: req._id,
+      status: req.isActive || "draft",
+    }));
+  }, [requisitionData]);
 
   const handleDelete = async (id) => {
     try {
@@ -180,6 +145,37 @@ const RecruiterRequisition = () => {
     setIsDetailModalVisible(true);
   };
 
+const handleSearchChange = (e) => {
+  setSearchText(e.target.value);
+};
+
+  const handleSearchClear = () => {
+    setSearchText("");
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+const handleFilterChange = (filterType, value) => {
+  setFilters((prev) => ({
+    ...prev,
+    [filterType]: value || undefined,
+  }));
+  setPagination((prev) => ({ ...prev, current: 1 }));
+};
+
+  const handleClearAllFilters = () => {
+    setSearchText("");
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      searchText ||
+      Object.keys(filters).some((key) => filters[key] !== undefined)
+    );
+  };
+
   const formatSalary = (record) => {
     if (
       !record.salaryMin &&
@@ -204,6 +200,18 @@ const RecruiterRequisition = () => {
 
   const columns = [
     {
+      title: "Req. Number",
+      dataIndex: "requisitionNo",
+      key: "requisitionNo",
+      width: 120,
+    },
+    {
+      title: "Reference Number",
+      dataIndex: "referenceNo",
+      key: "referenceNo",
+      width: 150,
+    },
+    {
       title: "Client",
       dataIndex: "client",
       key: "client",
@@ -212,6 +220,13 @@ const RecruiterRequisition = () => {
         return clientObj?.name || "N/A";
       },
       width: 150,
+    },
+    {
+      title: "Project",
+      dataIndex: "project",
+      key: "project",
+      width: 150,
+      render: (project) => project?.name || "N/A",
     },
     {
       title: "Job Title",
@@ -290,7 +305,12 @@ const RecruiterRequisition = () => {
           >
             View
           </Button>
-          <Button type="link" onClick={() => handleEdit(record)} size="small">
+          <Button
+            type="link"
+            onClick={() => handleEdit(record)}
+            icon={<EditOutlined />}
+            size="small"
+          >
             Edit
           </Button>
           <Button
@@ -327,6 +347,14 @@ const RecruiterRequisition = () => {
       background-color: #aa1f34 !important;
       border-color: #aa1f34 !important;
     }
+    .search-container {
+      margin-bottom: 16px;
+    }
+    .search-info {
+      color: #666;
+      font-size: 12px;
+      margin-top: 4px;
+    }
   `;
 
   return (
@@ -338,7 +366,7 @@ const RecruiterRequisition = () => {
           extra={
             <Button
               type="primary"
-              onClick={() => setIsModalVisible(true)}
+              onClick={handleAddNew}
               icon={<PlusOutlined />}
               size="small"
             >
@@ -347,20 +375,166 @@ const RecruiterRequisition = () => {
           }
           size="small"
         >
+          {/* Search and Filter Section */}
+          <div className="search-container">
+            <Row gutter={[16, 8]} align="middle" style={{ marginBottom: 12 }}>
+              <Col xs={24} sm={16} md={12} lg={10}>
+                <Input.Search
+                  placeholder="Search requisitions..."
+                  value={searchText}
+                  onChange={handleSearchChange}
+                  allowClear
+                  enterButton={<SearchOutlined />}
+                  onSearch={() => setDebouncedSearchText(searchText)}
+                  style={{ width: "100%" }}
+                />
+              </Col>
+              <Col xs={24} sm={8} md={6} lg={4}>
+                <Button
+                  type={showFilters ? "primary" : "default"}
+                  icon={<FilterOutlined />}
+                  onClick={() => setShowFilters(!showFilters)}
+                  size="small"
+                >
+                  Filters
+                </Button>
+              </Col>
+              <Col xs={24} sm={24} md={6} lg={6}>
+                <Space>
+                  {hasActiveFilters() && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={handleClearAllFilters}
+                      style={{ padding: 0 }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                  <div className="search-info">
+                    {searchText && (
+                      <span>
+                        Searching for: <strong>{searchText}</strong>
+                      </span>
+                    )}
+                  </div>
+                </Space>
+              </Col>
+            </Row>
+
+            {/* Filter Controls */}
+            {showFilters && (
+              <Row
+                gutter={[16, 8]}
+                style={{
+                  marginBottom: 16,
+                  padding: "12px",
+                  backgroundColor: "#fafafa",
+                  borderRadius: "6px",
+                }}
+              >
+                <Col xs={24} sm={12} md={6} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Client
+                    </span>
+                  </div>
+                  <Select
+                    placeholder="Select Client"
+                    value={filters.client}
+                    onChange={(value) => handleFilterChange("client", value)}
+                    allowClear
+                    size="small"
+                    style={{ width: "100%" }}
+                  >
+                    {clients.map((client) => (
+                      <Option key={client.id} value={client.id}>
+                        {client.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={6} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Project
+                    </span>
+                  </div>
+                  <Input
+                    placeholder="Filter by project"
+                    value={filters.project || ""}
+                    onChange={(e) =>
+                      handleFilterChange("project", e.target.value)
+                    }
+                    size="small"
+                    style={{ width: "100%" }}
+                    allowClear
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={6} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Reference No
+                    </span>
+                  </div>
+                  <Input
+                    placeholder="Filter by reference no"
+                    value={filters.referenceNo || ""}
+                    onChange={(e) =>
+                      handleFilterChange("referenceNo", e.target.value)
+                    }
+                    size="small"
+                    style={{ width: "100%" }}
+                    allowClear
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={6} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Requisition No
+                    </span>
+                  </div>
+                  <Input
+                    placeholder="Filter by requisition no"
+                    value={filters.requisitionNo || ""}
+                    onChange={(e) =>
+                      handleFilterChange("requisitionNo", e.target.value)
+                    }
+                    size="small"
+                    style={{ width: "100%" }}
+                    allowClear
+                  />
+                </Col>
+              </Row>
+            )}
+          </div>
+
           <Table
             columns={columns}
-            dataSource={requisitions}
+            dataSource={formattedRequisitions}
             loading={requisitionsLoading}
             rowKey="key"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              responsive: true,
-            }}
-            scroll={{ x: 800 }}
+            pagination={false}
+            scroll={{ x: 1200 }}
             size="small"
+            locale={{
+              emptyText: hasActiveFilters()
+                ? `No requisitions found matching the applied filters`
+                : "No requisitions available",
+            }}
           />
+
+          <div style={{ marginTop: 16, textAlign: "right" }}>
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={handlePaginationChange}
+              showSizeChanger
+              showQuickJumper
+              pageSizeOptions={["10", "20", "50", "100"]}
+            />
+          </div>
         </Card>
 
         {/* Detail View Modal */}
@@ -387,9 +561,18 @@ const RecruiterRequisition = () => {
         >
           {selectedRequisition && (
             <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Requisition Number">
+                {selectedRequisition.requisitionNo || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Reference Number">
+                {selectedRequisition.referenceNo || "N/A"}
+              </Descriptions.Item>
               <Descriptions.Item label="Client" span={2}>
                 {clients.find((c) => c.id === selectedRequisition.client)
                   ?.name || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Project" span={2}>
+                {selectedRequisition.project.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Job Title">
                 {selectedRequisition.title}
@@ -491,408 +674,7 @@ const RecruiterRequisition = () => {
           )}
         </Modal>
 
-        {/* Create/Edit Modal */}
-        <Modal
-          title={
-            editingRequisition ? "Edit Requisition" : "Create New Requisition"
-          }
-          visible={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            form.resetFields();
-            setSelectedClient(null);
-            setEditingRequisition(null);
-          }}
-          footer={null}
-          width="90%"
-          style={{
-            maxWidth: 1200,
-            height: "100vh",
-            top: 20,
-          }}
-          bodyStyle={{
-            height: "calc(100vh - 110px)",
-            overflowY: "auto",
-            padding: "16px",
-          }}
-        >
-          <Spin spinning={isSubmitting}>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              initialValues={{
-                EmploymentType: "full-time",
-                workplace: "remote",
-                salaryType: "annual",
-                isActive: "inactive",
-                numberOfCandidate: 1,
-              }}
-              size="small"
-            >
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    label="Client"
-                    name="client"
-                    rules={[
-                      { required: true, message: "Please select a client" },
-                    ]}
-                  >
-                    <Select
-                      placeholder="Select client"
-                      value={selectedClient}
-                      onChange={setSelectedClient}
-                      showSearch
-                      optionFilterProp="children"
-                      loading={clientsLoading}
-                      filterOption={(input, option) =>
-                        option.children
-                          .toLowerCase()
-                          .indexOf(input.toLowerCase()) >= 0
-                      }
-                    >
-                      {clients.map((client) => (
-                        <Option key={client.id} value={client.id}>
-                          {client.name} ({client.email})
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="title"
-                    label="Job Title"
-                    rules={[
-                      { required: true, message: "Please enter job title" },
-                    ]}
-                  >
-                    <Input placeholder="e.g. Senior Software Engineer" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="EmploymentType"
-                    label="Employment Type"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select employment type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select employment type">
-                      <Option value="full-time">Full-time</Option>
-                      <Option value="part-time">Part-time</Option>
-                      <Option value="contract">Contract</Option>
-                      <Option value="internship">Internship</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="workplace"
-                    label="Workplace Type"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select workplace type",
-                      },
-                    ]}
-                  >
-                    <Select placeholder="Select workplace type">
-                      <Option value="remote">Remote</Option>
-                      <Option value="hybrid">Hybrid</Option>
-                      <Option value="on-site">On-site</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="officeLocation" label="Office Location">
-                    <Input placeholder="e.g. City, Country" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="companyIndustry"
-                    label="Industry"
-                    rules={[
-                      { required: true, message: "Please enter industry" },
-                    ]}
-                  >
-                    <Input placeholder="e.g. Technology, Finance" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="jobFunction"
-                    label="Job Function"
-                    rules={[
-                      { required: true, message: "Please enter job function" },
-                    ]}
-                  >
-                    <Input placeholder="e.g. Software Development" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="experienceMin"
-                    label="Minimum Experience (years)"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter minimum experience",
-                      },
-                    ]}
-                  >
-                    <InputNumber min={0} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="experienceMax"
-                    label="Maximum Experience (years)"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter maximum experience",
-                      },
-                    ]}
-                  >
-                    <InputNumber min={0} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="numberOfCandidate"
-                    label="Number of Candidates"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter number of candidates",
-                      },
-                    ]}
-                  >
-                    <InputNumber min={1} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item
-                    name="salaryType"
-                    label="Salary Type"
-                    rules={[
-                      { required: true, message: "Please select salary type" },
-                    ]}
-                  >
-                    <Select placeholder="Select salary type">
-                      <Option value="hourly">Hourly</Option>
-                      <Option value="weekly">Weekly</Option>
-                      <Option value="monthly">Monthly</Option>
-                      <Option value="annual">Annual</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="salaryMin" label="Minimum Salary">
-                    <InputNumber min={0} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="salaryMax" label="Maximum Salary">
-                    <InputNumber min={0} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="deadlineDate" label="Application Deadline">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8}>
-                  <Form.Item name="isActive" label="Status">
-                    <Select placeholder="Select status">
-                      <Option value="active">Active</Option>
-                      <Option value="inactive">Inactive</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    name="description"
-                    label="Job Description"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter job description",
-                      },
-                    ]}
-                  >
-                    <TextArea
-                      rows={4}
-                      placeholder="Detailed job description..."
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    name="keyResponsibilities"
-                    label="Key Responsibilities"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter key responsibilities",
-                      },
-                    ]}
-                  >
-                    <TextArea
-                      rows={4}
-                      placeholder="List of key responsibilities..."
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    name="jobRequirements"
-                    label="Job Requirements"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter job requirements",
-                      },
-                    ]}
-                  >
-                    <TextArea
-                      rows={4}
-                      placeholder="List of job requirements..."
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    name="qualification"
-                    label="Qualifications"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter qualifications",
-                      },
-                    ]}
-                  >
-                    <TextArea
-                      rows={4}
-                      placeholder="Required qualifications..."
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item name="requiredSkills" label="Required Skills">
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      placeholder="Add skills"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item
-                    name="languagesRequired"
-                    label="Languages Required"
-                  >
-                    <Select
-                      mode="tags"
-                      style={{ width: "100%" }}
-                      placeholder="Add languages"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 8]}>
-                <Col span={24}>
-                  <Form.Item name="benefits" label="Benefits">
-                    <TextArea rows={4} placeholder="Benefits..." />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider style={{ margin: "16px 0" }} />
-
-              <Form.Item>
-                <Space>
-                  <Button
-                    onClick={() => {
-                      setIsModalVisible(false);
-                      form.resetFields();
-                      setSelectedClient(null);
-                      setEditingRequisition(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={isSubmitting}
-                  >
-                    {editingRequisition ? "Update" : "Add"} Requisition
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Spin>
-        </Modal>
-
+        {/* Delete Confirmation Modal */}
         <Modal
           title="Confirm Delete"
           visible={isDeleteModalVisible}
