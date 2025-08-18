@@ -396,11 +396,13 @@ export const employeeApi = createApi({
       },
     }),
     getEmployeeAdminDocuments: builder.query({
-      query: () => ({
+      query: ({ page = 1, limit = 10, search = "" } = {}) => ({
         url: "/admin-doc",
         method: "GET",
+        params: { page, limit, search }, // search is ERAM ID
       }),
     }),
+
     getEmployeeAdminDocumentById: builder.query({
       query: (id) => `/admin-doc/${id}`,
     }),

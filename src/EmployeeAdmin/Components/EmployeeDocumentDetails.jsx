@@ -195,6 +195,18 @@ const EmployeeDocumentDetail = () => {
     return { color: "default", icon: null, text: status };
   };
 
+  const expiredDocs = documents?.filter(
+    (doc) => doc.expiryDate && new Date(doc.expiryDate) < new Date()
+  );
+
+  const expiringSoonDocs = documents?.filter(
+    (doc) =>
+      doc.expiryDate &&
+      new Date(doc.expiryDate) <=
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) &&
+      new Date(doc.expiryDate) > new Date()
+  );
+
   // Documents table columns
   const documentColumns = [
     {
@@ -318,37 +330,130 @@ const EmployeeDocumentDetail = () => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <Space
-          align="center"
-          style={{
-            marginBottom: "12px",
-            flexWrap: "wrap",
-            width: "100%",
-          }}
+        <Row
+          align="middle"
+          justify="space-between"
+          gutter={[16, 16]}
+          style={{ flexWrap: "wrap" }}
         >
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={handleBack}
-            size="small"
-            style={{
-              borderColor: "#da2c46",
-              color: "#da2c46",
-            }}
-          >
-            Back
-          </Button>
-          <Title
-            level={2}
-            style={{
-              margin: 0,
-              color: "#da2c46",
-              fontSize: "clamp(16px, 4vw, 24px)",
-            }}
-          >
-            Employee Document Details
-          </Title>
-        </Space>
+          <Col>
+            <Space>
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={handleBack}
+                size="small"
+                style={{
+                  borderColor: "#da2c46",
+                  color: "#da2c46",
+                }}
+              >
+                Back
+              </Button>
+              <Title
+                level={2}
+                style={{
+                  margin: 0,
+                  color: "#da2c46",
+                  fontSize: "clamp(16px, 4vw, 24px)",
+                }}
+              >
+                Employee Document Details
+              </Title>
+            </Space>
+          </Col>
+          <Col>
+            <Button
+              type="primary"
+              icon={<NotificationOutlined />}
+              onClick={showNotificationModal}
+              style={{
+                backgroundColor: "#da2c46",
+                borderColor: "#da2c46",
+              }}
+            >
+              Notify Employee
+            </Button>
+          </Col>
+        </Row>
       </Card>
+
+      {(expiredDocs.length > 0 || expiringSoonDocs.length > 0) && (
+        <>
+          {expiredDocs.length > 0 && (
+            <Alert
+              message="Some documents have expired!"
+              description={
+                <div>
+                  <div style={{ marginBottom: 4 }}>
+                    Please notify the employee to update these expired
+                    documents:
+                  </div>
+                  <ul style={{ paddingLeft: 18, margin: 0 }}>
+                    {expiredDocs.map((doc) => (
+                      <li key={doc._id} style={{ color: "#ff4d4f" }}>
+                        {doc.documentName} (Expired on{" "}
+                        {formatDate(doc.expiryDate)})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              }
+              type="error"
+              showIcon
+              style={{ marginBottom: 12 }}
+              action={
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={showNotificationModal}
+                  style={{
+                    backgroundColor: "#da2c46",
+                    borderColor: "#da2c46",
+                  }}
+                >
+                  Notify
+                </Button>
+              }
+            />
+          )}
+          {expiringSoonDocs.length > 0 && (
+            <Alert
+              message="Some documents are expiring soon!"
+              description={
+                <div>
+                  <div style={{ marginBottom: 4 }}>
+                    Please notify the employee to renew these documents:
+                  </div>
+                  <ul style={{ paddingLeft: 18, margin: 0 }}>
+                    {expiringSoonDocs.map((doc) => (
+                      <li key={doc._id} style={{ color: "#faad14" }}>
+                        {doc.documentName} (Expires on{" "}
+                        {formatDate(doc.expiryDate)})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              }
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              action={
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={showNotificationModal}
+                  style={{
+                    backgroundColor: "#da2c46",
+                    borderColor: "#da2c46",
+                  }}
+                >
+                  Notify
+                </Button>
+              }
+            />
+          )}
+        </>
+      )}
 
       {/* Documents Section */}
       <Card
@@ -391,29 +496,6 @@ const EmployeeDocumentDetail = () => {
             style={{ margin: "20px 0" }}
           />
         )}
-      </Card>
-
-      {/* Action Card */}
-      <Card
-        size="small"
-        style={{
-          marginTop: "16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
-        <Space wrap>
-          <Button
-            type="primary"
-            icon={<NotificationOutlined />}
-            onClick={showNotificationModal}
-            style={{
-              backgroundColor: "#da2c46",
-              borderColor: "#da2c46",
-            }}
-          >
-            Notify Employee
-          </Button>
-        </Space>
       </Card>
 
       {/* Notification Modal */}

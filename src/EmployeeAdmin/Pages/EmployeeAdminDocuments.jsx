@@ -1,10 +1,21 @@
-import React from "react";
-import { Table, Button, Space, Card, Typography, Tag, Spin, Alert } from "antd";
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Space,
+  Card,
+  Typography,
+  Tag,
+  Spin,
+  Alert,
+  Input,
+} from "antd";
 import {
   EyeOutlined,
   UserOutlined,
   PhoneOutlined,
   MailOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useGetEmployeeAdminDocumentsQuery } from "../../Slices/Employee/EmployeeApis";
@@ -13,11 +24,29 @@ const { Title } = Typography;
 
 const EmployeeAdminDocuments = () => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetEmployeeAdminDocumentsQuery();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 2500);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  const { data, isLoading, error } = useGetEmployeeAdminDocumentsQuery({
+    page,
+    limit: pageSize,
+    search: debouncedSearch,
+  });
 
   const handleViewDocument = (id, email) => {
-    navigate(`/employee-admin/documents/${id}`, { 
-      state: { employeeEmail: email } 
+    navigate(`/employee-admin/documents/${id}`, {
+      state: { employeeEmail: email },
     });
   };
 
@@ -60,7 +89,9 @@ const EmployeeAdminDocuments = () => {
       render: (email) => (
         <Space>
           <MailOutlined style={{ color: "#da2c46" }} />
-          <span style={{ fontSize: "12px", wordBreak: "break-all" }}>{email}</span>
+          <span style={{ fontSize: "12px", wordBreak: "break-all" }}>
+            {email}
+          </span>
         </Space>
       ),
     },
@@ -143,119 +174,61 @@ const EmployeeAdminDocuments = () => {
   }
 
   const employees = data?.data || [];
+  const total = data?.total || 0;
 
   return (
     <div style={{ padding: "8px 16px" }}>
-      <Card 
-        size="small"
-        style={{ 
-          overflow: "hidden",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-        }}
-      >
-        <div style={{ marginBottom: "16px" }}>
-          <Title 
-            level={2} 
-            style={{ 
-              color: "#da2c46", 
-              marginBottom: "4px",
-              fontSize: "clamp(18px, 4vw, 24px)"
-            }}
-          >
-            Employee Admin Documents
-          </Title>
-          <p style={{ 
-            color: "#666", 
-            margin: 0,
-            fontSize: "clamp(12px, 2.5vw, 14px)"
-          }}>
-            Manage and view employee documentation and details
-          </p>
+      <Card size="small" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <Title level={2} style={{ color: "#da2c46", marginBottom: "4px" }}>
+              Employee Admin Documents
+            </Title>
+            <p style={{ color: "#666", margin: 0 }}>
+              Manage and view employee documentation and details
+            </p>
+          </div>
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="Search by ERAM ID"
+            allowClear
+            style={{ width: 250, height:35 }}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
         <Table
           columns={columns}
           dataSource={employees}
           rowKey="_id"
-          scroll={{ 
-            x: 800,
-            scrollToFirstRowOnChange: true 
-          }}
           pagination={{
-            pageSize: 10,
+            current: page,
+            pageSize,
+            total,
             showSizeChanger: true,
-            showQuickJumper: window.innerWidth > 768,
+            showQuickJumper: true,
+            onChange: (p, size) => {
+              setPage(p);
+              setPageSize(size);
+            },
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} employees`,
-            size: "small",
-            responsive: true,
-            simple: window.innerWidth < 576,
           }}
           size="small"
-          style={{
-            "--ant-primary-color": "#da2c46",
-          }}
-          rowHoverColor="#f5f5f5"
-          rowClassName={(record, index) => 
-            index % 2 === 0 ? "even-row" : "odd-row"
-          }
         />
 
         {employees.length === 0 && !isLoading && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "40px 20px",
-              color: "#666",
-            }}
-          >
-            <div style={{ fontSize: "16px", marginBottom: "8px" }}>
-              No employee documents found.
-            </div>
-            <div style={{ fontSize: "12px", color: "#999" }}>
-              Employee documents will appear here once uploaded.
-            </div>
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            No employee documents found.
           </div>
         )}
       </Card>
-
-      <style jsx>{`
-        @media (max-width: 576px) {
-          .ant-table-thead > tr > th {
-            padding: 8px 4px !important;
-            font-size: 12px !important;
-          }
-          .ant-table-tbody > tr > td {
-            padding: 8px 4px !important;
-            font-size: 12px !important;
-          }
-          .ant-btn {
-            padding: 4px 8px !important;
-            font-size: 12px !important;
-          }
-          .ant-tag {
-            font-size: 10px !important;
-            padding: 0 4px !important;
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .ant-table-thead > tr > th {
-            padding: 8px 6px !important;
-          }
-          .ant-table-tbody > tr > td {
-            padding: 8px 6px !important;
-          }
-        }
-
-        .even-row {
-          background-color: #fafafa;
-        }
-        
-        .odd-row {
-          background-color: #ffffff;
-        }
-      `}</style>
     </div>
   );
 };
