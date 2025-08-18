@@ -413,6 +413,12 @@ export const employeeApi = createApi({
         body: notificationData,
       }),
     }),
+    getExpiredDocuments: builder.query({
+      query: () => ({
+        url: "/expired",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -465,4 +471,5 @@ export const {
   useGetEmployeeAdminDocumentsQuery,
   useGetEmployeeAdminDocumentByIdQuery,
   useNotifyEmployeeMutation,
+  useGetExpiredDocumentsQuery,
 } = employeeApi;

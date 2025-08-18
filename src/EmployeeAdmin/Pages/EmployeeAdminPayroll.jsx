@@ -131,7 +131,7 @@ const EmployeeAdminPayroll = () => {
 
   const projectOptions = [
     ...new Set(
-      payrollData?.payroll?.map((item) => item.U_PrjNM).filter(Boolean)
+      payrollData?.data?.map((item) => item.U_PrjNM).filter(Boolean)
     ),
   ];
 
@@ -177,7 +177,7 @@ const EmployeeAdminPayroll = () => {
     setPageSize(pagination.pageSize);
   };
 
-  const filteredData = payrollData?.payroll?.filter(
+  const filteredData = payrollData?.data?.filter(
     (item) =>
       item.U_empname?.toLowerCase().includes(searchText.toLowerCase()) ||
       item.U_email?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -1046,10 +1046,10 @@ const EmployeeAdminPayroll = () => {
           </Row>
         }
       >
-        {payrollData?.payroll ? (
+        {payrollData?.data ? (
           <Table
             columns={payrollColumns}
-            dataSource={payrollData?.payroll || []}
+            dataSource={payrollData?.data || []}
             rowKey="_id"
             scroll={{ x: true }}
             pagination={{
