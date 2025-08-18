@@ -414,10 +414,20 @@ export const employeeApi = createApi({
       }),
     }),
     getExpiredDocuments: builder.query({
-      query: () => ({
-        url: "/expired",
-        method: "GET",
-      }),
+      query: ({ search = "", page = 1, limit = 10 } = {}) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+        if (search && search.trim()) {
+          params.append("search", search.trim());
+        }
+
+        return {
+          url: `/expired?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
   }),
 });
