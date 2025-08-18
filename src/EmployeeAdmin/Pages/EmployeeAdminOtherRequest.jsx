@@ -1,4 +1,4 @@
-import React, { useState , useCallback} from "react";
+import React, { useState, useCallback } from "react";
 import {
   Table,
   Button,
@@ -97,8 +97,8 @@ const EmployeeAdminOtherRequest = () => {
     useChangeOtherRequestStatusMutation();
 
   React.useEffect(() => {
-    if (data?.otherRequests) {
-      const transformedData = data.otherRequests.map((request) => ({
+    if (data?.data) {
+      const transformedData = data.data.map((request) => ({
         ...request,
         key: request._id,
       }));
@@ -513,6 +513,7 @@ const EmployeeAdminOtherRequest = () => {
       <Row gutter={16} style={{ marginBottom: "16px" }}>
         <Col span={6}>
           <Input
+            allowClear
             placeholder="Filter by ERAM ID"
             onChange={(e) => debouncedSearch(e.target.value)}
           />

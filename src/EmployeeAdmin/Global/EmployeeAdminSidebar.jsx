@@ -12,6 +12,7 @@ import {
   PaperClipOutlined,
   IssuesCloseOutlined,
   FilePdfOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -81,6 +82,11 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/documents",
       icon: <FilePdfOutlined />,
       label: "Employee Documents",
+    },
+    {
+      key: "/employee-admin/exp-documents",
+      icon: <WarningOutlined />,
+      label: "Expiring Documents",
     },
     {
       key: "/employee-admin/company-policy",

@@ -287,6 +287,7 @@ const EmployeeAdminLeaveRequest = () => {
       <Row gutter={16} style={{ marginBottom: "16px" }}>
         <Col span={6}>
           <Input
+          allowClear
             placeholder="Filter by ERAM ID"
             onChange={(e) => debouncedSearch(e.target.value)}
           />
