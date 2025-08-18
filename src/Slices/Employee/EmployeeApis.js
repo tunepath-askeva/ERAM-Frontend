@@ -243,6 +243,7 @@ export const employeeApi = createApi({
         method: "GET",
       }),
     }),
+    
     clearAllNotification: builder.mutation({
       query: () => ({
         url: `/clear-notification`,
