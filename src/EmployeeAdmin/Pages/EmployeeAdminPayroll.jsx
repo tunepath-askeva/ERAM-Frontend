@@ -1005,6 +1005,7 @@ const EmployeeAdminPayroll = () => {
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col>
               <Input
+              allowClear
                 placeholder="Search by ERAM ID"
                 prefix={<SearchOutlined />}
                 value={searchText}
@@ -1047,23 +1048,30 @@ const EmployeeAdminPayroll = () => {
         }
       >
         {payrollData?.data ? (
-          <Table
-            columns={payrollColumns}
-            dataSource={payrollData?.data || []}
-            rowKey="_id"
-            scroll={{ x: true }}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: payrollData?.total || 0,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50", "100"],
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} records`,
-            }}
-            loading={isPayrollLoading}
-            onChange={handleTableChange}
-          />
+<Table
+  columns={payrollColumns}
+  dataSource={payrollData?.data || []}
+  rowKey="_id"
+  scroll={{ x: true }}
+  pagination={{
+    current: currentPage,
+    pageSize: pageSize,
+    total: payrollData?.total || 0,
+    showSizeChanger: true,
+    pageSizeOptions: ["10", "20", "50", "100"],
+    showTotal: (total, range) =>
+      `${range[0]}-${range[1]} of ${total} records`,
+  }}
+  loading={isPayrollLoading}
+  onChange={handleTableChange}
+  locale={{
+    emptyText:
+      searchText || project || month || year
+        ? "No matching payroll records"
+        : "No payroll data available",
+  }}
+/>
+
         ) : (
           <Spin tip="Loading payroll data..." />
         )}
