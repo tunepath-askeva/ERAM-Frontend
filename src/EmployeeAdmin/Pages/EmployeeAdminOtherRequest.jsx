@@ -19,6 +19,7 @@ import {
   InputNumber,
   Divider,
   Select,
+  Upload
 } from "antd";
 import {
   EyeOutlined,
@@ -60,7 +61,7 @@ const EmployeeAdminOtherRequest = () => {
   const [requestData, setRequestData] = useState([]);
   const [ticketDetailsForm] = Form.useForm();
   const [ticketDetails, setTicketDetails] = useState([
-    { id: Date.now(), date: null, price: null, description: "" },
+    { id: Date.now(), date: null, price: null, description: "", file: null },
   ]);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [viewingTickets, setViewingTickets] = useState(false);
@@ -215,6 +216,7 @@ const EmployeeAdminOtherRequest = () => {
       date: null,
       price: null,
       description: "",
+      file: null,
     };
     setTicketDetails([...ticketDetails, newTicketDetail]);
   };
@@ -244,21 +246,36 @@ const EmployeeAdminOtherRequest = () => {
         return;
       }
 
-      const ticketData = ticketDetails.map((detail) => ({
-        date: detail.date.format("YYYY-MM-DD"),
-        ticketPrice: detail.price,
-        description: detail.description,
-      }));
+      // Build FormData
+      const formData = new FormData();
+      ticketDetails.forEach((detail, index) => {
+        formData.append(
+          `ticketDetails[${index}][date]`,
+          detail.date.format("YYYY-MM-DD")
+        );
+        formData.append(`ticketDetails[${index}][ticketPrice]`, detail.price);
+        formData.append(
+          `ticketDetails[${index}][description]`,
+          detail.description
+        );
 
-      await sendTicketInfo({
-        requestId: selectedRequestId,
-        ticketDetails: ticketData,
-      }).unwrap();
+        if (detail.file) {
+          formData.append(`ticketDetails[${index}][file]`, detail.file);
+        }
+      });
+
+      await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
 
       message.success("Ticket information sent successfully!");
       setShowTicketForm(false);
       setTicketDetails([
-        { id: Date.now(), date: null, price: null, description: "" },
+        {
+          id: Date.now(),
+          date: null,
+          price: null,
+          description: "",
+          file: null,
+        },
       ]);
       ticketDetailsForm.resetFields();
     } catch (error) {
@@ -877,6 +894,45 @@ const EmployeeAdminOtherRequest = () => {
                                 />
                               </Form.Item>
                             </Col>
+
+                            <Col span={24}>
+                              <Form.Item
+                                label={index === 0 ? "Upload Ticket File" : ""}
+                              >
+                                <Upload.Dragger
+                                  multiple={false}
+                                  beforeUpload={(file) => {
+                                    handleTicketDetailChange(
+                                      detail.id,
+                                      "file",
+                                      file
+                                    );
+                                    return false; // prevent auto-upload
+                                  }}
+                                  fileList={detail.file ? [detail.file] : []}
+                                  onRemove={() =>
+                                    handleTicketDetailChange(
+                                      detail.id,
+                                      "file",
+                                      null
+                                    )
+                                  }
+                                >
+                                  <p className="ant-upload-drag-icon">
+                                    <FileTextOutlined
+                                      style={{ color: "#da2c46" }}
+                                    />
+                                  </p>
+                                  <p className="ant-upload-text">
+                                    Click or drag file to upload
+                                  </p>
+                                  <p className="ant-upload-hint">
+                                    Supported formats: PDF, JPG, PNG (Max 5MB)
+                                  </p>
+                                </Upload.Dragger>
+                              </Form.Item>
+                            </Col>
+
                             <Col span={2}>
                               <Form.Item
                                 label={index === 0 ? " " : ""}

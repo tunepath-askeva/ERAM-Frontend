@@ -180,17 +180,6 @@ const EmployeeAdminExpiredDocuments = () => {
       width: 150,
     },
     {
-      title: "Upload Date",
-      key: "uploadDate",
-      render: (_, record) => (
-        <div>
-          <CalendarOutlined style={{ marginRight: 8, color: "#666" }} />
-          {new Date(record.uploadedAt).toLocaleDateString("en-GB")}
-        </div>
-      ),
-      width: 130,
-    },
-    {
       title: "Expiry Date",
       key: "expiryDate",
       render: (_, record) => (

@@ -285,12 +285,13 @@ export const employeeApi = createApi({
       }),
     }),
     sendTicketInfo: builder.mutation({
-      query: ({ requestId, ticketDetails }) => ({
+      query: ({ requestId, formData }) => ({
         url: `/ticket-info/${requestId}`,
         method: "POST",
-        body: { ticketDetails },
+        body: formData,
       }),
     }),
+
     submitSelectedTickets: builder.mutation({
       query: ({ requestId, ticketId }) => ({
         url: `/submit-ticket/${requestId}`,
