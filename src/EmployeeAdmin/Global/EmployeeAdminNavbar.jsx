@@ -30,6 +30,7 @@ import {
   MailOutlined,
   InfoCircleOutlined,
   ClockCircleOutlined,
+  CheckCircleOutlined
 } from "@ant-design/icons";
 import styled from "styled-components";
 import { socket } from "../../utils/socket.js";
