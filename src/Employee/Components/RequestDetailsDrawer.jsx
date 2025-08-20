@@ -30,7 +30,8 @@ import {
   DollarOutlined,
   SendOutlined,
   CheckOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -120,7 +121,7 @@ const RequestDetailsDrawer = ({
             actions={[
               <Button
                 type="link"
-                icon={<DownloadOutlined />}
+                icon={<EyeOutlined />}
                 onClick={() => handleDocumentDownload(doc)}
               >
                 View
@@ -149,16 +150,43 @@ const RequestDetailsDrawer = ({
       return null;
     }
 
-    // If request is approved and has a selected ticket, show that instead of selection UI
-    if (request.status === "approved" && request.selectedTicket) {
+    // If request has a selected ticket (either approved or pending admin response)
+    if (request.selectedTicket) {
+      const statusConfig = {
+        approved: {
+          title: "Approved Ticket",
+          color: "#52c41a",
+          backgroundColor: "#f6ffed",
+        },
+        pending: {
+          title: "Selected Ticket (Pending Admin Approval)",
+          color: "#faad14",
+          backgroundColor: "#fffbe6",
+        },
+        rejected: {
+          title: "Rejected Ticket",
+          color: "#ff4d4f",
+          backgroundColor: "#fff2f0",
+        },
+      };
+
+      const config = statusConfig[request.status] || statusConfig.pending;
+
       return (
-        <Card title="Approved Ticket" style={{ marginBottom: 16 }}>
+        <Card
+          title={config.title}
+          style={{
+            marginBottom: 16,
+            backgroundColor: config.backgroundColor,
+            borderColor: config.color,
+          }}
+        >
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="Date">
               {dayjs(request.selectedTicket.date).format("DD MMM YYYY")}
             </Descriptions.Item>
             <Descriptions.Item label="Price">
-              <Text strong style={{ color: "#52c41a" }}>
+              <Text strong style={{ color: config.color }}>
                 ₹{request.selectedTicket.ticketPrice.toLocaleString()}
               </Text>
             </Descriptions.Item>
@@ -167,7 +195,47 @@ const RequestDetailsDrawer = ({
                 {request.selectedTicket.description}
               </Paragraph>
             </Descriptions.Item>
-            {request.ticketApprovalNote && (
+
+            {/* Show uploaded documents for selected ticket */}
+            {request.selectedTicket.uploadedDocuments &&
+              request.selectedTicket.uploadedDocuments.length > 0 && (
+                <Descriptions.Item label="Documents" span={2}>
+                  <List
+                    size="small"
+                    dataSource={request.selectedTicket.uploadedDocuments}
+                    renderItem={(doc) => (
+                      <List.Item
+                        actions={[
+                          <Button
+                            type="link"
+                            icon={<EyeOutlined />}
+                            onClick={() => handleDocumentDownload(doc)}
+                          >
+                            View
+                          </Button>,
+                        ]}
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <FileTextOutlined style={{ color: "#1890ff" }} />
+                          }
+                          title={doc.documentName || doc.fileName || "Document"}
+                          description={
+                            doc.uploadedAt
+                              ? `Uploaded: ${dayjs(doc.uploadedAt).format(
+                                  "DD MMM YYYY, HH:mm"
+                                )}`
+                              : "Upload date not available"
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                </Descriptions.Item>
+              )}
+
+            {/* Show approval note if approved */}
+            {request.status === "approved" && request.ticketApprovalNote && (
               <Descriptions.Item label="Approval Note" span={2}>
                 <Paragraph style={{ margin: 0 }}>
                   {request.ticketApprovalNote}
@@ -175,66 +243,103 @@ const RequestDetailsDrawer = ({
               </Descriptions.Item>
             )}
           </Descriptions>
+
+          {/* Show waiting message for pending tickets */}
+          {request.status === "pending" && (
+            <Alert
+              message="Waiting for Admin Response"
+              description="Your selected ticket is pending admin approval. You will be notified once the admin reviews your selection."
+              type="info"
+              showIcon
+              style={{ marginTop: 16 }}
+            />
+          )}
         </Card>
       );
     }
 
-    // If request is pending and has ticket details, show selection UI
-    return (
-      <Card title="Available Tickets" style={{ marginBottom: 16 }}>
-        <List
-          dataSource={request.ticketDetails}
-          renderItem={(ticket) => (
-            <List.Item
-              style={{
-                border: "1px solid #f0f0f0",
-                borderRadius: "8px",
-                marginBottom: "12px",
-                padding: "16px",
-                backgroundColor:
-                  selectedTicket === ticket._id ? "#f6ffed" : "#fafafa",
-              }}
-            >
-              <List.Item.Meta
-                avatar={
-                  <Radio
-                    checked={selectedTicket === ticket._id}
-                    onChange={() => handleTicketSelection(ticket._id)}
-                  />
-                }
-                title={
-                  <Row gutter={[16, 8]}>
-                    <Col xs={24} sm={12}>
-                      <Space>
-                        <CalendarOutlined style={{ color: "#1890ff" }} />
-                        <Text strong>
-                          {dayjs(ticket.date).format("DD MMM YYYY")}
-                        </Text>
-                      </Space>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Space>
-                        <DollarOutlined style={{ color: "#52c41a" }} />
-                        <Text strong style={{ color: "#52c41a" }}>
-                          ₹{ticket.ticketPrice.toLocaleString()}
-                        </Text>
-                      </Space>
-                    </Col>
-                  </Row>
-                }
-                description={
-                  <div style={{ marginTop: 8 }}>
-                    <Paragraph style={{ margin: 0, color: "#666" }}>
-                      {ticket.description}
-                    </Paragraph>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-        />
+    // If request is pending and has ticket details but no selected ticket, show selection UI
+    if (request.status === "pending") {
+      return (
+        <Card title="Available Tickets" style={{ marginBottom: 16 }}>
+          <List
+            dataSource={request.ticketDetails}
+            renderItem={(ticket) => (
+              <List.Item
+                style={{
+                  border: "1px solid #f0f0f0",
+                  borderRadius: "8px",
+                  marginBottom: "12px",
+                  padding: "16px",
+                  backgroundColor:
+                    selectedTicket === ticket._id ? "#f6ffed" : "#fafafa",
+                }}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <Radio
+                      checked={selectedTicket === ticket._id}
+                      onChange={() => handleTicketSelection(ticket._id)}
+                    />
+                  }
+                  title={
+                    <Row gutter={[16, 8]}>
+                      <Col xs={24} sm={12}>
+                        <Space>
+                          <CalendarOutlined style={{ color: "#1890ff" }} />
+                          <Text strong>
+                            {dayjs(ticket.date).format("DD MMM YYYY")}
+                          </Text>
+                        </Space>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Space>
+                          <DollarOutlined style={{ color: "#52c41a" }} />
+                          <Text strong style={{ color: "#52c41a" }}>
+                            ₹{ticket.ticketPrice.toLocaleString()}
+                          </Text>
+                        </Space>
+                      </Col>
+                    </Row>
+                  }
+                  description={
+                    <div style={{ marginTop: 8 }}>
+                      <Paragraph style={{ margin: 0, color: "#666" }}>
+                        {ticket.description}
+                      </Paragraph>
 
-        {request.status === "pending" && (
+                      {/* Show documents for each ticket option */}
+                      {ticket.uploadedDocuments &&
+                        ticket.uploadedDocuments.length > 0 && (
+                          <div style={{ marginTop: 8 }}>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              Documents: {ticket.uploadedDocuments.length}{" "}
+                              file(s)
+                            </Text>
+                            <div style={{ marginTop: 4 }}>
+                              {ticket.uploadedDocuments.map((doc, index) => (
+                                <Button
+                                  key={index}
+                                  type="link"
+                                  size="small"
+                                  icon={<FileTextOutlined />}
+                                  onClick={() => handleDocumentDownload(doc)}
+                                >
+                                  {doc.documentName ||
+                                    doc.fileName ||
+                                    `Document ${index + 1}`}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+
           <Button
             type="primary"
             size="large"
@@ -251,9 +356,11 @@ const RequestDetailsDrawer = ({
           >
             Submit Selected Ticket
           </Button>
-        )}
-      </Card>
-    );
+        </Card>
+      );
+    }
+
+    return null;
   };
 
   const renderTicketApprovalStatus = () => {
@@ -279,7 +386,8 @@ const RequestDetailsDrawer = ({
       },
     };
 
-    const statusInfo = statusMap[request.ticketApprovalStatus] || statusMap.pending;
+    const statusInfo =
+      statusMap[request.ticketApprovalStatus] || statusMap.pending;
 
     return (
       <Card title="Ticket Status" style={{ marginBottom: 16 }}>
@@ -287,7 +395,10 @@ const RequestDetailsDrawer = ({
           <Badge
             status={statusInfo.color}
             text={
-              <Text strong style={{ color: `var(--ant-${statusInfo.color}-6)` }}>
+              <Text
+                strong
+                style={{ color: `var(--ant-${statusInfo.color}-6)` }}
+              >
                 {statusInfo.text}
               </Text>
             }
@@ -366,7 +477,9 @@ const RequestDetailsDrawer = ({
       {renderTicketSelection()}
 
       {/* Render ticket approval status if applicable */}
-      {request.ticketDetails && request.ticketDetails.length > 0 && renderTicketApprovalStatus()}
+      {request.ticketDetails &&
+        request.ticketDetails.length > 0 &&
+        renderTicketApprovalStatus()}
 
       {(request.status === "approved" || request.status === "rejected") && (
         <Card title="Admin Response" style={{ marginBottom: 16 }}>

@@ -10,9 +10,15 @@ import {
   Tag,
   Avatar,
   Space,
+  Spin,
 } from "antd";
 import { useState } from "react";
-import { CalendarOutlined, UserOutlined } from "@ant-design/icons";
+import { 
+  CalendarOutlined, 
+  UserOutlined, 
+  FileTextOutlined,
+  CloseOutlined 
+} from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -20,6 +26,16 @@ const EmployeeCompanyNews = () => {
   const { data: companyNews } = useGetCompanyNewsQuery();
   const [selectedNews, setSelectedNews] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  // Custom styles matching NewsDetailView
+  const customStyles = {
+    primaryColor: "#da2c46",
+    cardStyle: {
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(218, 44, 70, 0.1)",
+      border: `1px solid rgba(218, 44, 70, 0.2)`,
+    },
+  };
 
   const handleCardClick = (news) => {
     setSelectedNews(news);
@@ -42,7 +58,9 @@ const EmployeeCompanyNews = () => {
       </div>
 
       <Row gutter={[24, 24]}>
-        {companyNews?.news?.map((newsItem) => (
+        {companyNews?.news
+          ?.filter((newsItem) => newsItem.status === "published")
+          ?.map((newsItem) => (
           <Col key={newsItem._id} xs={24} sm={12} lg={8}>
             <Card
               hoverable
@@ -100,90 +118,214 @@ const EmployeeCompanyNews = () => {
         ))}
       </Row>
 
+      {/* Updated Modal with detailed view styling */}
       <Modal
         title={null}
-        visible={isModalVisible}
+        open={isModalVisible}
         onCancel={handleCloseModal}
         footer={null}
-        width={800}
+        width={900}
         className="news-modal"
-        closeIcon={<span className="modal-close-btn">×</span>}
+        closeIcon={<CloseOutlined style={{ fontSize: "20px", color: "#999" }} />}
+        styles={{
+          body: { padding: 0, maxHeight: "80vh", overflowY: "auto" }
+        }}
       >
         {selectedNews && (
-          <div className="news-detail">
-            <div className="news-detail-header">
-              <Title level={2} className="news-detail-title">
-                {selectedNews.title}
-              </Title>
-              <Space size="middle" className="news-detail-meta">
-                <Space size="small">
-                  <Avatar icon={<UserOutlined />} size="small" />
-                  <Text type="secondary">Admin</Text>
+          <div style={{ padding: "24px" }}>
+            {/* Main content card */}
+            <Card style={customStyles.cardStyle}>
+              {/* News Header */}
+              <div style={{ marginBottom: "24px" }}>
+                <Space wrap style={{ marginBottom: "16px" }}>
+                  <Tag
+                    color={selectedNews.status === "published" ? "green" : "orange"}
+                    style={{ fontSize: "12px", padding: "4px 8px" }}
+                  >
+                    {selectedNews.status?.toUpperCase() || "DRAFT"}
+                  </Tag>
+                  {selectedNews.createdAt && (
+                    <Text type="secondary">
+                      <CalendarOutlined style={{ marginRight: "4px" }} />
+                      {new Date(selectedNews.createdAt).toLocaleDateString()}
+                    </Text>
+                  )}
                 </Space>
-                <Space size="small">
-                  <CalendarOutlined style={{ color: "#888" }} />
-                  <Text type="secondary">
-                    {new Date(selectedNews.createdAt).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
+
+                <Title
+                  level={1}
+                  style={{ 
+                    color: customStyles.primaryColor, 
+                    marginBottom: "16px",
+                    fontSize: "28px"
+                  }}
+                >
+                  {selectedNews.title}
+                </Title>
+
+                {/* Cover Image */}
+                {selectedNews.coverImage && (
+                  <div style={{ marginBottom: "24px", textAlign: "center" }}>
+                    <Image
+                      src={selectedNews.coverImage}
+                      alt={selectedNews.title}
+                      style={{
+                        maxWidth: "100%",
+                        borderRadius: "12px",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                      }}
+                      placeholder={
+                        <div
+                          style={{
+                            padding: "40px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "12px",
+                          }}
+                        >
+                          <Spin />
+                        </div>
                       }
-                    )}
-                  </Text>
-                </Space>
-                <Tag color="blue">{selectedNews.status.toUpperCase()}</Tag>
-              </Space>
-            </div>
-
-            <Image
-              src={selectedNews.coverImage}
-              alt={selectedNews.title}
-              className="news-detail-image"
-              preview={false}
-            />
-
-            <Paragraph className="news-detail-description">
-              {selectedNews.description}
-            </Paragraph>
-
-            <Divider className="news-divider" />
-
-            {selectedNews.subsections?.map((subsection, index) => (
-              <div key={subsection._id} className="news-subsection">
-                {subsection.subtitle && (
-                  <Title level={4} className="subsection-title">
-                    {subsection.subtitle}
-                  </Title>
+                    />
+                  </div>
                 )}
-                {subsection.image && (
-                  <Image
-                    src={subsection.image}
-                    alt={subsection.subtitle}
-                    className="subsection-image"
-                    preview={false}
-                  />
-                )}
-                <Paragraph className="subsection-description">
-                  {subsection.subdescription
-                    .split("\r\n")
-                    .map((paragraph, i) => (
-                      <span key={i}>
-                        {paragraph}
-                        <br />
-                        <br />
-                      </span>
-                    ))}
-                </Paragraph>
-                {index < selectedNews.subsections.length - 1 && (
-                  <Divider className="news-divider" />
+
+                {/* Description */}
+                {selectedNews.description && (
+                  <>
+                    <Title level={4} style={{ color: customStyles.primaryColor }}>
+                      <FileTextOutlined style={{ marginRight: "8px" }} />
+                      Overview
+                    </Title>
+                    <Paragraph
+                      style={{
+                        fontSize: "16px",
+                        lineHeight: "1.6",
+                        marginBottom: "32px",
+                        color: "#444",
+                      }}
+                    >
+                      {selectedNews.description}
+                    </Paragraph>
+                  </>
                 )}
               </div>
-            ))}
+
+              {/* Subsections */}
+              {selectedNews.subsections && selectedNews.subsections.length > 0 && (
+                <>
+                  <Divider
+                    style={{
+                      margin: "32px 0",
+                      borderColor: customStyles.primaryColor,
+                    }}
+                  />
+
+                  <Title
+                    level={3}
+                    style={{ 
+                      color: customStyles.primaryColor, 
+                      marginBottom: "24px" 
+                    }}
+                  >
+                    Article Sections
+                  </Title>
+
+                  <Row gutter={[24, 24]}>
+                    {selectedNews.subsections.map((section, index) => (
+                      <Col xs={24} key={section._id || index}>
+                        <Card
+                          style={{
+                            borderRadius: "8px",
+                            border: `1px solid rgba(218, 44, 70, 0.1)`,
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+                          }}
+                        >
+                          <Title
+                            level={4}
+                            style={{ marginBottom: "16px", color: "#333" }}
+                          >
+                            {section.subtitle}
+                          </Title>
+
+                          <Paragraph
+                            style={{
+                              fontSize: "15px",
+                              lineHeight: "1.7",
+                              marginBottom: section.image ? "20px" : "0",
+                              color: "#555",
+                            }}
+                          >
+                            {section.subdescription
+                              ?.split("\r\n")
+                              .map((paragraph, i) => (
+                                <span key={i}>
+                                  {paragraph}
+                                  {i < section.subdescription.split("\r\n").length - 1 && (
+                                    <>
+                                      <br />
+                                      <br />
+                                    </>
+                                  )}
+                                </span>
+                              ))}
+                          </Paragraph>
+
+                          {section.image && (
+                            <div style={{ textAlign: "center" }}>
+                              <Image
+                                src={section.image}
+                                alt={section.subtitle}
+                                style={{
+                                  maxWidth: "100%",
+                                  borderRadius: "8px",
+                                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                                }}
+                                placeholder={
+                                  <div
+                                    style={{
+                                      padding: "40px",
+                                      backgroundColor: "#f5f5f5",
+                                      borderRadius: "8px",
+                                    }}
+                                  >
+                                    <Spin />
+                                  </div>
+                                }
+                              />
+                            </div>
+                          )}
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
+                </>
+              )}
+
+              {/* Footer with timestamps */}
+              <Divider style={{ margin: "40px 0 20px 0" }} />
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Text type="secondary">
+                    <strong>Created:</strong>{" "}
+                    {selectedNews.createdAt
+                      ? new Date(selectedNews.createdAt).toLocaleString()
+                      : "N/A"}
+                  </Text>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Text type="secondary">
+                    <strong>Last Updated:</strong>{" "}
+                    {selectedNews.updatedAt
+                      ? new Date(selectedNews.updatedAt).toLocaleString()
+                      : "N/A"}
+                  </Text>
+                </Col>
+              </Row>
+            </Card>
           </div>
         )}
       </Modal>
+
       <style jsx>{`
         .news-container {
           padding: 24px;
@@ -276,86 +418,27 @@ const EmployeeCompanyNews = () => {
           color: #40a9ff;
         }
 
-        /* News Detail Modal Styles */
+        /* Updated Modal Styles */
         .news-modal .ant-modal-content {
-          padding: 0;
-          border-radius: 8px;
+          border-radius: 12px;
           overflow: hidden;
         }
 
-        .news-modal .ant-modal-body {
-          padding: 0;
+        .news-modal .ant-modal-header {
+          border-bottom: none;
+          padding: 16px 24px;
         }
 
-        .news-detail {
-          padding: 0;
+        .news-modal .ant-modal-close {
+          top: 16px;
+          right: 16px;
         }
 
-        .news-detail-header {
-          padding: 24px 24px 0;
-        }
-
-        .news-detail-title {
-          margin-bottom: 16px;
-          color: #333;
-        }
-
-        .news-detail-meta {
-          margin-bottom: 24px;
-        }
-
-        .news-detail-image {
-          width: 100%;
-          max-height: 400px;
-          object-fit: cover;
-          margin-bottom: 24px;
-        }
-
-        .news-detail-description {
+        .news-modal .ant-modal-close-x {
+          width: 40px;
+          height: 40px;
+          line-height: 40px;
           font-size: 16px;
-          line-height: 1.8;
-          padding: 0 24px;
-          color: #444;
-        }
-
-        .news-divider {
-          margin: 24px 0;
-        }
-
-        .news-subsection {
-          padding: 0 24px;
-          margin-bottom: 24px;
-        }
-
-        .subsection-title {
-          color: #333;
-          margin-bottom: 16px;
-        }
-
-        .subsection-image {
-          width: 100%;
-          max-height: 300px;
-          object-fit: cover;
-          margin: 16px 0;
-          border-radius: 4px;
-        }
-
-        .subsection-description {
-          font-size: 15px;
-          line-height: 1.7;
-          color: #555;
-        }
-
-        .modal-close-btn {
-          font-size: 24px;
-          color: #999;
-          padding: 16px;
-          display: inline-block;
-          transition: color 0.3s;
-        }
-
-        .modal-close-btn:hover {
-          color: #333;
         }
       `}</style>
     </div>
