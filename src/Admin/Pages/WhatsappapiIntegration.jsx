@@ -357,7 +357,6 @@ const WhatsAppConfig = () => {
                                   { label: "Screening", value: "screening" },
                                   { label: "Interview", value: "interview" },
                                   { label: "Rejected", value: "rejected" },
-                                  { label: "Bulk Notify", value: "bulk-notify" },
                                 ]}
                               />
                             </Form.Item>
