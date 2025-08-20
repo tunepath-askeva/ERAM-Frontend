@@ -644,15 +644,6 @@ const EmployeeAdminExpiredDocuments = () => {
                   workOrder: selectedRecord.workOrder?.title || "N/A",
                   documentName: selectedRecord.documentName,
                   expiryDate: selectedRecord.expiryDate,
-                  subject: "Document Expiry Notification",
-                  message: `Your document "${
-                    selectedRecord.documentName
-                  }" under work order "${
-                    selectedRecord.workOrder?.title
-                  }" has expired or will expire on ${new Date(
-                    selectedRecord.expiryDate
-                  ).toLocaleDateString("en-GB")}. 
-            Please renew it to avoid compliance issues.`,
                 };
 
                 await singleNotify(payload);
