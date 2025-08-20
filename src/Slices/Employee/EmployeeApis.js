@@ -63,6 +63,9 @@ export const employeeApi = createApi({
     }),
 
     //EmployeeAdmin Apis
+    getEmployeeAdminDashboard: builder.query({
+      query: () => `/dashboard`,
+    }),
     getEmployeeAdminLeaveHistory: builder.query({
       query: ({ eramId, urgency, status, page, pageSize }) => {
         const params = new URLSearchParams();
@@ -498,4 +501,5 @@ export const {
   useGetEmployeeAdminDocumentByIdQuery,
   useNotifyEmployeeMutation,
   useGetExpiredDocumentsQuery,
+  useGetEmployeeAdminDashboardQuery
 } = employeeApi;

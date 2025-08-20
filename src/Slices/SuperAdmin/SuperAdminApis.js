@@ -15,6 +15,12 @@ export const superAdminApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    getSuperDashboardData: builder.query({
+      query: () => ({
+        url: "/dashboard",
+        method: "GET",
+      }),
+    }),
     loginSuperAdmin: builder.mutation({
       query: (credentials) => ({
         url: "/Login",
@@ -155,6 +161,9 @@ export const superAdminApi = createApi({
 });
 
 export const {
+  //dashboard
+  useGetSuperDashboardDataQuery,
+
   //branch
   useCreateBranchMutation,
   useUpdateBranchMutation,
@@ -178,7 +187,6 @@ export const {
   useRequestUpdateProfileMutation,
   useVerifyUpdateProfileMutation,
 
-
   //whatsapp
-  useSubmitWhatsappApiMutation
+  useSubmitWhatsappApiMutation,
 } = superAdminApi;
