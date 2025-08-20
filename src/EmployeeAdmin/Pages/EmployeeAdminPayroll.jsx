@@ -46,7 +46,7 @@ const EmployeeAdminPayroll = () => {
   const [form] = Form.useForm();
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [project, setProject] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");

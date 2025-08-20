@@ -16,6 +16,12 @@ export const adminApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    getAdminDashboardData: builder.query({
+      query: () => ({
+        url: "/dashboard",
+        method: "GET",
+      }),
+    }),
     addPipeline: builder.mutation({
       query: (pipelineData) => ({
         url: "/addPipeline",
@@ -535,6 +541,9 @@ export const adminApi = createApi({
 });
 
 export const {
+  //dashboard
+  useGetAdminDashboardDataQuery,
+
   //pipeline
   useAddPipelineMutation,
   useGetPipelinesQuery,
@@ -606,8 +615,7 @@ export const {
   //Requisition
   useGetAdminRequisiionQuery,
 
-
   //whatsapp
   useSubmitWhatsappApiMutation,
-  useGetWhatsappConfigQuery
+  useGetWhatsappConfigQuery,
 } = adminApi;
