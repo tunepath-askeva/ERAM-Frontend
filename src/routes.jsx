@@ -42,7 +42,6 @@ import RecruiterLayout from "./Recruiters/Global/RecruiterLayout";
 import RecruiterEditJob from "./Recruiters/Components/RecruiterEditJob";
 import RecruiterViewJob from "./Recruiters/Components/RecruiterViewJob";
 import EmployeeLayout from "./Employee/Global/EmployeeLayout";
-import EmployeeDashboard from "./Employee/Pages/EmployeeDashboard";
 import EmployeeProfileSettings from "./Employee/Pages/EmployeeProfileSettings";
 import EmployeeLeaveRequest from "./Employee/Pages/EmployeeLeaveRequest";
 import EmployeeRaiseRequest from "./Employee/Pages/EmployeeRaiseRequest";
@@ -307,10 +306,7 @@ const AppRoutes = () => {
       {/* Employee */}
 
       <Route element={<EmployeeLayout />}>
-        <Route
-          path="/employee/dashboard"
-          element={<ProtectedEmployee element={<EmployeeDashboard />} />}
-        />
+      
         <Route
           path="/employee/raise-request"
           element={<ProtectedEmployee element={<EmployeeRaiseRequest />} />}

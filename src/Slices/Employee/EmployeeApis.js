@@ -447,6 +447,13 @@ export const employeeApi = createApi({
         };
       },
     }),
+    bulkNotifyExpiredDocuments: builder.mutation({
+      query: (payload) => ({
+        url: "/bulk-notify",
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -500,5 +507,6 @@ export const {
   useGetEmployeeAdminDocumentByIdQuery,
   useNotifyEmployeeMutation,
   useGetExpiredDocumentsQuery,
-  useGetEmployeeAdminDashboardQuery
+  useGetEmployeeAdminDashboardQuery,
+  useBulkNotifyExpiredDocumentsMutation,
 } = employeeApi;

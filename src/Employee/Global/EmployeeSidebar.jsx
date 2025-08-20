@@ -58,9 +58,9 @@ const EmployeeSidebar = ({
 
   const menuItems = [
     {
-      key: "/employee/dashboard",
-      icon: <DashboardOutlined />,
-      label: "Dashboard",
+      key: "/employee/company-news",
+      icon: <PaperClipOutlined />,
+      label: "Company News",
     },
     {
       key: "/employee/raise-request",
@@ -82,11 +82,7 @@ const EmployeeSidebar = ({
       icon: <SolutionOutlined />,
       label: "Company Policies",
     },
-    {
-      key: "/employee/company-news",
-      icon: <PaperClipOutlined />,
-      label: "Company News",
-    },
+
     {
       key: "/employee/feedback",
       icon: <IssuesCloseOutlined />,
