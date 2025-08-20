@@ -537,6 +537,16 @@ export const adminApi = createApi({
         body: clientData,
       }),
     }),
+    updateTemplateStatus: builder.mutation({
+      query: ({ templateId, body , parentId }) => ({
+        url: `/whatsapp-status/${templateId}`,
+        method: "PATCH",
+        body: {
+          _id: parentId,
+          ...body, 
+        },
+      }),
+    }),
   }),
 });
 
@@ -618,4 +628,5 @@ export const {
   //whatsapp
   useSubmitWhatsappApiMutation,
   useGetWhatsappConfigQuery,
+  useUpdateTemplateStatusMutation,
 } = adminApi;

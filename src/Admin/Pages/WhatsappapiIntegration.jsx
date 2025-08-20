@@ -11,12 +11,15 @@ import {
   Tabs,
   Table,
   Tag,
+  Modal,
+  Switch,
 } from "antd";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { MinusCircleOutlined, PlusOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import axios from "axios";
 import {
   useGetWhatsappConfigQuery,
   useSubmitWhatsappApiMutation,
+  useUpdateTemplateStatusMutation, 
 } from "../../Slices/Admin/AdminApis";
 import { enqueueSnackbar } from "notistack";
 
@@ -29,9 +32,12 @@ const WhatsAppConfig = () => {
   const [templateVariables, setTemplateVariables] = useState({});
   const [approvedTemplates, setApprovedTemplates] = useState([]);
   const [selectedTemplates, setSelectedTemplates] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const [submitConfiguration] = useSubmitWhatsappApiMutation();
-  const { data: WhatsAppConfigData } = useGetWhatsappConfigQuery();
+  const [updateTemplateStatus] = useUpdateTemplateStatusMutation(); 
+  const { data: WhatsAppConfigData, refetch } = useGetWhatsappConfigQuery();
 
   useEffect(() => {
     const existingConfig = WhatsAppConfigData?.whatsapp?.[0];
@@ -148,6 +154,49 @@ const WhatsAppConfig = () => {
     }
   };
 
+  const handleStatusToggle = (templateId, currentStatus, templateName) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    
+    setSelectedTemplate({
+      id: templateId,
+      name: templateName,
+      currentStatus: currentStatus,
+      newStatus: newStatus,
+      action: newStatus === 'active' ? 'activate' : 'deactivate'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleModalOk = async () => {
+    try {
+      await updateTemplateStatus({
+        templateId: selectedTemplate.id,
+         parentId: existingConfig._id,
+        body: {
+          status: selectedTemplate.newStatus
+        }
+      }).unwrap();
+      
+      enqueueSnackbar(`Template ${selectedTemplate.action}d successfully!`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
+      
+      setIsModalOpen(false);
+      setSelectedTemplate(null);
+      
+      refetch();
+    } catch (error) {
+      console.error(error);
+      message.error(`Failed to ${selectedTemplate.action} template.`);
+    }
+  };
+
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    setSelectedTemplate(null);
+  };
+
   const existingConfig = WhatsAppConfigData?.whatsapp?.[0];
   const columns = [
     {
@@ -184,7 +233,11 @@ const WhatsAppConfig = () => {
       dataIndex: "status",
       key: "status",
       width: 120,
-      render: (event) => <Tag color="red">{event}</Tag>,
+      render: (status) => (
+        <Tag color={status === 'active' ? 'green' : 'red'}>
+          {status || 'inactive'}
+        </Tag>
+      ),
     },
     {
       title: "Variables",
@@ -199,185 +252,219 @@ const WhatsAppConfig = () => {
             ))
           : "—",
     },
+    {
+      title: "Action",
+      key: "action",
+      width: 120,
+      render: (_, record) => (
+        <Switch
+          checked={record.status === 'active'}
+          onChange={() => handleStatusToggle(record._id, record.status, record.name)}
+          checkedChildren="Active"
+          unCheckedChildren="Inactive"
+          size="small"
+        />
+      ),
+    },
   ];
 
   return (
-    <Tabs
-      defaultActiveKey="1"
-      items={[
-        {
-          key: "1",
-          label: "Configure API",
-          children: (
-            <Card
-              title="WhatsApp API Configuration"
-              style={{ maxWidth: 700, margin: "0 auto" }}
-            >
-              <Form form={form} layout="vertical">
-                <Form.Item
-                  label="API Key"
-                  name="apiKey"
-                  rules={[
-                    { required: true, message: "Please enter the API Key!" },
-                  ]}
-                >
-                  <Input
-                    placeholder="Enter your WhatsApp API Key"
-                    disabled={apiKeyDisabled}
-                    onBlur={fetchApprovedTemplates}
-                  />
-                </Form.Item>
+    <>
+      <Tabs
+        defaultActiveKey="1"
+        items={[
+          {
+            key: "1",
+            label: "Configure API",
+            children: (
+              <Card
+                title="WhatsApp API Configuration"
+                style={{ maxWidth: 700, margin: "0 auto" }}
+              >
+                <Form form={form} layout="vertical">
+                  <Form.Item
+                    label="API Key"
+                    name="apiKey"
+                    rules={[
+                      { required: true, message: "Please enter the API Key!" },
+                    ]}
+                  >
+                    <Input
+                      placeholder="Enter your WhatsApp API Key"
+                      disabled={apiKeyDisabled}
+                      onBlur={fetchApprovedTemplates}
+                    />
+                  </Form.Item>
 
-                <Form.List name="templates">
-                  {(fields, { add, remove }) => (
-                    <>
-                      <Title level={5}>Templates</Title>
-                      {fields.map((field, index) => (
-                        <Space
-                          key={field.key}
-                          direction="vertical"
-                          style={{ width: "100%", marginBottom: 1 }}
-                        >
-                          <Space style={{ width: "100%" }} align="baseline">
+                  <Form.List name="templates">
+                    {(fields, { add, remove }) => (
+                      <>
+                        <Title level={5}>Templates</Title>
+                        {fields.map((field, index) => (
+                          <Space
+                            key={field.key}
+                            direction="vertical"
+                            style={{ width: "100%", marginBottom: 1 }}
+                          >
+                            <Space style={{ width: "100%" }} align="baseline">
+                              <Form.Item
+                                {...field}
+                                name={[field.name, "name"]}
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: "Please select template",
+                                  },
+                                ]}
+                                style={{ flex: 1 }}
+                              >
+                                <Select
+                                  placeholder="Select Template"
+                                  options={approvedTemplates.map((t) => ({
+                                    label: t.name,
+                                    value: t.name,
+                                  }))}
+                                  onChange={(value) =>
+                                    handleTemplateSelect(index, value)
+                                  }
+                                />
+                              </Form.Item>
+                              <MinusCircleOutlined
+                                style={{ color: "red" }}
+                                onClick={() => remove(field.name)}
+                              />
+                              <Form.Item>
+                                <Button onClick={fetchApprovedTemplates}>
+                                  Fetch Approved Templates
+                                </Button>
+                              </Form.Item>
+                            </Space>
+
                             <Form.Item
-                              {...field}
-                              name={[field.name, "name"]}
+                              label="Trigger Event"
+                              name={[field.name, "triggerEvent"]}
                               rules={[
                                 {
                                   required: true,
-                                  message: "Please select template",
+                                  message: "Please select an event",
                                 },
                               ]}
-                              style={{ flex: 1 }}
                             >
                               <Select
-                                placeholder="Select Template"
-                                options={approvedTemplates.map((t) => ({
-                                  label: t.name,
-                                  value: t.name,
-                                }))}
-                                onChange={(value) =>
-                                  handleTemplateSelect(index, value)
-                                }
+                                placeholder="Select Event"
+                                options={[
+                                  { label: "Sourcing", value: "sourcing" },
+                                  { label: "Screening", value: "screening" },
+                                  { label: "Interview", value: "interview" },
+                                  { label: "Rejected", value: "rejected" },
+                                ]}
                               />
                             </Form.Item>
-                            <MinusCircleOutlined
-                              style={{ color: "red" }}
-                              onClick={() => remove(field.name)}
-                            />
-                            <Form.Item>
-                              <Button onClick={fetchApprovedTemplates}>
-                                Fetch Approved Templates
-                              </Button>
-                            </Form.Item>
+
+                            {templateBodies[index] && (
+                              <>
+                                <Paragraph style={{ marginLeft: 8 }}>
+                                  <strong>Body:</strong> {templateBodies[index]}
+                                </Paragraph>
+                                {templateVariables[index] &&
+                                  Object.keys(templateVariables[index]).map(
+                                    (varKey) => (
+                                      <Form.Item
+                                        key={`${index}-var-${varKey}`}
+                                        label={`Variable {{${varKey}}}`}
+                                      >
+                                        <Select
+                                          placeholder="Select variable"
+                                          value={templateVariables[index][varKey]}
+                                          onChange={(value) =>
+                                            handleVariableChange(
+                                              index,
+                                              varKey,
+                                              value
+                                            )
+                                          }
+                                          options={variableOptions}
+                                          allowClear
+                                        />
+                                      </Form.Item>
+                                    )
+                                  )}
+                              </>
+                            )}
                           </Space>
+                        ))}
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}
+                        >
+                          Add Template
+                        </Button>
+                      </>
+                    )}
+                  </Form.List>
 
-                          <Form.Item
-                            label="Trigger Event"
-                            name={[field.name, "triggerEvent"]}
-                            rules={[
-                              {
-                                required: true,
-                                message: "Please select an event",
-                              },
-                            ]}
-                          >
-                            <Select
-                              placeholder="Select Event"
-                              options={[
-                                { label: "Sourcing", value: "sourcing" },
-                                { label: "Screening", value: "screening" },
-                                { label: "Interview", value: "interview" },
-                                { label: "Rejected", value: "rejected" },
-                              ]}
-                            />
-                          </Form.Item>
-
-                          {templateBodies[index] && (
-                            <>
-                              <Paragraph style={{ marginLeft: 8 }}>
-                                <strong>Body:</strong> {templateBodies[index]}
-                              </Paragraph>
-                              {templateVariables[index] &&
-                                Object.keys(templateVariables[index]).map(
-                                  (varKey) => (
-                                    <Form.Item
-                                      key={`${index}-var-${varKey}`}
-                                      label={`Variable {{${varKey}}}`}
-                                    >
-                                      <Select
-                                        placeholder="Select variable"
-                                        value={templateVariables[index][varKey]}
-                                        onChange={(value) =>
-                                          handleVariableChange(
-                                            index,
-                                            varKey,
-                                            value
-                                          )
-                                        }
-                                        options={variableOptions}
-                                        allowClear
-                                      />
-                                    </Form.Item>
-                                  )
-                                )}
-                            </>
-                          )}
-                        </Space>
-                      ))}
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        block
-                        icon={<PlusOutlined />}
-                      >
-                        Add Template
-                      </Button>
-                    </>
-                  )}
-                </Form.List>
-
-                <Form.Item>
-                  <Button
-                    onClick={handleSubmit}
-                    type="primary"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                      marginTop: "10px",
-                      height: "38px",
-                      minWidth: "80px",
-                    }}
-                    block
-                  >
-                    Save Configuration
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Card>
-          ),
-        },
-        {
-          key: "2",
-          label: "Configured Templates",
-          children: (
-            <Card title="Your Saved Templates">
-              {existingConfig ? (
-                <>
-                  <Table
-                    dataSource={existingConfig.templates}
-                    columns={columns}
-                    rowKey="_id"
-                  />
-                </>
-              ) : (
-                <p>No configuration found.</p>
-              )}
-            </Card>
-          ),
-        },
-      ]}
-    />
+                  <Form.Item>
+                    <Button
+                      onClick={handleSubmit}
+                      type="primary"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                        marginTop: "10px",
+                        height: "38px",
+                        minWidth: "80px",
+                      }}
+                      block
+                    >
+                      Save Configuration
+                    </Button>
+                  </Form.Item>
+                </Form>
+              </Card>
+            ),
+          },
+          {
+            key: "2",
+            label: "Configured Templates",
+            children: (
+              <Card title="Your Saved Templates">
+                {existingConfig ? (
+                  <>
+                    <Table
+                      dataSource={existingConfig.templates}
+                      columns={columns}
+                      rowKey="_id"
+                      scroll={{ x: 1200 }}
+                    />
+                  </>
+                ) : (
+                  <p>No configuration found.</p>
+                )}
+              </Card>
+            ),
+          },
+        ]}
+      />
+      
+      <Modal
+        title={`${selectedTemplate?.action?.charAt(0).toUpperCase() + selectedTemplate?.action?.slice(1)} Template`}
+        open={isModalOpen}
+        onOk={handleModalOk}
+        onCancel={handleModalCancel}
+        okText="Yes"
+        cancelText="No"
+        okType={selectedTemplate?.newStatus === 'active' ? 'primary' : 'danger'}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <ExclamationCircleOutlined style={{ color: '#faad14', fontSize: '22px' }} />
+          <span>
+            Are you sure you want to {selectedTemplate?.action} the template "{selectedTemplate?.name}"?
+          </span>
+        </div>
+      </Modal>
+    </>
   );
 };
 
