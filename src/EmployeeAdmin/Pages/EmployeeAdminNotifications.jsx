@@ -14,6 +14,7 @@ import {
   Skeleton,
   Result,
   Popconfirm,
+  message,
 } from "antd";
 import {
   BellOutlined,
@@ -24,7 +25,12 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import { useClearAllNotificationMutation } from "../../Slices/Users/UserApis.js";
+import { 
+  useClearAllNotificationMutation,
+  useMarkAllReadMutation,
+  useMarkAsReadByIdMutation,
+  useDeleteNotificationMutation
+} from "../../Slices/Users/UserApis.js";
 import { useGetRecruiterNotificationQuery } from "../../Slices/Recruiter/RecruiterApis.js";
 
 import dayjs from "dayjs";
@@ -46,7 +52,10 @@ const EmployeeAdminNotifications = () => {
     refetch,
   } = useGetRecruiterNotificationQuery();
 
-  const [clearAll] = useClearAllNotificationMutation();
+  const [clearAllNotifications, { isLoading: clearingAll }] = useClearAllNotificationMutation();
+  const [markAllAsRead, { isLoading: markingAllRead }] = useMarkAllReadMutation();
+  const [markAsReadById, { isLoading: markingAsRead }] = useMarkAsReadByIdMutation();
+  const [deleteNotification, { isLoading: deleting }] = useDeleteNotificationMutation();
 
   useEffect(() => {
     if (apiData) {
@@ -59,24 +68,56 @@ const EmployeeAdminNotifications = () => {
     }
   }, [apiData, apiError]);
 
-  const handleMarkAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification._id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsReadById(id).unwrap();
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification._id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+      message.success("Notification marked as read");
+    } catch (error) {
+      message.error("Failed to mark notification as read");
+      console.error("Mark as read error:", error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead().unwrap();
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+      message.success("All notifications marked as read");
+    } catch (error) {
+      message.error("Failed to mark all notifications as read");
+      console.error("Mark all as read error:", error);
+    }
   };
 
-  const clearAllNotifications = async () => {
-    await clearAll();
+  const handleClearAllNotifications = async () => {
+    try {
+      await clearAllNotifications().unwrap();
+      setNotifications([]);
+      message.success("All notifications cleared");
+    } catch (error) {
+      message.error("Failed to clear notifications");
+      console.error("Clear all notifications error:", error);
+    }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      await deleteNotification(id).unwrap();
+      setNotifications((prev) => prev.filter((notification) => notification._id !== id));
+      message.success("Notification deleted");
+    } catch (error) {
+      message.error("Failed to delete notification");
+      console.error("Delete notification error:", error);
+    }
   };
 
   const getNotificationIcon = (type) => {
@@ -107,6 +148,40 @@ const EmployeeAdminNotifications = () => {
       default:
         return <Tag color="purple">Notification</Tag>;
     }
+  };
+
+  const getNotificationActions = (item) => {
+    const menuItems = [
+      {
+        key: 'markRead',
+        label: 'Mark as read',
+        icon: <CheckCircleOutlined />,
+        disabled: item.isRead,
+        onClick: () => handleMarkAsRead(item._id),
+      },
+      {
+        key: 'delete',
+        label: 'Delete',
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => handleDeleteNotification(item._id),
+      },
+    ];
+
+    return (
+      <Dropdown
+        menu={{ items: menuItems }}
+        trigger={['click']}
+        placement="bottomRight"
+      >
+        <Button
+          type="text"
+          icon={<MoreOutlined />}
+          size="small"
+          style={{ color: '#666' }}
+        />
+      </Dropdown>
+    );
   };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -209,27 +284,32 @@ const EmployeeAdminNotifications = () => {
                 {unreadCount} new
               </span>
             )}
-            {/* {unreadCount === 0 && (
-              <span style={{ marginLeft: "8px", color: "#52c41a" }}>
-                ✓ All caught up!
-              </span>
-            )} */}
           </Text>
           <Space>
             {unreadCount > 0 && (
-              <Button type="link" size="small" onClick={markAllAsRead}>
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={handleMarkAllAsRead}
+                loading={markingAllRead}
+              >
                 Mark all as read
               </Button>
             )}
             {notifications.length > 0 && (
               <Popconfirm
                 title="Are you sure you want to clear all notifications?"
-                onConfirm={clearAllNotifications}
+                onConfirm={handleClearAllNotifications}
                 okText="Yes"
                 cancelText="No"
                 placement="bottomRight"
               >
-                <Button type="link" size="small" danger>
+                <Button 
+                  type="link" 
+                  size="small" 
+                  danger
+                  loading={clearingAll}
+                >
                   Clear all
                 </Button>
               </Popconfirm>
@@ -249,6 +329,7 @@ const EmployeeAdminNotifications = () => {
                   borderRadius: "8px",
                   transition: "all 0.3s ease",
                 }}
+                actions={[getNotificationActions(item)]}
               >
                 <List.Item.Meta
                   avatar={
@@ -310,6 +391,7 @@ const EmployeeAdminNotifications = () => {
                           type="link"
                           size="small"
                           onClick={() => handleMarkAsRead(item._id)}
+                          loading={markingAsRead}
                           style={{ padding: 0 }}
                         >
                           Mark as read

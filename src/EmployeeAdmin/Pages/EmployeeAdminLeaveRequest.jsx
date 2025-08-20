@@ -26,6 +26,7 @@ const EmployeeAdminLeaveRequest = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeaveData] = useState([]);
   const [selectedEramId, setSelectedEramId] = useState(null);
+  const [selelctedMail, setSelectedMail] = useState(null);
   const [filters, setFilters] = useState({
     eramId: "",
     urgency: "",
@@ -56,6 +57,7 @@ const EmployeeAdminLeaveRequest = () => {
   const handleViewRequest = (record) => {
     setSelectedLeaveId(record._id);
     setSelectedEramId(record.eramId);
+    setSelectedMail(record.email);
     setModalVisible(true);
   };
 
@@ -63,6 +65,8 @@ const EmployeeAdminLeaveRequest = () => {
     setModalVisible(false);
     setSelectedLeaveId(null);
     setSelectedEramId(null);
+    setSelectedMail(null);
+
     // Refetch data when modal closes to get updated status
     refetch();
   };
@@ -287,7 +291,7 @@ const EmployeeAdminLeaveRequest = () => {
       <Row gutter={16} style={{ marginBottom: "16px" }}>
         <Col span={6}>
           <Input
-          allowClear
+            allowClear
             placeholder="Filter by ERAM ID"
             onChange={(e) => debouncedSearch(e.target.value)}
           />
@@ -347,6 +351,7 @@ const EmployeeAdminLeaveRequest = () => {
         onClose={handleCloseModal}
         leaveId={selectedLeaveId}
         eramId={selectedEramId}
+        email={selelctedMail}
       />
       <style jsx>{`
         .ant-table-thead > tr > th {

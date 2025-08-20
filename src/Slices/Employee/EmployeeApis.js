@@ -85,12 +85,13 @@ export const employeeApi = createApi({
       query: (id) => `/leaves/${id}`,
     }),
     updateLeaveStatus: builder.mutation({
-      query: ({ leaveId, status, comments }) => ({
+      query: ({ leaveId, status, comments, email }) => ({
         url: `/leave-status/${leaveId}`,
         method: "PATCH",
         body: {
           status,
           comments,
+          email,
         },
       }),
     }),
@@ -303,19 +304,20 @@ export const employeeApi = createApi({
       }),
     }),
     approveSelectedTicket: builder.mutation({
-      query: ({ id, status, ticketApprovalNote }) => ({
+      query: ({ id, status, ticketApprovalNote, email }) => ({
         url: `/ticket-status/${id}`,
         method: "PATCH",
-        body: { status, ticketApprovalNote },
+        body: { status, ticketApprovalNote, email },
       }),
     }),
     changeOtherRequestStatus: builder.mutation({
-      query: ({ id, status, comment }) => ({
+      query: ({ id, status, comment, email }) => ({
         url: `/request-status/${id}`,
         method: "PATCH",
         body: {
           status,
           approvalNote: comment,
+          email,
         },
       }),
     }),
@@ -454,6 +456,13 @@ export const employeeApi = createApi({
         body: payload,
       }),
     }),
+    singleNotifyExpiredDocument: builder.mutation({
+      query: (payload) => ({
+        url: "/expired-notify",
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -509,4 +518,5 @@ export const {
   useGetExpiredDocumentsQuery,
   useGetEmployeeAdminDashboardQuery,
   useBulkNotifyExpiredDocumentsMutation,
+  useSingleNotifyExpiredDocumentMutation,
 } = employeeApi;

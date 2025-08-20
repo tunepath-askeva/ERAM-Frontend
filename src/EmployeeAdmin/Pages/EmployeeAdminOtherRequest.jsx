@@ -19,7 +19,7 @@ import {
   InputNumber,
   Divider,
   Select,
-  Upload
+  Upload,
 } from "antd";
 import {
   EyeOutlined,
@@ -176,12 +176,15 @@ const EmployeeAdminOtherRequest = () => {
         return;
       }
 
+      const employeeEmail = requestDetails?.otherRequests?.employee?.email;
+
       if (actionTarget === "ticket") {
         // Use ticket approval API
         await approveSelectedTicket({
           id: selectedRequestId,
           status: actionType === "approve" ? "approved" : "rejected",
           ticketApprovalNote: comment,
+          email: employeeEmail,
         }).unwrap();
       } else {
         // Use overall request approval API
@@ -189,6 +192,7 @@ const EmployeeAdminOtherRequest = () => {
           id: selectedRequestId,
           status: actionType === "approve" ? "approved" : "rejected",
           comment,
+          email: employeeEmail,
         }).unwrap();
       }
 

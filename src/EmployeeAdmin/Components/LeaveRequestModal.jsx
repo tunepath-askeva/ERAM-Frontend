@@ -29,7 +29,7 @@ import {
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const LeaveRequestModal = ({ visible, onClose, leaveId, eramId }) => {
+const LeaveRequestModal = ({ visible, onClose, leaveId, eramId, email }) => {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
   const [comments, setComments] = useState("");
@@ -109,6 +109,7 @@ const LeaveRequestModal = ({ visible, onClose, leaveId, eramId }) => {
         leaveId,
         status: actionType === "approve" ? "approved" : "rejected",
         comments: comments.trim(),
+        email,
       }).unwrap();
 
       message.success(
@@ -231,7 +232,7 @@ const LeaveRequestModal = ({ visible, onClose, leaveId, eramId }) => {
         style={{ top: 20 }}
       >
         <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-          <Card >
+          <Card>
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <div

@@ -25,6 +25,7 @@ import {
 import {
   useGetExpiredDocumentsQuery,
   useBulkNotifyExpiredDocumentsMutation,
+  useSingleNotifyExpiredDocumentMutation,
 } from "../../Slices/Employee/EmployeeApis";
 
 const { TextArea } = Input;
@@ -36,6 +37,9 @@ const EmployeeAdminExpiredDocuments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [notificationData, setNotificationData] = useState({
     subject: "Document Expiry Notification",
@@ -60,6 +64,7 @@ const EmployeeAdminExpiredDocuments = () => {
   });
 
   const [bulkNotify] = useBulkNotifyExpiredDocumentsMutation();
+  const [singleNotify] = useSingleNotifyExpiredDocumentMutation();
 
   const processedData = useMemo(() => {
     if (!data?.expiredDocuments) return [];
@@ -220,15 +225,24 @@ const EmployeeAdminExpiredDocuments = () => {
       title: "Action",
       key: "action",
       render: (_, record) => (
-        <Button
-          type="link"
-          onClick={() => window.open(record.fileUrl, "_blank")}
-          style={{ color: "#da2c46", padding: 0 }}
-        >
-          View Document
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            onClick={() => window.open(record.fileUrl, "_blank")}
+            style={{ color: "#da2c46", padding: 0 }}
+          >
+            View Document
+          </Button>
+          <Button
+            type="link"
+            style={{ color: "#1677ff", padding: 0 }}
+            onClick={() => handleSingleNotify(record)}
+          >
+            Notify
+          </Button>
+        </Space>
       ),
-      width: 120,
+      width: 180,
     },
   ];
 
@@ -271,7 +285,7 @@ const EmployeeAdminExpiredDocuments = () => {
       };
 
       // Example API call
-       const response = await bulkNotify(payload);
+      const response = await bulkNotify(payload);
 
       console.log("Payload to send:", response);
 
@@ -297,6 +311,11 @@ const EmployeeAdminExpiredDocuments = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSingleNotify = (record) => {
+    setSelectedRecord(record);
+    setConfirmVisible(true);
   };
 
   const getSelectedEmployees = () => {
@@ -596,6 +615,87 @@ const EmployeeAdminExpiredDocuments = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <ExclamationCircleOutlined
+              style={{ marginRight: 8, color: "#da2c46" }}
+            />
+            Confirm Send Notification
+          </div>
+        }
+        open={confirmVisible}
+        onCancel={() => setConfirmVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setConfirmVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="send"
+            type="primary"
+            style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+            onClick={async () => {
+              if (!selectedRecord) return;
+              try {
+                const payload = {
+                  email: selectedRecord.user.email,
+                  workOrder: selectedRecord.workOrder?.title || "N/A",
+                  documentName: selectedRecord.documentName,
+                  expiryDate: selectedRecord.expiryDate,
+                  subject: "Document Expiry Notification",
+                  message: `Your document "${
+                    selectedRecord.documentName
+                  }" under work order "${
+                    selectedRecord.workOrder?.title
+                  }" has expired or will expire on ${new Date(
+                    selectedRecord.expiryDate
+                  ).toLocaleDateString("en-GB")}. 
+            Please renew it to avoid compliance issues.`,
+                };
+
+                await singleNotify(payload);
+
+                notification.success({
+                  message: "Notification Sent",
+                  description: `Notification sent to ${selectedRecord.user.fullName} (${selectedRecord.user.email})`,
+                  placement: "topRight",
+                });
+
+                setConfirmVisible(false);
+              } catch (error) {
+                notification.error({
+                  message: "Failed to Send Notification",
+                  description: "Please try again later.",
+                  placement: "topRight",
+                });
+              }
+            }}
+          >
+            Send
+          </Button>,
+        ]}
+      >
+        {selectedRecord && (
+          <div>
+            <p>
+              Are you sure you want to notify{" "}
+              <b>{selectedRecord.user.fullName}</b> ({selectedRecord.user.email}
+              )?
+            </p>
+            <p>
+              <b>Document:</b> {selectedRecord.documentName}
+            </p>
+            <p>
+              <b>Work Order:</b> {selectedRecord.workOrder?.title || "N/A"}
+            </p>
+            <p>
+              <b>Expiry Date:</b>{" "}
+              {new Date(selectedRecord.expiryDate).toLocaleDateString("en-GB")}
+            </p>
+          </div>
+        )}
       </Modal>
 
       <style jsx>{`

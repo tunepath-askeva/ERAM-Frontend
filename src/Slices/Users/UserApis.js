@@ -196,9 +196,28 @@ export const userApi = createApi({
     clearAllNotification: builder.mutation({
       query: () => ({
         url: `/clear-notification`,
-        method: "POST",
+        method: "DELETE",
       }),
-      invalidatesTags: ["Notifications"],
+    }),
+    markAllRead: builder.mutation({
+      query: () => ({
+        url: "/mark-read",
+        method: "PATCH",
+      }),
+    }),
+
+    markAsReadById: builder.mutation({
+      query: (id) => ({
+        url: `/mark-read/${id}`,
+        method: "PATCH",
+      }),
+    }),
+
+    deleteNotification: builder.mutation({
+      query: (id) => ({
+        url: `/del-notification/${id}`,
+        method: "DELETE",
+      }),
     }),
   }),
 });
@@ -228,4 +247,7 @@ export const {
   useSubmitWorkOrderDocumentsMutation,
   useGetCandidateDocumentsQuery,
   useClearAllNotificationMutation,
+  useDeleteNotificationMutation,
+  useMarkAllReadMutation,
+  useMarkAsReadByIdMutation,
 } = userApi;
