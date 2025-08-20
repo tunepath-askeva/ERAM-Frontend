@@ -116,7 +116,7 @@ const Login = () => {
           navigate("/candidate-jobs");
           break;
         case "employee":
-          navigate("/employee/dashboard");
+          navigate("/employee/company-news");
           break;
         case "recruiter":
           if (response.user.employeeAdmin === "Employee Admin") {

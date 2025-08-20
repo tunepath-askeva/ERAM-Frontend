@@ -22,7 +22,10 @@ import {
   WarningOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useGetExpiredDocumentsQuery } from "../../Slices/Employee/EmployeeApis";
+import {
+  useGetExpiredDocumentsQuery,
+  useBulkNotifyExpiredDocumentsMutation,
+} from "../../Slices/Employee/EmployeeApis";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -41,24 +44,23 @@ const EmployeeAdminExpiredDocuments = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // Reset to first page when searching
+      setCurrentPage(1);
     }, 2500);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // API call with search and pagination
   const { data, isLoading, isFetching } = useGetExpiredDocumentsQuery({
     search: debouncedSearch,
     page: currentPage,
     limit: pageSize,
   });
 
-  // Process the data to determine document status
+  const [bulkNotify] = useBulkNotifyExpiredDocumentsMutation();
+
   const processedData = useMemo(() => {
     if (!data?.expiredDocuments) return [];
 
@@ -92,25 +94,21 @@ const EmployeeAdminExpiredDocuments = () => {
     });
   }, [data]);
 
-  // Handle pagination changes
   const handleTableChange = (pagination) => {
     setCurrentPage(pagination.current);
     setPageSize(pagination.pageSize);
     setSelectedRowKeys([]); // Clear selection when page changes
   };
 
-  // Handle search input
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  // Clear search
   const handleSearchClear = () => {
     setSearchTerm("");
     setDebouncedSearch("");
   };
 
-  // Get counts for alerts
   const expiredCount = processedData.filter(
     (doc) => doc.documentStatus === "expired"
   ).length;
@@ -118,7 +116,6 @@ const EmployeeAdminExpiredDocuments = () => {
     (doc) => doc.documentStatus === "expiring"
   ).length;
 
-  // Total count from API response
   const totalDocuments =
     data?.pagination?.totalDocuments || data?.totalDocuments || 0;
 
@@ -260,20 +257,23 @@ const EmployeeAdminExpiredDocuments = () => {
 
     setLoading(true);
     try {
-      // Simulate API call - replace with your actual notification API
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const selectedUsers = processedData.filter((doc) =>
         selectedRowKeys.includes(doc._id)
       );
 
-      // Here you would make the actual API call to send notifications
-      // const response = await sendNotificationAPI({
-      //   userIds: selectedUsers.map(user => user.user._id),
-      //   subject: notificationData.subject,
-      //   message: notificationData.description,
-      //   documentIds: selectedRowKeys
-      // });
+      const payload = {
+        emails: selectedUsers.map((u) => u.user.email),
+        subject: notificationData.subject,
+        message: notificationData.description,
+        documentIds: selectedRowKeys,
+      };
+
+      // Example API call
+       const response = await bulkNotify(payload);
+
+      console.log("Payload to send:", payload);
 
       notification.success({
         message: "Notifications Sent Successfully",
