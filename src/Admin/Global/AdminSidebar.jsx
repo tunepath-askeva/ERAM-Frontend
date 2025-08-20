@@ -11,7 +11,8 @@ import {
   UsergroupAddOutlined,
   BorderOuterOutlined,
   DiffOutlined,
-  SendOutlined
+  SendOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -106,6 +107,11 @@ const AdminSidebar = ({
       key: "/admin/branches",
       icon: <AppstoreOutlined />,
       label: "Branch",
+    },
+    {
+      key: "/admin/notifications",
+      icon: <BellOutlined />,
+      label: "Notifications",
     },
   ];
 

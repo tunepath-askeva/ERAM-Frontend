@@ -157,6 +157,12 @@ export const superAdminApi = createApi({
         body: clientData,
       }),
     }),
+    getNotification: builder.query({
+      query: () => ({
+        url: "/notify",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -189,4 +195,8 @@ export const {
 
   //whatsapp
   useSubmitWhatsappApiMutation,
+
+  //Notify
+
+  useGetNotificationQuery,
 } = superAdminApi;

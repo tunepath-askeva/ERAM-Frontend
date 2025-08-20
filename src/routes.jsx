@@ -88,6 +88,10 @@ import EmployeeDocuments from "./Employee/Pages/EmployeeDocuments";
 import EmployeeAdminDocuments from "./EmployeeAdmin/Pages/EmployeeAdminDocuments";
 import EmployeeDocumentDetail from "./EmployeeAdmin/Components/EmployeeDocumentDetails";
 import EmployeeAdminExpiredDocuments from "./EmployeeAdmin/Pages/EmployeeAdminExpiredDocuments";
+import AdminNotifications from "./Admin/Pages/AdminNotifications";
+import SuperAdminNotifications from "./SuperAdmin/Pages/SuperAdminNotifications";
+import EmployeeAdminNotifications from "./EmployeeAdmin/Pages/EmployeeAdminNotifications";
+import RecruiterNotifications from "./Recruiters/Pages/RecruiterNotifications";
 
 const AppRoutes = () => {
   return (
@@ -114,6 +118,12 @@ const AppRoutes = () => {
         <Route
           path="/superadmin/branches"
           element={<ProtectedSuperAdmin element={<BranchManagement />} />}
+        />
+        <Route
+          path="/superadmin/notifications"
+          element={
+            <ProtectedSuperAdmin element={<SuperAdminNotifications />} />
+          }
         />
         <Route
           path="/superadmin/add"
@@ -155,6 +165,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/requisitions"
           element={<ProtectedAdmin element={<AdminRequisition />} />}
+        />
+        <Route
+          path="/admin/notifications"
+          element={<ProtectedAdmin element={<AdminNotifications />} />}
         />
 
         <Route
@@ -239,6 +253,10 @@ const AppRoutes = () => {
           element={<ProtectedRecruiter element={<RecruiterDashboard />} />}
         />
         <Route
+          path="/recruiter/notifications"
+          element={<ProtectedRecruiter element={<RecruiterNotifications />} />}
+        />
+        <Route
           path="/recruiter/jobs"
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
         />
@@ -306,7 +324,6 @@ const AppRoutes = () => {
       {/* Employee */}
 
       <Route element={<EmployeeLayout />}>
-      
         <Route
           path="/employee/raise-request"
           element={<ProtectedEmployee element={<EmployeeRaiseRequest />} />}
@@ -399,6 +416,12 @@ const AppRoutes = () => {
         <Route
           path="/employee-admin/news"
           element={<ProtectedEmployeeAdmin element={<EmployeeAdminNews />} />}
+        />
+        <Route
+          path="/employee-admin/notifications"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminNotifications />} />
+          }
         />
 
         <Route

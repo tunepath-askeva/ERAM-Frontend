@@ -6,7 +6,8 @@ import {
   AppstoreOutlined,
   SettingOutlined,
   LogoutOutlined,
-  SendOutlined 
+  SendOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -55,6 +56,11 @@ const SuperSidebar = ({
     },
     { key: "/superadmin/admins", icon: <UserOutlined />, label: "Admins" },
     // { key: "/superadmin/whatsapp", icon: <SendOutlined />, label: "Whatsapp API" },
+    {
+      key: "/superadmin/notifications",
+      icon: <BellOutlined />,
+      label: "Notifications",
+    },
     {
       key: "/superadmin/settings",
       icon: <SettingOutlined />,

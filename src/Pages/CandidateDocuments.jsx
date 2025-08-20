@@ -211,8 +211,8 @@ const CandidateDocuments = () => {
       <div style={{ padding: "24px", textAlign: "center" }}>
         <Result
           status="404"
-          title="No Employees Found"
-          subTitle="We couldn't find any employees matching your criteria."
+          title="No Documents Found"
+          subTitle="We couldn't find any documents from your profile."
           extra={
             <Button
               type="primary"

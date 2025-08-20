@@ -752,7 +752,7 @@ const EmployeeNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           >
             <Button
               type="text"
-              onClick={() => navigate("/notifications")}
+              onClick={() => navigate("/employee/notifications")}
               style={{
                 color: "#da2c46",
                 fontWeight: 500,

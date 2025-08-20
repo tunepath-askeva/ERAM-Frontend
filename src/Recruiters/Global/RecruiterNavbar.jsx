@@ -4,8 +4,23 @@ import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { userLogout } from "../../Slices/Users/UserSlice.js";
+import { useGetRecruiterNotificationQuery } from "../../Slices/Recruiter/RecruiterApis.js";
 
-import { Layout, Avatar, Dropdown, Menu, Button, Badge } from "antd";
+import {
+  Layout,
+  Avatar,
+  Dropdown,
+  Menu,
+  Button,
+  Badge,
+  Space,
+  Empty,
+  Popconfirm,
+  List,
+  Typography,
+  Tag,
+  notification,
+} from "antd";
 import {
   UserOutlined,
   LogoutOutlined,
@@ -14,10 +29,19 @@ import {
   DoubleRightOutlined,
   BellOutlined,
   MailOutlined,
+  InfoCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+import { socket } from "../../utils/socket.js";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 
 const { Header } = Layout;
+const { Text } = Typography;
 
 const BREAKPOINTS = {
   mobile: 768,
@@ -103,7 +127,6 @@ const UserEmail = styled.div`
   gap: 4px;
 `;
 
-
 const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -123,10 +146,50 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     roles: "",
   });
 
+  const { data: notifications, refetch: refetchNotifications } =
+    useGetRecruiterNotificationQuery();
+
   const [logout] = useLogoutSuperAdminMutation();
   const { enqueueSnackbar } = useSnackbar();
+
+  const [notificationList, setNotificationList] = useState([]);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const recruiterDataRaw =
+      localStorage.getItem("recruiterInfo") ||
+      localStorage.getItem("recruiter");
+
+    const recruiterData = recruiterDataRaw
+      ? JSON.parse(recruiterDataRaw)
+      : null;
+
+    if (!recruiterData?.email) return;
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+      socket.emit("join", recruiterData.email.toLowerCase());
+    });
+
+    socket.on("notification", (data) => {
+      notification.open({
+        message: data.title,
+        description: data.message,
+        placement: "topRight",
+        duration: 4,
+      });
+
+      setNotificationList((prevList) => [data, ...prevList]);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("notification");
+    };
+  }, []);
 
   useEffect(() => {
     const fetchRecruiterInfo = () => {
@@ -178,6 +241,85 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const combinedNotifications = [
+    ...(notifications?.notification || []),
+    ...notificationList,
+  ];
+
+  const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
+
+  const handleMarkAsRead = (id) => {
+    // Update local state
+    if (notifications?.notification?.some((n) => n._id === id)) {
+      // This is from API data
+      // In a real app, you would make an API call here to mark as read
+      refetchNotifications();
+    } else {
+      // This is from socket data
+      setNotificationList((prev) =>
+        prev.map((notification) =>
+          notification._id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+    }
+  };
+
+  const handleDeleteNotification = (id) => {
+    // Update local state
+    if (notifications?.notification?.some((n) => n._id === id)) {
+      // This is from API data
+      // In a real app, you would make an API call here to delete
+      refetchNotifications();
+    } else {
+      // This is from socket data
+      setNotificationList((prev) =>
+        prev.filter((notification) => notification._id !== id)
+      );
+    }
+  };
+
+  const markAllAsRead = () => {
+    // Mark all as read logic
+    // In a real app, you would make an API call here
+    refetchNotifications();
+    setNotificationList((prev) =>
+      prev.map((notification) => ({ ...notification, isRead: true }))
+    );
+  };
+
+  const clearAllNotifications = () => {
+    // Clear all notifications logic
+    // In a real app, you would make an API call here
+    setNotificationList([]);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "info":
+        return <InfoCircleOutlined style={{ color: "#1890ff" }} />;
+      case "success":
+        return <CheckCircleOutlined style={{ color: "#52c41a" }} />;
+      case "warning":
+        return <ExclamationCircleOutlined style={{ color: "#faad14" }} />;
+      case "error":
+        return <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />;
+      default:
+        return <BellOutlined style={{ color: "#722ed1" }} />;
+    }
+  };
+
+  const handleNotificationClick = (item) => {
+    if (!item.isRead) {
+      handleMarkAsRead(item._id || item.id);
+    }
+
+    if (item.link) {
+      navigate(item.link);
+    }
+  };
 
   const getNavbarHeight = () => {
     if (screenSize.isMobile) return 56;
@@ -277,6 +419,307 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     return recruiterInfo.name.charAt(0).toUpperCase();
   };
 
+  const notificationMenu = (
+    <div
+      style={{
+        width: screenSize.isMobile ? "calc(100vw - 24px)" : "min(400px, 90vw)",
+        maxHeight: screenSize.isMobile ? "calc(100vh - 120px)" : "500px",
+        overflowY: "auto",
+        padding: "0",
+        borderRadius: "8px",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)",
+        backgroundColor: "#ffffff",
+        position: screenSize.isMobile ? "fixed" : "relative",
+        left: screenSize.isMobile ? "12px" : "auto",
+        top: screenSize.isMobile ? "12px" : "auto",
+      }}
+    >
+      {combinedNotifications.length === 0 ? (
+        <div
+          style={{
+            padding: screenSize.isMobile ? "16px 12px" : "24px 16px",
+            textAlign: "center",
+          }}
+        >
+          <Empty
+            description={
+              <span
+                style={{
+                  color: "#666",
+                  fontSize: screenSize.isMobile ? "13px" : "14px",
+                  lineHeight: "1.4",
+                }}
+              >
+                No notifications available
+              </span>
+            }
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            imageStyle={{
+              height: screenSize.isMobile ? 45 : 60,
+              marginBottom: screenSize.isMobile ? "8px" : "12px",
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              padding: screenSize.isMobile ? "12px" : "16px",
+              borderBottom: "1px solid #f0f0f0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              position: screenSize.isMobile ? "sticky" : "static",
+              top: 0,
+              background: "#fff",
+              zIndex: 1,
+            }}
+          >
+            <Text
+              strong
+              style={{
+                fontSize: screenSize.isMobile ? "15px" : "16px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: screenSize.isMobile ? "60%" : "none",
+              }}
+            >
+              <BellOutlined
+                style={{
+                  marginRight: screenSize.isMobile ? 6 : 8,
+                  color: "#da2c46",
+                  fontSize: screenSize.isMobile ? "14px" : "16px",
+                }}
+              />
+              Notifications
+            </Text>
+            <Space size={screenSize.isMobile ? 4 : 8}>
+              {unreadNotifications.length > 0 && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={markAllAsRead}
+                  style={{
+                    fontSize: screenSize.isMobile ? "12px" : "13px",
+                    padding: screenSize.isMobile ? "0 4px" : "0 8px",
+                    height: "auto",
+                  }}
+                >
+                  Mark all
+                </Button>
+              )}
+              <Popconfirm
+                title="Clear all notifications?"
+                onConfirm={clearAllNotifications}
+                okText="Yes"
+                cancelText="No"
+                placement="bottomRight"
+                overlayStyle={{
+                  width: screenSize.isMobile ? "80vw" : "auto",
+                }}
+              >
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  style={{
+                    fontSize: screenSize.isMobile ? "12px" : "13px",
+                    padding: screenSize.isMobile ? "0 4px" : "0 8px",
+                    height: "auto",
+                  }}
+                >
+                  Clear all
+                </Button>
+              </Popconfirm>
+            </Space>
+          </div>
+          <List
+            dataSource={combinedNotifications}
+            renderItem={(item) => (
+              <List.Item
+                key={item._id || item.id}
+                onClick={() => handleNotificationClick(item)}
+                style={{
+                  cursor: "pointer",
+                  padding: screenSize.isMobile ? "10px 12px" : "12px 16px",
+                  borderBottom: "1px solid #f5f5f5",
+                  transition: "all 0.2s",
+                  backgroundColor: !item.isRead ? "#f6f9ff" : "transparent",
+                  ":hover": {
+                    backgroundColor: "#f9f9f9",
+                  },
+                }}
+              >
+                <div style={{ width: "100%" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: screenSize.isMobile ? "4px" : "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: screenSize.isMobile ? "4px" : "8px",
+                        flexWrap: "wrap",
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <Avatar
+                        icon={getNotificationIcon(item.type)}
+                        style={{
+                          backgroundColor: "transparent",
+                          fontSize: screenSize.isMobile ? "16px" : "20px",
+                          marginRight: screenSize.isMobile ? "4px" : "8px",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Text
+                        strong
+                        style={{
+                          fontSize: screenSize.isMobile ? "13px" : "14px",
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {item.title}
+                      </Text>
+                      {item.type && (
+                        <Tag
+                          color={
+                            item.type === "info"
+                              ? "blue"
+                              : item.type === "success"
+                              ? "green"
+                              : item.type === "warning"
+                              ? "orange"
+                              : item.type === "error"
+                              ? "red"
+                              : "purple"
+                          }
+                          style={{
+                            margin: 0,
+                            fontSize: screenSize.isMobile ? "10px" : "12px",
+                            padding: screenSize.isMobile ? "0 4px" : "0 6px",
+                            lineHeight: "18px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {item.type.charAt(0).toUpperCase() +
+                            item.type.slice(1)}
+                        </Tag>
+                      )}
+                    </div>
+                    {!item.isRead && (
+                      <span
+                        style={{
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "50%",
+                          backgroundColor: "#1890ff",
+                          flexShrink: 0,
+                          marginTop: screenSize.isMobile ? "4px" : "6px",
+                          marginLeft: "4px",
+                        }}
+                      />
+                    )}
+                  </div>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: screenSize.isMobile ? "12px" : "13px",
+                      display: "block",
+                      lineHeight: "1.4",
+                      marginBottom: screenSize.isMobile ? "4px" : "8px",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {item.message}
+                  </Text>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    {item.createdAt && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: screenSize.isMobile ? "10px" : "11px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <ClockCircleOutlined
+                          style={{
+                            fontSize: screenSize.isMobile ? "10px" : "11px",
+                          }}
+                        />
+                        {dayjs(item.createdAt || item.timestamp).fromNow()}
+                      </Text>
+                    )}
+                    {!item.isRead && (
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAsRead(item._id || item.id);
+                        }}
+                        style={{
+                          padding: 0,
+                          fontSize: screenSize.isMobile ? "10px" : "11px",
+                          height: "auto",
+                        }}
+                      >
+                        Mark read
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </List.Item>
+            )}
+          />
+          <div
+            style={{
+              padding: screenSize.isMobile ? "10px 12px" : "12px 16px",
+              borderTop: "1px solid #f0f0f0",
+              textAlign: "center",
+              position: screenSize.isMobile ? "sticky" : "static",
+              bottom: 0,
+              background: "#fff",
+              zIndex: 1,
+            }}
+          >
+            <Button
+              type="text"
+              onClick={() => navigate("/recruiter/notifications")}
+              style={{
+                color: "#da2c46",
+                fontWeight: 500,
+                fontSize: screenSize.isMobile ? "13px" : "14px",
+                padding: screenSize.isMobile ? "0 8px" : "0 12px",
+                width: "100%",
+              }}
+            >
+              View All Notifications
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   const userMenuItems = [
     {
       key: "user-info",
@@ -360,23 +803,30 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           gap: screenSize.isMobile ? "8px" : "12px",
         }}
       >
-        <Badge count={5} size="small">
-          <NavButton
-            type="text"
-            icon={
-              <BellOutlined
-                style={{
-                  color: "#2a4365",
-                  fontSize: getIconSize(),
-                }}
-              />
-            }
-            style={{
-              width: getButtonSize(),
-              height: getButtonSize(),
-            }}
-          />
-        </Badge>
+        <Dropdown
+          overlay={notificationMenu}
+          trigger={["click"]}
+          onOpenChange={(open) => setNotificationVisible(open)}
+          placement="bottomRight"
+        >
+          <Badge count={unreadNotifications.length} size="small">
+            <NavButton
+              type="text"
+              icon={
+                <BellOutlined
+                  style={{
+                    color: "#2a4365",
+                    fontSize: getIconSize(),
+                  }}
+                />
+              }
+              style={{
+                width: getButtonSize(),
+                height: getButtonSize(),
+              }}
+            />
+          </Badge>
+        </Dropdown>
 
         <Dropdown
           menu={{

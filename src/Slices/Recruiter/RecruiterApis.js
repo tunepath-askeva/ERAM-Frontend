@@ -453,6 +453,12 @@ export const recruiterApi = createApi({
         };
       },
     }),
+    getRecruiterNotification: builder.query({
+      query: () => ({
+        url: "/notify",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -500,4 +506,5 @@ export const {
   useConvertEmployeeMutation,
   useGetBranchEmployessQuery,
   useGetPipelineCompletedCandidateByIdQuery,
+  useGetRecruiterNotificationQuery,
 } = recruiterApi;

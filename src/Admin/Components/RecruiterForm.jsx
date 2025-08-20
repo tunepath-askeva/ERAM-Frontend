@@ -169,7 +169,9 @@ const RecruiterForm = ({
         specialization: values.specialization,
         experience: values.experience,
         recruiterType: values.recruiterType, // This will now be a string
-        permissions: values.permissions || [],
+        permissions: Array.from(
+          new Set([...(values.permissions || []), "notifications"])
+        ),
         role: "recruiter",
       };
 

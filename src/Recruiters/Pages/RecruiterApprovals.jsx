@@ -115,10 +115,18 @@ const RecruiterApprovals = () => {
         const isSeparateApproval = stage.separateApprovalId && !stage.levelInfo;
         if (isSeparateApproval) return;
 
-        if (!stage.uploadedDocuments || stage.uploadedDocuments.length === 0)
-          return;
+        const candidates = stage.uploadedDocuments?.length
+          ? stage.uploadedDocuments
+          : [
+              {
+                candidateId: "N/A",
+                candidateName: "No Candidate",
+                candidateEmail: "N/A",
+                documents: [],
+              },
+            ];
 
-        stage.uploadedDocuments.forEach((candidate) => {
+        candidates.forEach((candidate) => {
           tableData.push({
             key: `${workOrder._id}-${stage._id}-${candidate.candidateId}`,
             workOrderId: workOrder._id,
@@ -180,7 +188,18 @@ const RecruiterApprovals = () => {
 
         const recruiters = recruiterIds || (recruiterId ? [recruiterId] : []);
 
-        uploadedDocuments.forEach((candidateDoc) => {
+        const candidates = uploadedDocuments?.length
+          ? uploadedDocuments
+          : [
+              {
+                candidateId: "N/A",
+                candidateName: "No Candidate",
+                candidateEmail: "N/A",
+                documents: [],
+              },
+            ];
+
+        candidates.forEach((candidateDoc) => {
           const {
             candidateId,
             candidateName,
@@ -206,7 +225,7 @@ const RecruiterApprovals = () => {
             documents,
             documentsCount: documents.length,
             uploadedAt: documents?.[0]?.uploadedAt,
-            status: status,
+            status,
             levelStatus: levelInfo?.levelStatus,
             levelName: levelInfo?.levelName,
             levelId: levelInfo?.levelId,

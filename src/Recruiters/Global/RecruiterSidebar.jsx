@@ -11,6 +11,7 @@ import {
   UsergroupAddOutlined,
   CheckOutlined,
   DiffOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -121,7 +122,12 @@ const RecruiterSidebar = ({
       label: "Employees",
       permission: "employees",
     },
-    
+    {
+      key: "/recruiter/notifications",
+      icon: <BellOutlined />,
+      label: "Notifications",
+      permission: "notifications",
+    },
   ];
 
   useEffect(() => {
