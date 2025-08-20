@@ -273,7 +273,7 @@ const EmployeeAdminExpiredDocuments = () => {
       // Example API call
        const response = await bulkNotify(payload);
 
-      console.log("Payload to send:", payload);
+      console.log("Payload to send:", response);
 
       notification.success({
         message: "Notifications Sent Successfully",
