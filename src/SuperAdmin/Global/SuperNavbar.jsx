@@ -152,12 +152,14 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     roles: "",
   });
 
+  const [page, setPage] = useState(1);
+
   const [notificationList, setNotificationList] = useState([]);
   const [notificationVisible, setNotificationVisible] = useState(false);
 
   const [logoutSuperAdmin] = useLogoutSuperAdminMutation();
   const { data: notifications, refetch: refetchNotifications } =
-    useGetNotificationQuery();
+    useGetNotificationQuery({ page, limit: 10 });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -167,7 +169,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     useMarkAsReadByIdMutation();
   const [deleteNotification, { isLoading: deleting }] =
     useDeleteNotificationMutation();
-  const { enqueueSnackbar } = useSnackbar(); // Add this hook
+  const { enqueueSnackbar } = useSnackbar(); 
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -257,7 +259,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   }, []);
 
   const combinedNotifications = [
-    ...(notifications?.notification || []),
+    ...(notifications?.notifications || []), // ✅ plural
     ...notificationList,
   ];
 
@@ -268,7 +270,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -292,7 +294,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const handleDeleteNotification = (id) => {
     // Update local state
-    if (notifications?.notification?.some((n) => n._id === id)) {
+    if (notifications?.notifications?.some((n) => n._id === id)) {
       // This is from API data
       // In a real app, you would make an API call here to delete
       refetchNotifications();
@@ -583,7 +585,7 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               )}
               <Popconfirm
                 title="Clear all notifications?"
-                  onConfirm={clearAllNotification}
+                onConfirm={clearAllNotification}
                 okText="Yes"
                 cancelText="No"
                 placement="bottomRight"
