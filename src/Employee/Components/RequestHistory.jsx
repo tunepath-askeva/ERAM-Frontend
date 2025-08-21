@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Tag,
@@ -8,19 +8,18 @@ import {
   DatePicker,
   Space,
   Empty,
-  Popconfirm,
   Tooltip,
   Typography,
-  message,
   Badge,
   Spin,
+  Input,
+  Row,
+  Col,
 } from "antd";
 import {
   EyeOutlined,
-  DeleteOutlined,
   SearchOutlined,
   ReloadOutlined,
-  DownloadOutlined,
   HistoryOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
@@ -30,28 +29,72 @@ import RequestDetailsDrawer from "./RequestDetailsDrawer";
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 const { Option } = Select;
+const { Search } = Input;
 
 const RequestHistory = ({
   mobileView,
   requests = [],
   isLoading = false,
   onRefresh,
-  onTicketSubmit 
+  onTicketSubmit,
+  pagination,
+  onFiltersChange
 }) => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [searchText, setSearchText] = useState("");
+  const [dateRange, setDateRange] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [viewRequestDrawer, setViewRequestDrawer] = useState(false);
 
-  const normalizedRequests = requests?.map((request) => ({
-    id: request._id,
-    requestType: request.requestType,
-    description: request.description,
-    status: request.status.charAt(0).toUpperCase() + request.status.slice(1),
-    documents: request.uploadedDocuments || [],
-    createdAt: request.createdAt || new Date().toISOString(),
-    fullData: request,
-  }));
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleFiltersChange();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchText, filterStatus, filterType, dateRange]);
+
+  const handleFiltersChange = () => {
+    const filters = {
+      page: 1, // Reset to first page when filters change
+      pageSize: pagination?.pageSize || 10,
+      status: filterStatus,
+      requestType: filterType,
+      search: searchText,
+      startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
+      endDate: dateRange?.[1]?.format('YYYY-MM-DD'),
+    };
+
+    onFiltersChange?.(filters);
+  };
+
+  const handleTableChange = (paginationConfig) => {
+    const newFilters = {
+      page: paginationConfig.current,
+      pageSize: paginationConfig.pageSize,
+      status: filterStatus,
+      requestType: filterType,
+      search: searchText,
+      startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
+      endDate: dateRange?.[1]?.format('YYYY-MM-DD'),
+    };
+
+    onFiltersChange?.(newFilters);
+  };
+
+  const handleRefresh = () => {
+    handleFiltersChange();
+  };
+
+  const handleReset = () => {
+    setFilterStatus("all");
+    setFilterType("all");
+    setSearchText("");
+    setDateRange(null);
+    // Reset will trigger the useEffect which will call handleFiltersChange
+  };
 
   const requestTypes = [
     { value: "travel", label: "Travel Request", color: "blue" },
@@ -62,19 +105,6 @@ const RequestHistory = ({
     { value: "other", label: "Other Request", color: "volcano" },
   ];
 
-  const getFilteredRequests = () => {
-    return (
-      normalizedRequests?.filter((req) => {
-        const statusMatch =
-          filterStatus === "all" || req.status.toLowerCase() === filterStatus;
-        const typeMatch =
-          filterType === "all" ||
-          req.requestType.toLowerCase().includes(filterType);
-        return statusMatch && typeMatch;
-      }) || []
-    );
-  };
-
   const getRequestTypeTag = (type) => {
     const requestType = requestTypes.find((t) =>
       type.toLowerCase().includes(t.value)
@@ -84,13 +114,6 @@ const RequestHistory = ({
         {type.length > 20 ? `${type.substring(0, 20)}...` : type}
       </Tag>
     );
-  };
-
-  const handleRefresh = async () => {
-    if (onRefresh) {
-      await onRefresh();
-      message.success("Request history refreshed!");
-    }
   };
 
   const columns = [
@@ -114,9 +137,9 @@ const RequestHistory = ({
     },
     {
       title: "Documents",
-      dataIndex: "documents",
+      dataIndex: "uploadedDocuments",
       key: "documents",
-      render: (documents) => (
+      render: (documents = []) => (
         <Space>
           <Badge count={documents.length} size="small">
             <FileTextOutlined style={{ fontSize: 16 }} />
@@ -136,21 +159,20 @@ const RequestHistory = ({
       render: (status) => (
         <Tag
           color={
-            status === "Approved"
+            status === "approved"
               ? "green"
-              : status === "Rejected"
+              : status === "rejected"
               ? "red"
-              : status === "Pending"
+              : status === "pending"
               ? "orange"
-              : status === "Cancelled"
+              : status === "cancelled"
               ? "red"
               : "blue"
           }
         >
-          {status}
+          {status.charAt(0).toUpperCase() + status.slice(1)}
         </Tag>
       ),
-      
     },
     {
       title: "Submitted",
@@ -174,7 +196,7 @@ const RequestHistory = ({
             type="link"
             icon={<EyeOutlined />}
             onClick={() => {
-              setSelectedRequest(record.fullData || record);
+              setSelectedRequest(record);
               setViewRequestDrawer(true);
             }}
           >
@@ -185,15 +207,13 @@ const RequestHistory = ({
     },
   ];
 
-  const filteredData = getFilteredRequests();
-
   return (
     <div className="request-history-container">
       <Card
         title={
           <span>
             <HistoryOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Request History ({filteredData.length} requests)
+            Request History ({pagination?.total || 0} requests)
           </span>
         }
         style={{ borderRadius: "12px" }}
@@ -201,36 +221,12 @@ const RequestHistory = ({
         extra={
           !mobileView && (
             <Space>
-              <Select
-                placeholder="Filter by Status"
-                value={filterStatus}
-                onChange={setFilterStatus}
-                style={{ width: 150 }}
-                allowClear
+              <Button
+                onClick={handleReset}
+                disabled={isLoading}
               >
-                <Option value="all">All Status</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="approved">Approved</Option>
-                <Option value="rejected">Rejected</Option>
-                <Option value="cancelled">Cancelled</Option>
-              </Select>
-              <Select
-                placeholder="Filter by Type"
-                value={filterType}
-                onChange={setFilterType}
-                style={{ width: 180 }}
-                allowClear
-              >
-                <Option value="all">All Types</Option>
-                <Option value="travel">Travel Request</Option>
-                <Option value="exit">Exit Reentry</Option>
-                <Option value="vehicle">Vehicle Related</Option>
-                <Option value="payslip">Payslip Request</Option>
-                <Option value="general">General Request</Option>
-                <Option value="other">Other Request</Option>
-              </Select>
-              <RangePicker />
-              <Button icon={<SearchOutlined />}>Search</Button>
+                Reset Filters
+              </Button>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={handleRefresh}
@@ -242,57 +238,82 @@ const RequestHistory = ({
           )
         }
       >
-        {/* Mobile Filters */}
-        {mobileView && (
-          <div style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Row gutter={8}>
-                <Col span={12}>
-                  <Select
-                    placeholder="Filter by Status"
-                    value={filterStatus}
-                    onChange={setFilterStatus}
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
-                    <Option value="all">All Status</Option>
-                    <Option value="pending">Pending</Option>
-                    <Option value="approved">Approved</Option>
-                    <Option value="rejected">Rejected</Option>
-                    <Option value="cancelled">Cancelled</Option>
-                  </Select>
+        {/* Filters */}
+        <div style={{ marginBottom: 16 }}>
+          <Space direction={mobileView ? "vertical" : "horizontal"} style={{ width: "100%" }}>
+            <Row gutter={[8, 8]} style={{ width: "100%" }}>
+              <Col xs={24} sm={24} md={6}>
+                <Search
+                  placeholder="Search requests..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  style={{ width: "100%" }}
+                  allowClear
+                />
+              </Col>
+              <Col xs={12} sm={8} md={4}>
+                <Select
+                  placeholder="Status"
+                  value={filterStatus}
+                  onChange={setFilterStatus}
+                  style={{ width: "100%" }}
+                  allowClear
+                >
+                  <Option value="all">All Status</Option>
+                  <Option value="pending">Pending</Option>
+                  <Option value="approved">Approved</Option>
+                  <Option value="rejected">Rejected</Option>
+                  <Option value="cancelled">Cancelled</Option>
+                </Select>
+              </Col>
+              <Col xs={12} sm={8} md={4}>
+                <Select
+                  placeholder="Type"
+                  value={filterType}
+                  onChange={setFilterType}
+                  style={{ width: "100%" }}
+                  allowClear
+                >
+                  <Option value="all">All Types</Option>
+                  <Option value="travel">Travel Request</Option>
+                  <Option value="exit">Exit Reentry</Option>
+                  <Option value="vehicle">Vehicle Related</Option>
+                  <Option value="payslip">Payslip Request</Option>
+                  <Option value="general">General Request</Option>
+                  <Option value="other">Other Request</Option>
+                </Select>
+              </Col>
+              <Col xs={24} sm={8} md={6}>
+                <RangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
+                  style={{ width: "100%" }}
+                  format="DD MMM YYYY"
+                  allowClear
+                />
+              </Col>
+              {mobileView && (
+                <Col xs={24}>
+                  <Space style={{ width: "100%" }}>
+                    <Button onClick={handleReset} block>
+                      Reset
+                    </Button>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={handleRefresh}
+                      loading={isLoading}
+                      block
+                    >
+                      Refresh
+                    </Button>
+                  </Space>
                 </Col>
-                <Col span={12}>
-                  <Select
-                    placeholder="Filter by Type"
-                    value={filterType}
-                    onChange={setFilterType}
-                    style={{ width: "100%" }}
-                    allowClear
-                  >
-                    <Option value="all">All Types</Option>
-                    <Option value="travel">Travel Request</Option>
-                    <Option value="exit">Exit Reentry</Option>
-                    <Option value="vehicle">Vehicle Related</Option>
-                    <Option value="payslip">Payslip Request</Option>
-                    <Option value="general">General Request</Option>
-                    <Option value="other">Other Request</Option>
-                  </Select>
-                </Col>
-              </Row>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={isLoading}
-                block
-              >
-                Refresh History
-              </Button>
-            </Space>
-          </div>
-        )}
+              )}
+            </Row>
+          </Space>
+        </div>
 
-        {filteredData.length === 0 && !isLoading ? (
+        {requests.length === 0 && !isLoading ? (
           <Empty
             description="No requests found"
             style={{ padding: "40px 0" }}
@@ -300,20 +321,24 @@ const RequestHistory = ({
         ) : (
           <Spin spinning={isLoading}>
             <Table
-              dataSource={filteredData}
+              dataSource={requests}
               columns={columns}
-              rowKey="id"
+              rowKey="_id"
               pagination={{
-                pageSize: 10,
+                current: pagination?.page || 1,
+                pageSize: pagination?.pageSize || 10,
+                total: pagination?.total || 0,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} of ${total} requests`,
+                pageSizeOptions: ['5', '10', '20', '50'],
               }}
+              onChange={handleTableChange}
               scroll={{ x: true }}
               size={mobileView ? "small" : "middle"}
               rowClassName={(record) =>
-                record.status === "Pending" ? "pending-row" : ""
+                record.status === "pending" ? "pending-row" : ""
               }
             />
           </Spin>
@@ -325,10 +350,8 @@ const RequestHistory = ({
         onClose={() => setViewRequestDrawer(false)}
         request={selectedRequest}
         mobileView={mobileView}
-         onTicketSubmit={onTicketSubmit}
+        onTicketSubmit={onTicketSubmit}
       />
-
-     
     </div>
   );
 };

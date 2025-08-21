@@ -38,13 +38,22 @@ const { Title, Text } = Typography;
 const EmployeeRaiseRequest = () => {
   const [activeTab, setActiveTab] = useState("submit");
   const [mobileView, setMobileView] = useState(false);
+  const [requestFilters, setRequestFilters] = useState({
+    page: 1,
+    pageSize: 10,
+    status: "all",
+    requestType: "all",
+    search: "",
+    startDate: null,
+    endDate: null,
+  });
 
   const { data } = useGetEmployeeProfileQuery();
   const {
     data: requestHistoryData,
     refetch: refetchRequestHistory,
     isLoading: isLoadingHistory,
-  } = useGetRequestHistoryQuery();
+  } = useGetRequestHistoryQuery(requestFilters);
 
   const [submitSelectedTickets, { isLoading: isSubmittingTickets }] =
     useSubmitSelectedTicketsMutation();
@@ -74,7 +83,17 @@ const EmployeeRaiseRequest = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handleFiltersChange = (newFilters) => {
+    setRequestFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
   const getRequestStats = () => {
+    const stats = requestHistoryData?.stats;
+    if (stats) {
+      return stats; // Use server-side calculated stats
+    }
+
+    // Fallback to client-side calculation if stats not provided
     const requestList = requestHistoryData?.requests || [];
     if (!requestList.length)
       return {
@@ -111,24 +130,25 @@ const EmployeeRaiseRequest = () => {
     setActiveTab("history");
   };
 
- const handleTicketSubmit = async (requestId, ticketId) => {
-  try {
-    const result = await submitSelectedTickets({
-      requestId,
-      ticketId, 
-    }).unwrap();
+  const handleTicketSubmit = async (requestId, ticketId) => {
+    try {
+      const result = await submitSelectedTickets({
+        requestId,
+        ticketId,
+      }).unwrap();
 
-    message.success(result.message || "Ticket submitted successfully!");
-    await refetchRequestHistory();
-    return result;
-  } catch (error) {
-    const errorMessage = error?.data?.message || 
-                        error?.message || 
-                        "Failed to submit ticket. Please try again.";
-    message.error(errorMessage);
-    throw error;
-  }
-};
+      message.success(result.message || "Ticket submitted successfully!");
+      await refetchRequestHistory();
+      return result;
+    } catch (error) {
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to submit ticket. Please try again.";
+      message.error(errorMessage);
+      throw error;
+    }
+  };
 
   return (
     <div style={{ padding: mobileView ? 16 : 24 }}>
@@ -172,7 +192,7 @@ const EmployeeRaiseRequest = () => {
           <Card hoverable size="small">
             <Statistic
               title="Pending"
-              value={stats.pending}
+              value={stats.pending || 0}
               prefix={<HourglassOutlined style={{ color: "#faad14" }} />}
               valueStyle={{ color: "#faad14" }}
             />
@@ -182,7 +202,7 @@ const EmployeeRaiseRequest = () => {
           <Card hoverable size="small">
             <Statistic
               title="Approved"
-              value={stats.approved}
+              value={stats.approved || 0}
               prefix={<CheckCircleOutlined style={{ color: "#52c41a" }} />}
               valueStyle={{ color: "#52c41a" }}
             />
@@ -192,7 +212,7 @@ const EmployeeRaiseRequest = () => {
           <Card hoverable size="small">
             <Statistic
               title="Rejected"
-              value={stats.rejected}
+              value={stats.rejected || 0}
               prefix={<CloseCircleOutlined style={{ color: "#ff4d4f" }} />}
               valueStyle={{ color: "#ff4d4f" }}
             />
@@ -202,7 +222,7 @@ const EmployeeRaiseRequest = () => {
           <Card hoverable size="small">
             <Statistic
               title="This Year"
-              value={stats.totalRequests}
+              value={stats.totalRequests || 0}
               prefix={<FileTextOutlined style={{ color: "#722ed1" }} />}
               valueStyle={{ color: "#722ed1" }}
             />
@@ -237,7 +257,7 @@ const EmployeeRaiseRequest = () => {
                 <HistoryOutlined />
                 {!mobileView && " Request History"}
                 <Badge
-                  count={stats.pending}
+                  count={stats.pending || 0}
                   size="small"
                   style={{ marginLeft: 8 }}
                 />
@@ -247,9 +267,11 @@ const EmployeeRaiseRequest = () => {
               <RequestHistory
                 mobileView={mobileView}
                 requests={requestHistoryData?.requests || []}
+                pagination={requestHistoryData?.pagination}
                 isLoading={isLoadingHistory}
                 onRefresh={refetchRequestHistory}
                 onTicketSubmit={handleTicketSubmit}
+                onFiltersChange={handleFiltersChange}
               />
             ),
           },

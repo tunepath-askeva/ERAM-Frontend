@@ -34,10 +34,14 @@ const { Title, Text } = Typography;
 const EmployeeLeaveRequest = () => {
   const [activeTab, setActiveTab] = useState("apply");
   const [mobileView, setMobileView] = useState(false);
-  const [leaveRequests, setLeaveRequests] = useState([]);
 
   const { data } = useGetEmployeeProfileQuery();
-  const { data: leaveHistoryData } = useGetEmployeeLeaveHistoryQuery();
+
+  // Get basic stats without filters for the overview cards
+  const { data: statsData } = useGetEmployeeLeaveHistoryQuery({
+    page: 1,
+    limit: 1000, // Get all records for stats calculation
+  });
 
   const user = data?.employee;
 
@@ -74,7 +78,7 @@ const EmployeeLeaveRequest = () => {
   }, []);
 
   const getLeaveStats = () => {
-    const leaves = leaveHistoryData?.leaves || [];
+    const leaves = statsData?.leaves || [];
     if (!leaves.length)
       return {
         totalRequests: 0,
@@ -87,7 +91,7 @@ const EmployeeLeaveRequest = () => {
     const currentYear = dayjs().year();
 
     const yearlyRequests = leaves.filter(
-      (req) => dayjs(req.appliedDate).year() === currentYear
+      (req) => dayjs(req.appliedDate || req.createdAt).year() === currentYear
     );
 
     return {
@@ -112,7 +116,7 @@ const EmployeeLeaveRequest = () => {
   const stats = getLeaveStats();
 
   const handleLeaveSubmit = (newLeave) => {
-    setLeaveRequests((prev) => [newLeave, ...prev]);
+    // Switch to history tab after successful submission
     setActiveTab("history");
   };
 
@@ -202,10 +206,8 @@ const EmployeeLeaveRequest = () => {
         items={[
           {
             key: "apply",
-           
             label: (
-              <span          style={{color: "#da2c46"}}
->
+              <span style={{ color: "#da2c46" }}>
                 <PlusOutlined />
                 {!mobileView && " Apply Leave"}
               </span>
@@ -221,7 +223,7 @@ const EmployeeLeaveRequest = () => {
           {
             key: "history",
             label: (
-              <span  style={{color: "#da2c46"}}>
+              <span style={{ color: "#da2c46" }}>
                 <HistoryOutlined />
                 {!mobileView && " Leave History"}
                 <Badge
@@ -231,13 +233,7 @@ const EmployeeLeaveRequest = () => {
                 />
               </span>
             ),
-            children: (
-              <LeaveHistory
-                mobileView={mobileView}
-                leaveRequests={leaveHistoryData?.leaves || []}
-                setLeaveRequests={setLeaveRequests}
-              />
-            ),
+            children: <LeaveHistory mobileView={mobileView} />,
           },
         ]}
       />

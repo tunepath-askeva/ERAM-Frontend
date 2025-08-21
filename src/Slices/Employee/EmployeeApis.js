@@ -30,10 +30,43 @@ export const employeeApi = createApi({
       invalidatesTags: ["Leave"],
     }),
     getEmployeeLeaveHistory: builder.query({
-      query: () => ({
-        url: "/leave-history",
-        methid: "GET",
-      }),
+      query: ({
+        page = 1,
+        limit = 10,
+        status,
+        leaveType,
+        startDate,
+        endDate,
+        search,
+      } = {}) => {
+        const params = new URLSearchParams();
+
+        // Add pagination
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+
+        // Add filters if they exist and are not default values
+        if (status && status !== "all") {
+          params.append("status", status);
+        }
+        if (leaveType && leaveType !== "all") {
+          params.append("leaveType", leaveType);
+        }
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+        if (search && search.trim()) {
+          params.append("search", search.trim());
+        }
+
+        return {
+          url: `/leave-history?${params.toString()}`,
+          method: "GET", 
+        };
+      },
     }),
     raiseRequest: builder.mutation({
       query: (formData) => ({
@@ -43,10 +76,45 @@ export const employeeApi = createApi({
       }),
     }),
     getRequestHistory: builder.query({
-      query: () => ({
-        url: "/request-history",
-        method: "GET",
-      }),
+      query: (params = {}) => {
+        const {
+          page = 1,
+          pageSize = 10,
+          status,
+          requestType,
+          search,
+          startDate,
+          endDate,
+        } = params;
+
+        // Build query parameters
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+        });
+
+        // Add optional filters
+        if (status && status !== "all") {
+          queryParams.append("status", status);
+        }
+        if (requestType && requestType !== "all") {
+          queryParams.append("requestType", requestType);
+        }
+        if (search && search.trim()) {
+          queryParams.append("search", search.trim());
+        }
+        if (startDate) {
+          queryParams.append("startDate", startDate);
+        }
+        if (endDate) {
+          queryParams.append("endDate", endDate);
+        }
+
+        return {
+          url: `/request-history?${queryParams.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getCompanyNews: builder.query({
       query: () => ({
