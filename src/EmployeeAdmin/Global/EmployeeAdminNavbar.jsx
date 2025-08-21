@@ -30,7 +30,8 @@ import {
   MailOutlined,
   InfoCircleOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 import { socket } from "../../utils/socket.js";
@@ -801,7 +802,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                           e.stopPropagation();
                           handleMarkAsReads(item._id || item.id);
                         }}
-                         loading={markingAsRead}
+                        loading={markingAsRead}
                         style={{
                           padding: 0,
                           fontSize: screenSize.isMobile ? "10px" : "11px",
