@@ -15,6 +15,7 @@ import {
   Result,
   Popconfirm,
   message,
+  Pagination,
 } from "antd";
 import {
   BellOutlined,
@@ -25,11 +26,11 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import { 
+import {
   useClearAllNotificationMutation,
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
-  useDeleteNotificationMutation
+  useDeleteNotificationMutation,
 } from "../../Slices/Users/UserApis.js";
 import { useGetRecruiterNotificationQuery } from "../../Slices/Recruiter/RecruiterApis.js";
 
@@ -44,22 +45,28 @@ const EmployeeAdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetRecruiterNotificationQuery();
+  } = useGetRecruiterNotificationQuery({ page, limit: pageSize });
 
-  const [clearAllNotifications, { isLoading: clearingAll }] = useClearAllNotificationMutation();
-  const [markAllAsRead, { isLoading: markingAllRead }] = useMarkAllReadMutation();
-  const [markAsReadById, { isLoading: markingAsRead }] = useMarkAsReadByIdMutation();
-  const [deleteNotification, { isLoading: deleting }] = useDeleteNotificationMutation();
+  const [clearAllNotifications, { isLoading: clearingAll }] =
+    useClearAllNotificationMutation();
+  const [markAllAsRead, { isLoading: markingAllRead }] =
+    useMarkAllReadMutation();
+  const [markAsReadById, { isLoading: markingAsRead }] =
+    useMarkAsReadByIdMutation();
+  const [deleteNotification, { isLoading: deleting }] =
+    useDeleteNotificationMutation();
 
   useEffect(() => {
     if (apiData) {
-      setNotifications(apiData.notification || []);
+      setNotifications(apiData.notifications || []); // ✅ fixed
       setLoading(false);
     }
     if (apiError) {
@@ -112,7 +119,9 @@ const EmployeeAdminNotifications = () => {
   const handleDeleteNotification = async (id) => {
     try {
       await deleteNotification(id).unwrap();
-      setNotifications((prev) => prev.filter((notification) => notification._id !== id));
+      setNotifications((prev) =>
+        prev.filter((notification) => notification._id !== id)
+      );
       message.success("Notification deleted");
     } catch (error) {
       message.error("Failed to delete notification");
@@ -153,15 +162,15 @@ const EmployeeAdminNotifications = () => {
   const getNotificationActions = (item) => {
     const menuItems = [
       {
-        key: 'markRead',
-        label: 'Mark as read',
+        key: "markRead",
+        label: "Mark as read",
         icon: <CheckCircleOutlined />,
         disabled: item.isRead,
         onClick: () => handleMarkAsRead(item._id),
       },
       {
-        key: 'delete',
-        label: 'Delete',
+        key: "delete",
+        label: "Delete",
         icon: <DeleteOutlined />,
         danger: true,
         onClick: () => handleDeleteNotification(item._id),
@@ -171,14 +180,14 @@ const EmployeeAdminNotifications = () => {
     return (
       <Dropdown
         menu={{ items: menuItems }}
-        trigger={['click']}
+        trigger={["click"]}
         placement="bottomRight"
       >
         <Button
           type="text"
           icon={<MoreOutlined />}
           size="small"
-          style={{ color: '#666' }}
+          style={{ color: "#666" }}
         />
       </Dropdown>
     );
@@ -287,9 +296,9 @@ const EmployeeAdminNotifications = () => {
           </Text>
           <Space>
             {unreadCount > 0 && (
-              <Button 
-                type="link" 
-                size="small" 
+              <Button
+                type="link"
+                size="small"
                 onClick={handleMarkAllAsRead}
                 loading={markingAllRead}
               >
@@ -304,12 +313,7 @@ const EmployeeAdminNotifications = () => {
                 cancelText="No"
                 placement="bottomRight"
               >
-                <Button 
-                  type="link" 
-                  size="small" 
-                  danger
-                  loading={clearingAll}
-                >
+                <Button type="link" size="small" danger loading={clearingAll}>
                   Clear all
                 </Button>
               </Popconfirm>
@@ -417,6 +421,16 @@ const EmployeeAdminNotifications = () => {
             }
           />
         )}
+        <Pagination
+          current={apiData?.pagination?.page || 1}
+          pageSize={apiData?.pagination?.limit || 10}
+          total={apiData?.pagination?.total || 0}
+          onChange={(newPage, newPageSize) => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+          }}
+          style={{ marginTop: 16, textAlign: "center" }}
+        />
       </Card>
     </div>
   );

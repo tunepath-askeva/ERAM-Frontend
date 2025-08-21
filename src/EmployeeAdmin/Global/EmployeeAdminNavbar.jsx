@@ -154,10 +154,11 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const [notificationList, setNotificationList] = useState([]);
   const [notificationVisible, setNotificationVisible] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [logout] = useLogoutSuperAdminMutation();
   const { data: notifications, refetch: refetchNotifications } =
-    useGetEmployeeNotificationQuery();
+    useGetEmployeeNotificationQuery({ page, limit: 10 });
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
   const [markAllAsRead, { isLoading: markingAllRead }] =
@@ -310,7 +311,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   }, []);
 
   const combinedNotifications = [
-    ...(notifications?.notification || []),
+    ...(notifications?.notifications || []), // ✅ plural
     ...notificationList,
   ];
 
@@ -321,7 +322,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -345,7 +346,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const handleDeleteNotification = (id) => {
     // Update local state
-    if (notifications?.notification?.some((n) => n._id === id)) {
+    if (notifications?.notifications?.some((n) => n._id === id)) {
       // This is from API data
       // In a real app, you would make an API call here to delete
       refetchNotifications();
@@ -362,7 +363,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
