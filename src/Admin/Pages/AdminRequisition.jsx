@@ -55,6 +55,7 @@ const AdminRequisition = () => {
   } = useGetAdminRequisiionQuery({
     page: pagination.current,
     limit: pagination.pageSize,
+    search: debouncedSearchTerm,
   });
 
   const transformRequisitionData = (data) => {
@@ -94,7 +95,7 @@ const AdminRequisition = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setPagination((prev) => ({ ...prev, current: 1 }));
+      setPagination((prev) => ({ ...prev, current: 1 })); // Reset to page 1 on search
     }, 700);
 
     return () => clearTimeout(timer);
