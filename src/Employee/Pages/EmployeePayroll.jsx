@@ -11,6 +11,7 @@ import {
   Typography,
   Tag,
   Pagination,
+  DatePicker,
 } from "antd";
 import {
   EyeOutlined,
@@ -21,6 +22,7 @@ import {
   useGetEmployeePayrollQuery,
   useGeneratePayslipMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -34,7 +36,30 @@ const EmployeePayroll = () => {
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const printRef = useRef();
 
-  const { data } = useGetEmployeePayrollQuery();
+  const getMonthNumber = (monthName) => {
+    const months = [
+      "JANUARY",
+      "FEBRUARY",
+      "MARCH",
+      "APRIL",
+      "MAY",
+      "JUNE",
+      "JULY",
+      "AUGUST",
+      "SEPTEMBER",
+      "OCTOBER",
+      "NOVEMBER",
+      "DECEMBER",
+    ];
+    return monthName ? months.indexOf(monthName) + 1 : null;
+  };
+
+  const { data, isLoading, isFetching } = useGetEmployeePayrollQuery({
+    page: currentPage,
+    pageSize,
+    month: getMonthNumber(selectedMonth),
+    year: selectedYear,
+  });
   const [generatePayslip, { isLoading: isGenerating }] =
     useGeneratePayslipMutation();
 
@@ -47,10 +72,10 @@ const EmployeePayroll = () => {
         id: payroll._id,
         empName: payroll.U_empname,
         empId: payroll.U_EramId,
-        month: getMonthName(payroll.U_month),
+        month: getMonthNumber(payroll.U_month),
         year: payroll.U_year,
-        designation: "", 
-        nationality: "", 
+        designation: "",
+        nationality: "",
         basicSalary: parseFloat(payroll.U_basic || 0),
         hra: parseFloat(payroll.U_hra || 0),
         transportation: parseFloat(payroll.U_tpa || 0),
@@ -64,11 +89,11 @@ const EmployeePayroll = () => {
           parseFloat(payroll.U_loan || 0) +
           parseFloat(payroll.U_gosi || 0),
         netPay: parseFloat(payroll.U_ONP || 0),
-        status: "Paid", 
+        status: "Paid",
         payDate: new Date().toISOString().split("T")[0],
-        iqamaNo: "", 
-        gosiNo: "", 
-        daysInMonth: 30, 
+        iqamaNo: "",
+        gosiNo: "",
+        daysInMonth: 30,
         presentDays: 30,
         absVacDays: parseFloat(payroll.U_absdays || 0),
         sapId: payroll.U_empcode,
@@ -94,24 +119,6 @@ const EmployeePayroll = () => {
         executiveAllowance: parseFloat(payroll.U_exefallow || 0),
       },
     ];
-  };
-
-  const getMonthName = (monthNumber) => {
-    const months = [
-      "JANUARY",
-      "FEBRUARY",
-      "MARCH",
-      "APRIL",
-      "MAY",
-      "JUNE",
-      "JULY",
-      "AUGUST",
-      "SEPTEMBER",
-      "OCTOBER",
-      "NOVEMBER",
-      "DECEMBER",
-    ];
-    return months[parseInt(monthNumber) - 1] || "";
   };
 
   const payrollData = data ? transformPayrollData(data) : [];
@@ -210,11 +217,12 @@ const EmployeePayroll = () => {
 
   const handleMonthChange = (value) => {
     setSelectedMonth(value);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when filter changes
   };
 
-  const handleYearChange = (value) => {
-    setSelectedYear(value);
+  const handleYearChange = (date) => {
+    const year = date ? date.format("YYYY") : null;
+    setSelectedYear(year);
     setCurrentPage(1);
   };
 
@@ -222,17 +230,6 @@ const EmployeePayroll = () => {
     setCurrentPage(page);
     setPageSize(size);
   };
-
-  const filteredData = payrollData.filter((item) => {
-    const matchesMonth = !selectedMonth || item.month === selectedMonth;
-    const matchesYear = !selectedYear || item.year === selectedYear;
-    return matchesMonth && matchesYear;
-  });
-
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
 
   const months = [
     "JANUARY",
@@ -248,7 +245,6 @@ const EmployeePayroll = () => {
     "NOVEMBER",
     "DECEMBER",
   ];
-  const years = ["2023", "2024", "2025", "2026"];
 
   const numberToWords = (num) => {
     const ones = [
@@ -967,19 +963,14 @@ const EmployeePayroll = () => {
               </Select>
             </Col>
             <Col xs={24} sm={8}>
-              <Select
+              <DatePicker
+                picker="year"
                 placeholder="Select Year"
                 style={{ width: "100%" }}
-                value={selectedYear}
+                value={selectedYear ? dayjs(selectedYear, "YYYY") : null}
                 onChange={handleYearChange}
                 allowClear
-              >
-                {years.map((year) => (
-                  <Option key={year} value={year}>
-                    {year}
-                  </Option>
-                ))}
-              </Select>
+              />
             </Col>
           </Row>
         </Card>
@@ -987,18 +978,19 @@ const EmployeePayroll = () => {
         <Card>
           <Table
             columns={columns}
-            dataSource={paginatedData}
+            dataSource={payrollData}
             rowKey="id"
             pagination={false}
             scroll={{ x: 1000 }}
             size="middle"
+            loading={isLoading || isFetching}
           />
 
           <div style={{ marginTop: "16px", textAlign: "right" }}>
             <Pagination
               current={currentPage}
               pageSize={pageSize}
-              total={filteredData.length}
+              total={data?.totalRecords || 0}
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) =>

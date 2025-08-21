@@ -64,7 +64,7 @@ export const employeeApi = createApi({
 
         return {
           url: `/leave-history?${params.toString()}`,
-          method: "GET", 
+          method: "GET",
         };
       },
     }),
@@ -298,9 +298,15 @@ export const employeeApi = createApi({
       }),
     }),
     getEmployeePayroll: builder.query({
-      query: () => ({
+      query: ({ page = 1, pageSize = 10, month, year } = {}) => ({
         url: "/employee-payroll",
         method: "GET",
+        params: {
+          page,
+          pageSize,
+          ...(month && { month }),
+          ...(year && { year }),
+        },
       }),
     }),
     generatePayslip: builder.mutation({
