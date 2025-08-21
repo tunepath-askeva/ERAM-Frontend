@@ -24,10 +24,8 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import {
-  useGetEmployeeNotificationQuery,
-  useClearAllNotificationMutation,
-} from "../../Slices/Employee/EmployeeApis";
+import { useGetEmployeeNotificationQuery } from "../../Slices/Employee/EmployeeApis";
+import { useClearAllNotificationMutation } from "../../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -68,16 +66,19 @@ const EmployeeNotifications = () => {
           : notification
       )
     );
+    refetch();
   };
 
   const markAllAsRead = () => {
     setNotifications((prev) =>
       prev.map((notification) => ({ ...notification, isRead: true }))
     );
+    refetch();
   };
 
   const clearAllNotifications = async () => {
     await clearAll();
+    refetch();
   };
 
   const getNotificationIcon = (type) => {
