@@ -1046,9 +1046,7 @@ const EmployeePayroll = () => {
               display: none !important;
             }
           }
-        `}</style>
 
-        <style jsx>{`
           .ant-table-thead > tr > th {
             background-color: #fafafa !important;
             font-weight: 600 !important;
@@ -1071,6 +1069,100 @@ const EmployeePayroll = () => {
           }
           .ant-tabs-ink-bar {
             background-color: #da2c46 !important;
+          }
+
+          .ant-table-thead > tr > th {
+            background-color: #fafafa !important;
+            font-weight: 600 !important;
+          }
+
+          /* Active pagination item */
+          .ant-pagination-item-active {
+            border-color: #da2c46 !important;
+            background-color: #da2c46 !important;
+          }
+          .ant-pagination-item-active a {
+            color: #fff !important;
+          }
+
+          /* Pagination item hover */
+          .ant-pagination-item:hover {
+            border-color: #da2c46 !important;
+          }
+          .ant-pagination-item:hover a {
+            color: #da2c46 !important;
+          }
+
+          /* Pagination buttons (prev/next) */
+          .ant-pagination-prev:hover .ant-pagination-item-link,
+          .ant-pagination-next:hover .ant-pagination-item-link {
+            border-color: #da2c46 !important;
+            color: #da2c46 !important;
+          }
+
+          /* Jump to page input focus */
+          .ant-pagination-options-quick-jumper input:focus {
+            border-color: #da2c46 !important;
+            box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2) !important;
+          }
+
+          /* Page size selector */
+          .ant-select-selector:focus,
+          .ant-select-focused .ant-select-selector {
+            border-color: #da2c46 !important;
+            box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2) !important;
+          }
+
+          /* Page size dropdown hover */
+          .ant-select-item-option-selected:not(
+              .ant-select-item-option-disabled
+            ) {
+            background-color: #fef2f4 !important;
+            color: #da2c46 !important;
+          }
+          .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+            background-color: #fef2f4 !important;
+          }
+
+          /* Pagination showing info text */
+          .ant-pagination-total-text {
+            color: #666 !important;
+            font-weight: 500 !important;
+          }
+
+          /* Disabled pagination items */
+          .ant-pagination-disabled .ant-pagination-item-link {
+            color: #d9d9d9 !important;
+            border-color: #d9d9d9 !important;
+          }
+
+          /* Jump to specific page */
+          .ant-pagination-options-quick-jumper {
+            color: #666 !important;
+          }
+
+          /* Tabs styling (if you have tabs elsewhere) */
+          .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+            color: #da2c46 !important;
+          }
+          .ant-tabs-ink-bar {
+            background-color: #da2c46 !important;
+          }
+
+          /* Custom pagination container styling */
+          .ant-pagination {
+            margin-top: 24px !important;
+            text-align: center !important;
+          }
+
+          /* Responsive pagination adjustments */
+          @media (max-width: 768px) {
+            .ant-pagination {
+              text-align: center !important;
+            }
+            .ant-pagination-total-text {
+              display: none !important;
+            }
           }
         `}</style>
       </div>
