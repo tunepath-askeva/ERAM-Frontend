@@ -15,6 +15,7 @@ import {
   Result,
   Popconfirm,
   message,
+  Pagination,
 } from "antd";
 import {
   BellOutlined,
@@ -43,13 +44,15 @@ const RecruiterNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetRecruiterNotificationQuery();
+  } = useGetRecruiterNotificationQuery({ page, limit: pageSize });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -62,7 +65,7 @@ const RecruiterNotifications = () => {
 
   useEffect(() => {
     if (apiData) {
-      setNotifications(apiData.notification || []);
+      setNotifications(apiData.notifications || []); // ✅ fixed
       setLoading(false);
     }
     if (apiError) {
@@ -422,6 +425,16 @@ const RecruiterNotifications = () => {
             }
           />
         )}
+        <Pagination
+          current={apiData?.pagination?.page || 1}
+          pageSize={apiData?.pagination?.limit || 10}
+          total={apiData?.pagination?.total || 0}
+          onChange={(newPage, newPageSize) => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+          }}
+          style={{ marginTop: 16, textAlign: "center" }}
+        />
       </Card>
     </div>
   );

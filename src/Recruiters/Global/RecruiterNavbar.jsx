@@ -153,6 +153,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     email: "",
     roles: "",
   });
+  const [page, setPage] = useState(1);
 
   const { data: notifications, refetch: refetchNotifications } =
     useGetRecruiterNotificationQuery();
@@ -260,7 +261,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   }, []);
 
   const combinedNotifications = [
-    ...(notifications?.notification || []),
+    ...(notifications?.notifications || []), // ✅ plural
     ...notificationList,
   ];
 
@@ -271,7 +272,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -295,7 +296,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const handleDeleteNotification = (id) => {
     // Update local state
-    if (notifications?.notification?.some((n) => n._id === id)) {
+    if (notifications?.notifications?.some((n) => n._id === id)) {
       // This is from API data
       // In a real app, you would make an API call here to delete
       refetchNotifications();
@@ -312,7 +313,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -573,8 +574,9 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                 <Button
                   type="link"
                   size="small"
- onClick={markAllAsReads}
-                  loading={markingAllRead}                  style={{
+                  onClick={markAllAsReads}
+                  loading={markingAllRead}
+                  style={{
                     fontSize: screenSize.isMobile ? "12px" : "13px",
                     padding: screenSize.isMobile ? "0 4px" : "0 8px",
                     height: "auto",
