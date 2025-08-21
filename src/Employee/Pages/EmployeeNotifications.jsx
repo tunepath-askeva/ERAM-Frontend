@@ -14,6 +14,7 @@ import {
   Skeleton,
   Result,
   Popconfirm,
+  message,
 } from "antd";
 import {
   BellOutlined,
@@ -25,7 +26,12 @@ import {
   MoreOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeeNotificationQuery } from "../../Slices/Employee/EmployeeApis";
-import { useClearAllNotificationMutation } from "../../Slices/Users/UserApis";
+import {
+  useClearAllNotificationMutation,
+  useMarkAllReadMutation,
+  useMarkAsReadByIdMutation,
+  useDeleteNotificationMutation,
+} from "../../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -45,7 +51,14 @@ const EmployeeNotifications = () => {
     refetch,
   } = useGetEmployeeNotificationQuery();
 
-  const [clearAll] = useClearAllNotificationMutation();
+  const [clearAllNotifications, { isLoading: clearingAll }] =
+    useClearAllNotificationMutation();
+  const [markAllAsRead, { isLoading: markingAllRead }] =
+    useMarkAllReadMutation();
+  const [markAsReadById, { isLoading: markingAsRead }] =
+    useMarkAsReadByIdMutation();
+  const [deleteNotification, { isLoading: deleting }] =
+    useDeleteNotificationMutation();
 
   useEffect(() => {
     if (apiData) {
@@ -58,27 +71,58 @@ const EmployeeNotifications = () => {
     }
   }, [apiData, apiError]);
 
-  const handleMarkAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification._id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-    refetch();
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsReadById(id).unwrap();
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification._id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+      message.success("Notification marked as read");
+    } catch (error) {
+      message.error("Failed to mark notification as read");
+      console.error("Mark as read error:", error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
-    refetch();
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead().unwrap();
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+      message.success("All notifications marked as read");
+    } catch (error) {
+      message.error("Failed to mark all notifications as read");
+      console.error("Mark all as read error:", error);
+    }
   };
 
-  const clearAllNotifications = async () => {
-    await clearAll();
-    refetch();
+  const handleClearAllNotifications = async () => {
+    try {
+      await clearAllNotifications().unwrap();
+      setNotifications([]);
+      message.success("All notifications cleared");
+    } catch (error) {
+      message.error("Failed to clear notifications");
+      console.error("Clear all notifications error:", error);
+    }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      await deleteNotification(id).unwrap();
+      setNotifications((prev) =>
+        prev.filter((notification) => notification._id !== id)
+      );
+      message.success("Notification deleted");
+    } catch (error) {
+      message.error("Failed to delete notification");
+      console.error("Delete notification error:", error);
+    }
   };
 
   const getNotificationIcon = (type) => {
@@ -109,6 +153,40 @@ const EmployeeNotifications = () => {
       default:
         return <Tag color="purple">Notification</Tag>;
     }
+  };
+
+  const getNotificationActions = (item) => {
+    const menuItems = [
+      {
+        key: "markRead",
+        label: "Mark as read",
+        icon: <CheckCircleOutlined />,
+        disabled: item.isRead,
+        onClick: () => handleMarkAsRead(item._id),
+      },
+      {
+        key: "delete",
+        label: "Delete",
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => handleDeleteNotification(item._id),
+      },
+    ];
+
+    return (
+      <Dropdown
+        menu={{ items: menuItems }}
+        trigger={["click"]}
+        placement="bottomRight"
+      >
+        <Button
+          type="text"
+          icon={<MoreOutlined />}
+          size="small"
+          style={{ color: "#666" }}
+        />
+      </Dropdown>
+    );
   };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -219,19 +297,24 @@ const EmployeeNotifications = () => {
           </Text>
           <Space>
             {unreadCount > 0 && (
-              <Button type="link" size="small" onClick={markAllAsRead}>
+              <Button
+                type="link"
+                size="small"
+                onClick={handleMarkAllAsRead}
+                loading={markingAllRead}
+              >
                 Mark all as read
               </Button>
             )}
             {notifications.length > 0 && (
               <Popconfirm
                 title="Are you sure you want to clear all notifications?"
-                onConfirm={clearAllNotifications}
+                onConfirm={handleClearAllNotifications}
                 okText="Yes"
                 cancelText="No"
                 placement="bottomRight"
               >
-                <Button type="link" size="small" danger>
+                <Button type="link" size="small" danger loading={clearingAll}>
                   Clear all
                 </Button>
               </Popconfirm>
@@ -251,6 +334,7 @@ const EmployeeNotifications = () => {
                   borderRadius: "8px",
                   transition: "all 0.3s ease",
                 }}
+                actions={[getNotificationActions(item)]}
               >
                 <List.Item.Meta
                   avatar={
