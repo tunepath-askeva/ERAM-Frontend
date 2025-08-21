@@ -184,6 +184,13 @@ export const adminApi = createApi({
       },
     }),
 
+    getRecruitersName: builder.query({
+      query: () => ({
+        url: "/recruiter-name",
+        method: "GET",
+      }),
+    }),
+
     editRecruiter: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/recruiters/${id}`,
@@ -591,6 +598,7 @@ export const {
   useDisableRecruiterStatusMutation,
   useGetRecruiterByIdQuery,
   useDeleteRecruiterMutation,
+  useGetRecruitersNameQuery,
 
   //projects
   useAddProjectMutation,

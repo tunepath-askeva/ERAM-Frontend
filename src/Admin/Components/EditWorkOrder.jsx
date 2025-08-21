@@ -48,6 +48,7 @@ import {
   useGetApprovalQuery,
   useGetClientsQuery,
   useGetStaffsQuery,
+  useGetRecruitersNameQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -97,7 +98,8 @@ const EditWorkOrder = () => {
       includePagination: false,
     });
   const { data: Branch } = useGetAdminBranchQuery();
-  const { data: recruiters } = useGetRecruitersQuery();
+  // const { data: recruiters } = useGetRecruitersQuery();
+  const { data: recruiters } = useGetRecruitersNameQuery();
   const { data: projects } = useGetProjectsQuery();
   const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery();
   const {
@@ -121,7 +123,7 @@ const EditWorkOrder = () => {
   const branchId = Branch?.branch?._id;
 
   const activeRecruiters =
-    recruiters?.recruiters?.filter(
+    recruiters?.recruitername?.filter(
       (recruiter) => recruiter.accountStatus === "active"
     ) || [];
 
@@ -1571,7 +1573,7 @@ const EditWorkOrder = () => {
                       >
                         {activeRecruiters.map((recruiter) => (
                           <Option key={recruiter._id} value={recruiter._id}>
-                            {recruiter.fullName}
+                            {recruiter.fullName} - {recruiter.email}
                           </Option>
                         ))}
                       </Select>
@@ -1977,7 +1979,7 @@ const EditWorkOrder = () => {
                           value={recruiter._id}
                           label={recruiter.fullName}
                         >
-                          {recruiter.fullName}
+                          {recruiter.fullName} - {recruiter.email}
                         </Option>
                       ))}
                     </Select>

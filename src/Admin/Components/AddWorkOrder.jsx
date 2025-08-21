@@ -43,6 +43,7 @@ import {
   useGetApprovalQuery,
   useGetClientsQuery,
   useGetStaffsQuery,
+  useGetRecruitersNameQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -96,7 +97,8 @@ const AddWorkOrder = () => {
       includePagination: false,
     });
   const { data: Branch } = useGetAdminBranchQuery();
-  const { data: recruiters } = useGetRecruitersQuery();
+  // const { data: recruiters } = useGetRecruitersQuery();
+  const { data: recruiters } = useGetRecruitersNameQuery();
   const { data: projects } = useGetProjectsQuery();
   const { data: pipeline, refetch } = useGetPipelinesQuery();
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
@@ -113,7 +115,7 @@ const AddWorkOrder = () => {
   const branchId = Branch?.branch?._id;
 
   const activeRecruiters =
-    recruiters?.recruiters?.filter(
+    recruiters?.recruitername?.filter(
       (recruiter) => recruiter.accountStatus === "active"
     ) || [];
 
@@ -151,7 +153,7 @@ const AddWorkOrder = () => {
   useEffect(() => {
     if (location.state?.requisitionData) {
       const reqData = location.state.requisitionData;
-      console.log(reqData,'ooooooooooooooi')
+      console.log(reqData, "ooooooooooooooi");
       setIsPrefilled(true);
 
       const startDate = reqData.createdAt ? dayjs(reqData.createdAt) : dayjs();
@@ -188,7 +190,7 @@ const AddWorkOrder = () => {
         jobFunction: reqData.jobFunction,
         salaryType: reqData.salaryType || "daily",
         Education: reqData.Education,
-        
+
         languagesRequired: reqData.languagesRequired || [],
       });
 
@@ -1461,7 +1463,7 @@ const AddWorkOrder = () => {
                       >
                         {activeRecruiters.map((recruiter) => (
                           <Option key={recruiter._id} value={recruiter._id}>
-                            {recruiter.fullName}
+                            {recruiter.fullName} - {recruiter.email}
                           </Option>
                         ))}
                       </Select>
@@ -1820,7 +1822,7 @@ const AddWorkOrder = () => {
                           value={recruiter._id}
                           label={recruiter.fullName}
                         >
-                          {recruiter.fullName}
+                          {recruiter.fullName} - {recruiter.email}
                         </Option>
                       ))}
                     </Select>
