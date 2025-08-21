@@ -66,6 +66,7 @@ export const recruiterApi = createApi({
       transformResponse: (response) => {
         return {
           jobs: response.jobs,
+          totalJobs: response.totalJobs, // ✅ Keep original property name
           totalCount: response.totalJobs,
         };
       },
@@ -453,12 +454,12 @@ export const recruiterApi = createApi({
         };
       },
     }),
-getRecruiterNotification: builder.query({
-  query: ({ page = 1, limit = 10 }) => ({
-    url: `/notify?page=${page}&limit=${limit}`,
-    method: "GET",
-  }),
-}),
+    getRecruiterNotification: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/notify?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 

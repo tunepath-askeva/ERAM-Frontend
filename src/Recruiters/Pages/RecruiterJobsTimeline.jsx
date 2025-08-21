@@ -53,6 +53,7 @@ const RecruiterJobsTimeline = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
@@ -70,7 +71,7 @@ const RecruiterJobsTimeline = () => {
   } = useGetRecruiterJobsQuery({
     page: currentPage,
     limit: pageSize,
-    searchText: searchText,
+    searchText: debouncedSearch,
     status: filterStatus !== "all" ? filterStatus : undefined,
   });
 
@@ -85,8 +86,9 @@ const RecruiterJobsTimeline = () => {
     }
 
     searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
       setCurrentPage(1);
-    }, 500);
+    }, 1000);
   };
 
   useEffect(() => {
@@ -186,24 +188,7 @@ const RecruiterJobsTimeline = () => {
   };
 
   const getCurrentPageJobs = () => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredJobs
-      .filter((job) => {
-        const matchesSearch =
-          searchText === "" ||
-          job.title.toLowerCase().includes(searchText.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchText.toLowerCase()) ||
-          job.location.toLowerCase().includes(searchText.toLowerCase());
-
-        const matchesStatus =
-          filterStatus === "all" ||
-          (filterStatus === "active" && job.isActive) ||
-          (filterStatus === "inactive" && !job.isActive);
-
-        return matchesSearch && matchesStatus;
-      })
-      .slice(startIndex, endIndex);
+    return filteredJobs; // no slicing, API already paginates
   };
 
   if (isLoading) {
@@ -279,6 +264,7 @@ const RecruiterJobsTimeline = () => {
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} sm={16} md={16} lg={16} xl={16}>
             <Input
+              allowClear
               placeholder="Search jobs by title, company or location"
               size="large"
               prefix={<SearchOutlined style={{ color: primaryColor }} />}
@@ -620,70 +606,18 @@ const RecruiterJobsTimeline = () => {
             <Pagination
               current={currentPage}
               pageSize={pageSize}
-              total={
-                filteredJobs.filter((job) => {
-                  const matchesSearch =
-                    searchText === "" ||
-                    job.title
-                      .toLowerCase()
-                      .includes(searchText.toLowerCase()) ||
-                    job.company
-                      .toLowerCase()
-                      .includes(searchText.toLowerCase()) ||
-                    job.location
-                      .toLowerCase()
-                      .includes(searchText.toLowerCase());
-
-                  const matchesStatus =
-                    filterStatus === "all" ||
-                    (filterStatus === "active" && job.isActive) ||
-                    (filterStatus === "inactive" && !job.isActive);
-
-                  return matchesSearch && matchesStatus;
-                }).length
-              }
+              total={apiData?.totalCount || 0} // ✅ Use totalCount from transformResponse
               onChange={(page) => setCurrentPage(page)}
               showSizeChanger={false}
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} of ${total} jobs`
+              } // Optional: show total info
               itemRender={(current, type, originalElement) => {
                 if (type === "prev") {
-                  return (
-                    <Button
-                      style={{
-                        background: "#fff",
-                        color: primaryColor,
-                        borderColor: "#d9d9d9",
-                      }}
-                    >
-                      Previous
-                    </Button>
-                  );
+                  return <Button>Previous</Button>;
                 }
                 if (type === "next") {
-                  return (
-                    <Button
-                      style={{
-                        background: "#fff",
-                        color: primaryColor,
-                        borderColor: "#d9d9d9",
-                      }}
-                    >
-                      Next
-                    </Button>
-                  );
-                }
-                if (type === "page") {
-                  return (
-                    <Button
-                      style={{
-                        background:
-                          current === currentPage ? primaryColor : "#fff",
-                        color: current === currentPage ? "#fff" : primaryColor,
-                        borderColor: "#d9d9d9",
-                      }}
-                    >
-                      {current}
-                    </Button>
-                  );
+                  return <Button>Next</Button>;
                 }
                 return originalElement;
               }}
