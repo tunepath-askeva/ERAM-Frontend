@@ -437,6 +437,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                     name="workplace" 
                     initialValue="on-site"
                   >
+                    
                     <Select placeholder="Select Workplace" defaultValue="on-site">
                       <Option value="on-site">Onsite</Option>
                       <Option value="offshore">Offshore</Option>
