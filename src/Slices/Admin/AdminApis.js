@@ -532,8 +532,10 @@ export const adminApi = createApi({
       }),
     }),
     getAdminRequisiion: builder.query({
-      query: () => ({
-        url: "/requisition",
+      query: ({ page = 1, limit = 10, search = "" } = {}) => ({
+        url: `/requisition?page=${page}&limit=${limit}&search=${encodeURIComponent(
+          search
+        )}`,
         method: "GET",
       }),
     }),
@@ -554,12 +556,12 @@ export const adminApi = createApi({
         },
       }),
     }),
-getAdminNotifications: builder.query({
-  query: ({ page = 1, limit = 10 }) => ({
-    url: `/notify?page=${page}&limit=${limit}`,
-    method: "GET",
-  }),
-}),
+    getAdminNotifications: builder.query({
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/notify?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 

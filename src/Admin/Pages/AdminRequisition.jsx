@@ -52,7 +52,10 @@ const AdminRequisition = () => {
     isLoading,
     isError,
     refetch,
-  } = useGetAdminRequisiionQuery();
+  } = useGetAdminRequisiionQuery({
+    page: pagination.current,
+    limit: pagination.pageSize,
+  });
 
   const transformRequisitionData = (data) => {
     if (!data || !data.requisitions) return [];
@@ -86,7 +89,7 @@ const AdminRequisition = () => {
   };
 
   const requisitions = transformRequisitionData(apiResponse);
-  const totalCount = apiResponse?.requisitions?.length || 0;
+  const totalCount = apiResponse?.pagination?.total || 0;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -98,7 +101,7 @@ const AdminRequisition = () => {
   }, [searchTerm]);
 
   const handleCreateWorkOrder = (requisition) => {
-    console.log(requisition,'hi requireuisurieusrieu siurieruie')
+    console.log(requisition, "hi requireuisurieusrieu siurieruie");
     navigate(`/admin/add-workorder`, {
       state: {
         requisitionData: requisition.originalData,
