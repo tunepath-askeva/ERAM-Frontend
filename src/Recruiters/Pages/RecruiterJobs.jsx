@@ -776,6 +776,21 @@ const RecruiterJobs = () => {
           </Empty>
         </Card>
       )}
+      <style jsx>{`
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+      `}</style>
     </div>
   );
 };
