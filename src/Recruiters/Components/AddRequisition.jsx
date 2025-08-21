@@ -435,10 +435,10 @@ const AddRequisition = ({ onNavigateBack }) => {
                   <Form.Item 
                     label="Workplace" 
                     name="workplace" 
-                    initialValue="onsite"
+                    initialValue="on-site"
                   >
-                    <Select placeholder="Select Workplace" defaultValue="onsite">
-                      <Option value="onsite">Onsite</Option>
+                    <Select placeholder="Select Workplace" defaultValue="on-site">
+                      <Option value="on-site">Onsite</Option>
                       <Option value="offshore">Offshore</Option>
                       <Option value="remote">Remote</Option>
                       <Option value="hybrid">Hybrid</Option>

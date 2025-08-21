@@ -264,7 +264,7 @@ const EditRequisition = () => {
                 <Col span={8}>
                   <Form.Item label="Workplace" name="workplace">
                     <Select placeholder="Select Workplace">
-                      <Option value="onsite">Onsite</Option>
+                      <Option value="on-site">Onsite</Option>
                       <Option value="remote">Remote</Option>
                       <Option value="hybrid">Hybrid</Option>
                     </Select>
