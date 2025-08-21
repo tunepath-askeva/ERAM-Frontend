@@ -11,13 +11,15 @@ import {
   Avatar,
   Space,
   Spin,
+  Button,
 } from "antd";
 import { useState } from "react";
 import { 
   CalendarOutlined, 
   UserOutlined, 
   FileTextOutlined,
-  CloseOutlined 
+  CloseOutlined,
+  ArrowRightOutlined
 } from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
@@ -37,7 +39,8 @@ const EmployeeCompanyNews = () => {
     },
   };
 
-  const handleCardClick = (news) => {
+  const handleReadMore = (news, e) => {
+    e.stopPropagation(); // Prevent card click event
     setSelectedNews(news);
     setIsModalVisible(true);
   };
@@ -57,16 +60,18 @@ const EmployeeCompanyNews = () => {
         </Text>
       </div>
 
-      <Row gutter={[24, 24]}>
+      <div className="news-list">
         {companyNews?.news
           ?.filter((newsItem) => newsItem.status === "published")
           ?.map((newsItem) => (
-          <Col key={newsItem._id} xs={24} sm={12} lg={8}>
-            <Card
-              hoverable
-              className="news-card"
-              onClick={() => handleCardClick(newsItem)}
-              cover={
+          <Card
+            key={newsItem._id}
+            className="news-wide-card"
+            hoverable
+          >
+            <Row gutter={24} align="middle">
+              {/* Left side - Image */}
+              <Col xs={24} sm={8} md={6}>
                 <div className="news-image-container">
                   <Image
                     src={newsItem.coverImage}
@@ -78,47 +83,63 @@ const EmployeeCompanyNews = () => {
                     <Tag color="blue">{newsItem.status.toUpperCase()}</Tag>
                   </div>
                 </div>
-              }
-            >
-              <div className="news-meta">
-                <Space size="small">
-                  <Avatar icon={<UserOutlined />} size="small" />
-                  <Text type="secondary">Admin</Text>
-                </Space>
-                <Space size="small">
-                  <CalendarOutlined style={{ color: "#888" }} />
-                  <Text type="secondary">
-                    {new Date(newsItem.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </Space>
-              </div>
+              </Col>
 
-              <Title level={4} className="news-card-title">
-                {newsItem.title}
-              </Title>
+              {/* Right side - Content */}
+              <Col xs={24} sm={16} md={18}>
+                <div className="news-content">
+                  {/* Meta Information */}
+                  <div className="news-meta">
+                    <Space size="large">
+                      <Space size="small">
+                        <Avatar icon={<UserOutlined />} size="small" />
+                        <Text type="secondary">Admin</Text>
+                      </Space>
+                      <Space size="small">
+                        <CalendarOutlined style={{ color: "#888" }} />
+                        <Text type="secondary">
+                          {new Date(newsItem.createdAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </Text>
+                      </Space>
+                    </Space>
+                  </div>
 
-              <Paragraph
-                ellipsis={{ rows: 3 }}
-                className="news-card-description"
-              >
-                {newsItem.description}
-              </Paragraph>
+                  {/* Title */}
+                  <Title level={3} className="news-card-title">
+                    {newsItem.title}
+                  </Title>
 
-              <div className="news-footer">
-                <Text className="news-read-more" strong>
-                  Read More →
-                </Text>
-              </div>
-            </Card>
-          </Col>
+                  {/* Description */}
+                  <Paragraph
+                    ellipsis={{ rows: 2 }}
+                    className="news-card-description"
+                  >
+                    {newsItem.description}
+                  </Paragraph>
+
+                  {/* Read More Button */}
+                  <div className="news-actions">
+                    <Button
+                      type="primary"
+                      icon={<ArrowRightOutlined />}
+                      onClick={(e) => handleReadMore(newsItem, e)}
+                      className="read-more-btn"
+                    >
+                      Read More
+                    </Button>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
         ))}
-      </Row>
+      </div>
 
-      {/* Updated Modal with detailed view styling */}
+      {/* Modal remains the same */}
       <Modal
         title={null}
         open={isModalVisible}
@@ -339,7 +360,7 @@ const EmployeeCompanyNews = () => {
         }
 
         .news-title {
-          color: #1890ff;
+          color: #da2c46;
           margin-bottom: 8px;
         }
 
@@ -347,78 +368,114 @@ const EmployeeCompanyNews = () => {
           font-size: 16px;
         }
 
-        .news-card {
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-          transition: transform 0.3s, box-shadow 0.3s;
-          height: 100%;
+        .news-list {
           display: flex;
           flex-direction: column;
+          gap: 20px;
         }
 
-        .news-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        .news-wide-card {
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          border: 1px solid #f0f0f0;
+        }
+
+        .news-wide-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+          border-color: #da2c46;
         }
 
         .news-image-container {
           position: relative;
-          height: 200px;
+          width: 100%;
+          height: 180px;
           overflow: hidden;
+          border-radius: 8px;
         }
 
         .news-image {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.5s;
+          transition: transform 0.5s ease;
         }
 
-        .news-card:hover .news-image {
+        .news-wide-card:hover .news-image {
           transform: scale(1.05);
         }
 
         .news-badge {
           position: absolute;
-          top: 12px;
-          right: 12px;
+          top: 8px;
+          right: 8px;
+          z-index: 2;
+        }
+
+        .news-content {
+          padding: 8px 0;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
         }
 
         .news-meta {
-          display: flex;
-          justify-content: space-between;
           margin-bottom: 12px;
-          color: #666;
-          font-size: 13px;
         }
 
         .news-card-title {
           margin-bottom: 12px;
           color: #333;
+          font-size: 20px;
+          line-height: 1.3;
         }
 
         .news-card-description {
-          color: #555;
+          color: #666;
           margin-bottom: 16px;
+          font-size: 14px;
+          line-height: 1.5;
           flex-grow: 1;
         }
 
-        .news-footer {
-          border-top: 1px solid #f0f0f0;
-          padding-top: 12px;
+        .news-actions {
+          margin-top: auto;
         }
 
-        .news-read-more {
-          color: #1890ff;
-          transition: color 0.3s;
+        .read-more-btn {
+          background: #da2c46;
+          border-color: #da2c46;
+          border-radius: 6px;
+          font-weight: 500;
+          transition: all 0.3s ease;
         }
 
-        .news-card:hover .news-read-more {
-          color: #40a9ff;
+        .read-more-btn:hover {
+          background: #da2c46;
+          border-color: #da2c46;
+          transform: translateX(2px);
         }
 
-        /* Updated Modal Styles */
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .news-image-container {
+            height: 200px;
+            margin-bottom: 16px;
+          }
+          
+          .news-content {
+            padding: 0;
+          }
+          
+          .news-card-title {
+            font-size: 18px;
+          }
+        }
+
+        /* Modal Styles */
         .news-modal .ant-modal-content {
           border-radius: 12px;
           overflow: hidden;
