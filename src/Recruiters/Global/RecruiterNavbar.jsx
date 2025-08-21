@@ -35,6 +35,14 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+
+import {
+  useClearAllNotificationMutation,
+  useMarkAllReadMutation,
+  useMarkAsReadByIdMutation,
+  useDeleteNotificationMutation,
+} from "../../Slices/Users/UserApis.js";
+
 import { socket } from "../../utils/socket.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -149,6 +157,15 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const { data: notifications, refetch: refetchNotifications } =
     useGetRecruiterNotificationQuery();
 
+  const [clearAllNotifications, { isLoading: clearingAll }] =
+    useClearAllNotificationMutation();
+  const [markAllAsRead, { isLoading: markingAllRead }] =
+    useMarkAllReadMutation();
+  const [markAsReadById, { isLoading: markingAsRead }] =
+    useMarkAsReadByIdMutation();
+  const [deleteNotification, { isLoading: deleting }] =
+    useDeleteNotificationMutation();
+
   const [logout] = useLogoutSuperAdminMutation();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -249,21 +266,30 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
 
-  const handleMarkAsRead = (id) => {
-    // Update local state
-    if (notifications?.notification?.some((n) => n._id === id)) {
-      // This is from API data
-      // In a real app, you would make an API call here to mark as read
-      refetchNotifications();
-    } else {
-      // This is from socket data
-      setNotificationList((prev) =>
-        prev.map((notification) =>
-          notification._id === id
-            ? { ...notification, isRead: true }
-            : notification
-        )
-      );
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsReadById(id).unwrap();
+
+      // Update local state
+      if (notifications?.notification?.some((n) => n._id === id)) {
+        refetchNotifications();
+      } else {
+        setNotificationList((prev) =>
+          prev.map((notification) =>
+            notification._id === id
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+      }
+
+      // Optional: Show success message
+      enqueueSnackbar("Notification marked as read", { variant: "success" });
+    } catch (error) {
+      console.error("Mark as read error:", error);
+      enqueueSnackbar("Failed to mark notification as read", {
+        variant: "error",
+      });
     }
   };
 
@@ -281,19 +307,67 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     }
   };
 
-  const markAllAsRead = () => {
-    // Mark all as read logic
-    // In a real app, you would make an API call here
-    refetchNotifications();
-    setNotificationList((prev) =>
-      prev.map((notification) => ({ ...notification, isRead: true }))
-    );
+  const handleMarkAsReads = async (id) => {
+    try {
+      await markAsReadById(id).unwrap();
+
+      // Update local state
+      if (notifications?.notification?.some((n) => n._id === id)) {
+        refetchNotifications();
+      } else {
+        setNotificationList((prev) =>
+          prev.map((notification) =>
+            notification._id === id
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+      }
+
+      // Optional: Show success message
+      enqueueSnackbar("Notification marked as read", { variant: "success" });
+    } catch (error) {
+      console.error("Mark as read error:", error);
+      enqueueSnackbar("Failed to mark notification as read", {
+        variant: "error",
+      });
+    }
   };
 
-  const clearAllNotifications = () => {
-    // Clear all notifications logic
-    // In a real app, you would make an API call here
-    setNotificationList([]);
+  const markAllAsReads = async () => {
+    try {
+      await markAllAsRead().unwrap();
+
+      // Update local state
+      refetchNotifications();
+      setNotificationList((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
+      );
+
+      enqueueSnackbar("All notifications marked as read", {
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Mark all as read error:", error);
+      enqueueSnackbar("Failed to mark all notifications as read", {
+        variant: "error",
+      });
+    }
+  };
+
+  const clearAllNotification = async () => {
+    try {
+      await clearAllNotifications().unwrap();
+
+      // Clear local state
+      setNotificationList([]);
+      refetchNotifications();
+
+      enqueueSnackbar("All notifications cleared", { variant: "success" });
+    } catch (error) {
+      console.error("Clear all notifications error:", error);
+      enqueueSnackbar("Failed to clear notifications", { variant: "error" });
+    }
   };
 
   const getNotificationIcon = (type) => {
@@ -499,8 +573,8 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                 <Button
                   type="link"
                   size="small"
-                  onClick={markAllAsRead}
-                  style={{
+ onClick={markAllAsReads}
+                  loading={markingAllRead}                  style={{
                     fontSize: screenSize.isMobile ? "12px" : "13px",
                     padding: screenSize.isMobile ? "0 4px" : "0 8px",
                     height: "auto",
@@ -511,7 +585,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
               )}
               <Popconfirm
                 title="Clear all notifications?"
-                onConfirm={clearAllNotifications}
+                onConfirm={clearAllNotification}
                 okText="Yes"
                 cancelText="No"
                 placement="bottomRight"
@@ -674,7 +748,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleMarkAsRead(item._id || item.id);
+                          handleMarkAsReads(item._id || item.id);
                         }}
                         style={{
                           padding: 0,
