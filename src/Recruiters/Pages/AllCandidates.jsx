@@ -352,7 +352,7 @@ function AllCandidates() {
               Manage and track your candidates in branch
             </Text>
           </Col>
-          <Col xs={24} sm={8} md={12}>
+          {/* <Col xs={24} sm={8} md={12}>
             <Space
               size="small"
               style={{ width: "100%", justifyContent: "flex-end" }}
@@ -377,7 +377,7 @@ function AllCandidates() {
                 </Button>
               )}
             </Space>
-          </Col>
+          </Col> */}
         </Row>
       </Card>
 

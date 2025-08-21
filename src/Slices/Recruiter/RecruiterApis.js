@@ -453,12 +453,12 @@ export const recruiterApi = createApi({
         };
       },
     }),
-    getRecruiterNotification: builder.query({
-      query: () => ({
-        url: "/notify",
-        method: "GET",
-      }),
-    }),
+getRecruiterNotification: builder.query({
+  query: ({ page = 1, limit = 10 }) => ({
+    url: `/notify?page=${page}&limit=${limit}`,
+    method: "GET",
+  }),
+}),
   }),
 });
 

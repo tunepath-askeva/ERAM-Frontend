@@ -252,12 +252,12 @@ export const employeeApi = createApi({
         },
       }),
     }),
-    getEmployeeNotification: builder.query({
-      query: () => ({
-        url: `/notify`,
-        method: "GET",
-      }),
-    }),
+getEmployeeNotification: builder.query({
+  query: ({ page = 1, limit = 10 }) => ({
+    url: `/notify?page=${page}&limit=${limit}`,
+    method: "GET",
+  }),
+}),
 
     clearAllNotification: builder.mutation({
       query: () => ({

@@ -15,6 +15,7 @@ import {
   Result,
   Popconfirm,
   message,
+  Pagination,
 } from "antd";
 import {
   BellOutlined,
@@ -43,13 +44,15 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetCandidateNotificationQuery();
+  } = useGetCandidateNotificationQuery({ page, limit: pageSize });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -62,7 +65,7 @@ const Notifications = () => {
 
   useEffect(() => {
     if (apiData) {
-      setNotifications(apiData.notification || []);
+      setNotifications(apiData.notifications || []); // ✅ fixed
       setLoading(false);
     }
     if (apiError) {
@@ -421,7 +424,44 @@ const Notifications = () => {
             }
           />
         )}
+
+        <Pagination
+          current={apiData?.pagination?.page || 1}
+          pageSize={apiData?.pagination?.limit || 10}
+          total={apiData?.pagination?.total || 0}
+          onChange={(newPage, newPageSize) => {
+            setPage(newPage);
+            setPageSize(newPageSize);
+          }}
+          style={{ marginTop: 16, textAlign: "center" }}
+        />
       </Card>
+
+      <style jsx>{`
+        .ant-table-thead > tr > th {
+          background-color: #fafafa !important;
+          font-weight: 600 !important;
+        }
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: #da2c46 !important;
+        }
+        .ant-tabs-ink-bar {
+          background-color: #da2c46 !important;
+        }
+      `}</style>
     </div>
   );
 };

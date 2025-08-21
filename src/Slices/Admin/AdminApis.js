@@ -554,12 +554,12 @@ export const adminApi = createApi({
         },
       }),
     }),
-    getAdminNotifications: builder.query({
-      query: () => ({
-        url: "/notify",
-        method: "GET",
-      }),
-    }),
+getAdminNotifications: builder.query({
+  query: ({ page = 1, limit = 10 }) => ({
+    url: `/notify?page=${page}&limit=${limit}`,
+    method: "GET",
+  }),
+}),
   }),
 });
 

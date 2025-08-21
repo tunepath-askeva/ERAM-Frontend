@@ -146,8 +146,8 @@ export const userApi = createApi({
     }),
 
     getCandidateNotification: builder.query({
-      query: () => ({
-        url: `/notify`,
+      query: ({ page = 1, limit = 10 }) => ({
+        url: `/notify?page=${page}&limit=${limit}`,
         method: "GET",
       }),
       providesTags: ["Notifications"],

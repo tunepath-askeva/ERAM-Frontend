@@ -388,7 +388,7 @@ const RecruiterDashboard = () => {
 
         {/* Charts Section */}
         <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={24}>
             <Card 
               title={
                 <Space>
@@ -405,22 +405,7 @@ const RecruiterDashboard = () => {
             </Card>
           </Col>
 
-          <Col xs={24} lg={12}>
-            <Card 
-              title={
-                <Space>
-                  <CalendarOutlined style={{ color: colors.info }} />
-                  <Text strong style={{ fontSize: '18px' }}>Interview Status Overview</Text>
-                </Space>
-              }
-              style={{ height: '500px', borderRadius: '12px' }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <div style={{ height: '400px' }}>
-                <Column {...columnConfig} />
-              </div>
-            </Card>
-          </Col>
+        
         </Row>
 
         {/* Detailed Tables */}
