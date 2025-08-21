@@ -351,7 +351,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notification?.some((n) => n._id === id)) {
+      if (notifications?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
