@@ -49,6 +49,7 @@ import CandidateEditModal from "./CandidateEditModal";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
 import { useSelector } from "react-redux";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -94,6 +95,7 @@ function AllCandidates() {
   const [addCandidateForm] = Form.useForm();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 700);
+  const { enqueueSnackbar } = useSnackbar();
 
   const queryParams = useMemo(() => {
     const params = {
@@ -208,17 +210,13 @@ function AllCandidates() {
 
   const handleAddCandidate = async (candidateData) => {
     try {
-      await addCandidate(candidateData).unwrap();
-      enqueueSnackbar("Candidate created successfully!", {
-        variant: "success",
-      });
+      const response = await addCandidate(candidateData).unwrap();
       setAddCandidateModalVisible(false);
       refetch();
+
+      return { success: true, data: response };
     } catch (error) {
-      console.error("Error creating candidate:", error);
-      throw new Error(
-        error?.data?.message || "Failed to create candidate. Please try again."
-      );
+      throw error;
     }
   };
 
@@ -229,15 +227,13 @@ function AllCandidates() {
         role: "candidate",
       }).unwrap();
 
-      enqueueSnackbar(`Successfully imported ${response.count} candidates`, {
-        variant: "success",
-      });
+      setBulkUploadModalVisible(false);
       refetch();
+
+      return { success: true, data: response };
     } catch (error) {
-      console.error("Bulk import error:", error);
-      throw new Error(
-        error?.data?.message || "Failed to import candidates. Please try again."
-      );
+      console.error("❌ Bulk import error:", error);
+      throw error;
     }
   };
 

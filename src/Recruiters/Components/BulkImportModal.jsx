@@ -66,7 +66,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
         const fileContent = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target.result);
-          reader.onerror = reject;
+          reader.onerror = (e) => reject(new Error("Failed to read file"));
           reader.readAsText(file);
         });
 
@@ -74,108 +74,144 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
           Papa.parse(fileContent, {
             header: true,
             skipEmptyLines: true,
+            transformHeader: (header) => header.trim(), // Clean headers
             complete: (results) => {
               if (results.errors.length > 0) {
-                reject(
-                  new Error("CSV parsing error: " + results.errors[0].message)
+                console.warn("CSV parsing warnings:", results.errors);
+                // Only reject on critical errors, not warnings
+                const criticalErrors = results.errors.filter(error => 
+                  error.type === "Delimiter" || error.type === "Quotes"
                 );
+                if (criticalErrors.length > 0) {
+                  reject(new Error("CSV parsing error: " + criticalErrors[0].message));
+                } else {
+                  resolve(results.data);
+                }
               } else {
                 resolve(results.data);
               }
             },
-            error: reject,
+            error: (error) => reject(new Error("CSV parsing failed: " + error.message)),
           });
         });
       } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
         const data = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
-            const workbook = XLSX.read(e.target.result, { type: "binary" });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-              defval: "",
-            });
-            resolve(jsonData);
+            try {
+              const workbook = XLSX.read(e.target.result, { type: "binary" });
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                defval: "",
+                raw: false, // Convert everything to strings
+              });
+              resolve(jsonData);
+            } catch (xlsxError) {
+              reject(new Error("Failed to parse Excel file: " + xlsxError.message));
+            }
           };
-          reader.onerror = reject;
+          reader.onerror = (e) => reject(new Error("Failed to read Excel file"));
           reader.readAsBinaryString(file);
         });
 
         parsedData = data;
       } else {
-        enqueueSnackbar(
-          "Unsupported file type. Please upload a .csv or .xlsx file.",
-          { variant: "error" }
-        );
-        setIsImporting(false);
-        return;
+        throw new Error("Unsupported file type. Please upload a .csv or .xlsx file.");
       }
 
-      if (parsedData.length === 0) {
-        enqueueSnackbar("No valid data found in the file", {
-          variant: "error",
-        });
-        setIsImporting(false);
-        return;
+      if (!parsedData || parsedData.length === 0) {
+        throw new Error("No valid data found in the file");
       }
 
       const candidates = [];
       let skippedRows = 0;
+      const errors = [];
 
-      parsedData.forEach((row) => {
-        const fullName =
-          row["Full Name"]?.trim() ||
-          [row["First Name"], row["Middle Name"], row["Last Name"]]
-            .filter(Boolean)
-            .map((s) => s.trim())
-            .join(" ");
+      parsedData.forEach((row, index) => {
+        try {
+          // Clean and validate data
+          const fullName = (
+            row["Full Name"]?.toString()?.trim() ||
+            [row["First Name"], row["Middle Name"], row["Last Name"]]
+              .filter(Boolean)
+              .map((s) => s?.toString()?.trim())
+              .join(" ")
+          );
 
-        const email = row["Email"]?.trim();
-        const password = row["Password"]?.trim();
+          const email = row["Email"]?.toString()?.trim()?.toLowerCase();
+          const password = row["Password"]?.toString()?.trim();
 
-        if (fullName && email && password) {
+          if (!fullName || !email || !password) {
+            skippedRows++;
+            errors.push(`Row ${index + 2}: Missing required fields (Full Name, Email, Password)`);
+            return;
+          }
+
+          // Basic email validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            skippedRows++;
+            errors.push(`Row ${index + 2}: Invalid email format`);
+            return;
+          }
+
           candidates.push({
-            fullName: fullName || "",
-            email: email?.toLowerCase() || "",
-            phone: row["Phone"]?.trim() || "",
-            password: password || "",
-            companyName:
-              row["Company Name"]?.trim() || row["Company"]?.trim() || "",
-            specialization: row["Specialization"]?.trim() || "",
-            qualifications: row["Qualifications"]?.trim() || "",
+            fullName: fullName,
+            email: email,
+            phone: row["Phone"]?.toString()?.trim() || "",
+            password: password,
+            companyName: row["Company Name"]?.toString()?.trim() || 
+                         row["Company"]?.toString()?.trim() || "",
+            specialization: row["Specialization"]?.toString()?.trim() || "",
+            qualifications: row["Qualifications"]?.toString()?.trim() || "",
+            role: "candidate", // Add role here too
           });
-        } else {
+        } catch (rowError) {
           skippedRows++;
+          errors.push(`Row ${index + 2}: ${rowError.message}`);
         }
       });
 
       if (candidates.length === 0) {
-        enqueueSnackbar(
-          "No valid candidates found (Full Name, Email, Password required)",
-          { variant: "error" }
+        throw new Error(
+          "No valid candidates found. Please check the file format and required fields."
         );
-        setIsImporting(false);
-        return;
       }
 
       if (skippedRows > 0) {
+        console.warn("Import warnings:", errors);
         enqueueSnackbar(
-          `${skippedRows} row(s) skipped due to missing required fields.`,
+          `${skippedRows} row(s) skipped due to invalid data. Check console for details.`,
           { variant: "warning" }
         );
       }
 
-      await onImport(candidates);
-      setFileList([]);
-      onCancel();
+      // Call the import function and wait for result
+      const result = await onImport(candidates);
+      
+      // Only proceed if import was successful
+      if (result && result.success !== false) {
+        setFileList([]);
+        enqueueSnackbar(
+          `Successfully imported ${candidates.length} candidate(s)!`,
+          { variant: "success" }
+        );
+        onCancel(); // Close modal only on success
+      }
+
     } catch (error) {
       console.error("Import error:", error);
-      enqueueSnackbar(
-        error?.message ||
-          "Failed to import candidates. Please check the file format.",
-        { variant: "error" }
-      );
+      
+      let errorMessage = "Failed to import candidates. Please check the file format.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: "error" });
     } finally {
       setIsImporting(false);
     }
@@ -185,13 +221,16 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
     <Modal
       title="Bulk Import Candidates"
       open={visible}
-      onCancel={onCancel}
+      onCancel={() => {
+        setFileList([]);
+        onCancel();
+      }}
       footer={null}
       width={600}
     >
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Paragraph type="secondary">
-          Upload a CSV file containing candidate data. The file should include
+          Upload a CSV or Excel file containing candidate data. The file should include
           columns for Full Name, Email, Phone, Password, Company Name,
           Specialization, and Qualifications.
         </Paragraph>
@@ -256,37 +295,48 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             type="primary"
             icon={<DownloadOutlined />}
             onClick={() => {
-              const headers = [
-                "Full Name",
-                "Email",
-                "Phone",
-                "Password",
-                "Company Name",
-                "Specialization",
-                "Qualifications",
-              ];
+              try {
+                const headers = [
+                  "Full Name",
+                  "Email",
+                  "Phone",
+                  "Password",
+                  "Company Name",
+                  "Specialization",
+                  "Qualifications",
+                ];
 
-              const sampleRow = [
-                "John Doe",
-                "john.doe@example.com",
-                "9876543210",
-                "password123",
-                "Acme Corp",
-                "React.js Developer",
-                "B.Tech in Computer Science",
-              ];
+                const sampleRow = [
+                  "John Doe",
+                  "john.doe@example.com",
+                  "9876543210",
+                  "password123",
+                  "Acme Corp",
+                  "React.js Developer",
+                  "B.Tech in Computer Science",
+                ];
 
-              const csvContent =
-                "data:text/csv;charset=utf-8," +
-                [headers, sampleRow].map((row) => row.join(",")).join("\n");
+                const csvContent =
+                  "data:text/csv;charset=utf-8," +
+                  [headers, sampleRow].map((row) => row.join(",")).join("\n");
 
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement("a");
-              link.setAttribute("href", encodedUri);
-              link.setAttribute("download", "candidate_template.csv");
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "candidate_template.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                enqueueSnackbar("Template downloaded successfully!", { 
+                  variant: "success" 
+                });
+              } catch (downloadError) {
+                console.error("Download error:", downloadError);
+                enqueueSnackbar("Failed to download template", { 
+                  variant: "error" 
+                });
+              }
             }}
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",

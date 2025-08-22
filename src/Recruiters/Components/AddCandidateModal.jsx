@@ -49,15 +49,29 @@ const AddCandidateModal = ({
         role: "candidate",
       };
 
+      // Call the API
       await onSubmit(createPayload);
+      
+      // Assume success if no error was thrown
       form.resetFields();
       setSelectedCountryCode("91");
+      enqueueSnackbar("Candidate created successfully!", { 
+        variant: "success" 
+      });
+      
     } catch (error) {
       console.error("Error creating candidate:", error);
-      enqueueSnackbar(
-        error?.message || "Failed to create candidate. Please try again.",
-        { variant: "error" }
-      );
+      
+      // More detailed error handling
+      let errorMessage = "Failed to create candidate. Please try again.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: "error" });
     }
   };
 
