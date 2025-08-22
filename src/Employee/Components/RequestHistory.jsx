@@ -275,12 +275,12 @@ const RequestHistory = ({
                   allowClear
                 >
                   <Option value="all">All Types</Option>
-                  <Option value="travel">Travel Request</Option>
-                  <Option value="exit">Exit Reentry</Option>
-                  <Option value="vehicle">Vehicle Related</Option>
-                  <Option value="payslip">Payslip Request</Option>
-                  <Option value="general">General Request</Option>
-                  <Option value="other">Other Request</Option>
+                  <Option value="Travel Request">Travel Request</Option>
+                  <Option value="Exit Reentry">Exit Reentry</Option>
+                  <Option value="Vehicle Related Request">Vehicle Related</Option>
+                  <Option value="Payslip Request">Payslip Request</Option>
+                  <Option value="General Request">General Request</Option>
+                  <Option value="New/Other Request">Other Request</Option>
                 </Select>
               </Col>
               <Col xs={24} sm={8} md={6}>

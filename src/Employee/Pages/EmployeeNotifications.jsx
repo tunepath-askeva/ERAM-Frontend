@@ -208,8 +208,8 @@ const EmployeeNotifications = () => {
       <div style={{ padding: "16px" }}>
         <Result
           status="error"
-          title="Failed to Load Notifications"
-          subTitle="Something went wrong while fetching notifications."
+          title="Nothing to Show Here" 
+          // subTitle="Something went wrong while fetching notifications."
           extra={
             <Button
               type="primary"
