@@ -460,6 +460,21 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    addCandidate: builder.mutation({
+      query: (candidateData) => ({
+        url: "/candidate",
+        method: "POST",
+        body: candidateData,
+      }),
+    }),
+
+    bulkImportCandidates: builder.mutation({
+      query: (formData) => ({
+        url: "/Candidate/bulk",
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -508,4 +523,6 @@ export const {
   useGetBranchEmployessQuery,
   useGetPipelineCompletedCandidateByIdQuery,
   useGetRecruiterNotificationQuery,
+  useAddCandidateMutation,
+  useBulkImportCandidatesMutation,
 } = recruiterApi;

@@ -40,9 +40,14 @@ import {
 import {
   useGetAllBranchedCandidateQuery,
   useUpdateBranchedCandidateMutation,
+  useAddCandidateMutation,
+  useBulkImportCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import CandidateEditModal from "./CandidateEditModal";
+import AddCandidateModal from "../Components/AddCandidateModal";
+import BulkImportModal from "../Components/BulkImportModal";
 import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
@@ -137,6 +142,11 @@ function AllCandidates() {
   const [updateCandidate, { isLoading: isUpdating }] =
     useUpdateBranchedCandidateMutation();
 
+  const [addCandidate, { isLoading: isAddingCandidate }] =
+    useAddCandidateMutation();
+  const [bulkImportCandidates, { isLoading: isBulkImporting }] =
+    useBulkImportCandidatesMutation();
+
   const candidates = candidatesResponse?.users || [];
   const totalCandidates = candidatesResponse?.total || 0;
   const filterOptions = candidatesResponse?.filterOptions || {
@@ -193,6 +203,41 @@ function AllCandidates() {
     } catch (error) {
       message.error("Failed to update candidate");
       console.error("Update error:", error);
+    }
+  };
+
+  const handleAddCandidate = async (candidateData) => {
+    try {
+      await addCandidate(candidateData).unwrap();
+      enqueueSnackbar("Candidate created successfully!", {
+        variant: "success",
+      });
+      setAddCandidateModalVisible(false);
+      refetch();
+    } catch (error) {
+      console.error("Error creating candidate:", error);
+      throw new Error(
+        error?.data?.message || "Failed to create candidate. Please try again."
+      );
+    }
+  };
+
+  const handleBulkImport = async (candidates) => {
+    try {
+      const response = await bulkImportCandidates({
+        candidates,
+        role: "candidate",
+      }).unwrap();
+
+      enqueueSnackbar(`Successfully imported ${response.count} candidates`, {
+        variant: "success",
+      });
+      refetch();
+    } catch (error) {
+      console.error("Bulk import error:", error);
+      throw new Error(
+        error?.data?.message || "Failed to import candidates. Please try again."
+      );
     }
   };
 
@@ -352,7 +397,7 @@ function AllCandidates() {
               Manage and track your candidates in branch
             </Text>
           </Col>
-          {/* <Col xs={24} sm={8} md={12}>
+          <Col xs={24} sm={8} md={12}>
             <Space
               size="small"
               style={{ width: "100%", justifyContent: "flex-end" }}
@@ -377,7 +422,7 @@ function AllCandidates() {
                 </Button>
               )}
             </Space>
-          </Col> */}
+          </Col>
         </Row>
       </Card>
 
@@ -459,250 +504,21 @@ function AllCandidates() {
         candidate={candidateToEdit}
       />
 
-      {/* Add Candidate Modal */}
-      <Modal
-        title="Add New Candidate"
-        open={addCandidateModalVisible}
-        onCancel={() => {
-          setAddCandidateModalVisible(false);
-          addCandidateForm.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <Form
-          form={addCandidateForm}
-          layout="vertical"
-          initialValues={{
-            status: "new",
-          }}
-        >
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Full Name"
-                name="name"
-                rules={[
-                  { required: true, message: "Please enter candidate's name" },
-                ]}
-              >
-                <Input placeholder="Enter full name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: "Please enter email" },
-                  { type: "email", message: "Please enter a valid email" },
-                ]}
-              >
-                <Input placeholder="Enter email address" />
-              </Form.Item>
-            </Col>
-          </Row>
+      <AddCandidateModal
+        visible={addCandidateModalVisible}
+        onCancel={() => setAddCandidateModalVisible(false)}
+        onSubmit={handleAddCandidate}
+        form={addCandidateForm}
+        isSubmitting={isAddingCandidate}
+      />
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Phone"
-                name="phone"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please enter phone number",
-                  },
-                  {
-                    pattern: /^[0-9+\- ]+$/,
-                    message: "Please enter a valid phone number",
-                  },
-                ]}
-              >
-                <Input placeholder="Enter phone number" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Position"
-                name="position"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select a position",
-                  },
-                ]}
-              >
-                <Select placeholder="Select position">
-                  <Option value="frontend">Frontend Developer</Option>
-                  <Option value="backend">Backend Developer</Option>
-                  <Option value="fullstack">Full Stack Developer</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Notes" name="notes">
-            <Input.TextArea rows={4} placeholder="Add any additional notes" />
-          </Form.Item>
-
-          <Form.Item
-            label="Resume"
-            name="resume"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => {
-              if (Array.isArray(e)) {
-                return e;
-              }
-              return e?.fileList;
-            }}
-          >
-            <Upload.Dragger
-              name="resume"
-              multiple={false}
-              action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-              beforeUpload={(file) => {
-                const isPDF = file.type === "application/pdf";
-                const isDOC =
-                  file.type === "application/msword" ||
-                  file.type ===
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
-                if (!isPDF && !isDOC) {
-                  message.error("You can only upload PDF/DOC files!");
-                  return Upload.LIST_IGNORE;
-                }
-
-                const isLt2M = file.size / 1024 / 1024 < 2;
-                if (!isLt2M) {
-                  message.error("File must smaller than 2MB!");
-                  return Upload.LIST_IGNORE;
-                }
-
-                return isPDF || isDOC;
-              }}
-            >
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">
-                Click or drag file to this area to upload
-              </p>
-              <p className="ant-upload-hint">
-                Support for a single PDF or DOC file upload (max 2MB)
-              </p>
-            </Upload.Dragger>
-          </Form.Item>
-
-          <Form.Item style={{ textAlign: "right", marginTop: 24 }}>
-            <Space>
-              <Button
-                onClick={() => {
-                  setAddCandidateModalVisible(false);
-                  addCandidateForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                style={buttonStyle}
-                onClick={() => {
-                  addCandidateForm
-                    .validateFields()
-                    .then((values) => {
-                      // Handle form submission
-                      message.success("Candidate added successfully!");
-                      setAddCandidateModalVisible(false);
-                      addCandidateForm.resetFields();
-                      refetch(); // Refresh the candidate list
-                    })
-                    .catch((info) => {
-                      console.log("Validate Failed:", info);
-                    });
-                }}
-              >
-                Add Candidate
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Bulk Upload Modal */}
-      <Modal
-        title="Bulk Upload Candidates"
-        open={bulkUploadModalVisible}
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        visible={bulkUploadModalVisible}
         onCancel={() => setBulkUploadModalVisible(false)}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <div style={{ marginBottom: 24 }}>
-          <Text>
-            Upload an Excel file with candidate details. Download our template
-            file to ensure proper formatting.
-          </Text>
-        </div>
+        onImport={handleBulkImport}
+      />
 
-        <Dragger
-          name="file"
-          multiple={false}
-          action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-          accept=".xlsx,.xls"
-          beforeUpload={(file) => {
-            const isExcel =
-              file.type ===
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-              file.type === "application/vnd.ms-excel";
-
-            if (!isExcel) {
-              message.error("You can only upload Excel files!");
-              return Upload.LIST_IGNORE;
-            }
-
-            const isLt5M = file.size / 1024 / 1024 < 5;
-            if (!isLt5M) {
-              message.error("File must smaller than 5MB!");
-              return Upload.LIST_IGNORE;
-            }
-
-            return isExcel;
-          }}
-          onChange={(info) => {
-            const { status } = info.file;
-            if (status === "done") {
-              message.success(`${info.file.name} file uploaded successfully.`);
-              setBulkUploadModalVisible(false);
-              refetch(); // Refresh the candidate list
-            } else if (status === "error") {
-              message.error(`${info.file.name} file upload failed.`);
-            }
-          }}
-        >
-          <p className="ant-upload-drag-icon">
-            <UploadOutlined />
-          </p>
-          <p className="ant-upload-text">
-            Click or drag file to this area to upload
-          </p>
-          <p className="ant-upload-hint">
-            Support for a single Excel file upload (max 5MB)
-          </p>
-        </Dragger>
-
-        <div style={{ marginTop: 24, textAlign: "center" }}>
-          <Button
-            type="link"
-            icon={<DownloadOutlined />}
-            onClick={() => {
-              // Handle template download
-              message.info("Downloading template file...");
-            }}
-          >
-            Download Template File
-          </Button>
-        </div>
-      </Modal>
       <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;
@@ -728,7 +544,6 @@ function AllCandidates() {
           background-color: #da2c46 !important;
         }
       `}</style>
-      
     </div>
   );
 }
