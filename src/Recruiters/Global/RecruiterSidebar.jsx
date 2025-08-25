@@ -12,6 +12,7 @@ import {
   CheckOutlined,
   DiffOutlined,
   BellOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -97,7 +98,12 @@ const RecruiterSidebar = ({
       label: "Interview Candidates",
       permission: "candidates",
     },
-
+    {
+      key: "/recruiter/interviews",
+      icon: <TeamOutlined />,
+      label: "Assigned Interviews",
+      permission: "interviews",
+    },
     {
       key: "/recruiter/staged-candidates",
       icon: <UsergroupAddOutlined />,

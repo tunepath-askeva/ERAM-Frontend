@@ -92,6 +92,7 @@ import AdminNotifications from "./Admin/Pages/AdminNotifications";
 import SuperAdminNotifications from "./SuperAdmin/Pages/SuperAdminNotifications";
 import EmployeeAdminNotifications from "./EmployeeAdmin/Pages/EmployeeAdminNotifications";
 import RecruiterNotifications from "./Recruiters/Pages/RecruiterNotifications";
+import RecruiterAssignedInterviews from "./Recruiters/Pages/RecruiterAssignedInterviews";
 
 const AppRoutes = () => {
   return (
@@ -267,6 +268,12 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/requisition"
           element={<ProtectedRecruiter element={<RecruiterRequisition />} />}
+        />
+        <Route
+          path="/recruiter/interviews"
+          element={
+            <ProtectedRecruiter element={<RecruiterAssignedInterviews />} />
+          }
         />
         <Route
           path="/recruiter/requisition/add"

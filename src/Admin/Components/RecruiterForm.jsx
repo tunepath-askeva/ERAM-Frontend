@@ -55,6 +55,7 @@ const accessPermissions = [
   { key: "jobs", label: "Jobs" },
   { key: "jobs-timeline", label: "Jobs Timeline" },
   { key: "candidates", label: "Candidates" },
+  { key: "interviews", label: "Assgined Interviews" },
   { key: "completed-candidates", label: "Completed Candidates" },
   { key: "all-candidates", label: "All Candidates" },
   { key: "staged-candidates", label: "Staged Candidates" },
