@@ -25,7 +25,9 @@ import {
   CalendarOutlined,
   ClockCircleOutlined,
   SearchOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
+import { useGetRecruiterInterviewsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -40,59 +42,56 @@ const RecruiterAssignedInterviews = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [form] = Form.useForm();
 
-  // Sample data - replace with your actual data
-  const interviewsData = [
-    {
-      id: 1,
-      candidateName: "John Doe",
-      position: "Software Engineer",
-      scheduledDate: "2024-08-26",
-      scheduledTime: "10:00 AM",
-      status: "Scheduled",
-      interviewType: "Technical",
-    },
-    {
-      id: 2,
-      candidateName: "Jane Smith",
-      position: "UI/UX Designer",
-      scheduledDate: "2024-08-27",
-      scheduledTime: "2:00 PM",
-      status: "In Progress",
-      interviewType: "Design",
-    },
-    {
-      id: 3,
-      candidateName: "Mike Johnson",
-      position: "Data Scientist",
-      scheduledDate: "2024-08-28",
-      scheduledTime: "11:30 AM",
-      status: "Scheduled",
-      interviewType: "Technical",
-    },
-    {
-      id: 4,
-      candidateName: "Sarah Wilson",
-      position: "Frontend Developer",
-      scheduledDate: "2024-08-29",
-      scheduledTime: "3:00 PM",
-      status: "Scheduled",
-      interviewType: "Technical",
-    },
-    {
-      id: 5,
-      candidateName: "David Brown",
-      position: "Product Manager",
-      scheduledDate: "2024-08-30",
-      scheduledTime: "1:00 PM",
-      status: "In Progress",
-      interviewType: "Managerial",
-    },
-  ];
+  const { data, isLoading, error } = useGetRecruiterInterviewsQuery();
 
-  // Initialize filtered data
+  // Transform API data to component format
+  const transformInterviewData = (apiData) => {
+    if (!apiData || !apiData.interviews) return [];
+    
+    const transformedData = [];
+    
+    apiData.interviews.forEach((candidateInterview) => {
+      candidateInterview.interviews.forEach((interview) => {
+        transformedData.push({
+          id: interview._id,
+          candidateId: candidateInterview.candidate._id,
+          candidateEmail: candidateInterview.candidate.email,
+          candidateName: candidateInterview.candidate.email.split('@')[0], // Extract name from email
+          position: candidateInterview.workOrder.title,
+          jobCode: candidateInterview.workOrder.jobCode,
+          workplace: candidateInterview.workOrder.workplace,
+          workOrderId: candidateInterview.workOrder._id,
+          scheduledDate: new Date(interview.date).toLocaleDateString('en-GB'),
+          scheduledTime: new Date(interview.date).toLocaleTimeString('en-GB', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          fullDateTime: interview.date,
+          status: interview.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          interviewType: interview.title,
+          mode: interview.mode,
+          meetingLink: interview.meetingLink,
+          location: interview.location, // For in-person interviews
+          notes: interview.notes,
+          interviewerIds: interview.interviewerIds,
+          originalInterview: interview,
+          originalCandidate: candidateInterview.candidate,
+          originalWorkOrder: candidateInterview.workOrder,
+        });
+      });
+    });
+    
+    return transformedData;
+  };
+
+  // Initialize filtered data when API data changes
   useEffect(() => {
-    setFilteredData(interviewsData);
-  }, []);
+    if (data) {
+      const transformedData = transformInterviewData(data);
+      setFilteredData(transformedData);
+    }
+  }, [data]);
 
   // Debounced search function
   const debounceSearch = useCallback(
@@ -101,12 +100,19 @@ const RecruiterAssignedInterviews = () => {
       return (searchValue) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
+          if (!data) return;
+          
+          const allData = transformInterviewData(data);
+          
           if (searchValue.trim() === "") {
-            setFilteredData(interviewsData);
+            setFilteredData(allData);
           } else {
-            const filtered = interviewsData.filter(
+            const filtered = allData.filter(
               (interview) =>
                 interview.candidateName
+                  .toLowerCase()
+                  .includes(searchValue.toLowerCase()) ||
+                interview.candidateEmail
                   .toLowerCase()
                   .includes(searchValue.toLowerCase()) ||
                 interview.position
@@ -117,14 +123,17 @@ const RecruiterAssignedInterviews = () => {
                   .includes(searchValue.toLowerCase()) ||
                 interview.status
                   .toLowerCase()
+                  .includes(searchValue.toLowerCase()) ||
+                interview.jobCode
+                  .toLowerCase()
                   .includes(searchValue.toLowerCase())
             );
             setFilteredData(filtered);
           }
-        }, 2000); // 2 seconds debounce
+        }, 300); // Reduced debounce time to 300ms for better UX
       };
     })(),
-    []
+    [data]
   );
 
   // Handle search input change
@@ -134,31 +143,103 @@ const RecruiterAssignedInterviews = () => {
     debounceSearch(value);
   };
 
-  const columns = [
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'interview completed':
+        return 'green';
+      case 'scheduled':
+        return 'blue';
+      case 'in progress':
+        return 'orange';
+      case 'cancelled':
+        return 'red';
+      case 'on hold':
+        return 'volcano';
+      default:
+        return 'default';
+    }
+  };
 
+  const getModeIcon = (mode) => {
+    switch (mode.toLowerCase()) {
+      case 'online':
+        return '🔗';
+      case 'telephonic':
+        return '📞';
+      case 'in-person':
+        return '🏢';
+      default:
+        return '📋';
+    }
+  };
+
+  const getModeColor = (mode) => {
+    switch (mode.toLowerCase()) {
+      case 'online':
+        return 'green';
+      case 'telephonic':
+        return 'blue';
+      case 'in-person':
+        return 'orange';
+      default:
+        return 'default';
+    }
+  };
+
+  const columns = [
     {
       title: "Candidate",
       dataIndex: "candidateName",
       key: "candidateNameMobile",
-      width: 150,
+      width: 200,
       responsive: ["xs", "sm", "md", "lg"],
-      render: (text) => (
+      render: (text, record) => (
         <div>
-          <Space>
-            <UserOutlined style={{ color: "#da2c46" }} />
-            <span style={{ wordBreak: "break-word", fontSize: "12px" }}>
-              {text}
+          <Space direction="vertical" size="small">
+            <Space>
+              <UserOutlined style={{ color: "#da2c46" }} />
+              <span style={{ wordBreak: "break-word", fontSize: "12px", fontWeight: "bold" }}>
+                {text}
+              </span>
+            </Space>
+            <span style={{ fontSize: "10px", color: "#666" }}>
+              {record.candidateEmail}
             </span>
           </Space>
         </div>
       ),
     },
     {
-      title: "Position",
+      title: "Position & Job Code",
       dataIndex: "position",
       key: "position",
+      width: 200,
+      render: (text, record) => (
+        <div>
+          <div style={{ wordBreak: "break-word", fontWeight: "bold", fontSize: "12px" }}>
+            {text}
+          </div>
+          <div style={{ fontSize: "10px", color: "#666" }}>
+            {record.jobCode} • {record.workplace}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Interview Type & Mode",
+      dataIndex: "interviewType",
+      key: "interviewType",
       width: 180,
-      render: (text) => <span style={{ wordBreak: "break-word" }}>{text}</span>,
+      render: (text, record) => (
+        <div>
+          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>
+            {text}
+          </div>
+          <Tag color={getModeColor(record.mode)} size="small">
+            {getModeIcon(record.mode)} {record.mode}
+          </Tag>
+        </div>
+      ),
     },
     {
       title: "Date & Time",
@@ -185,20 +266,12 @@ const RecruiterAssignedInterviews = () => {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      width: 120,
-      render: (status) => {
-        const color =
-          status === "Scheduled"
-            ? "blue"
-            : status === "In Progress"
-            ? "orange"
-            : "green";
-        return (
-          <Tag color={color} style={{ fontSize: "10px" }}>
-            {status}
-          </Tag>
-        );
-      },
+      width: 140,
+      render: (status) => (
+        <Tag color={getStatusColor(status)} style={{ fontSize: "10px" }}>
+          {status}
+        </Tag>
+      ),
     },
     {
       title: "Action",
@@ -231,6 +304,8 @@ const RecruiterAssignedInterviews = () => {
       // Here you would typically make an API call to submit the interview result
       console.log("Interview Result:", {
         interviewId: selectedInterview.id,
+        candidateId: selectedInterview.candidateId,
+        workOrderId: selectedInterview.workOrderId,
         action: selectedAction,
         remarks: values.remarks,
         rating: values.rating,
@@ -268,7 +343,7 @@ const RecruiterAssignedInterviews = () => {
           level={window.innerWidth < 768 ? 3 : 2}
           style={{
             margin: 0,
-            textAlign:"left",
+            textAlign: "left",
           }}
         >
           Recruiter Assigned Interviews
@@ -287,7 +362,7 @@ const RecruiterAssignedInterviews = () => {
             <Col xs={24} sm={24} md={12} lg={8}>
               <Input
                 allowClear
-                placeholder="Search by candidate name, position, type, or status..."
+                placeholder="Search by candidate, position, job code, or status..."
                 prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
                 value={searchText}
                 onChange={handleSearchChange}
@@ -309,7 +384,7 @@ const RecruiterAssignedInterviews = () => {
             columns={columns}
             dataSource={filteredData}
             rowKey="id"
-            scroll={{ x: 800 }}
+            scroll={{ x: 1100 }}
             pagination={{
               pageSize: window.innerWidth < 768 ? 5 : 10,
               showSizeChanger: window.innerWidth >= 768,
@@ -323,7 +398,7 @@ const RecruiterAssignedInterviews = () => {
               pageSizeOptions: ["5", "10", "20", "50"],
             }}
             size={window.innerWidth < 768 ? "small" : "middle"}
-            loading={false}
+            loading={isLoading}
           />
         </Card>
       </Content>
@@ -356,11 +431,25 @@ const RecruiterAssignedInterviews = () => {
               <Descriptions.Item label="Candidate Name">
                 {selectedInterview.candidateName}
               </Descriptions.Item>
+              <Descriptions.Item label="Candidate Email">
+                {selectedInterview.candidateEmail}
+              </Descriptions.Item>
               <Descriptions.Item label="Position">
                 {selectedInterview.position}
               </Descriptions.Item>
+              <Descriptions.Item label="Job Code">
+                {selectedInterview.jobCode}
+              </Descriptions.Item>
+              <Descriptions.Item label="Workplace">
+                <Tag color="blue">{selectedInterview.workplace}</Tag>
+              </Descriptions.Item>
               <Descriptions.Item label="Interview Type">
                 {selectedInterview.interviewType}
+              </Descriptions.Item>
+              <Descriptions.Item label="Interview Mode">
+                <Tag color={getModeColor(selectedInterview.mode)}>
+                  {getModeIcon(selectedInterview.mode)} {selectedInterview.mode}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Scheduled Date">
                 {selectedInterview.scheduledDate}
@@ -368,64 +457,95 @@ const RecruiterAssignedInterviews = () => {
               <Descriptions.Item label="Scheduled Time">
                 {selectedInterview.scheduledTime}
               </Descriptions.Item>
+              {selectedInterview.mode === 'online' && selectedInterview.meetingLink && (
+                <Descriptions.Item label="Meeting Link">
+                  <a 
+                    href={selectedInterview.meetingLink.startsWith('http') 
+                      ? selectedInterview.meetingLink 
+                      : `https://${selectedInterview.meetingLink}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ wordBreak: "break-all" }}
+                  >
+                    <LinkOutlined /> Join Meeting
+                  </a>
+                </Descriptions.Item>
+              )}
+              {selectedInterview.mode === 'in-person' && selectedInterview.location && (
+                <Descriptions.Item label="Location">
+                  📍 {selectedInterview.location}
+                </Descriptions.Item>
+              )}
+              {selectedInterview.mode === 'telephonic' && (
+                <Descriptions.Item label="Interview Mode">
+                  <Tag color="blue">📞 Phone Interview</Tag>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Notes">
+                {selectedInterview.notes || 'No notes provided'}
+              </Descriptions.Item>
               <Descriptions.Item label="Status">
-                <Tag
-                  color={
-                    selectedInterview.status === "Scheduled" ? "blue" : "orange"
-                  }
-                >
+                <Tag color={getStatusColor(selectedInterview.status)}>
                   {selectedInterview.status}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Interviewers">
+                <Tag color="purple">
+                  {selectedInterview.interviewerIds.length} interviewer(s)
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
 
-            <Card
-              title="Interview Actions"
-              style={{ marginTop: window.innerWidth < 768 ? "16px" : "24px" }}
-              headStyle={{
-                backgroundColor: "#f5f5f5",
-                fontSize: window.innerWidth < 768 ? "14px" : "16px",
-              }}
-            >
-              <Row gutter={[8, 8]}>
-                <Col xs={24} sm={8}>
-                  <Button
-                    type="primary"
-                    icon={<CheckOutlined />}
-                    block
-                    size={window.innerWidth < 768 ? "middle" : "large"}
-                    style={getActionButtonStyle("pass")}
-                    onClick={() => handleActionClick("pass")}
-                  >
-                    Pass
-                  </Button>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Button
-                    type="primary"
-                    icon={<CloseOutlined />}
-                    block
-                    size={window.innerWidth < 768 ? "middle" : "large"}
-                    style={getActionButtonStyle("fail")}
-                    onClick={() => handleActionClick("fail")}
-                  >
-                    Fail
-                  </Button>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Button
-                    type="primary"
-                    icon={<PauseOutlined />}
-                    block
-                    size={window.innerWidth < 768 ? "middle" : "large"}
-                    style={getActionButtonStyle("hold")}
-                    onClick={() => handleActionClick("hold")}
-                  >
-                    Hold
-                  </Button>
-                </Col>
-              </Row>
-            </Card>
+            {/* Only show action buttons if interview is scheduled */}
+            {selectedInterview.status.toLowerCase() === 'scheduled' && (
+              <Card
+                title="Interview Actions"
+                style={{ marginTop: window.innerWidth < 768 ? "16px" : "24px" }}
+                headStyle={{
+                  backgroundColor: "#f5f5f5",
+                  fontSize: window.innerWidth < 768 ? "14px" : "16px",
+                }}
+              >
+                <Row gutter={[8, 8]}>
+                  <Col xs={24} sm={8}>
+                    <Button
+                      type="primary"
+                      icon={<CheckOutlined />}
+                      block
+                      size={window.innerWidth < 768 ? "middle" : "large"}
+                      style={getActionButtonStyle("pass")}
+                      onClick={() => handleActionClick("pass")}
+                    >
+                      Pass
+                    </Button>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Button
+                      type="primary"
+                      icon={<CloseOutlined />}
+                      block
+                      size={window.innerWidth < 768 ? "middle" : "large"}
+                      style={getActionButtonStyle("fail")}
+                      onClick={() => handleActionClick("fail")}
+                    >
+                      Fail
+                    </Button>
+                  </Col>
+                  <Col xs={24} sm={8}>
+                    <Button
+                      type="primary"
+                      icon={<PauseOutlined />}
+                      block
+                      size={window.innerWidth < 768 ? "middle" : "large"}
+                      style={getActionButtonStyle("hold")}
+                      onClick={() => handleActionClick("hold")}
+                    >
+                      Hold
+                    </Button>
+                  </Col>
+                </Row>
+              </Card>
+            )}
           </div>
         )}
       </Drawer>

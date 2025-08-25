@@ -475,6 +475,13 @@ export const recruiterApi = createApi({
         body: formData,
       }),
     }),
+
+    getRecruiterInterviews: builder.query({
+      query: () => ({
+        url: `/rec-interview`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -525,4 +532,5 @@ export const {
   useGetRecruiterNotificationQuery,
   useAddCandidateMutation,
   useBulkImportCandidatesMutation,
+  useGetRecruiterInterviewsQuery,
 } = recruiterApi;
