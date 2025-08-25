@@ -135,13 +135,13 @@ const RecruiterJobsTimeline = () => {
         : "Not specified",
       salary:
         job.salaryType === "annual"
-          ? `$${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
+          ? `SAR ${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
               job.salaryMax
                 ? `-${parseInt(job.salaryMax).toLocaleString()}`
                 : ""
             }/year`
           : job.salaryType === "monthly"
-          ? `$${job.salaryMin ? job.salaryMin : ""}${
+          ? `SAR ${job.salaryMin ? job.salaryMin : ""}${
               job.salaryMax ? `-${job.salaryMax}` : ""
             }/month`
           : "Salary not disclosed",

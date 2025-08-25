@@ -103,7 +103,7 @@ const CompletedCandidates = () => {
     isLoading: isCandidateDetailsLoading,
     isFetching: isCandidateDetailsFetching,
   } = useGetPipelineCompletedCandidateByIdQuery(selectedCandidate?._id, {
-    skip: !selectedCandidate?._id, 
+    skip: !selectedCandidate?._id,
   });
 
   const [convertEmployee, { isLoading: isConverting }] =
@@ -751,6 +751,7 @@ const CompletedCandidates = () => {
                 ...values,
                 candidateId: candidateToConvert.user._id,
                 customFieldId: candidateToConvert._id,
+                workOrderId: candidateToConvert.workOrder._id,
               };
 
               await convertEmployee(payload).unwrap();

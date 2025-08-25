@@ -190,7 +190,7 @@ const RecruiterViewJob = () => {
           <Text
             style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
           >
-            ${workOrder.salaryMin?.toLocaleString()} - $
+            SAR {workOrder.salaryMin?.toLocaleString()} - SAR 
             {workOrder.salaryMax?.toLocaleString()} ({workOrder.salaryType})
           </Text>
         </div>
