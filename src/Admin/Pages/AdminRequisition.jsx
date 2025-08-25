@@ -68,7 +68,7 @@ const AdminRequisition = () => {
       location: req.officeLocation,
       employmentType: req.EmploymentType,
       experience: `${req.experienceMin}-${req.experienceMax} years`,
-      salary: `$${req.salaryMin}-${req.salaryMax}`,
+      salary: `SAR  ${req.salaryMin}-${req.salaryMax}`,
       status: req.isActive,
       priority: "medium",
       positions: req.numberOfCandidate,

@@ -221,7 +221,7 @@ const ViewWorkOrder = () => {
             <Text
               style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
             >
-              ${parseInt(workOrder.salaryMin).toLocaleString()} - $
+              SAR {parseInt(workOrder.salaryMin).toLocaleString()} - SAR 
               {parseInt(workOrder.salaryMax).toLocaleString()}
             </Text>
           </div>
