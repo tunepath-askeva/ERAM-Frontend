@@ -295,10 +295,10 @@ export const recruiterApi = createApi({
       }),
     }),
     changeInterviewStatus: builder.mutation({
-      query: ({ id, status, _id }) => ({
+      query: ({ id, status, _id, remarks }) => ({
         url: `/interviewStatus/${id}`,
         method: "PUT",
-        body: { status, _id },
+        body: { status, _id, remarks },
       }),
     }),
     notifyCandidate: builder.mutation({

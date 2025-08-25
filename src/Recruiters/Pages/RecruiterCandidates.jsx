@@ -1768,9 +1768,13 @@ const RecruiterCandidates = () => {
                                     {interview.notes}
                                   </Descriptions.Item>
                                 )}
+                                {interview.remarks && (
+                                  <Descriptions.Item label="Remarks">
+                                    {interview.remarks}
+                                  </Descriptions.Item>
+                                )}
                               </Descriptions>
 
-                              {/* Action buttons */}
                               <div
                                 style={{
                                   marginTop: 16,
@@ -1778,101 +1782,40 @@ const RecruiterCandidates = () => {
                                   gap: 8,
                                 }}
                               >
+                                {/* Show Cancel only before interview is taken */}
                                 {interview.status === "scheduled" && (
-                                  <>
-                                    <Button
-                                      type="primary"
-                                      style={{ background: "#da2c46" }}
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_completed",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Mark as Completed
-                                    </Button>
-                                    <Button
-                                      type="primary"
-                                      style={{ background: "#faad14" }}
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_hold",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Hold
-                                    </Button>
-                                    <Button
-                                      danger
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_rejected",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Reject
-                                    </Button>
-                                    <Button
-                                      danger
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_cancelled",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </>
+                                  <Button
+                                    danger
+                                    onClick={() =>
+                                      handleChangeInterviewStatus(
+                                        "interview_cancelled",
+                                        interview._id
+                                      )
+                                    }
+                                    loading={isChangingStatus}
+                                  >
+                                    Cancel
+                                  </Button>
                                 )}
 
-                                {interview.status === "interview_hold" && (
-                                  <>
-                                    <Button
-                                      type="primary"
-                                      style={{ backgroundColor: "#da2c46" }}
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_completed",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Mark as Completed
-                                    </Button>
-                                    <Button
-                                      danger
-                                      onClick={() =>
-                                        handleChangeInterviewStatus(
-                                          "interview_rejected",
-                                          interview._id
-                                        )
-                                      }
-                                      loading={isChangingStatus}
-                                    >
-                                      Reject
-                                    </Button>
-                                    <Button
-                                      type="primary"
-                                      style={{ backgroundColor: "#da2c46" }}
-                                      onClick={(e) => {
-                                        handleRescheduleInterview(interview);
-                                      }}
-                                    >
-                                      Reschedule
-                                    </Button>
-                                  </>
+                                {/* After interviewer gives result */}
+                                {interview.status === "pass" && (
+                                  <Button
+                                    type="primary"
+                                    style={{ background: "#da2c46" }}
+                                    onClick={() =>
+                                      handleChangeInterviewStatus(
+                                        "interview_completed",
+                                        interview._id
+                                      )
+                                    }
+                                    loading={isChangingStatus}
+                                  >
+                                    Mark as Completed
+                                  </Button>
                                 )}
 
-                                {interview.status === "interview_completed" && (
+                                {interview.status === "fail" && (
                                   <Button
                                     danger
                                     onClick={() =>
@@ -1885,6 +1828,12 @@ const RecruiterCandidates = () => {
                                   >
                                     Reject
                                   </Button>
+                                )}
+
+                                {interview.status === "interview_hold" && (
+                                  <Tag color="orange">
+                                    Waiting for interviewer’s final decision
+                                  </Tag>
                                 )}
                               </div>
                             </Panel>

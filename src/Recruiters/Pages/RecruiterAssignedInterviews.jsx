@@ -27,7 +27,10 @@ import {
   SearchOutlined,
   LinkOutlined,
 } from "@ant-design/icons";
-import { useGetRecruiterInterviewsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetRecruiterInterviewsQuery,
+  useChangeInterviewStatusMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -42,37 +45,40 @@ const RecruiterAssignedInterviews = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [form] = Form.useForm();
 
-  const { data, isLoading, error } = useGetRecruiterInterviewsQuery();
+  const { data, isLoading, error, refetch } = useGetRecruiterInterviewsQuery();
+  const [changeStatus] = useChangeInterviewStatusMutation();
 
-  // Transform API data to component format
   const transformInterviewData = (apiData) => {
     if (!apiData || !apiData.interviews) return [];
-    
+
     const transformedData = [];
-    
+
     apiData.interviews.forEach((candidateInterview) => {
       candidateInterview.interviews.forEach((interview) => {
         transformedData.push({
           id: interview._id,
+          customFieldResponseId: candidateInterview.customFieldResponseId,
           candidateId: candidateInterview.candidate._id,
           candidateEmail: candidateInterview.candidate.email,
-          candidateName: candidateInterview.candidate.email.split('@')[0], // Extract name from email
+          candidateName: candidateInterview.candidate.email.split("@")[0],
           position: candidateInterview.workOrder.title,
           jobCode: candidateInterview.workOrder.jobCode,
           workplace: candidateInterview.workOrder.workplace,
           workOrderId: candidateInterview.workOrder._id,
-          scheduledDate: new Date(interview.date).toLocaleDateString('en-GB'),
-          scheduledTime: new Date(interview.date).toLocaleTimeString('en-GB', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true 
+          scheduledDate: new Date(interview.date).toLocaleDateString("en-GB"),
+          scheduledTime: new Date(interview.date).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
           }),
           fullDateTime: interview.date,
-          status: interview.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          status: interview.status
+            .replace("_", " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase()),
           interviewType: interview.title,
           mode: interview.mode,
           meetingLink: interview.meetingLink,
-          location: interview.location, // For in-person interviews
+          location: interview.location,
           notes: interview.notes,
           interviewerIds: interview.interviewerIds,
           originalInterview: interview,
@@ -81,7 +87,7 @@ const RecruiterAssignedInterviews = () => {
         });
       });
     });
-    
+
     return transformedData;
   };
 
@@ -101,9 +107,9 @@ const RecruiterAssignedInterviews = () => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           if (!data) return;
-          
+
           const allData = transformInterviewData(data);
-          
+
           if (searchValue.trim() === "") {
             setFilteredData(allData);
           } else {
@@ -145,44 +151,44 @@ const RecruiterAssignedInterviews = () => {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'interview completed':
-        return 'green';
-      case 'scheduled':
-        return 'blue';
-      case 'in progress':
-        return 'orange';
-      case 'cancelled':
-        return 'red';
-      case 'on hold':
-        return 'volcano';
+      case "interview completed":
+        return "green";
+      case "scheduled":
+        return "blue";
+      case "in progress":
+        return "orange";
+      case "cancelled":
+        return "red";
+      case "on hold":
+        return "volcano";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const getModeIcon = (mode) => {
     switch (mode.toLowerCase()) {
-      case 'online':
-        return '🔗';
-      case 'telephonic':
-        return '📞';
-      case 'in-person':
-        return '🏢';
+      case "online":
+        return "🔗";
+      case "telephonic":
+        return "📞";
+      case "in-person":
+        return "🏢";
       default:
-        return '📋';
+        return "📋";
     }
   };
 
   const getModeColor = (mode) => {
     switch (mode.toLowerCase()) {
-      case 'online':
-        return 'green';
-      case 'telephonic':
-        return 'blue';
-      case 'in-person':
-        return 'orange';
+      case "online":
+        return "green";
+      case "telephonic":
+        return "blue";
+      case "in-person":
+        return "orange";
       default:
-        return 'default';
+        return "default";
     }
   };
 
@@ -198,7 +204,13 @@ const RecruiterAssignedInterviews = () => {
           <Space direction="vertical" size="small">
             <Space>
               <UserOutlined style={{ color: "#da2c46" }} />
-              <span style={{ wordBreak: "break-word", fontSize: "12px", fontWeight: "bold" }}>
+              <span
+                style={{
+                  wordBreak: "break-word",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
                 {text}
               </span>
             </Space>
@@ -216,7 +228,13 @@ const RecruiterAssignedInterviews = () => {
       width: 200,
       render: (text, record) => (
         <div>
-          <div style={{ wordBreak: "break-word", fontWeight: "bold", fontSize: "12px" }}>
+          <div
+            style={{
+              wordBreak: "break-word",
+              fontWeight: "bold",
+              fontSize: "12px",
+            }}
+          >
             {text}
           </div>
           <div style={{ fontSize: "10px", color: "#666" }}>
@@ -232,7 +250,13 @@ const RecruiterAssignedInterviews = () => {
       width: 180,
       render: (text, record) => (
         <div>
-          <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>
+          <div
+            style={{
+              fontSize: "12px",
+              fontWeight: "bold",
+              marginBottom: "4px",
+            }}
+          >
             {text}
           </div>
           <Tag color={getModeColor(record.mode)} size="small">
@@ -301,21 +325,32 @@ const RecruiterAssignedInterviews = () => {
 
   const handleSubmitRemarks = async (values) => {
     try {
-      // Here you would typically make an API call to submit the interview result
-      console.log("Interview Result:", {
-        interviewId: selectedInterview.id,
-        candidateId: selectedInterview.candidateId,
-        workOrderId: selectedInterview.workOrderId,
-        action: selectedAction,
-        remarks: values.remarks,
-        rating: values.rating,
-      });
+      // Map the action to the correct status
+      const statusMapping = {
+        pass: "pass",
+        fail: "fail",
+        hold: "interview_hold",
+      };
 
+      await changeStatus({
+        id: selectedInterview.customFieldResponseId, // <-- goes in params
+
+        _id: selectedInterview.id, // <-- correct interview _id
+        status: statusMapping[selectedAction],
+        remarks: values.remarks,
+      }).unwrap();
+
+      refetch();
       message.success(`Interview marked as ${selectedAction} successfully!`);
       setModalVisible(false);
       setDrawerVisible(false);
       form.resetFields();
+
+      // Reset state
+      setSelectedInterview(null);
+      setSelectedAction("");
     } catch (error) {
+      console.error("Error updating interview status:", error);
       message.error("Failed to submit interview result");
     }
   };
@@ -457,32 +492,36 @@ const RecruiterAssignedInterviews = () => {
               <Descriptions.Item label="Scheduled Time">
                 {selectedInterview.scheduledTime}
               </Descriptions.Item>
-              {selectedInterview.mode === 'online' && selectedInterview.meetingLink && (
-                <Descriptions.Item label="Meeting Link">
-                  <a 
-                    href={selectedInterview.meetingLink.startsWith('http') 
-                      ? selectedInterview.meetingLink 
-                      : `https://${selectedInterview.meetingLink}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ wordBreak: "break-all" }}
-                  >
-                    <LinkOutlined /> Join Meeting
-                  </a>
-                </Descriptions.Item>
-              )}
-              {selectedInterview.mode === 'in-person' && selectedInterview.location && (
-                <Descriptions.Item label="Location">
-                  📍 {selectedInterview.location}
-                </Descriptions.Item>
-              )}
-              {selectedInterview.mode === 'telephonic' && (
+              {selectedInterview.mode === "online" &&
+                selectedInterview.meetingLink && (
+                  <Descriptions.Item label="Meeting Link">
+                    <a
+                      href={
+                        selectedInterview.meetingLink.startsWith("http")
+                          ? selectedInterview.meetingLink
+                          : `https://${selectedInterview.meetingLink}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ wordBreak: "break-all" }}
+                    >
+                      <LinkOutlined /> Join Meeting
+                    </a>
+                  </Descriptions.Item>
+                )}
+              {selectedInterview.mode === "in-person" &&
+                selectedInterview.location && (
+                  <Descriptions.Item label="Location">
+                    📍 {selectedInterview.location}
+                  </Descriptions.Item>
+                )}
+              {selectedInterview.mode === "telephonic" && (
                 <Descriptions.Item label="Interview Mode">
                   <Tag color="blue">📞 Phone Interview</Tag>
                 </Descriptions.Item>
               )}
               <Descriptions.Item label="Notes">
-                {selectedInterview.notes || 'No notes provided'}
+                {selectedInterview.notes || "No notes provided"}
               </Descriptions.Item>
               <Descriptions.Item label="Status">
                 <Tag color={getStatusColor(selectedInterview.status)}>
@@ -497,7 +536,7 @@ const RecruiterAssignedInterviews = () => {
             </Descriptions>
 
             {/* Only show action buttons if interview is scheduled */}
-            {selectedInterview.status.toLowerCase() === 'scheduled' && (
+            {selectedInterview.status.toLowerCase() === "scheduled" && (
               <Card
                 title="Interview Actions"
                 style={{ marginTop: window.innerWidth < 768 ? "16px" : "24px" }}

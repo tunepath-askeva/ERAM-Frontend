@@ -100,7 +100,7 @@ const RecruiterSidebar = ({
     },
     {
       key: "/recruiter/interviews",
-      icon: <TeamOutlined />,
+      icon: <UsergroupAddOutlined />,
       label: "Assigned Interviews",
       permission: "interviews",
     },
