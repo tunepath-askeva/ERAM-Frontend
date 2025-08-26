@@ -68,6 +68,7 @@ import {
   useGetAllStaffsQuery,
   useMoveToPipelineMutation,
   useGetPipelineCompletedCandidateByIdQuery,
+  useOfferInfoMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
@@ -119,6 +120,9 @@ const RecruiterCandidates = () => {
   const [convertModalVisible, setConvertModalVisible] = useState(false);
   const [convertForm] = Form.useForm();
   const [candidateToConvert, setCandidateToConvert] = useState(null);
+  const [offerModalVisible, setOfferModalVisible] = useState(false);
+  const [offerAction, setOfferAction] = useState("new"); // "new" or "revise"
+  const [offerForm] = Form.useForm();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -156,6 +160,8 @@ const RecruiterCandidates = () => {
     useConvertEmployeeMutation();
   const [moveToPipeline, { isLoading: isMovingPipeline }] =
     useMoveToPipelineMutation();
+
+  const [offerInfo, { isLoading: isSubmittingOffer }] = useOfferInfoMutation();
 
   const {
     data: candidateDetails,
@@ -320,31 +326,68 @@ const RecruiterCandidates = () => {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  const handleMakeOffer = async (candidate) => {
+  const handleMakeOffer = (candidate) => {
+    setSelectedCandidate(candidate);
+    setOfferModalVisible(true);
+    offerForm.resetFields();
+  };
+
+  const handleOfferSubmit = async (values) => {
     try {
-      const response = await moveToNextStage({
-        id: candidate._id,
-        status: "offer",
-      }).unwrap();
+      const formData = new FormData();
+      formData.append("status", "offer_pending");
+      formData.append("description", values.description);
 
-      message.success(`Offer sent to ${candidate.name} successfully!`);
+      if (values.file?.file?.originFileObj) {
+        formData.append("attachment", values.file.file.originFileObj);
+      }
+
+      await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
+
+      message.success("Offer created successfully!");
+      setOfferModalVisible(false);
+      offerForm.resetFields();
       refetch();
+      refetchCandidateDetails();
+    } catch (err) {
+      message.error("Failed to send offer");
+    }
+  };
 
-      const recruiterEmail = recruiterInfo?.email || "";
-      const candidateEmail = candidate.email;
-      const subject = encodeURIComponent(`Job Offer for ${candidate.position}`);
-      const body = encodeURIComponent(
-        `Dear ${candidate.name},\n\nWe are pleased to offer you the position of ${candidate.position}.\n\nBest regards,\n${recruiterEmail}`
-      );
+  const handleReviseOffer = async (values) => {
+    try {
+      const formData = new FormData();
+      formData.append("status", "offer_revised");
+      formData.append("description", values.description);
 
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${candidateEmail}&su=${subject}&body=${body}&bcc=${recruiterEmail}`;
+      if (values.file?.file?.originFileObj) {
+        formData.append("attachment", values.file.file.originFileObj);
+      }
 
-      window.open(gmailUrl, "_blank");
-    } catch (error) {
-      message.error(
-        `Failed to send offer to ${candidate.name}. Please try again.`
-      );
-      console.error("Make offer error:", error);
+      await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
+
+      message.success("Offer revised successfully!");
+      setOfferModalVisible(false);
+      offerForm.resetFields();
+      refetch();
+      refetchCandidateDetails();
+    } catch (err) {
+      message.error("Failed to revise offer");
+    }
+  };
+
+  const handleFinalizeOffer = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("status", "offer"); // final
+
+      await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
+
+      message.success("Offer finalized!");
+      refetch();
+      refetchCandidateDetails();
+    } catch (err) {
+      message.error("Failed to finalize offer");
     }
   };
 
@@ -513,7 +556,12 @@ const RecruiterCandidates = () => {
             key: "offer",
             label: "Make Offer",
             icon: <GiftOutlined style={iconTextStyle} />,
-            onClick: () => handleMakeOffer(candidate),
+            onClick: () => {
+              setSelectedCandidate(candidate);
+              setOfferAction("new"); // 👈 set to new offer
+              setOfferModalVisible(true);
+              offerForm.resetFields();
+            },
             style: { color: "#52c41a" },
           });
         }
@@ -1979,6 +2027,63 @@ const RecruiterCandidates = () => {
                       </div>
                     </TabPane>
                   )}
+
+                  {(candidate.status === "offer_pending" ||
+                    candidate.status === "offer_revised" ||
+                    candidate.status === "offer") && (
+                    <TabPane tab="Offer Details" key="offer">
+                      <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="Status">
+                          <Tag color="blue">{candidate.status}</Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Description">
+                          {candidate.offerDetails?.description || "N/A"}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Offer Letter">
+                          {candidate.offerDetails?.attachmentUrl ? (
+                            <a
+                              href={candidate.offerDetails.attachmentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Download Offer Letter
+                            </a>
+                          ) : (
+                            "No file uploaded"
+                          )}
+                        </Descriptions.Item>
+                      </Descriptions>
+
+                      <div style={{ marginTop: 16 }}>
+                        <Button
+                          onClick={() => {
+                            setOfferAction("revise"); // 👈 set to revise
+                            setOfferModalVisible(true);
+                            offerForm.setFieldsValue({
+                              description: candidate.offerDetails?.description,
+                            });
+                          }}
+                        >
+                          Revise Offer
+                        </Button>
+
+                        <Button
+                          type="primary"
+                          style={{ marginLeft: 8 }}
+                          onClick={async () => {
+                            const formData = new FormData();
+                            formData.append("status", "offer"); // finalize
+                            await offerInfo({ id: candidate._id, formData });
+                            message.success("Offer finalized!");
+                            refetch();
+                            refetchCandidateDetails();
+                          }}
+                        >
+                          Finalize Offer
+                        </Button>
+                      </div>
+                    </TabPane>
+                  )}
                 </Tabs>
               </div>
             )}
@@ -2986,6 +3091,77 @@ const RecruiterCandidates = () => {
             />
           </div>
         )}
+      </Modal>
+
+      <Modal
+        title={`${offerAction === "revise" ? "Revise" : "Make"} Offer for ${
+          selectedCandidate?.name
+        }`}
+        open={offerModalVisible}
+        onCancel={() => {
+          setOfferModalVisible(false);
+          offerForm.resetFields();
+        }}
+        footer={[
+          <Button key="cancel" onClick={() => setOfferModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={isSubmittingOffer}
+            onClick={() => offerForm.submit()}
+          >
+            {offerAction === "revise" ? "Revise Offer" : "Send Offer"}
+          </Button>,
+        ]}
+      >
+        <Form
+          form={offerForm}
+          layout="vertical"
+          onFinish={(values) => {
+            const formData = new FormData();
+            formData.append(
+              "status",
+              offerAction === "revise" ? "offer_revised" : "offer_pending"
+            );
+            formData.append("description", values.description);
+
+            if (values.file?.file?.originFileObj) {
+              formData.append("attachment", values.file.file.originFileObj);
+            }
+
+            offerInfo({ id: selectedCandidate._id, formData })
+              .unwrap()
+              .then(() => {
+                message.success(
+                  `Offer ${
+                    offerAction === "revise" ? "revised" : "sent"
+                  } successfully!`
+                );
+                setOfferModalVisible(false);
+                offerForm.resetFields();
+                refetch();
+                refetchCandidateDetails();
+              })
+              .catch(() => {
+                message.error("Failed to submit offer");
+              });
+          }}
+        >
+          <Form.Item
+            name="description"
+            label="Offer Description"
+            rules={[{ required: true, message: "Please enter description" }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter offer details" />
+          </Form.Item>
+          <Form.Item label="Offer Letter" name="file">
+            <Upload beforeUpload={() => false} maxCount={1}>
+              <Button icon={<UploadOutlined />}>Click to Upload</Button>
+            </Upload>
+          </Form.Item>
+        </Form>
       </Modal>
 
       <style jsx>{`

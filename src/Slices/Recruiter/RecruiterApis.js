@@ -11,7 +11,6 @@ export const recruiterApi = createApi({
     baseUrl,
     credentials: "include",
     prepareHeaders: (headers, { getState }) => {
-      headers.set("Content-Type", "application/json");
       return headers;
     },
   }),
@@ -482,6 +481,14 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+
+    offerInfo: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/offer-info/${id}`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -533,4 +540,5 @@ export const {
   useAddCandidateMutation,
   useBulkImportCandidatesMutation,
   useGetRecruiterInterviewsQuery,
+  useOfferInfoMutation,
 } = recruiterApi;
