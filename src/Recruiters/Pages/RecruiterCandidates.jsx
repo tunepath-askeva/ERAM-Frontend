@@ -258,6 +258,10 @@ const RecruiterCandidates = () => {
 
   const statusConfig = {
     interview: { color: "purple", label: "Interview" },
+    offer_pending: {
+      label: "Offer Accept Waiting",
+      color: "orange",
+    },
     offer: { color: "green", label: "Offer" },
     rejected: { color: "red", label: "Rejected" },
     completed: { color: "green", label: "Completed" },
@@ -276,12 +280,12 @@ const RecruiterCandidates = () => {
     localStorage.getItem("recruiterInfo") || "{}"
   );
 
-  console.log(recruiterInfo, "Recruiter info");
-
   const filterCounts = {
     all: candidates.length,
     completed: candidates.filter((c) => c.status === "completed").length,
     interview: candidates.filter((c) => c.status === "interview").length,
+    offer_pending: candidates.filter((c) => c.status === "offer_pending")
+      .length,
     offer: candidates.filter((c) => c.status === "offer").length,
     rejected: candidates.filter((c) => c.status === "rejected").length,
   };
@@ -337,9 +341,11 @@ const RecruiterCandidates = () => {
       const formData = new FormData();
       formData.append("status", "offer_pending");
       formData.append("description", values.description);
-
+      console.log(values, "hi valuesssss");
       if (values.file?.file?.originFileObj) {
         formData.append("attachment", values.file.file.originFileObj);
+      } else if (values.file?.fileList?.[0]?.originFileObj) {
+        formData.append("attachment", values.file.fileList[0].originFileObj);
       }
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
@@ -1303,7 +1309,7 @@ const RecruiterCandidates = () => {
     },
   ];
 
-  const tabItems = ["interview", "offer", "rejected"]
+  const tabItems = ["interview", "offer_pending", "offer", "rejected"]
     .filter((status) => hasPermission(`view-${status}-tab`))
     .map((status) => ({
       key: status,
@@ -1548,15 +1554,6 @@ const RecruiterCandidates = () => {
               onPressEnter={(e) => handleSearch(e.target.value)}
             />
           </Col>
-          <Col xs={24} md={6}>
-            <Button
-              icon={<FilterOutlined style={iconTextStyle} />}
-              size="large"
-              block
-            >
-              More Filters
-            </Button>
-          </Col>
         </Row>
 
         {/* Status Filter Tabs */}
@@ -1577,9 +1574,7 @@ const RecruiterCandidates = () => {
         </div>
       </Card>
 
-      {/* Candidates Table/Cards */}
       <Card>
-        {/* Desktop Table View */}
         <div
           className="desktop-view"
           style={{ display: window.innerWidth >= 768 ? "block" : "none" }}
@@ -2332,177 +2327,6 @@ const RecruiterCandidates = () => {
         </Form>
       </Modal>
 
-      {/* <Modal
-        title={`Convert ${candidateToConvert?.name || ""} to Employee`}
-        open={convertModalVisible}
-        onCancel={() => {
-          setConvertModalVisible(false);
-          convertForm.resetFields();
-          setCandidateToConvert(null);
-        }}
-        footer={null}
-        width={700}
-      >
-        <Form
-          form={convertForm}
-          layout="vertical"
-          onFinish={async (values) => {
-            try {
-              if (!candidateToConvert) {
-                throw new Error("No candidate selected");
-              }
-
-              console.log("Candidate object structure:", {
-                candidateId: candidateToConvert._id,
-                userId: candidateToConvert.candidateId,
-                fullObject: candidateToConvert,
-              });
-
-              if (!candidateToConvert.candidateId) {
-                throw new Error("Candidate user information is incomplete");
-              }
-
-              const payload = {
-                ...values,
-                candidateId: candidateToConvert.candidateId,
-                customFieldId: candidateToConvert._id,
-              };
-
-              console.log("Submit to API:", payload);
-              await convertEmployee(payload).unwrap();
-
-              message.success("Candidate successfully converted to employee!");
-              setConvertModalVisible(false);
-              convertForm.resetFields();
-              setCandidateToConvert(null);
-              refetch();
-            } catch (error) {
-              console.error("Conversion failed:", error);
-              message.error(error.message || "Failed to convert candidate.");
-            }
-          }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Full Name"
-                name="fullName"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Date of Join"
-                name="dateOfJoining"
-                rules={[{ required: true }]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Category"
-                name="category"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Assigned Job Title"
-                name="assignedJobTitle"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="ERAMID"
-                name="eramId"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Badge No"
-                name="badgeNo"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Gate Pass ID" name="gatePassId">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Aramco ID" name="aramcoId">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Other ID" name="otherId">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Plant ID" name="plantId">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="Official E-Mail Account" name="officialEmail">
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            label="Basic Asset MGT: Laptop, Vehicle, etc (Reporting and Documentation)"
-            name="basicAssets"
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item style={{ textAlign: "right" }}>
-            <Button
-              onClick={() => {
-                setConvertModalVisible(false);
-                convertForm.resetFields();
-              }}
-              style={{ marginRight: 8 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              style={{ backgroundColor: "#da2c46" }}
-              htmlType="submit"
-            >
-              Convert to Employee
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal> */}
-
       <Modal
         title={`Pipeline Details - ${selectedPipeline?.name || ""}`}
         open={pipelineModalVisible}
@@ -3116,39 +2940,7 @@ const RecruiterCandidates = () => {
           </Button>,
         ]}
       >
-        <Form
-          form={offerForm}
-          layout="vertical"
-          onFinish={(values) => {
-            const formData = new FormData();
-            formData.append(
-              "status",
-              offerAction === "revise" ? "offer_revised" : "offer_pending"
-            );
-            formData.append("description", values.description);
-
-            if (values.file?.file?.originFileObj) {
-              formData.append("attachment", values.file.file.originFileObj);
-            }
-
-            offerInfo({ id: selectedCandidate._id, formData })
-              .unwrap()
-              .then(() => {
-                message.success(
-                  `Offer ${
-                    offerAction === "revise" ? "revised" : "sent"
-                  } successfully!`
-                );
-                setOfferModalVisible(false);
-                offerForm.resetFields();
-                refetch();
-                refetchCandidateDetails();
-              })
-              .catch(() => {
-                message.error("Failed to submit offer");
-              });
-          }}
-        >
+        <Form form={offerForm} layout="vertical" onFinish={handleOfferSubmit}>
           <Form.Item
             name="description"
             label="Offer Description"
