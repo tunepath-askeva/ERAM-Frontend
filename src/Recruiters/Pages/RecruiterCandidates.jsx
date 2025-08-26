@@ -1316,17 +1316,16 @@ const RecruiterCandidates = () => {
     rejected: "Rejected",
   };
 
-const tabItems = ["interview","offer_pending", "offer", "rejected"]
-  .filter((status) => hasPermission(`view-${status}-tab`))
-  .map((status) => ({
-    key: status,
-    label: (
-      <Badge count={filterCounts[status]} size="small" offset={[10, 0]}>
-        {tabLabels[status]}
-      </Badge>
-    ),
-  }));
-
+  const tabItems = ["interview", "offer_pending", "offer", "rejected"]
+    // .filter((status) => hasPermission(`view-${status}-tab`))
+    .map((status) => ({
+      key: status,
+      label: (
+        <Badge count={filterCounts[status]} size="small" offset={[10, 0]}>
+          {tabLabels[status]}
+        </Badge>
+      ),
+    }));
 
   const CandidateCard = ({ candidate }) => (
     <Card
@@ -2040,16 +2039,20 @@ const tabItems = ["interview","offer_pending", "offer", "rejected"]
                           <Tag color="blue">{candidate.status}</Tag>
                         </Descriptions.Item>
                         <Descriptions.Item label="Description">
-                          {candidate.offerDetails?.description || "N/A"}
+                          {candidate.offerDetails?.[0]?.description || "N/A"}
                         </Descriptions.Item>
                         <Descriptions.Item label="Offer Letter">
-                          {candidate.offerDetails?.attachmentUrl ? (
+                          {candidate.offerDetails?.[0]?.offerDocument
+                            ?.fileUrl ? (
                             <a
-                              href={candidate.offerDetails.attachmentUrl}
+                              href={
+                                candidate.offerDetails[0].offerDocument.fileUrl
+                              }
                               target="_blank"
                               rel="noreferrer"
                             >
-                              Download Offer Letter
+                              {candidate.offerDetails[0].offerDocument
+                                .fileName || "Download Offer Letter"}
                             </a>
                           ) : (
                             "No file uploaded"
@@ -2058,32 +2061,38 @@ const tabItems = ["interview","offer_pending", "offer", "rejected"]
                       </Descriptions>
 
                       <div style={{ marginTop: 16 }}>
-                        <Button
-                          onClick={() => {
-                            setOfferAction("revise"); // 👈 set to revise
-                            setOfferModalVisible(true);
-                            offerForm.setFieldsValue({
-                              description: candidate.offerDetails?.description,
-                            });
-                          }}
-                        >
-                          Revise Offer
-                        </Button>
+                        {candidate.status === "offer_pending" && (
+                          <>
+                            <Button
+                              onClick={() => {
+                                setOfferAction("revise");
+                                setOfferModalVisible(true);
+                                offerForm.setFieldsValue({
+                                  description:
+                                    candidate.offerDetails?.[0]?.description,
+                                });
+                              }}
+                            >
+                              Revise Offer
+                            </Button>
 
-                        <Button
-                          type="primary"
-                          style={{ marginLeft: 8 }}
-                          onClick={async () => {
-                            const formData = new FormData();
-                            formData.append("status", "offer"); // finalize
-                            await offerInfo({ id: candidate._id, formData });
-                            message.success("Offer finalized!");
-                            refetch();
-                            refetchCandidateDetails();
-                          }}
-                        >
-                          Finalize Offer
-                        </Button>
+                            <Button
+                              type="primary"
+                              style={{ marginLeft: 8 }}
+                              onClick={async () => {
+                                await moveToNextStage({
+                                  id: candidate._id,
+                                  status: "offer",
+                                });
+                                message.success("Offer finalized!");
+                                refetch();
+                                refetchCandidateDetails();
+                              }}
+                            >
+                              Move to Offer
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TabPane>
                   )}

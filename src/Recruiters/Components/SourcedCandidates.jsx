@@ -48,6 +48,8 @@ import {
   useGetSourcedCandidateQuery,
   useGetExactMatchCandidatesQuery,
   useGetPipelinesQuery,
+  useGetCurrentWorkOrderDetailsForFilteringQuery,
+  useCurrentWorkorderDetailsFilteringMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
@@ -234,18 +236,28 @@ const SourcedCandidates = ({ jobId }) => {
   const [candidateToUpdate, setCandidateToUpdate] = useState(null);
   const [isExactMatch, setIsExactMatch] = useState(false);
   const [selectedPipeline, setSelectedPipeline] = useState(null);
+  const [isWorkOrderModalVisible, setIsWorkOrderModalVisible] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+  const [form] = Form.useForm();
 
   const [filters, setFilters] = useState(initialFilters);
   const [tempFilters, setTempFilters] = useState({ ...initialFilters });
   const [shouldFetch, setShouldFetch] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [queryParams, setQueryParams] = useState("");
+  const {
+    data: workOrderDetails,
+    isLoading: isWorkOrderLoading,
+    error: workOrderError,
+  } = useGetCurrentWorkOrderDetailsForFilteringQuery(jobId, {
+    skip: !isWorkOrderModalVisible,
+  });
 
+  const [CurrentWorkorderFiltering] = useCurrentWorkorderDetailsFilteringMutation()
   const { data: pipelineData } = useGetPipelinesQuery();
   const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
@@ -424,6 +436,29 @@ const SourcedCandidates = ({ jobId }) => {
 
     return merged;
   }, [jobApplications, sourcedCandidatesData, exactMatchData, isExactMatch]);
+
+const handleSubmit = async () => {
+  try {
+    const values = await form.validateFields(); 
+    const payload = {
+      ...values,
+      requiredSkills: values.requiredSkills
+        ? values.requiredSkills.split(",").map((s) => s.trim())
+        : [],
+      languagesRequired: values.languagesRequired
+        ? values.languagesRequired.split(",").map((l) => l.trim())
+        : [],
+    };
+
+    await CurrentWorkorderFiltering({  body: payload }).unwrap();
+    message.success("Work order details submitted successfully!");
+    setIsWorkOrderModalVisible(false);
+  } catch (error) {
+    console.error(error);
+    message.error("Please fix the errors in the form");
+  }
+};
+
 
   const sourcedCandidates = useMemo(() => {
     if (!shouldFetch && !isExactMatch) {
@@ -884,6 +919,13 @@ const SourcedCandidates = ({ jobId }) => {
               }}
             >
               Suggestion Match
+            </Button>
+            <Button
+              type="default"
+              onClick={() => setIsWorkOrderModalVisible(true)}
+              style={{ backgroundColor: "#1890ff", color: "#fff" }}
+            >
+              Exact Match
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -1453,7 +1495,7 @@ const SourcedCandidates = ({ jobId }) => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            <Col span={8}>
+            {/* <Col span={8}>
               <Form.Item label="Gender">
                 <Select
                   placeholder="Select gender"
@@ -1472,7 +1514,7 @@ const SourcedCandidates = ({ jobId }) => {
                   <Option value="other">Other</Option>
                 </Select>
               </Form.Item>
-            </Col>
+            </Col> */}
             <Col span={8}>
               <Form.Item label="Nationality">
                 <Select
@@ -1636,6 +1678,123 @@ const SourcedCandidates = ({ jobId }) => {
         )}
       </Modal>
 
+      <Modal
+        title="Current Work Order Details To Filter"
+        open={isWorkOrderModalVisible}
+        onCancel={() => setIsWorkOrderModalVisible(false)}
+        width={700}
+        footer={[
+          <Button key="close" onClick={() => setIsWorkOrderModalVisible(false)}>
+            Close
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            style={{ backgroundColor: "#da2c46" }}
+
+            onClick={handleSubmit}
+          >
+            Apply Filters
+          </Button>,
+        ]}
+      >
+        {isWorkOrderLoading ? (
+          <Spin tip="Loading work order details..." />
+        ) : workOrderError ? (
+          <Alert message="Failed to load work order details" type="error" />
+        ) : workOrderDetails ? (
+          <Form
+            layout="vertical"
+            form={form}
+            initialValues={{
+              officeLocation: workOrderDetails.officeLocation,
+              companyIndustry: workOrderDetails.companyIndustry,
+              EmploymentType: workOrderDetails.EmploymentType,
+              qualification: workOrderDetails.qualification,
+              experienceMin: workOrderDetails.experienceMin,
+              experienceMax: workOrderDetails.experienceMax,
+              salaryMin: workOrderDetails.salaryMin,
+              salaryMax: workOrderDetails.salaryMax,
+              requiredSkills: workOrderDetails.requiredSkills?.join(", "),
+              languagesRequired: workOrderDetails.languagesRequired?.join(", "),
+            }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Office Location" name="officeLocation">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Industry" name="companyIndustry">
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Employment Type" name="EmploymentType">
+                  <Select allowClear>
+                    <Option value="full-time">Full-time</Option>
+                    <Option value="part-time">Part-time</Option>
+                    <Option value="contract">Contract</Option>
+                    <Option value="internship">Internship</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Qualification" name="qualification">
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Experience Min" name="experienceMin">
+                  <InputNumber min={0} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Experience Max" name="experienceMax">
+                  <InputNumber min={0} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Salary Min (LPA)" name="salaryMin">
+                  <InputNumber min={0} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Salary Max (LPA)" name="salaryMax">
+                  <InputNumber min={0} style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              label="Required Skills (comma separated)"
+              name="requiredSkills"
+            >
+              <Input placeholder="e.g., JavaScript, React, Node.js" />
+            </Form.Item>
+
+            <Form.Item
+              label="Languages Required (comma separated)"
+              name="languagesRequired"
+            >
+              <Input placeholder="e.g., English, Arabic" />
+            </Form.Item>
+          </Form>
+        ) : (
+          <Empty description="No work order details found" />
+        )}
+      </Modal>
+
       <CommentModal
         visible={isCommentModalVisible}
         onCancel={() => {
@@ -1648,7 +1807,7 @@ const SourcedCandidates = ({ jobId }) => {
         pipelines={activePipelines}
         selectedPipeline={selectedPipeline}
         setSelectedPipeline={setSelectedPipeline}
-        candidateType={candidateToUpdate?.candidateType} 
+        candidateType={candidateToUpdate?.candidateType}
         setCandidateType={(type) => {
           setCandidateToUpdate((prev) => ({ ...prev, candidateType: type }));
         }}

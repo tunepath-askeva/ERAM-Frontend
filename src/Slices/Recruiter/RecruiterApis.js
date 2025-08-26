@@ -489,6 +489,19 @@ export const recruiterApi = createApi({
         body: formData,
       }),
     }),
+    getCurrentWorkOrderDetailsForFiltering: builder.query({
+      query: (jobId) => ({
+        url: `/workorder-filter/${jobId}`,
+        method: "GET",
+      }),
+    }),
+    currentWorkorderDetailsFiltering: builder.mutation({
+      query: ({  body }) => ({
+        url: `/curr-filter`,
+        method: "POST",
+        body: body,
+      }),
+    }),
   }),
 });
 
@@ -541,4 +554,6 @@ export const {
   useBulkImportCandidatesMutation,
   useGetRecruiterInterviewsQuery,
   useOfferInfoMutation,
+  useGetCurrentWorkOrderDetailsForFilteringQuery,
+  useCurrentWorkorderDetailsFilteringMutation,
 } = recruiterApi;
