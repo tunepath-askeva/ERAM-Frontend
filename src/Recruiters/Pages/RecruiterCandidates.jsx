@@ -1309,16 +1309,24 @@ const RecruiterCandidates = () => {
     },
   ];
 
-  const tabItems = ["interview", "offer_pending", "offer", "rejected"]
-    .filter((status) => hasPermission(`view-${status}-tab`))
-    .map((status) => ({
-      key: status,
-      label: (
-        <Badge count={filterCounts[status]} size="small" offset={[10, 0]}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Badge>
-      ),
-    }));
+  const tabLabels = {
+    interview: "Interview",
+    offer_pending: "Offer Accept Waiting",
+    offer: "Offer",
+    rejected: "Rejected",
+  };
+
+const tabItems = ["interview","offer_pending", "offer", "rejected"]
+  .filter((status) => hasPermission(`view-${status}-tab`))
+  .map((status) => ({
+    key: status,
+    label: (
+      <Badge count={filterCounts[status]} size="small" offset={[10, 0]}>
+        {tabLabels[status]}
+      </Badge>
+    ),
+  }));
+
 
   const CandidateCard = ({ candidate }) => (
     <Card
