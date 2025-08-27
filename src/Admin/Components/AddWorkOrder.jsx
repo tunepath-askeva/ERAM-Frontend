@@ -153,7 +153,6 @@ const AddWorkOrder = () => {
   useEffect(() => {
     if (location.state?.requisitionData) {
       const reqData = location.state.requisitionData;
-      console.log(reqData, "ooooooooooooooi");
       setIsPrefilled(true);
 
       const startDate = reqData.createdAt ? dayjs(reqData.createdAt) : dayjs();
@@ -189,7 +188,9 @@ const AddWorkOrder = () => {
         client: reqData.client._id,
         project: reqData.project._id,
         jobFunction: reqData.jobFunction,
-        salaryType: reqData.salaryType || "daily",
+        salaryType: reqData.salaryType || "monthly",
+        visacategorytype:reqData.visacategorytype,
+        visacategory:reqData.visacategory,
         Education: reqData.Education,
 
         languagesRequired: reqData.languagesRequired || [],
@@ -1673,6 +1674,7 @@ const AddWorkOrder = () => {
               workplace: "on-site",
               EmploymentType: "full-time",
               salaryType: "monthly",
+              visacategorytype: "any",
             }}
           >
             {/* Job Title and Project Assignment */}
@@ -2022,19 +2024,74 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="salaryMin" label="Minimum Salary (SAR)">
+                  <Form.Item
+                    name="salaryMin"
+                    label="Minimum Salary (SAR)"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter minimum salary",
+                      },
+                      {
+                        validator: (_, value) => {
+                          if (value === undefined || value === null) {
+                            return Promise.resolve(); 
+                          }
+                          if (typeof value !== "number" || isNaN(value)) {
+                            return Promise.reject(
+                              "Only numeric values are allowed"
+                            );
+                          }
+                          if (value < 0) {
+                            return Promise.reject(
+                              "Salary must be 0 or greater"
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
                     <InputNumber
                       style={{ width: "100%" }}
-                      min={0}
+                      min={0} 
                       placeholder="Enter minimum salary"
                     />
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={8}>
-                  <Form.Item name="salaryMax" label="Maximum Salary (SAR)">
+                  <Form.Item
+                    name="salaryMax"
+                    label="Maximum Salary (SAR)"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter maximum salary",
+                      },
+                      {
+                        validator: (_, value) => {
+                          if (value === undefined || value === null) {
+                            return Promise.resolve();
+                          }
+                          if (typeof value !== "number" || isNaN(value)) {
+                            return Promise.reject(
+                              "Only numeric values are allowed"
+                            );
+                          }
+                          if (value <= 0) {
+                            return Promise.reject(
+                              "Salary must be greater than 0"
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
                     <InputNumber
                       style={{ width: "100%" }}
-                      min={0}
+                      min={1}
                       placeholder="Enter maximum salary"
                     />
                   </Form.Item>
@@ -2077,11 +2134,7 @@ const AddWorkOrder = () => {
                     />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="nationality" label="Nationality">
-                    <Input placeholder="e.g., Saudi" />
-                  </Form.Item>
-                </Col>
+
                 <Col xs={24} md={8}>
                   <Form.Item name="visacategory" label="Visa Category">
                     <Input />
@@ -2100,12 +2153,18 @@ const AddWorkOrder = () => {
                   >
                     <Select
                       placeholder="Select visa category type"
-                      defaultValue="all"
+                      defaultValue="any"
                     >
-                      <Option value="all">All</Option>
                       <Option value="any">Any</Option>
+                      <Option value="relative">Relative</Option>
+                      <Option value="all">All</Option>
                       <Option value="same">Same</Option>
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="nationality" label="Nationality">
+                    <Input placeholder="e.g., Saudi" />
                   </Form.Item>
                 </Col>
 
