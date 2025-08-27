@@ -55,6 +55,7 @@ const CandidateCard = ({
   onSelectCandidate,
   isSelected,
   isSelectable = false,
+  exactMatchFilters = null,
 }) => {
   const navigate = useNavigate();
   const [isTimelineModalVisible, setIsTimelineModalVisible] = useState(false);

@@ -249,6 +249,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [shouldFetch, setShouldFetch] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [queryParams, setQueryParams] = useState("");
+  
   const {
     data: workOrderDetails,
     isLoading: isWorkOrderLoading,
@@ -925,7 +926,7 @@ const handleSubmit = async () => {
               onClick={() => setIsWorkOrderModalVisible(true)}
               style={{ backgroundColor: "#1890ff", color: "#fff" }}
             >
-              Exact Match
+              Current Work Order Filter
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
