@@ -407,7 +407,7 @@ const AdminRequisition = () => {
                       <Text type="secondary" style={{ fontSize: "12px" }}>
                         {searchTerm
                           ? "Try a different search term"
-                          : "Create your first requisition to get started"}
+                          : ""}
                       </Text>
                     </div>
                   }

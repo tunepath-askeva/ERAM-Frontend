@@ -296,14 +296,10 @@ const AddRequisition = ({ onNavigateBack }) => {
               Add New Requisitions
             </Space>
           }
-         
         >
-          <Form form={form} layout="vertical" >
+          <Form form={form} layout="vertical">
             {/* Common Fields Section */}
-            <Card
-              title="Common Information"
-              style={{ marginBottom: 16 }}
-            >
+            <Card title="Common Information" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={6}>
                   <Form.Item
@@ -328,11 +324,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item
-                    label="Project"
-                    name="project"
-                   
-                  >
+                  <Form.Item label="Project" name="project">
                     <Select
                       placeholder="Select Project"
                       onChange={(value) =>
@@ -421,7 +413,10 @@ const AddRequisition = ({ onNavigateBack }) => {
                     ]}
                     initialValue="full-time"
                   >
-                    <Select placeholder="Select Employment Type" defaultValue="full-time">
+                    <Select
+                      placeholder="Select Employment Type"
+                      defaultValue="full-time"
+                    >
                       <Option value="full-time">Full Time</Option>
                       <Option value="part-time">Part Time</Option>
                       <Option value="contract">Contract</Option>
@@ -432,13 +427,15 @@ const AddRequisition = ({ onNavigateBack }) => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item 
-                    label="Workplace" 
-                    name="workplace" 
+                  <Form.Item
+                    label="Workplace"
+                    name="workplace"
                     initialValue="on-site"
                   >
-                    
-                    <Select placeholder="Select Workplace" defaultValue="on-site">
+                    <Select
+                      placeholder="Select Workplace"
+                      defaultValue="on-site"
+                    >
                       <Option value="on-site">Onsite</Option>
                       <Option value="offshore">Offshore</Option>
                       <Option value="remote">Remote</Option>
@@ -504,12 +501,15 @@ const AddRequisition = ({ onNavigateBack }) => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item 
-                    label="Salary Type" 
+                  <Form.Item
+                    label="Salary Type"
                     name="salaryType"
                     initialValue="monthly"
                   >
-                    <Select placeholder="Select Salary Type" defaultValue="monthly">
+                    <Select
+                      placeholder="Select Salary Type"
+                      defaultValue="monthly"
+                    >
                       <Option value="hourly">Hourly</Option>
                       <Option value="daily">Daily</Option>
                       <Option value="weekly">Weekly</Option>
@@ -587,6 +587,44 @@ const AddRequisition = ({ onNavigateBack }) => {
                     <Select mode="tags" placeholder="Enter Languages"></Select>
                   </Form.Item>
                 </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="Nationality"
+                    name="nationality"
+                    rules={[
+                      { required: true, message: "Please enter job title" },
+                    ]}
+                  >
+                    <Input placeholder="Enter Job Title" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="visacategory" label="Visa Category">
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="visacategorytype"
+                    label="Visa Category Type"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select visa category type",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Select visa category type"
+                      defaultValue="any"
+                    >
+                      <Option value="any">Any</Option>
+                      <Option value="relative">Relative</Option>
+                      <Option value="all">All</Option>
+                      <Option value="same">Same</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
               </Row>
 
               <Row gutter={16}>
@@ -635,7 +673,7 @@ const AddRequisition = ({ onNavigateBack }) => {
               <Row gutter={16}>
                 <Col span={24}>
                   <Form.Item label="Status" name="isActive">
-                    <Select placeholder="Select Status" >
+                    <Select placeholder="Select Status">
                       <Option value="active">Active</Option>
                       <Option value="inactive">Inactive</Option>
                       <Option value="draft">Draft</Option>
