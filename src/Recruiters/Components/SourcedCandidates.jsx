@@ -249,6 +249,8 @@ const SourcedCandidates = ({ jobId }) => {
   const [shouldFetch, setShouldFetch] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [queryParams, setQueryParams] = useState("");
+  const [workOrderFilters, setWorkOrderFilters] = useState(null);
+const [candidateType, setCandidateType] = useState("");
   
   const {
     data: workOrderDetails,

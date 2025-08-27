@@ -118,7 +118,6 @@ const AddWorkOrder = () => {
     recruiters?.recruitername?.filter(
       (recruiter) => recruiter.accountStatus === "active"
     ) || [];
-    
 
   const activePipelines =
     pipeline?.allPipelines?.filter(
@@ -177,6 +176,7 @@ const AddWorkOrder = () => {
         workplace: reqData.workplace,
         requiredSkills: reqData.requiredSkills,
         numberOfCandidate: reqData.numberOfCandidate,
+        nationality: reqData.nationality,
         startDate: startDate,
         endDate: endDate,
         alertDate: alertDate,
@@ -1817,8 +1817,6 @@ const AddWorkOrder = () => {
                       placeholder="Select recruiters"
                       optionLabelProp="label"
                     >
-
-                      
                       {activeRecruiters.map((recruiter) => (
                         <Option
                           key={recruiter._id}
@@ -1960,6 +1958,7 @@ const AddWorkOrder = () => {
                     <Input placeholder="e.g., Technology" />
                   </Form.Item>
                 </Col>
+
                 <Col xs={24} md={8}>
                   <Form.Item
                     name="EmploymentType"
@@ -2076,6 +2075,37 @@ const AddWorkOrder = () => {
                       placeholder="No of Candidates Required"
                       style={{ width: "100%" }}
                     />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="nationality" label="Nationality">
+                    <Input placeholder="e.g., Saudi" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="visacategory" label="Visa Category">
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="visacategorytype"
+                    label="Visa Category Type"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select visa category type",
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder="Select visa category type"
+                      defaultValue="all"
+                    >
+                      <Option value="all">All</Option>
+                      <Option value="any">Any</Option>
+                      <Option value="same">Same</Option>
+                    </Select>
                   </Form.Item>
                 </Col>
 
