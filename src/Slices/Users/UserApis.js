@@ -225,6 +225,13 @@ export const userApi = createApi({
         method: "DELETE",
       }),
     }),
+    updateCandidateOfferStatus: builder.mutation({
+      query: (data) => ({
+        url: "/offer",
+        method: "PUT",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -257,4 +264,5 @@ export const {
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
   useValidateUserTokenQuery,
+  useUpdateCandidateOfferStatusMutation
 } = userApi;

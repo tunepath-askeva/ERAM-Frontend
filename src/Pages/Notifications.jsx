@@ -32,6 +32,7 @@ import {
   MoreOutlined,
   EyeOutlined,
   FileTextOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -39,7 +40,7 @@ import {
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
-  // useSendRevisionRequestMutation,
+  useUpdateCandidateOfferStatusMutation,
 } from "../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -55,11 +56,22 @@ const Notifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [offerLetterModalVisible, setOfferLetterModalVisible] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Modal states for different actions
+  const [acceptModalVisible, setAcceptModalVisible] = useState(false);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [revisionModalVisible, setRevisionModalVisible] = useState(false);
+
+  // Forms for different actions
+  const [acceptForm] = Form.useForm();
+  const [rejectForm] = Form.useForm();
   const [revisionForm] = Form.useForm();
+
+  // Loading states for actions
+  const [currentAction, setCurrentAction] = useState(null);
 
   const {
     data: apiData,
@@ -76,8 +88,8 @@ const Notifications = () => {
     useMarkAsReadByIdMutation();
   const [deleteNotification, { isLoading: deleting }] =
     useDeleteNotificationMutation();
-  // const [sendRevisionRequest, { isLoading: sendingRevision }] =
-  //   useSendRevisionRequestMutation();
+  const [updateOfferStatus, { isLoading: updatingOffer }] =
+    useUpdateCandidateOfferStatusMutation();
 
   useEffect(() => {
     if (apiData) {
@@ -144,26 +156,15 @@ const Notifications = () => {
     }
   };
 
-  const handleAcceptOffer = async (notification) => {
-    try {
-      // Implement your accept offer logic here
-      message.success("Offer accepted successfully!");
-      handleMarkAsRead(notification._id);
-    } catch (error) {
-      message.error("Failed to accept offer");
-      console.error("Accept offer error:", error);
-    }
+  // Open modals for different actions
+  const handleAcceptOffer = (notification) => {
+    setSelectedNotification(notification);
+    setAcceptModalVisible(true);
   };
 
-  const handleRejectOffer = async (notification) => {
-    try {
-      // Implement your reject offer logic here
-      message.success("Offer rejected");
-      handleMarkAsRead(notification._id);
-    } catch (error) {
-      message.error("Failed to reject offer");
-      console.error("Reject offer error:", error);
-    }
+  const handleRejectOffer = (notification) => {
+    setSelectedNotification(notification);
+    setRejectModalVisible(true);
   };
 
   const handleRequestRevision = (notification) => {
@@ -176,12 +177,67 @@ const Notifications = () => {
     setOfferLetterModalVisible(true);
   };
 
+  // Handle form submissions for different actions
+  const handleAcceptOfferSubmit = async (values) => {
+    try {
+      setCurrentAction("accept");
+
+      const payload = {
+        workorderId: selectedNotification.workorderId,
+        status: "offer-accepted",
+        description: values.description || "",
+      };
+
+      await updateOfferStatus(payload).unwrap();
+
+      message.success("Offer accepted successfully!");
+      setAcceptModalVisible(false);
+      acceptForm.resetFields();
+      handleMarkAsRead(selectedNotification._id);
+    } catch (error) {
+      message.error("Failed to accept offer");
+      console.error("Accept offer error:", error);
+    } finally {
+      setCurrentAction(null);
+    }
+  };
+
+  const handleRejectOfferSubmit = async (values) => {
+    try {
+      setCurrentAction("reject");
+
+      const payload = {
+        workorderId: selectedNotification.workorderId,
+        status: "offer-rejected",
+        description: values.description,
+      };
+
+      await updateOfferStatus(payload).unwrap();
+
+      message.success("Offer rejected");
+      setRejectModalVisible(false);
+      rejectForm.resetFields();
+      handleMarkAsRead(selectedNotification._id);
+    } catch (error) {
+      message.error("Failed to reject offer");
+      console.error("Reject offer error:", error);
+    } finally {
+      setCurrentAction(null);
+    }
+  };
+
   const handleSendRevisionRequest = async (values) => {
     try {
-      // await sendRevisionRequest({
-      //   notificationId: selectedNotification._id,
-      //   revisionRequirements: values.revisionRequirements,
-      // }).unwrap();
+      setCurrentAction("revision");
+
+      const payload = {
+        workorderId: selectedNotification.workorderId,
+        status: "offer-revised",
+        description: values.description,
+      };
+
+      await updateOfferStatus(payload).unwrap();
+
       message.success("Revision request sent successfully");
       setRevisionModalVisible(false);
       revisionForm.resetFields();
@@ -189,7 +245,25 @@ const Notifications = () => {
     } catch (error) {
       message.error("Failed to send revision request");
       console.error("Send revision request error:", error);
+    } finally {
+      setCurrentAction(null);
     }
+  };
+
+  // Close modal handlers
+  const handleCloseAcceptModal = () => {
+    setAcceptModalVisible(false);
+    acceptForm.resetFields();
+  };
+
+  const handleCloseRejectModal = () => {
+    setRejectModalVisible(false);
+    rejectForm.resetFields();
+  };
+
+  const handleCloseRevisionModal = () => {
+    setRevisionModalVisible(false);
+    revisionForm.resetFields();
   };
 
   const getNotificationIcon = (type) => {
@@ -458,7 +532,7 @@ const Notifications = () => {
                         {item.message}
                       </Paragraph>
 
-                      {/* Offer Letter Actions - Removed Download Button */}
+                      {/* Offer Letter Actions */}
                       {isOfferLetterNotification(item) && (
                         <div style={{ marginTop: "12px" }}>
                           <Space wrap>
@@ -487,6 +561,7 @@ const Notifications = () => {
                               size="small"
                               danger
                               onClick={() => handleRejectOffer(item)}
+                              icon={<CloseCircleOutlined />}
                             >
                               Reject
                             </Button>
@@ -544,14 +619,131 @@ const Notifications = () => {
         />
       </Card>
 
+      {/* Accept Offer Modal */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <CheckCircleOutlined style={{ color: "#52c41a" }} />
+            Accept Offer Letter
+          </div>
+        }
+        open={acceptModalVisible}
+        onCancel={handleCloseAcceptModal}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={acceptForm}
+          layout="vertical"
+          onFinish={handleAcceptOfferSubmit}
+        >
+          <Alert
+            message="You are about to accept this offer letter. Please provide any additional comments or confirmation message."
+            type="success"
+            style={{ marginBottom: 16 }}
+          />
+
+          <Form.Item
+            name="description"
+            label="Comments (Optional)"
+            rules={[
+              {
+                max: 500,
+                message: "Comments cannot exceed 500 characters",
+              },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Please provide any comments regarding your acceptance..."
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+            <Space>
+              <Button onClick={handleCloseAcceptModal}>Cancel</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={updatingOffer && currentAction === "accept"}
+                style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+              >
+                Accept Offer
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Reject Offer Modal */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
+            Reject Offer Letter
+          </div>
+        }
+        open={rejectModalVisible}
+        onCancel={handleCloseRejectModal}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={rejectForm}
+          layout="vertical"
+          onFinish={handleRejectOfferSubmit}
+        >
+          <Alert
+            message="You are about to reject this offer letter. Please provide a reason for rejection."
+            type="warning"
+            style={{ marginBottom: 16 }}
+          />
+
+          <Form.Item
+            name="description"
+            label="Reason for Rejection"
+            rules={[
+              {
+                required: true,
+                message: "Please provide a reason for rejection",
+              },
+              {
+                max: 500,
+                message: "Reason cannot exceed 500 characters",
+              },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Please specify why you are rejecting this offer..."
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+            <Space>
+              <Button onClick={handleCloseRejectModal}>Cancel</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                danger
+              >
+                Reject Offer
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       {/* Revision Request Modal */}
       <Modal
-        title="Request Offer Letter Revision"
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <FileTextOutlined style={{ color: "#1890ff" }} />
+            Request Offer Letter Revision
+          </div>
+        }
         open={revisionModalVisible}
-        onCancel={() => {
-          setRevisionModalVisible(false);
-          revisionForm.resetFields();
-        }}
+        onCancel={handleCloseRevisionModal}
         footer={null}
         width={600}
       >
@@ -561,18 +753,22 @@ const Notifications = () => {
           onFinish={handleSendRevisionRequest}
         >
           <Alert
-            message="Please provide details about what changes you'd like in the offer letter"
+            message="Please provide detailed information about what changes you'd like in the offer letter"
             type="info"
             style={{ marginBottom: 16 }}
           />
 
           <Form.Item
-            name="revisionRequirements"
+            name="description"
             label="Revision Requirements"
             rules={[
               {
                 required: true,
                 message: "Please provide revision requirements",
+              },
+              {
+                max: 1000,
+                message: "Requirements cannot exceed 1000 characters",
               },
             ]}
           >
@@ -584,18 +780,10 @@ const Notifications = () => {
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
-              <Button
-                onClick={() => {
-                  setRevisionModalVisible(false);
-                  revisionForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
+              <Button onClick={handleCloseRevisionModal}>Cancel</Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                // loading={sendingRevision}
               >
                 Send Revision Request
               </Button>
@@ -604,7 +792,7 @@ const Notifications = () => {
         </Form>
       </Modal>
 
-      {/* Offer Letter View Modal - Removed Download Options */}
+      {/* Offer Letter View Modal */}
       <Modal
         title="Offer Letter"
         open={offerLetterModalVisible}
