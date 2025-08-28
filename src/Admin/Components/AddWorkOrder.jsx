@@ -665,7 +665,7 @@ const AddWorkOrder = () => {
         <h3
           style={{
             margin: "0 0 8px 0",
-            color: "#1890ff",
+            color: "#da2c46",
             fontSize: "16px",
             fontWeight: "600",
             wordBreak: "break-word",
@@ -677,21 +677,45 @@ const AddWorkOrder = () => {
 
         <div
           style={{
-            marginBottom: "8px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px",
+            marginBottom: "16px",
+            display: "grid",
+            gap: "12px", // Space between tags
+            background: "#fafafa",
+            padding: "12px",
+            borderRadius: "8px",
           }}
         >
-          <Tag color="blue" style={{ fontSize: "11px", margin: "0" }}>
-            {jobData?.EmploymentType || "Full-time"}
+          <Tag color="blue" style={{ fontSize: "12px", padding: "6px 10px" }}>
+            Employement Type : {jobData?.EmploymentType || "Full-time"}
           </Tag>
-          <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
-            {jobData?.workplace || "workplace"}
+
+          <Tag color="green" style={{ fontSize: "12px", padding: "6px 10px" }}>
+            Workplace : {jobData?.workplace || "Workplace"}
           </Tag>
+
           {jobData?.officeLocation && (
-            <Tag style={{ fontSize: "11px", margin: "0" }}>
-              {jobData.officeLocation}
+            <Tag
+              color="geekblue"
+              style={{ fontSize: "12px", padding: "6px 10px" }}
+            >
+              Job Location : {jobData.officeLocation}
+            </Tag>
+          )}
+
+          <Tag
+            color="volcano"
+            style={{ fontSize: "12px", padding: "6px 10px" }}
+          >
+            Nationality : {jobData?.nationality || "Indian"}
+          </Tag>
+
+          <Tag color="purple" style={{ fontSize: "12px", padding: "6px 10px" }}>
+            Visa Category : {jobData?.visacategory || "Demo"}
+          </Tag>
+
+          {jobData?.visacategorytype && (
+            <Tag color="gold" style={{ fontSize: "12px", padding: "6px 10px" }}>
+              Visa Category Type : {jobData.visacategorytype || "Any"}
             </Tag>
           )}
         </div>

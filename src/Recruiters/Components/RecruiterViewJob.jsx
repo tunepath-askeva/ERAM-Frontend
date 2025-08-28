@@ -115,6 +115,18 @@ const RecruiterViewJob = () => {
           <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
             Project: {workOrder.project?.name}
           </Tag>
+          <Tag
+            color="geekblue"
+            style={{ fontSize: "12px", padding: "4px 8px" }}
+          >
+            Nationality : {workOrder.nationality || "N/A"} 
+          </Tag>
+          <Tag color="volcano" style={{ fontSize: "12px", padding: "4px 8px" }}>
+            Visa Category : {workOrder.visacategory || "N/A" } 
+          </Tag>
+          <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
+            Visa Category Type : {workOrder.visacategorytype || "N/A"}
+          </Tag>
         </div>
 
         <Row gutter={[16, 12]} style={{ marginBottom: "16px" }}>
@@ -190,7 +202,7 @@ const RecruiterViewJob = () => {
           <Text
             style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
           >
-            SAR {workOrder.salaryMin?.toLocaleString()} - SAR 
+            SAR {workOrder.salaryMin?.toLocaleString()} - SAR
             {workOrder.salaryMax?.toLocaleString()} ({workOrder.salaryType})
           </Text>
         </div>

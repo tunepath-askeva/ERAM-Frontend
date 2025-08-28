@@ -97,6 +97,18 @@ const ViewWorkOrder = () => {
           <Tag color="orange" style={{ fontSize: "12px", padding: "4px 8px" }}>
             {workOrder.workOrderStatus}
           </Tag>
+          <Tag
+            color="geekblue"
+            style={{ fontSize: "12px", padding: "4px 8px" }}
+          >
+            {workOrder.nationality || "N/A"}
+          </Tag>
+          <Tag color="volcano" style={{ fontSize: "12px", padding: "4px 8px" }}>
+            {workOrder.visacategory || "N/A"}
+          </Tag>
+          <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
+            {workOrder.visacategorytype || "N/A"}
+          </Tag>
         </div>
 
         <Row gutter={[16, 12]} style={{ marginBottom: "16px" }}>
@@ -221,7 +233,7 @@ const ViewWorkOrder = () => {
             <Text
               style={{ fontSize: "14px", fontWeight: "600", color: "#52c41a" }}
             >
-              SAR {parseInt(workOrder.salaryMin).toLocaleString()} - SAR 
+              SAR {parseInt(workOrder.salaryMin).toLocaleString()} - SAR
               {parseInt(workOrder.salaryMax).toLocaleString()}
             </Text>
           </div>

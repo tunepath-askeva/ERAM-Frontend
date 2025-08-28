@@ -261,6 +261,9 @@ const RecruiterEditJob = () => {
           client: job.client?._id,
           pipeline: selectedPipeIds,
           isActive: job.isActive === "active",
+          nationality: job.nationality,
+          visacategory: job.visacategory,
+          visacategorytype: job.visacategorytype,
         };
 
         jobForm.setFieldsValue(formData);
@@ -2457,6 +2460,37 @@ const RecruiterEditJob = () => {
                     style={{ width: "100%" }}
                     placeholder="e.g. 80000"
                   />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={8}>
+                <Form.Item name="nationality" label="Nationality">
+                  <Input placeholder="e.g. Indian" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <Form.Item
+                  name="visacategory"
+                  label="Visa Category"
+                  rules={[
+                    { required: true, message: "Please enter visa category" },
+                  ]}
+                >
+                  <Input placeholder="e.g. Entry visa, Exit visa" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <Form.Item name="visacategorytype" label="Visa Category Type">
+                  <Select
+                    placeholder="Select visa category type"
+                    defaultValue="any"
+                  >
+                    <Option value="any">Any</Option>
+                    <Option value="relative">Relative</Option>
+                    <Option value="all">All</Option>
+                    <Option value="same">Same</Option>
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>

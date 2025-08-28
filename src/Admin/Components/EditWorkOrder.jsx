@@ -721,7 +721,7 @@ const EditWorkOrder = () => {
           <h3
             style={{
               margin: "0 0 8px 0",
-              color: "#1890ff",
+              color: "#da2c46",
               fontSize: "16px",
               fontWeight: "600",
               wordBreak: "break-word",
@@ -733,21 +733,61 @@ const EditWorkOrder = () => {
 
           <div
             style={{
-              marginBottom: "8px",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "4px",
+              marginBottom: "16px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "12px",
+              background: "#fafafa",
+              padding: "12px",
+              borderRadius: "8px",
             }}
           >
-            <Tag color="blue" style={{ fontSize: "11px", margin: "0" }}>
+            <Tag color="blue" style={{ fontSize: "12px", padding: "6px 10px" }}>
+              <strong>Work Type:</strong>{" "}
               {displayData?.EmploymentType || "Full-time"}
             </Tag>
-            <Tag color="green" style={{ fontSize: "11px", margin: "0" }}>
-              {displayData?.workplace || "Remote"}
+
+            <Tag
+              color="green"
+              style={{ fontSize: "12px", padding: "6px 10px" }}
+            >
+              <strong>Work Place:</strong> {displayData?.workplace || "Remote"}
             </Tag>
+
             {displayData?.officeLocation && (
-              <Tag style={{ fontSize: "11px", margin: "0" }}>
-                {displayData.officeLocation}
+              <Tag
+                color="geekblue"
+                style={{ fontSize: "12px", padding: "6px 10px" }}
+              >
+                <strong>Job Location:</strong> {displayData.officeLocation}
+              </Tag>
+            )}
+
+            {displayData?.nationality && (
+              <Tag
+                color="volcano"
+                style={{ fontSize: "12px", padding: "6px 10px" }}
+              >
+                <strong>Nationality:</strong> {displayData.nationality}
+              </Tag>
+            )}
+
+            {displayData?.visacategory && (
+              <Tag
+                color="purple"
+                style={{ fontSize: "12px", padding: "6px 10px" }}
+              >
+                <strong>Visa Category:</strong> {displayData.visacategory}
+              </Tag>
+            )}
+
+            {displayData?.visacategorytype && (
+              <Tag
+                color="gold"
+                style={{ fontSize: "12px", padding: "6px 10px" }}
+              >
+                <strong>Visa Category Type:</strong>{" "}
+                {displayData.visacategorytype}
               </Tag>
             )}
           </div>

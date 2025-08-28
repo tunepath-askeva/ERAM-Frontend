@@ -151,12 +151,9 @@ const EditRequisition = () => {
             </Space>
           }
         >
-          <Form form={form} layout="vertical" >
+          <Form form={form} layout="vertical">
             {/* Common Fields Section */}
-            <Card
-              title="Common Information"
-              style={{ marginBottom: 16 }}
-            >
+            <Card title="Common Information" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={6}>
                   <Form.Item
@@ -176,10 +173,7 @@ const EditRequisition = () => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item
-                    label="Project"
-                    name="project"
-                  >
+                  <Form.Item label="Project" name="project">
                     <Select placeholder="Select Project">
                       {projects.map((project) => (
                         <Option key={project.id} value={project.id}>
@@ -310,6 +304,32 @@ const EditRequisition = () => {
                       placeholder="0"
                       style={{ width: "100%" }}
                     />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="Nationality" name="nationality">
+                    <Input placeholder="Enter Nationality" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="Visa Category" name="visacategory">
+                    <Input placeholder="Enter Visa Category" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label="Visa Category Type" name="visacategorytype">
+                    <Select
+                      placeholder="Select visa category type"
+                      defaultValue="any"
+                    >
+                      <Option value="any">Any</Option>
+                      <Option value="relative">Relative</Option>
+                      <Option value="all">All</Option>
+                      <Option value="same">Same</Option>
+                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
