@@ -11,6 +11,7 @@ import {
   InputNumber,
   Select,
   Checkbox,
+  Button 
 } from "antd";
 import {
   UserOutlined,
@@ -142,12 +143,16 @@ const RecruiterForm = ({
           ]);
         }
 
+           const experienceValue = initialValues.totalExperienceYears 
+        ? Number(initialValues.totalExperienceYears) 
+        : 0;
+
         form.setFieldsValue({
           fullName: initialValues.fullName || "",
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
           specialization: initialValues.specialization || "",
-          experience: initialValues.totalExperienceYears || 0,
+          experience: experienceValue || 0,
           recruiterType: initialValues.recruiterType || "Recruiter",
           permissions: initialValues.permissions || [],
         });
@@ -552,6 +557,16 @@ const RecruiterForm = ({
             <Space>
               <CheckCircleOutlined />
               <span>Access Permissions</span>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => {
+                  const allPermissions = accessPermissions.map((p) => p.key);
+                  form.setFieldsValue({ permissions: allPermissions });
+                }}
+              >
+                Select All
+              </Button>
             </Space>
           }
         >
