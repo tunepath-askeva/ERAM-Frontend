@@ -29,6 +29,12 @@ export const userApi = createApi({
         body: userData,
       }),
     }),
+    validateUserToken: builder.query({
+      query: () => ({
+        url: "/validate",
+        method: "GET",
+      }),
+    }),
     verifyOtp: builder.mutation({
       query: (otpData) => ({
         url: "/verifyOtp",
@@ -250,4 +256,5 @@ export const {
   useDeleteNotificationMutation,
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
+  useValidateUserTokenQuery,
 } = userApi;
