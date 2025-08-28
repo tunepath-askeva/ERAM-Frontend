@@ -13,7 +13,8 @@ import { useSearchParams } from "react-router-dom";
 const Login = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const { candidateInfo, userInfo } = useSelector((state) => state.userAuth);
+  const { candidateInfo, userInfo, adminInfo, recruiterInfo, employeeInfo } =
+    useSelector((state) => state.userAuth);
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
@@ -21,10 +22,34 @@ const Login = () => {
   const branchId = searchParams.get("branchId");
   console.log(branchId, "id-branch");
 
-    useEffect(() => {
-    if (candidateInfo || userInfo) {
-      const role = candidateInfo?.roles || userInfo?.roles;
+  useEffect(() => {
+    // Check if any user is logged in
+    const isLoggedIn =
+      candidateInfo || userInfo || adminInfo || recruiterInfo || employeeInfo;
 
+    if (isLoggedIn) {
+      // Determine the role and navigate accordingly
+      let role = null;
+      let userDetails = null;
+
+      if (candidateInfo) {
+        role = candidateInfo.roles;
+        userDetails = candidateInfo;
+      } else if (adminInfo) {
+        role = adminInfo.roles;
+        userDetails = adminInfo;
+      } else if (recruiterInfo) {
+        role = recruiterInfo.roles;
+        userDetails = recruiterInfo;
+      } else if (employeeInfo) {
+        role = employeeInfo.roles;
+        userDetails = employeeInfo;
+      } else if (userInfo) {
+        role = userInfo.roles;
+        userDetails = userInfo;
+      }
+
+      // Navigate based on role
       switch (role) {
         case "candidate":
           navigate("/candidate-jobs", { replace: true });
@@ -36,23 +61,28 @@ const Login = () => {
           navigate("/employee/company-news", { replace: true });
           break;
         case "recruiter":
-          if (userInfo?.employeeAdmin === "Employee Admin") {
+          if (userDetails?.employeeAdmin === "Employee Admin") {
             navigate("/employee-admin/dashboard", { replace: true });
           } else {
             navigate("/recruiter/dashboard", { replace: true });
           }
           break;
-        case "super_admin":
-          navigate("/super-admin/dashboard", { replace: true });
-          break;
         default:
           navigate("/", { replace: true });
       }
     }
-  }, [candidateInfo, userInfo, navigate]);
+  }, [
+    candidateInfo,
+    userInfo,
+    adminInfo,
+    recruiterInfo,
+    employeeInfo,
+    navigate,
+  ]);
 
-  if (candidateInfo || userInfo) {
-    return null; 
+  // Early return if any user is logged in
+  if (candidateInfo || userInfo || adminInfo || recruiterInfo || employeeInfo) {
+    return null;
   }
 
   const onFinish = async (values) => {
