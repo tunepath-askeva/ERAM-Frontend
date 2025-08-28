@@ -162,6 +162,19 @@ const AddWorkOrder = () => {
         ? dayjs(reqData.deadlineDate)
         : startDate.add(14, "day");
 
+      setSelectedProject(reqData.project._id);
+      const project = activeProjects.find((p) => p._id === reqData.project._id);
+
+      let finalJobCode = reqData.jobCode || "";
+      if (
+        project &&
+        project.prefix &&
+        !finalJobCode.startsWith(project.prefix)
+      ) {
+        const codeWithoutPrefix = finalJobCode.replace(/^[A-Z]+-/, "");
+        finalJobCode = `${project.prefix}-${codeWithoutPrefix}`;
+      }
+
       jobForm.setFieldsValue({
         title: reqData.title,
         description: reqData.description,
@@ -189,16 +202,17 @@ const AddWorkOrder = () => {
         project: reqData.project._id,
         jobFunction: reqData.jobFunction,
         salaryType: reqData.salaryType || "monthly",
-        visacategorytype:reqData.visacategorytype,
-        visacategory:reqData.visacategory,
+        visacategorytype: reqData.visacategorytype,
+        visacategory: reqData.visacategory,
         Education: reqData.Education,
 
         languagesRequired: reqData.languagesRequired || [],
+        jobCode: finalJobCode,
       });
 
       setRequiredDocuments(reqData.requiredDocuments || []);
     }
-  }, [location.state, jobForm]);
+  }, [location.state, jobForm, activeProjects]);
 
   // useEffect(() => {
   //   if (location.state?.requisitionData?.clientId && clientsData?.clients) {
@@ -2035,7 +2049,7 @@ const AddWorkOrder = () => {
                       {
                         validator: (_, value) => {
                           if (value === undefined || value === null) {
-                            return Promise.resolve(); 
+                            return Promise.resolve();
                           }
                           if (typeof value !== "number" || isNaN(value)) {
                             return Promise.reject(
@@ -2054,7 +2068,7 @@ const AddWorkOrder = () => {
                   >
                     <InputNumber
                       style={{ width: "100%" }}
-                      min={0} 
+                      min={0}
                       placeholder="Enter minimum salary"
                     />
                   </Form.Item>

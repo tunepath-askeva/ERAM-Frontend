@@ -268,9 +268,13 @@ const AdminRequisition = () => {
             size="small"
             icon={<FileTextOutlined />}
             onClick={() => handleCreateWorkOrder(record)}
+            disabled={record.status === "inactive"}
             style={{
-              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-              borderColor: "#da2c46",
+              background:
+                record.status === "inactive"
+                  ? "#ccc" // Grey when disabled
+                  : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              borderColor: record.status === "inactive" ? "#ccc" : "#da2c46",
             }}
           >
             Create Work Order
@@ -405,9 +409,7 @@ const AdminRequisition = () => {
                       </Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: "12px" }}>
-                        {searchTerm
-                          ? "Try a different search term"
-                          : ""}
+                        {searchTerm ? "Try a different search term" : ""}
                       </Text>
                     </div>
                   }
@@ -464,8 +466,12 @@ const AdminRequisition = () => {
               handleCreateWorkOrder(selectedRequisition);
               handleViewModalClose();
             }}
+            disabled={selectedRequisition?.status === "inactive"}
             style={{
-              background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+              background:
+                selectedRequisition?.status === "inactive"
+                  ? "#ccc"
+                  : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
           >
             Create Work Order
