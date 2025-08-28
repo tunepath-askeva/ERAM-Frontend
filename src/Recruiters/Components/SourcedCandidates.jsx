@@ -250,8 +250,10 @@ const SourcedCandidates = ({ jobId }) => {
   const [skillInput, setSkillInput] = useState("");
   const [queryParams, setQueryParams] = useState("");
   const [workOrderFilters, setWorkOrderFilters] = useState(null);
-const [candidateType, setCandidateType] = useState("");
-  
+  const [candidateType, setCandidateType] = useState("");
+  const [workOrderCandidates, setWorkOrderCandidates] = useState([]);
+  const [isWorkOrderFiltered, setIsWorkOrderFiltered] = useState(false);
+
   const {
     data: workOrderDetails,
     isLoading: isWorkOrderLoading,
@@ -260,7 +262,8 @@ const [candidateType, setCandidateType] = useState("");
     skip: !isWorkOrderModalVisible,
   });
 
-  const [CurrentWorkorderFiltering] = useCurrentWorkorderDetailsFilteringMutation()
+  const [CurrentWorkorderFiltering] =
+    useCurrentWorkorderDetailsFilteringMutation();
   const { data: pipelineData } = useGetPipelinesQuery();
   const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
@@ -406,9 +409,15 @@ const [candidateType, setCandidateType] = useState("");
         isApplied: true,
       })) || [];
 
-    const candidateSource = isExactMatch
-      ? exactMatchData
-      : sourcedCandidatesData;
+    let candidateSource;
+
+    if (isWorkOrderFiltered) {
+      candidateSource = { users: workOrderCandidates };
+    } else if (isExactMatch) {
+      candidateSource = exactMatchData;
+    } else {
+      candidateSource = sourcedCandidatesData;
+    }
 
     const sourcedCandidates =
       candidateSource?.users?.map((user) => ({
@@ -438,33 +447,48 @@ const [candidateType, setCandidateType] = useState("");
     });
 
     return merged;
-  }, [jobApplications, sourcedCandidatesData, exactMatchData, isExactMatch]);
+  }, [
+    jobApplications,
+    sourcedCandidatesData,
+    exactMatchData,
+    isExactMatch,
+    workOrderCandidates,
+    isWorkOrderFiltered,
+  ]);
 
-const handleSubmit = async () => {
-  try {
-    const values = await form.validateFields(); 
-    const payload = {
-      ...values,
-      requiredSkills: values.requiredSkills
-        ? values.requiredSkills.split(",").map((s) => s.trim())
-        : [],
-      languagesRequired: values.languagesRequired
-        ? values.languagesRequired.split(",").map((l) => l.trim())
-        : [],
-    };
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload = {
+        ...values,
+        requiredSkills: values.requiredSkills
+          ? values.requiredSkills.split(",").map((s) => s.trim())
+          : [],
+        languagesRequired: values.languagesRequired
+          ? values.languagesRequired.split(",").map((l) => l.trim())
+          : [],
+      };
 
-    await CurrentWorkorderFiltering({  body: payload }).unwrap();
-    message.success("Work order details submitted successfully!");
-    setIsWorkOrderModalVisible(false);
-  } catch (error) {
-    console.error(error);
-    message.error("Please fix the errors in the form");
-  }
-};
+      const response = await CurrentWorkorderFiltering({
+        body: payload,
+      }).unwrap();
 
+      setWorkOrderCandidates(response.data || []);
+      setIsWorkOrderFiltered(true);
+
+      // Clear other search states
+      setShouldFetch(false);
+      setIsExactMatch(false);
+      message.success("Work order details submitted successfully!");
+      setIsWorkOrderModalVisible(false);
+    } catch (error) {
+      console.error(error);
+      message.error("Please fix the errors in the form");
+    }
+  };
 
   const sourcedCandidates = useMemo(() => {
-    if (!shouldFetch && !isExactMatch) {
+    if (!shouldFetch && !isExactMatch && !isWorkOrderFiltered) {
       return [];
     }
 
@@ -475,7 +499,7 @@ const handleSubmit = async () => {
         (status === "sourced" || status === "applied" || !status)
       );
     });
-  }, [allCandidates, shouldFetch, isExactMatch]);
+  }, [allCandidates, shouldFetch, isExactMatch, isWorkOrderFiltered]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -498,9 +522,10 @@ const handleSubmit = async () => {
       filters.noticePeriod ||
       filters.profileUpdated ||
       filters.visaStatus ||
-      isExactMatch
+      isExactMatch ||
+      isWorkOrderFiltered
     );
-  }, [filters, isExactMatch]);
+  }, [filters, isExactMatch, isWorkOrderFiltered]);
 
   const handleExactMatch = async () => {
     try {
@@ -576,6 +601,8 @@ const handleSubmit = async () => {
 
     setShouldFetch(false);
     setIsExactMatch(false);
+    setIsWorkOrderFiltered(false);
+    setWorkOrderCandidates([]);
     setQueryParams("");
 
     setPagination((prev) => ({
@@ -959,7 +986,18 @@ const handleSubmit = async () => {
                           Suggestion Match
                         </Tag>
                       )}
-
+                      {isWorkOrderFiltered && (
+                        <Tag
+                          color="blue"
+                          closable
+                          onClose={() => {
+                            setIsWorkOrderFiltered(false);
+                            setWorkOrderCandidates([]);
+                          }}
+                        >
+                          Work Order Filter
+                        </Tag>
+                      )}
                       {filters.keywords && (
                         <Tag
                           color="blue"
@@ -1138,53 +1176,54 @@ const handleSubmit = async () => {
         </Col>
       </Row>
 
-      {(shouldFetch || isExactMatch) && sourcedCandidates.length > 0 && (
-        <Card
-          size="small"
-          style={{ marginBottom: "16px", backgroundColor: "#f6ffed" }}
-        >
-          <Row justify="space-between" align="middle">
-            <Col>
-              <Space>
-                <Text strong style={{ color: "#52c41a" }}>
-                  Found {sourcedCandidates.length} candidates
-                </Text>
-                {isExactMatch && <Text type="secondary">(Exact Match)</Text>}
-                {hasActiveFilters && !isExactMatch && (
-                  <Text type="secondary">
-                    (
-                    {
-                      Object.values(filters).filter((val) =>
-                        Array.isArray(val)
-                          ? val.length > 0
-                          : typeof val === "string"
-                          ? val.trim()
-                          : val !== null
-                      ).length
-                    }{" "}
-                    filters applied)
+      {(shouldFetch || isExactMatch || isWorkOrderFiltered) &&
+        sourcedCandidates.length > 0 && (
+          <Card
+            size="small"
+            style={{ marginBottom: "16px", backgroundColor: "#f6ffed" }}
+          >
+            <Row justify="space-between" align="middle">
+              <Col>
+                <Space>
+                  <Text strong style={{ color: "#52c41a" }}>
+                    Found {sourcedCandidates.length} candidates
                   </Text>
-                )}
-              </Space>
-            </Col>
-            <Col>
-              <Checkbox
-                checked={selectAll}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-              >
-                Select all on page
-              </Checkbox>
-            </Col>
-          </Row>
-        </Card>
-      )}
+                  {isExactMatch && <Text type="secondary">(Exact Match)</Text>}
+                  {hasActiveFilters && !isExactMatch && (
+                    <Text type="secondary">
+                      (
+                      {
+                        Object.values(filters).filter((val) =>
+                          Array.isArray(val)
+                            ? val.length > 0
+                            : typeof val === "string"
+                            ? val.trim()
+                            : val !== null
+                        ).length
+                      }{" "}
+                      filters applied)
+                    </Text>
+                  )}
+                </Space>
+              </Col>
+              <Col>
+                <Checkbox
+                  checked={selectAll}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                >
+                  Select all on page
+                </Checkbox>
+              </Col>
+            </Row>
+          </Card>
+        )}
 
       <Divider
         style={{ margin: window.innerWidth < 768 ? "8px 0" : "12px 0" }}
       />
 
       <div>
-        {!shouldFetch && !isExactMatch ? (
+        {!shouldFetch && !isExactMatch && !isWorkOrderFiltered ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -1193,7 +1232,7 @@ const handleSubmit = async () => {
               </span>
             }
           />
-        ) : isSourcedLoading || isExactMatchLoading ? (
+        ) : isSourcedLoading || isExactMatchLoading || isUpdatingStatus ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <Skeleton active />
             <Skeleton active />
@@ -1694,7 +1733,6 @@ const handleSubmit = async () => {
             key="submit"
             type="primary"
             style={{ backgroundColor: "#da2c46" }}
-
             onClick={handleSubmit}
           >
             Apply Filters
