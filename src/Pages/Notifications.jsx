@@ -20,6 +20,7 @@ import {
   Form,
   Input,
   Alert,
+  Spin,
 } from "antd";
 import {
   BellOutlined,
@@ -57,6 +58,7 @@ const Notifications = () => {
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [offerLetterModalVisible, setOfferLetterModalVisible] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [revisionForm] = Form.useForm();
 
   const {
@@ -79,7 +81,7 @@ const Notifications = () => {
 
   useEffect(() => {
     if (apiData) {
-      setNotifications(apiData.notifications || []); // ✅ fixed
+      setNotifications(apiData.notifications || []);
       setLoading(false);
     }
     if (apiError) {
@@ -456,7 +458,7 @@ const Notifications = () => {
                         {item.message}
                       </Paragraph>
                       
-                      {/* Offer Letter Actions */}
+                      {/* Offer Letter Actions - Removed Download Button */}
                       {isOfferLetterNotification(item) && (
                         <div style={{ marginTop: "12px" }}>
                           <Space wrap>
@@ -472,6 +474,7 @@ const Notifications = () => {
                               size="small"
                               onClick={() => handleAcceptOffer(item)}
                               icon={<CheckCircleOutlined />}
+                              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
                             >
                               Accept
                             </Button>
@@ -596,7 +599,7 @@ const Notifications = () => {
         </Form>
       </Modal>
 
-      {/* Offer Letter View Modal */}
+      {/* Offer Letter View Modal - Removed Download Options */}
       <Modal
         title="Offer Letter"
         open={offerLetterModalVisible}
@@ -606,12 +609,13 @@ const Notifications = () => {
             Close
           </Button>,
         ]}
-        width={800}
+        width={900}
+        style={{ top: 20 }}
       >
-        {selectedNotification && (
+        {selectedNotification && selectedNotification.fileUrl ? (
           <div>
             <Alert
-              message="This is a preview of your offer letter. Please use the buttons in the notification to accept, reject, or request revisions."
+              message="This is your official offer letter. You can view it below and use the action buttons in the notification to accept, reject, or request revisions."
               type="info"
               style={{ marginBottom: 16 }}
             />
@@ -619,60 +623,46 @@ const Notifications = () => {
             <div style={{ 
               border: "1px solid #d9d9d9", 
               borderRadius: "6px", 
-              padding: "24px",
-              minHeight: "400px"
+              height: "70vh",
+              position: "relative",
+              overflow: "hidden"
             }}>
-              <Title level={3} style={{ textAlign: "center", marginBottom: "24px" }}>
-                OFFER LETTER
-              </Title>
-              
-              <Paragraph>
-                Dear Candidate,
-              </Paragraph>
-              
-              <Paragraph>
-                We are pleased to offer you the position of <strong>Position Name</strong> 
-                at <strong>Company Name</strong>. This letter outlines the terms and conditions 
-                of your employment.
-              </Paragraph>
-              
-              <Title level={4}>Position Details:</Title>
-              <ul>
-                <li><strong>Position:</strong> Position Name</li>
-                <li><strong>Department:</strong> Department Name</li>
-                <li><strong>Start Date:</strong> Start Date</li>
-                <li><strong>Location:</strong> Work Location</li>
-              </ul>
-              
-              <Title level={4}>Compensation:</Title>
-              <ul>
-                <li><strong>Base Salary:</strong> $XX,XXX per year</li>
-                <li><strong>Benefits:</strong> Standard company benefits package</li>
-              </ul>
-              
-              <Paragraph>
-                Please sign and return this letter by <strong>Date</strong> to indicate 
-                your acceptance of this offer.
-              </Paragraph>
-              
-              <Paragraph>
-                We look forward to having you on our team!
-              </Paragraph>
-              
-              <div style={{ marginTop: "40px" }}>
-                <div style={{ float: "left", width: "45%" }}>
-                  <div style={{ borderTop: "1px solid #000", paddingTop: "8px" }}>
-                    <Text strong>For Company Name</Text>
-                  </div>
+              {pdfLoading && (
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 10
+                }}>
+                  <Spin size="large" />
                 </div>
-                <div style={{ float: "right", width: "45%" }}>
-                  <div style={{ borderTop: "1px solid #000", paddingTop: "8px" }}>
-                    <Text strong>Accepted By (Candidate)</Text>
-                  </div>
-                </div>
-                <div style={{ clear: "both" }}></div>
-              </div>
+              )}
+              
+              {/* PDF Viewer with restricted controls */}
+              <embed
+                src={`${selectedNotification.fileUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH&zoom=100`}
+                type="application/pdf"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none"
+                }}
+                onLoad={() => setPdfLoading(false)}
+                onError={() => {
+                  setPdfLoading(false);
+                  message.error("Failed to load offer letter.");
+                }}
+              />
             </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <Result
+              status="warning"
+              title="No Offer Letter Available"
+              subTitle="The offer letter file is not available for this notification."
+            />
           </div>
         )}
       </Modal>
@@ -700,6 +690,18 @@ const Notifications = () => {
         }
         .ant-tabs-ink-bar {
           background-color: #da2c46 !important;
+        }
+        
+        @keyframes pulse {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
