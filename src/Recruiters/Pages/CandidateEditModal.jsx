@@ -12,7 +12,12 @@ import {
   Tag,
   Space,
 } from "antd";
-import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  UploadOutlined,
+  PlusOutlined,
+  LockOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -46,11 +51,17 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
+      const { password, confirmPassword, ...restValues } = values;
+
       const updatedData = {
         ...values,
         skills,
         _id: candidate._id,
       };
+
+      if (password) {
+        updatedData.password = password;
+      }
       await onSubmit(updatedData);
       form.resetFields();
       setSkills([]);
@@ -77,6 +88,20 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
     setSkills([]);
     setNewSkill("");
     onCancel();
+  };
+
+  const validateConfirmPassword = (_, value) => {
+    const password = form.getFieldValue("password");
+
+    // If password is empty, confirm password can also be empty
+    if (!password) {
+      return Promise.resolve();
+    }
+
+    if (!value || password === value) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error("Passwords do not match!"));
   };
 
   return (
@@ -249,6 +274,49 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
             </Col>
           </Row>
         </Form.Item>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter password",
+                },
+                {
+                  min: 6,
+                  message: "Password must be at least 6 characters",
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder="Enter password"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Confirm Password"
+              name="confirmPassword"
+              dependencies={["password"]}
+              rules={[
+                {
+                  required: true,
+                  message: "Please confirm password",
+                },
+                { validator: validateConfirmPassword },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder="Confirm password"
+              />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
     </Modal>
   );
