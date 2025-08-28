@@ -89,6 +89,7 @@ const AddWorkOrder = () => {
   const [clientSelectLoading, setClientSelectLoading] = useState(false);
   const [staffSelectLoading, setStaffSelectLoading] = useState(false);
   const [isPrefilled, setIsPrefilled] = useState(false);
+  const [hasLoadedRequisition, setHasLoadedRequisition] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -151,7 +152,11 @@ const AddWorkOrder = () => {
   };
 
   useEffect(() => {
-    if (location.state?.requisitionData) {
+    if (
+      location.state?.requisitionData &&
+      !hasLoadedRequisition &&
+      activeProjects.length > 0
+    ) {
       const reqData = location.state.requisitionData;
       setIsPrefilled(true);
 
@@ -162,8 +167,18 @@ const AddWorkOrder = () => {
         ? dayjs(reqData.deadlineDate)
         : startDate.add(14, "day");
 
-      setSelectedProject(reqData.project._id);
+      // Verify the project still exists in active projects
       const project = activeProjects.find((p) => p._id === reqData.project._id);
+
+      if (project) {
+        setSelectedProject(reqData.project._id);
+      } else {
+        // Handle case where project is not found or inactive
+        console.warn("Project from requisition not found in active projects");
+        enqueueSnackbar("Project from requisition is no longer active", {
+          variant: "warning",
+        });
+      }
 
       let finalJobCode = reqData.jobCode || "";
       if (
@@ -193,7 +208,6 @@ const AddWorkOrder = () => {
         endDate: endDate,
         alertDate: alertDate,
         deadlineDate: deadlineDate,
-
         keyResponsibilities: reqData.keyResponsibilities,
         jobRequirements: reqData.jobRequirements,
         qualification: reqData.qualification,
@@ -205,14 +219,28 @@ const AddWorkOrder = () => {
         visacategorytype: reqData.visacategorytype,
         visacategory: reqData.visacategory,
         Education: reqData.Education,
-
         languagesRequired: reqData.languagesRequired || [],
         jobCode: finalJobCode,
       });
 
-      setRequiredDocuments(reqData.requiredDocuments || []);
+      if (reqData.requiredDocuments && reqData.requiredDocuments.length > 0) {
+        const documentsWithIds = reqData.requiredDocuments.map(
+          (doc, index) => ({
+            ...doc,
+            id: doc.id || `req_doc_${Date.now()}_${index}`,
+          })
+        );
+        setRequiredDocuments(documentsWithIds);
+      }
+
+      setHasLoadedRequisition(true);
     }
-  }, [location.state, jobForm, activeProjects]);
+  }, [
+    location.state?.requisitionData,
+    activeProjects.length,
+    hasLoadedRequisition,
+    jobForm,
+  ]);
 
   // useEffect(() => {
   //   if (location.state?.requisitionData?.clientId && clientsData?.clients) {

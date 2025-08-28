@@ -87,6 +87,12 @@ const RecruiterEditJob = () => {
   const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
     {}
   );
+  const [documents, setDocuments] = useState([]);
+  const [standardDocuments, setStandardDocuments] = useState([
+    { id: "visa", name: "Visa", isMandatory: false },
+    { id: "passport", name: "Passport", isMandatory: false },
+    { id: "iqma", name: "IQMA Certificate", isMandatory: false },
+  ]);
 
   const {
     data: fetchedJobData,
@@ -128,6 +134,26 @@ const RecruiterEditJob = () => {
         const initialStageRequiredDocuments = {};
         const initialStageStaffAssignments = {};
         const initialStageRecruiterAssignments = {};
+        const initialDocuments =
+          fetchedJobData.workOrder.documents?.map((doc) => ({
+            id: doc._id || Date.now() + Math.random().toString(36).substr(2, 9),
+            name: doc.name,
+            description: doc.description,
+            isMandatory: doc.isMandatory !== false,
+          })) || [];
+
+        setDocuments(initialDocuments);
+
+        const updatedStandardDocuments = [...standardDocuments];
+        initialDocuments.forEach((doc) => {
+          const stdDocIndex = updatedStandardDocuments.findIndex(
+            (stdDoc) => stdDoc.name.toLowerCase() === doc.name.toLowerCase()
+          );
+          if (stdDocIndex !== -1) {
+            updatedStandardDocuments[stdDocIndex].isMandatory = doc.isMandatory;
+          }
+        });
+        setStandardDocuments(updatedStandardDocuments);
 
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
@@ -678,10 +704,84 @@ const RecruiterEditJob = () => {
     updateApplicationField(fieldId, { options: newOptions });
   };
 
+  const addDocument = () => {
+    const newDocument = {
+      id: Date.now(),
+      name: "",
+      description: "",
+      isMandatory: true,
+    };
+    setDocuments([...documents, newDocument]);
+  };
+
+  const updateDocument = (id, updates) => {
+    setDocuments((docs) =>
+      docs.map((doc) => (doc.id === id ? { ...doc, ...updates } : doc))
+    );
+  };
+
+  const removeDocument = (id) => {
+    setDocuments((docs) => docs.filter((doc) => doc.id !== id));
+  };
+
+  const handleStandardDocumentChange = (id, isMandatory) => {
+    setStandardDocuments((prev) =>
+      prev.map((doc) => (doc.id === id ? { ...doc, isMandatory } : doc))
+    );
+
+    // Also update the main documents array
+    const docName = standardDocuments.find((d) => d.id === id)?.name;
+    if (docName) {
+      const existingDocIndex = documents.findIndex((d) => d.name === docName);
+      if (existingDocIndex !== -1) {
+        // Update existing document
+        const updatedDocs = [...documents];
+        updatedDocs[existingDocIndex] = {
+          ...updatedDocs[existingDocIndex],
+          isMandatory,
+        };
+        setDocuments(updatedDocs);
+      } else if (isMandatory) {
+        // Add new document if it's being marked as mandatory
+        setDocuments([
+          ...documents,
+          {
+            id: Date.now(),
+            name: docName,
+            description: "",
+            isMandatory: true,
+          },
+        ]);
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const values = jobForm.getFieldsValue();
+
+      const allDocuments = [
+        ...standardDocuments
+          .filter((doc) => doc.isMandatory)
+          .map((doc) => ({
+            name: doc.name,
+            description: "",
+            isMandatory: true,
+          })),
+        ...documents
+          .filter(
+            (doc) =>
+              !standardDocuments.some(
+                (stdDoc) => stdDoc.name.toLowerCase() === doc.name.toLowerCase()
+              )
+          )
+          .map((doc) => ({
+            name: doc.name,
+            description: doc.description || "",
+            isMandatory: doc.isMandatory !== false,
+          })),
+      ];
 
       const pipelineStageTimeline = selectedPipelines.flatMap((pipeId) => {
         const pipeline = activePipelines.find((p) => p._id === pipeId);
@@ -771,6 +871,7 @@ const RecruiterEditJob = () => {
         ...jobData,
         ...values,
         customFields: applicationFields,
+        documents: allDocuments,
         pipelineStageTimeline,
         startDate: values.startDate?.format("YYYY-MM-DD"),
         endDate: values.endDate?.format("YYYY-MM-DD"),
@@ -1030,6 +1131,60 @@ const RecruiterEditJob = () => {
               >
                 {displayData.keyResponsibilities}
               </p>
+            </div>
+          )}
+
+          {(standardDocuments.filter((doc) => doc.isMandatory).length > 0 ||
+            documents.length > 0) && (
+            <div style={{ marginBottom: "12px" }}>
+              <h4
+                style={{
+                  margin: "0 0 4px 0",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                }}
+              >
+                Required Documents
+              </h4>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+              >
+                {/* Standard documents */}
+                {standardDocuments
+                  .filter((doc) => doc.isMandatory)
+                  .map((doc, index) => (
+                    <div
+                      key={`std-${doc.id}`}
+                      style={{ display: "flex", alignItems: "center" }}
+                    >
+                      <span style={{ marginRight: "4px" }}>•</span>
+                      <span style={{ fontSize: "12px" }}>
+                        <strong>{doc.name}</strong>
+                      </span>
+                    </div>
+                  ))}
+
+                {/* Custom documents */}
+                {documents
+                  .filter(
+                    (doc) =>
+                      !standardDocuments.some((std) => std.name === doc.name)
+                  )
+                  .map((doc, index) => (
+                    <div
+                      key={index}
+                      style={{ display: "flex", alignItems: "center" }}
+                    >
+                      <span style={{ marginRight: "4px" }}>
+                        {doc.isMandatory ? "•" : "◦"}
+                      </span>
+                      <span style={{ fontSize: "12px" }}>
+                        <strong>{doc.name}</strong>
+                        {doc.description && ` - ${doc.description}`}
+                      </span>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
@@ -1753,7 +1908,7 @@ const RecruiterEditJob = () => {
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
-                          {recruiter.fullName || recruiter.email}
+                          {`${recruiter.fullName} - (${recruiter.email})`}
                         </Option>
                       ))}
                     </Select>
@@ -2710,6 +2865,100 @@ const RecruiterEditJob = () => {
               </Form.Item>
 
               {selectedPipelines.length > 0 && renderSelectedPipelines()}
+            </Card>
+
+            <Card
+              type="inner"
+              title="Required Documents"
+              style={{ marginBottom: "16px" }}
+            >
+              <div style={{ marginBottom: "16px" }}>
+                <h4>Standard Documents</h4>
+                <Row gutter={[16, 8]}>
+                  {standardDocuments.map((doc) => (
+                    <Col xs={24} sm={8} key={doc.id}>
+                      <Checkbox
+                        checked={doc.isMandatory}
+                        onChange={(e) =>
+                          handleStandardDocumentChange(doc.id, e.target.checked)
+                        }
+                      >
+                        {doc.name}
+                      </Checkbox>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+
+              <Divider />
+
+              <h4>Additional Documents</h4>
+              {documents.map((doc, index) => (
+                <Card
+                  key={doc.id}
+                  size="small"
+                  style={{ marginBottom: "12px" }}
+                  title={`Document ${index + 1}`}
+                  extra={
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeDocument(doc.id)}
+                    />
+                  }
+                >
+                  <Row gutter={[16, 8]}>
+                    <Col span={24}>
+                      <Form.Item label="Document Name">
+                        <Input
+                          value={doc.name}
+                          onChange={(e) =>
+                            updateDocument(doc.id, { name: e.target.value })
+                          }
+                          placeholder="e.g., Resume, Cover Letter, ID Proof"
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item label="Description">
+                        <Input.TextArea
+                          value={doc.description}
+                          onChange={(e) =>
+                            updateDocument(doc.id, {
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Enter document description or instructions"
+                          rows={2}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item>
+                        <Checkbox
+                          checked={doc.isMandatory}
+                          onChange={(e) =>
+                            updateDocument(doc.id, {
+                              isMandatory: e.target.checked,
+                            })
+                          }
+                        >
+                          Mandatory Document
+                        </Checkbox>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+              ))}
+              <Button
+                type="dashed"
+                onClick={addDocument}
+                icon={<PlusOutlined />}
+                block
+              >
+                Add Additional Document
+              </Button>
             </Card>
 
             <div
