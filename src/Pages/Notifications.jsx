@@ -195,7 +195,7 @@ const Notifications = () => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case "info":
-        return <InfoCircleOutlined style={{ color: "#1890ff" }} />;
+        return <InfoCircleOutlined style={{ color: "#da2c46" }} />;
       case "success":
         return <CheckCircleOutlined style={{ color: "#52c41a" }} />;
       case "warning":
@@ -457,7 +457,7 @@ const Notifications = () => {
                       >
                         {item.message}
                       </Paragraph>
-                      
+
                       {/* Offer Letter Actions - Removed Download Button */}
                       {isOfferLetterNotification(item) && (
                         <div style={{ marginTop: "12px" }}>
@@ -467,6 +467,7 @@ const Notifications = () => {
                               size="small"
                               onClick={() => handleViewOfferLetter(item)}
                               icon={<EyeOutlined />}
+                              style={{ backgroundColor: "#da2c46" }}
                             >
                               View Offer Letter
                             </Button>
@@ -474,7 +475,11 @@ const Notifications = () => {
                               size="small"
                               onClick={() => handleAcceptOffer(item)}
                               icon={<CheckCircleOutlined />}
-                              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                              style={{
+                                backgroundColor: "#52c41a",
+                                borderColor: "#52c41a",
+                                color: "white",
+                              }}
                             >
                               Accept
                             </Button>
@@ -495,7 +500,7 @@ const Notifications = () => {
                           </Space>
                         </div>
                       )}
-                      
+
                       {!item.isRead && !isOfferLetterNotification(item) && (
                         <Button
                           type="link"
@@ -560,7 +565,7 @@ const Notifications = () => {
             type="info"
             style={{ marginBottom: 16 }}
           />
-          
+
           <Form.Item
             name="revisionRequirements"
             label="Revision Requirements"
@@ -576,7 +581,7 @@ const Notifications = () => {
               placeholder="Please specify what changes you would like in the offer letter..."
             />
           </Form.Item>
-          
+
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
@@ -619,26 +624,30 @@ const Notifications = () => {
               type="info"
               style={{ marginBottom: 16 }}
             />
-            
-            <div style={{ 
-              border: "1px solid #d9d9d9", 
-              borderRadius: "6px", 
-              height: "70vh",
-              position: "relative",
-              overflow: "hidden"
-            }}>
+
+            <div
+              style={{
+                border: "1px solid #d9d9d9",
+                borderRadius: "6px",
+                height: "70vh",
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
               {pdfLoading && (
-                <div style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  zIndex: 10
-                }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 10,
+                  }}
+                >
                   <Spin size="large" />
                 </div>
               )}
-              
+
               {/* PDF Viewer with restricted controls */}
               <embed
                 src={`${selectedNotification.fileUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH&zoom=100`}
@@ -646,7 +655,7 @@ const Notifications = () => {
                 style={{
                   width: "100%",
                   height: "100%",
-                  border: "none"
+                  border: "none",
                 }}
                 onLoad={() => setPdfLoading(false)}
                 onError={() => {
@@ -691,7 +700,7 @@ const Notifications = () => {
         .ant-tabs-ink-bar {
           background-color: #da2c46 !important;
         }
-        
+
         @keyframes pulse {
           0% {
             opacity: 1;
