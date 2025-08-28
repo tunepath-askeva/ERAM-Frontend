@@ -861,6 +861,35 @@ const SourcedCandidates = ({ jobId }) => {
     );
   };
 
+  const SuggestionMatchInfo = () => {
+    return (
+      <Alert
+        message="Suggestion Match Criteria"
+        description={
+          <div>
+            <Text>Candidates are matched based on the following criteria:</Text>
+            <ul style={{ margin: "8px 0", paddingLeft: "20px" }}>
+              <li>Work order description and candidate profile summary</li>
+              <li>Required skills matching candidate skills</li>
+              <li>
+                Work order company industry and candidate industry experience
+              </li>
+              <li>Work order job function and candidate job title/role</li>
+            </ul>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              The system analyzes these factors to find the most relevant
+              candidates for your position.
+            </Text>
+          </div>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: "16px" }}
+        closable
+      />
+    );
+  };
+
   if (jobLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
@@ -957,6 +986,8 @@ const SourcedCandidates = ({ jobId }) => {
             >
               Current Work Order Filter
             </Button>
+
+          
 
             {(hasActiveFilters || isExactMatch) && (
               <Card size="small" style={{ marginBottom: "20px" }}>
@@ -1175,16 +1206,21 @@ const SourcedCandidates = ({ jobId }) => {
           </Space>
         </Col>
       </Row>
+        {isExactMatch && !isExactMatchLoading && <SuggestionMatchInfo />}
 
       {(shouldFetch || isExactMatch || isWorkOrderFiltered) &&
         sourcedCandidates.length > 0 && (
           <Card
             size="small"
-            style={{ marginBottom: "16px", backgroundColor: "#f6ffed" }}
+            style={{
+              marginBottom: "16px",
+              backgroundColor: isExactMatch ? "#f0f9ff" : "#f6ffed",
+              borderColor: isExactMatch ? "#1890ff" : "#52c41a",
+            }}
           >
             <Row justify="space-between" align="middle">
               <Col>
-                <Space>
+                <Space direction="vertical" size={4}>
                   <Text strong style={{ color: "#52c41a" }}>
                     Found {sourcedCandidates.length} candidates
                   </Text>
