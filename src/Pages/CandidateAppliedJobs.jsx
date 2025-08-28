@@ -619,7 +619,7 @@ const CandidateAppliedJobs = () => {
           }}
         >
           <Row gutter={[12, 16]} align="middle">
-            <Col xs={24} sm={24} md={12} lg={8}>
+            <Col xs={24} sm={24} md={12} lg={12}>
               <Search
                 placeholder="Search applications..."
                 size="large"
@@ -634,7 +634,7 @@ const CandidateAppliedJobs = () => {
                 }}
               />
             </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
+            <Col xs={12} sm={12} md={6} lg={8}>
               <Select
                 placeholder="Status"
                 size="large"
@@ -666,29 +666,7 @@ const CandidateAppliedJobs = () => {
                 ))}
               </Select>
             </Col>
-            <Col xs={12} sm={12} md={6} lg={4}>
-              <Select
-                placeholder="Priority"
-                size="large"
-                style={{ width: "100%" }}
-                value={priorityFilter || undefined}
-                onChange={setPriorityFilter}
-                allowClear={!!priorityFilter}
-              >
-                <Option value="high">High Priority</Option>
-                <Option value="medium">Medium Priority</Option>
-                <Option value="low">Low Priority</Option>
-              </Select>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4}>
-              <RangePicker
-                size="large"
-                style={{ width: "100%" }}
-                value={dateRangeFilter}
-                onChange={setDateRangeFilter}
-                placeholder={["From Date", "To Date"]}
-              />
-            </Col>
+
             <Col xs={24} sm={12} md={4} lg={4}>
               <Button
                 size="large"

@@ -30,7 +30,6 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
 
   useEffect(() => {
     if (candidate && visible) {
-      // Populate form with candidate data
       form.setFieldsValue({
         fullName: candidate.fullName,
         email: candidate.email,
@@ -42,7 +41,6 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
         accountStatus: candidate.accountStatus,
         noticePeriod: candidate.noticePeriod,
         industry: candidate.industry,
-        socialLinks: candidate.socialLinks || {},
       });
       setSkills(candidate.skills || []);
     }
@@ -246,33 +244,6 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
             <Option value="Retail">Retail</Option>
             <Option value="Consulting">Consulting</Option>
           </Select>
-        </Form.Item>
-
-        <Form.Item label="Social Links">
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name={["socialLinks", "linkedin"]} label="LinkedIn">
-                <Input placeholder="LinkedIn profile URL" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name={["socialLinks", "github"]} label="GitHub">
-                <Input placeholder="GitHub profile URL" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name={["socialLinks", "twitter"]} label="Twitter">
-                <Input placeholder="Twitter profile URL" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name={["socialLinks", "facebook"]} label="Facebook">
-                <Input placeholder="Facebook profile URL" />
-              </Form.Item>
-            </Col>
-          </Row>
         </Form.Item>
 
         <Row gutter={16}>

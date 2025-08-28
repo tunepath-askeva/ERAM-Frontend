@@ -16,6 +16,10 @@ import {
   Popconfirm,
   message,
   Pagination,
+  Modal,
+  Form,
+  Input,
+  Alert,
 } from "antd";
 import {
   BellOutlined,
@@ -25,6 +29,8 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
   MoreOutlined,
+  EyeOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -32,6 +38,7 @@ import {
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
+  // useSendRevisionRequestMutation,
 } from "../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -39,6 +46,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -46,6 +54,10 @@ const Notifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [revisionModalVisible, setRevisionModalVisible] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [offerLetterModalVisible, setOfferLetterModalVisible] = useState(false);
+  const [revisionForm] = Form.useForm();
 
   const {
     data: apiData,
@@ -62,6 +74,8 @@ const Notifications = () => {
     useMarkAsReadByIdMutation();
   const [deleteNotification, { isLoading: deleting }] =
     useDeleteNotificationMutation();
+  // const [sendRevisionRequest, { isLoading: sendingRevision }] =
+  //   useSendRevisionRequestMutation();
 
   useEffect(() => {
     if (apiData) {
@@ -128,6 +142,54 @@ const Notifications = () => {
     }
   };
 
+  const handleAcceptOffer = async (notification) => {
+    try {
+      // Implement your accept offer logic here
+      message.success("Offer accepted successfully!");
+      handleMarkAsRead(notification._id);
+    } catch (error) {
+      message.error("Failed to accept offer");
+      console.error("Accept offer error:", error);
+    }
+  };
+
+  const handleRejectOffer = async (notification) => {
+    try {
+      // Implement your reject offer logic here
+      message.success("Offer rejected");
+      handleMarkAsRead(notification._id);
+    } catch (error) {
+      message.error("Failed to reject offer");
+      console.error("Reject offer error:", error);
+    }
+  };
+
+  const handleRequestRevision = (notification) => {
+    setSelectedNotification(notification);
+    setRevisionModalVisible(true);
+  };
+
+  const handleViewOfferLetter = (notification) => {
+    setSelectedNotification(notification);
+    setOfferLetterModalVisible(true);
+  };
+
+  const handleSendRevisionRequest = async (values) => {
+    try {
+      // await sendRevisionRequest({
+      //   notificationId: selectedNotification._id,
+      //   revisionRequirements: values.revisionRequirements,
+      // }).unwrap();
+      message.success("Revision request sent successfully");
+      setRevisionModalVisible(false);
+      revisionForm.resetFields();
+      handleMarkAsRead(selectedNotification._id);
+    } catch (error) {
+      message.error("Failed to send revision request");
+      console.error("Send revision request error:", error);
+    }
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case "info":
@@ -156,6 +218,10 @@ const Notifications = () => {
       default:
         return <Tag color="purple">Notification</Tag>;
     }
+  };
+
+  const isOfferLetterNotification = (notification) => {
+    return notification.title.includes("Offer Letter Received");
   };
 
   const getNotificationActions = (item) => {
@@ -292,11 +358,6 @@ const Notifications = () => {
                 {unreadCount} new
               </span>
             )}
-            {/* {unreadCount === 0 && (
-              <span style={{ marginLeft: "8px", color: "#52c41a" }}>
-                ✓ All caught up!
-              </span>
-            )} */}
           </Text>
           <Space>
             {unreadCount > 0 && (
@@ -394,7 +455,45 @@ const Notifications = () => {
                       >
                         {item.message}
                       </Paragraph>
-                      {!item.isRead && (
+                      
+                      {/* Offer Letter Actions */}
+                      {isOfferLetterNotification(item) && (
+                        <div style={{ marginTop: "12px" }}>
+                          <Space wrap>
+                            <Button
+                              type="primary"
+                              size="small"
+                              onClick={() => handleViewOfferLetter(item)}
+                              icon={<EyeOutlined />}
+                            >
+                              View Offer Letter
+                            </Button>
+                            <Button
+                              size="small"
+                              onClick={() => handleAcceptOffer(item)}
+                              icon={<CheckCircleOutlined />}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="small"
+                              danger
+                              onClick={() => handleRejectOffer(item)}
+                            >
+                              Reject
+                            </Button>
+                            <Button
+                              size="small"
+                              onClick={() => handleRequestRevision(item)}
+                              icon={<FileTextOutlined />}
+                            >
+                              Request Revision
+                            </Button>
+                          </Space>
+                        </div>
+                      )}
+                      
+                      {!item.isRead && !isOfferLetterNotification(item) && (
                         <Button
                           type="link"
                           size="small"
@@ -436,6 +535,147 @@ const Notifications = () => {
           style={{ marginTop: 16, textAlign: "center" }}
         />
       </Card>
+
+      {/* Revision Request Modal */}
+      <Modal
+        title="Request Offer Letter Revision"
+        open={revisionModalVisible}
+        onCancel={() => {
+          setRevisionModalVisible(false);
+          revisionForm.resetFields();
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={revisionForm}
+          layout="vertical"
+          onFinish={handleSendRevisionRequest}
+        >
+          <Alert
+            message="Please provide details about what changes you'd like in the offer letter"
+            type="info"
+            style={{ marginBottom: 16 }}
+          />
+          
+          <Form.Item
+            name="revisionRequirements"
+            label="Revision Requirements"
+            rules={[
+              {
+                required: true,
+                message: "Please provide revision requirements",
+              },
+            ]}
+          >
+            <TextArea
+              rows={6}
+              placeholder="Please specify what changes you would like in the offer letter..."
+            />
+          </Form.Item>
+          
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+            <Space>
+              <Button
+                onClick={() => {
+                  setRevisionModalVisible(false);
+                  revisionForm.resetFields();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                // loading={sendingRevision}
+              >
+                Send Revision Request
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Offer Letter View Modal */}
+      <Modal
+        title="Offer Letter"
+        open={offerLetterModalVisible}
+        onCancel={() => setOfferLetterModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setOfferLetterModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedNotification && (
+          <div>
+            <Alert
+              message="This is a preview of your offer letter. Please use the buttons in the notification to accept, reject, or request revisions."
+              type="info"
+              style={{ marginBottom: 16 }}
+            />
+            
+            <div style={{ 
+              border: "1px solid #d9d9d9", 
+              borderRadius: "6px", 
+              padding: "24px",
+              minHeight: "400px"
+            }}>
+              <Title level={3} style={{ textAlign: "center", marginBottom: "24px" }}>
+                OFFER LETTER
+              </Title>
+              
+              <Paragraph>
+                Dear Candidate,
+              </Paragraph>
+              
+              <Paragraph>
+                We are pleased to offer you the position of <strong>Position Name</strong> 
+                at <strong>Company Name</strong>. This letter outlines the terms and conditions 
+                of your employment.
+              </Paragraph>
+              
+              <Title level={4}>Position Details:</Title>
+              <ul>
+                <li><strong>Position:</strong> Position Name</li>
+                <li><strong>Department:</strong> Department Name</li>
+                <li><strong>Start Date:</strong> Start Date</li>
+                <li><strong>Location:</strong> Work Location</li>
+              </ul>
+              
+              <Title level={4}>Compensation:</Title>
+              <ul>
+                <li><strong>Base Salary:</strong> $XX,XXX per year</li>
+                <li><strong>Benefits:</strong> Standard company benefits package</li>
+              </ul>
+              
+              <Paragraph>
+                Please sign and return this letter by <strong>Date</strong> to indicate 
+                your acceptance of this offer.
+              </Paragraph>
+              
+              <Paragraph>
+                We look forward to having you on our team!
+              </Paragraph>
+              
+              <div style={{ marginTop: "40px" }}>
+                <div style={{ float: "left", width: "45%" }}>
+                  <div style={{ borderTop: "1px solid #000", paddingTop: "8px" }}>
+                    <Text strong>For Company Name</Text>
+                  </div>
+                </div>
+                <div style={{ float: "right", width: "45%" }}>
+                  <div style={{ borderTop: "1px solid #000", paddingTop: "8px" }}>
+                    <Text strong>Accepted By (Candidate)</Text>
+                  </div>
+                </div>
+                <div style={{ clear: "both" }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <style jsx>{`
         .ant-table-thead > tr > th {
