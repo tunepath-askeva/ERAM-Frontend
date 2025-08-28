@@ -253,10 +253,6 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
               name="password"
               rules={[
                 {
-                  required: true,
-                  message: "Please enter password",
-                },
-                {
                   min: 6,
                   message: "Password must be at least 6 characters",
                 },
@@ -273,13 +269,7 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
               label="Confirm Password"
               name="confirmPassword"
               dependencies={["password"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Please confirm password",
-                },
-                { validator: validateConfirmPassword },
-              ]}
+              rules={[{ validator: validateConfirmPassword }]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
