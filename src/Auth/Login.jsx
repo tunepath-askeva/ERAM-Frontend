@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Form, Input, Button, Card, Divider } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 import { useLoginUserMutation } from "../Slices/Users/UserApis.js";
 import { setUserCredentials } from "../Slices/Users/UserSlice.js";
@@ -13,12 +13,47 @@ import { useSearchParams } from "react-router-dom";
 const Login = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { candidateInfo, userInfo } = useSelector((state) => state.userAuth);
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const [loginUser, { isLoading }] = useLoginUserMutation();
   const [searchParams] = useSearchParams();
   const branchId = searchParams.get("branchId");
   console.log(branchId, "id-branch");
+
+    useEffect(() => {
+    if (candidateInfo || userInfo) {
+      const role = candidateInfo?.roles || userInfo?.roles;
+
+      switch (role) {
+        case "candidate":
+          navigate("/candidate-jobs", { replace: true });
+          break;
+        case "admin":
+          navigate("/admin/dashboard", { replace: true });
+          break;
+        case "employee":
+          navigate("/employee/company-news", { replace: true });
+          break;
+        case "recruiter":
+          if (userInfo?.employeeAdmin === "Employee Admin") {
+            navigate("/employee-admin/dashboard", { replace: true });
+          } else {
+            navigate("/recruiter/dashboard", { replace: true });
+          }
+          break;
+        case "super_admin":
+          navigate("/super-admin/dashboard", { replace: true });
+          break;
+        default:
+          navigate("/", { replace: true });
+      }
+    }
+  }, [candidateInfo, userInfo, navigate]);
+
+  if (candidateInfo || userInfo) {
+    return null; 
+  }
 
   const onFinish = async (values) => {
     try {
@@ -57,10 +92,6 @@ const Login = () => {
         password: values.password,
         branchId,
       }).unwrap();
-
-      console.log("Login Response:", response);
-
-      console.log("Token:", response.token);
 
       if (response.requireOtp) {
         enqueueSnackbar(
