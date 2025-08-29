@@ -27,6 +27,8 @@ import SourcedCandidates from "./SourcedCandidates";
 import ScreeningCandidates from "./ScreeningCandidates";
 import SelectedCandidates from "./SelelctedCandidates";
 import PendingCandidates from "./PendingCandidates";
+import WorkOrderStatus from "./WorkOrderStatus";
+
 import { useSelector } from "react-redux";
 
 const { TabPane } = Tabs;
@@ -119,10 +121,10 @@ const RecruiterViewJob = () => {
             color="geekblue"
             style={{ fontSize: "12px", padding: "4px 8px" }}
           >
-            Nationality : {workOrder.nationality || "N/A"} 
+            Nationality : {workOrder.nationality || "N/A"}
           </Tag>
           <Tag color="volcano" style={{ fontSize: "12px", padding: "4px 8px" }}>
-            Visa Category : {workOrder.visacategory || "N/A" } 
+            Visa Category : {workOrder.visacategory || "N/A"}
           </Tag>
           <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
             Visa Category Type : {workOrder.visacategorytype || "N/A"}
@@ -929,6 +931,18 @@ const RecruiterViewJob = () => {
             >
               {renderPipelineStages()}
             </TabPane>
+            {hasPermission("view-job-status") && (
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    WorkOrder Status
+                  </span>
+                }
+                key="job-status"
+              >
+                <WorkOrderStatus jobId={id} />
+              </TabPane>
+            )}
             {hasPermission("view-job-sourced") && (
               <TabPane
                 tab={

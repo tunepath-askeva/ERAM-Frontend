@@ -72,6 +72,7 @@ const accessPermissions = [
   { key: "view-job-declined", label: "View Declined Candidates" },
   { key: "view-job-pending", label: "View Pending Candidates" },
   { key: "view-job-screening", label: "View Screening Candidates" },
+  { key: "view-job-status", label: "View Work Order Status" },
 
   { key: "view-candidates", label: "View Candidates" },
   { key: "add-candidate", label: "Add Candidate" },

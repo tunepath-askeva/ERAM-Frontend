@@ -119,9 +119,9 @@ const RecruiterApprovals = () => {
           ? stage.uploadedDocuments
           : [
               {
-                candidateId: "N/A",
-                candidateName: "No Candidate",
-                candidateEmail: "N/A",
+                candidateId: stage.candidateId || "N/A",
+                candidateName: stage.candidateName || "Unknown Candidate",
+                candidateEmail: stage.candidateEmail || "N/A",
                 documents: [],
               },
             ];
@@ -192,9 +192,9 @@ const RecruiterApprovals = () => {
           ? uploadedDocuments
           : [
               {
-                candidateId: "N/A",
-                candidateName: "No Candidate",
-                candidateEmail: "N/A",
+                candidateId: stage.candidateId || "N/A",
+                candidateName: stage.candidateName || "Unknown Candidate",
+                candidateEmail: stage.candidateEmail || "N/A",
                 documents: [],
               },
             ];

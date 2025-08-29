@@ -128,6 +128,16 @@ export const recruiterApi = createApi({
         },
       }),
     }),
+    getWorkOrderDetails: builder.query({
+      query: ({ jobId, page, limit }) => ({
+        url: `/job-details/${jobId}`,
+        method: "GET",
+        params: {
+          page,
+          limit,
+        },
+      }),
+    }),
     getPendingCandidates: builder.query({
       query: ({ jobId, page, limit }) => ({
         url: `/inpending/${jobId}`,
@@ -496,7 +506,7 @@ export const recruiterApi = createApi({
       }),
     }),
     currentWorkorderDetailsFiltering: builder.mutation({
-      query: ({  body }) => ({
+      query: ({ body }) => ({
         url: `/curr-filter`,
         method: "POST",
         body: body,
@@ -515,6 +525,7 @@ export const {
   useGetSourcedCandidateQuery,
   useGetSelectedCandidatesQuery,
   useGetScreeningCandidatesQuery,
+  useGetWorkOrderDetailsQuery,
   useUpdateCandidateStatusMutation,
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
