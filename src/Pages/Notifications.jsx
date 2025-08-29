@@ -121,6 +121,8 @@ const Notifications = () => {
       setFilteredNotifications(notifications);
     } else if (filterType === "unread") {
       setFilteredNotifications(notifications.filter((n) => !n.isRead));
+    } else if (filterType === "read") {
+      setFilteredNotifications(notifications.filter((n) => n.isRead));
     } else {
       setFilteredNotifications(
         notifications.filter((n) => n.type === filterType)
@@ -533,6 +535,7 @@ const Notifications = () => {
                 options={[
                   { label: "All", value: "all" },
                   { label: "Unread", value: "unread" },
+                  { label: "Read", value: "read" },
                 ]}
                 value={filterType}
                 onChange={setFilterType}
