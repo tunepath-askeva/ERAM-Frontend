@@ -76,7 +76,7 @@ const AdminSidebar = ({
     {
       key: "/admin/recruiters",
       icon: <UserOutlined />,
-      label: "Recruiters",
+      label: "Recruitment Team",
     },
     {
       key: "/admin/candidates",

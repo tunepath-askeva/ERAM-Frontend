@@ -232,6 +232,13 @@ export const userApi = createApi({
         body: data,
       }),
     }),
+    requestOfferRevision: builder.mutation({
+      query: (body) => ({
+        url: "/revising-offer",
+        method: "PATCH",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -264,5 +271,6 @@ export const {
   useMarkAllReadMutation,
   useMarkAsReadByIdMutation,
   useValidateUserTokenQuery,
-  useUpdateCandidateOfferStatusMutation
+  useUpdateCandidateOfferStatusMutation,
+  useRequestOfferRevisionMutation,
 } = userApi;

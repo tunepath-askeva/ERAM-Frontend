@@ -262,6 +262,10 @@ const RecruiterCandidates = () => {
       label: "Offer Accept Waiting",
       color: "orange",
     },
+    offer_revised: {
+      label: "Offer Revised",
+      color: "blue",
+    },
     offer: { color: "green", label: "Offer" },
     rejected: { color: "red", label: "Rejected" },
     completed: { color: "green", label: "Completed" },
@@ -285,6 +289,8 @@ const RecruiterCandidates = () => {
     completed: candidates.filter((c) => c.status === "completed").length,
     interview: candidates.filter((c) => c.status === "interview").length,
     offer_pending: candidates.filter((c) => c.status === "offer_pending")
+      .length,
+    offer_revised: candidates.filter((c) => c.status === "offer_revised")
       .length,
     offer: candidates.filter((c) => c.status === "offer").length,
     rejected: candidates.filter((c) => c.status === "rejected").length,
@@ -336,12 +342,29 @@ const RecruiterCandidates = () => {
     offerForm.resetFields();
   };
 
+  const handleMoveToOffer = async (candidate) => {
+    try {
+      const response = await moveToNextStage({
+        id: candidate._id,
+        status: "offer",
+      }).unwrap();
+
+      message.success(`${candidate.name} moved to offer stage successfully!`);
+      refetch();
+    } catch (error) {
+      message.error(
+        `Failed to move ${candidate.name} to offer stage. Please try again.`
+      );
+      console.error("Move to offer error:", error);
+    }
+  };
+
   const handleOfferSubmit = async (values) => {
     try {
       const formData = new FormData();
       formData.append("status", "offer_pending");
       formData.append("description", values.description);
-      console.log(values, "hi valuesssss");
+
       if (values.file?.file?.originFileObj) {
         formData.append("attachment", values.file.file.originFileObj);
       } else if (values.file?.fileList?.[0]?.originFileObj) {
@@ -368,6 +391,8 @@ const RecruiterCandidates = () => {
 
       if (values.file?.file?.originFileObj) {
         formData.append("attachment", values.file.file.originFileObj);
+      } else if (values.file?.fileList?.[0]?.originFileObj) {
+        formData.append("attachment", values.file.fileList[0].originFileObj);
       }
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
@@ -571,37 +596,123 @@ const RecruiterCandidates = () => {
             style: { color: "#52c41a" },
           });
         }
+        if (hasPermission("reject-candidate")) {
+          actions.push({
+            key: "reject",
+            label: "Reject",
+            icon: <StopOutlined style={iconTextStyle} />,
+            onClick: () => handleRejectCandidate(candidate),
+            style: { color: "#f5222d" },
+            confirm: true,
+            confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+            confirmDescription: "This action cannot be undone.",
+          });
+        }
         break;
+      case "offer_pending":
+        if (hasPermission("move-to-offer")) {
+          actions.push({
+            key: "move-to-offer",
+            label: "Move to Offer",
+            icon: <CheckOutlined style={iconTextStyle} />,
+            onClick: () => handleMoveToOffer(candidate),
+            style: { color: "#52c41a" },
+          });
+        }
+
+        if (hasPermission("reject-candidate")) {
+          actions.push({
+            key: "reject",
+            label: "Reject",
+            icon: <StopOutlined style={iconTextStyle} />,
+            onClick: () => handleRejectCandidate(candidate),
+            style: { color: "#f5222d" },
+            confirm: true,
+            confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+            confirmDescription: "This action cannot be undone.",
+          });
+        }
+        break;
+      case "offer_revised":
+        if (hasPermission("move-to-offer")) {
+          actions.push({
+            key: "move-to-offer",
+            label: "Move to Offer",
+            icon: <CheckOutlined style={iconTextStyle} />,
+            onClick: () => handleMoveToOffer(candidate),
+            style: { color: "#52c41a" },
+          });
+        }
+
+        if (hasPermission("reject-candidate")) {
+          actions.push({
+            key: "reject",
+            label: "Reject",
+            icon: <StopOutlined style={iconTextStyle} />,
+            onClick: () => handleRejectCandidate(candidate),
+            style: { color: "#f5222d" },
+            confirm: true,
+            confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+            confirmDescription: "This action cannot be undone.",
+          });
+        }
+        break;
+
+      case "offer":
+        if (hasPermission("move-to-pipeline")) {
+          actions.push({
+            key: "move",
+            label: "Move to Pipeline",
+            icon: <ArrowRightOutlined style={iconTextStyle} />,
+            onClick: () => handleMoveToPipeline(candidate),
+            style: { color: "#52c41a" },
+          });
+        }
+
+        if (hasPermission("reject-candidate")) {
+          actions.push({
+            key: "reject",
+            label: "Reject",
+            icon: <StopOutlined style={iconTextStyle} />,
+            onClick: () => handleRejectCandidate(candidate),
+            style: { color: "#f5222d" },
+            confirm: true,
+            confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+            confirmDescription: "This action cannot be undone.",
+          });
+        }
+        break;
+
       default:
         break;
     }
 
-    if (
-      candidate.status !== "rejected" &&
-      candidate.status !== "offer" &&
-      hasPermission("reject-candidate")
-    ) {
-      actions.push({
-        key: "reject",
-        label: "Reject",
-        icon: <StopOutlined style={iconTextStyle} />,
-        onClick: () => handleRejectCandidate(candidate),
-        style: { color: "#f5222d" },
-        confirm: true,
-        confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
-        confirmDescription: "This action cannot be undone.",
-      });
-    }
+    // if (
+    //   candidate.status !== "rejected" &&
+    //   candidate.status !== "offer" &&
+    //   hasPermission("reject-candidate")
+    // ) {
+    //   actions.push({
+    //     key: "reject",
+    //     label: "Reject",
+    //     icon: <StopOutlined style={iconTextStyle} />,
+    //     onClick: () => handleRejectCandidate(candidate),
+    //     style: { color: "#f5222d" },
+    //     confirm: true,
+    //     confirmTitle: `Are you sure you want to reject ${candidate.name}?`,
+    //     confirmDescription: "This action cannot be undone.",
+    //   });
+    // }
 
-    if (hasPermission("move-to-pipeline")) {
-      actions.push({
-        key: "move",
-        label: "Move to Pipeline",
-        icon: <CheckOutlined style={iconTextStyle} />,
-        onClick: () => handleMoveToPipeline(candidate),
-        style: { color: "#52c41a" },
-      });
-    }
+    // if (hasPermission("move-to-pipeline")) {
+    //   actions.push({
+    //     key: "move",
+    //     label: "Move to Pipeline",
+    //     icon: <CheckOutlined style={iconTextStyle} />,
+    //     onClick: () => handleMoveToPipeline(candidate),
+    //     style: { color: "#52c41a" },
+    //   });
+    // }
 
     return actions;
   };
@@ -1312,11 +1423,18 @@ const RecruiterCandidates = () => {
   const tabLabels = {
     interview: "Interview",
     offer_pending: "Offer Accept Waiting",
+    offer_revised: "Offer Revised",
     offer: "Offer",
     rejected: "Rejected",
   };
 
-  const tabItems = ["interview", "offer_pending", "offer", "rejected"]
+  const tabItems = [
+    "interview",
+    "offer_pending",
+    "offer_revised",
+    "offer",
+    "rejected",
+  ]
     // .filter((status) => hasPermission(`view-${status}-tab`))
     .map((status) => ({
       key: status,
@@ -1912,6 +2030,155 @@ const RecruiterCandidates = () => {
                       )}
                     </TabPane>
                   )}
+
+                  {(candidate.status === "offer_pending" ||
+                    candidate.status === "offer_revised" ||
+                    candidate.status === "offer") && (
+                    <TabPane tab="Offer Details" key="offer">
+                      <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="Status">
+                          <Tag
+                            color={
+                              candidate.status === "offer_pending"
+                                ? "orange"
+                                : candidate.status === "offer"
+                                ? "green"
+                                : candidate.status === "offer_revised"
+                                ? "blue"
+                                : "default"
+                            }
+                          >
+                            {candidate.status}
+                          </Tag>
+                        </Descriptions.Item>
+
+                        {candidate.offerDetails?.[0]?.currentStatus && (
+                          <Descriptions.Item label="Candidate Response">
+                            <Tag
+                              color={
+                                candidate.offerDetails[0].currentStatus ===
+                                "offer-accepted"
+                                  ? "green"
+                                  : candidate.offerDetails[0].currentStatus ===
+                                    "offer-rejected"
+                                  ? "red"
+                                  : candidate.offerDetails[0].currentStatus ===
+                                    "offer-revised"
+                                  ? "blue"
+                                  : "default"
+                              }
+                            >
+                              {candidate.offerDetails[0].currentStatus}
+                            </Tag>
+                          </Descriptions.Item>
+                        )}
+
+                        <Descriptions.Item label="Description">
+                          {candidate.offerDetails?.[0]?.description || "N/A"}
+                        </Descriptions.Item>
+
+                        <Descriptions.Item label="Offer Letter">
+                          {candidate.offerDetails?.[0]?.offerDocument
+                            ?.fileUrl ? (
+                            <a
+                              href={
+                                candidate.offerDetails[0].offerDocument.fileUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {candidate.offerDetails[0].offerDocument
+                                .fileName || "Download Offer Letter"}
+                            </a>
+                          ) : (
+                            "No file uploaded"
+                          )}
+                        </Descriptions.Item>
+
+                        {candidate.offerDetails?.[0]?.statusHistory?.length >
+                          0 && (
+                          <Descriptions.Item label="Status History">
+                            <Collapse>
+                              {candidate.offerDetails[0].statusHistory.map(
+                                (history, index) => (
+                                  <Panel
+                                    header={`${history.status} - ${new Date(
+                                      history.changedAt
+                                    ).toLocaleString()}`}
+                                    key={index}
+                                  >
+                                    <Text strong>Status: </Text>
+                                    <Tag
+                                      color={
+                                        history.status === "offer-accepted"
+                                          ? "green"
+                                          : history.status === "offer-rejected"
+                                          ? "red"
+                                          : history.status === "offer-revised"
+                                          ? "blue"
+                                          : "default"
+                                      }
+                                    >
+                                      {history.status}
+                                    </Tag>
+                                    <br />
+                                    <Text strong>Description: </Text>
+                                    <Text>{history.description}</Text>
+                                    <br />
+                                    <Text strong>Changed at: </Text>
+                                    <Text>
+                                      {new Date(
+                                        history.changedAt
+                                      ).toLocaleString()}
+                                    </Text>
+                                  </Panel>
+                                )
+                              )}
+                            </Collapse>
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+
+                      <div style={{ marginTop: 16 }}>
+                        {(candidate.status === "offer_pending" ||
+                          candidate.status === "offer_revised") && (
+                          <>
+                            <Button
+                              onClick={() => {
+                                setOfferAction("revise");
+                                setOfferModalVisible(true);
+                                offerForm.setFieldsValue({
+                                  description:
+                                    candidate.offerDetails?.[0]?.description,
+                                });
+                              }}
+                              style={{ marginRight: 8 }}
+                            >
+                              Revise Offer
+                            </Button>
+
+                            <Button
+                              type="primary"
+                              style={{ marginRight: 8 }}
+                              onClick={() => handleMoveToOffer(candidate)}
+                            >
+                              Move to Offer
+                            </Button>
+
+                            <Button
+                              danger
+                              onClick={() => handleRejectCandidate(candidate)}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+
+                        {candidate.status === "offer" && <></>}
+                      </div>
+                    </TabPane>
+                  )}
+
                   {selectedCandidate.status === "offer" && (
                     <TabPane tab="Pipeline" key="2">
                       <div style={{ padding: 16 }}>
@@ -2026,73 +2293,6 @@ const RecruiterCandidates = () => {
                             </Button>
                           )}
                         </Space>
-                      </div>
-                    </TabPane>
-                  )}
-
-                  {(candidate.status === "offer_pending" ||
-                    candidate.status === "offer_revised" ||
-                    candidate.status === "offer") && (
-                    <TabPane tab="Offer Details" key="offer">
-                      <Descriptions bordered column={1} size="small">
-                        <Descriptions.Item label="Status">
-                          <Tag color="blue">{candidate.status}</Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Description">
-                          {candidate.offerDetails?.[0]?.description || "N/A"}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Offer Letter">
-                          {candidate.offerDetails?.[0]?.offerDocument
-                            ?.fileUrl ? (
-                            <a
-                              href={
-                                candidate.offerDetails[0].offerDocument.fileUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {candidate.offerDetails[0].offerDocument
-                                .fileName || "Download Offer Letter"}
-                            </a>
-                          ) : (
-                            "No file uploaded"
-                          )}
-                        </Descriptions.Item>
-                      </Descriptions>
-
-                      <div style={{ marginTop: 16 }}>
-                        {candidate.status === "offer_pending" && (
-                          <>
-                            <Button
-                              onClick={() => {
-                                setOfferAction("revise");
-                                setOfferModalVisible(true);
-                                offerForm.setFieldsValue({
-                                  description:
-                                    candidate.offerDetails?.[0]?.description,
-                                });
-                              }}
-                            >
-                              Revise Offer
-                            </Button>
-
-                            <Button
-                              type="primary"
-                              style={{ marginLeft: 8 }}
-                              onClick={async () => {
-                                await moveToNextStage({
-                                  id: candidate._id,
-                                  status: "offer",
-                                });
-                                message.success("Offer finalized!");
-                                refetch();
-                                refetchCandidateDetails();
-                              }}
-                            >
-                              Move to Offer
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </TabPane>
                   )}
@@ -2957,7 +3157,13 @@ const RecruiterCandidates = () => {
           </Button>,
         ]}
       >
-        <Form form={offerForm} layout="vertical" onFinish={handleOfferSubmit}>
+        <Form
+          form={offerForm}
+          layout="vertical"
+          onFinish={
+            offerAction === "revise" ? handleReviseOffer : handleOfferSubmit
+          }
+        >
           <Form.Item
             name="description"
             label="Offer Description"
@@ -2965,9 +3171,27 @@ const RecruiterCandidates = () => {
           >
             <Input.TextArea rows={4} placeholder="Enter offer details" />
           </Form.Item>
-          <Form.Item label="Offer Letter" name="file">
-            <Upload beforeUpload={() => false} maxCount={1}>
-              <Button icon={<UploadOutlined />}>Click to Upload</Button>
+          <Form.Item
+            label="Offer Letter"
+            name="file"
+            rules={
+              offerAction === "new"
+                ? [{ required: true, message: "Please upload offer letter" }]
+                : []
+            }
+          >
+            <Upload
+              beforeUpload={(file) => {
+                const isPDF = file.type === "application/pdf";
+                if (!isPDF) {
+                  message.error("You can only upload PDF files!");
+                }
+                return false;
+              }}
+              accept=".pdf"
+              maxCount={1}
+            >
+              <Button icon={<UploadOutlined />}>Click to Upload PDF</Button>
             </Upload>
           </Form.Item>
         </Form>

@@ -11,7 +11,7 @@ import {
   InputNumber,
   Select,
   Checkbox,
-  Button 
+  Button,
 } from "antd";
 import {
   UserOutlined,
@@ -83,6 +83,7 @@ const accessPermissions = [
 
   { key: "move-to-interview", label: "Move to Interview" },
   { key: "make-offer", label: "Make Offer" },
+  { key: "move-to-offer", label: "Move to offer" },
   { key: "move-to-pipeline", label: "Move to Pipeline" },
   { key: "convert-to-employee", label: "Convert to Employee" },
   { key: "reject-candidate", label: "Reject Candidate" },
@@ -143,9 +144,9 @@ const RecruiterForm = ({
           ]);
         }
 
-           const experienceValue = initialValues.totalExperienceYears 
-        ? Number(initialValues.totalExperienceYears) 
-        : 0;
+        const experienceValue = initialValues.totalExperienceYears
+          ? Number(initialValues.totalExperienceYears)
+          : 0;
 
         form.setFieldsValue({
           fullName: initialValues.fullName || "",

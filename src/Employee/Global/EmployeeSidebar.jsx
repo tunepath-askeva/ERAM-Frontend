@@ -101,7 +101,7 @@ const EmployeeSidebar = ({
     {
       key: "/employee/profile-settings",
       icon: <SettingOutlined />,
-      label: "Profile-Settings",
+      label: "Profile Settings",
     },
   ];
 

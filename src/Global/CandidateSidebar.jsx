@@ -91,7 +91,7 @@ const CandidateSidebar = ({
     {
       key: "/candidate-settings",
       icon: <SettingOutlined />,
-      label: "Settings",
+      label: "Profile Settings",
     },
   ];
 
