@@ -1577,7 +1577,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                     <Select mode="tags" placeholder="Enter Languages"></Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={8}>
                   <Form.Item
                     label="Nationality"
                     name="nationality"

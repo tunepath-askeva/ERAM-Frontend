@@ -1504,7 +1504,7 @@ const EditRequisition = () => {
                     <Select mode="tags" placeholder="Enter Languages"></Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} md={8} >
                   <Form.Item
                     label="Nationality"
                     name="nationality"
@@ -1515,7 +1515,7 @@ const EditRequisition = () => {
                     <Input placeholder="Enter Nationality" />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={8}>
+                <Col xs={24} md={8} >
                   <Form.Item name="visacategory" label="Visa Category">
                     <Input placeholder="Enter Visa Category" />
                   </Form.Item>
