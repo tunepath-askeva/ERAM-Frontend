@@ -85,16 +85,6 @@ const WorkOrderStatus = ({ jobId }) => {
         </Tag>
       ),
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space size="middle">
-          <a>View Profile</a>
-          <a>Contact</a>
-        </Space>
-      ),
-    },
   ];
 
   if (error) return <div>Error loading work order status</div>;

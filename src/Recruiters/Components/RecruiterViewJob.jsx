@@ -195,6 +195,17 @@ const RecruiterViewJob = () => {
               </Text>
             </div>
           </Col>
+
+          <Col xs={12} sm={8}>
+            <div>
+              <Text strong style={{ fontSize: "13px", display: "block" }}>
+                Employees Converted
+              </Text>
+              <Text style={{ fontSize: "12px" }}>
+                {workOrder.numberOfEmployees}
+              </Text>
+            </div>
+          </Col>
         </Row>
 
         <div style={{ marginBottom: "16px" }}>

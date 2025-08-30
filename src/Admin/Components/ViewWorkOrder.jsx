@@ -16,7 +16,11 @@ import {
   InputNumber,
   Checkbox,
   Radio,
+  Breadcrumb,
+  Button,
 } from "antd";
+import { LeftOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -25,6 +29,7 @@ const { TextArea } = Input;
 
 const ViewWorkOrder = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data, error, isLoading } = useGetWorkOrderByIdQuery(id);
 
   if (isLoading) {
@@ -212,7 +217,17 @@ const ViewWorkOrder = () => {
                 Candidates Needed
               </Text>
               <Text style={{ fontSize: "12px" }}>
-                {workOrder.numberOfCandidate}
+                {workOrder.numberOfCandidate || 0}
+              </Text>
+            </div>
+          </Col>
+          <Col xs={12} sm={8}>
+            <div>
+              <Text strong style={{ fontSize: "13px", display: "block" }}>
+                Employees Converted
+              </Text>
+              <Text style={{ fontSize: "12px" }}>
+                {workOrder.numberOfEmployees || 0}
               </Text>
             </div>
           </Col>
@@ -825,6 +840,23 @@ const ViewWorkOrder = () => {
 
   return (
     <div>
+      <div style={{ marginBottom: "16px" }}>
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            <Button
+              type="link"
+              onClick={() => navigate(-1)}
+              icon={<LeftOutlined />}
+              style={{
+                paddingLeft: 0,
+                color: "#da2c46",
+              }}
+            >
+              Back to Jobs
+            </Button>
+          </Breadcrumb.Item>
+        </Breadcrumb>
+      </div>
       {/* Mobile-like Container */}
       <div
         style={{

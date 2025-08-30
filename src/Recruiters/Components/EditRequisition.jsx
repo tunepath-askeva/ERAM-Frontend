@@ -1255,9 +1255,7 @@ const EditRequisition = () => {
               <Form.Item
                 name="pipeline"
                 label="Pipeline"
-                rules={[
-                  { required: true, message: "Please select a pipeline" },
-                ]}
+              
               >
                 <Select
                   mode="multiple"

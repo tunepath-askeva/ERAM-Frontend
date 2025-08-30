@@ -21,6 +21,7 @@ import {
   DatePicker,
   InputNumber,
   Switch,
+  Breadcrumb,
 } from "antd";
 import {
   PlusOutlined,
@@ -34,6 +35,7 @@ import {
   CalendarOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useParams, useNavigate } from "react-router-dom";
@@ -2435,6 +2437,24 @@ const RecruiterEditJob = () => {
       <div
         style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}
       >
+        <div style={{marginBottom: 15}}>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Button
+                type="link"
+                onClick={() => navigate(-1)}
+                icon={<LeftOutlined />}
+                style={{
+                  paddingLeft: 0,
+                  color: "#da2c46",
+                }}
+              >
+                Back to Jobs
+              </Button>
+            </Breadcrumb.Item>
+          </Breadcrumb>
+        </div>
+
         <Steps
           current={currentStep}
           style={{ marginBottom: "24px" }}

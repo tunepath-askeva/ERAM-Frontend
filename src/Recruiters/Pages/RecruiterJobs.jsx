@@ -22,6 +22,7 @@ import {
   Result,
   Skeleton,
   Drawer,
+  Progress,
 } from "antd";
 import {
   SearchOutlined,
@@ -38,6 +39,9 @@ import {
   DownOutlined,
   EditOutlined,
   PoweroffOutlined,
+  GroupOutlined,
+  UsergroupAddOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -135,7 +139,9 @@ const RecruiterJobs = () => {
         : "Not specified",
       salary:
         job.salaryType === "annual"
-          ? `SAR ${job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""}${
+          ? `SAR ${
+              job.salaryMin ? parseInt(job.salaryMin).toLocaleString() : ""
+            }${
               job.salaryMax
                 ? `-${parseInt(job.salaryMax).toLocaleString()}`
                 : ""
@@ -156,6 +162,8 @@ const RecruiterJobs = () => {
       stages: job.pipeline?.[0]?.stages?.map((stage) => stage.name) || [],
       assignedRecruiters: job.assignedRecruiters || [],
       deadline: job.deadlineDate,
+      numberOfCandidate: job.numberOfCandidate || 0,
+      numberOfEmployees: job.numberOfEmployees || 0,
     }));
   };
 
@@ -309,7 +317,7 @@ const RecruiterJobs = () => {
               style={{ width: "100%" }}
             />
           </Col>
-{/* 
+          {/* 
           <Col xs={12} sm={4} md={4} lg={4} xl={4}>
             <Button
               type="primary"
@@ -628,6 +636,71 @@ const RecruiterJobs = () => {
                       </Text>
                     </div>
                   </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      flex: 1,
+                      minWidth: "120px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <UsergroupAddOutlined
+                      style={{ fontSize: "14px", color: "#666" }}
+                    />
+                    <Tooltip
+                      title={
+                        job.numberOfEmployees > job.numberOfCandidate
+                          ? "You have exceeded the required employees for this work order!"
+                          : `${job.numberOfEmployees} out of ${job.numberOfCandidate} employees converted`
+                      }
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          width: "100%",
+                        }}
+                      >
+                        <Text
+                          strong
+                          style={{
+                            fontSize: "12px",
+                            color:
+                              job.numberOfEmployees > job.numberOfCandidate
+                                ? "red"
+                                : "#444",
+                          }}
+                        >
+                          Employees Converted: {job.numberOfEmployees} /{" "}
+                          {job.numberOfCandidate}
+                          {job.numberOfEmployees > job.numberOfCandidate && (
+                            <WarningOutlined
+                              style={{ color: "red", marginLeft: 4 }}
+                            />
+                          )}
+                        </Text>
+                        <Progress
+                          percent={Math.min(
+                            (job.numberOfEmployees / job.numberOfCandidate) *
+                              100,
+                            100
+                          )}
+                          size="small"
+                          showInfo={false}
+                          strokeColor={
+                            job.numberOfEmployees > job.numberOfCandidate
+                              ? "red"
+                              : "#52c41a"
+                          }
+                          style={{ marginTop: "2px", width: "25%" }}
+                        />
+                      </div>
+                    </Tooltip>
+                  </div>
+
                   <div
                     style={{
                       display: "flex",

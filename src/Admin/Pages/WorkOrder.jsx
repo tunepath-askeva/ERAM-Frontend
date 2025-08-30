@@ -17,6 +17,7 @@ import {
   Skeleton,
   Input,
   Pagination,
+  Progress,
 } from "antd";
 import {
   PlusOutlined,
@@ -35,6 +36,7 @@ import {
   DollarOutlined,
   StopOutlined,
   PlayCircleOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -651,6 +653,78 @@ const WorkOrder = () => {
                         </div>
                       </div>
 
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          flex: 1,
+                          minWidth: "120px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <UsergroupAddOutlined
+                          style={{ fontSize: "14px", color: "#666" }}
+                        />
+                        <Tooltip
+                          title={
+                            (workOrder.numberOfEmployees || 0) >
+                            (workOrder.numberOfCandidate || 0)
+                              ? "You have exceeded the required employees for this work order!"
+                              : `${workOrder.numberOfEmployees || 0} out of ${
+                                  workOrder.numberOfCandidate || 0
+                                } employees converted`
+                          }
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              width: "100%",
+                            }}
+                          >
+                            <Text
+                              strong
+                              style={{
+                                fontSize: "12px",
+                                color:
+                                  (workOrder.numberOfEmployees || 0) >
+                                  (workOrder.numberOfCandidate || 0)
+                                    ? "red"
+                                    : "#444",
+                              }}
+                            >
+                              Employees Converted:{" "}
+                              {workOrder.numberOfEmployees || 0} /{" "}
+                              {workOrder.numberOfCandidate || 0}
+                              {(workOrder.numberOfEmployees || 0) >
+                                (workOrder.numberOfCandidate || 0) && (
+                                <WarningOutlined
+                                  style={{ color: "red", marginLeft: 4 }}
+                                />
+                              )}
+                            </Text>
+                            <Progress
+                              percent={Math.min(
+                                ((workOrder.numberOfEmployees || 0) /
+                                  (workOrder.numberOfCandidate || 1)) *
+                                  100,
+                                100
+                              )}
+                              size="small"
+                              showInfo={false}
+                              strokeColor={
+                                (workOrder.numberOfEmployees || 0) >
+                                (workOrder.numberOfCandidate || 0)
+                                  ? "red"
+                                  : "#52c41a"
+                              }
+                              style={{ marginTop: "2px", width: "25%" }}
+                            />
+                          </div>
+                        </Tooltip>
+                      </div>
+
                       <div style={{ marginBottom: 16 }}>
                         <Text
                           strong
@@ -1255,8 +1329,7 @@ const WorkOrder = () => {
           )}
         </div>
       </Modal>
-            <style jsx>{`
-       
+      <style jsx>{`
         .ant-pagination-item-active {
           border-color: #da2c46 !important;
           background-color: #da2c46 !important;
@@ -1270,7 +1343,6 @@ const WorkOrder = () => {
         .ant-pagination-item:hover a {
           color: #da2c46 !important;
         }
-        
       `}</style>
     </>
   );
