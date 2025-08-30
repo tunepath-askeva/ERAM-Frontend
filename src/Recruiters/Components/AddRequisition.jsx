@@ -1203,9 +1203,9 @@ const AddRequisition = ({ onNavigateBack }) => {
             (d) => d.stageId === stageId
           );
 
-          if (!recruiterIds.length || !dateEntry?.approvalId) {
+          if (!recruiterIds.length) {
             validationErrors.push(
-              `Please assign recruiters and approval for all stages`
+              `Please assign recruiters for all stages`
             );
           }
         });
