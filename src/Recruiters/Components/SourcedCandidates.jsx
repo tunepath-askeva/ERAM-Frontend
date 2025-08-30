@@ -275,6 +275,7 @@ const SourcedCandidates = ({ jobId }) => {
     isLoading: isExactMatchLoading,
     error: exactMatchError,
     refetch: refetchExactMatch,
+    
   } = useGetExactMatchCandidatesQuery(jobId, {
     page: pagination.current,
     limit: pagination.pageSize,
