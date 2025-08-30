@@ -20,6 +20,7 @@ import {
   Checkbox,
   Radio,
   Modal,
+  Breadcrumb,
 } from "antd";
 import {
   PlusOutlined,
@@ -31,6 +32,7 @@ import {
   MobileOutlined,
   DeleteOutlined,
   EditOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { ObjectId } from "bson";
@@ -160,9 +162,14 @@ const AddWorkOrder = () => {
       const reqData = location.state.requisitionData;
       setIsPrefilled(true);
 
-      const startDate = reqData.createdAt ? dayjs(reqData.createdAt) : dayjs();
-      const endDate = startDate.add(30, "day");
-      const alertDate = startDate.add(7, "day");
+      // Parse dates properly
+      const startDate = reqData.startDate ? dayjs(reqData.startDate) : dayjs();
+      const endDate = reqData.endDate
+        ? dayjs(reqData.endDate)
+        : startDate.add(30, "day");
+      const alertDate = reqData.alertDate
+        ? dayjs(reqData.alertDate)
+        : startDate.add(7, "day");
       const deadlineDate = reqData.deadlineDate
         ? dayjs(reqData.deadlineDate)
         : startDate.add(14, "day");
@@ -180,16 +187,22 @@ const AddWorkOrder = () => {
         });
       }
 
-      let finalJobCode = reqData.jobCode || "";
+      if (reqData.pipeline && reqData.pipeline.length > 0) {
+        setSelectedPipelines(reqData.pipeline);
+        jobForm.setFieldsValue({ pipeline: reqData.pipeline });
+      }
+
+      // Generate job code with project prefix
+      let finalJobCode = reqData.requisitionNo || "";
       if (
         project &&
         project.prefix &&
         !finalJobCode.startsWith(project.prefix)
       ) {
-        const codeWithoutPrefix = finalJobCode.replace(/^[A-Z]+-/, "");
-        finalJobCode = `${project.prefix}-${codeWithoutPrefix}`;
+        finalJobCode = `${project.prefix}-${finalJobCode}`;
       }
 
+      // Set form values with all available data from API response
       jobForm.setFieldsValue({
         title: reqData.title,
         description: reqData.description,
@@ -201,7 +214,7 @@ const AddWorkOrder = () => {
         salaryMin: reqData.salaryMin,
         salaryMax: reqData.salaryMax,
         workplace: reqData.workplace,
-        requiredSkills: reqData.requiredSkills,
+        requiredSkills: reqData.requiredSkills || [],
         numberOfCandidate: reqData.numberOfCandidate,
         nationality: reqData.nationality,
         startDate: startDate,
@@ -211,18 +224,53 @@ const AddWorkOrder = () => {
         keyResponsibilities: reqData.keyResponsibilities,
         jobRequirements: reqData.jobRequirements,
         qualification: reqData.qualification,
-        benefits: reqData.benefits,
+        benefits: Array.isArray(reqData.benefits)
+          ? reqData.benefits.join("\n")
+          : reqData.benefits,
         client: reqData.client._id,
         project: reqData.project._id,
         jobFunction: reqData.jobFunction,
         salaryType: reqData.salaryType || "monthly",
-        visacategorytype: reqData.visacategorytype,
+        visacategorytype: reqData.visacategorytype || "any",
         visacategory: reqData.visacategory,
         Education: reqData.Education,
         languagesRequired: reqData.languagesRequired || [],
         jobCode: finalJobCode,
       });
 
+      // Handle pipeline prefilling if available
+      if (reqData.pipeline && reqData.pipeline.length > 0) {
+        setSelectedPipelines(reqData.pipeline);
+        jobForm.setFieldsValue({ pipeline: reqData.pipeline });
+      }
+
+      // Handle pipeline stage timeline prefilling
+      if (
+        reqData.pipelineStageTimeline &&
+        reqData.pipelineStageTimeline.length > 0
+      ) {
+        const stageTimelineData = {};
+
+        reqData.pipelineStageTimeline.forEach((stage) => {
+          if (!stageTimelineData[stage.pipelineId]) {
+            stageTimelineData[stage.pipelineId] = [];
+          }
+
+          stageTimelineData[stage.pipelineId].push({
+            stageId: stage.stageId,
+            startDate: stage.startDate,
+            endDate: stage.endDate,
+            dependencyType: stage.dependencyType || "independent",
+            approvalId: stage.approvalId || null,
+            recruiterIds: stage.recruiterIds || [],
+            staffIds: stage.staffIds || [],
+          });
+        });
+
+        setPipelineStageDates(stageTimelineData);
+      }
+
+      // Handle required documents if available
       if (reqData.requiredDocuments && reqData.requiredDocuments.length > 0) {
         const documentsWithIds = reqData.requiredDocuments.map(
           (doc, index) => ({
@@ -240,6 +288,7 @@ const AddWorkOrder = () => {
     activeProjects.length,
     hasLoadedRequisition,
     jobForm,
+    enqueueSnackbar,
   ]);
 
   // useEffect(() => {
@@ -1712,6 +1761,24 @@ const AddWorkOrder = () => {
       <div
         style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}
       >
+        <div style={{ marginBottom: 15 }}>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Button
+                type="link"
+                onClick={() => navigate(-1)}
+                icon={<LeftOutlined />}
+                style={{
+                  paddingLeft: 0,
+                  color: "#da2c46",
+                }}
+              >
+                Back to Jobs
+              </Button>
+            </Breadcrumb.Item>
+          </Breadcrumb>
+        </div>
+
         <Steps
           current={currentStep}
           style={{ marginBottom: "24px" }}
@@ -1843,6 +1910,7 @@ const AddWorkOrder = () => {
                         mode="multiple"
                         placeholder="Select pipeline"
                         onChange={handlePipelineChange}
+                          value={selectedPipelines}
                         style={{ width: "calc(100% - 120px)" }}
                       >
                         {activePipelines.map((pipeline) => (

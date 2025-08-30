@@ -53,7 +53,7 @@ const RecruiterRequisition = () => {
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
 
   const { data: clientData } = useGetClientsQuery();
-const {
+  const {
     data: requisitionData,
     isLoading: requisitionsLoading,
     refetch,
@@ -79,6 +79,22 @@ const {
     return () => clearTimeout(timer);
   }, [searchText]);
 
+  // Refetch data when returning from add/edit pages
+  useEffect(() => {
+    const handleFocus = () => {
+      refetch();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    // Also refetch when component mounts
+    refetch();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refetch]);
+
   const clients =
     clientData?.clients?.map((client) => ({
       id: client._id,
@@ -86,7 +102,7 @@ const {
       email: client.email,
     })) || [];
 
- useEffect(() => {
+  useEffect(() => {
     if (requisitionData) {
       setPagination((prev) => ({
         ...prev,
@@ -105,16 +121,17 @@ const {
     navigate(`/recruiter/requisition/edit/${record._id}`);
   };
 
-const handlePaginationChange = (page, pageSize) => {
-  setPagination({ current: page, pageSize });
-};
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize });
+  };
 
   const formattedRequisitions = useMemo(() => {
     if (!requisitionData?.requisition) return [];
     return requisitionData.requisition.map((req) => ({
       ...req,
       key: req._id,
-      status: req.isActive || "draft",
+      // Fix status mapping
+      status: req.isActive,
     }));
   }, [requisitionData]);
 
@@ -145,9 +162,9 @@ const handlePaginationChange = (page, pageSize) => {
     setIsDetailModalVisible(true);
   };
 
-const handleSearchChange = (e) => {
-  setSearchText(e.target.value);
-};
+  const handleSearchChange = (e) => {
+    setSearchText(e.target.value);
+  };
 
   const handleSearchClear = () => {
     setSearchText("");
@@ -155,13 +172,13 @@ const handleSearchChange = (e) => {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-const handleFilterChange = (filterType, value) => {
-  setFilters((prev) => ({
-    ...prev,
-    [filterType]: value || undefined,
-  }));
-  setPagination((prev) => ({ ...prev, current: 1 }));
-};
+  const handleFilterChange = (filterType, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: value || undefined,
+    }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
 
   const handleClearAllFilters = () => {
     setSearchText("");
@@ -198,18 +215,40 @@ const handleFilterChange = (filterType, value) => {
     }${suffix}`;
   };
 
+  // Helper function to get status color
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "green";
+      case "inactive":
+        return "red";
+      case "draft":
+        return "orange";
+      default:
+        return "default";
+    }
+  };
+
+  // Helper function to format status text
+  const formatStatusText = (status) => {
+    if (!status) return "Draft";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   const columns = [
     {
       title: "Req. Number",
       dataIndex: "requisitionNo",
       key: "requisitionNo",
       width: 120,
+      render: (text) => text || "N/A",
     },
     {
       title: "Reference Number",
       dataIndex: "referenceNo",
       key: "referenceNo",
       width: 150,
+      render: (text) => text || "N/A",
     },
     {
       title: "Client",
@@ -233,6 +272,7 @@ const handleFilterChange = (filterType, value) => {
       dataIndex: "title",
       key: "title",
       width: 200,
+      render: (text) => text || "N/A",
     },
     {
       title: "Employment Type",
@@ -249,7 +289,7 @@ const handleFilterChange = (filterType, value) => {
               : "orange"
           }
         >
-          {type}
+          {type || "N/A"}
         </Tag>
       ),
     },
@@ -278,16 +318,8 @@ const handleFilterChange = (filterType, value) => {
       dataIndex: "isActive",
       key: "status",
       render: (status) => (
-        <Tag
-          color={
-            status === "active"
-              ? "green"
-              : status === "inactive"
-              ? "red"
-              : "default"
-          }
-        >
-          {status || "Draft"}
+        <Tag color={getStatusColor(status)}>
+          {formatStatusText(status)}
         </Tag>
       ),
       width: 100,
@@ -457,19 +489,40 @@ const handleFilterChange = (filterType, value) => {
                 <Col xs={24} sm={12} md={6} lg={6}>
                   <div style={{ marginBottom: 4 }}>
                     <span style={{ fontSize: "12px", color: "#666" }}>
-                      Project
+                      Status
                     </span>
                   </div>
-                  <Input
-                    placeholder="Filter by project"
-                    value={filters.project || ""}
-                    onChange={(e) =>
-                      handleFilterChange("project", e.target.value)
-                    }
+                  <Select
+                    placeholder="Select Status"
+                    value={filters.status}
+                    onChange={(value) => handleFilterChange("status", value)}
+                    allowClear
                     size="small"
                     style={{ width: "100%" }}
+                  >
+                    <Option value="active">Active</Option>
+                    <Option value="inactive">Inactive</Option>
+                    <Option value="draft">Draft</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={6} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Employment Type
+                    </span>
+                  </div>
+                  <Select
+                    placeholder="Select Type"
+                    value={filters.employmentType}
+                    onChange={(value) => handleFilterChange("employmentType", value)}
                     allowClear
-                  />
+                    size="small"
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="full-time">Full-time</Option>
+                    <Option value="part-time">Part-time</Option>
+                    <Option value="contract">Contract</Option>
+                  </Select>
                 </Col>
                 <Col xs={24} sm={12} md={6} lg={6}>
                   <div style={{ marginBottom: 4 }}>
@@ -482,23 +535,6 @@ const handleFilterChange = (filterType, value) => {
                     value={filters.referenceNo || ""}
                     onChange={(e) =>
                       handleFilterChange("referenceNo", e.target.value)
-                    }
-                    size="small"
-                    style={{ width: "100%" }}
-                    allowClear
-                  />
-                </Col>
-                <Col xs={24} sm={12} md={6} lg={6}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontSize: "12px", color: "#666" }}>
-                      Requisition No
-                    </span>
-                  </div>
-                  <Input
-                    placeholder="Filter by requisition no"
-                    value={filters.requisitionNo || ""}
-                    onChange={(e) =>
-                      handleFilterChange("requisitionNo", e.target.value)
                     }
                     size="small"
                     style={{ width: "100%" }}
@@ -533,6 +569,9 @@ const handleFilterChange = (filterType, value) => {
               showSizeChanger
               showQuickJumper
               pageSizeOptions={["10", "20", "50", "100"]}
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} of ${total} items`
+              }
             />
           </div>
         </Card>
@@ -557,7 +596,8 @@ const handleFilterChange = (filterType, value) => {
               Edit
             </Button>,
           ]}
-          width={800}
+          width={900}
+          style={{ top: 20 }}
         >
           {selectedRequisition && (
             <Descriptions bordered column={2} size="small">
@@ -572,52 +612,62 @@ const handleFilterChange = (filterType, value) => {
                   ?.name || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Project" span={2}>
-                {selectedRequisition.project.name || "N/A"}
+                {selectedRequisition.project?.name || "N/A"}
               </Descriptions.Item>
-              <Descriptions.Item label="Job Title">
-                {selectedRequisition.title}
+              <Descriptions.Item label="Job Title" span={2}>
+                {selectedRequisition.title || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Employment Type">
                 <Tag
                   color={
                     selectedRequisition.EmploymentType === "full-time"
                       ? "green"
-                      : "blue"
+                      : selectedRequisition.EmploymentType === "part-time"
+                      ? "blue"
+                      : "orange"
                   }
                 >
-                  {selectedRequisition.EmploymentType}
+                  {selectedRequisition.EmploymentType || "N/A"}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Workplace">
-                {selectedRequisition.workplace}
+                {selectedRequisition.workplace || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Office Location">
                 {selectedRequisition.officeLocation || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Job Function">
-                {selectedRequisition.jobFunction}
+                {selectedRequisition.jobFunction || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Industry">
-                {selectedRequisition.companyIndustry}
+                {selectedRequisition.companyIndustry || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Education">
+                {selectedRequisition.Education || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Experience">
-                {selectedRequisition.experienceMin} -{" "}
-                {selectedRequisition.experienceMax} years
+                {selectedRequisition.experienceMin || 0} -{" "}
+                {selectedRequisition.experienceMax || 0} years
               </Descriptions.Item>
               <Descriptions.Item label="Salary">
                 {formatSalary(selectedRequisition)}
               </Descriptions.Item>
               <Descriptions.Item label="Status">
-                <Tag
-                  color={
-                    selectedRequisition.isActive === "active" ? "green" : "red"
-                  }
-                >
-                  {selectedRequisition.isActive}
+                <Tag color={getStatusColor(selectedRequisition.isActive)}>
+                  {formatStatusText(selectedRequisition.isActive)}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Number of Candidates">
-                {selectedRequisition.numberOfCandidate}
+                {selectedRequisition.numberOfCandidate || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Nationality">
+                {selectedRequisition.nationality || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Visa Category">
+                {selectedRequisition.visacategory || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Visa Category Type">
+                {selectedRequisition.visacategorytype || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Start Date">
                 {selectedRequisition.startDate
@@ -640,35 +690,62 @@ const handleFilterChange = (filterType, value) => {
                   : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
-                {selectedRequisition.description}
+                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                  {selectedRequisition.description || "N/A"}
+                </div>
               </Descriptions.Item>
               <Descriptions.Item label="Key Responsibilities" span={2}>
-                {selectedRequisition.keyResponsibilities}
+                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                  {selectedRequisition.keyResponsibilities || "N/A"}
+                </div>
               </Descriptions.Item>
               <Descriptions.Item label="Qualifications" span={2}>
-                {selectedRequisition.qualification}
+                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                  {selectedRequisition.qualification || "N/A"}
+                </div>
               </Descriptions.Item>
               <Descriptions.Item label="Requirements" span={2}>
-                {selectedRequisition.jobRequirements}
+                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                  {selectedRequisition.jobRequirements || "N/A"}
+                </div>
               </Descriptions.Item>
               <Descriptions.Item label="Required Skills" span={2}>
-                {selectedRequisition.requiredSkills?.map((skill) => (
-                  <Tag key={skill} color="blue">
-                    {skill}
-                  </Tag>
-                )) || "N/A"}
+                {selectedRequisition.requiredSkills?.length > 0
+                  ? selectedRequisition.requiredSkills.map((skill) => (
+                      <Tag key={skill} color="blue" style={{ marginBottom: 4 }}>
+                        {skill}
+                      </Tag>
+                    ))
+                  : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Languages" span={2}>
-                {selectedRequisition.languagesRequired?.map((lang) => (
-                  <Tag key={lang} color="green">
-                    {lang}
-                  </Tag>
-                )) || "N/A"}
+                {selectedRequisition.languagesRequired?.length > 0
+                  ? selectedRequisition.languagesRequired.map((lang) => (
+                      <Tag key={lang} color="green" style={{ marginBottom: 4 }}>
+                        {lang}
+                      </Tag>
+                    ))
+                  : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Benefits" span={2}>
-                {Array.isArray(selectedRequisition.benefits)
-                  ? selectedRequisition.benefits.join(", ")
-                  : selectedRequisition.benefits}
+                <div style={{ maxHeight: '80px', overflowY: 'auto' }}>
+                  {Array.isArray(selectedRequisition.benefits)
+                    ? selectedRequisition.benefits.join(", ")
+                    : selectedRequisition.benefits || "N/A"}
+                </div>
+              </Descriptions.Item>
+              <Descriptions.Item label="Pipeline Stages" span={2}>
+                {selectedRequisition.pipelineStageTimeline?.length > 0 ? (
+                  <div>
+                    {selectedRequisition.pipelineStageTimeline.map((stage, index) => (
+                      <Tag key={stage._id} color="purple" style={{ marginBottom: 4 }}>
+                        {stage.stageName} (Order: {stage.stageOrder})
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  "No pipeline stages configured"
+                )}
               </Descriptions.Item>
             </Descriptions>
           )}
@@ -684,6 +761,9 @@ const handleFilterChange = (filterType, value) => {
             setRequisitionToDelete(null);
           }}
           confirmLoading={isDeleting}
+          okText="Delete"
+          cancelText="Cancel"
+          okButtonProps={{ danger: true }}
         >
           <p>Are you sure you want to delete this requisition?</p>
           <p>This action cannot be undone.</p>

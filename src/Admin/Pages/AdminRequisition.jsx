@@ -64,6 +64,8 @@ const AdminRequisition = () => {
     return data.requisitions.map((req) => ({
       _id: req._id,
       title: req.title,
+      requisitionNo: req.requisitionNo || "N/A",
+      referenceNo: req.referenceNo || "N/A",
       department: req.companyIndustry,
       location: req.officeLocation,
       employmentType: req.EmploymentType,
@@ -151,6 +153,28 @@ const AdminRequisition = () => {
 
   const columns = [
     {
+      title: "Requisition.No",
+      dataIndex: "requisitionNo",
+      key: "requisitionNo",
+      width: 150,
+      render: (requisitionNo) => (
+        <span style={{ fontWeight: 500, color: "#2c3e50" }}>
+          {requisitionNo || "-"}
+        </span>
+      ),
+    },
+    {
+      title: "Reference.No",
+      dataIndex: "referenceNo",
+      key: "referenceNo",
+      width: 150,
+      render: (referenceNo) => (
+        <span style={{ fontWeight: 500, color: "#2c3e50" }}>
+          {referenceNo || "-"}
+        </span>
+      ),
+    },
+    {
       title: "Job Title",
       dataIndex: "title",
       key: "title",
@@ -160,7 +184,6 @@ const AdminRequisition = () => {
           {text}
         </Text>
       ),
-      sorter: (a, b) => a.title.localeCompare(b.title),
     },
     {
       title: "Department",
@@ -209,11 +232,6 @@ const AdminRequisition = () => {
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </Tag>
       ),
-      filters: [
-        { text: "Active", value: "active" },
-        { text: "Inactive", value: "inactive" },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: "Priority",
@@ -245,7 +263,6 @@ const AdminRequisition = () => {
           {new Date(date).toLocaleDateString()}
         </Text>
       ),
-      sorter: (a, b) => new Date(a.deadline) - new Date(b.deadline),
     },
     {
       title: "Actions",
@@ -272,7 +289,7 @@ const AdminRequisition = () => {
             style={{
               background:
                 record.status === "inactive"
-                  ? "#ccc" // Grey when disabled
+                  ? "#ccc"
                   : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               borderColor: record.status === "inactive" ? "#ccc" : "#da2c46",
             }}
@@ -492,6 +509,12 @@ const AdminRequisition = () => {
               <Descriptions column={2} size="small">
                 <Descriptions.Item label="Job Title">
                   <Text strong>{selectedRequisition.title}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Requisition Number">
+                  <Text strong>{selectedRequisition.requisitionNo}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Reference Number">
+                  <Text strong>{selectedRequisition.referenceNo}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Department">
                   <Tag color="blue">{selectedRequisition.department}</Tag>
