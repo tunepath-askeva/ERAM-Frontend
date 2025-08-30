@@ -280,7 +280,7 @@ const RecruiterJobsTimeline = () => {
               style={{ width: "100%" }}
             />
           </Col>
-
+{/* 
           <Col xs={12} sm={4} md={4} lg={4} xl={4}>
             <Button
               type="primary"
@@ -295,7 +295,7 @@ const RecruiterJobsTimeline = () => {
             >
               Filters
             </Button>
-          </Col>
+          </Col> */}
         </Row>
       </Card>
 

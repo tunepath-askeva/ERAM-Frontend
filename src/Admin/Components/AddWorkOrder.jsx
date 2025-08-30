@@ -92,6 +92,7 @@ const AddWorkOrder = () => {
   const [staffSelectLoading, setStaffSelectLoading] = useState(false);
   const [isPrefilled, setIsPrefilled] = useState(false);
   const [hasLoadedRequisition, setHasLoadedRequisition] = useState(false);
+  const [defaultRecruiters, setDefaultRecruiters] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -335,6 +336,61 @@ const AddWorkOrder = () => {
     });
 
     setPipelineStageDates(newStageDates);
+  };
+
+  const handleDefaultRecruitersChange = (recruiterIds) => {
+    setDefaultRecruiters(recruiterIds);
+
+    if (currentPipelineForDates && recruiterIds.length > 0) {
+      const pipelineId = currentPipelineForDates._id;
+      const allStages = [
+        ...(currentPipelineForDates.stages || []),
+        ...(customStages[pipelineId] || []),
+      ];
+
+      allStages.forEach((stage) => {
+        const stageId = stage._id || stage.id;
+        handleStageDateChange(
+          pipelineId,
+          stageId,
+          "recruiterIds",
+          recruiterIds
+        );
+      });
+    }
+  };
+
+  const handleSavePipelineDates = () => {
+    if (!currentPipelineForDates) return;
+
+    const pipelineId = currentPipelineForDates._id;
+    const stageData = pipelineStageDates[pipelineId] || [];
+
+    // Validate that stages have required data
+    const invalidStages = [];
+    const allStages = [
+      ...(currentPipelineForDates.stages || []),
+      ...(customStages[pipelineId] || []),
+    ];
+
+    allStages.forEach((stage) => {
+      const stageId = stage._id || stage.id;
+      const dateEntry = stageData.find((d) => d.stageId === stageId);
+
+      if (!dateEntry || !dateEntry.startDate || !dateEntry.endDate) {
+        invalidStages.push(stage.name || `Stage ${stageId}`);
+      }
+    });
+
+    if (invalidStages.length > 0) {
+      message.error(`Please set dates for: ${invalidStages.join(", ")}`);
+      return;
+    }
+
+    // Save success
+    message.success(`Pipeline dates saved for ${currentPipelineForDates.name}`);
+    setPipelineDatesModalVisible(false);
+    setDefaultRecruiters && setDefaultRecruiters([]);
   };
 
   const showPipelineDatesModal = (pipelineId) => {
@@ -1378,18 +1434,24 @@ const AddWorkOrder = () => {
           currentPipelineForDates?.name || "Pipeline"
         }`}
         visible={pipelineDatesModalVisible}
-        onCancel={() => setPipelineDatesModalVisible(false)}
+        onCancel={() => {
+          setPipelineDatesModalVisible(false);
+          setDefaultRecruiters([]);
+        }}
         footer={[
           <Button
             key="back"
-            onClick={() => setPipelineDatesModalVisible(false)}
+            onClick={() => {
+              setDefaultRecruiters([]);
+              setPipelineDatesModalVisible(false);
+            }}
           >
             Close
           </Button>,
           <Button
             key="submit"
             type="primary"
-            onClick={() => setPipelineDatesModalVisible(false)}
+            onClick={handleSavePipelineDates}
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
@@ -1404,6 +1466,62 @@ const AddWorkOrder = () => {
           padding: "0 24px",
         }}
       >
+        {!isPrefilled && (
+          <div
+            style={{
+              marginBottom: "24px",
+              padding: "12px",
+              backgroundColor: "#f0f8ff",
+              borderRadius: "6px",
+              border: "1px solid #d6f2ff",
+            }}
+          >
+            <Form.Item
+              label="Default Recruiters (will be assigned to all stages)"
+              style={{ marginBottom: 0 }}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select default recruiters for all stages"
+                value={defaultRecruiters}
+                onChange={handleDefaultRecruitersChange}
+                style={{ width: "100%" }}
+                size="small"
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >=
+                  0
+                }
+              >
+                {activeRecruiters.map((recruiter) => (
+                  <Option key={recruiter._id} value={recruiter._id}>
+                    {recruiter.fullName} - {recruiter.email}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
+        )}
+
+        {isPrefilled && (
+          <div
+            style={{
+              marginBottom: "24px",
+              padding: "12px",
+              backgroundColor: "#fff7e6",
+              borderRadius: "6px",
+              border: "1px solid #ffd591",
+              fontSize: "14px",
+              color: "#d48806",
+            }}
+          >
+            This work order is created from a requisition. Recruiter assignments
+            are pre-configured and can be modified individually for each stage
+            below.
+          </div>
+        )}
+
         <div style={{ padding: "16px 0" }}>
           {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
@@ -1414,284 +1532,291 @@ const AddWorkOrder = () => {
             const availableApprovalLevels = approvalLevels;
 
             return (
-              <Card
-                key={stageId}
-                title={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      justifyContent: "space-between",
-                      width: "100%",
-                    }}
-                  >
+              <>
+                <Card
+                  key={stageId}
+                  title={
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        justifyContent: "space-between",
+                        width: "100%",
                       }}
                     >
-                      <span
-                        style={{ cursor: stage.isCustom ? "grab" : "default" }}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
                       >
-                        ⋮⋮
-                      </span>
-                      {stage.isCustom ? (
-                        <Input
-                          value={stage.name}
-                          onChange={(e) =>
-                            updateCustomStage(
+                        <span
+                          style={{
+                            cursor: stage.isCustom ? "grab" : "default",
+                          }}
+                        >
+                          ⋮⋮
+                        </span>
+                        {stage.isCustom ? (
+                          <Input
+                            value={stage.name}
+                            onChange={(e) =>
+                              updateCustomStage(
+                                currentPipelineForDates._id,
+                                stageId,
+                                { name: e.target.value }
+                              )
+                            }
+                            style={{ maxWidth: "200px" }}
+                            size="small"
+                          />
+                        ) : (
+                          <span>{stage.name}</span>
+                        )}
+                        {stage.isCustom && (
+                          <Tag color="orange" size="small">
+                            Custom
+                          </Tag>
+                        )}
+                        {dateEntry?.dependencyType && (
+                          <Tag color="green" size="small">
+                            {dateEntry.dependencyType}
+                          </Tag>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        {stage.isCustom && (
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() =>
+                              removeCustomStage(
+                                currentPipelineForDates._id,
+                                stageId
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  }
+                  style={{
+                    marginBottom: 16,
+                    cursor: stage.isCustom ? "move" : "default",
+                  }}
+                  draggable={stage.isCustom}
+                  onDragStart={(e) =>
+                    stage.isCustom && handleDragStart(e, stage)
+                  }
+                  onDragOver={handleDragOver}
+                  onDrop={(e) =>
+                    stage.isCustom &&
+                    handleDrop(e, stage, currentPipelineForDates._id)
+                  }
+                >
+                  <Row gutter={[16, 16]} align="bottom">
+                    {/* Date Section */}
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="Start Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.startDate
+                              ? dayjs(dateEntry.startDate)
+                              : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
                               currentPipelineForDates._id,
                               stageId,
-                              { name: e.target.value }
+                              "startDate",
+                              date
                             )
                           }
-                          style={{ maxWidth: "200px" }}
-                          size="small"
                         />
-                      ) : (
-                        <span>{stage.name}</span>
-                      )}
-                      {stage.isCustom && (
-                        <Tag color="orange" size="small">
-                          Custom
-                        </Tag>
-                      )}
-                      {dateEntry?.dependencyType && (
-                        <Tag color="green" size="small">
-                          {dateEntry.dependencyType}
-                        </Tag>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      {stage.isCustom && (
-                        <Button
-                          type="text"
-                          danger
+                      </Form.Item>
+                    </Col>
+
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="End Date"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
+                      >
+                        <DatePicker
+                          style={{ width: "100%" }}
                           size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={() =>
-                            removeCustomStage(
+                          value={
+                            dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
+                          }
+                          onChange={(date) =>
+                            handleStageDateChange(
                               currentPipelineForDates._id,
-                              stageId
+                              stageId,
+                              "endDate",
+                              date
                             )
                           }
                         />
-                      )}
-                    </div>
-                  </div>
-                }
-                style={{
-                  marginBottom: 16,
-                  cursor: stage.isCustom ? "move" : "default",
-                }}
-                draggable={stage.isCustom}
-                onDragStart={(e) => stage.isCustom && handleDragStart(e, stage)}
-                onDragOver={handleDragOver}
-                onDrop={(e) =>
-                  stage.isCustom &&
-                  handleDrop(e, stage, currentPipelineForDates._id)
-                }
-              >
-                <Row gutter={[16, 16]} align="bottom">
-                  {/* Date Section */}
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="Start Date"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <DatePicker
-                        style={{ width: "100%" }}
-                        size="small"
-                        value={
-                          dateEntry?.startDate
-                            ? dayjs(dateEntry.startDate)
-                            : null
-                        }
-                        onChange={(date) =>
-                          handleStageDateChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            "startDate",
-                            date
-                          )
-                        }
-                      />
-                    </Form.Item>
-                  </Col>
+                      </Form.Item>
+                    </Col>
 
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="End Date"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <DatePicker
-                        style={{ width: "100%" }}
-                        size="small"
-                        value={
-                          dateEntry?.endDate ? dayjs(dateEntry.endDate) : null
-                        }
-                        onChange={(date) =>
-                          handleStageDateChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            "endDate",
-                            date
-                          )
-                        }
-                      />
-                    </Form.Item>
-                  </Col>
-
-                  {/* Recruiter Assignment */}
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="Assigned Recruiters"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <Select
-                        mode="multiple"
-                        placeholder="Select recruiters"
-                        value={dateEntry?.recruiterIds || []}
-                        onChange={(value) =>
-                          handleStageDateChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            "recruiterIds",
-                            value
-                          )
-                        }
-                        style={{ width: "100%" }}
-                        size="small"
+                    {/* Recruiter Assignment */}
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="Assigned Recruiters"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
                       >
-                        {activeRecruiters.map((recruiter) => (
-                          <Option key={recruiter._id} value={recruiter._id}>
-                            {recruiter.fullName} - {recruiter.email}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
+                        <Select
+                          mode="multiple"
+                          placeholder="Select recruiters"
+                          value={dateEntry?.recruiterIds || []}
+                          onChange={(value) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "recruiterIds",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="small"
+                        >
+                          {activeRecruiters.map((recruiter) => (
+                            <Option key={recruiter._id} value={recruiter._id}>
+                              {recruiter.fullName} - {recruiter.email}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
 
-                  {/* Approval Level */}
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="Required Approval"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <Select
-                        placeholder="Select approval level"
-                        value={dateEntry?.approvalId || undefined}
-                        onChange={(value) =>
-                          handleStageDateChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            "approvalId",
-                            value
-                          )
-                        }
-                        style={{ width: "100%" }}
-                        size="small"
+                    {/* Approval Level */}
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="Required Approval"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
                       >
-                        {approvalLevels.map((level) => (
-                          <Option key={level.id} value={level.id}>
-                            {level.name}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
+                        <Select
+                          placeholder="Select approval level"
+                          value={dateEntry?.approvalId || undefined}
+                          onChange={(value) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "approvalId",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="small"
+                        >
+                          {approvalLevels.map((level) => (
+                            <Option key={level.id} value={level.id}>
+                              {level.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
 
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="Assigned Staff"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <Select
-                        mode="multiple"
-                        placeholder="Select staff"
-                        loading={isLoadingStaffs || staffSelectLoading}
-                        value={dateEntry?.staffIds || []}
-                        onChange={(value) =>
-                          handleStageDateChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            "staffIds",
-                            value
-                          )
-                        }
-                        style={{ width: "100%" }}
-                        size="small"
-                        showSearch
-                        optionFilterProp="children"
-                        filterOption={(input, option) =>
-                          option.children
-                            .toLowerCase()
-                            .indexOf(input.toLowerCase()) >= 0
-                        }
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="Assigned Staff"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
                       >
-                        {activeStaffs.map((staff) => (
-                          <Option key={staff._id} value={staff._id}>
-                            {staff.fullName} ({staff.designation || staff.role})
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
+                        <Select
+                          mode="multiple"
+                          placeholder="Select staff"
+                          loading={isLoadingStaffs || staffSelectLoading}
+                          value={dateEntry?.staffIds || []}
+                          onChange={(value) =>
+                            handleStageDateChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              "staffIds",
+                              value
+                            )
+                          }
+                          style={{ width: "100%" }}
+                          size="small"
+                          showSearch
+                          optionFilterProp="children"
+                          filterOption={(input, option) =>
+                            option.children
+                              .toLowerCase()
+                              .indexOf(input.toLowerCase()) >= 0
+                          }
+                        >
+                          {activeStaffs.map((staff) => (
+                            <Option key={staff._id} value={staff._id}>
+                              {staff.fullName} (
+                              {staff.designation || staff.role})
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
 
-                  {/* Dependency Type */}
-                  <Col xs={24} sm={12} md={12} lg={8}>
-                    <Form.Item
-                      label="Dependency Type"
-                      style={{ marginBottom: 0 }}
-                      labelCol={{ span: 24 }}
-                      wrapperCol={{ span: 24 }}
-                    >
-                      <Select
-                        placeholder="Select dependency type"
-                        style={{ width: "100%" }}
-                        size="small"
-                        value={
-                          dateEntry?.dependencyType ||
-                          stage.dependencyType ||
-                          "independent"
-                        }
-                        onChange={(value) =>
-                          handleDependencyTypeChange(
-                            currentPipelineForDates._id,
-                            stageId,
-                            value
-                          )
-                        }
+                    {/* Dependency Type */}
+                    <Col xs={24} sm={12} md={12} lg={8}>
+                      <Form.Item
+                        label="Dependency Type"
+                        style={{ marginBottom: 0 }}
+                        labelCol={{ span: 24 }}
+                        wrapperCol={{ span: 24 }}
                       >
-                        {dependencyTypes.map((level) => (
-                          <Option key={level.id} value={level.id}>
-                            {level.name}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Card>
+                        <Select
+                          placeholder="Select dependency type"
+                          style={{ width: "100%" }}
+                          size="small"
+                          value={
+                            dateEntry?.dependencyType ||
+                            stage.dependencyType ||
+                            "independent"
+                          }
+                          onChange={(value) =>
+                            handleDependencyTypeChange(
+                              currentPipelineForDates._id,
+                              stageId,
+                              value
+                            )
+                          }
+                        >
+                          {dependencyTypes.map((level) => (
+                            <Option key={level.id} value={level.id}>
+                              {level.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+              </>
             );
           })}
 
@@ -1910,7 +2035,7 @@ const AddWorkOrder = () => {
                         mode="multiple"
                         placeholder="Select pipeline"
                         onChange={handlePipelineChange}
-                          value={selectedPipelines}
+                        value={selectedPipelines}
                         style={{ width: "calc(100% - 120px)" }}
                       >
                         {activePipelines.map((pipeline) => (

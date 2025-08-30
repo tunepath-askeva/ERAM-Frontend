@@ -329,7 +329,7 @@ const AdminRecruiter = () => {
                 className="recruiter-title"
                 style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
               >
-                Recruiter Management
+                Recruitment Team Management
               </Title>
             </div>
 
