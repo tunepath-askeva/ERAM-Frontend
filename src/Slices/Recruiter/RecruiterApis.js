@@ -97,9 +97,17 @@ export const recruiterApi = createApi({
           total: response.total || 0,
           page: response.page || 1,
           totalPages: response.totalPages || 1,
+          limit: response.limit || 10,
           message: response.message || "",
         };
       },
+    }),
+
+    getWorkOrderBasedSourcedCandidates: builder.query({
+      query: ({ jobId, page = 1, limit = 10 }) => ({
+        url: `/sourced-candidate/${jobId}?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
     }),
 
     getExactMatchCandidates: builder.query({
@@ -523,6 +531,7 @@ export const {
   useGetRecruiterJobIdQuery,
   useGetJobApplicationsQuery,
   useGetSourcedCandidateQuery,
+  useGetWorkOrderBasedSourcedCandidatesQuery,
   useGetSelectedCandidatesQuery,
   useGetScreeningCandidatesQuery,
   useGetWorkOrderDetailsQuery,

@@ -50,6 +50,7 @@ import {
   useGetPipelinesQuery,
   useGetCurrentWorkOrderDetailsForFilteringQuery,
   useCurrentWorkorderDetailsFilteringMutation,
+  useGetWorkOrderBasedSourcedCandidatesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
@@ -262,6 +263,13 @@ const SourcedCandidates = ({ jobId }) => {
     skip: !isWorkOrderModalVisible,
   });
 
+  const { data: workOrderBasedSourced, refetch: refetchWorkOrderBased } =
+    useGetWorkOrderBasedSourcedCandidatesQuery({
+      jobId,
+      page: pagination.current,
+      limit: pagination.pageSize,
+    });
+
   const [CurrentWorkorderFiltering] =
     useCurrentWorkorderDetailsFilteringMutation();
   const { data: pipelineData } = useGetPipelinesQuery();
@@ -377,6 +385,9 @@ const SourcedCandidates = ({ jobId }) => {
     error: exactMatchError,
     refetch: refetchExactMatch,
   } = useGetExactMatchCandidatesQuery(jobId, {
+    page: pagination.current,
+    limit: pagination.pageSize,
+
     skip: !isExactMatch,
   });
 
@@ -391,13 +402,36 @@ const SourcedCandidates = ({ jobId }) => {
     if (sourcedCandidatesData) {
       setPagination((prev) => ({
         ...prev,
-        total:
-          sourcedCandidatesData.total ||
-          sourcedCandidatesData.users?.length ||
-          0,
+        total: sourcedCandidatesData.total || 0,
+        current: sourcedCandidatesData.page || 1,
       }));
     }
   }, [sourcedCandidatesData]);
+
+  useEffect(() => {
+    if (workOrderBasedSourced) {
+      // Handle the workOrderBasedSourced structure which has 'candidates' array
+      const candidatesArray = Array.isArray(workOrderBasedSourced.candidates)
+        ? workOrderBasedSourced.candidates
+        : [];
+
+      setPagination((prev) => ({
+        ...prev,
+        total: workOrderBasedSourced.total || candidatesArray.length,
+        current: workOrderBasedSourced.page || 1,
+      }));
+    }
+  }, [workOrderBasedSourced]);
+
+  useEffect(() => {
+    if (exactMatchData) {
+      setPagination((prev) => ({
+        ...prev,
+        total: exactMatchData.total || exactMatchData.users?.length || 0,
+        current: exactMatchData.page || 1,
+      }));
+    }
+  }, [exactMatchData]);
 
   const allCandidates = useMemo(() => {
     const jobAppCandidates =
@@ -409,28 +443,40 @@ const SourcedCandidates = ({ jobId }) => {
         isApplied: true,
       })) || [];
 
-    let candidateSource;
+    let candidatesArray = [];
 
     if (isWorkOrderFiltered) {
-      candidateSource = { users: workOrderCandidates };
+      // For work order filtered (manual filtering)
+      candidatesArray = Array.isArray(workOrderCandidates)
+        ? workOrderCandidates
+        : [];
     } else if (isExactMatch) {
-      candidateSource = exactMatchData;
+      // For exact match
+      candidatesArray = Array.isArray(exactMatchData?.users)
+        ? exactMatchData.users
+        : [];
+    } else if (shouldFetch) {
+      // For advanced filtering
+      candidatesArray = Array.isArray(sourcedCandidatesData?.users)
+        ? sourcedCandidatesData.users
+        : [];
     } else {
-      candidateSource = sourcedCandidatesData;
+      // Default case - workOrderBasedSourced
+      candidatesArray = Array.isArray(workOrderBasedSourced?.candidates)
+        ? workOrderBasedSourced.candidates
+        : [];
     }
 
-    const sourcedCandidates =
-      candidateSource?.users?.map((user) => ({
-        ...user,
-        status: user.status || "sourced",
-        applicationId: user._id,
-        isApplied: false,
-        isSourced: true,
-        isExactMatch: isExactMatch,
-        currentCompany:
-          user.workExperience?.[0]?.company || user.currentCompany,
-        totalExperienceYears: user.totalExperienceYears || 0,
-      })) || [];
+    const sourcedCandidates = candidatesArray.map((user) => ({
+      ...user,
+      status: user.status || "sourced",
+      applicationId: user._id,
+      isApplied: false,
+      isSourced: true,
+      isExactMatch: isExactMatch,
+      currentCompany: user.workExperience?.[0]?.company || user.currentCompany,
+      totalExperienceYears: user.totalExperienceYears || 0,
+    }));
 
     const merged = [...sourcedCandidates];
     jobAppCandidates.forEach((jobCandidate) => {
@@ -454,6 +500,8 @@ const SourcedCandidates = ({ jobId }) => {
     isExactMatch,
     workOrderCandidates,
     isWorkOrderFiltered,
+    workOrderBasedSourced,
+    shouldFetch,
   ]);
 
   const handleSubmit = async () => {
@@ -486,10 +534,20 @@ const SourcedCandidates = ({ jobId }) => {
       message.error("Please fix the errors in the form");
     }
   };
-
   const sourcedCandidates = useMemo(() => {
     if (!shouldFetch && !isExactMatch && !isWorkOrderFiltered) {
-      return [];
+      // Default case - workOrderBasedSourced with 'candidates' array
+      const defaultCandidates = Array.isArray(workOrderBasedSourced?.candidates)
+        ? workOrderBasedSourced.candidates
+        : [];
+
+      return defaultCandidates.filter((candidate) => {
+        const status = candidate.status;
+        return (
+          status !== "selected" &&
+          (status === "sourced" || status === "applied" || !status)
+        );
+      });
     }
 
     return allCandidates.filter((candidate) => {
@@ -499,7 +557,13 @@ const SourcedCandidates = ({ jobId }) => {
         (status === "sourced" || status === "applied" || !status)
       );
     });
-  }, [allCandidates, shouldFetch, isExactMatch, isWorkOrderFiltered]);
+  }, [
+    allCandidates,
+    shouldFetch,
+    isExactMatch,
+    isWorkOrderFiltered,
+    workOrderBasedSourced,
+  ]);
 
   const hasActiveFilters = useMemo(() => {
     return (
@@ -803,6 +867,22 @@ const SourcedCandidates = ({ jobId }) => {
       pageSize: pageSize,
     }));
     setSelectAll(false);
+
+    // Refetch data when pagination changes
+    if (shouldFetch) {
+      const params = buildQueryParams();
+      setQueryParams(params);
+      // The query will automatically refetch when queryParams changes
+    } else if (isWorkOrderFiltered) {
+      // For work order filtered, we need to manually refetch
+      refetchWorkOrderBased();
+    } else if (isExactMatch) {
+      // For exact match, we need to manually refetch
+      refetchExactMatch();
+    } else {
+      // For default work order based, refetch
+      refetchWorkOrderBased();
+    }
   };
 
   const getModalButtonText = () => {
@@ -986,8 +1066,6 @@ const SourcedCandidates = ({ jobId }) => {
             >
               Current Work Order Filter
             </Button>
-
-          
 
             {(hasActiveFilters || isExactMatch) && (
               <Card size="small" style={{ marginBottom: "20px" }}>
@@ -1189,7 +1267,8 @@ const SourcedCandidates = ({ jobId }) => {
         <Col>
           <Space>
             <Text type="secondary">
-              {selectedCandidates.length} selected of {sourcedCandidates.length}{" "}
+              {selectedCandidates.length} selected of{" "}
+              {Array.isArray(sourcedCandidates) ? sourcedCandidates.length : 0}{" "}
               candidates
             </Text>
             {selectedCandidates.length > 0 && (
@@ -1206,7 +1285,7 @@ const SourcedCandidates = ({ jobId }) => {
           </Space>
         </Col>
       </Row>
-        {isExactMatch && !isExactMatchLoading && <SuggestionMatchInfo />}
+      {isExactMatch && !isExactMatchLoading && <SuggestionMatchInfo />}
 
       {(shouldFetch || isExactMatch || isWorkOrderFiltered) &&
         sourcedCandidates.length > 0 && (
@@ -1259,7 +1338,11 @@ const SourcedCandidates = ({ jobId }) => {
       />
 
       <div>
-        {!shouldFetch && !isExactMatch && !isWorkOrderFiltered ? (
+        {!shouldFetch &&
+        !isExactMatch &&
+        !isWorkOrderFiltered &&
+        (!workOrderBasedSourced?.candidates ||
+          workOrderBasedSourced.candidates.length === 0) ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -1268,7 +1351,13 @@ const SourcedCandidates = ({ jobId }) => {
               </span>
             }
           />
-        ) : isSourcedLoading || isExactMatchLoading || isUpdatingStatus ? (
+        ) : isSourcedLoading ||
+          isExactMatchLoading ||
+          isUpdatingStatus ||
+          (!shouldFetch &&
+            !isExactMatch &&
+            !isWorkOrderFiltered &&
+            !workOrderBasedSourced) ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <Skeleton active />
             <Skeleton active />
