@@ -951,7 +951,11 @@ const RecruiterViewJob = () => {
                 }
                 key="job-status"
               >
-                <WorkOrderStatus jobId={id} />
+                <WorkOrderStatus
+                  jobId={id}
+                  numberOfCandidate={workOrder.numberOfCandidate}
+                  numberOfEmployees={workOrder.numberOfEmployees}
+                />
               </TabPane>
             )}
             {hasPermission("view-job-sourced") && (

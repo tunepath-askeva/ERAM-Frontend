@@ -37,7 +37,11 @@ import { useGetWorkOrderDetailsQuery } from "../../Slices/Recruiter/RecruiterApi
 
 const { Title, Text } = Typography;
 
-const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
+const AdminWorkOrderStatus = ({
+  jobId,
+  numberOfCandidate,
+  numberOfEmployees,
+}) => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const { data, isLoading, error } = useGetWorkOrderDetailsQuery({ jobId });
 
@@ -130,15 +134,17 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
 
   const statusCounts = getStatusCounts();
   const totalCandidates = data ? data.allWorkorderResponse.length : 0;
-  
+
   // Use numberOfEmployees prop directly as it represents actual converted employees
   const convertedEmployees = numberOfEmployees || 0;
   const requiredCandidates = numberOfCandidate || 0;
 
   // Check if work order is complete
   const isWorkOrderComplete = convertedEmployees >= requiredCandidates;
-  const completionPercentage = requiredCandidates > 0 ? 
-    Math.round((convertedEmployees / requiredCandidates) * 100) : 0;
+  const completionPercentage =
+    requiredCandidates > 0
+      ? Math.round((convertedEmployees / requiredCandidates) * 100)
+      : 0;
 
   useEffect(() => {
     if (isWorkOrderComplete && convertedEmployees > 0 && !showCompletionModal) {
@@ -155,30 +161,30 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       width: "40%",
       render: (user) => (
         <Space size="small">
-          <Avatar 
-            icon={<UserOutlined />} 
+          <Avatar
+            icon={<UserOutlined />}
             style={{ backgroundColor: "#da2c46" }}
             size="small"
           />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div 
-              style={{ 
-                fontWeight: 500, 
+            <div
+              style={{
+                fontWeight: 500,
                 fontSize: "14px",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
-                textOverflow: "ellipsis"
+                textOverflow: "ellipsis",
               }}
             >
               {user.fullName}
             </div>
-            <Text 
-              type="secondary" 
-              style={{ 
+            <Text
+              type="secondary"
+              style={{
                 fontSize: "12px",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
-                textOverflow: "ellipsis"
+                textOverflow: "ellipsis",
               }}
             >
               {user.email}
@@ -186,7 +192,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           </div>
         </Space>
       ),
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
+      responsive: ["xs", "sm", "md", "lg", "xl"],
     },
     {
       title: "Status",
@@ -202,7 +208,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           {statusConfig[status]?.text || status}
         </Tag>
       ),
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
+      responsive: ["xs", "sm", "md", "lg", "xl"],
     },
     {
       title: "Sourced",
@@ -210,38 +216,35 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       key: "sourced",
       width: "25%",
       render: (isSourced) => (
-        <Tag 
+        <Tag
           color={isSourced === "true" ? "#52c41a" : "#ff4d4f"}
           style={{ borderRadius: "6px" }}
         >
           {isSourced === "true" ? "Yes" : "No"}
         </Tag>
       ),
-      responsive: ['sm', 'md', 'lg', 'xl'],
+      responsive: ["sm", "md", "lg", "xl"],
     },
   ];
-
-  const handleRaiseNewRequest = () => {
-    console.log("Raising new work order request...");
-    setShowCompletionModal(false);
-  };
 
   if (error) return <div>Error loading work order status</div>;
 
   return (
-    <div style={{ 
-      padding: "16px", 
-      minHeight: "100vh",
-      maxWidth: "100%",
-      overflow: "hidden"
-    }}>
+    <div
+      style={{
+        padding: "16px",
+        minHeight: "100vh",
+        maxWidth: "100%",
+        overflow: "hidden",
+      }}
+    >
       <div style={{ marginBottom: "20px" }}>
-        <Title 
-          level={2} 
-          style={{ 
-            color: "#da2c46", 
+        <Title
+          level={2}
+          style={{
+            color: "#da2c46",
             marginBottom: "4px",
-            fontSize: "clamp(20px, 4vw, 28px)"
+            fontSize: "clamp(20px, 4vw, 28px)",
           }}
         >
           Work Order Status
@@ -258,22 +261,22 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           type="success"
           showIcon
           action={
-            <Button 
-              size="small" 
-              style={{ 
-                backgroundColor: "#da2c46", 
+            <Button
+              size="small"
+              style={{
+                backgroundColor: "#da2c46",
                 borderColor: "#da2c46",
-                color: "white"
+                color: "white",
               }}
               onClick={() => setShowCompletionModal(true)}
             >
               View Details
             </Button>
           }
-          style={{ 
-            marginBottom: "20px", 
+          style={{
+            marginBottom: "20px",
             borderRadius: "8px",
-            border: `1px solid #52c41a`
+            border: `1px solid #52c41a`,
           }}
           closable
         />
@@ -282,13 +285,13 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       {/* Key Metrics Row - Responsive Grid */}
       <Row gutter={[12, 12]} style={{ marginBottom: "20px" }}>
         <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-          <Card 
+          <Card
             size="small"
-            style={{ 
-              borderRadius: "8px", 
+            style={{
+              borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(218,44,70,0.1)",
               border: `1px solid #da2c46`,
-              height: "100%"
+              height: "100%",
             }}
           >
             <Statistic
@@ -299,22 +302,22 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
               }
               value={requiredCandidates}
               prefix={<UserAddOutlined style={{ color: "#da2c46" }} />}
-              valueStyle={{ 
-                color: "#da2c46", 
+              valueStyle={{
+                color: "#da2c46",
                 fontWeight: "bold",
-                fontSize: "clamp(16px, 4vw, 24px)"
+                fontSize: "clamp(16px, 4vw, 24px)",
               }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-          <Card 
+          <Card
             size="small"
-            style={{ 
-              borderRadius: "8px", 
+            style={{
+              borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(82,196,26,0.1)",
               border: `1px solid #52c41a`,
-              height: "100%"
+              height: "100%",
             }}
           >
             <Statistic
@@ -325,22 +328,22 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
               }
               value={convertedEmployees}
               prefix={<TrophyOutlined style={{ color: "#52c41a" }} />}
-              valueStyle={{ 
-                color: "#52c41a", 
+              valueStyle={{
+                color: "#52c41a",
                 fontWeight: "bold",
-                fontSize: "clamp(16px, 4vw, 24px)"
+                fontSize: "clamp(16px, 4vw, 24px)",
               }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-          <Card 
+          <Card
             size="small"
-            style={{ 
-              borderRadius: "8px", 
+            style={{
+              borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(114,46,209,0.1)",
               border: `1px solid #722ed1`,
-              height: "100%"
+              height: "100%",
             }}
           >
             <Statistic
@@ -351,22 +354,22 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
               }
               value={totalCandidates}
               prefix={<TeamOutlined style={{ color: "#722ed1" }} />}
-              valueStyle={{ 
-                color: "#722ed1", 
+              valueStyle={{
+                color: "#722ed1",
                 fontWeight: "bold",
-                fontSize: "clamp(16px, 4vw, 24px)"
+                fontSize: "clamp(16px, 4vw, 24px)",
               }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6} lg={6} xl={6}>
-          <Card 
+          <Card
             size="small"
-            style={{ 
-              borderRadius: "8px", 
+            style={{
+              borderRadius: "8px",
               boxShadow: "0 2px 8px rgba(250,140,22,0.1)",
               border: `1px solid #fa8c16`,
-              height: "100%"
+              height: "100%",
             }}
           >
             <Statistic
@@ -378,10 +381,10 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
               value={completionPercentage}
               suffix="%"
               prefix={<RocketOutlined style={{ color: "#fa8c16" }} />}
-              valueStyle={{ 
-                color: isWorkOrderComplete ? "#52c41a" : "#fa8c16", 
+              valueStyle={{
+                color: isWorkOrderComplete ? "#52c41a" : "#fa8c16",
                 fontWeight: "bold",
-                fontSize: "clamp(16px, 4vw, 24px)"
+                fontSize: "clamp(16px, 4vw, 24px)",
               }}
             />
           </Card>
@@ -389,17 +392,17 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       </Row>
 
       {/* Progress Section */}
-      <Card 
+      <Card
         title={
           <Text style={{ fontSize: "clamp(14px, 3vw, 16px)", fontWeight: 600 }}>
             Hiring Progress
           </Text>
         }
         size="small"
-        style={{ 
-          marginBottom: "20px", 
-          borderRadius: "8px", 
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
+        style={{
+          marginBottom: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
         <div>
@@ -407,8 +410,8 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
             percent={completionPercentage}
             status={isWorkOrderComplete ? "success" : "active"}
             strokeColor={
-              isWorkOrderComplete 
-                ? "#52c41a" 
+              isWorkOrderComplete
+                ? "#52c41a"
                 : {
                     "0%": "#da2c46",
                     "100%": "#52c41a",
@@ -419,19 +422,19 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           />
           <Row justify="space-between" align="middle">
             <Col>
-              <Text 
-                type="secondary" 
+              <Text
+                type="secondary"
                 style={{ fontSize: "clamp(11px, 2vw, 13px)" }}
               >
                 Employees Converted: {convertedEmployees}/{requiredCandidates}
               </Text>
             </Col>
             <Col>
-              <Text 
-                strong 
-                style={{ 
+              <Text
+                strong
+                style={{
                   color: isWorkOrderComplete ? "#52c41a" : "#da2c46",
-                  fontSize: "clamp(11px, 2vw, 13px)"
+                  fontSize: "clamp(11px, 2vw, 13px)",
                 }}
               >
                 {completionPercentage}% Complete
@@ -445,33 +448,41 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       <Row gutter={[8, 8]} style={{ marginBottom: "20px" }}>
         {Object.entries(statusCounts).map(([status, count]) => (
           <Col xs={12} sm={8} md={6} lg={4} xl={3} key={status}>
-            <Card 
+            <Card
               size="small"
-              style={{ 
-                borderRadius: "6px", 
+              style={{
+                borderRadius: "6px",
                 boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
                 textAlign: "center",
-                height: "80px"
+                height: "80px",
               }}
               bodyStyle={{ padding: "8px" }}
             >
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <Badge 
-                  count={count} 
-                  style={{ 
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Badge
+                  count={count}
+                  style={{
                     backgroundColor: statusConfig[status]?.color,
-                    fontSize: "10px"
+                    fontSize: "10px",
                   }}
                 >
                   <div style={{ fontSize: "16px", marginBottom: "4px" }}>
                     {statusConfig[status]?.icon}
                   </div>
                 </Badge>
-                <Text style={{ 
-                  fontSize: "clamp(9px, 1.5vw, 11px)", 
-                  textAlign: "center",
-                  lineHeight: 1.2
-                }}>
+                <Text
+                  style={{
+                    fontSize: "clamp(9px, 1.5vw, 11px)",
+                    textAlign: "center",
+                    lineHeight: 1.2,
+                  }}
+                >
                   {statusConfig[status]?.text || status}
                 </Text>
               </div>
@@ -481,16 +492,16 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       </Row>
 
       {/* Candidates Table - Responsive */}
-      <Card 
+      <Card
         title={
           <Text style={{ fontSize: "clamp(14px, 3vw, 16px)", fontWeight: 600 }}>
             Candidate Details
           </Text>
         }
         size="small"
-        style={{ 
-          borderRadius: "8px", 
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
+        style={{
+          borderRadius: "8px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
         <Table
@@ -498,12 +509,11 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           dataSource={data ? data.allWorkorderResponse : []}
           loading={isLoading}
           rowKey="_id"
-          pagination={{ 
+          pagination={{
             pageSize: window.innerWidth < 768 ? 5 : 10,
             showSizeChanger: false,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} of ${total}`,
-            size: "small"
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
+            size: "small",
           }}
           scroll={{ x: "100%" }}
           size="small"
@@ -524,35 +534,27 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           <Button key="close" onClick={() => setShowCompletionModal(false)}>
             Close
           </Button>,
-          <Button 
-            key="request" 
-            style={{ 
-              backgroundColor: "#da2c46", 
-              borderColor: "#da2c46",
-              color: "white"
-            }}
-            onClick={handleRaiseNewRequest}
-          >
-            Raise New Request
-          </Button>,
+         
         ]}
         width={Math.min(600, window.innerWidth - 32)}
         centered
       >
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>
-            🎉
-          </div>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
           <Title level={3} style={{ color: "#52c41a", marginBottom: "16px" }}>
             Congratulations!
           </Title>
-          <Text style={{ 
-            fontSize: "clamp(14px, 3vw, 16px)", 
-            display: "block", 
-            marginBottom: "20px" 
-          }}>
-            You have successfully converted <strong>{convertedEmployees}</strong> out of{" "}
-            <strong>{requiredCandidates}</strong> required candidates to employees.
+          <Text
+            style={{
+              fontSize: "clamp(14px, 3vw, 16px)",
+              display: "block",
+              marginBottom: "20px",
+            }}
+          >
+            You have successfully converted{" "}
+            <strong>{convertedEmployees}</strong> out of{" "}
+            <strong>{requiredCandidates}</strong> required candidates to
+            employees.
           </Text>
           <Alert
             message="Recommendation"
@@ -567,4 +569,4 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
   );
 };
 
-export default WorkOrderStatus;
+export default AdminWorkOrderStatus;

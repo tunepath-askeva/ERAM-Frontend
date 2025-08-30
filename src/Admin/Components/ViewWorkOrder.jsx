@@ -21,6 +21,7 @@ import {
 } from "antd";
 import { LeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import AdminWorkOrderStatus from "./AdminWorkOrderStatus.jsx";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -922,6 +923,20 @@ const ViewWorkOrder = () => {
               key="pipeline"
             >
               {renderPipelineStages()}
+            </TabPane>
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Work Order Status
+                </span>
+              }
+              key="job-status"
+            >
+              <AdminWorkOrderStatus
+                jobId={id}
+                numberOfCandidate={workOrder.numberOfCandidate}
+                numberOfEmployees={workOrder.numberOfEmployees}
+              />
             </TabPane>
           </Tabs>
         </div>
