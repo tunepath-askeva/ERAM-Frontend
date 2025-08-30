@@ -104,10 +104,23 @@ export const recruiterApi = createApi({
     }),
 
     getWorkOrderBasedSourcedCandidates: builder.query({
-      query: ({ jobId, page = 1, limit = 10 }) => ({
-        url: `/sourced-candidate/${jobId}?page=${page}&limit=${limit}`,
-        method: "GET",
-      }),
+      query: ({ jobId, page = 1, limit = 10, ...filters }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          ...Object.fromEntries(
+            Object.entries(filters).map(([key, value]) => [
+              key,
+              value.toString(),
+            ])
+          ),
+        });
+
+        return {
+          url: `/sourced-candidate/${jobId}?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
 
     getExactMatchCandidates: builder.query({

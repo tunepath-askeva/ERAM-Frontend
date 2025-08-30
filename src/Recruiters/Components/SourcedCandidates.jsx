@@ -249,7 +249,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [tempFilters, setTempFilters] = useState({ ...initialFilters });
   const [shouldFetch, setShouldFetch] = useState(false);
   const [skillInput, setSkillInput] = useState("");
-  const [queryParams, setQueryParams] = useState("");
+  const [queryParams, setQueryParams] = useState({});
   const [workOrderFilters, setWorkOrderFilters] = useState(null);
   const [candidateType, setCandidateType] = useState("");
   const [workOrderCandidates, setWorkOrderCandidates] = useState([]);
@@ -257,18 +257,11 @@ const SourcedCandidates = ({ jobId }) => {
 
   const {
     data: workOrderDetails,
-    isLoading: isWorkOrderLoading,
-    error: workOrderError,
+    isLoading: isWorkOrderLoadingOne,
+    error: workOrderErrorOne,
   } = useGetCurrentWorkOrderDetailsForFilteringQuery(jobId, {
     skip: !isWorkOrderModalVisible,
   });
-
-  const { data: workOrderBasedSourced, refetch: refetchWorkOrderBased } =
-    useGetWorkOrderBasedSourcedCandidatesQuery({
-      jobId,
-      page: pagination.current,
-      limit: pagination.pageSize,
-    });
 
   const [CurrentWorkorderFiltering] =
     useCurrentWorkorderDetailsFilteringMutation();
@@ -276,108 +269,6 @@ const SourcedCandidates = ({ jobId }) => {
   const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
-
-  const buildQueryParams = useCallback(() => {
-    const params = new URLSearchParams();
-
-    const hasFilters =
-      filters.keywords.trim() ||
-      filters.skills.length > 0 ||
-      filters.location.trim() ||
-      filters.company.trim() ||
-      filters.qualifications.length > 0 ||
-      filters.jobRoles.length > 0 ||
-      filters.industries.length > 0 ||
-      filters.languages.length > 0 ||
-      filters.experience[0] > 0 ||
-      filters.experience[1] < 20 ||
-      filters.salary[0] > 0 ||
-      filters.salary[1] < 2000000 ||
-      filters.ageRange[0] > 18 ||
-      filters.ageRange[1] < 70 ||
-      filters.gender ||
-      filters.nationality ||
-      filters.noticePeriod ||
-      filters.profileUpdated ||
-      filters.visaStatus;
-
-    if (!hasFilters) {
-      return "";
-    }
-
-    params.append("page", pagination.current.toString());
-    params.append("limit", pagination.pageSize.toString());
-
-    if (filters.keywords) {
-      params.append("keywords", filters.keywords);
-    }
-    if (filters.experience[0] > 0 || filters.experience[1] < 30) {
-      params.append("minExperience", filters.experience[0].toString());
-      params.append("maxExperience", filters.experience[1].toString());
-    }
-    if (filters.qualifications?.length > 0) {
-      params.append("qualifications", filters.qualifications.join(","));
-    }
-    if (filters.skills?.length > 0) {
-      params.append("skills", filters.skills.join(","));
-    }
-    if (filters.location) {
-      params.append("location", filters.location);
-    }
-    if (filters.company) {
-      params.append("company", filters.company);
-    }
-    if (filters.jobRoles?.length > 0) {
-      params.append("jobRoles", filters.jobRoles.join(","));
-    }
-    if (filters.industries?.length > 0) {
-      params.append("industries", filters.industries.join(","));
-    }
-    if (filters.salary[0] > 0 || filters.salary[1] < 2000000) {
-      params.append("minSalary", filters.salary[0].toString());
-      params.append("maxSalary", filters.salary[1].toString());
-    }
-    if (filters.gender) {
-      params.append("gender", filters.gender);
-    }
-    if (filters.nationality) {
-      params.append("nationality", filters.nationality);
-    }
-    if (filters.ageRange[0] > 18 || filters.ageRange[1] < 70) {
-      params.append("minAge", filters.ageRange[0].toString());
-      params.append("maxAge", filters.ageRange[1].toString());
-    }
-    if (filters.noticePeriod) {
-      params.append("noticePeriod", filters.noticePeriod);
-    }
-    if (filters.profileUpdated) {
-      params.append("profileUpdated", filters.profileUpdated);
-    }
-    if (filters.visaStatus) {
-      params.append("visaStatus", filters.visaStatus);
-    }
-    if (filters.languages?.length > 0) {
-      params.append("languages", filters.languages.join(","));
-    }
-
-    return params.toString();
-  }, [filters, pagination.current, pagination.pageSize]);
-
-  useEffect(() => {
-    if (shouldFetch) {
-      const params = buildQueryParams();
-      setQueryParams(params);
-    }
-  }, [buildQueryParams, shouldFetch]);
-
-  const {
-    data: sourcedCandidatesData,
-    isLoading: isSourcedLoading,
-    error: sourcedError,
-    refetch: refetchSourced,
-  } = useGetSourcedCandidateQuery(queryParams, {
-    skip: !shouldFetch || !queryParams || queryParams === "",
-  });
 
   const {
     data: exactMatchData,
@@ -398,15 +289,17 @@ const SourcedCandidates = ({ jobId }) => {
     refetch: jobRefetch,
   } = useGetJobApplicationsQuery(jobId);
 
-  useEffect(() => {
-    if (sourcedCandidatesData) {
-      setPagination((prev) => ({
-        ...prev,
-        total: sourcedCandidatesData.total || 0,
-        current: sourcedCandidatesData.page || 1,
-      }));
-    }
-  }, [sourcedCandidatesData]);
+  const {
+    data: workOrderBasedSourced,
+    isLoading: isWorkOrderLoading,
+    error: workOrderError,
+    refetch: refetchWorkOrderBased,
+  } = useGetWorkOrderBasedSourcedCandidatesQuery({
+    jobId,
+    page: pagination.current,
+    limit: pagination.pageSize,
+    ...queryParams, // Spread the query parameters here
+  });
 
   useEffect(() => {
     if (workOrderBasedSourced) {
@@ -446,25 +339,179 @@ const SourcedCandidates = ({ jobId }) => {
     let candidatesArray = [];
 
     if (isWorkOrderFiltered) {
-      // For work order filtered (manual filtering)
       candidatesArray = Array.isArray(workOrderCandidates)
         ? workOrderCandidates
         : [];
     } else if (isExactMatch) {
-      // For exact match
       candidatesArray = Array.isArray(exactMatchData?.users)
         ? exactMatchData.users
         : [];
-    } else if (shouldFetch) {
-      // For advanced filtering
-      candidatesArray = Array.isArray(sourcedCandidatesData?.users)
-        ? sourcedCandidatesData.users
-        : [];
     } else {
-      // Default case - workOrderBasedSourced
+      // Always use workOrderBasedSourced for default and filtered cases
       candidatesArray = Array.isArray(workOrderBasedSourced?.candidates)
         ? workOrderBasedSourced.candidates
         : [];
+    }
+
+    // Apply client-side filtering when shouldFetch is true
+    if (shouldFetch && !isWorkOrderFiltered && !isExactMatch) {
+      candidatesArray = candidatesArray.filter((candidate) => {
+        // Keywords filter
+        if (filters.keywords.trim()) {
+          const keywords = filters.keywords.toLowerCase();
+          const searchableText = [
+            candidate.firstName,
+            candidate.lastName,
+            candidate.email,
+            candidate.currentCompany,
+            ...(candidate.skills || []),
+            ...(candidate.workExperience?.map((exp) => exp.company) || []),
+            ...(candidate.workExperience?.map((exp) => exp.jobTitle) || []),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+          if (!searchableText.includes(keywords)) return false;
+        }
+
+        // Experience filter
+        const experience = candidate.totalExperienceYears || 0;
+        if (
+          experience < filters.experience[0] ||
+          experience > filters.experience[1]
+        ) {
+          return false;
+        }
+
+        // Location filter
+        if (filters.location.trim()) {
+          const candidateLocation =
+            candidate.currentLocation || candidate.location || "";
+          if (
+            !candidateLocation
+              .toLowerCase()
+              .includes(filters.location.toLowerCase())
+          ) {
+            return false;
+          }
+        }
+
+        // Company filter
+        if (filters.company.trim()) {
+          const currentCompany =
+            candidate.currentCompany ||
+            candidate.workExperience?.[0]?.company ||
+            "";
+          if (
+            !currentCompany
+              .toLowerCase()
+              .includes(filters.company.toLowerCase())
+          ) {
+            return false;
+          }
+        }
+
+        // Skills filter
+        if (filters.skills.length > 0) {
+          const candidateSkills = (candidate.skills || []).map((skill) =>
+            skill.toLowerCase()
+          );
+          const hasRequiredSkills = filters.skills.some((skill) =>
+            candidateSkills.includes(skill.toLowerCase())
+          );
+          if (!hasRequiredSkills) return false;
+        }
+
+        // Qualifications filter
+        if (filters.qualifications.length > 0) {
+          const candidateQualifications = (candidate.qualifications || []).map(
+            (q) => q.toLowerCase()
+          );
+          const hasRequiredQual = filters.qualifications.some((qual) =>
+            candidateQualifications.includes(qual.toLowerCase())
+          );
+          if (!hasRequiredQual) return false;
+        }
+
+        // Job roles filter
+        if (filters.jobRoles.length > 0) {
+          const candidateRoles = [
+            candidate.currentJobTitle,
+            ...(candidate.workExperience?.map((exp) => exp.jobTitle) || []),
+          ]
+            .filter(Boolean)
+            .map((role) => role.toLowerCase());
+
+          const hasRequiredRole = filters.jobRoles.some((role) =>
+            candidateRoles.some((candidateRole) =>
+              candidateRole.includes(role.toLowerCase())
+            )
+          );
+          if (!hasRequiredRole) return false;
+        }
+
+        // Industries filter
+        if (filters.industries.length > 0) {
+          const candidateIndustries = [
+            candidate.industry,
+            ...(candidate.workExperience?.map((exp) => exp.industry) || []),
+          ]
+            .filter(Boolean)
+            .map((ind) => ind.toLowerCase());
+
+          const hasRequiredIndustry = filters.industries.some((industry) =>
+            candidateIndustries.includes(industry.toLowerCase())
+          );
+          if (!hasRequiredIndustry) return false;
+        }
+
+        // Salary filter
+        const candidateSalary =
+          candidate.expectedSalary || candidate.currentSalary || 0;
+        if (
+          candidateSalary < filters.salary[0] ||
+          candidateSalary > filters.salary[1]
+        ) {
+          return false;
+        }
+
+        // Gender filter
+        if (filters.gender && candidate.gender !== filters.gender) {
+          return false;
+        }
+
+        // Nationality filter
+        if (
+          filters.nationality &&
+          candidate.nationality !== filters.nationality
+        ) {
+          return false;
+        }
+
+        // Age filter
+        if (candidate.age) {
+          if (
+            candidate.age < filters.ageRange[0] ||
+            candidate.age > filters.ageRange[1]
+          ) {
+            return false;
+          }
+        }
+
+        // Languages filter
+        if (filters.languages.length > 0) {
+          const candidateLanguages = (candidate.languages || []).map((lang) =>
+            lang.toLowerCase()
+          );
+          const hasRequiredLanguage = filters.languages.some((lang) =>
+            candidateLanguages.includes(lang.toLowerCase())
+          );
+          if (!hasRequiredLanguage) return false;
+        }
+
+        return true;
+      });
     }
 
     const sourcedCandidates = candidatesArray.map((user) => ({
@@ -495,13 +542,13 @@ const SourcedCandidates = ({ jobId }) => {
     return merged;
   }, [
     jobApplications,
-    sourcedCandidatesData,
     exactMatchData,
     isExactMatch,
     workOrderCandidates,
     isWorkOrderFiltered,
     workOrderBasedSourced,
     shouldFetch,
+    filters, // Add filters dependency
   ]);
 
   const handleSubmit = async () => {
@@ -648,8 +695,57 @@ const SourcedCandidates = ({ jobId }) => {
       return;
     }
 
+    // Convert filters to query parameters
+    const params = {};
+
+    // Basic text filters
+    if (tempFilters.keywords.trim())
+      params.keywords = tempFilters.keywords.trim();
+    if (tempFilters.location.trim())
+      params.location = tempFilters.location.trim();
+    if (tempFilters.company.trim()) params.company = tempFilters.company.trim();
+
+    // Array filters - join with commas
+    if (tempFilters.skills.length > 0)
+      params.skills = tempFilters.skills.join(",");
+    if (tempFilters.qualifications.length > 0)
+      params.qualifications = tempFilters.qualifications.join(",");
+    if (tempFilters.jobRoles.length > 0)
+      params.jobRoles = tempFilters.jobRoles.join(",");
+    if (tempFilters.industries.length > 0)
+      params.industries = tempFilters.industries.join(",");
+    if (tempFilters.languages.length > 0)
+      params.languages = tempFilters.languages.join(",");
+
+    // Range filters - send min and max separately
+    if (tempFilters.experience[0] > 0)
+      params.experienceMin = tempFilters.experience[0];
+    if (tempFilters.experience[1] < 20)
+      params.experienceMax = tempFilters.experience[1];
+
+    if (tempFilters.salary[0] > 0) params.salaryMin = tempFilters.salary[0];
+    if (tempFilters.salary[1] < 2000000)
+      params.salaryMax = tempFilters.salary[1];
+
+    if (tempFilters.ageRange[0] > 18) params.ageMin = tempFilters.ageRange[0];
+    if (tempFilters.ageRange[1] < 70) params.ageMax = tempFilters.ageRange[1];
+
+    // Single value filters
+    if (tempFilters.gender) params.gender = tempFilters.gender;
+    if (tempFilters.nationality) params.nationality = tempFilters.nationality;
+    if (tempFilters.noticePeriod)
+      params.noticePeriod = tempFilters.noticePeriod;
+    if (tempFilters.profileUpdated)
+      params.profileUpdated = tempFilters.profileUpdated;
+    if (tempFilters.visaStatus) params.visaStatus = tempFilters.visaStatus;
+
+    console.log("Query parameters being sent:", params); // For debugging
+
+    setQueryParams(params);
     setFilters({ ...tempFilters });
-    setShouldFetch(true);
+    setShouldFetch(false); // Set to false since we're using server-side filtering
+    setIsExactMatch(false);
+    setIsWorkOrderFiltered(false);
     setPagination((prev) => ({ ...prev, current: 1 }));
     setIsFilterModalVisible(false);
   };
@@ -662,12 +758,12 @@ const SourcedCandidates = ({ jobId }) => {
     setFilters(initialFilters);
     setTempFilters(initialFilters);
     setSkillInput("");
+    setQueryParams({}); // Clear query parameters object
 
     setShouldFetch(false);
     setIsExactMatch(false);
     setIsWorkOrderFiltered(false);
     setWorkOrderCandidates([]);
-    setQueryParams("");
 
     setPagination((prev) => ({
       ...prev,
@@ -794,7 +890,7 @@ const SourcedCandidates = ({ jobId }) => {
           return candidate?.isSourced;
         })
       ) {
-        refetchSourced();
+        refetchWorkOrderBased();
       }
       jobRefetch();
     } catch (error) {
@@ -831,7 +927,7 @@ const SourcedCandidates = ({ jobId }) => {
       message.success(`Candidate moved to ${newStatus} successfully`);
 
       if (candidate.isSourced) {
-        refetchSourced();
+        refetchWorkOrderBased();
       }
       jobRefetch();
 
@@ -867,22 +963,7 @@ const SourcedCandidates = ({ jobId }) => {
       pageSize: pageSize,
     }));
     setSelectAll(false);
-
-    // Refetch data when pagination changes
-    if (shouldFetch) {
-      const params = buildQueryParams();
-      setQueryParams(params);
-      // The query will automatically refetch when queryParams changes
-    } else if (isWorkOrderFiltered) {
-      // For work order filtered, we need to manually refetch
-      refetchWorkOrderBased();
-    } else if (isExactMatch) {
-      // For exact match, we need to manually refetch
-      refetchExactMatch();
-    } else {
-      // For default work order based, refetch
-      refetchWorkOrderBased();
-    }
+    // Remove the complex refetch logic since we're doing client-side filtering
   };
 
   const getModalButtonText = () => {
@@ -1351,7 +1432,7 @@ const SourcedCandidates = ({ jobId }) => {
               </span>
             }
           />
-        ) : isSourcedLoading ||
+        ) : isWorkOrderLoading ||
           isExactMatchLoading ||
           isUpdatingStatus ||
           (!shouldFetch &&
@@ -1363,7 +1444,7 @@ const SourcedCandidates = ({ jobId }) => {
             <Skeleton active />
             <Skeleton active />
           </div>
-        ) : sourcedError || exactMatchError ? (
+        ) : workOrderError || exactMatchError ? (
           <Alert
             message={`Failed to load ${
               isExactMatch ? "suggestion match" : "sourced"
@@ -1864,7 +1945,7 @@ const SourcedCandidates = ({ jobId }) => {
           </Button>,
         ]}
       >
-        {isWorkOrderLoading ? (
+        {isWorkOrderLoadingOne ? (
           <Spin tip="Loading work order details..." />
         ) : workOrderError ? (
           <Alert message="Failed to load work order details" type="error" />
