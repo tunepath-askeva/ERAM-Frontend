@@ -6,6 +6,7 @@ import { superAdminApi } from "./Slices/SuperAdmin/SuperAdminApis.js";
 import { adminApi } from "./Slices/Admin/AdminApis.js";
 import { recruiterApi } from "./Slices/Recruiter/RecruiterApis.js";
 import { employeeApi } from "./Slices/Employee/EmployeeApis.js";
+import { rtkQueryErrorHandler } from "./errorHandlerMiddleware.js";
 
 const store = configureStore({
   reducer: {
@@ -23,7 +24,8 @@ const store = configureStore({
       .concat(superAdminApi.middleware)
       .concat(adminApi.middleware)
       .concat(recruiterApi.middleware)
-      .concat(employeeApi.middleware),
+      .concat(employeeApi.middleware)
+      .concat(rtkQueryErrorHandler),
   devTools: true,
 });
 

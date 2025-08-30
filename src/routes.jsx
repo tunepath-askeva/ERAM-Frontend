@@ -93,6 +93,7 @@ import SuperAdminNotifications from "./SuperAdmin/Pages/SuperAdminNotifications"
 import EmployeeAdminNotifications from "./EmployeeAdmin/Pages/EmployeeAdminNotifications";
 import RecruiterNotifications from "./Recruiters/Pages/RecruiterNotifications";
 import RecruiterAssignedInterviews from "./Recruiters/Pages/RecruiterAssignedInterviews";
+import NotFound from "./Pages/NotFound";
 
 const AppRoutes = () => {
   return (
@@ -104,6 +105,8 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
       <Route path="/branches" element={<Branches />} />
+      <Route path="*" element={<NotFound />} />
+      <Route path="/404" element={<NotFound />} />
 
       {/* Super Admin */}
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />
