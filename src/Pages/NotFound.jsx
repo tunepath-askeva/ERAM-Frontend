@@ -37,7 +37,7 @@ const NotFound = () => {
       }
     }
 
-    navigate("/");
+    navigate("/login");
   };
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const NotFound = () => {
           </p>
           
           <button className="btn-home" onClick={handleGoHome}>
-            Return Home
+            Return to Login
           </button>
         </div>
       </div>
