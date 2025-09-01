@@ -52,8 +52,8 @@ const AddRequisition = ({ onNavigateBack }) => {
     project: null,
     requisitionNo: "",
     referenceNo: "",
-    assignedRecruiter: null,
-    approvalRecruiter: null,
+    assignedRecruiter: [],
+    approvalRecruiter: [],
   });
 
   const { data: clientData } = useGetClientsQuery();
@@ -276,9 +276,15 @@ const AddRequisition = ({ onNavigateBack }) => {
       title: "Assigned Recruiter",
       dataIndex: "assignedRecruiter",
       key: "assignedRecruiter",
-      render: (recruiterId) => {
-        const recruiter = recruiters.find((r) => r._id === recruiterId);
-        return recruiter ? recruiter.fullName : "N/A";
+      render: (recruiterIds) => {
+        if (!Array.isArray(recruiterIds) || recruiterIds.length === 0)
+          return "N/A";
+        return recruiterIds
+          .map((recruiterId) => {
+            const recruiter = recruiters.find((r) => r._id === recruiterId);
+            return recruiter ? recruiter.fullName : "Unknown";
+          })
+          .join(", ");
       },
       width: 150,
     },
@@ -286,9 +292,15 @@ const AddRequisition = ({ onNavigateBack }) => {
       title: "Approval Recruiter",
       dataIndex: "approvalRecruiter",
       key: "approvalRecruiter",
-      render: (recruiterId) => {
-        const recruiter = recruiters.find((r) => r._id === recruiterId);
-        return recruiter ? recruiter.fullName : "N/A";
+      render: (recruiterIds) => {
+        if (!Array.isArray(recruiterIds) || recruiterIds.length === 0)
+          return "N/A";
+        return recruiterIds
+          .map((recruiterId) => {
+            const recruiter = recruiters.find((r) => r._id === recruiterId);
+            return recruiter ? recruiter.fullName : "Unknown";
+          })
+          .join(", ");
       },
       width: 150,
     },
@@ -451,6 +463,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                     ]}
                   >
                     <Select
+                      mode="multiple"
                       placeholder="Select assigned recruiter"
                       onChange={(value) =>
                         handleCommonFieldChange("assignedRecruiter", value)
@@ -476,6 +489,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                     ]}
                   >
                     <Select
+                      mode="multiple"
                       placeholder="Select approval recruiter"
                       onChange={(value) =>
                         handleCommonFieldChange("approvalRecruiter", value)

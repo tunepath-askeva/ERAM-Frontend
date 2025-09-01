@@ -75,8 +75,16 @@ const EditRequisition = () => {
         endDate: req.endDate ? dayjs(req.endDate) : null,
         deadlineDate: req.deadlineDate ? dayjs(req.deadlineDate) : null,
         alertDate: req.alertDate ? dayjs(req.alertDate) : null,
-        assignedRecruiter: req.assignedRecruiter,
-        approvalRecruiter: req.approvalRecruiter,
+        assignedRecruiter: Array.isArray(req.assignedRecruiter)
+          ? req.assignedRecruiter
+          : req.assignedRecruiter
+          ? [req.assignedRecruiter]
+          : [],
+        approvalRecruiter: Array.isArray(req.approvalRecruiter)
+          ? req.approvalRecruiter
+          : req.approvalRecruiter
+          ? [req.approvalRecruiter]
+          : [],
       });
     }
   }, [requisitionData, form]);
@@ -242,7 +250,10 @@ const EditRequisition = () => {
                       { required: true, message: "Please select a recruiter" },
                     ]}
                   >
-                    <Select placeholder="Select recruiter for this requisition">
+                    <Select
+                      mode="multiple"
+                      placeholder="Select recruiter for this requisition"
+                    >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
                           {`${recruiter.fullName} - (${recruiter.email})`}
@@ -262,7 +273,10 @@ const EditRequisition = () => {
                       },
                     ]}
                   >
-                    <Select placeholder="Select recruiter for approval">
+                    <Select
+                      mode="multiple"
+                      placeholder="Select recruiter for approval"
+                    >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
                           {`${recruiter.fullName} - (${recruiter.email})`}
