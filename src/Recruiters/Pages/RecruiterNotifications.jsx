@@ -16,6 +16,9 @@ import {
   Popconfirm,
   message,
   Pagination,
+  Modal,
+  Form,
+  Input,
 } from "antd";
 import {
   BellOutlined,
@@ -25,6 +28,8 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
   MoreOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -32,13 +37,17 @@ import {
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
 } from "../../Slices/Users/UserApis.js";
-import { useGetRecruiterNotificationQuery } from "../../Slices/Recruiter/RecruiterApis.js";
+import {
+  useGetRecruiterNotificationQuery,
+  useApproveRejectRequisitionMutation,
+} from "../../Slices/Recruiter/RecruiterApis.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const RecruiterNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -46,6 +55,10 @@ const RecruiterNotifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedRequisition, setSelectedRequisition] = useState(null);
+  const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+  const [form] = Form.useForm();
 
   const {
     data: apiData,
@@ -62,10 +75,12 @@ const RecruiterNotifications = () => {
     useMarkAsReadByIdMutation();
   const [deleteNotification, { isLoading: deleting }] =
     useDeleteNotificationMutation();
+  const [approveRejectRequisition, { isLoading: submittingAction }] =
+    useApproveRejectRequisitionMutation();
 
   useEffect(() => {
     if (apiData) {
-      setNotifications(apiData.notifications || []); // ✅ fixed
+      setNotifications(apiData.notifications || []);
       setLoading(false);
     }
     if (apiError) {
@@ -126,6 +141,45 @@ const RecruiterNotifications = () => {
       message.error("Failed to delete notification");
       console.error("Delete notification error:", error);
     }
+  };
+
+  const handleApproveReject = (requisitionId, action) => {
+    setSelectedRequisition(requisitionId);
+    setActionType(action);
+    setModalVisible(true);
+  };
+
+  const handleModalSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      await approveRejectRequisition({
+        requisitionId: selectedRequisition,
+        status: actionType,
+        remarks: values.remarks,
+      }).unwrap();
+
+      message.success(`Requisition ${actionType}d successfully`);
+      setModalVisible(false);
+      form.resetFields();
+      setSelectedRequisition(null);
+      setActionType(null);
+
+      // Refresh notifications to update the UI
+      refetch();
+    } catch (error) {
+      if (error.name !== "ValidationError") {
+        message.error(`Failed to ${actionType} requisition`);
+        console.error(`${actionType} requisition error:`, error);
+      }
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    form.resetFields();
+    setSelectedRequisition(null);
+    setActionType(null);
   };
 
   const getNotificationIcon = (type) => {
@@ -189,6 +243,46 @@ const RecruiterNotifications = () => {
           style={{ color: "#666" }}
         />
       </Dropdown>
+    );
+  };
+
+  const isRequisitionAssignmentNotification = (notification) => {
+    return (
+      notification.title?.toLowerCase().includes("requisition assigned") ||
+      notification.message
+        ?.toLowerCase()
+        .includes("assigned to approve requisition")
+    );
+  };
+
+  const renderApprovalButtons = (item) => {
+    if (!isRequisitionAssignmentNotification(item) || !item.requisitionId) {
+      return null;
+    }
+
+    return (
+      <Space style={{ marginTop: "12px" }}>
+        <Button
+          type="primary"
+          icon={<CheckOutlined />}
+          size="small"
+          style={{
+            backgroundColor: "#52c41a",
+            borderColor: "#52c41a",
+          }}
+          onClick={() => handleApproveReject(item.requisitionId, "approved")}
+        >
+          Approve
+        </Button>
+        <Button
+          danger
+          icon={<CloseOutlined />}
+          size="small"
+          onClick={() => handleApproveReject(item.requisitionId, "rejected")}
+        >
+          Reject
+        </Button>
+      </Space>
     );
   };
 
@@ -292,18 +386,12 @@ const RecruiterNotifications = () => {
                 {unreadCount} new
               </span>
             )}
-            {/* {unreadCount === 0 && (
-              <span style={{ marginLeft: "8px", color: "#52c41a" }}>
-                ✓ All caught up!
-              </span>
-            )} */}
           </Text>
           <Space>
             {unreadCount > 0 && (
               <Button
                 type="link"
                 size="small"
-                o
                 onClick={handleMarkAllAsRead}
                 loading={markingAllRead}
               >
@@ -395,12 +483,16 @@ const RecruiterNotifications = () => {
                       >
                         {item.message}
                       </Paragraph>
+
+                      {/* Approval/Rejection buttons for requisition assignment notifications */}
+                      {renderApprovalButtons(item)}
+
                       {!item.isRead && (
                         <Button
                           type="link"
                           size="small"
                           onClick={() => handleMarkAsRead(item._id)}
-                          style={{ padding: 0 }}
+                          style={{ padding: 0, marginTop: "8px" }}
                         >
                           Mark as read
                         </Button>
@@ -436,6 +528,48 @@ const RecruiterNotifications = () => {
           style={{ marginTop: 16, textAlign: "center" }}
         />
       </Card>
+
+      {/* Approval/Rejection Modal */}
+      <Modal
+        title={`${
+          actionType === "approved" ? "Approve" : "Reject"
+        } Requisition`}
+        open={modalVisible}
+        onOk={handleModalSubmit}
+        onCancel={handleModalCancel}
+        confirmLoading={submittingAction}
+        okText={actionType === "approved" ? "Approve" : "Reject"}
+        okButtonProps={{
+          style:
+            actionType === "approved"
+              ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
+              : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" },
+        }}
+        cancelText="Cancel"
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" initialValues={{ remarks: "" }}>
+          <Form.Item
+            name="remarks"
+            label="Remarks"
+            rules={[
+              {
+                required: true,
+                message: "Please provide remarks for your decision",
+              },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder={`Please provide your reason for ${
+                actionType === "approved" ? "approving" : "rejecting"
+              } this requisition...`}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

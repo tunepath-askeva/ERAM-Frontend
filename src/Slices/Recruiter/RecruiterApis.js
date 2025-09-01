@@ -533,6 +533,17 @@ export const recruiterApi = createApi({
         body: body,
       }),
     }),
+    approveRejectRequisition: builder.mutation({
+      query: ({ requisitionId, status, remarks }) => ({
+        url: `/req-status`,
+        method: "PATCH",
+        body: {
+          requisitionId,
+          status, 
+          remarks,
+        },
+      }),
+    }),
   }),
 });
 
@@ -589,4 +600,5 @@ export const {
   useOfferInfoMutation,
   useGetCurrentWorkOrderDetailsForFilteringQuery,
   useCurrentWorkorderDetailsFilteringMutation,
+  useApproveRejectRequisitionMutation
 } = recruiterApi;
