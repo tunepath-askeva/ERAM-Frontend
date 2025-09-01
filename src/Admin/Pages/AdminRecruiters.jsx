@@ -372,7 +372,7 @@ const AdminRecruiter = () => {
                   minWidth: "180px",
                 }}
               >
-                Add New Recruiter
+                Add New Member
               </Button>
             </div>
           </div>
@@ -596,7 +596,7 @@ const AdminRecruiter = () => {
                 showSizeChanger
                 showQuickJumper
                 showTotal={(total, range) =>
-                  `${range[0]}-${range[1]} of ${total} recruiters`
+                  `${range[0]}-${range[1]} of ${total} members`
                 }
                 pageSizeOptions={["12", "24", "36", "64", "128"]}
               />
@@ -662,7 +662,7 @@ const AdminRecruiter = () => {
         onCancel={handleRecruiterModalClose}
         onSuccess={handleRecruiterSuccess}
         mode={editingRecruiter ? "edit" : "add"}
-        title={editingRecruiter ? "Edit Recruiter" : "Add New Recruiter"}
+        title={editingRecruiter ? "Edit Member" : "Add New Member"}
         initialValues={editingRecruiter}
         recruiterId={editingRecruiter?._id}
       />

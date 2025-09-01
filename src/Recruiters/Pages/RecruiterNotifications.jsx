@@ -37,7 +37,7 @@ import {
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
 } from "../../Slices/Users/UserApis.js";
-import {
+import { 
   useGetRecruiterNotificationQuery,
   useApproveRejectRequisitionMutation,
 } from "../../Slices/Recruiter/RecruiterApis.js";
@@ -56,7 +56,7 @@ const RecruiterNotifications = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedRequisition, setSelectedRequisition] = useState(null);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
   const [form] = Form.useForm();
 
@@ -143,8 +143,8 @@ const RecruiterNotifications = () => {
     }
   };
 
-  const handleApproveReject = (requisitionId, action) => {
-    setSelectedRequisition(requisitionId);
+  const handleApproveReject = (notification, action) => {
+    setSelectedNotification(notification);
     setActionType(action);
     setModalVisible(true);
   };
@@ -152,9 +152,10 @@ const RecruiterNotifications = () => {
   const handleModalSubmit = async () => {
     try {
       const values = await form.validateFields();
-
+      
       await approveRejectRequisition({
-        requisitionId: selectedRequisition,
+        notificationId: selectedNotification._id,
+        requisitionId: selectedNotification.requisitionId,
         status: actionType,
         remarks: values.remarks,
       }).unwrap();
@@ -162,13 +163,13 @@ const RecruiterNotifications = () => {
       message.success(`Requisition ${actionType}d successfully`);
       setModalVisible(false);
       form.resetFields();
-      setSelectedRequisition(null);
+      setSelectedNotification(null);
       setActionType(null);
-
+      
       // Refresh notifications to update the UI
       refetch();
     } catch (error) {
-      if (error.name !== "ValidationError") {
+      if (error.name !== 'ValidationError') {
         message.error(`Failed to ${actionType} requisition`);
         console.error(`${actionType} requisition error:`, error);
       }
@@ -178,7 +179,7 @@ const RecruiterNotifications = () => {
   const handleModalCancel = () => {
     setModalVisible(false);
     form.resetFields();
-    setSelectedRequisition(null);
+    setSelectedNotification(null);
     setActionType(null);
   };
 
@@ -247,12 +248,8 @@ const RecruiterNotifications = () => {
   };
 
   const isRequisitionAssignmentNotification = (notification) => {
-    return (
-      notification.title?.toLowerCase().includes("requisition assigned") ||
-      notification.message
-        ?.toLowerCase()
-        .includes("assigned to approve requisition")
-    );
+    return notification.title?.toLowerCase().includes("requisition assigned") ||
+           notification.message?.toLowerCase().includes("assigned to approve requisition");
   };
 
   const renderApprovalButtons = (item) => {
@@ -270,7 +267,7 @@ const RecruiterNotifications = () => {
             backgroundColor: "#52c41a",
             borderColor: "#52c41a",
           }}
-          onClick={() => handleApproveReject(item.requisitionId, "approved")}
+          onClick={() => handleApproveReject(item, "approved")}
         >
           Approve
         </Button>
@@ -278,7 +275,7 @@ const RecruiterNotifications = () => {
           danger
           icon={<CloseOutlined />}
           size="small"
-          onClick={() => handleApproveReject(item.requisitionId, "rejected")}
+          onClick={() => handleApproveReject(item, "rejected")}
         >
           Reject
         </Button>
@@ -483,10 +480,10 @@ const RecruiterNotifications = () => {
                       >
                         {item.message}
                       </Paragraph>
-
+                      
                       {/* Approval/Rejection buttons for requisition assignment notifications */}
                       {renderApprovalButtons(item)}
-
+                      
                       {!item.isRead && (
                         <Button
                           type="link"
@@ -531,24 +528,25 @@ const RecruiterNotifications = () => {
 
       {/* Approval/Rejection Modal */}
       <Modal
-        title={`${
-          actionType === "approved" ? "Approve" : "Reject"
-        } Requisition`}
+        title={`${actionType === "approved" ? "Approve" : "Reject"} Requisition`}
         open={modalVisible}
         onOk={handleModalSubmit}
         onCancel={handleModalCancel}
         confirmLoading={submittingAction}
         okText={actionType === "approved" ? "Approve" : "Reject"}
         okButtonProps={{
-          style:
-            actionType === "approved"
-              ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
-              : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" },
+          style: actionType === "approved" 
+            ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
+            : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" }
         }}
         cancelText="Cancel"
         destroyOnClose
       >
-        <Form form={form} layout="vertical" initialValues={{ remarks: "" }}>
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ remarks: "" }}
+        >
           <Form.Item
             name="remarks"
             label="Remarks"
@@ -561,9 +559,7 @@ const RecruiterNotifications = () => {
           >
             <TextArea
               rows={4}
-              placeholder={`Please provide your reason for ${
-                actionType === "approved" ? "approving" : "rejecting"
-              } this requisition...`}
+              placeholder={`Please provide your reason for ${actionType === "approved" ? "approving" : "rejecting"} this requisition...`}
               maxLength={500}
               showCount
             />
