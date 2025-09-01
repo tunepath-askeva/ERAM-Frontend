@@ -188,11 +188,6 @@ const AddWorkOrder = () => {
         });
       }
 
-      if (reqData.pipeline && reqData.pipeline.length > 0) {
-        setSelectedPipelines(reqData.pipeline);
-        jobForm.setFieldsValue({ pipeline: reqData.pipeline });
-      }
-
       // Generate job code with project prefix
       let finalJobCode = reqData.requisitionNo || "";
       if (
@@ -237,39 +232,9 @@ const AddWorkOrder = () => {
         Education: reqData.Education,
         languagesRequired: reqData.languagesRequired || [],
         jobCode: finalJobCode,
+        // Set assigned recruiters from requisition data
+        assignedId: reqData.assignedRecruiters || reqData.recruiters || [],
       });
-
-      // Handle pipeline prefilling if available
-      if (reqData.pipeline && reqData.pipeline.length > 0) {
-        setSelectedPipelines(reqData.pipeline);
-        jobForm.setFieldsValue({ pipeline: reqData.pipeline });
-      }
-
-      // Handle pipeline stage timeline prefilling
-      if (
-        reqData.pipelineStageTimeline &&
-        reqData.pipelineStageTimeline.length > 0
-      ) {
-        const stageTimelineData = {};
-
-        reqData.pipelineStageTimeline.forEach((stage) => {
-          if (!stageTimelineData[stage.pipelineId]) {
-            stageTimelineData[stage.pipelineId] = [];
-          }
-
-          stageTimelineData[stage.pipelineId].push({
-            stageId: stage.stageId,
-            startDate: stage.startDate,
-            endDate: stage.endDate,
-            dependencyType: stage.dependencyType || "independent",
-            approvalId: stage.approvalId || null,
-            recruiterIds: stage.recruiterIds || [],
-            staffIds: stage.staffIds || [],
-          });
-        });
-
-        setPipelineStageDates(stageTimelineData);
-      }
 
       // Handle required documents if available
       if (reqData.requiredDocuments && reqData.requiredDocuments.length > 0) {
@@ -1466,61 +1431,40 @@ const AddWorkOrder = () => {
           padding: "0 24px",
         }}
       >
-        {!isPrefilled && (
-          <div
-            style={{
-              marginBottom: "24px",
-              padding: "12px",
-              backgroundColor: "#f0f8ff",
-              borderRadius: "6px",
-              border: "1px solid #d6f2ff",
-            }}
+        <div
+          style={{
+            marginBottom: "24px",
+            padding: "12px",
+            backgroundColor: "#f0f8ff",
+            borderRadius: "6px",
+            border: "1px solid #d6f2ff",
+          }}
+        >
+          <Form.Item
+            label="Default Recruiters (will be assigned to all stages)"
+            style={{ marginBottom: 0 }}
           >
-            <Form.Item
-              label="Default Recruiters (will be assigned to all stages)"
-              style={{ marginBottom: 0 }}
+            <Select
+              mode="multiple"
+              placeholder="Select default recruiters for all stages"
+              value={defaultRecruiters}
+              onChange={handleDefaultRecruitersChange}
+              style={{ width: "100%" }}
+              size="small"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
             >
-              <Select
-                mode="multiple"
-                placeholder="Select default recruiters for all stages"
-                value={defaultRecruiters}
-                onChange={handleDefaultRecruitersChange}
-                style={{ width: "100%" }}
-                size="small"
-                showSearch
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >=
-                  0
-                }
-              >
-                {activeRecruiters.map((recruiter) => (
-                  <Option key={recruiter._id} value={recruiter._id}>
-                    {recruiter.fullName} - {recruiter.email}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </div>
-        )}
-
-        {isPrefilled && (
-          <div
-            style={{
-              marginBottom: "24px",
-              padding: "12px",
-              backgroundColor: "#fff7e6",
-              borderRadius: "6px",
-              border: "1px solid #ffd591",
-              fontSize: "14px",
-              color: "#d48806",
-            }}
-          >
-            This work order is created from a requisition. Recruiter assignments
-            are pre-configured and can be modified individually for each stage
-            below.
-          </div>
-        )}
+              {activeRecruiters.map((recruiter) => (
+                <Option key={recruiter._id} value={recruiter._id}>
+                  {recruiter.fullName} - {recruiter.email}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </div>
 
         <div style={{ padding: "16px 0" }}>
           {allStages.map((stage, index) => {

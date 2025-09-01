@@ -75,10 +75,10 @@ const EditRequisition = () => {
         endDate: req.endDate ? dayjs(req.endDate) : null,
         deadlineDate: req.deadlineDate ? dayjs(req.deadlineDate) : null,
         alertDate: req.alertDate ? dayjs(req.alertDate) : null,
-        assignedRecruiter: Array.isArray(req.assignedRecruiter)
-          ? req.assignedRecruiter
-          : req.assignedRecruiter
-          ? [req.assignedRecruiter]
+        assignedRecruiters: Array.isArray(req.assignedRecruiters)
+          ? req.assignedRecruiters
+          : req.assignedRecruiters
+          ? [req.assignedRecruiters]
           : [],
         approvalRecruiter: Array.isArray(req.approvalRecruiter)
           ? req.approvalRecruiter
@@ -245,7 +245,7 @@ const EditRequisition = () => {
                 <Col span={12}>
                   <Form.Item
                     label="Assigned Recruiter"
-                    name="assignedRecruiter"
+                    name="assignedRecruiters"
                     rules={[
                       { required: true, message: "Please select a recruiter" },
                     ]}
