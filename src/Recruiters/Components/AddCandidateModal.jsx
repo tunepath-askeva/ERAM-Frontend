@@ -11,6 +11,11 @@ import {
   StarOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
+import {
+  countryMobileLimits,
+  phoneUtils,
+  countryInfo,
+} from "../../utils/countryMobileLimits";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -24,6 +29,7 @@ const AddCandidateModal = ({
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [selectedCountryCode, setSelectedCountryCode] = useState("91");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   useEffect(() => {
     if (visible) {
@@ -35,49 +41,123 @@ const AddCandidateModal = ({
     }
   }, [visible, form]);
 
+  const validatePhoneNumber = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please enter phone number"));
+    }
+
+    const cleanNumber = value.replace(/\D/g, "");
+    const isValid = phoneUtils.validateMobileNumber(
+      selectedCountryCode,
+      cleanNumber
+    );
+
+    if (!isValid) {
+      const limits = phoneUtils.getLimits(selectedCountryCode);
+      return Promise.reject(
+        new Error(
+          `Phone number must be between ${limits.min} and ${
+            limits.max
+          } digits for ${
+            countryInfo[selectedCountryCode]?.name || "selected country"
+          }`
+        )
+      );
+    }
+
+    return Promise.resolve();
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const value = e.target.value;
+    const cleanValue = value.replace(/\D/g, "");
+
+    const limits = phoneUtils.getLimits(selectedCountryCode);
+    if (limits && cleanValue.length <= limits.max) {
+      setPhoneNumber(cleanValue);
+      form.setFieldsValue({ phoneNumber: cleanValue });
+    }
+  };
+
+  const handleCountryCodeChange = (value) => {
+    setSelectedCountryCode(value);
+    form.validateFields(["phoneNumber"]);
+  };
+
+  const getCountryOptions = () => {
+    return phoneUtils
+      .getSupportedCountryCodes()
+      .map((code) => {
+        const country = countryInfo[code];
+        return {
+          value: code,
+          label: `${country?.flag || ""} ${
+            country?.name || `Country ${code}`
+          } (+${code})`,
+          searchText: `${country?.name || ""} ${code}`.toLowerCase(),
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  };
+
   const handleSubmit = async (values) => {
     try {
-      const { confirmPassword, firstName, lastName, countryCode, phoneNumber, ...payload } = values;
+      const {
+        confirmPassword,
+        firstName,
+        middleName,
+        lastName,
+        countryCode,
+        phoneNumber,
+        ...payload
+      } = values;
 
-      const fullName = `${firstName} ${lastName}`.trim();
-      const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
+      const fullName = [firstName, middleName, lastName]
+        .filter(Boolean)
+        .map((name) => name.trim())
+        .join(" ");
+
+      const fullPhoneNumber = phoneUtils.formatWithCountryCode(
+        countryCode,
+        phoneNumber
+      );
 
       const createPayload = {
         ...payload,
+        firstName: firstName?.trim(),
+        middleName: middleName?.trim() || "",
+        lastName: lastName?.trim(),
         fullName,
         phone: fullPhoneNumber,
         role: "candidate",
       };
 
-      // Call the API
       await onSubmit(createPayload);
-      
-      // Assume success if no error was thrown
+
       form.resetFields();
       setSelectedCountryCode("91");
-      enqueueSnackbar("Candidate created successfully!", { 
-        variant: "success" 
+      setPhoneNumber("");
+      enqueueSnackbar("Candidate created successfully!", {
+        variant: "success",
       });
-      
     } catch (error) {
       console.error("Error creating candidate:", error);
-      
-      // More detailed error handling
+
       let errorMessage = "Failed to create candidate. Please try again.";
-      
+
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       enqueueSnackbar(errorMessage, { variant: "error" });
     }
   };
 
   const validateConfirmPassword = (_, value) => {
     const password = form.getFieldValue("password");
-    
+
     if (!value || password === value) {
       return Promise.resolve();
     }
@@ -127,7 +207,7 @@ const AddCandidateModal = ({
         style={{ padding: "16px 0" }}
       >
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               label="First Name"
               name="firstName"
@@ -136,7 +216,15 @@ const AddCandidateModal = ({
               <Input prefix={<UserOutlined />} placeholder="Enter first name" />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
+            <Form.Item label="Middle Name" name="middleName">
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="Enter middle name (optional)"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
             <Form.Item
               label="Last Name"
               name="lastName"
@@ -168,35 +256,47 @@ const AddCandidateModal = ({
               <Input.Group compact>
                 <Form.Item
                   name="countryCode"
-                  style={{ width: "30%" }}
+                  style={{ width: "40%" }}
                   rules={[{ required: true, message: "Select country" }]}
-                  initialValue="91"
                 >
                   <Select
-                    placeholder="Code"
+                    showSearch
+                    placeholder="Country"
                     value={selectedCountryCode}
-                    onChange={setSelectedCountryCode}
+                    onChange={handleCountryCodeChange}
+                    filterOption={(input, option) =>
+                      option.searchText?.includes(input.toLowerCase())
+                    }
+                    style={{ width: "100%" }}
                   >
-                    <Option value="91">+91 (IN)</Option>
-                    <Option value="1">+1 (US)</Option>
-                    <Option value="44">+44 (UK)</Option>
-                    <Option value="971">+971 (UAE)</Option>
+                    {getCountryOptions().map((option) => (
+                      <Option
+                        key={option.value}
+                        value={option.value}
+                        searchText={option.searchText}
+                      >
+                        {option.label}
+                      </Option>
+                    ))}
                   </Select>
                 </Form.Item>
                 <Form.Item
                   name="phoneNumber"
-                  style={{ width: "70%" }}
-                  rules={[
-                    { required: true, message: "Please enter phone number" },
-                    {
-                      pattern: /^[0-9]{10,15}$/,
-                      message: "Please enter valid phone number",
-                    },
-                  ]}
+                  style={{ width: "60%" }}
+                  rules={[{ validator: validatePhoneNumber }]}
                 >
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="Enter phone number"
+                    placeholder={`Enter ${
+                      phoneUtils.getLimits(selectedCountryCode)?.min || 0
+                    }-${
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 0
+                    } digits`}
+                    value={phoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    maxLength={
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 15
+                    }
                   />
                 </Form.Item>
               </Input.Group>
@@ -251,9 +351,7 @@ const AddCandidateModal = ({
                 { required: true, message: "Please enter qualifications" },
               ]}
             >
-              <Input
-                placeholder="Enter educational qualifications, certifications, degrees, etc."
-              />
+              <Input placeholder="Enter educational qualifications, certifications, degrees, etc." />
             </Form.Item>
           </Col>
         </Row>

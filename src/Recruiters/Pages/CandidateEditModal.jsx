@@ -38,6 +38,14 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
 
   useEffect(() => {
     if (candidate && visible) {
+      // Parse full name into components
+      const nameParts = candidate.fullName?.split(" ") || [];
+      const firstName = nameParts[0] || "";
+      const lastName =
+        nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+      const middleName =
+        nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
+
       const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(
         candidate.phone
       );
@@ -45,9 +53,9 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
       setPhoneNumber(parsedPhone);
 
       form.setFieldsValue({
-        // fullName: candidate.fullName,
-        firstName: candidate.firstName,
-        lastName: candidate.lastName,
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
         email: candidate.email,
         countryCode,
         phoneNumber: parsedPhone,
@@ -144,10 +152,34 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      const { password, confirmPassword, ...restValues } = values;
+      const {
+        password,
+        confirmPassword,
+        firstName,
+        middleName,
+        lastName,
+        countryCode,
+        phoneNumber,
+        ...restValues
+      } = values;
+
+      const fullName = [firstName, middleName, lastName]
+        .filter(Boolean)
+        .map((name) => name.trim())
+        .join(" ");
+
+      const fullPhoneNumber = phoneUtils.formatWithCountryCode(
+        countryCode,
+        phoneNumber
+      );
 
       const updatedData = {
-        ...values,
+        ...restValues,
+        firstName: firstName?.trim(),
+        middleName: middleName?.trim() || "",
+        lastName: lastName?.trim(),
+        fullName,
+        phone: fullPhoneNumber,
         skills,
         _id: candidate._id,
       };
@@ -155,6 +187,7 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
       if (password) {
         updatedData.password = password;
       }
+
       await onSubmit(updatedData);
       form.resetFields();
       setSkills([]);
@@ -224,22 +257,15 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item
-              name="lastName"
-              label="Last Name"
-              rules={[{ required: true, message: "Please enter last name" }]}
-            >
-              <Input />
+            <Form.Item name="middleName" label="Middle Name">
+              <Input placeholder="Enter middle name (optional)" />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: "Please enter email" },
-                { type: "email", message: "Please enter valid email" },
-              ]}
+              name="lastName"
+              label="Last Name"
+              rules={[{ required: true, message: "Please enter last name" }]}
             >
               <Input />
             </Form.Item>
@@ -259,6 +285,18 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
         </Row> */}
 
         <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true, message: "Please enter email" },
+                { type: "email", message: "Please enter valid email" },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
           <Col span={12}>
             <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
               <Input.Group compact>
@@ -310,20 +348,20 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
               </Input.Group>
             </Form.Item>
           </Col>
-          <Col span={12}>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={8}>
             <Form.Item name="title" label="Job Title">
               <Input />
             </Form.Item>
           </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item name="location" label="Location">
               <Input />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item name="totalExperienceYears" label="Experience (Years)">
               <Input type="number" />
             </Form.Item>

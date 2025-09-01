@@ -79,11 +79,14 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
               if (results.errors.length > 0) {
                 console.warn("CSV parsing warnings:", results.errors);
                 // Only reject on critical errors, not warnings
-                const criticalErrors = results.errors.filter(error => 
-                  error.type === "Delimiter" || error.type === "Quotes"
+                const criticalErrors = results.errors.filter(
+                  (error) =>
+                    error.type === "Delimiter" || error.type === "Quotes"
                 );
                 if (criticalErrors.length > 0) {
-                  reject(new Error("CSV parsing error: " + criticalErrors[0].message));
+                  reject(
+                    new Error("CSV parsing error: " + criticalErrors[0].message)
+                  );
                 } else {
                   resolve(results.data);
                 }
@@ -91,7 +94,8 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                 resolve(results.data);
               }
             },
-            error: (error) => reject(new Error("CSV parsing failed: " + error.message)),
+            error: (error) =>
+              reject(new Error("CSV parsing failed: " + error.message)),
           });
         });
       } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
@@ -108,16 +112,21 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
               });
               resolve(jsonData);
             } catch (xlsxError) {
-              reject(new Error("Failed to parse Excel file: " + xlsxError.message));
+              reject(
+                new Error("Failed to parse Excel file: " + xlsxError.message)
+              );
             }
           };
-          reader.onerror = (e) => reject(new Error("Failed to read Excel file"));
+          reader.onerror = (e) =>
+            reject(new Error("Failed to read Excel file"));
           reader.readAsBinaryString(file);
         });
 
         parsedData = data;
       } else {
-        throw new Error("Unsupported file type. Please upload a .csv or .xlsx file.");
+        throw new Error(
+          "Unsupported file type. Please upload a .csv or .xlsx file."
+        );
       }
 
       if (!parsedData || parsedData.length === 0) {
@@ -130,21 +139,30 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
 
       parsedData.forEach((row, index) => {
         try {
-          // Clean and validate data
-          const fullName = (
-            row["Full Name"]?.toString()?.trim() ||
-            [row["First Name"], row["Middle Name"], row["Last Name"]]
+          const firstName = row["First Name"]?.toString()?.trim() || "";
+          const middleName = row["Middle Name"]?.toString()?.trim() || "";
+          const lastName = row["Last Name"]?.toString()?.trim() || "";
+
+          // Prefer individual name fields, fallback to Full Name
+          let fullName = "";
+          if (firstName || lastName) {
+            fullName = [firstName, middleName, lastName]
               .filter(Boolean)
-              .map((s) => s?.toString()?.trim())
-              .join(" ")
-          );
+              .join(" ");
+          } else {
+            fullName = row["Full Name"]?.toString()?.trim() || "";
+          }
 
           const email = row["Email"]?.toString()?.trim()?.toLowerCase();
           const password = row["Password"]?.toString()?.trim();
 
           if (!fullName || !email || !password) {
             skippedRows++;
-            errors.push(`Row ${index + 2}: Missing required fields (Full Name, Email, Password)`);
+            errors.push(
+              `Row ${
+                index + 2
+              }: Missing required fields (Name, Email, Password)`
+            );
             return;
           }
 
@@ -157,15 +175,20 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
           }
 
           candidates.push({
+            firstName: firstName,
+            middleName: middleName,
+            lastName: lastName,
             fullName: fullName,
             email: email,
             phone: row["Phone"]?.toString()?.trim() || "",
             password: password,
-            companyName: row["Company Name"]?.toString()?.trim() || 
-                         row["Company"]?.toString()?.trim() || "",
+            companyName:
+              row["Company Name"]?.toString()?.trim() ||
+              row["Company"]?.toString()?.trim() ||
+              "",
             specialization: row["Specialization"]?.toString()?.trim() || "",
             qualifications: row["Qualifications"]?.toString()?.trim() || "",
-            role: "candidate", // Add role here too
+            role: "candidate",
           });
         } catch (rowError) {
           skippedRows++;
@@ -189,7 +212,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
 
       // Call the import function and wait for result
       const result = await onImport(candidates);
-      
+
       // Only proceed if import was successful
       if (result && result.success !== false) {
         setFileList([]);
@@ -199,18 +222,18 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
         );
         onCancel(); // Close modal only on success
       }
-
     } catch (error) {
       console.error("Import error:", error);
-      
-      let errorMessage = "Failed to import candidates. Please check the file format.";
-      
+
+      let errorMessage =
+        "Failed to import candidates. Please check the file format.";
+
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       enqueueSnackbar(errorMessage, { variant: "error" });
     } finally {
       setIsImporting(false);
@@ -230,8 +253,8 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
     >
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Paragraph type="secondary">
-          Upload a CSV or Excel file containing candidate data. The file should include
-          columns for Full Name, Email, Phone, Password, Company Name,
+          Upload a CSV or Excel file containing candidate data. The file should
+          include columns for Full Name, Email, Phone, Password, Company Name,
           Specialization, and Qualifications.
         </Paragraph>
 
@@ -282,7 +305,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
           <ul style={{ paddingLeft: "20px", margin: 0 }}>
             <li>Maximum file size: 5MB</li>
             <li>Supported formats: .csv, .xls, .xlsx</li>
-            <li>Required columns: Full Name, Email, Password</li>
+            <li>Required columns: First Name OR Full Name, Email, Password</li>
             <li>
               Optional columns: Phone, Company Name, Specialization,
               Qualifications
@@ -297,6 +320,9 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             onClick={() => {
               try {
                 const headers = [
+                  "First Name",
+                  "Middle Name",
+                  "Last Name",
                   "Full Name",
                   "Email",
                   "Phone",
@@ -307,7 +333,10 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                 ];
 
                 const sampleRow = [
-                  "John Doe",
+                  "John",
+                  "Michael",
+                  "Doe",
+                  "John Michael Doe",
                   "john.doe@example.com",
                   "9876543210",
                   "password123",
@@ -327,14 +356,14 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
-                enqueueSnackbar("Template downloaded successfully!", { 
-                  variant: "success" 
+
+                enqueueSnackbar("Template downloaded successfully!", {
+                  variant: "success",
                 });
               } catch (downloadError) {
                 console.error("Download error:", downloadError);
-                enqueueSnackbar("Failed to download template", { 
-                  variant: "error" 
+                enqueueSnackbar("Failed to download template", {
+                  variant: "error",
                 });
               }
             }}
