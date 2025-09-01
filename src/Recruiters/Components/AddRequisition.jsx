@@ -52,7 +52,7 @@ const AddRequisition = ({ onNavigateBack }) => {
     project: null,
     requisitionNo: "",
     referenceNo: "",
-    assignedRecruiter: [],
+    assignedRecruiters: [],
     approvalRecruiter: [],
   });
 
@@ -274,8 +274,8 @@ const AddRequisition = ({ onNavigateBack }) => {
     },
     {
       title: "Assigned Recruiter",
-      dataIndex: "assignedRecruiter",
-      key: "assignedRecruiter",
+      dataIndex: "assignedRecruiters",
+      key: "assignedRecruiters",
       render: (recruiterIds) => {
         if (!Array.isArray(recruiterIds) || recruiterIds.length === 0)
           return "N/A";
@@ -453,7 +453,7 @@ const AddRequisition = ({ onNavigateBack }) => {
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    name="assignedRecruiter"
+                    name="assignedRecruiters"
                     label="Assigned Recruiter"
                     rules={[
                       {
@@ -466,7 +466,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                       mode="multiple"
                       placeholder="Select assigned recruiter"
                       onChange={(value) =>
-                        handleCommonFieldChange("assignedRecruiter", value)
+                        handleCommonFieldChange("assignedRecruiters", value)
                       }
                     >
                       {recruiters.map((recruiter) => (
