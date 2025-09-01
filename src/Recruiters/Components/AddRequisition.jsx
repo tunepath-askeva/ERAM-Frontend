@@ -727,6 +727,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                         message: "Please select visa category type",
                       },
                     ]}
+                    initialValue="any"
                   >
                     <Select
                       placeholder="Select visa category type"
@@ -734,7 +735,6 @@ const AddRequisition = ({ onNavigateBack }) => {
                     >
                       <Option value="any">Any</Option>
                       <Option value="relative">Relative</Option>
-                      <Option value="all">All</Option>
                       <Option value="same">Same</Option>
                     </Select>
                   </Form.Item>

@@ -13,10 +13,7 @@ import {
   Space,
   Divider,
 } from "antd";
-import {
-  SaveOutlined,
-  ArrowLeftOutlined,
-} from "@ant-design/icons";
+import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
   useGetClientsQuery,
@@ -39,12 +36,13 @@ const EditRequisition = () => {
   const { data: clientData } = useGetClientsQuery();
   const { data: projectData } = useGetProjectsQuery();
   const { data: recruiterData } = useGetAllRecruitersQuery();
-  const { data: requisitionData, isLoading, refetch } = useGetRequisitionsByIdQuery(
-    requisitionId,
-    {
-      skip: !requisitionId,
-    }
-  );
+  const {
+    data: requisitionData,
+    isLoading,
+    refetch,
+  } = useGetRequisitionsByIdQuery(requisitionId, {
+    skip: !requisitionId,
+  });
   const [updateRequisition] = useEditRequisitionMutation();
 
   const projects =
@@ -258,7 +256,10 @@ const EditRequisition = () => {
                     label="Approval Recruiter"
                     name="approvalRecruiter"
                     rules={[
-                      { required: true, message: "Please select an approval recruiter" },
+                      {
+                        required: true,
+                        message: "Please select an approval recruiter",
+                      },
                     ]}
                   >
                     <Select placeholder="Select recruiter for approval">
@@ -508,6 +509,7 @@ const EditRequisition = () => {
                         message: "Please select visa category type",
                       },
                     ]}
+                    initialValue="any"
                   >
                     <Select
                       placeholder="Select visa category type"
@@ -515,7 +517,6 @@ const EditRequisition = () => {
                     >
                       <Option value="any">Any</Option>
                       <Option value="relative">Relative</Option>
-                      <Option value="all">All</Option>
                       <Option value="same">Same</Option>
                     </Select>
                   </Form.Item>
