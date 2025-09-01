@@ -19,7 +19,11 @@ import {
   useGetClientsQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
-import { countryMobileLimits, phoneUtils, countryInfo } from "../../utils/countryMobileLimits.js";
+import {
+  countryMobileLimits,
+  phoneUtils,
+  countryInfo,
+} from "../../utils/countryMobileLimits.js";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -32,7 +36,7 @@ const CandidateFormModal = ({
   editingCandidate,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
-  const [selectedCountryCode, setSelectedCountryCode] = useState("91"); 
+  const [selectedCountryCode, setSelectedCountryCode] = useState("91");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
@@ -51,39 +55,47 @@ const CandidateFormModal = ({
   const isLoading = isAdding || isEditing;
 
   const parsePhoneNumber = (fullPhone) => {
-    if (!fullPhone || !fullPhone.startsWith('+')) {
+    if (!fullPhone || !fullPhone.startsWith("+")) {
       return { countryCode: "91", phoneNumber: fullPhone || "" };
     }
-    
+
     const phoneWithoutPlus = fullPhone.substring(1);
-    const supportedCodes = phoneUtils.getSupportedCountryCodes().sort((a, b) => b.length - a.length);
-    
+    const supportedCodes = phoneUtils
+      .getSupportedCountryCodes()
+      .sort((a, b) => b.length - a.length);
+
     for (const code of supportedCodes) {
       if (phoneWithoutPlus.startsWith(code)) {
         return {
           countryCode: code,
-          phoneNumber: phoneWithoutPlus.substring(code.length)
+          phoneNumber: phoneWithoutPlus.substring(code.length),
         };
       }
     }
-    
+
     return { countryCode: "91", phoneNumber: phoneWithoutPlus };
   };
 
   useEffect(() => {
     if (visible) {
       if (isEditMode && editingCandidate) {
-        const [firstName, ...lastNameParts] =
-          editingCandidate.fullName.split(" ");
-        const lastName = lastNameParts.join(" ");
+        const nameParts = editingCandidate.fullName.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName =
+          nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+        const middleName =
+          nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
 
-        const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(editingCandidate.phone);
+        const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(
+          editingCandidate.phone
+        );
         setSelectedCountryCode(countryCode);
         setPhoneNumber(parsedPhone);
 
         form.setFieldsValue({
-          firstName: firstName || "",
-          lastName: lastName || "",
+          firstName: firstName,
+          middleName: middleName,
+          lastName: lastName,
           email: editingCandidate.email || "",
           countryCode: countryCode,
           phoneNumber: parsedPhone,
@@ -96,7 +108,7 @@ const CandidateFormModal = ({
         });
       } else {
         form.resetFields();
-        setSelectedCountryCode("91"); 
+        setSelectedCountryCode("91");
         setPhoneNumber("");
         form.setFieldsValue({
           countryCode: "91",
@@ -107,14 +119,32 @@ const CandidateFormModal = ({
 
   const handleSubmit = async (values) => {
     try {
-      const { confirmPassword, firstName, lastName, countryCode, phoneNumber, ...payload } = values;
+      const {
+        confirmPassword,
+        firstName,
+        middleName,
+        lastName,
+        countryCode,
+        phoneNumber,
+        ...payload
+      } = values;
 
-      const fullName = `${firstName} ${lastName}`.trim();
-      const fullPhoneNumber = phoneUtils.formatWithCountryCode(countryCode, phoneNumber);
+      const fullName = [firstName, middleName, lastName]
+        .filter(Boolean)
+        .map((name) => name.trim())
+        .join(" ");
+
+      const fullPhoneNumber = phoneUtils.formatWithCountryCode(
+        countryCode,
+        phoneNumber
+      );
 
       if (isEditMode) {
         const editPayload = {
           ...payload,
+          firstName: firstName?.trim(),
+          middleName: middleName?.trim() || "",
+          lastName: lastName?.trim(),
           fullName,
           phone: fullPhoneNumber,
         };
@@ -134,6 +164,9 @@ const CandidateFormModal = ({
       } else {
         const createPayload = {
           ...payload,
+          firstName: firstName?.trim(),
+          middleName: middleName?.trim() || "",
+          lastName: lastName?.trim(),
           fullName,
           phone: fullPhoneNumber,
           role: "candidate",
@@ -187,13 +220,20 @@ const CandidateFormModal = ({
     }
 
     const cleanNumber = value.replace(/\D/g, "");
-    const isValid = phoneUtils.validateMobileNumber(selectedCountryCode, cleanNumber);
-    
+    const isValid = phoneUtils.validateMobileNumber(
+      selectedCountryCode,
+      cleanNumber
+    );
+
     if (!isValid) {
       const limits = phoneUtils.getLimits(selectedCountryCode);
       return Promise.reject(
         new Error(
-          `Phone number must be between ${limits.min} and ${limits.max} digits for ${countryInfo[selectedCountryCode]?.name || 'selected country'}`
+          `Phone number must be between ${limits.min} and ${
+            limits.max
+          } digits for ${
+            countryInfo[selectedCountryCode]?.name || "selected country"
+          }`
         )
       );
     }
@@ -204,7 +244,7 @@ const CandidateFormModal = ({
   const handlePhoneNumberChange = (e) => {
     const value = e.target.value;
     const cleanValue = value.replace(/\D/g, ""); // Remove non-digits
-    
+
     const limits = phoneUtils.getLimits(selectedCountryCode);
     if (limits && cleanValue.length <= limits.max) {
       setPhoneNumber(cleanValue);
@@ -215,18 +255,23 @@ const CandidateFormModal = ({
   const handleCountryCodeChange = (value) => {
     setSelectedCountryCode(value);
     // Re-validate phone number when country code changes
-    form.validateFields(['phoneNumber']);
+    form.validateFields(["phoneNumber"]);
   };
 
   const getCountryOptions = () => {
-    return phoneUtils.getSupportedCountryCodes().map(code => {
-      const country = countryInfo[code];
-      return {
-        value: code,
-        label: `${country?.flag || ''} ${country?.name || `Country ${code}`} (+${code})`,
-        searchText: `${country?.name || ''} ${code}`.toLowerCase(),
-      };
-    }).sort((a, b) => a.label.localeCompare(b.label));
+    return phoneUtils
+      .getSupportedCountryCodes()
+      .map((code) => {
+        const country = countryInfo[code];
+        return {
+          value: code,
+          label: `${country?.flag || ""} ${
+            country?.name || `Country ${code}`
+          } (+${code})`,
+          searchText: `${country?.name || ""} ${code}`.toLowerCase(),
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
   };
 
   const countryOptions = getCountryOptions();
@@ -274,7 +319,7 @@ const CandidateFormModal = ({
         style={{ padding: "16px 0" }}
       >
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               label="First Name"
               name="firstName"
@@ -283,7 +328,15 @@ const CandidateFormModal = ({
               <Input prefix={<UserOutlined />} placeholder="Enter first name" />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
+            <Form.Item label="Middle Name" name="middleName">
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="Enter middle name (optional)"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
             <Form.Item
               label="Last Name"
               name="lastName"
@@ -328,9 +381,9 @@ const CandidateFormModal = ({
                     }
                     style={{ width: "100%" }}
                   >
-                    {countryOptions.map(option => (
-                      <Option 
-                        key={option.value} 
+                    {countryOptions.map((option) => (
+                      <Option
+                        key={option.value}
                         value={option.value}
                         searchText={option.searchText}
                       >
@@ -346,10 +399,16 @@ const CandidateFormModal = ({
                 >
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder={`Enter ${phoneUtils.getLimits(selectedCountryCode)?.min || 0}-${phoneUtils.getLimits(selectedCountryCode)?.max || 0} digits`}
+                    placeholder={`Enter ${
+                      phoneUtils.getLimits(selectedCountryCode)?.min || 0
+                    }-${
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 0
+                    } digits`}
                     value={phoneNumber}
                     onChange={handlePhoneNumberChange}
-                    maxLength={phoneUtils.getLimits(selectedCountryCode)?.max || 15}
+                    maxLength={
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 15
+                    }
                   />
                 </Form.Item>
               </Input.Group>

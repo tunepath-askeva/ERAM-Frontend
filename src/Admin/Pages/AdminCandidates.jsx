@@ -391,19 +391,28 @@ const AdminCandidates = () => {
       let skippedRows = 0;
 
       parsedData.forEach((row) => {
-        const fullName =
-          row["Full Name"]?.trim() ||
-          [row["First Name"], row["Middle Name"], row["Last Name"]]
+        const firstName = row["First Name"]?.trim() || "";
+        const middleName = row["Middle Name"]?.trim() || "";
+        const lastName = row["Last Name"]?.trim() || "";
+
+        let fullName = "";
+        if (firstName || lastName) {
+          fullName = [firstName, middleName, lastName]
             .filter(Boolean)
-            .map((s) => s.trim())
             .join(" ");
+        } else {
+          fullName = row["Full Name"]?.trim() || "";
+        }
 
         const email = row["Email"]?.trim();
         const password = row["Password"]?.trim();
 
         if (fullName && email && password) {
           candidates.push({
-            fullName: fullName || "",
+            firstName: firstName,
+            middleName: middleName,
+            lastName: lastName,
+            fullName: fullName,
             email: email?.toLowerCase() || "",
             phone: row["Phone"]?.trim() || "",
             password: password || "",
@@ -1049,7 +1058,7 @@ const AdminCandidates = () => {
             <ul style={{ paddingLeft: "20px", margin: 0 }}>
               <li>Maximum file size: 5MB</li>
               <li>Supported formats: .csv only</li>
-              <li>Required columns: Full Name, Email, Password</li>
+              <li>Required columns:First Name OR Full Name, Email, Password</li>
               <li>
                 Optional columns: Phone, Company Name, Specialization,
                 Qualifications
@@ -1063,6 +1072,9 @@ const AdminCandidates = () => {
               icon={<DownloadOutlined />}
               onClick={() => {
                 const headers = [
+                  "First Name",
+                  "Middle Name",
+                  "Last Name",
                   "Full Name",
                   "Email",
                   "Phone",
@@ -1073,7 +1085,10 @@ const AdminCandidates = () => {
                 ];
 
                 const sampleRow = [
-                  "John Doe",
+                  "John",
+                  "Michael",
+                  "Doe",
+                  "John Michael Doe",
                   "john.doe@example.com",
                   "9876543210",
                   "password123",
