@@ -61,23 +61,22 @@ const { Option } = Select;
 
 const initialFilters = {
   keywords: "",
-  experience: [0, 20],
+  experience: ["", ""],
   qualifications: [],
   skills: [],
   location: "",
   company: "",
-  salary: [0, 2000000],
+  salary: ["", ""],
   jobRoles: [],
   industries: [],
   gender: null,
   nationality: null,
-  ageRange: [18, 70],
+  ageRange: ["", ""],
   noticePeriod: null,
   profileUpdated: null,
   visaStatus: null,
   languages: [],
 };
-
 const locationOptions = [
   { value: "Dubai" },
   { value: "Abu Dhabi" },
@@ -275,7 +274,6 @@ const SourcedCandidates = ({ jobId }) => {
     isLoading: isExactMatchLoading,
     error: exactMatchError,
     refetch: refetchExactMatch,
-    
   } = useGetExactMatchCandidatesQuery(jobId, {
     page: pagination.current,
     limit: pagination.pageSize,
@@ -377,12 +375,18 @@ const SourcedCandidates = ({ jobId }) => {
         }
 
         // Experience filter
-        const experience = candidate.totalExperienceYears || 0;
-        if (
-          experience < filters.experience[0] ||
-          experience > filters.experience[1]
-        ) {
-          return false;
+        if (filters.experience[0].trim() || filters.experience[1].trim()) {
+          const experience = candidate.totalExperienceYears || 0;
+          const minExp = filters.experience[0].trim()
+            ? parseFloat(filters.experience[0])
+            : 0;
+          const maxExp = filters.experience[1].trim()
+            ? parseFloat(filters.experience[1])
+            : Infinity;
+
+          if (experience < minExp || experience > maxExp) {
+            return false;
+          }
         }
 
         // Location filter
@@ -468,13 +472,19 @@ const SourcedCandidates = ({ jobId }) => {
         }
 
         // Salary filter
-        const candidateSalary =
-          candidate.expectedSalary || candidate.currentSalary || 0;
-        if (
-          candidateSalary < filters.salary[0] ||
-          candidateSalary > filters.salary[1]
-        ) {
-          return false;
+        if (filters.salary[0].trim() || filters.salary[1].trim()) {
+          const candidateSalary =
+            candidate.expectedSalary || candidate.currentSalary || 0;
+          const minSalary = filters.salary[0].trim()
+            ? parseFloat(filters.salary[0])
+            : 0;
+          const maxSalary = filters.salary[1].trim()
+            ? parseFloat(filters.salary[1])
+            : Infinity;
+
+          if (candidateSalary < minSalary || candidateSalary > maxSalary) {
+            return false;
+          }
         }
 
         // Gender filter
@@ -491,12 +501,18 @@ const SourcedCandidates = ({ jobId }) => {
         }
 
         // Age filter
-        if (candidate.age) {
-          if (
-            candidate.age < filters.ageRange[0] ||
-            candidate.age > filters.ageRange[1]
-          ) {
-            return false;
+        if (filters.ageRange[0].trim() || filters.ageRange[1].trim()) {
+          if (candidate.age) {
+            const minAge = filters.ageRange[0].trim()
+              ? parseFloat(filters.ageRange[0])
+              : 0;
+            const maxAge = filters.ageRange[1].trim()
+              ? parseFloat(filters.ageRange[1])
+              : Infinity;
+
+            if (candidate.age < minAge || candidate.age > maxAge) {
+              return false;
+            }
           }
         }
 
@@ -623,12 +639,12 @@ const SourcedCandidates = ({ jobId }) => {
       filters.jobRoles.length > 0 ||
       filters.industries.length > 0 ||
       filters.languages.length > 0 ||
-      filters.experience[0] > 0 ||
-      filters.experience[1] < 20 ||
-      filters.salary[0] > 0 ||
-      filters.salary[1] < 2000000 ||
-      filters.ageRange[0] > 18 ||
-      filters.ageRange[1] < 70 ||
+      filters.experience[0].trim() ||
+      filters.experience[1].trim() ||
+      filters.salary[0].trim() ||
+      filters.salary[1].trim() ||
+      filters.ageRange[0].trim() ||
+      filters.ageRange[1].trim() ||
       filters.gender ||
       filters.nationality ||
       filters.noticePeriod ||
@@ -719,17 +735,20 @@ const SourcedCandidates = ({ jobId }) => {
       params.languages = tempFilters.languages.join(",");
 
     // Range filters - send min and max separately
-    if (tempFilters.experience[0] > 0)
+    if (tempFilters.experience[0]?.toString().trim())
       params.experienceMin = tempFilters.experience[0];
-    if (tempFilters.experience[1] < 20)
+    if (tempFilters.experience[1]?.toString().trim())
       params.experienceMax = tempFilters.experience[1];
 
-    if (tempFilters.salary[0] > 0) params.salaryMin = tempFilters.salary[0];
-    if (tempFilters.salary[1] < 2000000)
+    if (tempFilters.salary[0]?.toString().trim())
+      params.salaryMin = tempFilters.salary[0];
+    if (tempFilters.salary[1]?.toString().trim())
       params.salaryMax = tempFilters.salary[1];
 
-    if (tempFilters.ageRange[0] > 18) params.ageMin = tempFilters.ageRange[0];
-    if (tempFilters.ageRange[1] < 70) params.ageMax = tempFilters.ageRange[1];
+    if (tempFilters.ageRange[0]?.toString().trim())
+      params.ageMin = tempFilters.ageRange[0];
+    if (tempFilters.ageRange[1]?.toString().trim())
+      params.ageMax = tempFilters.ageRange[1];
 
     // Single value filters
     if (tempFilters.gender) params.gender = tempFilters.gender;
@@ -791,10 +810,13 @@ const SourcedCandidates = ({ jobId }) => {
         clearedFilters.company = "";
         break;
       case "experience":
-        clearedFilters.experience = [0, 20];
+        clearedFilters.experience = ["", ""];
         break;
       case "salary":
-        clearedFilters.salary = [0, 2000000];
+        clearedFilters.salary = ["", ""];
+        break;
+      case "ageRange":
+        clearedFilters.ageRange = ["", ""];
         break;
       case "qualifications":
         clearedFilters.qualifications = [];
@@ -1141,12 +1163,37 @@ const SourcedCandidates = ({ jobId }) => {
             >
               Suggestion Match
             </Button>
-            <Button
+            {/* <Button
               type="default"
               onClick={() => setIsWorkOrderModalVisible(true)}
               style={{ backgroundColor: "#1890ff", color: "#fff" }}
             >
               Current Work Order Filter
+            </Button> */}
+
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={showFilterModal}
+              style={{ backgroundColor: "#da2c46" }}
+            >
+             Primary Filter
+              {hasActiveFilters && !isExactMatch && (
+                <Badge
+                  count={
+                    Object.values(filters).filter((val) =>
+                      Array.isArray(val)
+                        ? val.length > 0
+                        : typeof val === "string"
+                        ? val.trim()
+                        : typeof val === "number"
+                        ? false
+                        : val !== null
+                    ).length
+                  }
+                  size="small"
+                />
+              )}
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -1262,9 +1309,8 @@ const SourcedCandidates = ({ jobId }) => {
                           <ToolOutlined /> {filters.jobRoles.join(", ")}
                         </Tag>
                       )}
-
-                      {(filters.experience[0] > 0 ||
-                        filters.experience[1] < 20) && (
+                      {(filters.experience[0].trim() ||
+                        filters.experience[1].trim()) && (
                         <Tag
                           color="red"
                           closable
@@ -1272,24 +1318,35 @@ const SourcedCandidates = ({ jobId }) => {
                             handleClearSpecificFilter("experience")
                           }
                         >
-                          Exp: {filters.experience[0]}-{filters.experience[1]}{" "}
-                          years
+                          Exp: {filters.experience[0] || "0"}-
+                          {filters.experience[1] || "∞"} years
                         </Tag>
                       )}
 
-                      {(filters.salary[0] > 0 ||
-                        filters.salary[1] < 2000000) && (
+                      {(filters.salary[0].trim() ||
+                        filters.salary[1].trim()) && (
                         <Tag
                           color="gold"
                           closable
                           onClose={() => handleClearSpecificFilter("salary")}
                         >
-                          <DollarOutlined /> ₹
-                          {(filters.salary[0] / 100000).toFixed(1)}L-₹
-                          {(filters.salary[1] / 100000).toFixed(1)}L
+                          <DollarOutlined /> SAR
+                          {filters.salary[0] || "0"} - SAR{" "}
+                          {filters.salary[1] || "∞"}
                         </Tag>
                       )}
 
+                      {(filters.ageRange[0].trim() ||
+                        filters.ageRange[1].trim()) && (
+                        <Tag
+                          color="cyan"
+                          closable
+                          onClose={() => handleClearSpecificFilter("ageRange")}
+                        >
+                          Age: {filters.ageRange[0] || "0"}-
+                          {filters.ageRange[1] || "∞"}
+                        </Tag>
+                      )}
                       {filters.industries.length > 0 && (
                         <Tag
                           color="geekblue"
@@ -1606,50 +1663,83 @@ const SourcedCandidates = ({ jobId }) => {
 
           <Row gutter={[16, 16]}>
             <Col span={12}>
-              <Form.Item label="Experience (Years)">
-                <Slider
-                  range
-                  min={0}
-                  max={30}
-                  value={tempFilters.experience}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({ ...prev, experience: value }))
-                  }
-                  marks={{
-                    0: "0",
-                    5: "5",
-                    10: "10",
-                    15: "15",
-                    20: "20",
-                    25: "25",
-                    30: "30+",
-                  }}
-                />
+              <Form.Item label="Experience Range (Years)">
+                <Input.Group compact>
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Min"
+                    value={tempFilters.experience[0]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        experience: [e.target.value, prev.experience[1]],
+                      }))
+                    }
+                  />
+                  <Input
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      backgroundColor: "#fafafa",
+                    }}
+                    placeholder="~"
+                    disabled
+                  />
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Max"
+                    value={tempFilters.experience[1]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        experience: [prev.experience[0], e.target.value],
+                      }))
+                    }
+                  />
+                </Input.Group>
               </Form.Item>
             </Col>
+
             <Col span={12}>
               <Form.Item
-                label="Annual Salary Range (₹)"
-                extra="Annual salary in rupees (L = lakhs)"
+                label="Annual Salary Range (SAR)"
+                extra="Annual salary"
               >
-                <Slider
-                  range
-                  min={0}
-                  max={2000000}
-                  step={50000}
-                  value={tempFilters.salary}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({ ...prev, salary: value }))
-                  }
-                  marks={{
-                    0: "0",
-                    500000: "5L",
-                    1000000: "10L",
-                    1500000: "15L",
-                    2000000: "20L+",
-                  }}
-                  tipFormatter={(value) => `${value / 100000}L`}
-                />
+                <Input.Group compact>
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Min"
+                    value={tempFilters.salary[0]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        salary: [e.target.value, prev.salary[1]],
+                      }))
+                    }
+                  />
+                  <Input
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      backgroundColor: "#fafafa",
+                    }}
+                    placeholder="~"
+                    disabled
+                  />
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Max"
+                    value={tempFilters.salary[1]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        salary: [prev.salary[0], e.target.value],
+                      }))
+                    }
+                  />
+                </Input.Group>
               </Form.Item>
             </Col>
           </Row>
@@ -1789,23 +1879,40 @@ const SourcedCandidates = ({ jobId }) => {
             </Col>
             <Col span={8}>
               <Form.Item label="Age Range">
-                <Slider
-                  range
-                  min={18}
-                  max={70}
-                  value={tempFilters.ageRange}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({ ...prev, ageRange: value }))
-                  }
-                  marks={{
-                    18: "18",
-                    25: "25",
-                    35: "35",
-                    45: "45",
-                    55: "55",
-                    70: "70+",
-                  }}
-                />
+                <Input.Group compact>
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Min"
+                    value={tempFilters.ageRange[0]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        ageRange: [e.target.value, prev.ageRange[1]],
+                      }))
+                    }
+                  />
+                  <Input
+                    style={{
+                      width: "10%",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      backgroundColor: "#fafafa",
+                    }}
+                    placeholder="~"
+                    disabled
+                  />
+                  <Input
+                    style={{ width: "45%" }}
+                    placeholder="Max"
+                    value={tempFilters.ageRange[1]}
+                    onChange={(e) =>
+                      setTempFilters((prev) => ({
+                        ...prev,
+                        ageRange: [prev.ageRange[0], e.target.value],
+                      }))
+                    }
+                  />
+                </Input.Group>
               </Form.Item>
             </Col>
           </Row>

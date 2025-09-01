@@ -17,7 +17,13 @@ import {
   PlusOutlined,
   LockOutlined,
   EyeOutlined,
+  PhoneOutlined,
 } from "@ant-design/icons";
+import {
+  countryMobileLimits,
+  phoneUtils,
+  countryInfo,
+} from "../../utils/countryMobileLimits.js";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -27,13 +33,24 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
   const [loading, setLoading] = useState(false);
   const [skills, setSkills] = useState([]);
   const [newSkill, setNewSkill] = useState("");
+  const [selectedCountryCode, setSelectedCountryCode] = useState("91");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   useEffect(() => {
     if (candidate && visible) {
+      const { countryCode, phoneNumber: parsedPhone } = parsePhoneNumber(
+        candidate.phone
+      );
+      setSelectedCountryCode(countryCode);
+      setPhoneNumber(parsedPhone);
+
       form.setFieldsValue({
-        fullName: candidate.fullName,
+        // fullName: candidate.fullName,
+        firstName: candidate.firstName,
+        lastName: candidate.lastName,
         email: candidate.email,
-        phone: candidate.phone,
+        countryCode,
+        phoneNumber: parsedPhone,
         title: candidate.title,
         location: candidate.location,
         totalExperienceYears: candidate.totalExperienceYears,
@@ -45,6 +62,84 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
       setSkills(candidate.skills || []);
     }
   }, [candidate, visible, form]);
+
+  const parsePhoneNumber = (fullPhone) => {
+    if (!fullPhone || !fullPhone.startsWith("+")) {
+      return { countryCode: "91", phoneNumber: fullPhone || "" };
+    }
+
+    const phoneWithoutPlus = fullPhone.substring(1);
+    const supportedCodes = phoneUtils
+      .getSupportedCountryCodes()
+      .sort((a, b) => b.length - a.length);
+
+    for (const code of supportedCodes) {
+      if (phoneWithoutPlus.startsWith(code)) {
+        return {
+          countryCode: code,
+          phoneNumber: phoneWithoutPlus.substring(code.length),
+        };
+      }
+    }
+
+    return { countryCode: "91", phoneNumber: phoneWithoutPlus };
+  };
+
+  const handlePhoneNumberChange = (e) => {
+    const value = e.target.value;
+    const cleanValue = value.replace(/\D/g, "");
+    const limits = phoneUtils.getLimits(selectedCountryCode);
+    if (limits && cleanValue.length <= limits.max) {
+      setPhoneNumber(cleanValue);
+      form.setFieldsValue({ phoneNumber: cleanValue });
+    }
+  };
+
+  const handleCountryCodeChange = (value) => {
+    setSelectedCountryCode(value);
+    form.validateFields(["phoneNumber"]);
+  };
+
+  const validatePhoneNumber = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error("Please enter phone number"));
+    }
+    const cleanNumber = value.replace(/\D/g, "");
+    const isValid = phoneUtils.validateMobileNumber(
+      selectedCountryCode,
+      cleanNumber
+    );
+    if (!isValid) {
+      const limits = phoneUtils.getLimits(selectedCountryCode);
+      return Promise.reject(
+        new Error(
+          `Phone number must be between ${limits.min} and ${
+            limits.max
+          } digits for ${
+            countryInfo[selectedCountryCode]?.name || "selected country"
+          }`
+        )
+      );
+    }
+    return Promise.resolve();
+  };
+
+  const getCountryOptions = () => {
+    return phoneUtils
+      .getSupportedCountryCodes()
+      .map((code) => {
+        const country = countryInfo[code];
+        return {
+          value: code,
+          label: `${country?.flag || ""} ${
+            country?.name || `Country ${code}`
+          } (+${code})`,
+          searchText: `${country?.name || ""} ${code}`.toLowerCase(),
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  };
+  const countryOptions = getCountryOptions();
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -119,16 +214,25 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
     >
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
-              name="fullName"
-              label="Full Name"
-              rules={[{ required: true, message: "Please enter full name" }]}
+              name="firstName"
+              label="First Name"
+              rules={[{ required: true, message: "Please enter first name" }]}
             >
               <Input />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
+            <Form.Item
+              name="lastName"
+              label="Last Name"
+              rules={[{ required: true, message: "Please enter last name" }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
             <Form.Item
               name="email"
               label="Email"
@@ -142,14 +246,68 @@ const CandidateEditModal = ({ visible, onCancel, onSubmit, candidate }) => {
           </Col>
         </Row>
 
-        <Row gutter={16}>
+        {/* <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="phone"
-              label="Phone"
-              rules={[{ required: true, message: "Please enter phone number" }]}
+              name="fullName"
+              label="Full Name"
+              rules={[{ required: true, message: "Please enter full name" }]}
             >
               <Input />
+            </Form.Item>
+          </Col>
+        </Row> */}
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
+              <Input.Group compact>
+                <Form.Item
+                  name="countryCode"
+                  style={{ width: "40%" }}
+                  rules={[{ required: true, message: "Select country" }]}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Country"
+                    value={selectedCountryCode}
+                    onChange={handleCountryCodeChange}
+                    filterOption={(input, option) =>
+                      option.searchText?.includes(input.toLowerCase())
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    {countryOptions.map((option) => (
+                      <Option
+                        key={option.value}
+                        value={option.value}
+                        searchText={option.searchText}
+                      >
+                        {option.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="phoneNumber"
+                  style={{ width: "60%" }}
+                  rules={[{ validator: validatePhoneNumber }]}
+                >
+                  <Input
+                    prefix={<PhoneOutlined />}
+                    placeholder={`Enter ${
+                      phoneUtils.getLimits(selectedCountryCode)?.min || 0
+                    }-${
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 0
+                    } digits`}
+                    value={phoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    maxLength={
+                      phoneUtils.getLimits(selectedCountryCode)?.max || 15
+                    }
+                  />
+                </Form.Item>
+              </Input.Group>
             </Form.Item>
           </Col>
           <Col span={12}>
