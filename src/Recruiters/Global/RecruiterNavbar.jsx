@@ -155,9 +155,10 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   });
   const [page, setPage] = useState(1);
 
-  const { data: notifications, refetch: refetchNotifications } =
-    useGetRecruiterNotificationQuery();
+  const { data: notificationData, refetch: refetchNotifications } =
+    useGetRecruiterNotificationQuery({ page: 1, limit: 50 });
 
+  console.log(notificationData, "NOT DATA");
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
   const [markAllAsRead, { isLoading: markingAllRead }] =
@@ -261,9 +262,11 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   }, []);
 
   const combinedNotifications = [
-    ...(notifications?.notifications || []), // ✅ plural
+    ...(notificationData?.notifications || []), // ✅ plural
     ...notificationList,
   ];
+
+  console.log(combinedNotifications, "NOTIFY");
 
   const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
 
@@ -272,7 +275,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notifications?.some((n) => n._id === id)) {
+      if (notificationData?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -296,7 +299,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
   const handleDeleteNotification = (id) => {
     // Update local state
-    if (notifications?.notifications?.some((n) => n._id === id)) {
+    if (notificationData?.notifications?.some((n) => n._id === id)) {
       // This is from API data
       // In a real app, you would make an API call here to delete
       refetchNotifications();
@@ -313,7 +316,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       await markAsReadById(id).unwrap();
 
       // Update local state
-      if (notifications?.notifications?.some((n) => n._id === id)) {
+      if (notificationData?.notifications?.some((n) => n._id === id)) {
         refetchNotifications();
       } else {
         setNotificationList((prev) =>
@@ -779,7 +782,9 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           >
             <Button
               type="text"
-              onClick={() => navigate("/recruiter/notifications")}
+              onClick={() => {
+                navigate("/recruiter/notifications");
+              }}
               style={{
                 color: "#da2c46",
                 fontWeight: 500,
