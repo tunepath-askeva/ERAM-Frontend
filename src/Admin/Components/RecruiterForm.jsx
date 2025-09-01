@@ -12,6 +12,7 @@ import {
   Select,
   Checkbox,
   Button,
+  Divider,
 } from "antd";
 import {
   UserOutlined,
@@ -26,6 +27,11 @@ import {
   StarOutlined,
   ToolOutlined,
   CheckCircleOutlined,
+  DashboardOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  FileTextOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import {
   useCreateRecruiterMutation,
@@ -51,60 +57,91 @@ const recruiterTypes = [
   "Sales",
 ];
 
-const accessPermissions = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "jobs", label: "Jobs" },
-  { key: "jobs-timeline", label: "Jobs Timeline" },
-  { key: "candidates", label: "Candidates" },
-  { key: "interviews", label: "Assgined Interviews" },
-  { key: "completed-candidates", label: "Completed Candidates" },
-  { key: "all-candidates", label: "All Candidates" },
-  { key: "staged-candidates", label: "Staged Candidates" },
-  { key: "approvals", label: "Approvals" },
-  { key: "employees", label: "Employees" },
-  { key: "requisition", label: "Requisition" },
-  { key: "edit-job", label: "Edit Job" },
-  { key: "edit-candidate-details", label: "Edit Candidate" },
-  { key: "deactivate-job", label: "Deactivate/Activate Job" },
-  { key: "view-job-sourced", label: "View Sourced Candidates" },
-  { key: "view-job-selected", label: "View Selected Candidates" },
-  { key: "view-job-applied", label: "View Applied Candidates" },
-  { key: "view-job-declined", label: "View Declined Candidates" },
-  { key: "view-job-pending", label: "View Pending Candidates" },
-  { key: "view-job-screening", label: "View Screening Candidates" },
-  { key: "view-job-status", label: "View Work Order Status" },
-
-  { key: "view-candidates", label: "View Candidates" },
-  { key: "add-candidate", label: "Add Candidate" },
-  { key: "bulk-upload", label: "Bulk Upload Candidates" },
-
-  { key: "download-documents", label: "Download Documents" },
-  { key: "send-messages", label: "Send Messages" },
-  { key: "view-profile", label: "View Candidate Profile" },
-
-  { key: "move-to-interview", label: "Move to Interview" },
-  { key: "make-offer", label: "Make Offer" },
-  { key: "move-to-offer", label: "Move to offer" },
-  { key: "move-to-pipeline", label: "Move to Pipeline" },
-  { key: "convert-to-employee", label: "Convert to Employee" },
-  { key: "reject-candidate", label: "Reject Candidate" },
-
-  { key: "schedule-interview", label: "Schedule Interview" },
-  { key: "reschedule-interview", label: "Reschedule Interview" },
-  { key: "view-interviews", label: "View Interviews" },
-  { key: "change-interview-status", label: "Change Interview Status" },
-
-  { key: "view-all-tab", label: "View All Tab" },
-  { key: "view-completed-tab", label: "View Completed Tab" },
-  { key: "view-interview-tab", label: "View Interview Tab" },
-  { key: "view-offer-tab", label: "View Offer Tab" },
-  { key: "view-rejected-tab", label: "View Rejected Tab" },
-
-  { key: "view-overview-tab", label: "View Overview Tab" },
-  { key: "view-activity-tab", label: "View Activity Tab" },
-  { key: "view-documents-tab", label: "View Documents Tab" },
-
-  { key: "notify-candidate", label: "Notify Candidate" },
+// Grouped permissions for better organization
+const permissionGroups = [
+  {
+    title: "Side Navigation Tabs",
+    icon: <DashboardOutlined />,
+    permissions: [
+      { key: "dashboard", label: "Dashboard" },
+      { key: "jobs", label: "Jobs" },
+      { key: "jobs-timeline", label: "Jobs Timeline" },
+      { key: "all-candidates", label: "All Candidates" },
+      { key: "candidates", label: "Interview Candidates" },
+      { key: "interviews", label: "Assigned Interviews" },
+      { key: "staged-candidates", label: "Staged Candidates" },
+      { key: "completed-candidates", label: "Completed Candidates" },
+      { key: "approvals", label: "Approvals" },
+      { key: "employees", label: "Employees" },
+      { key: "notifications", label: "Notifications" },
+      { key: "requisition", label: "Requisition" },
+    ],
+  },
+  {
+    title: "Job Management",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "edit-job", label: "Edit Job" },
+      { key: "deactivate-job", label: "Deactivate/Activate Job" },
+      { key: "view-job-sourced", label: "View Sourced Candidates" },
+      { key: "view-job-selected", label: "View Selected Candidates" },
+      { key: "view-job-applied", label: "View Applied Candidates" },
+      { key: "view-job-declined", label: "View Declined Candidates" },
+      { key: "view-job-pending", label: "View Pending Candidates" },
+      { key: "view-job-screening", label: "View Screening Candidates" },
+      { key: "view-job-status", label: "View Work Order Status" },
+    ],
+  },
+  {
+    title: "Candidate Management",
+    icon: <TeamOutlined />,
+    permissions: [
+      { key: "view-candidates", label: "View Candidates" },
+      { key: "add-candidate", label: "Add Candidate" },
+      { key: "bulk-upload", label: "Bulk Upload Candidates" },
+      { key: "edit-candidate-details", label: "Edit Candidate" },
+      { key: "download-documents", label: "Download Documents" },
+      { key: "send-messages", label: "Send Messages" },
+      { key: "view-profile", label: "View Candidate Profile" },
+      { key: "notify-candidate", label: "Notify Candidate" },
+    ],
+  },
+  {
+    title: "Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [
+      { key: "move-to-interview", label: "Move to Interview" },
+      { key: "make-offer", label: "Make Offer" },
+      { key: "move-to-offer", label: "Move to Offer" },
+      { key: "move-to-pipeline", label: "Move to Pipeline" },
+      { key: "convert-to-employee", label: "Convert to Employee" },
+      { key: "reject-candidate", label: "Reject Candidate" },
+    ],
+  },
+  {
+    title: "Interview Management",
+    icon: <CalendarOutlined />,
+    permissions: [
+      { key: "schedule-interview", label: "Schedule Interview" },
+      { key: "reschedule-interview", label: "Reschedule Interview" },
+      { key: "view-interviews", label: "View Interviews" },
+      { key: "change-interview-status", label: "Change Interview Status" },
+    ],
+  },
+  {
+    title: "Tab Views",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "view-all-tab", label: "View All Tab" },
+      { key: "view-completed-tab", label: "View Completed Tab" },
+      { key: "view-interview-tab", label: "View Interview Tab" },
+      { key: "view-offer-tab", label: "View Offer Tab" },
+      { key: "view-rejected-tab", label: "View Rejected Tab" },
+      { key: "view-overview-tab", label: "View Overview Tab" },
+      { key: "view-activity-tab", label: "View Activity Tab" },
+      { key: "view-documents-tab", label: "View Documents Tab" },
+    ],
+  },
 ];
 
 const RecruiterForm = ({
@@ -176,7 +213,7 @@ const RecruiterForm = ({
         phoneno: values.phoneno,
         specialization: values.specialization,
         experience: values.experience,
-        recruiterType: values.recruiterType, // This will now be a string
+        recruiterType: values.recruiterType,
         permissions: Array.from(
           new Set([...(values.permissions || []), "notifications"])
         ),
@@ -248,10 +285,35 @@ const RecruiterForm = ({
 
   // Handle custom recruiter type selection
   const handleRecruiterTypeChange = (value) => {
-    // If the selected value is not in the current options, add it
     if (value && !dynamicRecruiterTypes.includes(value)) {
       setDynamicRecruiterTypes((prev) => [...prev, value]);
     }
+  };
+
+  // Handle group-level select all
+  const handleGroupSelectAll = (groupPermissions, checked) => {
+    const currentPermissions = form.getFieldValue("permissions") || [];
+    const groupKeys = groupPermissions.map((p) => p.key);
+
+    let newPermissions;
+    if (checked) {
+      // Add all group permissions
+      newPermissions = Array.from(
+        new Set([...currentPermissions, ...groupKeys])
+      );
+    } else {
+      // Remove all group permissions
+      newPermissions = currentPermissions.filter((p) => !groupKeys.includes(p));
+    }
+
+    form.setFieldsValue({ permissions: newPermissions });
+  };
+
+  // Check if all permissions in a group are selected
+  const isGroupFullySelected = (groupPermissions) => {
+    const currentPermissions = form.getFieldValue("permissions") || [];
+    const groupKeys = groupPermissions.map((p) => p.key);
+    return groupKeys.every((key) => currentPermissions.includes(key));
   };
 
   return (
@@ -271,7 +333,7 @@ const RecruiterForm = ({
         },
       }}
       confirmLoading={isLoading}
-      width={800}
+      width={1000}
       okText={mode === "add" ? "Create Recruiter" : "Update Recruiter"}
       cancelText="Cancel"
       destroyOnClose={true}
@@ -471,87 +533,89 @@ const RecruiterForm = ({
           </Row>
         </Card>
 
-        <Card
-          size="small"
-          title={
-            <Space>
-              <LockOutlined />
-              <span>Security</span>
-              {mode === "edit" && (
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    fontWeight: "normal",
-                  }}
+        {mode === "add" && (
+          <Card
+            size="small"
+            title={
+              <Space>
+                <LockOutlined />
+                <span>Security</span>
+                {mode === "edit" && (
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#666",
+                      fontWeight: "normal",
+                    }}
+                  >
+                    (Leave empty to keep current password)
+                  </span>
+                )}
+              </Space>
+            }
+            style={{ marginBottom: 16 }}
+          >
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Password"
+                  name="password"
+                  rules={[
+                    {
+                      required: mode === "add",
+                      message: "Please enter password",
+                    },
+                    {
+                      min: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                    {
+                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      message:
+                        "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+                    },
+                  ]}
+                  hasFeedback
                 >
-                  (Leave empty to keep current password)
-                </span>
-              )}
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Password"
-                name="password"
-                rules={[
-                  {
-                    required: mode === "add",
-                    message: "Please enter password",
-                  },
-                  {
-                    min: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                  {
-                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                    message:
-                      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-                  },
-                ]}
-                hasFeedback
-              >
-                <Input.Password
-                  placeholder={
-                    mode === "edit"
-                      ? "Enter new password (optional)"
-                      : "Enter password"
-                  }
-                  prefix={<LockOutlined />}
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Confirm Password"
-                name="confirmPassword"
-                dependencies={["password"]}
-                rules={[
-                  {
-                    required: mode === "add",
-                    message: "Please confirm password",
-                  },
-                  validateConfirmPassword,
-                ]}
-                hasFeedback
-              >
-                <Input.Password
-                  placeholder={
-                    mode === "edit"
-                      ? "Confirm new password"
-                      : "Confirm password"
-                  }
-                  prefix={<LockOutlined />}
-                  size="large"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
+                  <Input.Password
+                    placeholder={
+                      mode === "edit"
+                        ? "Enter new password (optional)"
+                        : "Enter password"
+                    }
+                    prefix={<LockOutlined />}
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  dependencies={["password"]}
+                  rules={[
+                    {
+                      required: mode === "add",
+                      message: "Please confirm password",
+                    },
+                    validateConfirmPassword,
+                  ]}
+                  hasFeedback
+                >
+                  <Input.Password
+                    placeholder={
+                      mode === "edit"
+                        ? "Confirm new password"
+                        : "Confirm password"
+                    }
+                    prefix={<LockOutlined />}
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+        )}
 
         <Card
           size="small"
@@ -563,26 +627,87 @@ const RecruiterForm = ({
                 type="link"
                 size="small"
                 onClick={() => {
-                  const allPermissions = accessPermissions.map((p) => p.key);
+                  const allPermissions = permissionGroups.flatMap((group) =>
+                    group.permissions.map((p) => p.key)
+                  );
                   form.setFieldsValue({ permissions: allPermissions });
                 }}
               >
                 Select All
               </Button>
+              <Button
+                type="link"
+                size="small"
+                style={{color: "#da2c46"}}
+                onClick={() => {
+                  form.setFieldsValue({ permissions: [] });
+                }}
+              >
+                Deselect All
+              </Button>
             </Space>
           }
         >
           <Form.Item name="permissions">
-            <Checkbox.Group style={{ width: "100%" }}>
-              <Row gutter={[16, 16]}>
-                {accessPermissions.map((permission) => (
-                  <Col span={8} key={permission.key}>
-                    <Checkbox value={permission.key}>
-                      {permission.label}
-                    </Checkbox>
-                  </Col>
-                ))}
-              </Row>
+            <Checkbox.Group style={{ width: "100%", color: "#da2c46" }}>
+              {permissionGroups.map((group, groupIndex) => (
+                <div key={group.title} style={{ marginBottom: 24 }}>
+                  <div
+                    style={{
+                      marginBottom: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Space>
+                      {group.icon}
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "14px",
+                          color: "#da2c46",
+                        }}
+                      >
+                        {group.title}
+                      </span>
+                    </Space>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => {
+                        const isFullySelected = isGroupFullySelected(
+                          group.permissions
+                        );
+                        handleGroupSelectAll(
+                          group.permissions,
+                          !isFullySelected
+                        );
+                      }}
+                      style={{ padding: 0, height: "auto" }}
+                    >
+                      {isGroupFullySelected(group.permissions)
+                        ? "Deselect All"
+                        : "Select All"}
+                    </Button>
+                  </div>
+                  <Row gutter={[12, 8]}>
+                    {group.permissions.map((permission) => (
+                      <Col span={8} key={permission.key}>
+                        <Checkbox
+                          value={permission.key}
+                          style={{ fontSize: "13px" }}
+                        >
+                          {permission.label}
+                        </Checkbox>
+                      </Col>
+                    ))}
+                  </Row>
+                  {groupIndex < permissionGroups.length - 1 && (
+                    <Divider style={{ margin: "16px 0 0 0" }} />
+                  )}
+                </div>
+              ))}
             </Checkbox.Group>
           </Form.Item>
         </Card>
