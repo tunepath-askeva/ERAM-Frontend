@@ -105,6 +105,8 @@ const CandidateFormModal = ({
           qualifications: editingCandidate.qualifications || "",
           supplierId: editingCandidate.supplierId || undefined,
           candidateType: editingCandidate.candidateType || "",
+          agency: editingCandidate.agency || "",
+          workorderhint: editingCandidate.workorderhint || "",
         });
       } else {
         form.resetFields();
@@ -441,6 +443,28 @@ const CandidateFormModal = ({
                 prefix={<StarOutlined />}
                 placeholder="e.g., React.js, Node.js, Python"
               />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Agency"
+              name="agency"
+              rules={[{ required: true, message: "Please enter agency name" }]}
+            >
+              <Input placeholder="Enter agency name" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Work Order Hint"
+              name="workorderhint"
+              rules={[
+                { required: true, message: "Please enter work order hint" },
+              ]}
+            >
+              <Input placeholder="eg. This candidate is for work order 1" />
             </Form.Item>
           </Col>
         </Row>
