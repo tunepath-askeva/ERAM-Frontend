@@ -83,6 +83,7 @@ import {
 import { useDispatch } from "react-redux";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import dayjs from "dayjs";
+import PhoneInput from "../Global/PhoneInput";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -563,11 +564,45 @@ const CandidateSettings = () => {
       const contactValues = await contactForm.validateFields();
       const preferencesValues = await preferencesForm.validateFields();
 
+      const combinePhoneNumbers = (values) => {
+        const result = { ...values };
+
+        // Handle main phone
+        if (values.phone && values.phoneCountryCode) {
+          result.phone = `+${values.phoneCountryCode}${values.phone}`;
+          delete result.phoneCountryCode;
+        }
+
+        // Handle emergency contacts
+        if (values.emergencyContactNo && values.emergencyContactNoCountryCode) {
+          result.emergencyContactNo = `+${values.emergencyContactNoCountryCode}${values.emergencyContactNo}`;
+          delete result.emergencyContactNoCountryCode;
+        }
+
+        if (
+          values.contactPersonMobile &&
+          values.contactPersonMobileCountryCode
+        ) {
+          result.contactPersonMobile = `+${values.contactPersonMobileCountryCode}${values.contactPersonMobile}`;
+          delete result.contactPersonMobileCountryCode;
+        }
+
+        if (
+          values.contactPersonHomeNo &&
+          values.contactPersonHomeNoCountryCode
+        ) {
+          result.contactPersonHomeNo = `+${values.contactPersonHomeNoCountryCode}${values.contactPersonHomeNo}`;
+          delete result.contactPersonHomeNoCountryCode;
+        }
+
+        return result;
+      };
+
       const allValues = {
-        ...profileValues,
-        ...personalValues,
-        ...addressValues,
-        ...contactValues,
+        ...combinePhoneNumbers(profileValues),
+        ...combinePhoneNumbers(personalValues),
+        ...combinePhoneNumbers(addressValues),
+        ...combinePhoneNumbers(contactValues),
         jobPreferences: preferencesValues,
         socialLinks: profileValues.socialLinks || userData.socialLinks,
         lastUpdated: new Date().toISOString(),
@@ -1083,22 +1118,13 @@ const CandidateSettings = () => {
                 </Col>
 
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Phone"
+                  <PhoneInput
+                    form={profileForm}
                     name="phone"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter your phone number",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<PhoneOutlined />}
-                      placeholder="Enter phone number"
-                      disabled={!isProfileEditable}
-                    />
-                  </Form.Item>
+                    label="Phone"
+                    required={true}
+                    disabled={!isProfileEditable}
+                  />
                 </Col>
 
                 <Col xs={24} sm={12}>
@@ -1654,23 +1680,14 @@ const CandidateSettings = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Emergency Contact No"
+                <Col xs={24} sm={12}>
+                  <PhoneInput
+                    form={contactForm}
                     name="emergencyContactNo"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter emergency contact",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<PhoneOutlined />}
-                      placeholder="Enter emergency contact"
-                      disabled={!isProfileEditable}
-                    />
-                  </Form.Item>
+                    label="Emergency Contact No"
+                    required={true}
+                    disabled={!isProfileEditable}
+                  />
                 </Col>
 
                 <Col xs={24} sm={8}>
@@ -1941,29 +1958,23 @@ const CandidateSettings = () => {
                 </Col>
 
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Emergency Contact Mobile"
+                  <PhoneInput
+                    form={contactForm}
                     name="contactPersonMobile"
-                  >
-                    <Input
-                      prefix={<PhoneOutlined />}
-                      placeholder="Enter mobile number"
-                      disabled={!isProfileEditable}
-                    />
-                  </Form.Item>
+                    label="Emergency Contact Mobile"
+                    required={false}
+                    disabled={!isProfileEditable}
+                  />
                 </Col>
 
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Emergency Contact Home No"
+                  <PhoneInput
+                    form={contactForm}
                     name="contactPersonHomeNo"
-                  >
-                    <Input
-                      prefix={<PhoneOutlined />}
-                      placeholder="Enter home number"
-                      disabled={!isProfileEditable}
-                    />
-                  </Form.Item>
+                    label="Emergency Contact Home No"
+                    required={false}
+                    disabled={!isProfileEditable}
+                  />
                 </Col>
 
                 <Col xs={24} sm={12}>

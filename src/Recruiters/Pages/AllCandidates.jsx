@@ -43,6 +43,7 @@ import {
   useAddCandidateMutation,
   useBulkImportCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import { useNavigate } from "react-router-dom";
 
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import CandidateEditModal from "./CandidateEditModal";
@@ -73,6 +74,8 @@ const useDebounce = (value, delay) => {
 };
 
 function AllCandidates() {
+  const navigate = useNavigate();
+
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
@@ -187,6 +190,15 @@ function AllCandidates() {
     setCandidateToEdit(candidate);
     setEditModalVisible(true);
   }, []);
+
+  const handleEdit = useCallback(
+    (candidate) => {
+      navigate(`/recruiter/allcandidates/${candidate._id}`, {
+        state: { candidate },
+      });
+    },
+    [navigate]
+  );
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
@@ -347,7 +359,7 @@ function AllCandidates() {
             <Button
               size="small"
               icon={<EditOutlined />}
-              onClick={() => handleEditCandidate(record)}
+              onClick={() => handleEdit(record)}
             />
           )}
         </Space>

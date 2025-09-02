@@ -197,11 +197,40 @@ const phoneUtils = {
   },
 
   /**
-   * @param {string} countryCode - The country code to check
-   * @returns {boolean} - Whether the country code is supported
+   * @param {string} countryCode
+   * @returns {boolean} 
    */
   isCountryCodeSupported: function (countryCode) {
     return countryCode in countryMobileLimits;
+  },
+
+  parsePhoneNumber: (phoneString) => {
+    if (!phoneString) return { countryCode: null, phoneNumber: null };
+
+    const clean = phoneString.replace(/\D/g, ""); // remove non-digits
+    if (!clean) return { countryCode: null, phoneNumber: null };
+
+    const sortedCodes = Object.keys(countryMobileLimits).sort(
+      (a, b) => b.length - a.length
+    );
+
+    for (const code of sortedCodes) {
+      if (clean.startsWith(code)) {
+        return {
+          countryCode: code,
+          phoneNumber: clean.slice(code.length),
+        };
+      }
+    }
+
+    return {
+      countryCode: null,
+      phoneNumber: clean,
+    };
+  },
+
+  formatWithCountryCode: (countryCode, phoneNumber) => {
+    return `+${countryCode}${phoneNumber}`;
   },
 };
 
