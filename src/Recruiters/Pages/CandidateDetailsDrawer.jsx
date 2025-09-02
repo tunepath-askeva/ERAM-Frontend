@@ -17,6 +17,7 @@ import {
   message,
   Modal,
   Skeleton,
+  Input,
 } from "antd";
 import {
   UserOutlined,
@@ -43,9 +44,10 @@ const { TabPane } = Tabs;
 
 const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
   const [notifyModalVisible, setNotifyModalVisible] = useState(false);
+  const [remarks, setRemarks] = useState("");
 
   const { data, isLoading, error } = useGetAllcandidatebyIdQuery(candidateId, {
-    skip: !candidateId, // don’t fetch if no ID
+    skip: !candidateId,
   });
 
   const candidate = data?.candidateDetails;
@@ -95,10 +97,19 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
   };
 
   const confirmNotification = () => {
+    if (!remarks.trim()) {
+      message.warning("Please enter your remarks before sending.");
+      return;
+    }
+
+    // Here you’d call your API/mutation to actually send the notification
     message.success(
-      `Notification sent to ${candidate.fullName || candidate.firstName}`
+      `Notification sent to ${
+        candidate.fullName || candidate.firstName
+      } with remarks: "${remarks}"`
     );
     setNotifyModalVisible(false);
+    setRemarks(""); // reset
   };
 
   const getCompletionColor = (percentage) => {
@@ -764,36 +775,26 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
         onOk={confirmNotification}
         onCancel={() => setNotifyModalVisible(false)}
         okText="Send Notification"
+        okButtonProps={{
+          style: {
+            backgroundColor: "#da2c46",
+            borderColor: "#da2c46",
+            color: "#fff",
+          },
+        }}
         cancelText="Cancel"
       >
         <p>
-          Are you sure you want to notify{" "}
-          {candidate.fullName || candidate.firstName} to complete their profile?
-        </p>
-        <p>
-          This will send them an email notification reminding them to update
-          their profile information.
+          Send a notification to{" "}
+          <strong>{candidate.fullName || candidate.firstName}</strong>
         </p>
 
-        <div style={{ marginTop: 16 }}>
-          <Text strong>Missing Information:</Text>
-          <ul>
-            {!candidate.profileSummary && <li>Profile summary</li>}
-            {!candidate.nationality && <li>Nationality</li>}
-            {!candidate.countryOfBirth && <li>Country of birth</li>}
-            {!candidate.emergencyContactNo && <li>Emergency contact</li>}
-            {(!candidate.education || candidate.education.length === 0) && (
-              <li>Education details</li>
-            )}
-            {(!candidate.workExperience ||
-              candidate.workExperience.length === 0) && (
-              <li>Work experience</li>
-            )}
-            {(!candidate.skills || candidate.skills.length === 0) && (
-              <li>Skills</li>
-            )}
-          </ul>
-        </div>
+        <Input.TextArea
+          rows={4}
+          placeholder="Type your remarks or message here..."
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+        />
       </Modal>
     </>
   );
