@@ -653,7 +653,7 @@ const CandidateSettings = () => {
         "workExperience",
         JSON.stringify(userData.workExperience || [])
       );
-
+      // Build certificates array with title as fieldname and metadata
       const certificatesData = userData.certificates
         .filter((cert) => cert.certificateFile)
         .map((cert) => ({
@@ -661,26 +661,20 @@ const CandidateSettings = () => {
           originalname: cert.certificateFile.name,
           encoding: "7bit",
           mimetype: cert.certificateFile.type,
-          destination: "uploads/",
+          destination: "uploads/", // backend can update real path
           filename: cert.certificateFile.name.split(".")[0] + "_" + Date.now(),
           path: `uploads/${cert.certificateFile.name}`,
           size: cert.certificateFile.size,
-          file: cert.certificateFile, // Store the actual file object here
         }));
 
-      // Append the whole certificates array as JSON + files in same array
-      formData.append(
-        "certificates",
-        JSON.stringify(certificatesData, (key, value) => {
-          // Files can't be stringified, so remove the actual file object from JSON
-          if (key === "file") return undefined;
-          return value;
-        })
-      );
+      // Add certificates array as JSON
+      formData.append("certificates", JSON.stringify(certificatesData));
 
-      // Then append files in same certificates key as FormData
-      certificatesData.forEach((cert) => {
-        formData.append("certificates", cert.file, cert.originalname);
+      // Also append actual files so backend can save them
+      userData.certificates.forEach((cert) => {
+        if (cert.certificateFile) {
+          formData.append("certificates", cert.certificateFile);
+        }
       });
 
       // Handle image file
