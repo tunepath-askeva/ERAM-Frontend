@@ -214,7 +214,7 @@ const CandidateSettings = () => {
     expectedSalary: "",
     resume: "",
     resumeFile: null,
-    lastUpdated: "",
+    updatedAt: "",
     socialLinks: {
       linkedin: "",
       github: "",
@@ -376,7 +376,7 @@ const CandidateSettings = () => {
         resume: candidateData.resume || "",
         resumeUrl: candidateData.resumeUrl || "",
         resumeFile: null,
-        lastUpdated: candidateData.lastUpdated || "",
+        updatedAt: candidateData.updatedAt || "",
         socialLinks: candidateData.socialLinks || {
           linkedin: "",
           github: "",
@@ -605,7 +605,7 @@ const CandidateSettings = () => {
         ...combinePhoneNumbers(contactValues),
         jobPreferences: preferencesValues,
         socialLinks: profileValues.socialLinks || userData.socialLinks,
-        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       setLoading(true);
@@ -1360,7 +1360,10 @@ const CandidateSettings = () => {
 
                 <Col span={24}>
                   <Text type="secondary">
-                    Last updated: {userData.lastUpdated || "Not available"}
+                    Last updated:{" "}
+                    {userData.updatedAt
+                      ? dayjs(userData.updatedAt).format("MMM DD, YYYY")
+                      : "Not available"}
                   </Text>
                 </Col>
               </Row>

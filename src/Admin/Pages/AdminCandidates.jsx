@@ -65,7 +65,7 @@ import {
   useDisableCandidateStatusMutation,
 } from "../../Slices/Admin/AdminApis.js";
 import CandidateFormModal from "../Components/CandidateFormModal";
-import CandidateViewModal from "../Components/CandidateViewModal";
+import CandidateViewDrawer from "../Components/CandidateViewDrawer.jsx";
 import { useForm } from "antd/es/form/Form.js";
 
 const { Title, Text, Paragraph } = Typography;
@@ -78,7 +78,7 @@ const AdminCandidates = () => {
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [disableModalVisible, setDisableModalVisible] = useState(false);
   const [candidateToToggle, setCandidateToToggle] = useState(null);
-  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewDrawerVisible, setViewDrawerVisible] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [bulkImportVisible, setBulkImportVisible] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -92,6 +92,7 @@ const AdminCandidates = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [fetchingCandidateId, setFetchingCandidateId] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -114,12 +115,21 @@ const AdminCandidates = () => {
     pageSize: pageSize,
   });
 
+  const {
+    data: candidateDetailsById,
+    isLoading: isLoadingCandidate,
+    error: candidateError,
+  } = useGetCandidateByIdQuery(fetchingCandidateId, {
+    skip: !fetchingCandidateId,
+  });
+
   const [bulkImportCandidates] = useBulkImportCandidatesMutation();
   const [deleteCandidate, { isLoading: isDeleting }] =
     useDeleteCandidateMutation();
   const [toggleCandidateStatus] = useDisableCandidateStatusMutation();
 
   const candidates = candidatesResponse?.getCandidates || [];
+  const candidateDetails = candidateDetailsById?.candidate;
   const totalCount = candidatesResponse?.totalCount || 0;
   const totalPages = candidatesResponse?.totalPages || 0;
 
@@ -141,6 +151,21 @@ const AdminCandidates = () => {
       );
     }
   }, [isError, error]);
+
+  useEffect(() => {
+    if (candidateDetails && fetchingCandidateId) {
+      // Ensure candidateDetails has the required properties
+      const safeCandidate = {
+        ...candidateDetails,
+        fullName:
+          candidateDetails.fullName ||
+          candidateDetails.firstName ||
+          candidateDetails.lastName ||
+          "Unknown",
+      };
+      setEditingCandidate(safeCandidate);
+    }
+  }, [candidateDetails, fetchingCandidateId]);
 
   const showDisableModal = (candidate) => {
     setCandidateToToggle(candidate);
@@ -223,6 +248,7 @@ const AdminCandidates = () => {
   };
 
   const showEditModal = (candidate) => {
+    setFetchingCandidateId(candidate._id);
     setEditingCandidate(candidate);
     setCandidateModalVisible(true);
   };
@@ -230,16 +256,17 @@ const AdminCandidates = () => {
   const handleCandidateModalClose = () => {
     setCandidateModalVisible(false);
     setEditingCandidate(null);
+    setFetchingCandidateId(null);
     refetch();
   };
 
   const handleViewCandidate = (candidateId) => {
     setSelectedCandidateId(candidateId);
-    setViewModalVisible(true);
+    setViewDrawerVisible(true);
   };
 
-  const handleViewModalClose = () => {
-    setViewModalVisible(false);
+  const handleViewDrawerClose = () => {
+    setViewDrawerVisible(false);
     setSelectedCandidateId(null);
   };
 
@@ -869,11 +896,12 @@ const AdminCandidates = () => {
         onCancel={handleCandidateModalClose}
         form={form}
         editingCandidate={editingCandidate}
+        isLoadingCandidate={isLoadingCandidate}
       />
       {/* Candidate View Modal */}
-      <CandidateViewModal
-        visible={viewModalVisible}
-        onCancel={handleViewModalClose}
+      <CandidateViewDrawer
+        visible={viewDrawerVisible}
+        onClose={handleViewDrawerClose}
         candidateId={selectedCandidateId}
       />
 
@@ -1098,7 +1126,7 @@ const AdminCandidates = () => {
                   "React.js Developer",
                   "B.Tech in Computer Science",
                   "Demo",
-                  "This is demo work order candidate"
+                  "This is demo work order candidate",
                 ];
 
                 const csvContent =

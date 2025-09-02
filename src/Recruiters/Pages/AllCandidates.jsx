@@ -89,6 +89,7 @@ function AllCandidates() {
 
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [candidateToEdit, setCandidateToEdit] = useState(null);
   const [addCandidateModalVisible, setAddCandidateModalVisible] =
@@ -181,7 +182,7 @@ function AllCandidates() {
   }, []);
 
   const showCandidateDetails = useCallback((candidate) => {
-    setSelectedCandidate(candidate);
+    setSelectedCandidateId(candidate._id); // store only ID
     setDrawerVisible(true);
   }, []);
 
@@ -190,14 +191,9 @@ function AllCandidates() {
     setEditModalVisible(true);
   }, []);
 
-  const handleEdit = useCallback(
-    (candidate) => {
-      navigate(`/recruiter/allcandidates/${candidate._id}`, {
-        state: { candidate },
-      });
-    },
-    [navigate]
-  );
+  const handleEdit = useCallback((candidate) => {
+    navigate(`/recruiter/allcandidates/${candidate._id}`);
+  });
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
@@ -336,13 +332,16 @@ function AllCandidates() {
       dataIndex: "accountStatus",
       render: (status, record) => (
         <Space>
-          <Badge status={status === "active" ? "success" : "error"} />
-          <Tag color={record.candidateType === "Khafalath" ? "gold" : "green"}>
-            {record.candidateType}
-          </Tag>
+          <Tag color={status === "active" ? "green" : "red"}>{status}</Tag>
+          {record.candidateType && (
+            <Tag color={record.candidateType === "Khafalath" ? "gold" : "blue"}>
+              {record.candidateType}
+            </Tag>
+          )}
         </Space>
       ),
     },
+
     {
       title: "Actions",
       key: "actions",
@@ -478,7 +477,8 @@ function AllCandidates() {
             bordered
             loading={isLoading}
           />
-          <div style={{ marginTop: 16, textAlign: "right" }}>
+
+          <div style={{ marginTop: 16, marginBottom: 16, position: "center" }}>
             <Pagination
               current={currentPage}
               pageSize={pageSize}
@@ -498,7 +498,7 @@ function AllCandidates() {
       <CandidateDetailsDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
-        candidate={selectedCandidate}
+        candidateId={selectedCandidateId}
       />
 
       <AddCandidateModal

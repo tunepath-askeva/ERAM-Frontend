@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, Button, Row, Col, Select } from "antd";
+import { Modal, Form, Input, Button, Row, Col, Select, Spin } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -34,6 +34,7 @@ const CandidateFormModal = ({
   onSubmit,
   form,
   editingCandidate,
+  isLoadingCandidate = false,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
   const [selectedCountryCode, setSelectedCountryCode] = useState("91");
@@ -78,8 +79,10 @@ const CandidateFormModal = ({
 
   useEffect(() => {
     if (visible) {
-      if (isEditMode && editingCandidate) {
-        const nameParts = editingCandidate.fullName.split(" ");
+      if (isEditMode && editingCandidate && !isLoadingCandidate) {
+        // Add safety check for fullName
+        const fullName = editingCandidate.fullName || "";
+        const nameParts = fullName.split(" ");
         const firstName = nameParts[0] || "";
         const lastName =
           nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
@@ -103,12 +106,15 @@ const CandidateFormModal = ({
           specialization: editingCandidate.specialization || "",
           experience: editingCandidate.totalExperienceYears || "",
           qualifications: editingCandidate.qualifications || "",
-          supplierId: editingCandidate.supplierId || undefined,
+          supplierId:
+            editingCandidate.supplier ||
+            editingCandidate.supplierId ||
+            undefined,
           candidateType: editingCandidate.candidateType || "",
           agency: editingCandidate.agency || "",
           workorderhint: editingCandidate.workorderhint || "",
         });
-      } else {
+      } else if (!isEditMode) {
         form.resetFields();
         setSelectedCountryCode("91");
         setPhoneNumber("");
@@ -117,7 +123,7 @@ const CandidateFormModal = ({
         });
       }
     }
-  }, [visible, form, isEditMode, editingCandidate]);
+  }, [visible, form, isEditMode, editingCandidate, isLoadingCandidate]);
 
   const handleSubmit = async (values) => {
     try {
@@ -149,6 +155,7 @@ const CandidateFormModal = ({
           lastName: lastName?.trim(),
           fullName,
           phone: fullPhoneNumber,
+          supplier: payload.supplierId,
         };
 
         if (!payload.password) {
@@ -314,325 +321,344 @@ const CandidateFormModal = ({
         </Button>,
       ]}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        style={{ padding: "16px 0" }}
-      >
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
-              label="First Name"
-              name="firstName"
-              rules={[{ required: true, message: "Please enter first name" }]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Enter first name" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item label="Middle Name" name="middleName">
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Enter middle name (optional)"
-              />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item
-              label="Last Name"
-              name="lastName"
-              rules={[{ required: true, message: "Please enter last name" }]}
-            >
-              <Input prefix={<UserOutlined />} placeholder="Enter last name" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[
-                { required: true, message: "Please enter email" },
-                { type: "email", message: "Please enter valid email" },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined />}
-                placeholder="Enter email address"
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
-              <Input.Group compact>
-                <Form.Item
-                  name="countryCode"
-                  style={{ width: "40%" }}
-                  rules={[{ required: true, message: "Select country" }]}
-                >
-                  <Select
-                    showSearch
-                    placeholder="Country"
-                    value={selectedCountryCode}
-                    onChange={handleCountryCodeChange}
-                    filterOption={(input, option) =>
-                      option.searchText?.includes(input.toLowerCase())
-                    }
-                    style={{ width: "100%" }}
-                  >
-                    {countryOptions.map((option) => (
-                      <Option
-                        key={option.value}
-                        value={option.value}
-                        searchText={option.searchText}
-                      >
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  name="phoneNumber"
-                  style={{ width: "60%" }}
-                  rules={[{ validator: validatePhoneNumber }]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined />}
-                    placeholder={`Enter ${
-                      phoneUtils.getLimits(selectedCountryCode)?.min || 0
-                    }-${
-                      phoneUtils.getLimits(selectedCountryCode)?.max || 0
-                    } digits`}
-                    value={phoneNumber}
-                    onChange={handlePhoneNumberChange}
-                    maxLength={
-                      phoneUtils.getLimits(selectedCountryCode)?.max || 15
-                    }
-                  />
-                </Form.Item>
-              </Input.Group>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Company Name"
-              name="companyName"
-              rules={[{ required: true, message: "Please enter company name" }]}
-            >
-              <Input
-                prefix={<BankOutlined />}
-                placeholder="Enter current/previous company"
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Specialization"
-              name="specialization"
-              rules={[
-                { required: true, message: "Please enter specialization" },
-              ]}
-            >
-              <Input
-                prefix={<StarOutlined />}
-                placeholder="e.g., React.js, Node.js, Python"
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Agency"
-              name="agency"
-              rules={[{ required: true, message: "Please enter agency name" }]}
-            >
-              <Input placeholder="Enter agency name" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Work Order Hint"
-              name="workorderhint"
-              rules={[
-                { required: true, message: "Please enter work order hint" },
-              ]}
-            >
-              <Input placeholder="eg. This candidate is for work order 1" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Experience"
-              name="experience"
-              rules={[{ required: true, message: "Please enter experience" }]}
-            >
-              <Input placeholder="Enter work experience." />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="Qualifications"
-              name="qualifications"
-              rules={[
-                { required: true, message: "Please enter qualifications" },
-              ]}
-            >
-              <Input
-                rows={3}
-                placeholder="Enter educational qualifications, certifications, degrees, etc."
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        {/* Add Supplier Field */}
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Supplier (Optional)"
-              name="supplierId"
-              help="Select a supplier if this candidate is associated with one"
-            >
-              <Select
-                placeholder={
-                  clientsData ? "Select a supplier" : "Loading suppliers..."
-                }
-                allowClear
-                showSearch
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  String(option?.children ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                loading={!clientsData}
-                notFoundContent={
-                  activeSuppliers.length === 0
-                    ? "No active suppliers available"
-                    : null
-                }
+      {isLoadingCandidate ? (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>Loading candidate details...</div>
+        </div>
+      ) : (
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          style={{ padding: "16px 0" }}
+        >
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                label="First Name"
+                name="firstName"
+                rules={[{ required: true, message: "Please enter first name" }]}
               >
-                {activeSuppliers.map((supplier) => (
-                  <Option
-                    key={supplier._id}
-                    value={supplier._id}
-                    title={supplier.fullName || supplier.companyName}
-                  >
-                    {supplier.fullName ||
-                      supplier.companyName ||
-                      `Supplier (ID: ${supplier._id})`}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Enter first name"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Middle Name" name="middleName">
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Enter middle name (optional)"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Last Name"
+                name="lastName"
+                rules={[{ required: true, message: "Please enter last name" }]}
+              >
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Enter last name"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Col span={12}>
-            <Form.Item
-              label="Candidate Type"
-              name="candidateType"
-              rules={[
-                {
-                  required: true,
-                  message: "Please select or enter candidate type",
-                },
-              ]}
-            >
-              <Select
-                showSearch
-                allowClear
-                placeholder="Select or type candidate type"
-                value={form.getFieldValue("candidateType")}
-                onSearch={(val) => setCandidateTypeInput(val)}
-                onChange={(value) => {
-                  form.setFieldsValue({ candidateType: value });
-                }}
-                onBlur={() => {
-                  const currentValue = form.getFieldValue("candidateType");
-                  if (!currentValue && candidateTypeInput) {
-                    form.setFieldsValue({ candidateType: candidateTypeInput });
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  { required: true, message: "Please enter email" },
+                  { type: "email", message: "Please enter valid email" },
+                ]}
+              >
+                <Input
+                  prefix={<MailOutlined />}
+                  placeholder="Enter email address"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
+                <Input.Group compact>
+                  <Form.Item
+                    name="countryCode"
+                    style={{ width: "40%" }}
+                    rules={[{ required: true, message: "Select country" }]}
+                  >
+                    <Select
+                      showSearch
+                      placeholder="Country"
+                      value={selectedCountryCode}
+                      onChange={handleCountryCodeChange}
+                      filterOption={(input, option) =>
+                        option.searchText?.includes(input.toLowerCase())
+                      }
+                      style={{ width: "100%" }}
+                    >
+                      {countryOptions.map((option) => (
+                        <Option
+                          key={option.value}
+                          value={option.value}
+                          searchText={option.searchText}
+                        >
+                          {option.label}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    name="phoneNumber"
+                    style={{ width: "60%" }}
+                    rules={[{ validator: validatePhoneNumber }]}
+                  >
+                    <Input
+                      prefix={<PhoneOutlined />}
+                      placeholder={`Enter ${
+                        phoneUtils.getLimits(selectedCountryCode)?.min || 0
+                      }-${
+                        phoneUtils.getLimits(selectedCountryCode)?.max || 0
+                      } digits`}
+                      value={phoneNumber}
+                      onChange={handlePhoneNumberChange}
+                      maxLength={
+                        phoneUtils.getLimits(selectedCountryCode)?.max || 15
+                      }
+                    />
+                  </Form.Item>
+                </Input.Group>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Company Name"
+                name="companyName"
+                rules={[
+                  { required: true, message: "Please enter company name" },
+                ]}
+              >
+                <Input
+                  prefix={<BankOutlined />}
+                  placeholder="Enter current/previous company"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Specialization"
+                name="specialization"
+                rules={[
+                  { required: true, message: "Please enter specialization" },
+                ]}
+              >
+                <Input
+                  prefix={<StarOutlined />}
+                  placeholder="e.g., React.js, Node.js, Python"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Agency"
+                name="agency"
+                rules={[
+                  { required: true, message: "Please enter agency name" },
+                ]}
+              >
+                <Input placeholder="Enter agency name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Work Order Hint"
+                name="workorderhint"
+                rules={[
+                  { required: true, message: "Please enter work order hint" },
+                ]}
+              >
+                <Input placeholder="eg. This candidate is for work order 1" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Experience"
+                name="experience"
+                rules={[{ required: true, message: "Please enter experience" }]}
+              >
+                <Input placeholder="Enter work experience." />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Qualifications"
+                name="qualifications"
+                rules={[
+                  { required: true, message: "Please enter qualifications" },
+                ]}
+              >
+                <Input
+                  rows={3}
+                  placeholder="Enter educational qualifications, certifications, degrees, etc."
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Add Supplier Field */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Supplier (Optional)"
+                name="supplierId"
+                help="Select a supplier if this candidate is associated with one"
+              >
+                <Select
+                  placeholder={
+                    clientsData ? "Select a supplier" : "Loading suppliers..."
                   }
-                }}
-                filterOption={(input, option) =>
-                  (option?.children ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-              >
-                {[
-                  "General",
-                  "Supplier",
-                  "Own",
-                  "SponserTransfer",
-                  "Khafalath",
-                  "Others",
-                ].map((type) => (
-                  <Select.Option key={type} value={type}>
-                    {type}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    String(option?.children ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  loading={!clientsData}
+                  notFoundContent={
+                    activeSuppliers.length === 0
+                      ? "No active suppliers available"
+                      : null
+                  }
+                >
+                  {activeSuppliers.map((supplier) => (
+                    <Option
+                      key={supplier._id}
+                      value={supplier._id}
+                      title={supplier.fullName || supplier.companyName}
+                    >
+                      {supplier.fullName ||
+                        supplier.companyName ||
+                        `Supplier (ID: ${supplier._id})`}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label={isEditMode ? "New Password (Optional)" : "Password"}
-              name="password"
-              rules={[
-                {
-                  required: !isEditMode,
-                  message: "Please enter password",
-                },
-                {
-                  min: 6,
-                  message: "Password must be at least 6 characters",
-                },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder={
-                  isEditMode
-                    ? "Leave blank to keep current password"
-                    : "Enter password"
-                }
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label={isEditMode ? "Confirm New Password" : "Confirm Password"}
-              name="confirmPassword"
-              dependencies={["password"]}
-              rules={[
-                {
-                  required: !isEditMode && form.getFieldValue("password"),
-                  message: "Please confirm password",
-                },
-                { validator: validateConfirmPassword },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Confirm password"
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
+            <Col span={12}>
+              <Form.Item
+                label="Candidate Type"
+                name="candidateType"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select or enter candidate type",
+                  },
+                ]}
+              >
+                <Select
+                  showSearch
+                  allowClear
+                  placeholder="Select or type candidate type"
+                  value={form.getFieldValue("candidateType")}
+                  onSearch={(val) => setCandidateTypeInput(val)}
+                  onChange={(value) => {
+                    form.setFieldsValue({ candidateType: value });
+                  }}
+                  onBlur={() => {
+                    const currentValue = form.getFieldValue("candidateType");
+                    if (!currentValue && candidateTypeInput) {
+                      form.setFieldsValue({
+                        candidateType: candidateTypeInput,
+                      });
+                    }
+                  }}
+                  filterOption={(input, option) =>
+                    (option?.children ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {[
+                    "General",
+                    "Supplier",
+                    "Own",
+                    "SponserTransfer",
+                    "Khafalath",
+                    "Others",
+                  ].map((type) => (
+                    <Select.Option key={type} value={type}>
+                      {type}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={isEditMode ? "New Password (Optional)" : "Password"}
+                name="password"
+                rules={[
+                  {
+                    required: !isEditMode,
+                    message: "Please enter password",
+                  },
+                  {
+                    min: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder={
+                    isEditMode
+                      ? "Leave blank to keep current password"
+                      : "Enter password"
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={isEditMode ? "Confirm New Password" : "Confirm Password"}
+                name="confirmPassword"
+                dependencies={["password"]}
+                rules={[
+                  {
+                    required: !isEditMode && form.getFieldValue("password"),
+                    message: "Please confirm password",
+                  },
+                  { validator: validateConfirmPassword },
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder="Confirm password"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      )}
     </Modal>
   );
 };

@@ -451,6 +451,12 @@ export const recruiterApi = createApi({
         return response;
       },
     }),
+    getAllcandidatebyId: builder.query({
+      query: (id) => ({
+        url: `/all-candidate/${id}`,
+        method: "GET",
+      }),
+    }),
     updateBranchedCandidate: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/branched-candidates/${id}`,
@@ -539,7 +545,7 @@ export const recruiterApi = createApi({
         method: "PATCH",
         body: {
           requisitionId,
-          status, 
+          status,
           remarks,
         },
       }),
@@ -587,6 +593,7 @@ export const {
   useGetRequisitionsByIdQuery,
   useGetProjectsQuery,
   useGetAllBranchedCandidateQuery,
+  useGetAllcandidatebyIdQuery,
   useUpdateBranchedCandidateMutation,
   useStagedCandidateNotifyMutation,
   useGetRecruiterJobTimelineIdQuery,

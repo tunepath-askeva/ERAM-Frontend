@@ -51,8 +51,8 @@ import {
   LeftOutlined,
 } from "@ant-design/icons";
 import {
-  // useGetCandidateByIdQuery,
   useUpdateBranchedCandidateMutation,
+  useGetAllcandidatebyIdQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useSnackbar } from "notistack";
 import dayjs from "dayjs";
@@ -151,11 +151,11 @@ const CandidateEditPage = () => {
   const [educationForm] = Form.useForm();
   const [workForm] = Form.useForm();
 
-  const candidate = state?.candidate || {};
-  // const { data: candidateData, isLoading, error, refetch } = useGetCandidateByIdQuery(id);
+  // const candidate = state?.candidate || {};
+  const { data: candidateData, isLoading, error, refetch } = useGetAllcandidatebyIdQuery(id);
   const [updateCandidate] = useUpdateBranchedCandidateMutation();
 
-  // const candidate = candidateData?.user || {};
+  const candidate = candidateData?.candidateDetails || {};
 
   useEffect(() => {
     if (candidate) {
