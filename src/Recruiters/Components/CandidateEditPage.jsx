@@ -152,7 +152,12 @@ const CandidateEditPage = () => {
   const [workForm] = Form.useForm();
 
   // const candidate = state?.candidate || {};
-  const { data: candidateData, isLoading, error, refetch } = useGetAllcandidatebyIdQuery(id);
+  const {
+    data: candidateData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetAllcandidatebyIdQuery(id);
   const [updateCandidate] = useUpdateBranchedCandidateMutation();
 
   const candidate = candidateData?.candidateDetails || {};
@@ -256,6 +261,8 @@ const CandidateEditPage = () => {
         },
         accountStatus: candidate.accountStatus || "active",
         candidateType: candidate.candidateType || "External",
+        agency: candidate.agency || "N/A",
+        workorderhint: candidate.workorderhint || "N/A",
       });
 
       // Set form values
