@@ -1748,17 +1748,35 @@ const CandidateSettings = () => {
                     }
                   >
                     <List.Item.Meta
-                      title={<Text strong>{item.title}</Text>}
+                      title={
+                        <Text strong>
+                          {item.fileName || item.documentName || item.title}
+                        </Text>
+                      }
                       description={
                         <div>
                           {item.fileUrl && (
                             <div style={{ marginTop: 4 }}>
                               <Button
                                 type="link"
-                                href={item.fileUrl}
-                                target="_blank"
-                                icon={<EyeOutlined />}
                                 size="small"
+                                icon={<EyeOutlined />}
+                                onClick={() => {
+                                  const ext = item.fileUrl
+                                    .split(".")
+                                    .pop()
+                                    .toLowerCase();
+                                  if (
+                                    ["pdf", "jpg", "jpeg", "png"].includes(ext)
+                                  ) {
+                                    window.open(item.fileUrl, "_blank");
+                                  } else {
+                                    window.open(
+                                      `https://docs.google.com/viewer?url=${item.fileUrl}&embedded=true`,
+                                      "_blank"
+                                    );
+                                  }
+                                }}
                               >
                                 View Certificate
                               </Button>

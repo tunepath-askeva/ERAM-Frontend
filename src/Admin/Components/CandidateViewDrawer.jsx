@@ -741,6 +741,40 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           </Button>
         </Card>
       )}
+
+      {candidate.certificates && candidate.certificates.length > 0 && (
+        <Card title="Certificates" style={{ marginTop: 24 }}>
+          <List
+            dataSource={candidate.certificates}
+            renderItem={(cert) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={
+                    <Text strong>{cert.documentName || cert.fileName}</Text>
+                  }
+                  description={
+                    <div>
+                      <Text type="secondary">
+                        Uploaded on:{" "}
+                        {new Date(cert.uploadedAt).toLocaleDateString()}
+                      </Text>
+                      <br />
+                      <Button
+                        type="link"
+                        href={cert.fileUrl}
+                        target="_blank"
+                        icon={<EyeOutlined />}
+                      >
+                        View Certificate
+                      </Button>
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
     </div>
   );
 

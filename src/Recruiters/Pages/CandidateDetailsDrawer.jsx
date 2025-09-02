@@ -706,6 +706,56 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                     <Empty description="No work experience available" />
                   )}
                 </TabPane>
+                <TabPane
+                  tab={
+                    <span>
+                      <FileTextOutlined />
+                      Certificates
+                    </span>
+                  }
+                  key="certificates"
+                >
+                  {candidate.certificates &&
+                  candidate.certificates.length > 0 ? (
+                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+                      <List
+                        dataSource={candidate.certificates}
+                        renderItem={(cert) => (
+                          <List.Item>
+                            <List.Item.Meta
+                              title={
+                                <Text strong>
+                                  {cert.documentName || cert.fileName}
+                                </Text>
+                              }
+                              description={
+                                <div>
+                                  <Text type="secondary">
+                                    Uploaded on:{" "}
+                                    {dayjs(cert.uploadedAt).format(
+                                      "MMM DD, YYYY"
+                                    )}
+                                  </Text>
+                                  <br />
+                                  <Button
+                                    type="link"
+                                    href={cert.fileUrl}
+                                    target="_blank"
+                                    icon={<FilePdfOutlined />}
+                                  >
+                                    View Certificate
+                                  </Button>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </Card>
+                  ) : (
+                    <Empty description="No certificates available" />
+                  )}
+                </TabPane>
 
                 <TabPane
                   tab={
