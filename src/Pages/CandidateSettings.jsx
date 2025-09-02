@@ -624,6 +624,7 @@ const CandidateSettings = () => {
 
       const formData = new FormData();
 
+      // Handle regular form fields
       Object.entries(allValues).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (dayjs.isDayjs(value)) {
@@ -636,6 +637,7 @@ const CandidateSettings = () => {
         }
       });
 
+      // Handle JSON fields
       formData.append(
         "socialLinks",
         JSON.stringify(allValues.socialLinks || {})
@@ -644,15 +646,6 @@ const CandidateSettings = () => {
         "jobPreferences",
         JSON.stringify(allValues.jobPreferences || {})
       );
-      const certificatesMetadata = userData.certificates.map((cert) => ({
-        ...cert,
-        certificateFile: undefined,
-        fieldname: cert.title
-          ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
-          : `certificate_${cert.id}`,
-      }));
-
-      formData.append("certificates", JSON.stringify(certificatesMetadata));
       formData.append("skills", JSON.stringify(userData.skills || []));
       formData.append("languages", userData.languages || []);
       formData.append("education", JSON.stringify(userData.education || []));
@@ -661,20 +654,50 @@ const CandidateSettings = () => {
         JSON.stringify(userData.workExperience || [])
       );
 
+      // Handle certificates metadata and files properly
+      const certificatesWithFiles = [];
+      const certificateFiles = [];
+
+      userData.certificates.forEach((cert, index) => {
+        // Create metadata without the file object
+        const certMetadata = {
+          ...cert,
+          certificateFile: undefined, // Remove file object from metadata
+          fieldname: cert.title
+            ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
+            : `certificate_${cert.id}`,
+          fileIndex: cert.certificateFile ? certificateFiles.length : -1, // Track which file this cert corresponds to
+        };
+
+        certificatesWithFiles.push(certMetadata);
+
+        // Collect files separately
+        if (cert.certificateFile) {
+          certificateFiles.push(cert.certificateFile);
+        }
+      });
+
+      formData.append(
+        "certificatesMetadata",
+        JSON.stringify(certificatesWithFiles)
+      );
+
+      // Handle image file
       if (imageFile) {
         formData.append("image", imageFile);
       }
+
+      // Handle resume file
       if (userData.resumeFile) {
         formData.append("resume", userData.resumeFile);
       } else if (!userData.resumeFile && userData.resumeUrl === "") {
         formData.append("resume", "");
       }
 
-      // userData.certificates.forEach((cert) => {
-      //   if (cert.certificateFile) {
-      //     formData.append("certificates", cert.certificateFile);
-      //   }
-      // });
+      // Handle certificate files - append all at once
+      certificateFiles.forEach((file, index) => {
+        formData.append("certificates", file);
+      });
 
       const res = await profileComplete(formData).unwrap();
 
