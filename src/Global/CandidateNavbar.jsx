@@ -867,7 +867,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       key: "",
       icon: <UserOutlined style={{ color: "#2a4365" }} />,
       label: "Profile",
-      onClick: () => navigate("/superadmin/settings"),
+      onClick: () => navigate("/candidate-settings"),
     },
     {
       type: "divider",

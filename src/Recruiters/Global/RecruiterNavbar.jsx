@@ -830,12 +830,6 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       disabled: true,
     },
     {
-      key: "profile",
-      icon: <UserOutlined style={{ color: "#2a4365" }} />,
-      label: "Profile",
-      onClick: () => navigate(),
-    },
-    {
       type: "divider",
     },
     {
