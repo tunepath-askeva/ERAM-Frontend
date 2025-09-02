@@ -646,7 +646,12 @@ const CandidateSettings = () => {
       );
       formData.append(
         "certificates",
-        JSON.stringify(userData.certificates || [])
+        JSON.stringify(
+          userData.certificates.map((cert) => ({
+            ...cert,
+            certificateFile: undefined,
+          }))
+        )
       );
       formData.append("skills", JSON.stringify(userData.skills || []));
       formData.append("languages", userData.languages || []);
@@ -664,6 +669,15 @@ const CandidateSettings = () => {
       } else if (!userData.resumeFile && userData.resumeUrl === "") {
         formData.append("resume", "");
       }
+
+      userData.certificates.forEach((cert, index) => {
+        if (cert.certificateFile) {
+          const fileName = cert.title
+            ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
+            : `certificateFile_${index}`;
+          formData.append(`${fileName}`, cert.certificateFile);
+        }
+      });
 
       const res = await profileComplete(formData).unwrap();
 
@@ -763,20 +777,34 @@ const CandidateSettings = () => {
 
   const addCertificate = () => {
     if (!isProfileEditable) {
-      message.warning("Please enable edit mode to add certificate/document");
+      message.warning("Please enable edit mode to add certificate");
       return;
     }
     certForm.resetFields();
     setEditingCertId(null);
+    setEditingCertData({}); // Clear any previous data
     setIsCertModalVisible(true);
   };
 
   const handleCertificateSubmit = async () => {
     try {
       const values = await certForm.validateFields();
+      const certificateFile =
+        editingCertData.certificateFile ||
+        (editingCertId &&
+          userData.certificates.find((c) => c.id === editingCertId)
+            ?.certificateFile);
+
       const newCertificate = {
         ...values,
         id: editingCertId || Math.random().toString(36).substr(2, 9),
+        certificateFile: certificateFile || null,
+        fileUrl:
+          editingCertData.fileUrl ||
+          (editingCertId &&
+            userData.certificates.find((c) => c.id === editingCertId)
+              ?.fileUrl) ||
+          "",
       };
 
       if (editingCertId) {
@@ -794,6 +822,7 @@ const CandidateSettings = () => {
       }
       setIsCertModalVisible(false);
       setEditingCertId(null);
+      setEditingCertData({}); // Clear temporary data
     } catch (err) {
       console.log("Validation error:", err);
     }
@@ -801,12 +830,18 @@ const CandidateSettings = () => {
 
   const handleEditCertificate = (cert) => {
     if (!isProfileEditable) {
-      message.warning("Please enable edit mode to edit certificate/document");
+      message.warning("Please enable edit mode to edit certificate");
       return;
     }
     setEditingCertId(cert.id);
-    setEditingCertData(cert);
-    certForm.setFieldsValue(cert);
+    setEditingCertData({
+      ...cert,
+      certificateFile: cert.certificateFile || null,
+      fileUrl: cert.fileUrl || "",
+    });
+    certForm.setFieldsValue({
+      title: cert.title,
+    });
     setIsCertModalVisible(true);
   };
 
@@ -1701,26 +1736,9 @@ const CandidateSettings = () => {
                     }
                   >
                     <List.Item.Meta
-                      avatar={
-                        <Badge
-                          count={item.type === "certificate" ? "CERT" : "DOC"}
-                          style={{
-                            backgroundColor:
-                              item.type === "certificate"
-                                ? "#52c41a"
-                                : "#1890ff",
-                          }}
-                        />
-                      }
                       title={<Text strong>{item.title}</Text>}
                       description={
                         <div>
-                          <Text
-                            type="secondary"
-                            style={{ textTransform: "capitalize" }}
-                          >
-                            {item.type}
-                          </Text>
                           {item.fileUrl && (
                             <div style={{ marginTop: 4 }}>
                               <Button
@@ -1730,7 +1748,7 @@ const CandidateSettings = () => {
                                 icon={<EyeOutlined />}
                                 size="small"
                               >
-                                View File
+                                View Certificate
                               </Button>
                             </div>
                           )}
@@ -2556,7 +2574,7 @@ const CandidateSettings = () => {
       </Modal>
 
       <Modal
-        title={`${editingCertId ? "Edit" : "Add"} Certificate/Document`}
+        title={`${editingCertId ? "Edit" : "Add"} Certificate`}
         visible={isCertModalVisible}
         onOk={handleCertificateSubmit}
         onCancel={() => setIsCertModalVisible(false)}
@@ -2566,37 +2584,23 @@ const CandidateSettings = () => {
       >
         <Form form={certForm} layout="vertical">
           <Form.Item
-            name="type"
-            label="Type"
-            rules={[{ required: true, message: "Please select type" }]}
-          >
-            <Select placeholder="Select type">
-              <Option value="certificate">Certificate</Option>
-              <Option value="document">Document</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
             name="title"
-            label="Title"
-            rules={[{ required: true, message: "Please enter title" }]}
+            label="Certificate Title"
+            rules={[
+              { required: true, message: "Please enter certificate title" },
+            ]}
           >
             <Input placeholder="e.g. AWS Certified Solutions Architect" />
           </Form.Item>
 
-          <Form.Item
-            name="file"
-            label="Upload File"
-            rules={[
-              { required: !editingCertId, message: "Please upload a file" },
-            ]}
-          >
+          <Form.Item label="Upload Certificate">
             <Upload
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              showUploadList={false}
               beforeUpload={(file) => {
                 const isLt5M = file.size / 1024 / 1024 < 5;
                 if (!isLt5M) {
-                  message.error("File must be smaller than 5MB!");
+                  message.error("Certificate must be smaller than 5MB!");
                   return false;
                 }
 
@@ -2615,29 +2619,80 @@ const CandidateSettings = () => {
                   return false;
                 }
 
-                // Store the file in the form data
-                certForm.setFieldsValue({
-                  file: file,
-                  fileUrl: URL.createObjectURL(file),
-                });
+                // Store the file for the certificate being edited/added
+                setUserData((prev) => ({
+                  ...prev,
+                  certificates: prev.certificates.map((cert) =>
+                    cert.id === editingCertId
+                      ? {
+                          ...cert,
+                          certificateFile: file,
+                          fileUrl: URL.createObjectURL(file),
+                        }
+                      : cert
+                  ),
+                }));
+
+                // If adding new certificate, store file temporarily
+                if (!editingCertId) {
+                  setEditingCertData((prev) => ({
+                    ...prev,
+                    certificateFile: file,
+                    fileUrl: URL.createObjectURL(file),
+                  }));
+                }
+
                 return false; // prevent auto upload
               }}
-              showUploadList={false}
             >
-              <Button icon={<UploadOutlined />}>Click to Upload</Button>
+              <Button icon={<UploadOutlined />}>Upload Certificate</Button>
             </Upload>
 
-            {certForm.getFieldValue("fileUrl") && (
+            {/* Show current file info */}
+            {(editingCertData.fileUrl ||
+              (editingCertId &&
+                userData.certificates.find((c) => c.id === editingCertId)
+                  ?.fileUrl)) && (
               <div style={{ marginTop: 8 }}>
-                <Text type="secondary">File selected: </Text>
+                <Text type="secondary">Current certificate: </Text>
                 <Button
                   type="link"
-                  href={certForm.getFieldValue("fileUrl")}
+                  href={
+                    editingCertData.fileUrl ||
+                    userData.certificates.find((c) => c.id === editingCertId)
+                      ?.fileUrl
+                  }
                   target="_blank"
                   icon={<EyeOutlined />}
                   size="small"
                 >
-                  Preview
+                  View
+                </Button>
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  onClick={() => {
+                    if (editingCertId) {
+                      setUserData((prev) => ({
+                        ...prev,
+                        certificates: prev.certificates.map((cert) =>
+                          cert.id === editingCertId
+                            ? { ...cert, fileUrl: "", certificateFile: null }
+                            : cert
+                        ),
+                      }));
+                    } else {
+                      setEditingCertData((prev) => ({
+                        ...prev,
+                        fileUrl: "",
+                        certificateFile: null,
+                      }));
+                    }
+                  }}
+                >
+                  Remove
                 </Button>
               </div>
             )}
