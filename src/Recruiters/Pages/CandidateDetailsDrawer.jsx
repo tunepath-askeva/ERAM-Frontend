@@ -105,6 +105,13 @@ const CandidateDetailsDrawer = ({ candidate, visible, onClose }) => {
     return "Incomplete";
   };
 
+  const formatUrl = (url) => {
+    if (!url) return "";
+    return url.startsWith("http://") || url.startsWith("https://")
+      ? url
+      : `https://${url}`;
+  };
+
   return (
     <>
       <Drawer
@@ -611,7 +618,7 @@ const CandidateDetailsDrawer = ({ candidate, visible, onClose }) => {
                       <br />
                       <Text>
                         <a
-                          href={candidate.socialLinks.linkedin}
+                          href={formatUrl(candidate.socialLinks.linkedin)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -626,7 +633,7 @@ const CandidateDetailsDrawer = ({ candidate, visible, onClose }) => {
                       <br />
                       <Text>
                         <a
-                          href={candidate.socialLinks.github}
+                          href={formatUrl(candidate.socialLinks.github)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -641,7 +648,7 @@ const CandidateDetailsDrawer = ({ candidate, visible, onClose }) => {
                       <br />
                       <Text>
                         <a
-                          href={candidate.socialLinks.twitter}
+                          href={formatUrl(candidate.socialLinks.twitter)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -656,7 +663,7 @@ const CandidateDetailsDrawer = ({ candidate, visible, onClose }) => {
                       <br />
                       <Text>
                         <a
-                          href={candidate.socialLinks.facebook}
+                          href={formatUrl(candidate.socialLinks.facebook)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >

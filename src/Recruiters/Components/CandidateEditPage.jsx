@@ -142,6 +142,7 @@ const CandidateEditPage = () => {
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({});
   const [editingWorkData, setEditingWorkData] = useState({});
+  const [candidateTypeInput, setCandidateTypeInput] = useState("");
 
   const [profileForm] = Form.useForm();
   const [personalForm] = Form.useForm();
@@ -686,6 +687,24 @@ const CandidateEditPage = () => {
                   </Form.Item>
                 </Col>
 
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Agency" name="agency">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter agency name"
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Work Order Hint" name="workorderhint">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter Work order hint."
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col span={24}>
                   <Divider orientation="left">Social Media Links</Divider>
                 </Col>
@@ -732,12 +751,61 @@ const CandidateEditPage = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-
                 <Col xs={24} sm={12}>
-                  <Form.Item label="Candidate Type" name="candidateType">
-                    <Select>
-                      <Option value="Khafalath">Khafalath</Option>
-                      <Option value="External">External</Option>
+                  <Form.Item
+                    label="Candidate Type"
+                    name="candidateType"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select or enter candidate type",
+                      },
+                    ]}
+                  >
+                    <Select
+                      showSearch
+                      allowClear
+                      placeholder="Select or type candidate type"
+                      defaultActiveFirstOption={false}
+                      filterOption={(input, option) =>
+                        (option?.children ?? "")
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
+                      }
+                      onSearch={(val) => setCandidateTypeInput(val)}
+                      onChange={(value) => {
+                        profileForm.setFieldsValue({ candidateType: value });
+                      }}
+                      onBlur={() => {
+                        const currentValue =
+                          profileForm.getFieldValue("candidateType");
+                        if (!currentValue && candidateTypeInput) {
+                          profileForm.setFieldsValue({
+                            candidateType: candidateTypeInput,
+                          });
+                        }
+                      }}
+                      onInputKeyDown={(e) => {
+                        if (e.key === "Enter" && candidateTypeInput) {
+                          profileForm.setFieldsValue({
+                            candidateType: candidateTypeInput,
+                          });
+                        }
+                      }}
+                    >
+                      {[
+                        "General",
+                        "Supplier",
+                        "Own",
+                        "SponserTransfer",
+                        "Khafalath",
+                        "External",
+                        "Others",
+                      ].map((type) => (
+                        <Select.Option key={type} value={type}>
+                          {type}
+                        </Select.Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
