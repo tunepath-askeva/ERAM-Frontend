@@ -664,8 +664,18 @@ const CandidateSettings = () => {
 
       userData.certificates.forEach((cert) => {
         if (cert.certificateFile) {
-          const fieldName = `certificates[${cert.title || "certificate"}]`;
-          formData.append(fieldName, cert.certificateFile);
+          // Set the fieldname in the file object itself before appending
+          Object.defineProperty(cert.certificateFile, "fieldname", {
+            value: cert.title || "certificate",
+            writable: false,
+          });
+
+          // Append under the same key "certificates"
+          formData.append(
+            "certificates",
+            cert.certificateFile,
+            cert.title || "certificate"
+          );
         }
       });
 
