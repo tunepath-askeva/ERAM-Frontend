@@ -39,6 +39,8 @@ import {
 import dayjs from "dayjs";
 import { useGetAllcandidatebyIdQuery } from "../../Slices/Recruiter/RecruiterApis";
 
+import { useNotifyEmployeeMutation } from "../../Slices/Employee/EmployeeApis";
+
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
@@ -49,6 +51,9 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
   const { data, isLoading, error } = useGetAllcandidatebyIdQuery(candidateId, {
     skip: !candidateId,
   });
+
+  const [sendNotification, { isLoading: isNotificationLoading }] =
+    useNotifyEmployeeMutation();
 
   const candidate = data?.candidateDetails;
 
@@ -96,20 +101,36 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
     setNotifyModalVisible(true);
   };
 
-  const confirmNotification = () => {
+  const handleModalClose = () => {
+    setNotifyModalVisible(false);
+    setRemarks("");
+  };
+
+  const confirmNotification = async () => {
     if (!remarks.trim()) {
       message.warning("Please enter your remarks before sending.");
       return;
     }
 
-    // Here you’d call your API/mutation to actually send the notification
-    message.success(
-      `Notification sent to ${
-        candidate.fullName || candidate.firstName
-      } with remarks: "${remarks}"`
-    );
-    setNotifyModalVisible(false);
-    setRemarks(""); // reset
+    try {
+      const response = await sendNotification({
+        email: candidate.email,
+        title: "Profile Updation - Immediate Action required!!!",
+        description: remarks.trim(),
+      }).unwrap();
+
+      message.success(
+        `Notification sent successfully to ${
+          candidate.fullName || candidate.firstName
+        }`
+      );
+      handleModalClose();
+    } catch (error) {
+      console.error("Notification error:", error);
+      message.error(
+        error?.data?.message || "Failed to send notification. Please try again."
+      );
+    }
   };
 
   const getCompletionColor = (percentage) => {
@@ -773,8 +794,9 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
         title="Notify Candidate"
         visible={notifyModalVisible}
         onOk={confirmNotification}
-        onCancel={() => setNotifyModalVisible(false)}
+        onCancel={handleModalClose}
         okText="Send Notification"
+        confirmLoading={isNotificationLoading}
         okButtonProps={{
           style: {
             backgroundColor: "#da2c46",
