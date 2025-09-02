@@ -654,33 +654,34 @@ const CandidateSettings = () => {
         JSON.stringify(userData.workExperience || [])
       );
 
-      // Handle certificates metadata and files properly
-      const certificatesWithFiles = [];
-      const certificateFiles = [];
+      const certificatesData = userData.certificates
+        .filter((cert) => cert.certificateFile)
+        .map((cert) => ({
+          fieldname: cert.title || "certificate",
+          originalname: cert.certificateFile.name,
+          encoding: "7bit",
+          mimetype: cert.certificateFile.type,
+          destination: "uploads/",
+          filename: cert.certificateFile.name.split(".")[0] + "_" + Date.now(),
+          path: `uploads/${cert.certificateFile.name}`,
+          size: cert.certificateFile.size,
+          file: cert.certificateFile, // Store the actual file object here
+        }));
 
-      userData.certificates.forEach((cert, index) => {
-        // Create metadata without the file object
-        const certMetadata = {
-          ...cert,
-          certificateFile: undefined, // Remove file object from metadata
-          fieldname: cert.title
-            ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
-            : `certificate_${cert.id}`,
-          fileIndex: cert.certificateFile ? certificateFiles.length : -1, // Track which file this cert corresponds to
-        };
-
-        certificatesWithFiles.push(certMetadata);
-
-        // Collect files separately
-        if (cert.certificateFile) {
-          certificateFiles.push(cert.certificateFile);
-        }
-      });
-
+      // Append the whole certificates array as JSON + files in same array
       formData.append(
-        "certificatesMetadata",
-        JSON.stringify(certificatesWithFiles)
+        "certificates",
+        JSON.stringify(certificatesData, (key, value) => {
+          // Files can't be stringified, so remove the actual file object from JSON
+          if (key === "file") return undefined;
+          return value;
+        })
       );
+
+      // Then append files in same certificates key as FormData
+      certificatesData.forEach((cert) => {
+        formData.append("certificates", cert.file, cert.originalname);
+      });
 
       // Handle image file
       if (imageFile) {
@@ -693,11 +694,6 @@ const CandidateSettings = () => {
       } else if (!userData.resumeFile && userData.resumeUrl === "") {
         formData.append("resume", "");
       }
-
-      // Handle certificate files - append all at once
-      certificateFiles.forEach((file, index) => {
-        formData.append("certificates", file);
-      });
 
       const res = await profileComplete(formData).unwrap();
 
