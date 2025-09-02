@@ -46,7 +46,6 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
-import CandidateEditModal from "./CandidateEditModal";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
 import { useSelector } from "react-redux";
@@ -500,16 +499,6 @@ function AllCandidates() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
         candidate={selectedCandidate}
-      />
-
-      <CandidateEditModal
-        visible={editModalVisible}
-        onCancel={() => {
-          setEditModalVisible(false);
-          setCandidateToEdit(null);
-        }}
-        onSubmit={handleEditSubmit}
-        candidate={candidateToEdit}
       />
 
       <AddCandidateModal
