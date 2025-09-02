@@ -644,15 +644,15 @@ const CandidateSettings = () => {
         "jobPreferences",
         JSON.stringify(allValues.jobPreferences || {})
       );
-      formData.append(
-        "certificates",
-        JSON.stringify(
-          userData.certificates.map((cert) => ({
-            ...cert,
-            certificateFile: undefined,
-          }))
-        )
-      );
+      const certificatesMetadata = userData.certificates.map((cert) => ({
+        ...cert,
+        certificateFile: undefined,
+        fieldname: cert.title
+          ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
+          : `certificate_${cert.id}`,
+      }));
+
+      formData.append("certificates", JSON.stringify(certificatesMetadata));
       formData.append("skills", JSON.stringify(userData.skills || []));
       formData.append("languages", userData.languages || []);
       formData.append("education", JSON.stringify(userData.education || []));
@@ -670,14 +670,11 @@ const CandidateSettings = () => {
         formData.append("resume", "");
       }
 
-      userData.certificates.forEach((cert, index) => {
-        if (cert.certificateFile) {
-          const fileName = cert.title
-            ? cert.title.replace(/[^a-zA-Z0-9]/g, "_")
-            : `certificateFile_${index}`;
-          formData.append(`${fileName}`, cert.certificateFile);
-        }
-      });
+      // userData.certificates.forEach((cert) => {
+      //   if (cert.certificateFile) {
+      //     formData.append("certificates", cert.certificateFile);
+      //   }
+      // });
 
       const res = await profileComplete(formData).unwrap();
 
