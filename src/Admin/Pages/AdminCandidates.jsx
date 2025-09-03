@@ -1112,6 +1112,7 @@ const AdminCandidates = () => {
                   "Qualifications",
                   "Agency",
                   "Work Order Hint",
+                  "Client",
                 ];
 
                 const sampleRow = [
@@ -1127,6 +1128,7 @@ const AdminCandidates = () => {
                   "B.Tech in Computer Science",
                   "Demo",
                   "This is demo work order candidate",
+                  "Demo-123",
                 ];
 
                 const csvContent =

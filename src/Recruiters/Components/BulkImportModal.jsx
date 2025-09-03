@@ -191,6 +191,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             role: "candidate",
             agency: row["Agency"]?.toString()?.trim() || "",
             workorderhint: row["Work Order Hint"]?.toString()?.trim() || "",
+            client: row["Client"]?.toString()?.trim() || "",
           });
         } catch (rowError) {
           skippedRows++;
@@ -334,6 +335,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "Qualifications",
                   "Agency",
                   "Work Order Hint",
+                  "Client",
                 ];
 
                 const sampleRow = [
@@ -349,6 +351,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "B.Tech in Computer Science",
                   "Demo",
                   "This is work order 1 candidate",
+                  "Demo-123",
                 ];
 
                 const csvContent =

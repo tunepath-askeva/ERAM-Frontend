@@ -113,6 +113,7 @@ const CandidateFormModal = ({
           candidateType: editingCandidate.candidateType || "",
           agency: editingCandidate.agency || "",
           workorderhint: editingCandidate.workorderhint || "",
+          client: editingCandidate.client || "",
         });
       } else if (!isEditMode) {
         form.resetFields();
@@ -468,26 +469,31 @@ const CandidateFormModal = ({
             </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Agency"
                 name="agency"
-                rules={[
-                  { required: true, message: "Please enter agency name" },
-                ]}
+              
               >
                 <Input placeholder="Enter agency name" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Work Order Hint"
                 name="workorderhint"
-                rules={[
-                  { required: true, message: "Please enter work order hint" },
-                ]}
+                
               >
                 <Input placeholder="eg. This candidate is for work order 1" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Client"
+                name="client"
+               
+              >
+                <Input placeholder="Enter client name" />
               </Form.Item>
             </Col>
           </Row>

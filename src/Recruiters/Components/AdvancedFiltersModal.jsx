@@ -39,7 +39,8 @@ const AdvancedFiltersModal = ({
     if (visible) {
       form.setFieldsValue({
         // Basic filters (keep existing ones)
-        search: initialFilters.search || "",
+        workorderhint: initialFilters.workorderhint || "",
+        client: initialFilters.client || "",
         skills: initialFilters.skills || [],
         location: initialFilters.location || "",
         experience: initialFilters.experience || "",
@@ -66,7 +67,7 @@ const AdvancedFiltersModal = ({
         minExpectedSalary: initialFilters.minExpectedSalary || undefined,
         maxExpectedSalary: initialFilters.maxExpectedSalary || undefined,
         noticePeriod: initialFilters.noticePeriod || "any",
-        agency: initialFilters.agency || "",
+
         candidateType: initialFilters.candidateType || "",
         accountStatus: initialFilters.accountStatus || "",
 
@@ -258,7 +259,17 @@ const AdvancedFiltersModal = ({
         {/* Basic Search and Skills */}
         <Card title="Basic Filters" size="small" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Search Hint" name="workorderhint">
+                <Input placeholder="Enter search hint" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Client" name="client">
+                <Input placeholder="Enter client code" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
               <Form.Item label="Location" name="location">
                 <Input placeholder="Enter location" />
               </Form.Item>

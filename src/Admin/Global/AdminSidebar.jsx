@@ -106,7 +106,7 @@ const AdminSidebar = ({
     {
       key: "/admin/branches",
       icon: <AppstoreOutlined />,
-      label: "Branch",
+      label: "Branch Details",
     },
     {
       key: "/admin/notifications",

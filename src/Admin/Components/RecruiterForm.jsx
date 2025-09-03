@@ -496,9 +496,7 @@ const RecruiterForm = ({
               <Form.Item
                 label="Specialization"
                 name="specialization"
-                rules={[
-                  { required: true, message: "Please enter specialization" },
-                ]}
+               
               >
                 <Input
                   placeholder="e.g., IT, Healthcare, Finance"
@@ -512,7 +510,7 @@ const RecruiterForm = ({
                 label="Experience (Years)"
                 name="experience"
                 rules={[
-                  { required: true, message: "Please enter experience" },
+                 
                   {
                     type: "number",
                     min: 0,
