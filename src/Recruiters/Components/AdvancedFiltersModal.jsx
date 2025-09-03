@@ -78,19 +78,15 @@ const AdvancedFiltersModal = ({
         // Experience and Education
         minExperience: initialFilters.minExperience || undefined,
         maxExperience: initialFilters.maxExperience || undefined,
-        hasEducation: initialFilters.hasEducation || "",
+
         hasCertificates: initialFilters.hasCertificates || "",
-        hasWorkExperience: initialFilters.hasWorkExperience || "",
 
         // Profile completion and activity
-        minProfileCompletion: initialFilters.minProfileCompletion || undefined,
-        maxProfileCompletion: initialFilters.maxProfileCompletion || undefined,
+
         lastUpdated: initialFilters.lastUpdated || "any_time",
         hasResume: initialFilters.hasResume || "",
-        hasSocialLinks: initialFilters.hasSocialLinks || "",
 
         // Contact information
-        hasEmergencyContact: initialFilters.hasEmergencyContact || "",
         languages: initialFilters.languages || [],
       });
     }
@@ -262,7 +258,6 @@ const AdvancedFiltersModal = ({
         {/* Basic Search and Skills */}
         <Card title="Basic Filters" size="small" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
-            
             <Col xs={24} sm={12}>
               <Form.Item label="Location" name="location">
                 <Input placeholder="Enter location" />
@@ -433,22 +428,31 @@ const AdvancedFiltersModal = ({
                 <InputNumber
                   placeholder="Minimum salary"
                   style={{ width: "100%" }}
+                  min={0}
+                  type="number"
                   formatter={(value) =>
-                    `SAR - ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                  parser={(value) =>
+                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
+                  }
                 />
               </Form.Item>
             </Col>
+
             <Col xs={24} sm={12}>
               <Form.Item label="Max Current Salary" name="maxCurrentSalary">
                 <InputNumber
                   placeholder="Maximum salary"
                   style={{ width: "100%" }}
+                  min={0}
+                  type="number"
                   formatter={(value) =>
-                    `SAR - ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                  parser={(value) =>
+                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
+                  }
                 />
               </Form.Item>
             </Col>
@@ -457,10 +461,14 @@ const AdvancedFiltersModal = ({
                 <InputNumber
                   placeholder="Minimum salary"
                   style={{ width: "100%" }}
+                  min={0}
+                  type="number"
                   formatter={(value) =>
-                    `SAR - ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                  parser={(value) =>
+                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
+                  }
                 />
               </Form.Item>
             </Col>
@@ -469,10 +477,14 @@ const AdvancedFiltersModal = ({
                 <InputNumber
                   placeholder="Maximum salary"
                   style={{ width: "100%" }}
+                  min={0}
+                  type="number"
                   formatter={(value) =>
-                    `SAR - ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                  parser={(value) =>
+                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
+                  }
                 />
               </Form.Item>
             </Col>
@@ -504,7 +516,14 @@ const AdvancedFiltersModal = ({
           <Row gutter={16}>
             <Col xs={24} sm={8}>
               <Form.Item label="Visa Status" name="visaStatus">
-                <Select mode="multiple" placeholder="Select visa status" />
+                <Select
+                  mode="tags"
+                  placeholder="Select or type visa status"
+                  options={filterOptions.visaStatus?.map((visa) => ({
+                    value: visa,
+                    label: visa,
+                  }))}
+                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
@@ -528,32 +547,6 @@ const AdvancedFiltersModal = ({
         >
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item
-                label="Min Profile Completion %"
-                name="minProfileCompletion"
-              >
-                <InputNumber
-                  placeholder="Minimum %"
-                  style={{ width: "100%" }}
-                  min={0}
-                  max={100}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Max Profile Completion %"
-                name="maxProfileCompletion"
-              >
-                <InputNumber
-                  placeholder="Maximum %"
-                  style={{ width: "100%" }}
-                  min={0}
-                  max={100}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
               <Form.Item label="Last Updated" name="lastUpdated">
                 <Select options={lastUpdatedOptions} />
               </Form.Item>
@@ -563,31 +556,9 @@ const AdvancedFiltersModal = ({
                 <Select placeholder="Select option" options={booleanOptions} />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Has Education" name="hasEducation">
-                <Select placeholder="Select option" options={booleanOptions} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Has Work Experience" name="hasWorkExperience">
-                <Select placeholder="Select option" options={booleanOptions} />
-              </Form.Item>
-            </Col>
+
             <Col xs={24} sm={8}>
               <Form.Item label="Has Certificates" name="hasCertificates">
-                <Select placeholder="Select option" options={booleanOptions} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Has Social Links" name="hasSocialLinks">
-                <Select placeholder="Select option" options={booleanOptions} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Has Emergency Contact"
-                name="hasEmergencyContact"
-              >
                 <Select placeholder="Select option" options={booleanOptions} />
               </Form.Item>
             </Col>
