@@ -205,8 +205,12 @@ const AdvancedFiltersModal = ({
   ];
 
   const candidateTypeOptions = [
+    { value: "General", label: "General" },
+    { value: "Own", label: "Own" },
+    { value: "SponserTransfer", label: "SponserTransfer" },
     { value: "Khafalath", label: "Khafalath" },
     { value: "External", label: "External" },
+    { value: "Others", label: "Others" },
   ];
 
   const accountStatusOptions = [
@@ -258,11 +262,7 @@ const AdvancedFiltersModal = ({
         {/* Basic Search and Skills */}
         <Card title="Basic Filters" size="small" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Search" name="search">
-                <Input placeholder="Search candidates, skills, email, title..." />
-              </Form.Item>
-            </Col>
+            
             <Col xs={24} sm={12}>
               <Form.Item label="Location" name="location">
                 <Input placeholder="Enter location" />
