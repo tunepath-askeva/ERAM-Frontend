@@ -36,6 +36,7 @@ import {
   EyeOutlined,
   EditOutlined,
   UploadOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import {
   useGetAllBranchedCandidateQuery,
@@ -49,6 +50,7 @@ import SkeletonLoader from "../../Global/SkeletonLoader";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
+import AdvancedFiltersModal from "../Components/AdvancedFiltersModal";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
@@ -96,6 +98,12 @@ function AllCandidates() {
   const [addCandidateModalVisible, setAddCandidateModalVisible] =
     useState(false);
   const [bulkUploadModalVisible, setBulkUploadModalVisible] = useState(false);
+  const [advancedFiltersVisible, setAdvancedFiltersVisible] = useState(false);
+
+  // Advanced filters state
+  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
+
   const [filters, setFilters] = useState({});
   const [addCandidateForm] = Form.useForm();
 
@@ -108,6 +116,15 @@ function AllCandidates() {
       limit: pageSize,
     };
 
+    // If advanced filters are applied, use them instead of basic filters
+    if (isAdvancedFilterApplied && Object.keys(advancedFilters).length > 0) {
+      return {
+        ...params,
+        ...advancedFilters,
+      };
+    }
+
+    // Basic filters (original logic)
     if (debouncedSearchTerm) {
       params.search = debouncedSearchTerm;
     }
@@ -137,6 +154,8 @@ function AllCandidates() {
     selectedLocation,
     selectedExperience,
     selectedIndustry,
+    advancedFilters,
+    isAdvancedFilterApplied,
   ]);
 
   const {
@@ -145,6 +164,7 @@ function AllCandidates() {
     error,
     refetch,
   } = useGetAllBranchedCandidateQuery(queryParams);
+
   const [
     filterCandidates,
     { data, isLoading: filterLoading, error: filterError },
@@ -155,12 +175,29 @@ function AllCandidates() {
 
   const [addCandidate, { isLoading: isAddingCandidate }] =
     useAddCandidateMutation();
+
   const [bulkImportCandidates, { isLoading: isBulkImporting }] =
     useBulkImportCandidatesMutation();
 
   const handleApplyFilters = async (appliedFilters) => {
-    setFilters(appliedFilters);
-    await filterCandidates(appliedFilters).unwrap();
+    try {
+      setFilters(appliedFilters);
+      const response = await filterCandidates(appliedFilters).unwrap();
+
+      // Update the advanced filters state
+      setAdvancedFilters(appliedFilters);
+      setIsAdvancedFilterApplied(true);
+
+      // Reset pagination to first page when new filters are applied
+      setCurrentPage(1);
+
+      message.success(
+        `Found ${response?.total || 0} candidates matching your criteria`
+      );
+    } catch (error) {
+      message.error("Failed to apply filters. Please try again.");
+      console.error("Filter error:", error);
+    }
   };
 
   const candidates = candidatesResponse?.users || [];
@@ -173,7 +210,7 @@ function AllCandidates() {
   };
 
   useEffect(() => {
-    if (currentPage !== 1) {
+    if (currentPage !== 1 && !isAdvancedFilterApplied) {
       setCurrentPage(1);
     }
   }, [
@@ -185,16 +222,24 @@ function AllCandidates() {
   ]);
 
   const clearFilters = useCallback(() => {
+    // Clear basic filters
     setSearchTerm("");
     setSelectedSkills([]);
     setSelectedLocation("");
     setSelectedExperience("");
     setSelectedIndustry("");
+
+    // Clear advanced filters
+    setAdvancedFilters({});
+    setIsAdvancedFilterApplied(false);
+
     setCurrentPage(1);
+
+    message.success("All filters cleared");
   }, []);
 
   const showCandidateDetails = useCallback((candidate) => {
-    setSelectedCandidateId(candidate._id); // store only ID
+    setSelectedCandidateId(candidate._id);
     setDrawerVisible(true);
   }, []);
 
@@ -267,9 +312,17 @@ function AllCandidates() {
     [pageSize]
   );
 
-  const handleSearchChange = useCallback((e) => {
-    setSearchTerm(e.target.value);
-  }, []);
+  const handleSearchChange = useCallback(
+    (e) => {
+      // If advanced filters are applied, clear them when using basic search
+      if (isAdvancedFilterApplied) {
+        setAdvancedFilters({});
+        setIsAdvancedFilterApplied(false);
+      }
+      setSearchTerm(e.target.value);
+    },
+    [isAdvancedFilterApplied]
+  );
 
   const buttonStyle = {
     background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
@@ -353,7 +406,6 @@ function AllCandidates() {
         </Space>
       ),
     },
-
     {
       title: "Actions",
       key: "actions",
@@ -412,6 +464,16 @@ function AllCandidates() {
             </Title>
             <Text type="secondary">
               Manage and track your candidates in branch
+              {isAdvancedFilterApplied && (
+                <Badge
+                  count="Advanced Filters Active"
+                  style={{
+                    backgroundColor: "#da2c46",
+                    marginLeft: 8,
+                    fontSize: "10px",
+                  }}
+                />
+              )}
             </Text>
           </Col>
           <Col xs={24} sm={8} md={12}>
@@ -445,7 +507,7 @@ function AllCandidates() {
 
       <Card style={{ marginBottom: "24px" }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8} lg={18}>
+          <Col xs={24} sm={12} md={8} lg={12}>
             <Search
               placeholder="Search candidates, skills, email, title..."
               value={searchTerm}
@@ -453,13 +515,29 @@ function AllCandidates() {
               prefix={<SearchOutlined />}
               allowClear
               loading={isLoading && searchTerm !== debouncedSearchTerm}
+              disabled={isAdvancedFilterApplied}
             />
+            {isAdvancedFilterApplied && (
+              <Text type="secondary" style={{ fontSize: "12px", marginTop: 4 }}>
+                Basic search disabled while advanced filters are active
+              </Text>
+            )}
           </Col>
 
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Button onClick={clearFilters} icon={<FilterOutlined />}>
-              Clear Search
-            </Button>
+          <Col xs={24} sm={12} md={8} lg={12}>
+            <Space>
+              <Button
+                icon={<SettingOutlined />}
+                onClick={() => setAdvancedFiltersVisible(true)}
+                type={isAdvancedFilterApplied ? "primary" : "default"}
+                style={isAdvancedFilterApplied ? buttonStyle : {}}
+              >
+                Advanced Filters
+              </Button>
+              <Button onClick={clearFilters} icon={<FilterOutlined />}>
+                Clear All Filters
+              </Button>
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -467,11 +545,13 @@ function AllCandidates() {
       {candidates.length === 0 && !isLoading ? (
         <Empty
           description={
-            debouncedSearchTerm ||
-            selectedSkills.length > 0 ||
-            selectedLocation ||
-            selectedExperience ||
-            selectedIndustry
+            isAdvancedFilterApplied
+              ? "No candidates found matching your advanced filter criteria"
+              : debouncedSearchTerm ||
+                selectedSkills.length > 0 ||
+                selectedLocation ||
+                selectedExperience ||
+                selectedIndustry
               ? "No candidates found matching your criteria"
               : "No candidates found"
           }
@@ -489,7 +569,7 @@ function AllCandidates() {
             loading={isLoading}
           />
 
-          <div style={{ marginTop: 16, marginBottom: 16, position: "center" }}>
+          <div style={{ marginTop: 16, marginBottom: 16, textAlign: "center" }}>
             <Pagination
               current={currentPage}
               pageSize={pageSize}
@@ -520,11 +600,18 @@ function AllCandidates() {
         isSubmitting={isAddingCandidate}
       />
 
-      {/* Bulk Import Modal */}
       <BulkImportModal
         visible={bulkUploadModalVisible}
         onCancel={() => setBulkUploadModalVisible(false)}
         onImport={handleBulkImport}
+      />
+
+      <AdvancedFiltersModal
+        visible={advancedFiltersVisible}
+        onCancel={() => setAdvancedFiltersVisible(false)}
+        onApplyFilters={handleApplyFilters}
+        initialFilters={advancedFilters}
+        filterOptions={filterOptions}
       />
 
       <style jsx>{`
