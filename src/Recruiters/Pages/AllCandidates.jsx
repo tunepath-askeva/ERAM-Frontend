@@ -103,6 +103,11 @@ function AllCandidates() {
   // Advanced filters state
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
+  const [advancedCurrentPage, setAdvancedCurrentPage] = useState(1);
+  const [advancedPageSize, setAdvancedPageSize] = useState(10);
+
+  const [filteredCandidates, setFilteredCandidates] = useState([]);
+  const [filteredTotal, setFilteredTotal] = useState(0);
 
   const [filters, setFilters] = useState({});
   const [addCandidateForm] = Form.useForm();
@@ -116,32 +121,24 @@ function AllCandidates() {
       limit: pageSize,
     };
 
-    // If advanced filters are applied, use them instead of basic filters
-    if (isAdvancedFilterApplied && Object.keys(advancedFilters).length > 0) {
-      return {
-        ...params,
-        ...advancedFilters,
-      };
-    }
-
-    // Basic filters (original logic)
-    if (debouncedSearchTerm) {
+    // Only use basic filters for GET API - remove advanced filter logic
+    if (debouncedSearchTerm && !isAdvancedFilterApplied) {
       params.search = debouncedSearchTerm;
     }
 
-    if (selectedSkills.length > 0) {
+    if (selectedSkills.length > 0 && !isAdvancedFilterApplied) {
       params.skills = selectedSkills.join(",");
     }
 
-    if (selectedLocation) {
+    if (selectedLocation && !isAdvancedFilterApplied) {
       params.location = selectedLocation;
     }
 
-    if (selectedExperience) {
+    if (selectedExperience && !isAdvancedFilterApplied) {
       params.experience = selectedExperience;
     }
 
-    if (selectedIndustry) {
+    if (selectedIndustry && !isAdvancedFilterApplied) {
       params.industry = selectedIndustry;
     }
 
@@ -154,7 +151,6 @@ function AllCandidates() {
     selectedLocation,
     selectedExperience,
     selectedIndustry,
-    advancedFilters,
     isAdvancedFilterApplied,
   ]);
 
@@ -163,7 +159,9 @@ function AllCandidates() {
     isLoading,
     error,
     refetch,
-  } = useGetAllBranchedCandidateQuery(queryParams);
+  } = useGetAllBranchedCandidateQuery(queryParams, {
+    skip: !queryParams,
+  });
 
   const [
     filterCandidates,
@@ -182,17 +180,25 @@ function AllCandidates() {
   const handleApplyFilters = async (appliedFilters) => {
     try {
       setFilters(appliedFilters);
-      const response = await filterCandidates(appliedFilters).unwrap();
+      const response = await filterCandidates({
+        ...appliedFilters,
+        page: 1,
+        limit: pageSize,
+      }).unwrap();
 
-      // Update the advanced filters state
+      setFilteredCandidates(response?.candidates || []);
+      setFilteredTotal(response?.total || response?.candidates?.length || 0);
+
       setAdvancedFilters(appliedFilters);
       setIsAdvancedFilterApplied(true);
 
-      // Reset pagination to first page when new filters are applied
-      setCurrentPage(1);
+      setAdvancedCurrentPage(1);
+      setAdvancedPageSize(pageSize);
 
       message.success(
-        `Found ${response?.total || 0} candidates matching your criteria`
+        `Found ${
+          response?.candidates?.length || 0
+        } candidates matching your criteria`
       );
     } catch (error) {
       message.error("Failed to apply filters. Please try again.");
@@ -200,8 +206,21 @@ function AllCandidates() {
     }
   };
 
-  const candidates = candidatesResponse?.users || [];
-  const totalCandidates = candidatesResponse?.total || 0;
+  const candidates = isAdvancedFilterApplied
+    ? filteredCandidates
+    : candidatesResponse?.users || [];
+
+  const totalCandidates = isAdvancedFilterApplied
+    ? filteredTotal
+    : candidatesResponse?.total || 0;
+
+  const currentPaginationPage = isAdvancedFilterApplied
+    ? advancedCurrentPage
+    : currentPage;
+  const currentPaginationPageSize = isAdvancedFilterApplied
+    ? advancedPageSize
+    : pageSize;
+
   const filterOptions = data?.filterOptions || {
     skills: [],
     locations: [],
@@ -210,7 +229,7 @@ function AllCandidates() {
   };
 
   useEffect(() => {
-    if (currentPage !== 1 && !isAdvancedFilterApplied) {
+    if (!isAdvancedFilterApplied && currentPage !== 1) {
       setCurrentPage(1);
     }
   }, [
@@ -219,6 +238,7 @@ function AllCandidates() {
     selectedLocation,
     selectedExperience,
     selectedIndustry,
+    isAdvancedFilterApplied,
   ]);
 
   const clearFilters = useCallback(() => {
@@ -231,6 +251,8 @@ function AllCandidates() {
 
     // Clear advanced filters
     setAdvancedFilters({});
+    setFilteredCandidates([]);
+    setFilteredTotal(0);
     setIsAdvancedFilterApplied(false);
 
     setCurrentPage(1);
@@ -301,7 +323,7 @@ function AllCandidates() {
     }
   };
 
-  const handlePageChange = useCallback(
+  const handleNormalPageChange = useCallback(
     (page, size) => {
       setCurrentPage(page);
       if (size !== pageSize) {
@@ -311,6 +333,33 @@ function AllCandidates() {
     },
     [pageSize]
   );
+
+  const handleAdvancedPageChange = useCallback(
+    async (page, size) => {
+      try {
+        const response = await filterCandidates({
+          ...advancedFilters,
+          page: page,
+          limit: size,
+        }).unwrap();
+
+        setFilteredCandidates(response?.candidates || []);
+        setFilteredTotal(response?.total || response?.candidates?.length || 0);
+        setAdvancedCurrentPage(page);
+        if (size !== advancedPageSize) {
+          setAdvancedPageSize(size);
+        }
+      } catch (error) {
+        message.error("Failed to load more candidates");
+        console.error("Pagination error:", error);
+      }
+    },
+    [advancedFilters, advancedPageSize, filterCandidates]
+  );
+
+  const currentPaginationHandler = isAdvancedFilterApplied
+    ? handleAdvancedPageChange
+    : handleNormalPageChange;
 
   const handleSearchChange = useCallback(
     (e) => {
@@ -429,7 +478,9 @@ function AllCandidates() {
     },
   ];
 
-  if (isLoading && currentPage === 1) {
+  const isLoadingData = isAdvancedFilterApplied ? filterLoading : isLoading;
+
+  if (isLoadingData && currentPage === 1) {
     return (
       <div style={{ textAlign: "center", padding: "50px" }}>
         <SkeletonLoader />
@@ -566,15 +617,15 @@ function AllCandidates() {
             pagination={false}
             scroll={{ x: true }}
             bordered
-            loading={isLoading}
+            loading={isLoadingData}
           />
 
           <div style={{ marginTop: 16, marginBottom: 16, textAlign: "center" }}>
             <Pagination
-              current={currentPage}
-              pageSize={pageSize}
+              current={currentPaginationPage}
+              pageSize={currentPaginationPageSize}
               total={totalCandidates}
-              onChange={handlePageChange}
+              onChange={currentPaginationHandler}
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) =>

@@ -162,10 +162,10 @@ const AdvancedFiltersModal = ({
   const noticePeriodOptions = [
     { value: "any", label: "Any Notice Period" },
     { value: "immediate", label: "Immediate" },
-    { value: "15_days", label: "15 Days" },
-    { value: "1_month", label: "1 Month" },
-    { value: "2_months", label: "2 Months" },
-    { value: "3_months", label: "3+ Months" },
+    { value: "15 days", label: "15 Days" },
+    { value: "1 month", label: "1 Month" },
+    { value: "2 months", label: "2 Months" },
+    { value: "3 months", label: "3+ Months" },
   ];
 
   const lastUpdatedOptions = [
