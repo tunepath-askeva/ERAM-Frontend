@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Button,
   Table,
@@ -14,6 +14,10 @@ import {
   Pagination,
   Modal,
   Descriptions,
+  Row,
+  Col,
+  Divider,
+  Select 
 } from "antd";
 import {
   PlusOutlined,
@@ -27,22 +31,29 @@ import {
   InfoCircleOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  FilterOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { useGetAdminRequisiionQuery } from "../../Slices/Admin/AdminApis";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
+const { Search } = Input;
+const { Option } = Select;
 
 const AdminRequisition = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
   });
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -56,12 +67,17 @@ const AdminRequisition = () => {
     page: pagination.current,
     limit: pagination.pageSize,
     search: debouncedSearchTerm,
+    filters,
   });
 
-  const transformRequisitionData = (data) => {
-    if (!data || !data.requisitions) return [];
+  // Transform and group requisitions
+  const { groupedRequisitions, totalCount } = useMemo(() => {
+    if (!apiResponse || !apiResponse.requisitions) {
+      return { groupedRequisitions: [], totalCount: 0 };
+    }
 
-    return data.requisitions.map((req) => ({
+    // First transform the data
+    const transformedRequisitions = apiResponse.requisitions.map((req) => ({
       _id: req._id,
       title: req.title,
       requisitionNo: req.requisitionNo || "N/A",
@@ -70,7 +86,7 @@ const AdminRequisition = () => {
       location: req.officeLocation,
       employmentType: req.EmploymentType,
       experience: `${req.experienceMin}-${req.experienceMax} years`,
-      salary: `SAR  ${req.salaryMin}-${req.salaryMax}`,
+      salary: `SAR ${req.salaryMin}-${req.salaryMax}`,
       status: req.isActive,
       priority: "medium",
       positions: req.numberOfCandidate,
@@ -89,10 +105,36 @@ const AdminRequisition = () => {
         client: req.client,
       },
     }));
-  };
 
-  const requisitions = transformRequisitionData(apiResponse);
-  const totalCount = apiResponse?.pagination?.total || 0;
+    // Then group by requisitionNo and referenceNo
+    const grouped = {};
+    
+    transformedRequisitions.forEach((req) => {
+      const groupKey = `${req.requisitionNo}-${req.referenceNo}`;
+      
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          key: groupKey,
+          requisitionNo: req.requisitionNo,
+          referenceNo: req.referenceNo,
+          count: 0,
+          positions: [],
+          groupData: req, // Use first requisition's data for group info
+        };
+      }
+      
+      grouped[groupKey].positions.push({
+        ...req,
+        key: req._id,
+      });
+      grouped[groupKey].count++;
+    });
+
+    return {
+      groupedRequisitions: Object.values(grouped),
+      totalCount: apiResponse.pagination?.total || 0,
+    };
+  }, [apiResponse]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -104,7 +146,6 @@ const AdminRequisition = () => {
   }, [searchTerm]);
 
   const handleCreateWorkOrder = (requisition) => {
-    console.log(requisition, "hi requireuisurieusrieu siurieruie");
     navigate(`/admin/add-workorder`, {
       state: {
         requisitionData: requisition.originalData,
@@ -125,6 +166,27 @@ const AdminRequisition = () => {
 
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
+  };
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: value || undefined,
+    }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchTerm("");
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      searchTerm ||
+      Object.keys(filters).some((key) => filters[key] !== undefined)
+    );
   };
 
   const getStatusColor = (status) => {
@@ -151,29 +213,8 @@ const AdminRequisition = () => {
     }
   };
 
-  const columns = [
-    {
-      title: "Requisition.No",
-      dataIndex: "requisitionNo",
-      key: "requisitionNo",
-      width: 150,
-      render: (requisitionNo) => (
-        <span style={{ fontWeight: 500, color: "#2c3e50" }}>
-          {requisitionNo || "-"}
-        </span>
-      ),
-    },
-    {
-      title: "Reference.No",
-      dataIndex: "referenceNo",
-      key: "referenceNo",
-      width: 150,
-      render: (referenceNo) => (
-        <span style={{ fontWeight: 500, color: "#2c3e50" }}>
-          {referenceNo || "-"}
-        </span>
-      ),
-    },
+  // Columns for individual positions within a group
+  const positionColumns = [
     {
       title: "Job Title",
       dataIndex: "title",
@@ -301,6 +342,45 @@ const AdminRequisition = () => {
     },
   ];
 
+  const customStyles = `
+    .requisition-group-card {
+      margin-bottom: 16px;
+    }
+    .requisition-group-header {
+      padding: 12px 16px;
+      margin: -16px -16px 16px -16px;
+      border-radius: 6px 6px 0 0;
+      border-bottom: 1px solid #d9d9d9;
+      background-color: #fafafa;
+    }
+    .group-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #da2c46;
+      margin-bottom: 4px;
+    }
+    .group-subtitle {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .group-stats {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .ant-btn-primary {
+      background-color: #da2c46 !important;
+      border-color: #da2c46 !important;
+    }
+    .ant-btn-primary:hover {
+      background-color: #c2253d !important;
+      border-color: #c2253d !important;
+    }
+  `;
+
   if (isError) {
     return (
       <Card style={{ margin: 16 }}>
@@ -317,16 +397,11 @@ const AdminRequisition = () => {
 
   return (
     <>
+      <style>{customStyles}</style>
       <div
         style={{
           padding: "16px",
           minHeight: "100vh",
-          "@media (min-width: 576px)": {
-            padding: "24px",
-          },
-          "@media (min-width: 768px)": {
-            padding: "32px",
-          },
         }}
       >
         <div className="requisition-header">
@@ -373,7 +448,7 @@ const AdminRequisition = () => {
                 minWidth: "300px",
               }}
             >
-              <Input.Search
+              <Search
                 placeholder="Search Requisitions"
                 allowClear
                 value={searchTerm}
@@ -381,59 +456,204 @@ const AdminRequisition = () => {
                 style={{
                   maxWidth: "300px",
                   width: "100%",
-                  borderRadius: "8px",
-                  height: "35px",
                 }}
                 size="large"
-                className="custom-search-input"
               />
+              <Button
+                type={showFilters ? "primary" : "default"}
+                icon={<FilterOutlined />}
+                onClick={() => setShowFilters(!showFilters)}
+                size="large"
+              >
+                Filters
+              </Button>
             </div>
           </div>
+
+          {/* Filter Controls */}
+          {showFilters && (
+            <Card
+              size="small"
+              style={{
+                marginBottom: 16,
+                backgroundColor: "#fafafa",
+              }}
+            >
+              <Row gutter={[16, 8]}>
+                <Col xs={24} sm={12} md={8} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Status
+                    </span>
+                  </div>
+                  <Select
+                    placeholder="Select Status"
+                    value={filters.status}
+                    onChange={(value) => handleFilterChange("status", value)}
+                    allowClear
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="active">Active</Option>
+                    <Option value="inactive">Inactive</Option>
+                    <Option value="draft">Draft</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Employment Type
+                    </span>
+                  </div>
+                  <Select
+                    placeholder="Select Type"
+                    value={filters.employmentType}
+                    onChange={(value) =>
+                      handleFilterChange("employmentType", value)
+                    }
+                    allowClear
+                    style={{ width: "100%" }}
+                  >
+                    <Option value="full-time">Full-time</Option>
+                    <Option value="part-time">Part-time</Option>
+                    <Option value="contract">Contract</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Reference No
+                    </span>
+                  </div>
+                  <Input
+                    placeholder="Filter by reference no"
+                    value={filters.referenceNo || ""}
+                    onChange={(e) =>
+                      handleFilterChange("referenceNo", e.target.value)
+                    }
+                    style={{ width: "100%" }}
+                    allowClear
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={6}>
+                  <div style={{ marginBottom: 4 }}>
+                    <span style={{ fontSize: "12px", color: "#666" }}>
+                      Requisition No
+                    </span>
+                  </div>
+                  <Input
+                    placeholder="Filter by requisition no"
+                    value={filters.requisitionNo || ""}
+                    onChange={(e) =>
+                      handleFilterChange("requisitionNo", e.target.value)
+                    }
+                    style={{ width: "100%" }}
+                    allowClear
+                  />
+                </Col>
+              </Row>
+              {hasActiveFilters() && (
+                <div style={{ marginTop: 16, textAlign: "right" }}>
+                  <Button
+                    type="link"
+                    onClick={handleClearAllFilters}
+                    style={{ padding: 0 }}
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
         </div>
 
-        {/* Table */}
+        {/* Grouped Requisitions Display */}
         <Card
           style={{
             borderRadius: "12px",
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
             border: "1px solid rgba(255, 255, 255, 0.2)",
             background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
           }}
         >
-          <Table
-            columns={columns}
-            dataSource={requisitions}
-            rowKey="_id"
-            loading={isLoading}
-            pagination={false}
-            scroll={{ x: 1400 }}
-            size="middle"
-            style={{
-              borderRadius: "8px",
-              overflow: "hidden",
-            }}
-            locale={{
-              emptyText: (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <div style={{ textAlign: "center" }}>
-                      <Text style={{ fontSize: "14px", color: "#7f8c8d" }}>
-                        {searchTerm
-                          ? "No requisitions match your search"
-                          : "No requisitions created yet"}
-                      </Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        {searchTerm ? "Try a different search term" : ""}
-                      </Text>
+          {isLoading ? (
+            <div style={{ textAlign: "center", padding: "50px 0" }}>
+              <Spin size="large" />
+            </div>
+          ) : groupedRequisitions.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div style={{ textAlign: "center" }}>
+                  <Text style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                    {hasActiveFilters()
+                      ? "No requisitions match your search"
+                      : "No requisitions created yet"}
+                  </Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {hasActiveFilters() ? "Try a different search term" : ""}
+                  </Text>
+                </div>
+              }
+            />
+          ) : (
+            <>
+              {groupedRequisitions.map((group) => (
+                <Card
+                  key={group.key}
+                  className="requisition-group-card"
+                  size="small"
+                >
+                  <div className="requisition-group-header">
+                    <div className="group-title">
+                      Requisition.No: {group.requisitionNo || "N/A"}
                     </div>
-                  }
-                />
-              ),
-            }}
-          />
+                    <div className="group-title">
+                      Reference.No: {group.referenceNo || "N/A"}
+                    </div>
+                    <div className="group-stats">
+                      <Tag color="blue">
+                        {group.count} Position{group.count > 1 ? "s" : ""}
+                      </Tag>
+                      {(() => {
+                        const statusCounts = group.positions.reduce(
+                          (acc, pos) => {
+                            const status = pos.status || "draft";
+                            acc[status] = (acc[status] || 0) + 1;
+                            return acc;
+                          },
+                          {}
+                        );
+
+                        return Object.entries(statusCounts).map(
+                          ([status, count]) => (
+                            <Tag
+                              key={status}
+                              color={getStatusColor(status)}
+                              size="small"
+                            >
+                              {status.charAt(0).toUpperCase() +
+                                status.slice(1)}
+                              : {count}
+                            </Tag>
+                          )
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <Table
+                    columns={positionColumns}
+                    dataSource={group.positions}
+                    pagination={false}
+                    size="small"
+                    rowKey="key"
+                    scroll={{ x: 1000 }}
+                  />
+                </Card>
+              ))}
+            </>
+          )}
 
           {/* Pagination */}
           {totalCount > 0 && (
@@ -601,31 +821,6 @@ const AdminRequisition = () => {
           </div>
         )}
       </Modal>
-      <style jsx>{`
-        .ant-table-thead > tr > th {
-          background-color: #fafafa !important;
-          font-weight: 600 !important;
-        }
-        .ant-pagination-item-active {
-          border-color: #da2c46 !important;
-          background-color: #da2c46 !important;
-        }
-        .ant-pagination-item-active a {
-          color: #fff !important;
-        }
-        .ant-pagination-item:hover {
-          border-color: #da2c46 !important;
-        }
-        .ant-pagination-item:hover a {
-          color: #da2c46 !important;
-        }
-        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: #da2c46 !important;
-        }
-        .ant-tabs-ink-bar {
-          background-color: #da2c46 !important;
-        }
-      `}</style>
     </>
   );
 };

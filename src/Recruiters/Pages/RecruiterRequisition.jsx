@@ -14,6 +14,7 @@ import {
   Select,
   DatePicker,
   Pagination,
+  Divider,
 } from "antd";
 import {
   PlusOutlined,
@@ -21,7 +22,6 @@ import {
   EyeOutlined,
   EditOutlined,
   SearchOutlined,
-  ClearOutlined,
   FilterOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -85,13 +85,13 @@ const RecruiterRequisition = () => {
       refetch();
     };
 
-    window.addEventListener('focus', handleFocus);
-    
+    window.addEventListener("focus", handleFocus);
+
     // Also refetch when component mounts
     refetch();
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [refetch]);
 
@@ -113,6 +113,42 @@ const RecruiterRequisition = () => {
     }
   }, [requisitionData]);
 
+  // Group requisitions by requisitionNo and referenceNo
+  const groupedRequisitions = useMemo(() => {
+    if (!requisitionData?.requisition) return [];
+
+    const grouped = {};
+
+    requisitionData.requisition.forEach((req) => {
+      const groupKey = `${req.requisitionNo || "N/A"}-${
+        req.referenceNo || "N/A"
+      }`;
+
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = {
+          key: groupKey,
+          requisitionNo: req.requisitionNo,
+          referenceNo: req.referenceNo,
+          client: req.client,
+          project: req.project,
+          count: 0,
+          positions: [],
+          // Use the first requisition's data for group-level info
+          groupData: req,
+        };
+      }
+
+      grouped[groupKey].positions.push({
+        ...req,
+        key: req._id,
+        status: req.isActive,
+      });
+      grouped[groupKey].count++;
+    });
+
+    return Object.values(grouped);
+  }, [requisitionData]);
+
   const handleAddNew = () => {
     navigate("/recruiter/requisition/add");
   };
@@ -124,16 +160,6 @@ const RecruiterRequisition = () => {
   const handlePaginationChange = (page, pageSize) => {
     setPagination({ current: page, pageSize });
   };
-
-  const formattedRequisitions = useMemo(() => {
-    if (!requisitionData?.requisition) return [];
-    return requisitionData.requisition.map((req) => ({
-      ...req,
-      key: req._id,
-      // Fix status mapping
-      status: req.isActive,
-    }));
-  }, [requisitionData]);
 
   const handleDelete = async (id) => {
     try {
@@ -235,38 +261,8 @@ const RecruiterRequisition = () => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const columns = [
-    {
-      title: "Req. Number",
-      dataIndex: "requisitionNo",
-      key: "requisitionNo",
-      width: 120,
-      render: (text) => text || "N/A",
-    },
-    {
-      title: "Reference Number",
-      dataIndex: "referenceNo",
-      key: "referenceNo",
-      width: 150,
-      render: (text) => text || "N/A",
-    },
-    {
-      title: "Client",
-      dataIndex: "client",
-      key: "client",
-      render: (client) => {
-        const clientObj = clients.find((c) => c.id === client);
-        return clientObj?.name || "N/A";
-      },
-      width: 150,
-    },
-    {
-      title: "Project",
-      dataIndex: "project",
-      key: "project",
-      width: 150,
-      render: (project) => project?.name || "N/A",
-    },
+  // Columns for individual positions within a group
+  const positionColumns = [
     {
       title: "Job Title",
       dataIndex: "title",
@@ -318,9 +314,7 @@ const RecruiterRequisition = () => {
       dataIndex: "isActive",
       key: "status",
       render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {formatStatusText(status)}
-        </Tag>
+        <Tag color={getStatusColor(status)}>{formatStatusText(status)}</Tag>
       ),
       width: 100,
     },
@@ -386,6 +380,33 @@ const RecruiterRequisition = () => {
       color: #666;
       font-size: 12px;
       margin-top: 4px;
+    }
+    .requisition-group-card {
+      margin-bottom: 16px;
+    }
+    .requisition-group-header {
+      padding: 12px 16px;
+      margin: -16px -16px 16px -16px;
+      border-radius: 6px 6px 0 0;
+      border-bottom: 1px solid #d9d9d9;
+    }
+    .group-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #da2c46;
+      margin-bottom: 4px;
+    }
+    .group-subtitle {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .group-stats {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
     }
   `;
 
@@ -514,7 +535,9 @@ const RecruiterRequisition = () => {
                   <Select
                     placeholder="Select Type"
                     value={filters.employmentType}
-                    onChange={(value) => handleFilterChange("employmentType", value)}
+                    onChange={(value) =>
+                      handleFilterChange("employmentType", value)
+                    }
                     allowClear
                     size="small"
                     style={{ width: "100%" }}
@@ -545,20 +568,91 @@ const RecruiterRequisition = () => {
             )}
           </div>
 
-          <Table
-            columns={columns}
-            dataSource={formattedRequisitions}
-            loading={requisitionsLoading}
-            rowKey="key"
-            pagination={false}
-            scroll={{ x: 1200 }}
-            size="small"
-            locale={{
-              emptyText: hasActiveFilters()
-                ? `No requisitions found matching the applied filters`
-                : "No requisitions available",
-            }}
-          />
+          {/* Grouped Requisitions Display */}
+          <div style={{ minHeight: "400px" }}>
+            {requisitionsLoading ? (
+              <div style={{ textAlign: "center", padding: "50px 0" }}>
+                Loading...
+              </div>
+            ) : groupedRequisitions.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "50px 0",
+                  color: "#999",
+                }}
+              >
+                {hasActiveFilters()
+                  ? "No requisitions found matching the applied filters"
+                  : "No requisitions available"}
+              </div>
+            ) : (
+              groupedRequisitions.map((group) => (
+                <Card
+                  key={group.key}
+                  className="requisition-group-card"
+                  size="small"
+                >
+                  <div className="requisition-group-header">
+                    <div className="group-title">
+                      Requisition.No: {group.requisitionNo || "N/A"}
+                    </div>
+                    <div className="group-title">
+                      Reference.No: {group.referenceNo || "N/A"}
+                    </div>
+                    <div className="group-subtitle">
+                      <span>
+                        <strong>Client:</strong>{" "}
+                        {clients.find((c) => c.id === group.client)?.name ||
+                          "N/A"}
+                      </span>
+                      <span>•</span>
+                      <span>
+                        <strong>Project:</strong> {group.project?.name || "N/A"}
+                      </span>
+                    </div>
+                    <div className="group-stats">
+                      <Tag color="blue">
+                        {group.count} Position{group.count > 1 ? "s" : ""}
+                      </Tag>
+                      {(() => {
+                        const statusCounts = group.positions.reduce(
+                          (acc, pos) => {
+                            const status = pos.isActive || "draft";
+                            acc[status] = (acc[status] || 0) + 1;
+                            return acc;
+                          },
+                          {}
+                        );
+
+                        return Object.entries(statusCounts).map(
+                          ([status, count]) => (
+                            <Tag
+                              key={status}
+                              color={getStatusColor(status)}
+                              size="small"
+                            >
+                              {formatStatusText(status)}: {count}
+                            </Tag>
+                          )
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <Table
+                    columns={positionColumns}
+                    dataSource={group.positions}
+                    pagination={false}
+                    size="small"
+                    rowKey="key"
+                    scroll={{ x: 1000 }}
+                    style={{ marginTop: 0 }}
+                  />
+                </Card>
+              ))
+            )}
+          </div>
 
           <div style={{ marginTop: 16, textAlign: "right" }}>
             <Pagination
@@ -690,22 +784,22 @@ const RecruiterRequisition = () => {
                   : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
-                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
                   {selectedRequisition.description || "N/A"}
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Key Responsibilities" span={2}>
-                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
                   {selectedRequisition.keyResponsibilities || "N/A"}
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Qualifications" span={2}>
-                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
                   {selectedRequisition.qualification || "N/A"}
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Requirements" span={2}>
-                <div style={{ maxHeight: '100px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
                   {selectedRequisition.jobRequirements || "N/A"}
                 </div>
               </Descriptions.Item>
@@ -728,7 +822,7 @@ const RecruiterRequisition = () => {
                   : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Benefits" span={2}>
-                <div style={{ maxHeight: '80px', overflowY: 'auto' }}>
+                <div style={{ maxHeight: "80px", overflowY: "auto" }}>
                   {Array.isArray(selectedRequisition.benefits)
                     ? selectedRequisition.benefits.join(", ")
                     : selectedRequisition.benefits || "N/A"}
@@ -737,11 +831,17 @@ const RecruiterRequisition = () => {
               <Descriptions.Item label="Pipeline Stages" span={2}>
                 {selectedRequisition.pipelineStageTimeline?.length > 0 ? (
                   <div>
-                    {selectedRequisition.pipelineStageTimeline.map((stage, index) => (
-                      <Tag key={stage._id} color="purple" style={{ marginBottom: 4 }}>
-                        {stage.stageName} (Order: {stage.stageOrder})
-                      </Tag>
-                    ))}
+                    {selectedRequisition.pipelineStageTimeline.map(
+                      (stage, index) => (
+                        <Tag
+                          key={stage._id}
+                          color="purple"
+                          style={{ marginBottom: 4 }}
+                        >
+                          {stage.stageName} (Order: {stage.stageOrder})
+                        </Tag>
+                      )
+                    )}
                   </div>
                 ) : (
                   "No pipeline stages configured"
