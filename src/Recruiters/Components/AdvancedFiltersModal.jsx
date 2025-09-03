@@ -225,7 +225,7 @@ const AdvancedFiltersModal = ({
       title={
         <Space>
           <FilterOutlined />
-          <span>Advanced Filters</span>
+          <span>Filters</span>
         </Space>
       }
       visible={visible}
