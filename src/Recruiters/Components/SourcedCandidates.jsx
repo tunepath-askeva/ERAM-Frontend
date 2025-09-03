@@ -260,6 +260,10 @@ const SourcedCandidates = ({ jobId }) => {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
 
+  const [filteredCandidates, setFilteredCandidates] = useState([]);
+  const [filteredTotal, setFilteredTotal] = useState(0);
+  const [primaryFiltersApplied, setPrimaryFiltersApplied] = useState(false);
+
   const {
     data: workOrderDetails,
     isLoading: isWorkOrderLoadingOne,
@@ -275,7 +279,7 @@ const SourcedCandidates = ({ jobId }) => {
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
 
-  const [filterCandidates, { data: filterData }] =
+  const [filterCandidates, { data: filterData, isLoading: filterLoading }] =
     useFilterAllCandidatesMutation();
 
   const filterOptions = filterData?.filterOptions || {
@@ -341,6 +345,15 @@ const SourcedCandidates = ({ jobId }) => {
     }
   }, [exactMatchData]);
 
+  useEffect(() => {
+    if (primaryFiltersApplied && filteredCandidates.length > 0) {
+      setPagination((prev) => ({
+        ...prev,
+        total: filteredTotal,
+      }));
+    }
+  }, [primaryFiltersApplied, filteredCandidates, filteredTotal]);
+
   const allCandidates = useMemo(() => {
     const jobAppCandidates =
       jobApplications?.formResponses?.map((response) => ({
@@ -352,8 +365,11 @@ const SourcedCandidates = ({ jobId }) => {
       })) || [];
 
     let candidatesArray = [];
-
-    if (isWorkOrderFiltered) {
+    if (primaryFiltersApplied) {
+      candidatesArray = Array.isArray(filteredCandidates)
+        ? filteredCandidates
+        : [];
+    } else if (isWorkOrderFiltered) {
       candidatesArray = Array.isArray(workOrderCandidates)
         ? workOrderCandidates
         : [];
@@ -369,7 +385,12 @@ const SourcedCandidates = ({ jobId }) => {
     }
 
     // Apply client-side filtering when shouldFetch is true
-    if (shouldFetch && !isWorkOrderFiltered && !isExactMatch) {
+    if (
+      shouldFetch &&
+      !primaryFiltersApplied &&
+      !isWorkOrderFiltered &&
+      !isExactMatch
+    ) {
       candidatesArray = candidatesArray.filter((candidate) => {
         // Keywords filter
         if (filters.keywords.trim()) {
@@ -581,25 +602,51 @@ const SourcedCandidates = ({ jobId }) => {
     isWorkOrderFiltered,
     workOrderBasedSourced,
     shouldFetch,
-    filters, // Add filters dependency
+    filters,
+    filteredCandidates,
+    primaryFiltersApplied,
   ]);
 
   const handleApplyFilters = async (appliedFilters) => {
     try {
+      console.log("Applying filters:", appliedFilters);
+
       setAdvancedFilters(appliedFilters);
-      setIsAdvancedFilterApplied(true);
+      setPrimaryFiltersApplied(true);
 
-      const response = await filterCandidates(appliedFilters).unwrap();
+      const response = await filterCandidates({
+        ...appliedFilters,
+        page: 1,
+        limit: pagination.pageSize,
+      }).unwrap();
 
-      setWorkOrderCandidates(response?.users || []);
-      setIsWorkOrderFiltered(true);
+      console.log("Filter response:", response);
 
-      message.success(
-        `Found ${response?.total || 0} candidates matching your criteria`
-      );
+      const candidates = response?.candidates || response?.users || [];
+
+      // Handle the pagination data structure from your API
+      const total = response?.total || 0;
+      const currentPage = response?.page || 1;
+      const totalPages = response?.pages || 1;
+
+      console.log("Filtered candidates:", candidates);
+      console.log("Pagination info:", { total, currentPage, totalPages });
+
+      setFilteredCandidates(candidates);
+      setFilteredTotal(total);
+
+      // Update pagination state with correct values
+      setPagination((prev) => ({
+        ...prev,
+        current: currentPage,
+        total: total,
+        pageSize: prev.pageSize,
+      }));
+
+      message.success(`Found ${total} candidates matching your criteria`);
     } catch (error) {
-      message.error("Failed to apply filters. Please try again.");
       console.error("Filter error:", error);
+      message.error("Failed to apply filters. Please try again.");
     }
   };
 
@@ -634,22 +681,31 @@ const SourcedCandidates = ({ jobId }) => {
     }
   };
   const sourcedCandidates = useMemo(() => {
-    if (!shouldFetch && !isExactMatch && !isWorkOrderFiltered) {
+    // Use the correct candidates array based on active filters
+    let candidatesToFilter = [];
+
+    if (primaryFiltersApplied) {
+      candidatesToFilter = allCandidates; // This should contain filteredCandidates
+    } else if (!shouldFetch && !isExactMatch && !isWorkOrderFiltered) {
       // Default case - workOrderBasedSourced with 'candidates' array
       const defaultCandidates = Array.isArray(workOrderBasedSourced?.candidates)
         ? workOrderBasedSourced.candidates
         : [];
-
-      return defaultCandidates.filter((candidate) => {
-        const status = candidate.status;
-        return (
-          status !== "selected" &&
-          (status === "sourced" || status === "applied" || !status)
-        );
-      });
+      candidatesToFilter = defaultCandidates.map((user) => ({
+        ...user,
+        status: user.status || "sourced",
+        applicationId: user._id,
+        isApplied: false,
+        isSourced: true,
+        currentCompany:
+          user.workExperience?.[0]?.company || user.currentCompany,
+        totalExperienceYears: user.totalExperienceYears || 0,
+      }));
+    } else {
+      candidatesToFilter = allCandidates;
     }
 
-    return allCandidates.filter((candidate) => {
+    return candidatesToFilter.filter((candidate) => {
       const status = candidate.status;
       return (
         status !== "selected" &&
@@ -662,10 +718,12 @@ const SourcedCandidates = ({ jobId }) => {
     isExactMatch,
     isWorkOrderFiltered,
     workOrderBasedSourced,
+    primaryFiltersApplied,
   ]);
 
   const hasActiveFilters = useMemo(() => {
     return (
+      primaryFiltersApplied ||
       filters.keywords.trim() ||
       filters.skills.length > 0 ||
       filters.location.trim() ||
@@ -688,7 +746,7 @@ const SourcedCandidates = ({ jobId }) => {
       isExactMatch ||
       isWorkOrderFiltered
     );
-  }, [filters, isExactMatch, isWorkOrderFiltered]);
+  }, [filters, isExactMatch, isWorkOrderFiltered, primaryFiltersApplied]);
 
   const handleExactMatch = async () => {
     try {
@@ -814,6 +872,11 @@ const SourcedCandidates = ({ jobId }) => {
     setTempFilters(initialFilters);
     setSkillInput("");
     setQueryParams({}); // Clear query parameters object
+
+    setAdvancedFilters({});
+    setFilteredCandidates([]);
+    setFilteredTotal(0);
+    setPrimaryFiltersApplied(false);
 
     setShouldFetch(false);
     setIsExactMatch(false);
@@ -1014,14 +1077,45 @@ const SourcedCandidates = ({ jobId }) => {
     }
   };
 
-  const handlePaginationChange = (page, pageSize) => {
-    setPagination((prev) => ({
-      ...prev,
-      current: page,
-      pageSize: pageSize,
-    }));
-    setSelectAll(false);
-    // Remove the complex refetch logic since we're doing client-side filtering
+  const handlePaginationChange = async (page, pageSize) => {
+    if (primaryFiltersApplied) {
+      // Handle primary filter pagination
+      try {
+        const response = await filterCandidates({
+          ...advancedFilters,
+          page: page,
+          limit: pageSize,
+        }).unwrap();
+
+        const candidates = response?.candidates || response?.users || [];
+        const total = response?.total || 0;
+        const currentPage = response?.page || page;
+        const totalPages = response?.pages || 1;
+
+        setFilteredCandidates(candidates);
+        setFilteredTotal(total);
+
+        setPagination((prev) => ({
+          ...prev,
+          current: currentPage,
+          pageSize: pageSize,
+          total: total,
+        }));
+
+        console.log("Pagination updated:", { currentPage, total, pageSize });
+      } catch (error) {
+        message.error("Failed to load more candidates");
+        console.error("Pagination error:", error);
+      }
+    } else {
+      // Existing pagination logic for other filters
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize: pageSize,
+      }));
+      setSelectAll(false);
+    }
   };
 
   const getModalButtonText = () => {
@@ -1231,6 +1325,20 @@ const SourcedCandidates = ({ jobId }) => {
                       <Text strong style={{ color: "#666", fontSize: "13px" }}>
                         Active Filters:
                       </Text>
+                      {primaryFiltersApplied && (
+                        <Tag
+                          color="red"
+                          closable
+                          onClose={() => {
+                            setPrimaryFiltersApplied(false);
+                            setFilteredCandidates([]);
+                            setFilteredTotal(0);
+                            setAdvancedFilters({});
+                          }}
+                        >
+                          Primary Filters Active
+                        </Tag>
+                      )}
 
                       {isExactMatch && (
                         <Tag
@@ -1445,8 +1553,11 @@ const SourcedCandidates = ({ jobId }) => {
       </Row>
       {isExactMatch && !isExactMatchLoading && <SuggestionMatchInfo />}
 
-      {(shouldFetch || isExactMatch || isWorkOrderFiltered) &&
-        sourcedCandidates.length > 0 && (
+      {(shouldFetch ||
+        isExactMatch ||
+        isWorkOrderFiltered ||
+        primaryFiltersApplied) &&
+        sourcedCandidates.length >= 0 && (
           <Card
             size="small"
             style={{
@@ -1499,6 +1610,7 @@ const SourcedCandidates = ({ jobId }) => {
         {!shouldFetch &&
         !isExactMatch &&
         !isWorkOrderFiltered &&
+        !primaryFiltersApplied &&
         (!workOrderBasedSourced?.candidates ||
           workOrderBasedSourced.candidates.length === 0) ? (
           <Empty
@@ -1512,9 +1624,11 @@ const SourcedCandidates = ({ jobId }) => {
         ) : isWorkOrderLoading ||
           isExactMatchLoading ||
           isUpdatingStatus ||
+          filterLoading ||
           (!shouldFetch &&
             !isExactMatch &&
             !isWorkOrderFiltered &&
+            !primaryFiltersApplied &&
             !workOrderBasedSourced) ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <Skeleton active />
@@ -1550,9 +1664,13 @@ const SourcedCandidates = ({ jobId }) => {
 
             <div style={{ marginTop: 16, textAlign: "center" }}>
               <Pagination
-                current={pagination.current}
+                current={
+                  primaryFiltersApplied
+                    ? pagination.current
+                    : pagination.current
+                }
                 pageSize={pagination.pageSize}
-                total={pagination.total}
+                total={primaryFiltersApplied ? filteredTotal : pagination.total}
                 onChange={handlePaginationChange}
                 showSizeChanger={true}
                 showQuickJumper={true}

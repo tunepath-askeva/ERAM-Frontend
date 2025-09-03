@@ -12,6 +12,7 @@ import {
   Button,
   Space,
   Tabs,
+  List,
 } from "antd";
 import {
   UserOutlined,
@@ -29,9 +30,11 @@ import {
   GithubOutlined,
   TwitterOutlined,
   FacebookOutlined,
+  FilePdfOutlined 
 } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetSourcedCandidateQuery } from "../../Slices/Recruiter/RecruiterApis";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -294,12 +297,64 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                   <Descriptions.Item label="Visa Status">
                     {candidate.visaStatus?.join(", ") || "Not specified"}
                   </Descriptions.Item>
+                  <Descriptions.Item label="Agency">
+                    {candidate.agency || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Work Order Hint">
+                    {candidate.workorderhint || "Not specified"}
+                  </Descriptions.Item>
                 </Descriptions>
 
                 <Divider />
                 <Title level={5}>Summary</Title>
                 <div style={{ marginBottom: "24px" }}>
                   {candidate.profileSummary || "No summary provided"}
+                </div>
+                <Divider />
+
+             
+                <Title level={5}>Certificates</Title>
+                <div style={{ marginBottom: "24px" }}>
+                  {candidate.certificates &&
+                  candidate.certificates.length > 0 ? (
+                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+                      <List
+                        dataSource={candidate.certificates}
+                        renderItem={(cert) => (
+                          <List.Item>
+                            <List.Item.Meta
+                              title={
+                                <Text strong>
+                                  {cert.documentName || cert.fileName}
+                                </Text>
+                              }
+                              description={
+                                <div>
+                                  <Text type="secondary">
+                                    Uploaded on:{" "}
+                                    {dayjs(cert.uploadedAt).format(
+                                      "MMM DD, YYYY"
+                                    )}
+                                  </Text>
+                                  <br />
+                                  <Button
+                                    type="link"
+                                    href={cert.fileUrl}
+                                    target="_blank"
+                                    icon={<FilePdfOutlined />}
+                                  >
+                                    View Certificate
+                                  </Button>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </Card>
+                  ) : (
+                    <Empty description="No certificates available" />
+                  )}
                 </div>
                 <Divider />
 
