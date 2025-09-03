@@ -24,6 +24,7 @@ import {
   EyeOutlined,
   EditOutlined,
   SearchOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import {
   useUploadPayrollFileMutation,
@@ -36,6 +37,175 @@ import { debounce } from "lodash";
 const { Dragger } = Upload;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+
+const payrollHeaders = [
+  // Basic Information
+  "U_year",
+  "U_month",
+  "U_paygroup",
+  "U_PrjNM",
+  "U_empname",
+  "U_empcode",
+  "U_EramId",
+
+  // Salary Components
+  "U_basic",
+  "U_food",
+  "U_hra",
+  "U_tel",
+  "U_tpa",
+  "U_fuel",
+  "U_shftallow",
+  "U_othrallow",
+  "U_otallow",
+  "U_specallow",
+  "U_actallow",
+  "U_projallow",
+  "U_offsallow",
+  "U_airtallow",
+  "U_exefallow",
+  "U_OEARN",
+  "U_OVSAL",
+  "U_TRFAL",
+  "U_COMAL",
+  "U_HSHIP",
+  "U_BENAL",
+  "U_OBASE",
+  "U_RAAL",
+  "U_FOTA",
+
+  // Overtime & Days
+  "U_OTHOUR1",
+  "U_OTHOUR2",
+  "U_OTHOUR3",
+  "U_TOTHR",
+  "U_OTRT",
+  "U_OTLV",
+  "U_TABDays",
+  "U_absdays",
+  "U_stddays",
+  "U_TUPDays",
+  "U_unpddays",
+  "U_umhjdays",
+  "U_medidays",
+  "U_SFDAY",
+  "U_RADAY",
+  "U_SADAY",
+
+  // Deductions
+  "U_TPAD",
+  "U_ODED",
+  "U_ODEDSA",
+  "U_adv",
+  "U_loan",
+  "U_gosi",
+  "U_TPAD_1",
+  "U_ADMC",
+
+  // Actual Values (Optional)
+  "U_albasic",
+  "U_alfood",
+  "U_alhra",
+  "U_altel",
+  "U_altpa",
+  "U_alfuel",
+  "U_alshftallow",
+  "U_alothrallow",
+  "U_alotallow",
+  "U_alspecallow",
+  "U_alactallow",
+  "U_alprojallow",
+  "U_aloffsallow",
+  "U_alairtallow",
+  "U_alexefallow",
+  "U_altotalsal",
+  "U_alover",
+  "U_altran",
+  "U_alcomp",
+  "U_alhard",
+  "U_albene",
+  "U_alFOTA",
+  "U_alOTLV",
+
+  // Summary
+  "U_totalearn",
+  "U_ONP",
+];
+
+const sampleRow = [
+  "2025",
+  "8",
+  "GroupA",
+  "ProjectX",
+  "John Doe",
+  "EMP001",
+  "ERAM001",
+  "5000",
+  "500",
+  "1000",
+  "200",
+  "300",
+  "100",
+  "50",
+  "20",
+  "150",
+  "100",
+  "200",
+  "50",
+  "75",
+  "100",
+  "50",
+  "20",
+  "10",
+  "5",
+  "15",
+  "10",
+  "5",
+  "3",
+  "20",
+  "50",
+  "100",
+  "2",
+  "100",
+  "2",
+  "1",
+  "0",
+  "0",
+  "5",
+  "0",
+  "0",
+  "50",
+  "20",
+  "0",
+  "100",
+  "0",
+  "0",
+  "0",
+  "0",
+  "5000",
+  "500",
+  "1000",
+  "200",
+  "300",
+  "100",
+  "50",
+  "20",
+  "150",
+  "100",
+  "200",
+  "50",
+  "75",
+  "100",
+  "50",
+  "20",
+  "10",
+  "5",
+  "15",
+  "100",
+  "50",
+  "6000",
+  "5800",
+];
 
 const EmployeeAdminPayroll = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -129,10 +299,25 @@ const EmployeeAdminPayroll = () => {
     return false;
   };
 
+  const handleDownloadSample = () => {
+    const csvRows = [
+      payrollHeaders.join(","), // First row: headers
+      sampleRow.join(","), // Second row: sample data
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "sample_payroll.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const projectOptions = [
-    ...new Set(
-      payrollData?.data?.map((item) => item.U_PrjNM).filter(Boolean)
-    ),
+    ...new Set(payrollData?.data?.map((item) => item.U_PrjNM).filter(Boolean)),
   ];
 
   const handleRemoveFile = () => {
@@ -984,6 +1169,16 @@ const EmployeeAdminPayroll = () => {
               Remove File
             </Button>
           )}
+
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            style={{ backgroundColor: "#da2c46", marginRight: "5px" }}
+            onClick={handleDownloadSample}
+          >
+            Download Sample Payroll File
+          </Button>
+
           <Button
             type="primary"
             icon={<UploadOutlined />}
@@ -1003,7 +1198,7 @@ const EmployeeAdminPayroll = () => {
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col>
               <Input
-              allowClear
+                allowClear
                 placeholder="Search by ERAM ID"
                 prefix={<SearchOutlined />}
                 value={searchText}
@@ -1046,30 +1241,29 @@ const EmployeeAdminPayroll = () => {
         }
       >
         {payrollData?.data ? (
-<Table
-  columns={payrollColumns}
-  dataSource={payrollData?.data || []}
-  rowKey="_id"
-  scroll={{ x: true }}
-  pagination={{
-    current: currentPage,
-    pageSize: pageSize,
-    total: payrollData?.total || 0,
-    showSizeChanger: true,
-    pageSizeOptions: ["10", "20", "50", "100"],
-    showTotal: (total, range) =>
-      `${range[0]}-${range[1]} of ${total} records`,
-  }}
-  loading={isPayrollLoading}
-  onChange={handleTableChange}
-  locale={{
-    emptyText:
-      searchText || project || month || year
-        ? "No matching payroll records"
-        : "No payroll data available",
-  }}
-/>
-
+          <Table
+            columns={payrollColumns}
+            dataSource={payrollData?.data || []}
+            rowKey="_id"
+            scroll={{ x: true }}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: payrollData?.total || 0,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50", "100"],
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} records`,
+            }}
+            loading={isPayrollLoading}
+            onChange={handleTableChange}
+            locale={{
+              emptyText:
+                searchText || project || month || year
+                  ? "No matching payroll records"
+                  : "No payroll data available",
+            }}
+          />
         ) : (
           <Spin tip="Loading payroll data..." />
         )}

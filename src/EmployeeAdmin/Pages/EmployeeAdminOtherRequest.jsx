@@ -239,54 +239,44 @@ const EmployeeAdminOtherRequest = () => {
     );
   };
 
-  const handleSendTicketInfo = async () => {
-    try {
-      const isValid = ticketDetails.every(
-        (detail) => detail.date && detail.price && detail.description.trim()
-      );
+const handleSendTicketInfo = async () => {
+  console.log("Handler called");
+  console.log("Ticket Details:", ticketDetails);
 
-      if (!isValid) {
-        message.error("Please fill all ticket detail fields");
-        return;
-      }
+  try {
+    const isValid = ticketDetails.every(
+      (detail) => detail.date && detail.price
+    );
 
-      // Build FormData
-      const formData = new FormData();
-      ticketDetails.forEach((detail, index) => {
-        formData.append(
-          `ticketDetails[${index}][date]`,
-          detail.date.format("YYYY-MM-DD")
-        );
-        formData.append(`ticketDetails[${index}][ticketPrice]`, detail.price);
-        formData.append(
-          `ticketDetails[${index}][description]`,
-          detail.description
-        );
-
-        if (detail.file) {
-          formData.append(`ticketDetails[${index}][file]`, detail.file);
-        }
-      });
-
-      await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
-
-      message.success("Ticket information sent successfully!");
-      setShowTicketForm(false);
-      setTicketDetails([
-        {
-          id: Date.now(),
-          date: null,
-          price: null,
-          description: "",
-          file: null,
-        },
-      ]);
-      ticketDetailsForm.resetFields();
-    } catch (error) {
-      message.error("Failed to send ticket information. Please try again.");
-      console.error("Error sending ticket info:", error);
+    if (!isValid) {
+      console.log("Validation failed");
+      message.error("Please fill all ticket detail fields");
+      return;
     }
-  };
+
+    const formData = new FormData();
+    ticketDetails.forEach((detail, index) => {
+      formData.append(`ticketDetails[${index}][date]`, detail.date.format("YYYY-MM-DD"));
+      formData.append(`ticketDetails[${index}][ticketPrice]`, detail.price);
+      formData.append(`ticketDetails[${index}][description]`, detail.description);
+      if (detail.file) {
+        formData.append(`ticketDetails[${index}][file]`, detail.file);
+      }
+    });
+
+    console.log("FormData before sending:", [...formData.entries()]);
+
+    await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
+
+    message.success("Ticket information sent successfully!");
+    setShowTicketForm(false);
+    setTicketDetails([{ id: Date.now(), date: null, price: null, description: "", file: null }]);
+    ticketDetailsForm.resetFields();
+  } catch (error) {
+    console.error("Error sending ticket info:", error);
+    message.error("Failed to send ticket information. Please try again.");
+  }
+};
 
   const handleDownloadDocument = (fileUrl, documentName) => {
     const link = document.createElement("a");
@@ -600,7 +590,7 @@ const EmployeeAdminOtherRequest = () => {
             Request Details
           </div>
         }
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={handleCloseModal}
         footer={[
           ...(isTravelRequest &&
