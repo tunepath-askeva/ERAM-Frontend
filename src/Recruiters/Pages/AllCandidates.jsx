@@ -42,9 +42,10 @@ import {
   useUpdateBranchedCandidateMutation,
   useAddCandidateMutation,
   useBulkImportCandidatesMutation,
+  useFilterAllCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate } from "react-router-dom";
-
+import SkeletonLoader from "../../Global/SkeletonLoader";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
@@ -95,6 +96,7 @@ function AllCandidates() {
   const [addCandidateModalVisible, setAddCandidateModalVisible] =
     useState(false);
   const [bulkUploadModalVisible, setBulkUploadModalVisible] = useState(false);
+  const [filters, setFilters] = useState({});
   const [addCandidateForm] = Form.useForm();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 700);
@@ -143,6 +145,10 @@ function AllCandidates() {
     error,
     refetch,
   } = useGetAllBranchedCandidateQuery(queryParams);
+  const [
+    filterCandidates,
+    { data, isLoading: filterLoading, error: filterError },
+  ] = useFilterAllCandidatesMutation();
 
   const [updateCandidate, { isLoading: isUpdating }] =
     useUpdateBranchedCandidateMutation();
@@ -152,12 +158,18 @@ function AllCandidates() {
   const [bulkImportCandidates, { isLoading: isBulkImporting }] =
     useBulkImportCandidatesMutation();
 
+  const handleApplyFilters = async (appliedFilters) => {
+    setFilters(appliedFilters);
+    await filterCandidates(appliedFilters).unwrap();
+  };
+
   const candidates = candidatesResponse?.users || [];
   const totalCandidates = candidatesResponse?.total || 0;
-  const filterOptions = candidatesResponse?.filterOptions || {
+  const filterOptions = data?.filterOptions || {
     skills: [],
     locations: [],
     industries: [],
+    agency: "",
   };
 
   useEffect(() => {
@@ -368,8 +380,7 @@ function AllCandidates() {
   if (isLoading && currentPage === 1) {
     return (
       <div style={{ textAlign: "center", padding: "50px" }}>
-        <Spin size="large" />
-        <div style={{ marginTop: 16 }}>Loading candidates...</div>
+        <SkeletonLoader />
       </div>
     );
   }

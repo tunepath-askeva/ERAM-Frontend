@@ -550,6 +550,13 @@ export const recruiterApi = createApi({
         },
       }),
     }),
+    filterAllCandidates: builder.mutation({
+      query: (filters) => ({
+        url: "/all-candidates-filter",
+        method: "POST",
+        body: filters,
+      }),
+    }),
   }),
 });
 
@@ -608,4 +615,5 @@ export const {
   useGetCurrentWorkOrderDetailsForFilteringQuery,
   useCurrentWorkorderDetailsFilteringMutation,
   useApproveRejectRequisitionMutation,
+  useFilterAllCandidatesMutation,
 } = recruiterApi;

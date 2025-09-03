@@ -322,6 +322,18 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                           {candidate.expectedSalary || "Not specified"}
                         </Text>
                       </Col>
+                      <Col xs={24} sm={12}>
+                        <Text strong>Agency:</Text>
+                        <br />
+                        <Text>{candidate.agency || "Not specified"}</Text>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Text strong>Work Order Hint:</Text>
+                        <br />
+                        <Text>
+                          {candidate.workorderhint || "Not specified"}
+                        </Text>
+                      </Col>
                     </Row>
 
                     {candidate.skills && candidate.skills.length > 0 && (
