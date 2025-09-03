@@ -51,9 +51,11 @@ import {
   useGetCurrentWorkOrderDetailsForFilteringQuery,
   useCurrentWorkorderDetailsFilteringMutation,
   useGetWorkOrderBasedSourcedCandidatesQuery,
+  useFilterAllCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
+import AdvancedFiltersModal from "./AdvancedFiltersModal";
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -254,6 +256,10 @@ const SourcedCandidates = ({ jobId }) => {
   const [workOrderCandidates, setWorkOrderCandidates] = useState([]);
   const [isWorkOrderFiltered, setIsWorkOrderFiltered] = useState(false);
 
+  const [advancedFiltersVisible, setAdvancedFiltersVisible] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [isAdvancedFilterApplied, setIsAdvancedFilterApplied] = useState(false);
+
   const {
     data: workOrderDetails,
     isLoading: isWorkOrderLoadingOne,
@@ -268,6 +274,16 @@ const SourcedCandidates = ({ jobId }) => {
   const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
+
+  const [filterCandidates, { data: filterData }] =
+    useFilterAllCandidatesMutation();
+
+  const filterOptions = filterData?.filterOptions || {
+    skills: [],
+    locations: [],
+    industries: [],
+    agency: "",
+  };
 
   const {
     data: exactMatchData,
@@ -567,6 +583,25 @@ const SourcedCandidates = ({ jobId }) => {
     shouldFetch,
     filters, // Add filters dependency
   ]);
+
+  const handleApplyFilters = async (appliedFilters) => {
+    try {
+      setAdvancedFilters(appliedFilters);
+      setIsAdvancedFilterApplied(true);
+
+      const response = await filterCandidates(appliedFilters).unwrap();
+
+      setWorkOrderCandidates(response?.users || []);
+      setIsWorkOrderFiltered(true);
+
+      message.success(
+        `Found ${response?.total || 0} candidates matching your criteria`
+      );
+    } catch (error) {
+      message.error("Failed to apply filters. Please try again.");
+      console.error("Filter error:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -1174,26 +1209,10 @@ const SourcedCandidates = ({ jobId }) => {
             <Button
               type="primary"
               icon={<FilterOutlined />}
-              onClick={showFilterModal}
+              onClick={() => setAdvancedFiltersVisible(true)}
               style={{ backgroundColor: "#da2c46" }}
             >
-             Primary Filter
-              {hasActiveFilters && !isExactMatch && (
-                <Badge
-                  count={
-                    Object.values(filters).filter((val) =>
-                      Array.isArray(val)
-                        ? val.length > 0
-                        : typeof val === "string"
-                        ? val.trim()
-                        : typeof val === "number"
-                        ? false
-                        : val !== null
-                    ).length
-                  }
-                  size="small"
-                />
-              )}
+              Primary Filter
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -2166,6 +2185,14 @@ const SourcedCandidates = ({ jobId }) => {
         setCandidateType={(type) => {
           setCandidateToUpdate((prev) => ({ ...prev, candidateType: type }));
         }}
+      />
+
+      <AdvancedFiltersModal
+        visible={advancedFiltersVisible}
+        onCancel={() => setAdvancedFiltersVisible(false)}
+        onApplyFilters={handleApplyFilters}
+        initialFilters={advancedFilters}
+        filterOptions={filterOptions}
       />
     </div>
   );
