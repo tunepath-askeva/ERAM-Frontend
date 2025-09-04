@@ -142,6 +142,9 @@ const CandidateEditPage = () => {
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [editingEducationData, setEditingEducationData] = useState({});
   const [editingWorkData, setEditingWorkData] = useState({});
+  const [skills, setSkills] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [industry, setIndustry] = useState([]);
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
 
   const [profileForm] = Form.useForm();
@@ -161,7 +164,6 @@ const CandidateEditPage = () => {
   const [updateCandidate] = useUpdateBranchedCandidateMutation();
 
   const candidate = candidateData?.candidateDetails || {};
-
   useEffect(() => {
     if (candidate) {
       const parsePhoneNumbers = (data) => {
@@ -273,6 +275,15 @@ const CandidateEditPage = () => {
     }
   }, [candidate, profileForm, personalForm, addressForm, contactForm]);
 
+  useEffect(() => {
+    if (candidate.skills) {
+      setSkills(candidate.skills);
+    }
+    if (candidate.languages) {
+      setLanguages(candidate.languages);
+    }
+  }, [candidate]);
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -301,8 +312,8 @@ const CandidateEditPage = () => {
         ...combinePhoneNumbers(personalValues),
         ...combinePhoneNumbers(addressValues),
         ...combinePhoneNumbers(contactValues),
-        skills: candidate.skills || [],
-        languages: candidate.languages || [],
+        skills,
+        languages,
         education: candidate.education || [],
         workExperience: candidate.workExperience || [],
         industry: candidate.industry || [],
@@ -845,11 +856,37 @@ const CandidateEditPage = () => {
                 mode="tags"
                 style={{ width: "100%" }}
                 placeholder="Add skills"
-                value={candidate.skills}
-                onChange={(value) => {
-                  candidate.skills = value;
-                }}
+                value={skills}
+                onChange={(value) => setSkills(value)}
               />
+
+              <div style={{ marginTop: 16 }}>
+                {skills.length === 0 ? (
+                  <Text type="secondary">No skills added yet</Text>
+                ) : (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+                  >
+                    {skills.map((skill, idx) => (
+                      <Tag
+                        key={idx}
+                        color="blue"
+                        closable
+                        onClose={() => {
+                          setSkills(skills.filter((s) => s !== skill));
+                        }}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: "14px",
+                          borderRadius: "16px",
+                        }}
+                      >
+                        {skill}
+                      </Tag>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Card>
 
             <Card
@@ -865,11 +902,37 @@ const CandidateEditPage = () => {
                 mode="tags"
                 style={{ width: "100%" }}
                 placeholder="Add languages"
-                value={candidate.languages}
-                onChange={(value) => {
-                  candidate.languages = value;
-                }}
+                value={languages}
+                onChange={(value) => setLanguages(value)}
               />
+
+              <div style={{ marginTop: 16 }}>
+                {languages.length === 0 ? (
+                  <Text type="secondary">No languages added yet</Text>
+                ) : (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+                  >
+                    {languages.map((lang, idx) => (
+                      <Tag
+                        key={idx}
+                        color="blue"
+                        closable
+                        onClose={() =>
+                          setLanguages(languages.filter((l) => l !== lang))
+                        }
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: "14px",
+                          borderRadius: "16px",
+                        }}
+                      >
+                        {lang}
+                      </Tag>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Card>
 
             <Card
@@ -1149,10 +1212,8 @@ const CandidateEditPage = () => {
                       mode="tags"
                       style={{ width: "100%" }}
                       placeholder="Add industries (type to add custom values)"
-                      value={candidate.industry}
-                      onChange={(value) => {
-                        candidate.industry = value;
-                      }}
+                      value={industry}
+                      onChange={(value) => setIndustry(value)}
                       options={defaultIndustryOptions}
                       tokenSeparators={[","]}
                     />
@@ -1363,7 +1424,6 @@ const CandidateEditPage = () => {
         </Tabs>
       </Card>
 
-      {/* Education Modal */}
       <Modal
         title={`${editingEducationId ? "Edit" : "Add"} Education`}
         visible={isEduModalVisible}
