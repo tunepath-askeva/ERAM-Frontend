@@ -284,17 +284,15 @@ const CandidateEditPage = () => {
 
       const combinePhoneNumbers = (values) => {
         const result = { ...values };
-
         Object.keys(values).forEach((key) => {
           if (key.endsWith("CountryCode") && values[key]) {
             const fieldName = key.replace("CountryCode", "");
             if (values[fieldName]) {
               result[fieldName] = `+${values[key]}${values[fieldName]}`;
-              delete result[key];
             }
+            delete result[key];
           }
         });
-
         return result;
       };
 
@@ -312,26 +310,37 @@ const CandidateEditPage = () => {
         socialLinks: profileValues.socialLinks || candidate.socialLinks || {},
       };
 
-      // Handle date fields
+      // format dates
       if (allValues.passportIssueDate) {
-        allValues.passportIssueDate =
-          allValues.passportIssueDate.format("YYYY-MM-DD");
+        allValues.passportIssueDate = dayjs(allValues.passportIssueDate).format(
+          "YYYY-MM-DD"
+        );
       }
       if (allValues.passportExpiryDate) {
-        allValues.passportExpiryDate =
-          allValues.passportExpiryDate.format("YYYY-MM-DD");
+        allValues.passportExpiryDate = dayjs(
+          allValues.passportExpiryDate
+        ).format("YYYY-MM-DD");
       }
 
       const formData = new FormData();
-      Object.keys(allValues).forEach((key) => {
-        if (allValues[key] !== null && allValues[key] !== undefined) {
-          if (
-            typeof allValues[key] === "object" &&
-            !dayjs.isDayjs(allValues[key])
-          ) {
-            formData.append(key, JSON.stringify(allValues[key]));
+      Object.entries(allValues).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (Array.isArray(value)) {
+            value.forEach((item, i) => {
+              if (typeof item === "object") {
+                Object.entries(item).forEach(([subKey, subVal]) => {
+                  formData.append(`${key}[${i}][${subKey}]`, subVal);
+                });
+              } else {
+                formData.append(`${key}[${i}]`, item);
+              }
+            });
+          } else if (typeof value === "object") {
+            Object.entries(value).forEach(([subKey, subVal]) => {
+              formData.append(`${key}[${subKey}]`, subVal);
+            });
           } else {
-            formData.append(key, allValues[key]);
+            formData.append(key, value);
           }
         }
       });
@@ -340,12 +349,16 @@ const CandidateEditPage = () => {
         formData.append("image", imageFile);
       }
 
-      await updateCandidate({ id, data: formData }).unwrap();
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      await updateCandidate({ id, formData }).unwrap();
 
       enqueueSnackbar("Candidate updated successfully!", {
         variant: "success",
       });
-      navigate(-1); // Go back to previous page
+      navigate(-1);
     } catch (error) {
       console.error("Update error:", error);
       enqueueSnackbar(error?.data?.message || "Failed to update candidate", {

@@ -458,10 +458,10 @@ export const recruiterApi = createApi({
       }),
     }),
     updateBranchedCandidate: builder.mutation({
-      query: ({ id, ...data }) => ({
+      query: ({ id, formData }) => ({
         url: `/branched-candidates/${id}`,
         method: "PUT",
-        body: data,
+        body: formData,
       }),
       invalidatesTags: ["BranchedCandidate"],
     }),

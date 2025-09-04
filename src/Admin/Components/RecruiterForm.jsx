@@ -90,6 +90,8 @@ const permissionGroups = [
       { key: "view-job-pending", label: "View Pending Candidates" },
       { key: "view-job-screening", label: "View Screening Candidates" },
       { key: "view-job-status", label: "View Work Order Status" },
+      { key: "edit-requisitions", label: "Edit Requisition" },
+      { key: "add-requisitions", label: "Add Requisition" },
     ],
   },
   {
@@ -215,7 +217,7 @@ const RecruiterForm = ({
         experience: values.experience,
         recruiterType: values.recruiterType,
         permissions: Array.from(
-          new Set([...(values.permissions || []), "notifications"])
+          new Set([...(values.permissions || [])])
         ),
         role: "recruiter",
       };

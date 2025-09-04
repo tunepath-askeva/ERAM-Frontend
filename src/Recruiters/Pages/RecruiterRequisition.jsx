@@ -31,6 +31,7 @@ import {
   useDeleteRequisitionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -51,6 +52,12 @@ const RecruiterRequisition = () => {
   const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
+    const recruiterPermissions = useSelector(
+      (state) => state.userAuth.recruiterPermissions
+    );
+
+
+    console.log(recruiterPermissions,'hi recruiterpermisstions-=-=-=')
 
   const { data: clientData } = useGetClientsQuery();
   const {
@@ -331,6 +338,7 @@ const RecruiterRequisition = () => {
           >
             View
           </Button>
+           { hasPermission("edit-requisitions") &&
           <Button
             type="link"
             onClick={() => handleEdit(record)}
@@ -339,6 +347,7 @@ const RecruiterRequisition = () => {
           >
             Edit
           </Button>
+    }
           <Button
             type="link"
             danger
@@ -410,6 +419,11 @@ const RecruiterRequisition = () => {
     }
   `;
 
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
+
   return (
     <>
       <style>{customStyles}</style>
@@ -417,6 +431,7 @@ const RecruiterRequisition = () => {
         <Card
           title="Client Requisitions"
           extra={
+            hasPermission("add-requisitions") &&
             <Button
               type="primary"
               onClick={handleAddNew}
@@ -433,7 +448,7 @@ const RecruiterRequisition = () => {
             <Row gutter={[16, 8]} align="middle" style={{ marginBottom: 12 }}>
               <Col xs={24} sm={16} md={12} lg={10}>
                 <Input.Search
-                  placeholder="Search requisitions..."
+                  placeholder="Search requisitions by title,requisitionNo and referenceNo..."
                   value={searchText}
                   onChange={handleSearchChange}
                   allowClear
