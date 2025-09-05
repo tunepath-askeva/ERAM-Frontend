@@ -52,12 +52,11 @@ const RecruiterRequisition = () => {
   const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
-    const recruiterPermissions = useSelector(
-      (state) => state.userAuth.recruiterPermissions
-    );
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
 
-
-    console.log(recruiterPermissions,'hi recruiterpermisstions-=-=-=')
+  console.log(recruiterPermissions, "hi recruiterpermisstions-=-=-=");
 
   const { data: clientData } = useGetClientsQuery();
   const {
@@ -72,6 +71,8 @@ const RecruiterRequisition = () => {
       pageSize: pagination.pageSize,
     },
   });
+
+  console.log(requisitionData, "requistioin data-=-=");
 
   const [deleteRequisition, { isLoading: isDeleting }] =
     useDeleteRequisitionMutation();
@@ -262,7 +263,6 @@ const RecruiterRequisition = () => {
     }
   };
 
-  // Helper function to format status text
   const formatStatusText = (status) => {
     if (!status) return "Draft";
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -317,6 +317,25 @@ const RecruiterRequisition = () => {
       width: 120,
     },
     {
+      title: "Approval Status",
+      dataIndex: "approvalstatus",
+      key: "approvalstatus",
+      render: (approvalstatus) => (
+        <Tag
+          color={
+            approvalstatus === "approved"
+              ? "green"
+              : approvalstatus === "rejected"
+              ? "red"
+              : "orange"
+          }
+        >
+          {approvalstatus ? approvalstatus.toUpperCase() : "PENDING"}
+        </Tag>
+      ),
+      width: 120,
+    },
+    {
       title: "Status",
       dataIndex: "isActive",
       key: "status",
@@ -338,16 +357,16 @@ const RecruiterRequisition = () => {
           >
             View
           </Button>
-           { hasPermission("edit-requisitions") &&
-          <Button
-            type="link"
-            onClick={() => handleEdit(record)}
-            icon={<EditOutlined />}
-            size="small"
-          >
-            Edit
-          </Button>
-    }
+          {hasPermission("edit-requisitions") && (
+            <Button
+              type="link"
+              onClick={() => handleEdit(record)}
+              icon={<EditOutlined />}
+              size="small"
+            >
+              Edit
+            </Button>
+          )}
           <Button
             type="link"
             danger
@@ -419,7 +438,6 @@ const RecruiterRequisition = () => {
     }
   `;
 
-
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
   };
@@ -431,15 +449,16 @@ const RecruiterRequisition = () => {
         <Card
           title="Client Requisitions"
           extra={
-            hasPermission("add-requisitions") &&
-            <Button
-              type="primary"
-              onClick={handleAddNew}
-              icon={<PlusOutlined />}
-              size="small"
-            >
-              Create New
-            </Button>
+            hasPermission("add-requisitions") && (
+              <Button
+                type="primary"
+                onClick={handleAddNew}
+                icon={<PlusOutlined />}
+                size="small"
+              >
+                Create New
+              </Button>
+            )
           }
           size="small"
         >
@@ -501,27 +520,6 @@ const RecruiterRequisition = () => {
                   borderRadius: "6px",
                 }}
               >
-                <Col xs={24} sm={12} md={6} lg={6}>
-                  <div style={{ marginBottom: 4 }}>
-                    <span style={{ fontSize: "12px", color: "#666" }}>
-                      Client
-                    </span>
-                  </div>
-                  <Select
-                    placeholder="Select Client"
-                    value={filters.client}
-                    onChange={(value) => handleFilterChange("client", value)}
-                    allowClear
-                    size="small"
-                    style={{ width: "100%" }}
-                  >
-                    {clients.map((client) => (
-                      <Option key={client.id} value={client.id}>
-                        {client.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Col>
                 <Col xs={24} sm={12} md={6} lg={6}>
                   <div style={{ marginBottom: 4 }}>
                     <span style={{ fontSize: "12px", color: "#666" }}>

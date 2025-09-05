@@ -276,6 +276,31 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select recruiter for approval"
+                      disabled
+                    >
+                      {recruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {`${recruiter.fullName} - (${recruiter.email})`}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="Notify Recruiter"
+                    name="notifyRecruiter"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select an approval recruiter",
+                      },
+                    ]}
+                  >      
+                    <Select
+                      mode="multiple"
+                      placeholder="Select recruiter for approval"
+                      disabled
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>

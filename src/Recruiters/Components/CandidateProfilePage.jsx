@@ -13,6 +13,7 @@ import {
   Space,
   Tabs,
   List,
+  Empty,
 } from "antd";
 import {
   UserOutlined,
@@ -353,7 +354,7 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                       />
                     </Card>
                   ) : (
-                    <Empty description="No certificates available" />
+             "No certificates available" 
                   )}
                 </div>
                 <Divider />

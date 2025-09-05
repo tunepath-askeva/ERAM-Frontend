@@ -17,7 +17,7 @@ import {
   Row,
   Col,
   Divider,
-  Select 
+  Select,
 } from "antd";
 import {
   PlusOutlined,
@@ -88,6 +88,7 @@ const AdminRequisition = () => {
       experience: `${req.experienceMin}-${req.experienceMax} years`,
       salary: `SAR ${req.salaryMin}-${req.salaryMax}`,
       status: req.isActive,
+      overallapprovalstatus: req.overallapprovalstatus,
       priority: "medium",
       positions: req.numberOfCandidate,
       postedDate: new Date(req.createdAt).toISOString().split("T")[0],
@@ -108,10 +109,10 @@ const AdminRequisition = () => {
 
     // Then group by requisitionNo and referenceNo
     const grouped = {};
-    
+
     transformedRequisitions.forEach((req) => {
       const groupKey = `${req.requisitionNo}-${req.referenceNo}`;
-      
+
       if (!grouped[groupKey]) {
         grouped[groupKey] = {
           key: groupKey,
@@ -122,7 +123,7 @@ const AdminRequisition = () => {
           groupData: req, // Use first requisition's data for group info
         };
       }
-      
+
       grouped[groupKey].positions.push({
         ...req,
         key: req._id,
@@ -263,6 +264,26 @@ const AdminRequisition = () => {
         <Text style={{ color: "#52c41a", fontWeight: "500" }}>{text}</Text>
       ),
     },
+    {
+      title: "Approval Status",
+      dataIndex: "overallapprovalstatus",
+      key: "overallapprovalstatus",
+      width: 130,
+      render: (status) => (
+        <Tag
+          color={
+            status === "approved"
+              ? "green"
+              : status === "rejected"
+              ? "red"
+              : "orange"
+          }
+        >
+          {status ? status.toUpperCase() : "PENDING"}
+        </Tag>
+      ),
+    },
+
     {
       title: "Status",
       dataIndex: "status",
@@ -632,8 +653,7 @@ const AdminRequisition = () => {
                               color={getStatusColor(status)}
                               size="small"
                             >
-                              {status.charAt(0).toUpperCase() +
-                                status.slice(1)}
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
                               : {count}
                             </Tag>
                           )

@@ -1731,42 +1731,6 @@ const SourcedCandidates = ({ jobId }) => {
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
         <Form layout="vertical">
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Form.Item label="Keywords">
-                <Input
-                  placeholder="Job title, skills, companies, etc."
-                  value={tempFilters.keywords}
-                  onChange={(e) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      keywords: e.target.value,
-                    }))
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Current Location">
-                <AutoComplete
-                  options={locationOptions}
-                  placeholder="Search location"
-                  value={tempFilters.location}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      location: value,
-                    }))
-                  }
-                  filterOption={(inputValue, option) =>
-                    option.value
-                      .toUpperCase()
-                      .indexOf(inputValue.toUpperCase()) !== -1
-                  }
-                />
-              </Form.Item>
-            </Col>
-          </Row>
 
           <Form.Item label="Skills">
             <Space.Compact style={{ width: "100%" }}>
@@ -2050,74 +2014,6 @@ const SourcedCandidates = ({ jobId }) => {
                     }
                   />
                 </Input.Group>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]}>
-            <Col span={8}>
-              <Form.Item label="Notice Period">
-                <Select
-                  placeholder="Select notice period"
-                  value={tempFilters.noticePeriod}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      noticePeriod: value,
-                    }))
-                  }
-                  allowClear
-                  style={{ width: "100%" }}
-                >
-                  <Option value="immediate">Immediate</Option>
-                  <Option value="1">1 month</Option>
-                  <Option value="2">2 months</Option>
-                  <Option value="3">3 months</Option>
-                  <Option value="3+">More than 3 months</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="Profile Updated">
-                <Select
-                  placeholder="When profile was updated"
-                  value={tempFilters.profileUpdated}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      profileUpdated: value,
-                    }))
-                  }
-                  allowClear
-                  style={{ width: "100%" }}
-                >
-                  <Option value="7">Last 7 days</Option>
-                  <Option value="15">Last 15 days</Option>
-                  <Option value="30">Last 30 days</Option>
-                  <Option value="60">Last 60 days</Option>
-                  <Option value="90">Last 90 days</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Visa Status">
-                <Select
-                  placeholder="Select visa status"
-                  value={tempFilters.visaStatus}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      visaStatus: value,
-                    }))
-                  }
-                  allowClear
-                  style={{ width: "100%" }}
-                >
-                  <Option value="visit">Visit Visa</Option>
-                  <Option value="employment">Employment Visa</Option>
-                  <Option value="resident">Residence Visa</Option>
-                  <Option value="citizen">Citizen</Option>
-                </Select>
               </Form.Item>
             </Col>
           </Row>

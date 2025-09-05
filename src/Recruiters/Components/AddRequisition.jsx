@@ -503,6 +503,33 @@ const AddRequisition = ({ onNavigateBack }) => {
                     </Select>
                   </Form.Item>
                 </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    name="notifyRecruiter"
+                    label="Notify Recruiter"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select an approval recruiter",
+                      },
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Select notify recruiter"
+                      onChange={(value) =>
+                        handleCommonFieldChange("notifyRecruiter", value)
+                      }
+                    >
+                      {recruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName} ({recruiter.email})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
               </Row>
             </Card>
 

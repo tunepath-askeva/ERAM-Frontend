@@ -946,7 +946,7 @@ const RecruiterViewJob = () => {
               <TabPane
                 tab={
                   <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                    WorkOrder Status
+                    Work order Status
                   </span>
                 }
                 key="job-status"

@@ -145,6 +145,8 @@ const CandidateEditPage = () => {
   const [skills, setSkills] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [industry, setIndustry] = useState([]);
+  const [education, setEducation] = useState([]);
+  const [workExperience, setWorkExperience] = useState([]);
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
 
   const [profileForm] = Form.useForm();
@@ -282,6 +284,12 @@ const CandidateEditPage = () => {
     if (candidate.languages) {
       setLanguages(candidate.languages);
     }
+    if (candidate?.education) {
+      setEducation(candidate.education);
+    }
+    if (candidate?.workExperience) {
+      setWorkExperience(candidate.workExperience);
+    }
   }, [candidate]);
 
   const handleSubmit = async () => {
@@ -314,8 +322,8 @@ const CandidateEditPage = () => {
         ...combinePhoneNumbers(contactValues),
         skills,
         languages,
-        education: candidate.education || [],
-        workExperience: candidate.workExperience || [],
+        education,
+        workExperience,
         industry: candidate.industry || [],
         visaStatus: candidate.visaStatus || [],
         socialLinks: profileValues.socialLinks || candidate.socialLinks || {},
@@ -404,14 +412,13 @@ const CandidateEditPage = () => {
         id: editingEducationId || Math.random().toString(36).substr(2, 9),
       };
 
-      const updatedEducation = editingEducationId
-        ? candidate.education.map((edu) =>
-            edu.id === editingEducationId ? newEducation : edu
-          )
-        : [...candidate.education, newEducation];
-
-      // Update local state
-      candidate.education = updatedEducation;
+      setEducation((prev) =>
+        editingEducationId
+          ? prev.map((edu) =>
+              edu.id === editingEducationId ? newEducation : edu
+            )
+          : [...prev, newEducation]
+      );
 
       setIsEduModalVisible(false);
       setEditingEducationId(null);
@@ -436,34 +443,24 @@ const CandidateEditPage = () => {
   const handleWorkSubmit = async () => {
     try {
       const values = await workForm.validateFields();
-      const formattedValues = {
+      const newWork = {
         ...values,
-        jobTitle: values.jobTitle || values.title,
-        startDate: dayjs.isDayjs(values.startDate)
-          ? values.startDate.format("YYYY-MM-DD")
-          : values.startDate,
-        endDate: isCurrentJob
-          ? "Present"
-          : dayjs.isDayjs(values.endDate)
-          ? values.endDate.format("YYYY-MM-DD")
-          : values.endDate,
         id: editingWorkId || Math.random().toString(36).substr(2, 9),
+        isCurrent: isCurrentJob,
       };
 
-      const updatedWorkExperience = editingWorkId
-        ? candidate.workExperience.map((work) =>
-            work.id === editingWorkId ? formattedValues : work
-          )
-        : [...candidate.workExperience, formattedValues];
-
-      // Update local state
-      candidate.workExperience = updatedWorkExperience;
+      setWorkExperience((prev) =>
+        editingWorkId
+          ? prev.map((w) => (w.id === editingWorkId ? newWork : w))
+          : [...prev, newWork]
+      );
 
       setIsWorkModalVisible(false);
       setEditingWorkId(null);
       setIsCurrentJob(false);
-    } catch (error) {
-      console.log("Validation failed:", error);
+      workForm.resetFields();
+    } catch (err) {
+      console.log("Validation error:", err);
     }
   };
 
@@ -488,7 +485,11 @@ const CandidateEditPage = () => {
   };
 
   const removeEducation = (id) => {
-    candidate.education = candidate.education.filter((edu) => edu.id !== id);
+    setEducation((prev) => prev.filter((edu) => edu.id !== id));
+  };
+
+  const removeWork = (id) => {
+    setWorkExperience((prev) => prev.filter((w) => w.id !== id));
   };
 
   const removeWorkExperience = (id) => {
@@ -959,13 +960,13 @@ const CandidateEditPage = () => {
               }
               style={{ marginBottom: 24, borderRadius: "12px" }}
             >
-              {candidate.education && candidate.education.length === 0 ? (
+              {education.length === 0 ? ( // ✅ use local state here
                 <div style={{ textAlign: "center", padding: 16 }}>
                   <Text type="secondary">No education added yet</Text>
                 </div>
               ) : (
                 <List
-                  dataSource={candidate.education}
+                  dataSource={education}
                   renderItem={(item) => (
                     <List.Item
                       actions={[
@@ -1003,37 +1004,27 @@ const CandidateEditPage = () => {
             </Card>
 
             <Card
-              title={
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
+              title="Work Experience"
+              extra={
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={addWorkExperience}
+                  style={{ background: "#da2c46", border: "none" }}
                 >
-                  <span>
-                    <TrophyOutlined
-                      style={{ marginRight: 8, color: "#da2c46" }}
-                    />
-                    <span style={{ color: "#da2c46" }}>Work Experience</span>
-                  </span>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={addWorkExperience}
-                    style={{ background: "#da2c46", border: "none" }}
-                  >
-                    Add Experience
-                  </Button>
-                </div>
+                  Add Work Experience
+                </Button>
               }
               style={{ marginBottom: 24, borderRadius: "12px" }}
             >
-              {candidate.workExperience &&
-              candidate.workExperience.length === 0 ? (
+              {workExperience.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 16 }}>
                   <Text type="secondary">No work experience added yet</Text>
                 </div>
               ) : (
                 <List
-                  dataSource={candidate.workExperience}
+                  dataSource={workExperience}
                   renderItem={(item) => (
                     <List.Item
                       actions={[
@@ -1046,37 +1037,27 @@ const CandidateEditPage = () => {
                           type="text"
                           danger
                           icon={<DeleteOutlined />}
-                          onClick={() => removeWorkExperience(item.id)}
+                          onClick={() => removeWork(item.id)}
                         />,
                       ]}
                     >
                       <List.Item.Meta
-                        title={
-                          <Text strong>{item.jobTitle || item.title}</Text>
-                        }
+                        title={<Text strong>{item.jobTitle}</Text>}
                         description={
                           <div>
                             <Text>{item.company}</Text>
                             <br />
                             <Text type="secondary">
                               {item.startDate
-                                ? dayjs(item.startDate).format("MMM YYYY")
+                                ? new Date(item.startDate).toLocaleDateString()
                                 : ""}{" "}
                               -{" "}
-                              {item.endDate === "Present"
+                              {item.isCurrent
                                 ? "Present"
                                 : item.endDate
-                                ? dayjs(item.endDate).format("MMM YYYY")
+                                ? new Date(item.endDate).toLocaleDateString()
                                 : ""}
                             </Text>
-                            <br />
-                            {item.description && (
-                              <Paragraph
-                                ellipsis={{ rows: 2, expandable: true }}
-                              >
-                                {item.description}
-                              </Paragraph>
-                            )}
                           </div>
                         }
                       />
@@ -1472,7 +1453,6 @@ const CandidateEditPage = () => {
           </Form.Item>
         </Form>
       </Modal>
-      {/* Work Experience Modal */}
       <Modal
         title={`${editingWorkId ? "Edit" : "Add"} Work Experience`}
         visible={isWorkModalVisible}

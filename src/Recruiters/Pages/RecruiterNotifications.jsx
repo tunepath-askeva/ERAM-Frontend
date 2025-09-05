@@ -37,7 +37,7 @@ import {
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
 } from "../../Slices/Users/UserApis.js";
-import { 
+import {
   useGetRecruiterNotificationQuery,
   useApproveRejectRequisitionMutation,
 } from "../../Slices/Recruiter/RecruiterApis.js";
@@ -57,7 +57,7 @@ const RecruiterNotifications = () => {
   const [pageSize, setPageSize] = useState(10);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
-  const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+  const [actionType, setActionType] = useState(null);
   const [form] = Form.useForm();
 
   const {
@@ -88,6 +88,8 @@ const RecruiterNotifications = () => {
       setLoading(false);
     }
   }, [apiData, apiError]);
+
+  console.log(notifications, "hi notifications-=-=-=-");
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -152,7 +154,7 @@ const RecruiterNotifications = () => {
   const handleModalSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       await approveRejectRequisition({
         notificationId: selectedNotification._id,
         requisitionId: selectedNotification.requisitionId,
@@ -165,11 +167,11 @@ const RecruiterNotifications = () => {
       form.resetFields();
       setSelectedNotification(null);
       setActionType(null);
-      
+
       // Refresh notifications to update the UI
       refetch();
     } catch (error) {
-      if (error.name !== 'ValidationError') {
+      if (error.name !== "ValidationError") {
         message.error(`Failed to ${actionType} requisition`);
         console.error(`${actionType} requisition error:`, error);
       }
@@ -248,13 +250,28 @@ const RecruiterNotifications = () => {
   };
 
   const isRequisitionAssignmentNotification = (notification) => {
-    return notification.title?.toLowerCase().includes("requisition assigned") ||
-           notification.message?.toLowerCase().includes("assigned to approve requisition");
+    return (
+      notification.title?.toLowerCase().includes("requisition assigned") ||
+      notification.message
+        ?.toLowerCase()
+        .includes("assigned to approve requisition")
+    );
   };
 
   const renderApprovalButtons = (item) => {
     if (!isRequisitionAssignmentNotification(item) || !item.requisitionId) {
       return null;
+    }
+
+    if (item.Status) {
+      return (
+        <Tag
+          color={item.Status === "approved" ? "green" : "red"}
+          style={{ marginTop: "12px", fontWeight: "bold" }}
+        >
+          {item.Status.toUpperCase()}
+        </Tag>
+      );
     }
 
     return (
@@ -480,10 +497,10 @@ const RecruiterNotifications = () => {
                       >
                         {item.message}
                       </Paragraph>
-                      
+
                       {/* Approval/Rejection buttons for requisition assignment notifications */}
                       {renderApprovalButtons(item)}
-                      
+
                       {!item.isRead && (
                         <Button
                           type="link"
@@ -528,25 +545,24 @@ const RecruiterNotifications = () => {
 
       {/* Approval/Rejection Modal */}
       <Modal
-        title={`${actionType === "approved" ? "Approve" : "Reject"} Requisition`}
+        title={`${
+          actionType === "approved" ? "Approve" : "Reject"
+        } Requisition`}
         open={modalVisible}
         onOk={handleModalSubmit}
         onCancel={handleModalCancel}
         confirmLoading={submittingAction}
         okText={actionType === "approved" ? "Approve" : "Reject"}
         okButtonProps={{
-          style: actionType === "approved" 
-            ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
-            : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" }
+          style:
+            actionType === "approved"
+              ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
+              : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" },
         }}
         cancelText="Cancel"
         destroyOnClose
       >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{ remarks: "" }}
-        >
+        <Form form={form} layout="vertical" initialValues={{ remarks: "" }}>
           <Form.Item
             name="remarks"
             label="Remarks"
@@ -559,7 +575,9 @@ const RecruiterNotifications = () => {
           >
             <TextArea
               rows={4}
-              placeholder={`Please provide your reason for ${actionType === "approved" ? "approving" : "rejecting"} this requisition...`}
+              placeholder={`Please provide your reason for ${
+                actionType === "approved" ? "approving" : "rejecting"
+              } this requisition...`}
               maxLength={500}
               showCount
             />
