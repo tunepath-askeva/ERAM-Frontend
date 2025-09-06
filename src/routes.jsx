@@ -95,6 +95,7 @@ import RecruiterNotifications from "./Recruiters/Pages/RecruiterNotifications";
 import RecruiterAssignedInterviews from "./Recruiters/Pages/RecruiterAssignedInterviews";
 import NotFound from "./Pages/NotFound";
 import CandidateEditPage from "./Recruiters/Components/CandidateEditPage";
+import RecruiterMoreJobDetails from "./Recruiters/Pages/RecruiterMoreJobDetails";
 
 const AppRoutes = () => {
   return (
@@ -256,6 +257,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/dashboard"
           element={<ProtectedRecruiter element={<RecruiterDashboard />} />}
+        />
+        <Route
+          path="/recruiter/dashboard/details"
+          element={<ProtectedRecruiter element={<RecruiterMoreJobDetails />} />}
         />
         <Route
           path="/recruiter/notifications"

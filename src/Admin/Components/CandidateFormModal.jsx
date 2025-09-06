@@ -470,29 +470,17 @@ const CandidateFormModal = ({
           </Row>
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item
-                label="Agency"
-                name="agency"
-              
-              >
+              <Form.Item label="Agency" name="agency">
                 <Input placeholder="Enter agency name" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                label="Work Order Hint"
-                name="workorderhint"
-                
-              >
+              <Form.Item label="Work Order Hint" name="workorderhint">
                 <Input placeholder="eg. This candidate is for work order 1" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item
-                label="Client"
-                name="client"
-               
-              >
+              <Form.Item label="Client" name="client">
                 <Input placeholder="Enter client name" />
               </Form.Item>
             </Col>
@@ -505,7 +493,15 @@ const CandidateFormModal = ({
                 name="experience"
                 rules={[{ required: true, message: "Please enter experience" }]}
               >
-                <Input placeholder="Enter work experience." />
+                <Select placeholder="Select experience">
+                  <Option value="0-1">0-1 Years</Option>
+                  <Option value="1-2">1-2 Years</Option>
+                  <Option value="2-3">2-3 Years</Option>
+                  <Option value="3-5">3-5 Years</Option>
+                  <Option value="5-7">5-7 Years</Option>
+                  <Option value="7-10">7-10 Years</Option>
+                  <Option value="10+">10+ Years</Option>
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>

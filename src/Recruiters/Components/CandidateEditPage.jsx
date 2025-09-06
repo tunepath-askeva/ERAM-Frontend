@@ -145,6 +145,7 @@ const CandidateEditPage = () => {
   const [skills, setSkills] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [industry, setIndustry] = useState([]);
+  const [visaStatus, setVisaStatus] = useState([]);
   const [education, setEducation] = useState([]);
   const [workExperience, setWorkExperience] = useState([]);
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
@@ -178,16 +179,7 @@ const CandidateEditPage = () => {
           result.phone = mainPhone.phoneNumber;
         }
 
-        // Parse emergency contact
-        const emergencyPhone = phoneUtils.parsePhoneNumber(
-          data.emergencyContactNo
-        );
-        if (emergencyPhone.countryCode) {
-          result.emergencyContactNoCountryCode = emergencyPhone.countryCode;
-          result.emergencyContactNo = emergencyPhone.phoneNumber;
-        }
-
-        // Parse other contact numbers
+        // Parse contact person mobile (this was the missing piece)
         const contactMobile = phoneUtils.parsePhoneNumber(
           data.contactPersonMobile
         );
@@ -196,6 +188,7 @@ const CandidateEditPage = () => {
           result.contactPersonMobile = contactMobile.phoneNumber;
         }
 
+        // Parse contact person home number
         const contactHome = phoneUtils.parsePhoneNumber(
           data.contactPersonHomeNo
         );
@@ -204,8 +197,18 @@ const CandidateEditPage = () => {
           result.contactPersonHomeNo = contactHome.phoneNumber;
         }
 
+        // Parse emergency contact number (if this field exists)
+        const emergencyPhone = phoneUtils.parsePhoneNumber(
+          data.emergencyContactNo
+        );
+        if (emergencyPhone.countryCode) {
+          result.emergencyContactNoCountryCode = emergencyPhone.countryCode;
+          result.emergencyContactNo = emergencyPhone.phoneNumber;
+        }
+
         return result;
       };
+
       const formData = parsePhoneNumbers({
         firstName: candidate.firstName || "",
         lastName: candidate.lastName || "",
@@ -269,6 +272,13 @@ const CandidateEditPage = () => {
         workorderhint: candidate.workorderhint || "N/A",
       });
 
+      if (candidate.industry) {
+        setIndustry(candidate.industry);
+      }
+      if (candidate.visaStatus) {
+        setVisaStatus(candidate.visaStatus);
+      }
+
       // Set form values
       profileForm.setFieldsValue(formData);
       personalForm.setFieldsValue(formData);
@@ -324,8 +334,8 @@ const CandidateEditPage = () => {
         languages,
         education,
         workExperience,
-        industry: candidate.industry || [],
-        visaStatus: candidate.visaStatus || [],
+        industry,
+        visaStatus,
         socialLinks: profileValues.socialLinks || candidate.socialLinks || {},
       };
 
@@ -1154,15 +1164,6 @@ const CandidateEditPage = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
-                  <PhoneInput
-                    form={personalForm}
-                    name="emergencyContactNo"
-                    label="Emergency Contact No"
-                    required={true}
-                  />
-                </Col>
-
                 <Col xs={24} sm={8}>
                   <Form.Item
                     label="Age"
@@ -1217,9 +1218,7 @@ const CandidateEditPage = () => {
                       style={{ width: "100%" }}
                       placeholder="Add visa statuses (type to add custom values)"
                       value={candidate.visaStatus}
-                      onChange={(value) => {
-                        candidate.visaStatus = value;
-                      }}
+                      onChange={(value) => setVisaStatus(value)}
                       options={defaultVisaStatusOptions}
                       tokenSeparators={[","]}
                     />

@@ -557,6 +557,12 @@ export const recruiterApi = createApi({
         body: filters,
       }),
     }),
+    getAllJobStageDetails: builder.query({
+      query: () => ({
+        url: "/job-details",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -616,4 +622,5 @@ export const {
   useCurrentWorkorderDetailsFilteringMutation,
   useApproveRejectRequisitionMutation,
   useFilterAllCandidatesMutation,
+  useGetAllJobStageDetailsQuery,
 } = recruiterApi;
