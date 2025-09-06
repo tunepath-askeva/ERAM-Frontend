@@ -92,8 +92,8 @@ const locationOptions = [
 ];
 
 const industryOptions = [
-  { value: "IT", label: "Information Technology" },
-  { value: "Banking", label: "Banking & Finance" },
+  { value: "Information Technology", label: "Information Technology" },
+  { value: "Banking & Finance", label: "Banking & Finance" },
   { value: "Construction", label: "Construction" },
   { value: "Healthcare", label: "Healthcare" },
   { value: "Education", label: "Education" },
@@ -1262,7 +1262,7 @@ const SourcedCandidates = ({ jobId }) => {
               onClick={showFilterModal}
               style={{ backgroundColor: "#da2c46" }}
             >
-              Advanced Filters
+              Candidate Filters
               {hasActiveFilters && !isExactMatch && (
                 <Badge
                   count={
@@ -1306,7 +1306,7 @@ const SourcedCandidates = ({ jobId }) => {
               onClick={() => setAdvancedFiltersVisible(true)}
               style={{ backgroundColor: "#da2c46" }}
             >
-              Primary Filter
+              Advanced Primary Filter
             </Button>
 
             {(hasActiveFilters || isExactMatch) && (
@@ -1706,7 +1706,7 @@ const SourcedCandidates = ({ jobId }) => {
               alignItems: "center",
             }}
           >
-            <span>Advanced Candidate Filters</span>
+            <span> Candidate Filters</span>
             {hasActiveFilters && (
               <Button
                 type="link"
@@ -1731,7 +1731,6 @@ const SourcedCandidates = ({ jobId }) => {
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
         <Form layout="vertical">
-
           <Form.Item label="Skills">
             <Space.Compact style={{ width: "100%" }}>
               <Input
@@ -1847,20 +1846,6 @@ const SourcedCandidates = ({ jobId }) => {
 
           <Row gutter={[16, 16]}>
             <Col span={12}>
-              <Form.Item label="Current Company">
-                <Input
-                  placeholder="Current or past companies"
-                  value={tempFilters.company}
-                  onChange={(e) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      company: e.target.value,
-                    }))
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="Industry">
                 <Select
                   mode="tags"
@@ -1878,32 +1863,6 @@ const SourcedCandidates = ({ jobId }) => {
                   {industryOptions.map((industry) => (
                     <Option key={industry.value} value={industry.value}>
                       {industry.label}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Form.Item label="Job Role">
-                <Select
-                  mode="tags"
-                  placeholder="Select job roles"
-                  value={tempFilters.jobRoles}
-                  onChange={(value) =>
-                    setTempFilters((prev) => ({
-                      ...prev,
-                      jobRoles: value,
-                    }))
-                  }
-                  tokenSeparators={[","]}
-                  style={{ width: "100%" }}
-                >
-                  {jobRoleOptions.map((role) => (
-                    <Option key={role.value} value={role.value}>
-                      {role.label}
                     </Option>
                   ))}
                 </Select>
@@ -1933,6 +1892,8 @@ const SourcedCandidates = ({ jobId }) => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Row gutter={[16, 16]}></Row>
 
           <Row gutter={[16, 16]}>
             {/* <Col span={8}>

@@ -558,11 +558,6 @@ const AdvancedFiltersModal = ({
         >
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item label="Last Updated" name="lastUpdated">
-                <Select options={lastUpdatedOptions} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
               <Form.Item label="Has Resume" name="hasResume">
                 <Select placeholder="Select option" options={booleanOptions} />
               </Form.Item>
