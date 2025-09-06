@@ -239,6 +239,14 @@ export const userApi = createApi({
         body,
       }),
     }),
+    getJobSuggestions: builder.query({
+      query: ({ searchQuery, fetchLocation = false }) => ({
+        url: `/search-suggestions?query=${encodeURIComponent(
+          searchQuery
+        )}&fetchLocation=${fetchLocation}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -273,4 +281,5 @@ export const {
   useValidateUserTokenQuery,
   useUpdateCandidateOfferStatusMutation,
   useRequestOfferRevisionMutation,
+  useGetJobSuggestionsQuery,
 } = userApi;

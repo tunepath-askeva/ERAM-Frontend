@@ -25,6 +25,7 @@ import {
   Result,
   Skeleton,
   Drawer,
+  AutoComplete,
 } from "antd";
 import {
   SearchOutlined,
@@ -54,7 +55,8 @@ import { useNavigate } from "react-router-dom";
 import {
   useGetJobsByBranchQuery,
   useLazySearchJobsQuery,
-  useLazyFilterJobsQuery, // Add this import
+  useLazyFilterJobsQuery,
+  useGetJobSuggestionsQuery,
 } from "../Slices/Users/UserApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -72,7 +74,40 @@ const CandidateJobs = () => {
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false); // Add this state
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [shouldFetchSuggestions, setShouldFetchSuggestions] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [workTypeFilter, setWorkTypeFilter] = useState("");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("");
+  const [experienceFilter, setExperienceFilter] = useState("");
+  const [postedDateFilter, setPostedDateFilter] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [showingSearchResults, setShowingSearchResults] = useState(false);
+  const [showingFilterResults, setShowingFilterResults] = useState(false);
+
   const navigate = useNavigate();
+
+  const useDebounce = (value, delay) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  };
+
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
+
+  const debouncedLocationFilter = useDebounce(locationFilter, 500);
 
   const {
     data: apiData,
@@ -85,20 +120,93 @@ const CandidateJobs = () => {
     { data: searchData, isLoading: searchLoading, error: searchError },
   ] = useLazySearchJobsQuery();
 
+  const {
+    data: suggestionsData,
+    isLoading: suggestionsLoading,
+    error: suggestionsError,
+  } = useGetJobSuggestionsQuery(
+    { searchQuery: debouncedSearchKeyword, fetchLocation: false },
+    {
+      skip:
+        !shouldFetchSuggestions ||
+        !debouncedSearchKeyword ||
+        debouncedSearchKeyword.length < 2,
+    }
+  );
+
+  const {
+    data: locationSuggestionsData,
+    isLoading: locationSuggestionsLoading,
+  } = useGetJobSuggestionsQuery(
+    { searchQuery: debouncedLocationFilter, fetchLocation: true },
+    {
+      skip:
+        !shouldFetchSuggestions ||
+        !debouncedLocationFilter ||
+        debouncedLocationFilter.length < 2,
+    }
+  );
+
   const [
     filterJobs,
     { data: filterData, isLoading: filterLoading, error: filterError },
   ] = useLazyFilterJobsQuery();
 
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [workTypeFilter, setWorkTypeFilter] = useState("");
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("");
-  const [experienceFilter, setExperienceFilter] = useState("");
-  const [postedDateFilter, setPostedDateFilter] = useState("");
+  useEffect(() => {
+    if (debouncedSearchKeyword && debouncedSearchKeyword.length >= 2) {
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [debouncedSearchKeyword]);
 
-  const [showingSearchResults, setShowingSearchResults] = useState(false);
-  const [showingFilterResults, setShowingFilterResults] = useState(false); // Add this state
+  useEffect(() => {
+    if (debouncedSearchKeyword && debouncedSearchKeyword.length >= 2) {
+      setShouldFetchSuggestions(true);
+      setShowSuggestions(true);
+    } else {
+      setShouldFetchSuggestions(false);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [debouncedSearchKeyword]);
+
+  useEffect(() => {
+    if (suggestionsData && Array.isArray(suggestionsData)) {
+      const formattedSuggestions = suggestionsData.map((item) => ({
+        value: item.title,
+        label: (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>{item.title}</span>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              {item.officeLocation}
+            </Text>
+          </div>
+        ),
+        title: item.title,
+        location: item.officeLocation,
+      }));
+      setSuggestions(formattedSuggestions);
+    }
+  }, [suggestionsData]);
+
+  useEffect(() => {
+    if (locationSuggestionsData && Array.isArray(locationSuggestionsData)) {
+      setLocationSuggestions(
+        locationSuggestionsData.map((item) => ({
+          value: item.officeLocation,
+          label: item.officeLocation,
+        }))
+      );
+    }
+  }, [locationSuggestionsData]);
 
   useEffect(() => {
     if (apiData?.workorders && !showingSearchResults && !showingFilterResults) {
@@ -576,27 +684,97 @@ const CandidateJobs = () => {
           <div className="desktop-search" style={{ display: "block" }}>
             <Row gutter={[12, 12]} align="middle">
               <Col xs={24} sm={24} md={10} lg={10} xl={10}>
-                <Input
-                  placeholder="Job title or keyword"
+                <AutoComplete
                   size="large"
-                  prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+                  placeholder="Job title or keyword"
                   value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  onPressEnter={handleSearch}
+                  options={showSuggestions ? suggestions : []}
+                  onChange={(value) => {
+                    setSearchKeyword(value);
+                    if (value.length < 2) {
+                      setShouldFetchSuggestions(false);
+                    }
+                  }}
+                  onSelect={(value, option) => {
+                    setSearchKeyword(option.title);
+                    if (option.location) {
+                      setLocationFilter(option.location);
+                    }
+                    setShowSuggestions(false);
+                    setShouldFetchSuggestions(false);
+                    setTimeout(() => handleSearch(), 100);
+                  }}
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }
+                  onFocus={() => {
+                    if (searchKeyword && searchKeyword.length >= 2) {
+                      setShowSuggestions(true);
+                      setShouldFetchSuggestions(true);
+                    }
+                  }}
+                  dropdownClassName="job-suggestions-dropdown"
+                  notFoundContent={
+                    suggestionsLoading ? (
+                      <div style={{ padding: "8px", textAlign: "center" }}>
+                        <Spin size="small" /> Loading suggestions...
+                      </div>
+                    ) : shouldFetchSuggestions && searchKeyword.length >= 2 ? (
+                      "No suggestions found"
+                    ) : null
+                  }
                   style={{ width: "100%" }}
-                />
+                >
+                  <Input
+                    size="large"
+                    allowClear
+                    prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+                    onPressEnter={handleSearch}
+                  />
+                </AutoComplete>
               </Col>
               <Col xs={24} sm={12} md={6} lg={6} xl={6}>
-                <Input
-                  placeholder="City or country"
+                <AutoComplete
                   size="large"
-                  prefix={<EnvironmentOutlined style={{ color: "#da2c46" }} />}
+                  placeholder="City or country"
                   value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  onPressEnter={handleSearch}
+                  options={showSuggestions ? locationSuggestions : []}
+                  onChange={(value) => {
+                    setLocationFilter(value);
+                    if (value.length < 2) {
+                      setShouldFetchSuggestions(false);
+                    } else {
+                      setShouldFetchSuggestions(true);
+                    }
+                  }}
+                  onSelect={(value) => {
+                    setLocationFilter(value);
+                    setShowSuggestions(false);
+                    setShouldFetchSuggestions(false);
+                    setTimeout(() => handleSearch(), 100);
+                  }}
+                  notFoundContent={
+                    locationSuggestionsLoading ? (
+                      <div style={{ padding: "8px", textAlign: "center" }}>
+                        <Spin size="small" /> Loading locations...
+                      </div>
+                    ) : shouldFetchSuggestions && locationFilter.length >= 2 ? (
+                      "No location suggestions found"
+                    ) : null
+                  }
                   style={{ width: "100%" }}
-                />
+                >
+                  <Input
+                    size="large"
+                    allowClear
+                    prefix={
+                      <EnvironmentOutlined style={{ color: "#da2c46" }} />
+                    }
+                    onPressEnter={handleSearch}
+                  />
+                </AutoComplete>
               </Col>
+
               <Col xs={12} sm={6} md={4} lg={4} xl={4}>
                 <div className="desktop-filter" style={{ display: "none" }}>
                   <Dropdown
@@ -1178,6 +1356,33 @@ const CandidateJobs = () => {
           </Card>
         )}
       </div>
+      <style jsx>
+        {`
+          .job-suggestions-dropdown {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 8px !important;
+            border: 1px solid #e0e0e0 !important;
+          }
+
+          .job-suggestions-dropdown .ant-select-item {
+            padding: 12px 16px !important;
+            border-bottom: 1px solid #f5f5f5;
+          }
+
+          .job-suggestions-dropdown .ant-select-item:last-child {
+            border-bottom: none;
+          }
+
+          .job-suggestions-dropdown .ant-select-item:hover {
+            background-color: #f8f9fa !important;
+          }
+
+          .job-suggestions-dropdown .ant-select-item-option-selected {
+            background-color: #fff2f4 !important;
+            border-left: 3px solid #da2c46 !important;
+          }
+        `}
+      </style>
     </>
   );
 };
