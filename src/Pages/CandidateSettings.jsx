@@ -1904,15 +1904,7 @@ const CandidateSettings = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
-                  <PhoneInput
-                    form={contactForm}
-                    name="emergencyContactNo"
-                    label="Emergency Contact No"
-                    required={true}
-                    disabled={!isProfileEditable}
-                  />
-                </Col>
+                
 
                 <Col xs={24} sm={8}>
                   <Form.Item

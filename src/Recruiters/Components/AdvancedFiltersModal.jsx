@@ -440,30 +440,25 @@ const AdvancedFiltersModal = ({
                   placeholder="Minimum salary"
                   style={{ width: "100%" }}
                   min={0}
-                  type="number"
+                  max={99999999} // Set a reasonable maximum
                   formatter={(value) =>
                     `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) =>
-                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
-                  }
+                  parser={(value) => value.replace(/,/g, "")}
                 />
               </Form.Item>
             </Col>
-
             <Col xs={24} sm={12}>
               <Form.Item label="Max Current Salary" name="maxCurrentSalary">
                 <InputNumber
                   placeholder="Maximum salary"
                   style={{ width: "100%" }}
                   min={0}
-                  type="number"
+                  max={99999999} // Set a reasonable maximum
                   formatter={(value) =>
                     `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) =>
-                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
-                  }
+                  parser={(value) => value.replace(/,/g, "")}
                 />
               </Form.Item>
             </Col>
@@ -473,13 +468,11 @@ const AdvancedFiltersModal = ({
                   placeholder="Minimum salary"
                   style={{ width: "100%" }}
                   min={0}
-                  type="number"
+                  max={99999999} // Set a reasonable maximum
                   formatter={(value) =>
                     `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) =>
-                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
-                  }
+                  parser={(value) => value.replace(/,/g, "")}
                 />
               </Form.Item>
             </Col>
@@ -489,13 +482,11 @@ const AdvancedFiltersModal = ({
                   placeholder="Maximum salary"
                   style={{ width: "100%" }}
                   min={0}
-                  type="number"
+                  max={99999999} 
                   formatter={(value) =>
                     `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(value) =>
-                    value.replace(/\SAR\s?-\s?|\s?SAR\s?|(,*)/g, "")
-                  }
+                  parser={(value) => value.replace(/,/g, "")}
                 />
               </Form.Item>
             </Col>
