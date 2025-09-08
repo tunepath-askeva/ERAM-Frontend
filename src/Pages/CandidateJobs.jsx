@@ -86,6 +86,7 @@ const CandidateJobs = () => {
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [showingSearchResults, setShowingSearchResults] = useState(false);
   const [showingFilterResults, setShowingFilterResults] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
 
   const navigate = useNavigate();
 
@@ -198,15 +199,25 @@ const CandidateJobs = () => {
   }, [suggestionsData]);
 
   useEffect(() => {
-    if (locationSuggestionsData && Array.isArray(locationSuggestionsData)) {
-      setLocationSuggestions(
-        locationSuggestionsData.map((item) => ({
-          value: item.officeLocation,
-          label: item.officeLocation,
-        }))
-      );
+    if (debouncedLocationFilter && debouncedLocationFilter.length >= 2) {
+      setShowLocationSuggestions(true);
+    } else {
+      setLocationSuggestions([]);
+      setShowLocationSuggestions(false);
     }
-  }, [locationSuggestionsData]);
+  }, [debouncedLocationFilter]);
+
+
+useEffect(() => {
+  if (locationSuggestionsData && Array.isArray(locationSuggestionsData)) {
+    setLocationSuggestions(
+      locationSuggestionsData.map((item) => ({
+        value: item.officeLocation,
+        label: item.officeLocation,
+      }))
+    );
+  }
+}, [locationSuggestionsData]);
 
   useEffect(() => {
     if (apiData?.workorders && !showingSearchResults && !showingFilterResults) {
@@ -738,7 +749,7 @@ const CandidateJobs = () => {
                   size="large"
                   placeholder="City or country"
                   value={locationFilter}
-                  options={showSuggestions ? locationSuggestions : []}
+                  options={locationSuggestions} // Remove the showSuggestions condition here
                   onChange={(value) => {
                     setLocationFilter(value);
                     if (value.length < 2) {
@@ -749,9 +760,13 @@ const CandidateJobs = () => {
                   }}
                   onSelect={(value) => {
                     setLocationFilter(value);
-                    setShowSuggestions(false);
                     setShouldFetchSuggestions(false);
                     setTimeout(() => handleSearch(), 100);
+                  }}
+                  onFocus={() => {
+                    if (locationFilter && locationFilter.length >= 2) {
+                      setShouldFetchSuggestions(true);
+                    }
                   }}
                   notFoundContent={
                     locationSuggestionsLoading ? (

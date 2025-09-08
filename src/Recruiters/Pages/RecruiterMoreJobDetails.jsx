@@ -725,29 +725,6 @@ const RecruiterMoreJobDetails = () => {
         </Col>
       </Row>
 
-      {/* Charts Section - Only render if data exists */}
-      {getStatusChartData().length > 0 && (
-        <Row gutter={[24, 24]} style={{ marginBottom: "32px" }}>
-          <Col xs={24} lg={24}>
-            <Card
-              title={
-                <Space>
-                  <FileExcelOutlined style={{ color: colors.primary }} />
-                  <Text strong>Candidates per Work Order</Text>
-                </Space>
-              }
-              style={{ height: "400px", borderRadius: "12px" }}
-            >
-              <div style={{ height: "300px" }}>
-                {getWorkOrderChartData().length > 0 && (
-                  <Column {...workOrderColumnConfig} />
-                )}
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      )}
-
       {/* Work Order Summary Table */}
       {analytics.workOrderStats.length > 0 && (
         <Card
