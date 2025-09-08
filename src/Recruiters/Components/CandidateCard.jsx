@@ -175,11 +175,11 @@ const CandidateCard = ({
     if (isNaN(numSalary)) return salary;
 
     if (numSalary >= 100000) {
-      return `₹${(numSalary / 100000).toFixed(1)}L`;
+      return `${(numSalary / 100000).toFixed(1)}L`;
     } else if (numSalary >= 1000) {
-      return `₹${(numSalary / 1000).toFixed(0)}K`;
+      return `${(numSalary / 1000).toFixed(0)}K`;
     } else {
-      return `₹${numSalary}`;
+      return `${numSalary}`;
     }
   };
 
