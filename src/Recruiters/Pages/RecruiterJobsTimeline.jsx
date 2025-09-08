@@ -54,7 +54,7 @@ const RecruiterJobsTimeline = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -280,7 +280,7 @@ const RecruiterJobsTimeline = () => {
               style={{ width: "100%" }}
             />
           </Col>
-{/* 
+          {/* 
           <Col xs={12} sm={4} md={4} lg={4} xl={4}>
             <Button
               type="primary"
@@ -679,8 +679,12 @@ const RecruiterJobsTimeline = () => {
               current={currentPage}
               pageSize={pageSize}
               total={apiData?.totalCount || 0} // ✅ Use totalCount from transformResponse
-              onChange={(page) => setCurrentPage(page)}
-              showSizeChanger={false}
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+              showSizeChanger={true}
+              pageSizeOptions={["5", "10", "20", "50", "100", "150"]}
               showTotal={(total, range) =>
                 `${range[0]}-${range[1]} of ${total} jobs`
               } // Optional: show total info

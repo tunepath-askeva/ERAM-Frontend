@@ -34,6 +34,8 @@ const EmployeePayroll = () => {
   const [pageSize, setPageSize] = useState(10);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+
   const printRef = useRef();
 
   const getMonthNumber = (monthName) => {
@@ -60,65 +62,61 @@ const EmployeePayroll = () => {
     month: getMonthNumber(selectedMonth),
     year: selectedYear,
   });
-  const [generatePayslip, { isLoading: isGenerating }] =
-    useGeneratePayslipMutation();
+  const [generatePayslip] = useGeneratePayslipMutation();
 
   const transformPayrollData = (apiData) => {
-    if (!apiData?.payroll) return [];
+    if (!apiData?.payroll || !Array.isArray(apiData.payroll)) return [];
 
-    const payroll = apiData.payroll;
-    return [
-      {
-        id: payroll._id,
-        empName: payroll.U_empname,
-        empId: payroll.U_EramId,
-        month: getMonthNumber(payroll.U_month),
-        year: payroll.U_year,
-        designation: "",
-        nationality: "",
-        basicSalary: parseFloat(payroll.U_basic || 0),
-        hra: parseFloat(payroll.U_hra || 0),
-        transportation: parseFloat(payroll.U_tpa || 0),
-        foodAllowance: parseFloat(payroll.U_food || 0),
-        otherAllowance: parseFloat(payroll.U_othrallow || 0),
-        otAllowance: parseFloat(payroll.U_otallow || 0),
-        airTicketAllowance: parseFloat(payroll.U_airtallow || 0),
-        totalEarnings: parseFloat(payroll.U_totalearn || 0),
-        deductions:
-          parseFloat(payroll.U_adv || 0) +
-          parseFloat(payroll.U_loan || 0) +
-          parseFloat(payroll.U_gosi || 0),
-        netPay: parseFloat(payroll.U_ONP || 0),
-        status: "Paid",
-        payDate: new Date().toISOString().split("T")[0],
-        iqamaNo: "",
-        gosiNo: "",
-        daysInMonth: 30,
-        presentDays: 30,
-        absVacDays: parseFloat(payroll.U_absdays || 0),
-        sapId: payroll.U_empcode,
-        workArea: payroll.U_PrjNM,
-        iban: "",
-        bankName: "",
-        iqamaExp: "",
-        doj: "",
-        otHours: parseFloat(payroll.U_OTHOUR1 || 0),
-        remarks: "",
-        email: payroll.U_email,
-        paygroup: payroll.U_paygroup,
-        advance: parseFloat(payroll.U_adv || 0),
-        loan: parseFloat(payroll.U_loan || 0),
-        gosi: parseFloat(payroll.U_gosi || 0),
-        telephone: parseFloat(payroll.U_tel || 0),
-        fuel: parseFloat(payroll.U_fuel || 0),
-        shiftAllowance: parseFloat(payroll.U_shftallow || 0),
-        specialAllowance: parseFloat(payroll.U_specallow || 0),
-        actualAllowance: parseFloat(payroll.U_actallow || 0),
-        projectAllowance: parseFloat(payroll.U_projallow || 0),
-        offshoreAllowance: parseFloat(payroll.U_offsallow || 0),
-        executiveAllowance: parseFloat(payroll.U_exefallow || 0),
-      },
-    ];
+    return apiData.payroll.map((payroll) => ({
+      id: payroll._id,
+      empName: payroll.U_empname,
+      empId: payroll.U_EramId,
+      month: payroll.U_month, // Keep as string, don't convert to number
+      year: payroll.U_year,
+      designation: "",
+      nationality: "",
+      basicSalary: parseFloat(payroll.U_basic || 0),
+      hra: parseFloat(payroll.U_hra || 0),
+      transportation: parseFloat(payroll.U_tpa || 0),
+      foodAllowance: parseFloat(payroll.U_food || 0),
+      otherAllowance: parseFloat(payroll.U_othrallow || 0),
+      otAllowance: parseFloat(payroll.U_otallow || 0),
+      airTicketAllowance: parseFloat(payroll.U_airtallow || 0),
+      totalEarnings: parseFloat(payroll.U_totalearn || 0),
+      deductions:
+        parseFloat(payroll.U_adv || 0) +
+        parseFloat(payroll.U_loan || 0) +
+        parseFloat(payroll.U_gosi || 0),
+      netPay: parseFloat(payroll.U_ONP || 0),
+      status: "Paid",
+      payDate: new Date().toISOString().split("T")[0],
+      iqamaNo: "",
+      gosiNo: "",
+      daysInMonth: 30,
+      presentDays: 30,
+      absVacDays: parseFloat(payroll.U_absdays || 0),
+      sapId: payroll.U_empcode,
+      workArea: payroll.U_PrjNM,
+      iban: "",
+      bankName: "",
+      iqamaExp: "",
+      doj: "",
+      otHours: parseFloat(payroll.U_OTHOUR1 || 0),
+      remarks: "",
+      email: payroll.U_email,
+      paygroup: payroll.U_paygroup,
+      advance: parseFloat(payroll.U_adv || 0),
+      loan: parseFloat(payroll.U_loan || 0),
+      gosi: parseFloat(payroll.U_gosi || 0),
+      telephone: parseFloat(payroll.U_tel || 0),
+      fuel: parseFloat(payroll.U_fuel || 0),
+      shiftAllowance: parseFloat(payroll.U_shftallow || 0),
+      specialAllowance: parseFloat(payroll.U_specallow || 0),
+      actualAllowance: parseFloat(payroll.U_actallow || 0),
+      projectAllowance: parseFloat(payroll.U_projallow || 0),
+      offshoreAllowance: parseFloat(payroll.U_offsallow || 0),
+      executiveAllowance: parseFloat(payroll.U_exefallow || 0),
+    }));
   };
 
   const payrollData = data ? transformPayrollData(data) : [];
@@ -192,10 +190,10 @@ const EmployeePayroll = () => {
             icon={<DownloadOutlined />}
             onClick={() => handleDownload(record)}
             size="small"
-            loading={isGenerating}
-            disabled={isGenerating}
+            loading={downloadingId === record.id}
+            disabled={downloadingId === record.id}
           >
-            {isGenerating ? "Generating..." : "Download"}
+            {downloadingId === record.id ? "Generating..." : "Download"}
           </Button>
         </Space>
       ),
@@ -209,9 +207,12 @@ const EmployeePayroll = () => {
 
   const handleDownload = async (record) => {
     try {
+      setDownloadingId(record.id);
       await generatePayslip({ id: record.id });
     } catch (error) {
       console.error("Error generating payslip:", error);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -1012,10 +1013,12 @@ const EmployeePayroll = () => {
               key="download"
               icon={<DownloadOutlined />}
               onClick={() => handleDownload(selectedPayroll)}
-              loading={isGenerating}
-              disabled={isGenerating}
+              loading={downloadingId === selectedPayroll?.id}
+              disabled={downloadingId === selectedPayroll?.id}
             >
-              {isGenerating ? "Generating..." : "Download"}
+              {downloadingId === selectedPayroll?.id
+                ? "Generating..."
+                : "Download"}
             </Button>,
             <Button key="close" onClick={() => setViewModalVisible(false)}>
               Close
