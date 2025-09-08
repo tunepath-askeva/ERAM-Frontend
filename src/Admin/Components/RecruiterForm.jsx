@@ -92,6 +92,7 @@ const permissionGroups = [
       { key: "view-job-status", label: "View Work Order Status" },
       { key: "edit-requisitions", label: "Edit Requisition" },
       { key: "add-requisitions", label: "Add Requisition" },
+      { key: "delete-requisitions", label: "Delete Requisition" },
     ],
   },
   {
@@ -216,9 +217,7 @@ const RecruiterForm = ({
         specialization: values.specialization,
         experience: values.experience,
         recruiterType: values.recruiterType,
-        permissions: Array.from(
-          new Set([...(values.permissions || [])])
-        ),
+        permissions: Array.from(new Set([...(values.permissions || [])])),
         role: "recruiter",
       };
 
@@ -495,11 +494,7 @@ const RecruiterForm = ({
         >
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="Specialization"
-                name="specialization"
-               
-              >
+              <Form.Item label="Specialization" name="specialization">
                 <Input
                   placeholder="e.g., IT, Healthcare, Finance"
                   prefix={<BankOutlined />}
@@ -512,7 +507,6 @@ const RecruiterForm = ({
                 label="Experience (Years)"
                 name="experience"
                 rules={[
-                 
                   {
                     type: "number",
                     min: 0,
@@ -638,7 +632,7 @@ const RecruiterForm = ({
               <Button
                 type="link"
                 size="small"
-                style={{color: "#da2c46"}}
+                style={{ color: "#da2c46" }}
                 onClick={() => {
                   form.setFieldsValue({ permissions: [] });
                 }}

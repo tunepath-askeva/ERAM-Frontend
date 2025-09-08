@@ -367,16 +367,18 @@ const RecruiterRequisition = () => {
               Edit
             </Button>
           )}
-          <Button
-            type="link"
-            danger
-            onClick={() => {
-              setRequisitionToDelete(record._id);
-              setIsDeleteModalVisible(true);
-            }}
-            icon={<DeleteOutlined />}
-            size="small"
-          />
+          {hasPermission("delete-requisitions") && (
+            <Button
+              type="link"
+              danger
+              onClick={() => {
+                setRequisitionToDelete(record._id);
+                setIsDeleteModalVisible(true);
+              }}
+              icon={<DeleteOutlined />}
+              size="small"
+            />
+          )}
         </Space>
       ),
       width: 150,
@@ -692,16 +694,19 @@ const RecruiterRequisition = () => {
             <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
               Close
             </Button>,
-            <Button
-              key="edit"
-              type="primary"
-              onClick={() => {
-                setIsDetailModalVisible(false);
-                handleEdit(selectedRequisition);
-              }}
-            >
-              Edit
-            </Button>,
+
+            hasPermission("edit-requisitions") && (
+              <Button
+                key="edit"
+                type="primary"
+                onClick={() => {
+                  setIsDetailModalVisible(false);
+                  handleEdit(selectedRequisition);
+                }}
+              >
+                Edit
+              </Button>
+            ),
           ]}
           width={900}
           style={{ top: 20 }}

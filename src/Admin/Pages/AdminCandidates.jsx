@@ -434,6 +434,12 @@ const AdminCandidates = () => {
         const email = row["Email"]?.trim();
         const password = row["Password"]?.trim();
 
+        const countryCode =
+          row["Country Code"]?.toString()?.trim().replace("+", "") || "91";
+        const phoneNumber = row["Phone Number"]?.toString()?.trim() || "";
+        const phone =
+          countryCode && phoneNumber ? `+${countryCode}${phoneNumber}` : "";
+
         if (fullName && email && password) {
           candidates.push({
             firstName: firstName,
@@ -441,7 +447,7 @@ const AdminCandidates = () => {
             lastName: lastName,
             fullName: fullName,
             email: email?.toLowerCase() || "",
-            phone: row["Phone"]?.trim() || "",
+            phone,
             password: password || "",
             companyName:
               row["Company Name"]?.trim() || row["Company"]?.trim() || "",
@@ -1105,7 +1111,8 @@ const AdminCandidates = () => {
                   "Last Name",
                   "Full Name",
                   "Email",
-                  "Phone",
+                  "Country Code",
+                  "Phone Number",
                   "Password",
                   "Company Name",
                   "Specialization",
@@ -1121,6 +1128,7 @@ const AdminCandidates = () => {
                   "Doe",
                   "John Michael Doe",
                   "john.doe@example.com",
+                  "91",
                   "9876543210",
                   "password123",
                   "Acme Corp",

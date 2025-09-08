@@ -166,6 +166,12 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             return;
           }
 
+          const countryCode =
+            row["Country Code"]?.toString()?.trim().replace("+", "") || "91";
+          const phoneNumber = row["Phone Number"]?.toString()?.trim() || "";
+          const phone =
+            countryCode && phoneNumber ? `+${countryCode}${phoneNumber}` : "";
+
           // Basic email validation
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(email)) {
@@ -180,7 +186,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             lastName: lastName,
             fullName: fullName,
             email: email,
-            phone: row["Phone"]?.toString()?.trim() || "",
+            phone,
             password: password,
             companyName:
               row["Company Name"]?.toString()?.trim() ||
@@ -328,7 +334,8 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "Last Name",
                   "Full Name",
                   "Email",
-                  "Phone",
+                  "Country Code",
+                  "Phone Number",
                   "Password",
                   "Company Name",
                   "Specialization",
@@ -344,6 +351,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "Doe",
                   "John Michael Doe",
                   "john.doe@example.com",
+                  "91",
                   "9876543210",
                   "password123",
                   "Acme Corp",
