@@ -64,6 +64,7 @@ const permissionGroups = [
     icon: <DashboardOutlined />,
     permissions: [
       { key: "dashboard", label: "Dashboard" },
+      { key: "requisition", label: "Requisition" },
       { key: "jobs", label: "Jobs" },
       { key: "jobs-timeline", label: "Jobs Timeline" },
       { key: "all-candidates", label: "All Candidates" },
@@ -74,7 +75,15 @@ const permissionGroups = [
       { key: "approvals", label: "Approvals" },
       { key: "employees", label: "Employees" },
       { key: "notifications", label: "Notifications" },
-      { key: "requisition", label: "Requisition" },
+    ],
+  },
+  {
+    title: "Requisition Management",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "edit-requisitions", label: "Edit Requisition" },
+      { key: "add-requisitions", label: "Add Requisition" },
+      { key: "delete-requisitions", label: "Delete Requisition" },
     ],
   },
   {
@@ -83,16 +92,13 @@ const permissionGroups = [
     permissions: [
       { key: "edit-job", label: "Edit Job" },
       { key: "deactivate-job", label: "Deactivate/Activate Job" },
-      { key: "view-job-sourced", label: "View Sourced Candidates" },
-      { key: "view-job-selected", label: "View Selected Candidates" },
-      { key: "view-job-applied", label: "View Applied Candidates" },
-      { key: "view-job-declined", label: "View Declined Candidates" },
-      { key: "view-job-pending", label: "View Pending Candidates" },
-      { key: "view-job-screening", label: "View Screening Candidates" },
-      { key: "view-job-status", label: "View Work Order Status" },
-      { key: "edit-requisitions", label: "Edit Requisition" },
-      { key: "add-requisitions", label: "Add Requisition" },
-      { key: "delete-requisitions", label: "Delete Requisition" },
+      { key: "view-job-status", label: "View Work Order Status Tab" },
+      { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
+      { key: "view-job-selected", label: "View Selected Candidates Tab" },
+      { key: "view-job-applied", label: "View Applied Candidates Tab" },
+      { key: "view-job-declined", label: "View Declined Candidates Tab" },
+      { key: "view-job-pending", label: "View Pending Candidates Tab" },
+      { key: "view-job-screening", label: "View Screening Candidates Tab" },
     ],
   },
   {
@@ -103,28 +109,20 @@ const permissionGroups = [
       { key: "add-candidate", label: "Add Candidate" },
       { key: "bulk-upload", label: "Bulk Upload Candidates" },
       { key: "edit-candidate-details", label: "Edit Candidate" },
-      { key: "download-documents", label: "Download Documents" },
-      { key: "send-messages", label: "Send Messages" },
-      { key: "view-profile", label: "View Candidate Profile" },
-      { key: "notify-candidate", label: "Notify Candidate" },
     ],
   },
   {
-    title: "Candidate Actions",
-    icon: <SettingOutlined />,
+    title: "Interview Candidate Actions",
+    icon: <TeamOutlined />,
     permissions: [
+      { key: "download-documents", label: "Download Documents" },
+      { key: "send-messages", label: "Send Messages" },
+      { key: "view-profile", label: "View Candidate Profile" },
       { key: "move-to-interview", label: "Move to Interview" },
       { key: "make-offer", label: "Make Offer" },
       { key: "move-to-offer", label: "Move to Offer" },
       { key: "move-to-pipeline", label: "Move to Pipeline" },
-      { key: "convert-to-employee", label: "Convert to Employee" },
       { key: "reject-candidate", label: "Reject Candidate" },
-    ],
-  },
-  {
-    title: "Interview Management",
-    icon: <CalendarOutlined />,
-    permissions: [
       { key: "schedule-interview", label: "Schedule Interview" },
       { key: "reschedule-interview", label: "Reschedule Interview" },
       { key: "view-interviews", label: "View Interviews" },
@@ -132,7 +130,17 @@ const permissionGroups = [
     ],
   },
   {
-    title: "Tab Views",
+    title: "Completed Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [{ key: "convert-to-employee", label: "Convert to Employee" }],
+  },
+  {
+    title: "Staged Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [{ key: "notify-candidate", label: "Notify Candidate" }],
+  },
+  {
+    title: "Tab Views for Interview candidates",
     icon: <FileTextOutlined />,
     permissions: [
       { key: "view-all-tab", label: "View All Tab" },
@@ -614,98 +622,259 @@ const RecruiterForm = ({
         <Card
           size="small"
           title={
-            <Space>
-              <CheckCircleOutlined />
-              <span>Access Permissions</span>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => {
-                  const allPermissions = permissionGroups.flatMap((group) =>
-                    group.permissions.map((p) => p.key)
-                  );
-                  form.setFieldsValue({ permissions: allPermissions });
-                }}
-              >
-                Select All
-              </Button>
-              <Button
-                type="link"
-                size="small"
-                style={{ color: "#da2c46" }}
-                onClick={() => {
-                  form.setFieldsValue({ permissions: [] });
-                }}
-              >
-                Deselect All
-              </Button>
-            </Space>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <Space>
+                <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                <span style={{ fontSize: "14px", fontWeight: 600 }}>
+                  Access Permissions
+                </span>
+              </Space>
+              <Space size="medium">
+                <Button
+                  type="primary"
+                  ghost
+                  size="small"
+                  onClick={() => {
+                    const allPermissions = permissionGroups.flatMap((group) =>
+                      group.permissions.map((p) => p.key)
+                    );
+                    form.setFieldsValue({ permissions: allPermissions });
+                  }}
+                  style={{ borderRadius: "6px", fontSize: "12px" }}
+                >
+                  Select All
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    form.setFieldsValue({ permissions: [] });
+                  }}
+                  style={{ borderRadius: "6px", fontSize: "12px" }}
+                >
+                  Clear All
+                </Button>
+              </Space>
+            </div>
           }
+          style={{ marginBottom: 0 }}
         >
-          <Form.Item name="permissions">
-            <Checkbox.Group style={{ width: "100%", color: "#da2c46" }}>
-              {permissionGroups.map((group, groupIndex) => (
-                <div key={group.title} style={{ marginBottom: 24 }}>
-                  <div
-                    style={{
-                      marginBottom: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Space>
-                      {group.icon}
-                      <span
+          <Form.Item name="permissions" style={{ marginBottom: 0 }}>
+            <Checkbox.Group style={{ width: "100%" }}>
+              <div
+                style={{
+                  maxHeight: "450px",
+                  overflowY: "auto",
+                  paddingRight: "8px",
+                  scrollbarWidth: "thin",
+                }}
+              >
+                <Row gutter={[16, 16]}>
+                  {permissionGroups.map((group) => (
+                    <Col span={24} key={group.title}>
+                      <div
                         style={{
-                          fontWeight: 600,
-                          fontSize: "14px",
-                          color: "#da2c46",
+                          borderRadius: "8px",
+                          padding: "16px",
+                          border: "1px solid #e9ecef",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                         }}
                       >
-                        {group.title}
-                      </span>
-                    </Space>
-                    <Button
-                      type="link"
-                      size="small"
-                      onClick={() => {
-                        const isFullySelected = isGroupFullySelected(
-                          group.permissions
-                        );
-                        handleGroupSelectAll(
-                          group.permissions,
-                          !isFullySelected
-                        );
-                      }}
-                      style={{ padding: 0, height: "auto" }}
-                    >
-                      {isGroupFullySelected(group.permissions)
-                        ? "Deselect All"
-                        : "Select All"}
-                    </Button>
-                  </div>
-                  <Row gutter={[12, 8]}>
-                    {group.permissions.map((permission) => (
-                      <Col span={8} key={permission.key}>
-                        <Checkbox
-                          value={permission.key}
-                          style={{ fontSize: "13px" }}
+                        {/* Group Header */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginBottom: "12px",
+                            paddingBottom: "8px",
+                            borderBottom: "2px solid #dee2e6",
+                          }}
                         >
-                          {permission.label}
-                        </Checkbox>
-                      </Col>
-                    ))}
-                  </Row>
-                  {groupIndex < permissionGroups.length - 1 && (
-                    <Divider style={{ margin: "16px 0 0 0" }} />
-                  )}
-                </div>
-              ))}
+                          <Space>
+                            <div
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                borderRadius: "8px",
+                                backgroundColor: "#fde8e3ff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#da2c46",
+                                fontSize: "16px",
+                              }}
+                            >
+                              {group.icon}
+                            </div>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: "14px",
+                                  fontWeight: 600,
+                                  color: "#212529",
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                {group.title}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  color: "#6c757d",
+                                }}
+                              >
+                                {group.permissions.length} permission
+                                {group.permissions.length !== 1 ? "s" : ""}
+                              </div>
+                            </div>
+                          </Space>
+                          <Form.Item
+                            noStyle
+                            shouldUpdate={(prev, cur) =>
+                              prev.permissions !== cur.permissions
+                            }
+                          >
+                            {({ getFieldValue }) => {
+                              const currentPermissions =
+                                getFieldValue("permissions") || [];
+                              const groupKeys = group.permissions.map(
+                                (p) => p.key
+                              );
+                              const isFullySelected = groupKeys.every((key) =>
+                                currentPermissions.includes(key)
+                              );
+
+                              return (
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={() =>
+                                    handleGroupSelectAll(
+                                      group.permissions,
+                                      !isFullySelected
+                                    )
+                                  }
+                                  style={{
+                                    backgroundColor: isFullySelected
+                                      ? "#fff2f0"
+                                      : "#f0f9ff",
+                                    color: isFullySelected
+                                      ? "#cf1322"
+                                      : "#0958d9",
+                                    border: `1px solid ${
+                                      isFullySelected ? "#ffccc7" : "#bae0ff"
+                                    }`,
+                                    borderRadius: "6px",
+                                    fontSize: "12px",
+                                    fontWeight: 500,
+                                    padding: "4px 12px",
+                                    height: "auto",
+                                  }}
+                                >
+                                  {isFullySelected
+                                    ? "Deselect All"
+                                    : "Select All"}
+                                </Button>
+                              );
+                            }}
+                          </Form.Item>
+                        </div>
+
+                        {/* Permissions List */}
+                        <Row gutter={[8, 8]}>
+                          {group.permissions.map((permission) => (
+                            <Col
+                              key={permission.key}
+                              span={
+                                group.permissions.length === 1
+                                  ? 24
+                                  : group.permissions.length === 2
+                                  ? 12
+                                  : group.permissions.length <= 4
+                                  ? 12
+                                  : 8
+                              }
+                            >
+                              <div className="custom-checkbox"
+                                style={{
+                                  backgroundColor: "#ffffff",
+                                  border: "1px solid #e9ecef",
+                                  borderRadius: "6px",
+                                  padding: "8px 12px",
+                                  minHeight: "36px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  transition: "all 0.2s ease",
+                                  cursor: "pointer",
+                                  ":hover": {
+                                    borderColor: "#da2c46",
+                                    boxShadow: "0 2px 4px rgba(24,144,255,0.1)",
+                                  },
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = "#da2c46";
+                                  e.currentTarget.style.boxShadow =
+                                    "0 2px 4px rgba(24,144,255,0.1)";
+                                  e.currentTarget.style.transform =
+                                    "translateY(-1px)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = "#e9ecef";
+                                  e.currentTarget.style.boxShadow = "none";
+                                  e.currentTarget.style.transform =
+                                    "translateY(0)";
+                                }}
+                              >
+                                <Checkbox
+                                  value={permission.key}
+                                  style={{ width: "100%" }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: "13px",
+                                      fontWeight: 500,
+                                      color: "#495057",
+                                      marginLeft: "8px",
+                                      lineHeight: "1.4",
+                                    }}
+                                  >
+                                    {permission.label}
+                                  </span>
+                                </Checkbox>
+                              </div>
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
             </Checkbox.Group>
           </Form.Item>
         </Card>
       </Form>
+
+      <style jsx>
+        {`
+          .custom-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+            background-color: #da2c46 !important;
+            border-color: #da2c46 !important;
+          }
+
+          .custom-checkbox .ant-checkbox-input:focus + .ant-checkbox-inner {
+            border-color: #da2c46 !important;
+            box-shadow: 0 0 0 2px rgba(218, 44, 70, 0.2);
+          }
+        `}
+      </style>
     </Modal>
   );
 };
