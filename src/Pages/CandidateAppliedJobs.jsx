@@ -334,7 +334,7 @@ const CandidateAppliedJobs = () => {
         ].includes(app.status);
       } else if (activeSubTab === "interviews") {
         matchesSubTab = [
-          "scheduled",
+          "interview",
           "interview_completed",
           "final_round",
         ].includes(app.status);

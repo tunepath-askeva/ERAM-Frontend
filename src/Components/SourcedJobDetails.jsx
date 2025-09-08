@@ -529,283 +529,293 @@ const SourcedJobDetails = () => {
 
     return (
       <div>
-
-{sourcedJob.workOrder?.documents?.length > 0 && (
-        <Card style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "16px" }}>
-            <FileTextOutlined style={{ marginRight: "8px" }} />
-            Work Order Required Documents
-          </Title>
-
-          <div style={{ marginBottom: "16px" }}>
-            <Text type="secondary">
-              Status: 
-              <Tag 
-                color={sourcedJob.workOrderuploadedDocuments?.length === sourcedJob.workOrder.documents.length ? "success" : "warning"}
-                style={{ marginLeft: "8px" }}
-              >
-                {sourcedJob.workOrderuploadedDocuments?.length || 0}/{sourcedJob.workOrder.documents.length} Uploaded
-              </Tag>
-            </Text>
-          </div>
-
-          {/* Required Documents Grid */}
-          <div style={{ marginBottom: "24px" }}>
-            <Title level={3}>
-              Required Documents ({sourcedJob.workOrder.documents.length})
+        {sourcedJob.workOrder?.documents?.length > 0 && (
+          <Card style={{ marginBottom: "16px" }}>
+            <Title level={5} style={{ marginBottom: "16px" }}>
+              <FileTextOutlined style={{ marginRight: "8px" }} />
+              Work Order Required Documents
             </Title>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "12px",
-              }}
-            >
-              {sourcedJob.workOrder.documents.map((doc, docIndex) => {
-                const isUploaded = isDocumentUploaded(sourcedJob.workOrderuploadedDocuments, doc.name);
-                const isPending = uploadedFiles['workOrder']?.some(
-                  (pendingDoc) => pendingDoc.documentType === doc.name
-                );
 
-                return (
-                  <div
-                    key={doc._id || docIndex}
-                    style={{
-                      padding: "12px",
-                      border: `2px solid ${
-                        isUploaded
-                          ? "#52c41a"
-                          : isPending
-                          ? "#faad14"
-                          : "#d9d9d9"
-                      }`,
-                      borderRadius: "8px",
-                      backgroundColor: isUploaded
-                        ? "#f6ffed"
-                        : isPending
-                        ? "#fffbf0"
-                        : "#fafafa",
-                      position: "relative",
-                    }}
-                  >
+            <div style={{ marginBottom: "16px" }}>
+              <Text type="secondary">
+                Status:
+                <Tag
+                  color={
+                    sourcedJob.workOrderuploadedDocuments?.length ===
+                    sourcedJob.workOrder.documents.length
+                      ? "success"
+                      : "warning"
+                  }
+                  style={{ marginLeft: "8px" }}
+                >
+                  {sourcedJob.workOrderuploadedDocuments?.length || 0}/
+                  {sourcedJob.workOrder.documents.length} Uploaded
+                </Tag>
+              </Text>
+            </div>
+
+            {/* Required Documents Grid */}
+            <div style={{ marginBottom: "24px" }}>
+              <Title level={3}>
+                Required Documents ({sourcedJob.workOrder.documents.length})
+              </Title>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "12px",
+                }}
+              >
+                {sourcedJob.workOrder.documents.map((doc, docIndex) => {
+                  const isUploaded = isDocumentUploaded(
+                    sourcedJob.workOrderuploadedDocuments,
+                    doc.name
+                  );
+                  const isPending = uploadedFiles["workOrder"]?.some(
+                    (pendingDoc) => pendingDoc.documentType === doc.name
+                  );
+
+                  return (
                     <div
+                      key={doc._id || docIndex}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <FileTextOutlined
-                        style={{
-                          color: isUploaded
+                        padding: "12px",
+                        border: `2px solid ${
+                          isUploaded
                             ? "#52c41a"
                             : isPending
                             ? "#faad14"
-                            : "#8c8c8c",
-                          fontSize: "16px",
-                        }}
-                      />
-                      <Text strong style={{ fontSize: "14px" }}>
-                        {doc.name}
-                      </Text>
-                    </div>
-
-                    {doc.description && (
-                      <Text type="secondary" style={{ marginTop: "4px" }}>
-                        {doc.description}
-                      </Text>
-                    )}
-
-                    <div
-                      style={{
-                        marginTop: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
+                            : "#d9d9d9"
+                        }`,
+                        borderRadius: "8px",
+                        backgroundColor: isUploaded
+                          ? "#f6ffed"
+                          : isPending
+                          ? "#fffbf0"
+                          : "#fafafa",
+                        position: "relative",
                       }}
                     >
-                      {isUploaded ? (
-                        <Tag
-                          color="success"
-                          size="small"
-                          icon={<CheckCircleOutlined />}
-                        >
-                          Uploaded
-                        </Tag>
-                      ) : isPending ? (
-                        <Tag
-                          color="warning"
-                          size="small"
-                          icon={<ClockCircleOutlined />}
-                        >
-                          Pending Submit
-                        </Tag>
-                      ) : (
-                        <Tag color="default" size="small">
-                          Not Uploaded
-                        </Tag>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Upload Section for Work Order Documents */}
-          <Divider />
-          <div>
-            <Title level={3}>
-              Upload Work Order Documents
-            </Title>
-            
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: "16px",
-                marginBottom: "16px",
-              }}
-            >
-              {sourcedJob.workOrder.documents
-                .filter(doc => !isDocumentUploaded(sourcedJob.workOrderuploadedDocuments, doc.name))
-                .map((doc, docIndex) => (
-                  <div
-                    key={`wo-${doc._id || docIndex}`}
-                    style={{
-                      border: "2px dashed #d9d9d9",
-                      borderRadius: "12px",
-                      padding: "20px",
-                      textAlign: "center",
-                      backgroundColor: "#fafafa",
-                      transition: "all 0.3s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#da2c46";
-                      e.currentTarget.style.backgroundColor = "#fff";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 4px 12px rgba(218, 44, 70, 0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "#d9d9d9";
-                      e.currentTarget.style.backgroundColor = "#fafafa";
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  >
-                    <Upload
-                      {...uploadProps('workOrder', doc.name)}
-                      style={{ width: "100%" }}
-                    >
-                      <div>
-                        <div
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <FileTextOutlined
                           style={{
-                            width: "50px",
-                            height: "50px",
-                            borderRadius: "50%",
-                            backgroundColor: "#da2c46",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 12px",
-                            transition: "transform 0.3s ease",
-                          }}
-                        >
-                          <UploadOutlined
-                            style={{ fontSize: "20px", color: "white" }}
-                          />
-                        </div>
-                        <Text
-                          strong
-                          style={{
-                            display: "block",
-                            marginBottom: "4px",
+                            color: isUploaded
+                              ? "#52c41a"
+                              : isPending
+                              ? "#faad14"
+                              : "#8c8c8c",
                             fontSize: "16px",
                           }}
-                        >
+                        />
+                        <Text strong style={{ fontSize: "14px" }}>
                           {doc.name}
                         </Text>
-                        <Text
-                          type="secondary"
-                          style={{ fontSize: "12px" }}
-                        >
-                          Click to upload or drag & drop
-                        </Text>
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            fontSize: "10px",
-                            color: "#999",
-                          }}
-                        >
-                          PDF, DOC, JPG, PNG (Max 5MB)
-                        </div>
                       </div>
-                    </Upload>
-                  </div>
-                ))}
-            </div>
-          </div>
 
-          {/* Submit Button for Work Order Documents */}
-          {uploadedFiles['workOrder']?.length > 0 && (
-            <div
-              style={{
-                marginTop: "24px",
-                padding: "16px",
-                backgroundColor: "#f9f9f9",
-                borderRadius: "8px",
-              }}
-            >
-              <div style={{ marginBottom: "12px" }}>
-                <Text>
-                  Ready to Submit: {uploadedFiles['workOrder'].length} document(s)
-                </Text>
-                <div style={{ marginTop: "8px" }}>
-                  {uploadedFiles['workOrder'].map((file, index) => (
-                    <Tag
-                      key={index}
-                      color="blue"
-                      style={{ marginBottom: "4px" }}
-                    >
-                      {file.name}
-                    </Tag>
-                  ))}
-                </div>
+                      {doc.description && (
+                        <Text type="secondary" style={{ marginTop: "4px" }}>
+                          {doc.description}
+                        </Text>
+                      )}
+
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        {isUploaded ? (
+                          <Tag
+                            color="success"
+                            size="small"
+                            icon={<CheckCircleOutlined />}
+                          >
+                            Uploaded
+                          </Tag>
+                        ) : isPending ? (
+                          <Tag
+                            color="warning"
+                            size="small"
+                            icon={<ClockCircleOutlined />}
+                          >
+                            Pending Submit
+                          </Tag>
+                        ) : (
+                          <Tag color="default" size="small">
+                            Not Uploaded
+                          </Tag>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <Space>
-                <Button
-                  type="primary"
-                  size="large"
-                  loading={isSubmitting}
-                  onClick={handleSubmitWorkOrderDocuments}
-                  style={{
-                    backgroundColor: "#da2c46",
-                    borderColor: "#da2c46",
-                    minWidth: "140px",
-                  }}
-                  icon={!isSubmitting ? <CheckCircleOutlined /> : null}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Documents"}
-                </Button>
-                <Button
-                  size="large"
-                  onClick={() =>
-                    setUploadedFiles((prev) => ({
-                      ...prev,
-                      ['workOrder']: [],
-                    }))
-                  }
-                >
-                  Clear All ({uploadedFiles['workOrder'].length})
-                </Button>
-              </Space>
             </div>
-          )}
-        </Card>
-      )}
+
+            {/* Upload Section for Work Order Documents */}
+            <Divider />
+            <div>
+              <Title level={3}>Upload Work Order Documents</Title>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                {sourcedJob.workOrder.documents
+                  .filter(
+                    (doc) =>
+                      !isDocumentUploaded(
+                        sourcedJob.workOrderuploadedDocuments,
+                        doc.name
+                      )
+                  )
+                  .map((doc, docIndex) => (
+                    <div
+                      key={`wo-${doc._id || docIndex}`}
+                      style={{
+                        border: "2px dashed #d9d9d9",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        textAlign: "center",
+                        backgroundColor: "#fafafa",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#da2c46";
+                        e.currentTarget.style.backgroundColor = "#fff";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow =
+                          "0 4px 12px rgba(218, 44, 70, 0.15)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#d9d9d9";
+                        e.currentTarget.style.backgroundColor = "#fafafa";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <Upload
+                        {...uploadProps("workOrder", doc.name)}
+                        style={{ width: "100%" }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              width: "50px",
+                              height: "50px",
+                              borderRadius: "50%",
+                              backgroundColor: "#da2c46",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              margin: "0 auto 12px",
+                              transition: "transform 0.3s ease",
+                            }}
+                          >
+                            <UploadOutlined
+                              style={{ fontSize: "20px", color: "white" }}
+                            />
+                          </div>
+                          <Text
+                            strong
+                            style={{
+                              display: "block",
+                              marginBottom: "4px",
+                              fontSize: "16px",
+                            }}
+                          >
+                            {doc.name}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            Click to upload or drag & drop
+                          </Text>
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              fontSize: "10px",
+                              color: "#999",
+                            }}
+                          >
+                            PDF, DOC, JPG, PNG (Max 5MB)
+                          </div>
+                        </div>
+                      </Upload>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Submit Button for Work Order Documents */}
+            {uploadedFiles["workOrder"]?.length > 0 && (
+              <div
+                style={{
+                  marginTop: "24px",
+                  padding: "16px",
+                  backgroundColor: "#f9f9f9",
+                  borderRadius: "8px",
+                }}
+              >
+                <div style={{ marginBottom: "12px" }}>
+                  <Text>
+                    Ready to Submit: {uploadedFiles["workOrder"].length}{" "}
+                    document(s)
+                  </Text>
+                  <div style={{ marginTop: "8px" }}>
+                    {uploadedFiles["workOrder"].map((file, index) => (
+                      <Tag
+                        key={index}
+                        color="blue"
+                        style={{ marginBottom: "4px" }}
+                      >
+                        {file.name}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+                <Space>
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={isSubmitting}
+                    onClick={handleSubmitWorkOrderDocuments}
+                    style={{
+                      backgroundColor: "#da2c46",
+                      borderColor: "#da2c46",
+                      minWidth: "140px",
+                    }}
+                    icon={!isSubmitting ? <CheckCircleOutlined /> : null}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Documents"}
+                  </Button>
+                  <Button
+                    size="large"
+                    onClick={() =>
+                      setUploadedFiles((prev) => ({
+                        ...prev,
+                        ["workOrder"]: [],
+                      }))
+                    }
+                  >
+                    Clear All ({uploadedFiles["workOrder"].length})
+                  </Button>
+                </Space>
+              </div>
+            )}
+          </Card>
+        )}
 
         {stageProgress?.map((stage, index) => {
           const fullStage = stage.fullStage || stage;
@@ -1427,7 +1437,10 @@ const SourcedJobDetails = () => {
   };
 
   const InterviewContent = () => {
-    if (!sourcedJob.interviewDetails) {
+    if (
+      !sourcedJob.interviewDetails ||
+      sourcedJob.interviewDetails.length === 0
+    ) {
       return (
         <Card>
           <div style={{ textAlign: "center", padding: "40px" }}>
@@ -1445,86 +1458,61 @@ const SourcedJobDetails = () => {
       );
     }
 
-    const interview = sourcedJob.interviewDetails;
-    const interviewDate = new Date(interview.date);
-
     return (
-      <Card>
+      <>
         <Title level={4} style={{ marginBottom: "24px" }}>
           Interview Details
         </Title>
 
-        <Descriptions
-          bordered
-          column={1}
-          labelStyle={{ fontWeight: "600", width: "200px" }}
-        >
-          <Descriptions.Item label="Status">
-            <Tag
-              color={
-                interview.status === "scheduled"
-                  ? "blue"
-                  : interview.status === "completed"
-                  ? "green"
-                  : interview.status === "cancelled"
-                  ? "red"
-                  : "orange"
-              }
-            >
-              {interview.status?.toUpperCase() || "PENDING"}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Date">
-            {interviewDate.toLocaleDateString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Time">
-            {interviewDate.toLocaleTimeString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Mode">
-            <Tag color={interview.mode === "online" ? "blue" : "green"}>
-              {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
-            </Tag>
-          </Descriptions.Item>
+        {sourcedJob.interviewDetails.map((interview, index) => {
+          const interviewDate = new Date(interview.date);
 
-          {interview.mode === "online" && interview.meetingLink && (
-            <Descriptions.Item label="Meeting Link">
-              <Button
-                type="link"
-                href={interview.meetingLink}
-                target="_blank"
-                icon={<UserOutlined />}
+          return (
+            <Card key={interview._id || index} style={{ marginBottom: "16px" }}>
+              <Descriptions
+                bordered
+                column={1}
+                labelStyle={{ fontWeight: "600", width: "200px" }}
               >
-                Join Meeting
-              </Button>
-            </Descriptions.Item>
-          )}
-
-          {interview.mode === "in-person" && interview.location && (
-            <Descriptions.Item label="Location">
-              {interview.location}
-            </Descriptions.Item>
-          )}
-
-          {interview.notes && (
-            <Descriptions.Item label="Notes">
-              <Text>{interview.notes}</Text>
-            </Descriptions.Item>
-          )}
-        </Descriptions>
-
-        <Divider />
-
-        <Title level={5} style={{ marginBottom: "16px" }}>
-          Preparation Tips
-        </Title>
-        <ul>
-          <li>Join 5 minutes before the scheduled time</li>
-          <li>Have your resume and portfolio ready</li>
-          {interview.mode === "online" && (
-            <li>Test your audio and video beforehand</li>
-          )}
-        </ul>
-      </Card>
+                <Descriptions.Item label="Title">
+                  {interview.title || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag
+                    color={
+                      interview.status === "scheduled"
+                        ? "blue"
+                        : interview.status === "completed"
+                        ? "green"
+                        : interview.status === "cancelled"
+                        ? "red"
+                        : "orange"
+                    }
+                  >
+                    {interview.status?.toUpperCase() || "PENDING"}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Date">
+                  {interviewDate.toLocaleDateString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Time">
+                  {interviewDate.toLocaleTimeString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mode">
+                  <Tag color={interview.mode === "online" ? "blue" : "green"}>
+                    {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
+                  </Tag>
+                </Descriptions.Item>
+                {interview.notes && (
+                  <Descriptions.Item label="Notes">
+                    <Text>{interview.notes}</Text>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+          );
+        })}
+      </>
     );
   };
 

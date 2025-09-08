@@ -10,10 +10,12 @@ const PhoneInput = ({ form, name = "phone", label = "Phone", required = true, di
   const [selectedCountryCode, setSelectedCountryCode] = useState("91");
   const [phoneNumber, setPhoneNumber] = useState("");
 
-  useEffect(() => {
-    // Extract country code and phone number from existing value
-    const currentPhone = form.getFieldValue(name);
-    if (currentPhone) {
+useEffect(() => {
+  // Extract country code and phone number from existing value
+  const currentPhone = form.getFieldValue(name);
+  if (currentPhone && typeof currentPhone === 'string') {
+    // Handle phone numbers that start with '+' (international format)
+    if (currentPhone.startsWith('+')) {
       const { countryCode, phoneNumber: number } = phoneUtils.parsePhoneNumber(currentPhone);
       if (countryCode) {
         setSelectedCountryCode(countryCode);
@@ -23,8 +25,18 @@ const PhoneInput = ({ form, name = "phone", label = "Phone", required = true, di
         setPhoneNumber(number);
         form.setFieldsValue({ [name]: number });
       }
+    } else {
+      // Handle phone numbers without '+' - assume they might already be separated
+      // or use default country code (91 for India)
+      setPhoneNumber(currentPhone);
+      form.setFieldsValue({ [name]: currentPhone });
+      // Set default country code if not already set
+      if (!form.getFieldValue(`${name}CountryCode`)) {
+        form.setFieldsValue({ [`${name}CountryCode`]: selectedCountryCode });
+      }
     }
-  }, [form, name]);
+  }
+}, [form, name, selectedCountryCode]);
 
   const validatePhoneNumber = (_, value) => {
     if (!value && required) {

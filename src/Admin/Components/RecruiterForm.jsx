@@ -38,6 +38,8 @@ import {
   useEditRecruiterMutation,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
+import PhoneInput from "../../Global/PhoneInput.jsx";
+import { phoneUtils  } from "../../utils/countryMobileLimits.js";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -201,6 +203,11 @@ const RecruiterForm = ({
           fullName: initialValues.fullName || "",
           email: initialValues.email || "",
           phoneno: initialValues.phone || "",
+          phonenoCountryCode:
+            initialValues.phoneCountryCode ||
+            initialValues.phone?.startsWith("+")
+              ? phoneUtils.parsePhoneNumber(initialValues.phone)?.countryCode
+              : "91",
           specialization: initialValues.specialization || "",
           experience: experienceValue || 0,
           recruiterType: initialValues.recruiterType || "Recruiter",
@@ -221,7 +228,9 @@ const RecruiterForm = ({
       const payload = {
         fullName: values.fullName,
         email: values.email,
-        phoneno: values.phoneno,
+        phoneno: values.phonenoCountryCode
+          ? `+${values.phonenoCountryCode}${values.phoneno}`
+          : values.phoneno,
         specialization: values.specialization,
         experience: values.experience,
         recruiterType: values.recruiterType,
@@ -469,23 +478,12 @@ const RecruiterForm = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="Phone Number"
+              <PhoneInput
+                form={form}
                 name="phoneno"
-                rules={[
-                  { required: true, message: "Please enter phone number" },
-                  {
-                    pattern: /^[+]?[0-9\s-()]+$/,
-                    message: "Please enter a valid phone number",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="+91 98765 43210"
-                  prefix={<PhoneOutlined />}
-                  size="large"
-                />
-              </Form.Item>
+                label="Phone Number"
+                required={true}
+              />
             </Col>
           </Row>
         </Card>
@@ -802,7 +800,8 @@ const RecruiterForm = ({
                                   : 8
                               }
                             >
-                              <div className="custom-checkbox"
+                              <div
+                                className="custom-checkbox"
                                 style={{
                                   backgroundColor: "#ffffff",
                                   border: "1px solid #e9ecef",
