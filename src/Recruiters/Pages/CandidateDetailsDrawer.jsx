@@ -328,10 +328,17 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                         <Text>{candidate.agency || "Not specified"}</Text>
                       </Col>
                       <Col xs={24} sm={12}>
-                        <Text strong>Work Order Hint:</Text>
+                        <Text strong>Search Hint:</Text>
                         <br />
                         <Text>
                           {candidate.workorderhint || "Not specified"}
+                        </Text>
+                      </Col>
+                       <Col xs={24} sm={12}>
+                        <Text strong>Client:</Text>
+                        <br />
+                        <Text>
+                          {candidate.ClientCode || "Not specified"}
                         </Text>
                       </Col>
                     </Row>

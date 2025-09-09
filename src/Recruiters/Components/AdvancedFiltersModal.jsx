@@ -39,6 +39,7 @@ const AdvancedFiltersModal = ({
     if (visible) {
       form.setFieldsValue({
         // Basic filters (keep existing ones)
+        search: initialFilters.search || "",
         workorderhint: initialFilters.workorderhint || "",
         client: initialFilters.client || "",
         skills: initialFilters.skills || [],
@@ -259,6 +260,14 @@ const AdvancedFiltersModal = ({
         {/* Basic Search and Skills */}
         <Card title="Basic Filters" size="small" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
+            <Col xs={24} sm={24}>
+              <Form.Item label="Search" name="search">
+                <Input placeholder="Search by name, email and role..." />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col xs={24} sm={8}>
               <Form.Item label="Search Hint" name="workorderhint">
                 <Input placeholder="Enter search hint" />
@@ -270,10 +279,11 @@ const AdvancedFiltersModal = ({
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Location" name="location">
-                <Input placeholder="Enter location" />
+              <Form.Item label="Agency" name="agency">
+                <Input placeholder="Enter agency name" />
               </Form.Item>
             </Col>
+
             <Col xs={24} sm={12}>
               <Form.Item label="Skills" name="skills">
                 <Select
@@ -309,6 +319,43 @@ const AdvancedFiltersModal = ({
         >
           <Row gutter={16}>
             <Col xs={24} sm={8}>
+              <Form.Item label="Nationality" name="nationality">
+                <Input placeholder="Enter nationality" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Country of Birth" name="countryOfBirth">
+                <Input placeholder="Enter country of birth" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Location" name="location">
+                <Input placeholder="Enter location" />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Min Age" name="minAge">
+                <InputNumber
+                  placeholder="Minimum age"
+                  style={{ width: "100%" }}
+                  min={18}
+                  max={100}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item label="Max Age" name="maxAge">
+                <InputNumber
+                  placeholder="Maximum age"
+                  style={{ width: "100%" }}
+                  min={18}
+                  max={100}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
               <Form.Item label="Gender" name="gender">
                 <Select placeholder="Select gender" options={genderOptions} />
               </Form.Item>
@@ -330,38 +377,8 @@ const AdvancedFiltersModal = ({
               </Form.Item>
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Nationality" name="nationality">
-                <Input placeholder="Enter nationality" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Country of Birth" name="countryOfBirth">
-                <Input placeholder="Enter country of birth" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
               <Form.Item label="Religion" name="religion">
                 <Input placeholder="Enter religion" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Min Age" name="minAge">
-                <InputNumber
-                  placeholder="Minimum age"
-                  style={{ width: "100%" }}
-                  min={18}
-                  max={100}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Max Age" name="maxAge">
-                <InputNumber
-                  placeholder="Maximum age"
-                  style={{ width: "100%" }}
-                  min={18}
-                  max={100}
-                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={24}>
@@ -404,7 +421,7 @@ const AdvancedFiltersModal = ({
           style={{ marginBottom: 16 }}
         >
           <Row gutter={16}>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Min Experience (Years)" name="minExperience">
                 <InputNumber
                   placeholder="Minimum years"
@@ -414,7 +431,7 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Max Experience (Years)" name="maxExperience">
                 <InputNumber
                   placeholder="Maximum years"
@@ -424,17 +441,13 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Notice Period" name="noticePeriod">
                 <Select options={noticePeriodOptions} />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Agency" name="agency">
-                <Input placeholder="Enter agency name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
+
+            <Col xs={24} sm={8}>
               <Form.Item label="Min Current Salary" name="minCurrentSalary">
                 <InputNumber
                   placeholder="Minimum salary"
@@ -448,7 +461,7 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Max Current Salary" name="maxCurrentSalary">
                 <InputNumber
                   placeholder="Maximum salary"
@@ -462,7 +475,7 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Min Expected Salary" name="minExpectedSalary">
                 <InputNumber
                   placeholder="Minimum salary"
@@ -476,13 +489,13 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Max Expected Salary" name="maxExpectedSalary">
                 <InputNumber
                   placeholder="Maximum salary"
                   style={{ width: "100%" }}
                   min={0}
-                  max={99999999} 
+                  max={99999999}
                   formatter={(value) =>
                     `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
@@ -490,7 +503,7 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Candidate Type" name="candidateType">
                 <Select
                   placeholder="Select candidate type"
@@ -498,7 +511,7 @@ const AdvancedFiltersModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Account Status" name="accountStatus">
                 <Select
                   placeholder="Select account status"

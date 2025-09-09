@@ -270,6 +270,7 @@ const CandidateEditPage = () => {
         candidateType: candidate.candidateType || "External",
         agency: candidate.agency || "N/A",
         workorderhint: candidate.workorderhint || "N/A",
+        ClientCode: candidate.ClientCode || "N/A",
       });
 
       if (candidate.industry) {
@@ -706,7 +707,7 @@ const CandidateEditPage = () => {
                       style={{ width: "100%" }}
                       placeholder="Enter current salary"
                       formatter={(value) =>
-                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
                     />
@@ -722,14 +723,14 @@ const CandidateEditPage = () => {
                       style={{ width: "100%" }}
                       placeholder="Enter expected salary"
                       formatter={(value) =>
-                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
                     />
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
+                <Col xs={24} sm={12} lg={8}>
                   <Form.Item label="Agency" name="agency">
                     <Input
                       style={{ width: "100%" }}
@@ -738,11 +739,20 @@ const CandidateEditPage = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} sm={12}>
-                  <Form.Item label="Work Order Hint" name="workorderhint">
+                <Col xs={24} sm={12} lg={8}>
+                  <Form.Item label="Search Hint" name="workorderhint">
                     <Input
                       style={{ width: "100%" }}
                       placeholder="Enter Work order hint."
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                  <Form.Item label="Client" name="ClientCode">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter client name"
                     />
                   </Form.Item>
                 </Col>
