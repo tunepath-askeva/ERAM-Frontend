@@ -170,6 +170,7 @@ const AddWorkOrder = () => {
 
       setIsRequisitionBased(true);
       setRequisitionData({
+        requisitionId: reqData._id,
         requisitionNo: reqData.requisitionNo,
         referenceNo: reqData.referenceNo,
       });

@@ -103,6 +103,7 @@ const AdminRequisition = () => {
       clientId: req.client,
       originalData: {
         ...req,
+        _id: req._id,
         client: req.client,
       },
     }));
@@ -150,6 +151,7 @@ const AdminRequisition = () => {
     navigate(`/admin/add-workorder`, {
       state: {
         requisitionData: requisition.originalData,
+        _id: requisition.originalData._id,
         prefilled: true,
       },
     });
