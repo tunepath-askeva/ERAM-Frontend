@@ -577,7 +577,6 @@ const AdminCandidates = () => {
           <span>{text}</span>
         </div>
       ),
-      sorter: (a, b) => a.fullName.localeCompare(b.fullName),
     },
     {
       title: "Email",
@@ -621,11 +620,6 @@ const AdminCandidates = () => {
           {status || "inactive"}
         </Tag>
       ),
-      filters: [
-        { text: "Active", value: "active" },
-        { text: "Inactive", value: "inactive" },
-      ],
-      onFilter: (value, record) => record.accountStatus === value,
     },
     {
       title: "Actions",

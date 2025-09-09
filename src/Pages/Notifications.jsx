@@ -668,46 +668,50 @@ const Notifications = () => {
                               >
                                 View Offer
                               </Button>
-                              <Button
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAcceptOffer(item);
-                                }}
-                                icon={<CheckCircleOutlined />}
-                                style={{
-                                  background:
-                                    "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
-                                  border: "none",
-                                  color: "white",
-                                  borderRadius: "6px",
-                                }}
-                              >
-                                Accept
-                              </Button>
-                              <Button
-                                size="small"
-                                danger
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRejectOffer(item);
-                                }}
-                                icon={<CloseCircleOutlined />}
-                                style={{ borderRadius: "6px" }}
-                              >
-                                Reject
-                              </Button>
-                              <Button
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRequestRevision(item);
-                                }}
-                                icon={<FileTextOutlined />}
-                                style={{ borderRadius: "6px" }}
-                              >
-                                Request Revision
-                              </Button>
+                              {item.Status !== "offer-accepted" && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAcceptOffer(item);
+                                    }}
+                                    icon={<CheckCircleOutlined />}
+                                    style={{
+                                      background:
+                                        "linear-gradient(135deg, #52c41a 0%, #389e0d 100%)",
+                                      border: "none",
+                                      color: "white",
+                                      borderRadius: "6px",
+                                    }}
+                                  >
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    danger
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRejectOffer(item);
+                                    }}
+                                    icon={<CloseCircleOutlined />}
+                                    style={{ borderRadius: "6px" }}
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRequestRevision(item);
+                                    }}
+                                    icon={<FileTextOutlined />}
+                                    style={{ borderRadius: "6px" }}
+                                  >
+                                    Request Revision
+                                  </Button>
+                                </>
+                              )}
                             </Space>
                           </div>
                         )}
@@ -995,8 +999,16 @@ const Notifications = () => {
         {selectedNotification && selectedNotification.fileUrl ? (
           <div>
             <Alert
-              message="This is your official offer letter. You can view it below and use the action buttons in the notification to accept, reject, or request revisions."
-              type="info"
+              message={
+                selectedNotification?.Status === "offer-accepted"
+                  ? "You have already accepted this offer letter. Please review it for your records."
+                  : "This is your official offer letter. You can view it below and use the action buttons in the notification to accept, reject, or request revisions."
+              }
+              type={
+                selectedNotification?.Status === "offer-accepted"
+                  ? "success"
+                  : "info"
+              }
               style={{ marginBottom: 16, borderRadius: "8px" }}
             />
 
