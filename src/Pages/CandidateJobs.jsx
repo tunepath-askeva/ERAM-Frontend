@@ -71,7 +71,7 @@ const CandidateJobs = () => {
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [jobs, setJobs] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(10);
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false); // Add this state
@@ -229,9 +229,7 @@ const CandidateJobs = () => {
       const transformedJobs = transformJobData(apiData.workorders);
       setAllJobs(transformedJobs);
       setTotalJobs(
-        apiData.totalCount ||
-          apiData.pagination?.totalCount ||
-          transformedJobs.length
+        apiData.total || apiData.pagination?.total || transformedJobs.length
       );
     }
   }, [apiData, showingSearchResults, showingFilterResults]);
@@ -241,8 +239,8 @@ const CandidateJobs = () => {
       const transformedJobs = transformJobData(searchData.jobs);
       setAllJobs(transformedJobs);
       setTotalJobs(
-        searchData.totalCount ||
-          searchData.pagination?.totalCount ||
+        searchData.total ||
+          searchData.pagination?.total ||
           transformedJobs.length
       );
     }
@@ -253,8 +251,8 @@ const CandidateJobs = () => {
       const transformedJobs = transformJobData(filterData.jobs);
       setAllJobs(transformedJobs);
       setTotalJobs(
-        filterData.totalCount ||
-          filterData.pagination?.totalCount ||
+        filterData.total ||
+          filterData.pagination?.total ||
           transformedJobs.length
       );
     }
@@ -387,7 +385,7 @@ const CandidateJobs = () => {
       await filterJobs(filterParams);
       setShowingFilterResults(true);
       setShowingSearchResults(false);
-      setCurrentPage(1);
+      if (resetPage) setCurrentPage(1);
     } catch (error) {
       message.error("Failed to filter jobs. Please try again.");
       console.error("Filter error:", error);
@@ -400,7 +398,7 @@ const CandidateJobs = () => {
     if (!searchKeyword.trim() && !locationFilter.trim()) {
       setShowingSearchResults(false);
       setShowingFilterResults(false);
-      setCurrentPage(1);
+      if (resetPage) setCurrentPage(1);
       return;
     }
 
@@ -1029,7 +1027,7 @@ const CandidateJobs = () => {
           </Text>
         </div>
 
-        {totalJobs.length > 0 ? (
+        {totalJobs > 0 ? (
           <>
             <div
               style={{
@@ -1312,8 +1310,11 @@ const CandidateJobs = () => {
                 current={currentPage}
                 pageSize={pageSize}
                 total={totalJobs}
-                onChange={(page) => setCurrentPage(page)}
-                showSizeChanger={false}
+                onChange={(page, newPageSize) => {
+                  setCurrentPage(page);
+                  setPageSize(newPageSize);
+                }}
+                showSizeChanger={true}
                 showTotal={(total, range) =>
                   `${range[0]}-${range[1]} of ${total} jobs`
                 }
