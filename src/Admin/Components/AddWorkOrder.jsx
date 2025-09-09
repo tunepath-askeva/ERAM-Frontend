@@ -93,6 +93,11 @@ const AddWorkOrder = () => {
   const [isPrefilled, setIsPrefilled] = useState(false);
   const [hasLoadedRequisition, setHasLoadedRequisition] = useState(false);
   const [defaultRecruiters, setDefaultRecruiters] = useState([]);
+  const [isRequisitionBased, setIsRequisitionBased] = useState(false);
+  const [requisitionData, setRequisitionData] = useState({
+    requisitionNo: null,
+    referenceNo: null,
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -162,6 +167,12 @@ const AddWorkOrder = () => {
     ) {
       const reqData = location.state.requisitionData;
       setIsPrefilled(true);
+
+      setIsRequisitionBased(true);
+      setRequisitionData({
+        requisitionNo: reqData.requisitionNo,
+        referenceNo: reqData.referenceNo,
+      });
 
       // Parse dates properly
       const startDate = reqData.startDate ? dayjs(reqData.startDate) : dayjs();
@@ -711,6 +722,11 @@ const AddWorkOrder = () => {
         requiredDocuments,
         client: jobForm.getFieldValue("client"),
         languagesRequired: jobForm.getFieldValue("languagesRequired") || [],
+        isRequisition: isRequisitionBased,
+        ...(isRequisitionBased && {
+          requisitionNo: requisitionData.requisitionNo,
+          referenceNo: requisitionData.referenceNo,
+        }),
       };
 
       const result = await createWorkOrder(workOrderData).unwrap();
@@ -730,6 +746,11 @@ const AddWorkOrder = () => {
       setCustomStages({});
       setStageApprovers({});
       setCurrentStep(0);
+      setIsRequisitionBased(false);
+      setRequisitionData({
+        requisitionNo: null,
+        referenceNo: null,
+      });
       navigate("/admin/workorder");
     } catch (error) {
       console.error("Error creating work order:", error);
@@ -747,6 +768,11 @@ const AddWorkOrder = () => {
     setJobData(null);
     setApplicationFields([]);
     setCurrentStep(0);
+    setIsRequisitionBased(false);
+    setRequisitionData({
+      requisitionNo: null,
+      referenceNo: null,
+    });
     navigate("/admin/workorder");
   };
 

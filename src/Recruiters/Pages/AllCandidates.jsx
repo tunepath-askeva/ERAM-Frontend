@@ -206,9 +206,29 @@ function AllCandidates() {
     }
   };
 
+  const isRecentlyUpdated = (date) => {
+    if (!date) return false;
+    const updated = new Date(date);
+    const now = new Date();
+    const diff = (now - updated) / (1000 * 60 * 60 * 24); // in days
+    return diff <= 2;
+  };
+
   const candidates = isAdvancedFilterApplied
     ? filteredCandidates
     : candidatesResponse?.users || [];
+
+  const sortedCandidates = useMemo(() => {
+    const recent = candidates.filter((c) => isRecentlyUpdated(c.updatedAt));
+    const others = candidates.filter((c) => !isRecentlyUpdated(c.updatedAt));
+
+    // Sort both groups by updatedAt desc
+    recent.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    others.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+    // Put recent first
+    return [...recent, ...others];
+  }, [candidates]);
 
   const totalCandidates = isAdvancedFilterApplied
     ? filteredTotal
@@ -386,13 +406,22 @@ function AllCandidates() {
       render: (text, record) => (
         <Space>
           <Avatar src={record.image} icon={<UserOutlined />} />
-          <div>
-            <div>{text}</div>
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {text}
+          {isRecentlyUpdated(record.updatedAt) && (
+  <Tooltip title="Recently updated profile within the last 2 days">
+    <span className="glow-dot" />
+  </Tooltip>
+)}
+
+            </div>
             <Text type="secondary">{record.title || "No title"}</Text>
           </div>
         </Space>
       ),
     },
+
     {
       title: "Contact",
       dataIndex: "email",
@@ -612,7 +641,7 @@ function AllCandidates() {
         <>
           <Table
             columns={columns}
-            dataSource={candidates}
+            dataSource={sortedCandidates}
             rowKey="_id"
             pagination={false}
             scroll={{ x: true }}
