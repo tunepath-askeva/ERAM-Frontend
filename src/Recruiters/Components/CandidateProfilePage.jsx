@@ -31,7 +31,7 @@ import {
   GithubOutlined,
   TwitterOutlined,
   FacebookOutlined,
-  FilePdfOutlined 
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetSourcedCandidateQuery } from "../../Slices/Recruiter/RecruiterApis";
@@ -301,8 +301,11 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                   <Descriptions.Item label="Agency">
                     {candidate.agency || "Not specified"}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Work Order Hint">
+                  <Descriptions.Item label="Search Hint">
                     {candidate.workorderhint || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Client Code">
+                    {candidate.ClientCode || "Not specified"}
                   </Descriptions.Item>
                 </Descriptions>
 
@@ -313,7 +316,6 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                 </div>
                 <Divider />
 
-             
                 <Title level={5}>Certificates</Title>
                 <div style={{ marginBottom: "24px" }}>
                   {candidate.certificates &&
@@ -354,7 +356,7 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                       />
                     </Card>
                   ) : (
-             "No certificates available" 
+                    "No certificates available"
                   )}
                 </div>
                 <Divider />
