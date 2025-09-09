@@ -62,8 +62,8 @@ export const userApi = createApi({
 
     //jobs
     getJobsByBranch: builder.query({
-      query: () => ({
-        url: "/branchById",
+      query: ({ page = 1, limit = 10 } = {}) => ({
+        url: `/branchById?page=${page}&limit=${limit}`,
         method: "GET",
       }),
     }),
@@ -81,10 +81,12 @@ export const userApi = createApi({
       }),
     }),
     searchJobs: builder.query({
-      query: ({ title, location }) => ({
+      query: ({ title, location, page = 1, limit = 10 }) => ({
         url: `/search?title=${encodeURIComponent(
           title
-        )}&location=${encodeURIComponent(location)}`,
+        )}&location=${encodeURIComponent(
+          location
+        )}&page=${page}&limit=${limit}`,
         method: "GET",
       }),
     }),
@@ -116,6 +118,10 @@ export const userApi = createApi({
     filterJobs: builder.query({
       query: (filters) => {
         const params = new URLSearchParams();
+
+        // Add pagination parameters
+        params.append("page", filters.page || 1);
+        params.append("limit", filters.limit || 10);
 
         if (filters.location) params.append("location", filters.location);
         if (filters.employmentType)

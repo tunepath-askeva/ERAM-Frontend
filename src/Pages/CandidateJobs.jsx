@@ -64,7 +64,8 @@ const { Option } = Select;
 const { Search } = Input;
 
 const CandidateJobs = () => {
-  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [allJobs, setAllJobs] = useState([]);
+  const [totalJobs, setTotalJobs] = useState(0);
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobDetailVisible, setJobDetailVisible] = useState(false);
   const [savedJobs, setSavedJobs] = useState(new Set());
@@ -114,7 +115,12 @@ const CandidateJobs = () => {
     data: apiData,
     isLoading: initialLoading,
     error: initialError,
-  } = useGetJobsByBranchQuery();
+  } = useGetJobsByBranchQuery(
+    { page: currentPage, limit: pageSize },
+    {
+      skip: showingSearchResults || showingFilterResults,
+    }
+  );
 
   const [
     searchJobs,
@@ -207,38 +213,61 @@ const CandidateJobs = () => {
     }
   }, [debouncedLocationFilter]);
 
-
-useEffect(() => {
-  if (locationSuggestionsData && Array.isArray(locationSuggestionsData)) {
-    setLocationSuggestions(
-      locationSuggestionsData.map((item) => ({
-        value: item.officeLocation,
-        label: item.officeLocation,
-      }))
-    );
-  }
-}, [locationSuggestionsData]);
+  useEffect(() => {
+    if (locationSuggestionsData && Array.isArray(locationSuggestionsData)) {
+      setLocationSuggestions(
+        locationSuggestionsData.map((item) => ({
+          value: item.officeLocation,
+          label: item.officeLocation,
+        }))
+      );
+    }
+  }, [locationSuggestionsData]);
 
   useEffect(() => {
     if (apiData?.workorders && !showingSearchResults && !showingFilterResults) {
       const transformedJobs = transformJobData(apiData.workorders);
-      setFilteredJobs(transformedJobs);
+      setAllJobs(transformedJobs);
+      setTotalJobs(
+        apiData.totalCount ||
+          apiData.pagination?.totalCount ||
+          transformedJobs.length
+      );
     }
   }, [apiData, showingSearchResults, showingFilterResults]);
 
   useEffect(() => {
     if (searchData?.jobs && showingSearchResults) {
       const transformedJobs = transformJobData(searchData.jobs);
-      setFilteredJobs(transformedJobs);
+      setAllJobs(transformedJobs);
+      setTotalJobs(
+        searchData.totalCount ||
+          searchData.pagination?.totalCount ||
+          transformedJobs.length
+      );
     }
   }, [searchData, showingSearchResults]);
 
   useEffect(() => {
     if (filterData?.jobs && showingFilterResults) {
       const transformedJobs = transformJobData(filterData.jobs);
-      setFilteredJobs(transformedJobs);
+      setAllJobs(transformedJobs);
+      setTotalJobs(
+        filterData.totalCount ||
+          filterData.pagination?.totalCount ||
+          transformedJobs.length
+      );
     }
   }, [filterData, showingFilterResults]);
+
+  // Add this new useEffect to handle page changes
+  useEffect(() => {
+    if (showingSearchResults && searchKeyword.trim()) {
+      handleSearch();
+    } else if (showingFilterResults) {
+      handleFilterJobs();
+    }
+  }, [currentPage]);
 
   const transformJobData = (jobs) => {
     if (!jobs || !Array.isArray(jobs)) return [];
@@ -311,7 +340,10 @@ useEffect(() => {
 
     setIsFiltering(true);
     try {
-      const filterParams = {};
+      const filterParams = {
+        page: currentPage,
+        limit: pageSize,
+      };
 
       if (locationFilter) filterParams.location = locationFilter;
 
@@ -377,6 +409,8 @@ useEffect(() => {
       await searchJobs({
         title: searchKeyword.trim() || "",
         location: locationFilter.trim() || "",
+        page: currentPage,
+        limit: pageSize,
       });
       setShowingSearchResults(true);
       setShowingFilterResults(false);
@@ -439,9 +473,7 @@ useEffect(() => {
   };
 
   const getCurrentPageJobs = () => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredJobs.slice(startIndex, endIndex);
+    return allJobs;
   };
 
   const getActiveFiltersCount = () => {
@@ -991,13 +1023,13 @@ useEffect(() => {
               color: "#374151",
             }}
           >
-            {filteredJobs.length} jobs found
+            {totalJobs} jobs found
             {showingSearchResults && " (from search results)"}
             {showingFilterResults && " (filtered results)"}
           </Text>
         </div>
 
-        {filteredJobs.length > 0 ? (
+        {totalJobs.length > 0 ? (
           <>
             <div
               style={{
@@ -1279,9 +1311,12 @@ useEffect(() => {
               <Pagination
                 current={currentPage}
                 pageSize={pageSize}
-                total={filteredJobs.length}
+                total={totalJobs}
                 onChange={(page) => setCurrentPage(page)}
                 showSizeChanger={false}
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} jobs`
+                }
                 itemRender={(current, type, originalElement) => {
                   if (type === "prev") {
                     return (

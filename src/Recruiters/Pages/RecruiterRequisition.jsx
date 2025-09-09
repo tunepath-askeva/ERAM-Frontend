@@ -704,7 +704,7 @@ const RecruiterRequisition = () => {
             </Button>,
 
             hasPermission("edit-requisitions") &&
-              !selectedRequisition?.convertedToWorkorder && ( // 🔹 hide if converted
+              !selectedRequisition?.convertedToWorkorder && (
                 <Button
                   key="edit"
                   type="primary"
