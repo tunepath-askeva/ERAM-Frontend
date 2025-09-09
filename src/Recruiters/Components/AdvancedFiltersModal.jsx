@@ -181,7 +181,7 @@ const AdvancedFiltersModal = ({
   const genderOptions = [
     { value: "Male", label: "Male" },
     { value: "Female", label: "Female" },
-    { value: "Other", label: "Other" },
+    { value: "Others", label: "Others" },
   ];
 
   const maritalStatusOptions = [
