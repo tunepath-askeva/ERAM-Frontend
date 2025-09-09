@@ -97,6 +97,7 @@ const AddWorkOrder = () => {
   const [requisitionData, setRequisitionData] = useState({
     requisitionNo: null,
     referenceNo: null,
+    requisitionId: null,
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -727,6 +728,7 @@ const AddWorkOrder = () => {
         ...(isRequisitionBased && {
           requisitionNo: requisitionData.requisitionNo,
           referenceNo: requisitionData.referenceNo,
+          requisitionId: requisitionData._id,
         }),
       };
 
@@ -751,6 +753,7 @@ const AddWorkOrder = () => {
       setRequisitionData({
         requisitionNo: null,
         referenceNo: null,
+        requisitionId: null,
       });
       navigate("/admin/workorder");
     } catch (error) {
@@ -773,6 +776,7 @@ const AddWorkOrder = () => {
     setRequisitionData({
       requisitionNo: null,
       referenceNo: null,
+      requisitionId: null,
     });
     navigate("/admin/workorder");
   };
