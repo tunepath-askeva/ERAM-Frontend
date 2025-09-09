@@ -357,16 +357,19 @@ const RecruiterRequisition = () => {
           >
             View
           </Button>
+
           {hasPermission("edit-requisitions") && (
             <Button
               type="link"
               onClick={() => handleEdit(record)}
               icon={<EditOutlined />}
               size="small"
+              disabled={record.convertedToWorkorder} // 🔹 disable edit
             >
               Edit
             </Button>
           )}
+
           {hasPermission("delete-requisitions") && (
             <Button
               type="link"
@@ -377,7 +380,12 @@ const RecruiterRequisition = () => {
               }}
               icon={<DeleteOutlined />}
               size="small"
+              disabled={record.convertedToWorkorder} // 🔹 disable delete
             />
+          )}
+
+          {record.convertedToWorkorder && (
+            <Tag color="purple">Converted to Work Order</Tag>
           )}
         </Space>
       ),
@@ -695,18 +703,19 @@ const RecruiterRequisition = () => {
               Close
             </Button>,
 
-            hasPermission("edit-requisitions") && (
-              <Button
-                key="edit"
-                type="primary"
-                onClick={() => {
-                  setIsDetailModalVisible(false);
-                  handleEdit(selectedRequisition);
-                }}
-              >
-                Edit
-              </Button>
-            ),
+            hasPermission("edit-requisitions") &&
+              !selectedRequisition?.convertedToWorkorder && ( // 🔹 hide if converted
+                <Button
+                  key="edit"
+                  type="primary"
+                  onClick={() => {
+                    setIsDetailModalVisible(false);
+                    handleEdit(selectedRequisition);
+                  }}
+                >
+                  Edit
+                </Button>
+              ),
           ]}
           width={900}
           style={{ top: 20 }}
@@ -863,6 +872,13 @@ const RecruiterRequisition = () => {
                   </div>
                 ) : (
                   "No pipeline stages configured"
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Converted to Work Order">
+                {selectedRequisition?.convertedToWorkorder ? (
+                  <Tag color="purple">Yes</Tag>
+                ) : (
+                  <Tag color="default">No</Tag>
                 )}
               </Descriptions.Item>
             </Descriptions>

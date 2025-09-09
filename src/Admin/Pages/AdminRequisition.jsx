@@ -354,22 +354,24 @@ const AdminRequisition = () => {
             />
           </Tooltip>
 
-          <Button
-            type="primary"
-            size="small"
-            icon={<FileTextOutlined />}
-            onClick={() => handleCreateWorkOrder(record)}
-            disabled={record.status === "inactive"}
-            style={{
-              background:
-                record.status === "inactive"
-                  ? "#ccc"
-                  : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-              borderColor: record.status === "inactive" ? "#ccc" : "#da2c46",
-            }}
-          >
-            Create Work Order
-          </Button>
+          {!record.originalData.convertedToWorkorder && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<FileTextOutlined />}
+              onClick={() => handleCreateWorkOrder(record)}
+              disabled={record.status === "inactive"}
+              style={{
+                background:
+                  record.status === "inactive"
+                    ? "#ccc"
+                    : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                borderColor: record.status === "inactive" ? "#ccc" : "#da2c46",
+              }}
+            >
+              Create Work Order
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -727,24 +729,28 @@ const AdminRequisition = () => {
           <Button key="close" onClick={handleViewModalClose}>
             Close
           </Button>,
-          <Button
-            key="create-work-order"
-            type="primary"
-            icon={<FileTextOutlined />}
-            onClick={() => {
-              handleCreateWorkOrder(selectedRequisition);
-              handleViewModalClose();
-            }}
-            disabled={selectedRequisition?.status === "inactive"}
-            style={{
-              background:
-                selectedRequisition?.status === "inactive"
-                  ? "#ccc"
-                  : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-            }}
-          >
-            Create Work Order
-          </Button>,
+          ...(selectedRequisition?.originalData?.convertedToWorkorder
+            ? [] // if converted, no button
+            : [
+                <Button
+                  key="create-work-order"
+                  type="primary"
+                  icon={<FileTextOutlined />}
+                  onClick={() => {
+                    handleCreateWorkOrder(selectedRequisition);
+                    handleViewModalClose();
+                  }}
+                  disabled={selectedRequisition?.status === "inactive"}
+                  style={{
+                    background:
+                      selectedRequisition?.status === "inactive"
+                        ? "#ccc"
+                        : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                  }}
+                >
+                  Create Work Order
+                </Button>,
+              ]),
         ]}
         width="90%"
         style={{ maxWidth: 800 }}
