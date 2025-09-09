@@ -728,7 +728,7 @@ const AddWorkOrder = () => {
         ...(isRequisitionBased && {
           requisitionNo: requisitionData.requisitionNo,
           referenceNo: requisitionData.referenceNo,
-          requisitionId: requisitionData._id,
+          requisitionId: requisitionData.requisitionId,
         }),
       };
 

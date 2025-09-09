@@ -148,10 +148,20 @@ const AdminRequisition = () => {
   }, [searchTerm]);
 
   const handleCreateWorkOrder = (requisition) => {
+    console.log("Creating work order for requisition:", requisition); // Debug log
+
     navigate(`/admin/add-workorder`, {
       state: {
-        requisitionData: requisition.originalData,
-        _id: requisition.originalData._id,
+        requisitionData: {
+          ...requisition.originalData,
+          _id: requisition.originalData._id,
+          client:
+            requisition.originalData.client ||
+            requisition.originalData.clientId,
+          project:
+            requisition.originalData.project ||
+            requisition.originalData.projectId,
+        },
         prefilled: true,
       },
     });
