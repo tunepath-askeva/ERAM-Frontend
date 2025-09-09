@@ -262,14 +262,35 @@ const SourcedJobDetails = () => {
         </Descriptions.Item>
         <Descriptions.Item label="Work Type">
           <Tag color={workOrder.workplace === "remote" ? "green" : "blue"}>
-            {workOrder.workplace === "remote" ? "Remote" : "On-site"}
+            {workOrder.workplace === "remote"
+              ? "Remote"
+              : workOrder.workplace === "on-site"
+              ? "On-site"
+              : "Hybrid"}
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Company Industry">
           {workOrder.companyIndustry || "Not specified"}
         </Descriptions.Item>
-        <Descriptions.Item label="Annual Salary">
-          {formatCurrency(workOrder.annualSalary)}
+        <Descriptions.Item label="Salary Range">
+          {workOrder.salaryMin && workOrder.salaryMax
+            ? `${formatCurrency(workOrder.salaryMin)} - ${formatCurrency(
+                workOrder.salaryMax
+              )} (${workOrder.salaryType || "monthly"})`
+            : "Not specified"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Experience Required">
+          {workOrder.experienceMin && workOrder.experienceMax
+            ? `${workOrder.experienceMin} - ${workOrder.experienceMax} years`
+            : "Not specified"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Education">
+          <Tag color="purple">
+            {workOrder.Education?.toUpperCase() || "Not specified"}
+          </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Qualification">
+          {workOrder.qualification || "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Start Date">
           {workOrder.startDate
@@ -281,6 +302,14 @@ const SourcedJobDetails = () => {
             ? new Date(workOrder.endDate).toLocaleDateString()
             : "Not specified"}
         </Descriptions.Item>
+        <Descriptions.Item label="Visa Category">
+          {workOrder.visacategory || "Not specified"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Visa Category Type">
+          <Tag color="orange">
+            {workOrder.visacategorytype?.toUpperCase() || "Not specified"}
+          </Tag>
+        </Descriptions.Item>
         <Descriptions.Item label="Application Status">
           <Tag
             color={getStatusInfo(sourcedJob.status).color}
@@ -288,6 +317,14 @@ const SourcedJobDetails = () => {
           >
             {sourcedJob.status?.replace("_", " ").toUpperCase() || "PENDING"}
           </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Sourced Status">
+          <Tag color={sourcedJob.isSourced === "true" ? "green" : "red"}>
+            {sourcedJob.isSourced === "true" ? "SOURCED" : "NOT SOURCED"}
+          </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Selected Moving Comment">
+          {sourcedJob.selectedMovingComment || "No comment provided"}
         </Descriptions.Item>
         <Descriptions.Item label="Applied Date">
           {sourcedJob.createdAt
@@ -313,7 +350,14 @@ const SourcedJobDetails = () => {
           </div>
         </Descriptions.Item>
         <Descriptions.Item label="Job Description">
-          {workOrder.description || "No description provided"}
+          <div style={{ whiteSpace: "pre-line" }}>
+            {workOrder.description || "No description provided"}
+          </div>
+        </Descriptions.Item>
+        <Descriptions.Item label="Key Responsibilities">
+          <div style={{ whiteSpace: "pre-line" }}>
+            {workOrder.keyResponsibilities || "No responsibilities listed"}
+          </div>
         </Descriptions.Item>
         {workOrder.benefits?.length > 0 && (
           <Descriptions.Item label="Benefits">
@@ -324,6 +368,19 @@ const SourcedJobDetails = () => {
             </ul>
           </Descriptions.Item>
         )}
+        <Descriptions.Item label="Required Documents">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            {workOrder.documents?.length > 0 ? (
+              workOrder.documents.map((doc, index) => (
+                <Tag key={doc._id || index} color="cyan">
+                  {doc.name} {doc.isMandatory && <Text type="danger">*</Text>}
+                </Tag>
+              ))
+            ) : (
+              <Text type="secondary">No documents required</Text>
+            )}
+          </div>
+        </Descriptions.Item>
       </Descriptions>
     </Card>
   );

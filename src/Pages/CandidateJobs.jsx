@@ -74,7 +74,7 @@ const CandidateJobs = () => {
   const [pageSize, setPageSize] = useState(10);
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [isFiltering, setIsFiltering] = useState(false); // Add this state
+  const [isFiltering, setIsFiltering] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [shouldFetchSuggestions, setShouldFetchSuggestions] = useState(false);
@@ -1182,44 +1182,6 @@ const CandidateJobs = () => {
                           }}
                         >
                           {job.location}
-                        </Text>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <DollarOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          {job.salary}
-                        </Text>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <ClockCircleOutlined
-                          style={{ fontSize: "12px", color: "#666" }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: "#666",
-                          }}
-                        >
-                          {job.experience}
                         </Text>
                       </div>
                     </div>

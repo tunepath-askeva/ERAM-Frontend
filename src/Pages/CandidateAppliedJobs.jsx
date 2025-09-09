@@ -39,7 +39,6 @@ import {
   SearchOutlined,
   EnvironmentOutlined,
   ClockCircleOutlined,
-  DollarOutlined,
   BulbOutlined,
   TeamOutlined,
   EyeOutlined,
@@ -968,26 +967,6 @@ const CandidateAppliedJobs = () => {
                             }}
                           >
                             {application.location} • {application.workType}
-                          </Text>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          <DollarOutlined
-                            style={{ color: "#6b7280", fontSize: "12px" }}
-                          />
-                          <Text
-                            style={{
-                              fontSize: "clamp(11px, 2vw, 13px)",
-                              color: "#374151",
-                            }}
-                          >
-                            {application.salary}
                           </Text>
                         </div>
 

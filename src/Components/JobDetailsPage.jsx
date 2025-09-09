@@ -514,7 +514,7 @@ const JobDetailsPage = () => {
                   {job.EmploymentType}
                 </Tag>
                 <Tag color="purple" className="job-tag">
-                  {job.Experience} years exp
+                  {job.experienceMin}-{job.experienceMax} years exp
                 </Tag>
                 {job.numberOfCandidate && (
                   <Tag color="cyan" className="job-tag">
@@ -549,14 +549,15 @@ const JobDetailsPage = () => {
 
       {/* Key Information Cards */}
       <Row gutter={[16, 16]} className="key-info-section">
-        {job.annualSalary && (
+        {(job.salaryMin || job.salaryMax) && (
           <Col xs={12} sm={12} md={6}>
             <Card className="info-card salary-card">
-              <DollarOutlined className="info-icon" />
+           
               <div className="info-content">
                 <Text className="info-label">Salary</Text>
                 <Text className="info-value">
-                  {formatSalary(job.annualSalary, job.salaryType)}
+                  {job.salaryMin?.toLocaleString()} - 
+                  {job.salaryMax?.toLocaleString()} {job.salaryType}
                 </Text>
               </div>
             </Card>
@@ -617,6 +618,42 @@ const JobDetailsPage = () => {
               <div key={index} className="requirement-item">
                 <CheckCircleOutlined className="check-icon" />
                 <span>{requirement}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Key Responsibilities */}
+      {job.keyResponsibilities && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            Key Responsibilities
+          </Title>
+          <div className="requirements-list">
+            {job.keyResponsibilities
+              .split("\n\n")
+              .map((responsibility, index) => (
+                <div key={index} className="requirement-item">
+                  <CheckCircleOutlined className="check-icon" />
+                  <span>{responsibility}</span>
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Qualifications */}
+      {job.qualification && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            Qualifications
+          </Title>
+          <div className="requirements-list">
+            {job.qualification.split("\n\n").map((qualification, index) => (
+              <div key={index} className="requirement-item">
+                <CheckCircleOutlined className="check-icon" />
+                <span>{qualification}</span>
               </div>
             ))}
           </div>
