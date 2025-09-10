@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   List,
@@ -30,6 +30,7 @@ import {
   MoreOutlined,
   CheckOutlined,
   CloseOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -43,11 +44,12 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
+const { TextArea, Search } = Input;
 
 const RecruiterNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -55,17 +57,34 @@ const RecruiterNotifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (searchTerm !== debouncedSearchTerm) {
+        setPage(1);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
 
   const {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetRecruiterNotificationQuery({ page, limit: pageSize });
+  } = useGetRecruiterNotificationQuery({
+    page,
+    limit: pageSize,
+    search: debouncedSearchTerm,
+  });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -89,7 +108,18 @@ const RecruiterNotifications = () => {
     }
   }, [apiData, apiError]);
 
-  console.log(notifications, "hi notifications-=-=-=-");
+  const handleSearch = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  }, []);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -303,12 +333,7 @@ const RecruiterNotifications = () => {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (loading || apiLoading) {
-    return (
-      <div style={{ padding: "16px" }}>
-        <Skeleton active paragraph={{ rows: 4 }} />
-        <Skeleton active paragraph={{ rows: 4 }} />
-      </div>
-    );
+    return <SkeletonLoader />;
   }
 
   if (error || apiError) {
@@ -364,6 +389,49 @@ const RecruiterNotifications = () => {
         </Text>
       </div>
 
+      {/* Search Bar */}
+      <Card
+        style={{
+          marginBottom: "16px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+        }}
+      >
+        <div style={{ marginBottom: "8px" }}>
+          <Text
+            strong
+            style={{ fontSize: "16px", marginBottom: "8px", display: "block" }}
+          >
+            Search Notifications
+          </Text>
+          <Search
+            placeholder="Search notifications by title, message, or type..."
+            allowClear
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            style={{ width: "100%" }}
+            size="large"
+            prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+          />
+          {debouncedSearchTerm && (
+            <div style={{ marginTop: "8px" }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Searching for: "{debouncedSearchTerm}"
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={clearSearch}
+                  style={{ padding: "0 4px", fontSize: "12px" }}
+                >
+                  Clear
+                </Button>
+              </Text>
+            </div>
+          )}
+        </div>
+      </Card>
+
       <Card
         style={{
           marginBottom: "16px",
@@ -383,8 +451,8 @@ const RecruiterNotifications = () => {
             strong
             style={{ fontSize: "16px", display: "flex", alignItems: "center" }}
           >
-            Recent Notifications
-            {unreadCount > 0 && (
+            {debouncedSearchTerm ? "Search Results" : "Recent Notifications"}
+            {unreadCount > 0 && !debouncedSearchTerm && (
               <span
                 style={{
                   marginLeft: "8px",
@@ -526,7 +594,9 @@ const RecruiterNotifications = () => {
                   color: "#666",
                 }}
               >
-                No notifications available
+                {debouncedSearchTerm
+                  ? `No notifications found for "${debouncedSearchTerm}"`
+                  : "No notifications available"}
               </Text>
             }
           />
@@ -540,6 +610,11 @@ const RecruiterNotifications = () => {
             setPageSize(newPageSize);
           }}
           style={{ marginTop: 16, textAlign: "center" }}
+          showSizeChanger
+          showQuickJumper
+          showTotal={(total, range) =>
+            `${range[0]}-${range[1]} of ${total} notifications`
+          }
         />
       </Card>
 

@@ -491,10 +491,21 @@ export const recruiterApi = createApi({
       },
     }),
     getRecruiterNotification: builder.query({
-      query: ({ page = 1, limit = 10 }) => ({
-        url: `/notify?page=${page}&limit=${limit}`,
-        method: "GET",
-      }),
+      query: ({ page = 1, limit = 10, search = "" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+
+        if (search && search.trim()) {
+          params.append("search", search.trim());
+        }
+
+        return {
+          url: `/notify?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     addCandidate: builder.mutation({
       query: (candidateData) => ({
