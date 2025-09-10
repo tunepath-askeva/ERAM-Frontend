@@ -10,9 +10,9 @@ let baseUrl;
 if (window.location.hostname === "localhost") {
   // local dev
   baseUrl = "http://localhost:5000/api/admin";
-} else if (window.location.hostname === "103.205.65.133") {
-  // your new server
-  baseUrl = "http://103.205.65.133/api/admin";
+// } else if (window.location.hostname === "103.205.65.133") {
+//   // your new server
+//   baseUrl = "http://103.205.65.133/api/admin";
 } else {
   // render server
   baseUrl = "https://eram-backend-2gvv.onrender.com/api/admin";
