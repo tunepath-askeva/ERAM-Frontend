@@ -56,7 +56,6 @@ const RecruiterRequisition = () => {
     (state) => state.userAuth.recruiterPermissions
   );
 
-  console.log(recruiterPermissions, "hi recruiterpermisstions-=-=-=");
 
   const { data: clientData } = useGetClientsQuery();
   const {
@@ -71,8 +70,6 @@ const RecruiterRequisition = () => {
       pageSize: pagination.pageSize,
     },
   });
-
-  console.log(requisitionData, "requistioin data-=-=");
 
   const [deleteRequisition, { isLoading: isDeleting }] =
     useDeleteRequisitionMutation();

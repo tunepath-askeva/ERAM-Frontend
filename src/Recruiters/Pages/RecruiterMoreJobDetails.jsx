@@ -40,6 +40,7 @@ import {
 } from "@ant-design/icons";
 import { Pie, Column } from "@ant-design/plots";
 import { useNavigate } from "react-router-dom";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -120,36 +121,36 @@ const RecruiterMoreJobDetails = () => {
 
           // Map API statuses to table columns
           switch (status) {
-            case 'sourced':
+            case "sourced":
               statusCounts.sourced = count;
               break;
-            case 'selected':
+            case "selected":
               statusCounts.selected = count;
               break;
-            case 'applied':
+            case "applied":
               statusCounts.applied = count;
               break;
-            case 'rejected':
+            case "rejected":
               statusCounts.declined = count;
               break;
-            case 'in-pending':
-            case 'offer_pending':
+            case "in-pending":
+            case "offer_pending":
               statusCounts.pending = count;
               break;
-            case 'screening':
+            case "screening":
               statusCounts.screening = count;
               break;
-            case 'pipeline':
+            case "pipeline":
               statusCounts.pipeline = count;
               break;
-            case 'interview':
+            case "interview":
               statusCounts.interview = count;
               break;
-            case 'completed':
-            case 'hired':
+            case "completed":
+            case "hired":
               statusCounts.completed = count;
               break;
-            case 'approved':
+            case "approved":
               statusCounts.approvals = count;
               break;
             default:
@@ -251,7 +252,7 @@ const RecruiterMoreJobDetails = () => {
   // Calculate totals for work order table
   const totals = useMemo(() => {
     if (workOrderData.length === 0) return {};
-    
+
     return workOrderData.reduce((acc, row) => {
       acc.total = (acc.total || 0) + row.total;
       acc.sourced = (acc.sourced || 0) + row.sourced;
@@ -585,7 +586,6 @@ const RecruiterMoreJobDetails = () => {
         </Tag>
       ),
     },
-
   ];
 
   // Candidate details table
@@ -691,7 +691,7 @@ const RecruiterMoreJobDetails = () => {
           minHeight: "50vh",
         }}
       >
-        <Spin size="large" tip="Loading job details..." />
+        <SkeletonLoader />
       </div>
     );
   }
@@ -961,7 +961,10 @@ const RecruiterMoreJobDetails = () => {
                   Hired/Completed
                 </Text>
               }
-              value={(analytics.statusBreakdown.hired || 0) + (analytics.statusBreakdown.completed || 0)}
+              value={
+                (analytics.statusBreakdown.hired || 0) +
+                (analytics.statusBreakdown.completed || 0)
+              }
               prefix={
                 <TrophyOutlined
                   style={{ color: colors.success, fontSize: "20px" }}
@@ -989,7 +992,8 @@ const RecruiterMoreJobDetails = () => {
               value={
                 analytics.totalCandidates > 0
                   ? (
-                      (((analytics.statusBreakdown.hired || 0) + (analytics.statusBreakdown.completed || 0)) /
+                      (((analytics.statusBreakdown.hired || 0) +
+                        (analytics.statusBreakdown.completed || 0)) /
                         analytics.totalCandidates) *
                       100
                     ).toFixed(1)
@@ -1042,62 +1046,95 @@ const RecruiterMoreJobDetails = () => {
               summary={() => (
                 <Table.Summary.Row style={{ backgroundColor: "#fafafa" }}>
                   <Table.Summary.Cell index={0}>
-                      <Text strong style={{ color: colors.primary }}>
+                    <Text strong style={{ color: colors.primary }}>
                       TOTAL
                     </Text>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1} align="center">
-                    <Tag color="blue" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="blue"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.total || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={2} align="center">
-                    <Tag color="cyan" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="cyan"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.sourced || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={3} align="center">
-                    <Tag color="purple" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="purple"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.selected || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={4} align="center">
-                    <Tag color="blue" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="blue"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.applied || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={5} align="center">
-                    <Tag color="red" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="red"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.declined || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={6} align="center">
-                    <Tag color="orange" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="orange"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.pending || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={7} align="center">
-                    <Tag color="gold" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="gold"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.screening || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={8} align="center">
-                    <Tag color="red" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="red"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.pipeline || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={9} align="center">
-                    <Tag color="orange" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="orange"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.interview || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={10} align="center">
-                    <Tag color="green" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="green"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.completed || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={11} align="center">
-                    <Tag color="volcano" style={{ minWidth: "40px", textAlign: "center" }}>
+                    <Tag
+                      color="volcano"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
                       <strong>{totals.approvals || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
@@ -1118,7 +1155,6 @@ const RecruiterMoreJobDetails = () => {
         >
           {/* Charts Section */}
           <Row gutter={[24, 24]} style={{ marginBottom: "32px" }}>
-          
             <Col xs={24} lg={24}>
               <Card
                 title={
@@ -1167,71 +1203,73 @@ const RecruiterMoreJobDetails = () => {
           {/* Status Breakdown Cards */}
           {Object.keys(analytics.statusBreakdown).length > 0 && (
             <Row gutter={[16, 16]} style={{ marginBottom: "32px" }}>
-              {Object.entries(analytics.statusBreakdown).map(([status, count]) => {
-                const percentage =
-                  analytics.totalCandidates > 0
-                    ? ((count / analytics.totalCandidates) * 100).toFixed(1)
-                    : 0;
-                const colorMap = {
-                  selected: colors.success,
-                  pipeline: colors.primary,
-                  interview: colors.warning,
-                  hired: colors.purple,
-                  completed: colors.success,
-                  applied: colors.info,
-                  sourced: colors.cyan,
-                  rejected: colors.error,
-                  screening: colors.warning,
-                  approved: colors.success,
-                  "in-pending": colors.warning,
-                  offer_pending: colors.warning,
-                };
+              {Object.entries(analytics.statusBreakdown).map(
+                ([status, count]) => {
+                  const percentage =
+                    analytics.totalCandidates > 0
+                      ? ((count / analytics.totalCandidates) * 100).toFixed(1)
+                      : 0;
+                  const colorMap = {
+                    selected: colors.success,
+                    pipeline: colors.primary,
+                    interview: colors.warning,
+                    hired: colors.purple,
+                    completed: colors.success,
+                    applied: colors.info,
+                    sourced: colors.cyan,
+                    rejected: colors.error,
+                    screening: colors.warning,
+                    approved: colors.success,
+                    "in-pending": colors.warning,
+                    offer_pending: colors.warning,
+                  };
 
-                return (
-                  <Col xs={24} sm={12} lg={6} key={status}>
-                    <Card
-                      size="small"
-                      style={{
-                        textAlign: "center",
-                        borderRadius: "8px",
-                        border: `2px solid ${colorMap[status]}20`,
-                      }}
-                    >
-                      <Text
-                        strong
-                        style={{
-                          display: "block",
-                          fontSize: "16px",
-                          color: colorMap[status],
-                          textTransform: "capitalize",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        {status.replace('_', ' ')}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: "24px",
-                          fontWeight: "bold",
-                          color: colorMap[status],
-                        }}
-                      >
-                        {count}
-                      </Text>
-                      <Progress
-                        percent={parseFloat(percentage)}
+                  return (
+                    <Col xs={24} sm={12} lg={6} key={status}>
+                      <Card
                         size="small"
-                        strokeColor={colorMap[status]}
-                        showInfo={false}
-                        style={{ marginTop: "8px" }}
-                      />
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        {percentage}% of total
-                      </Text>
-                    </Card>
-                  </Col>
-                );
-              })}
+                        style={{
+                          textAlign: "center",
+                          borderRadius: "8px",
+                          border: `2px solid ${colorMap[status]}20`,
+                        }}
+                      >
+                        <Text
+                          strong
+                          style={{
+                            display: "block",
+                            fontSize: "16px",
+                            color: colorMap[status],
+                            textTransform: "capitalize",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          {status.replace("_", " ")}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: "bold",
+                            color: colorMap[status],
+                          }}
+                        >
+                          {count}
+                        </Text>
+                        <Progress
+                          percent={parseFloat(percentage)}
+                          size="small"
+                          strokeColor={colorMap[status]}
+                          showInfo={false}
+                          style={{ marginTop: "8px" }}
+                        />
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          {percentage}% of total
+                        </Text>
+                      </Card>
+                    </Col>
+                  );
+                }
+              )}
             </Row>
           )}
         </TabPane>
@@ -1297,12 +1335,19 @@ const RecruiterMoreJobDetails = () => {
               <TrophyOutlined style={{ marginRight: "12px" }} />
               Job Analytics Summary Report
             </Title>
-            
-            <Row gutter={[32, 24]} justify="center" style={{ marginBottom: "32px" }}>
+
+            <Row
+              gutter={[32, 24]}
+              justify="center"
+              style={{ marginBottom: "32px" }}
+            >
               <Col xs={24} sm={8}>
                 <Statistic
                   title={
-                    <Text strong style={{ color: colors.primary, fontSize: "16px" }}>
+                    <Text
+                      strong
+                      style={{ color: colors.primary, fontSize: "16px" }}
+                    >
                       Total Work Orders
                     </Text>
                   }
@@ -1313,7 +1358,10 @@ const RecruiterMoreJobDetails = () => {
               <Col xs={24} sm={8}>
                 <Statistic
                   title={
-                    <Text strong style={{ color: colors.info, fontSize: "16px" }}>
+                    <Text
+                      strong
+                      style={{ color: colors.info, fontSize: "16px" }}
+                    >
                       Total Candidates
                     </Text>
                   }
@@ -1324,14 +1372,18 @@ const RecruiterMoreJobDetails = () => {
               <Col xs={24} sm={8}>
                 <Statistic
                   title={
-                    <Text strong style={{ color: colors.success, fontSize: "16px" }}>
+                    <Text
+                      strong
+                      style={{ color: colors.success, fontSize: "16px" }}
+                    >
                       Hiring Success Rate
                     </Text>
                   }
                   value={
                     analytics.totalCandidates > 0
                       ? (
-                          (((analytics.statusBreakdown.hired || 0) + (analytics.statusBreakdown.completed || 0)) /
+                          (((analytics.statusBreakdown.hired || 0) +
+                            (analytics.statusBreakdown.completed || 0)) /
                             analytics.totalCandidates) *
                           100
                         ).toFixed(1)
@@ -1346,7 +1398,10 @@ const RecruiterMoreJobDetails = () => {
             <Divider />
 
             {/* Top Performing Work Orders */}
-            <Title level={4} style={{ color: colors.primary, marginBottom: "16px" }}>
+            <Title
+              level={4}
+              style={{ color: colors.primary, marginBottom: "16px" }}
+            >
               Top Performing Work Orders
             </Title>
             <Row gutter={[16, 16]} justify="center">
@@ -1360,8 +1415,11 @@ const RecruiterMoreJobDetails = () => {
                       style={{
                         borderRadius: "8px",
                         border: `2px solid ${
-                          index === 0 ? colors.success : 
-                          index === 1 ? colors.warning : colors.info
+                          index === 0
+                            ? colors.success
+                            : index === 1
+                            ? colors.warning
+                            : colors.info
                         }20`,
                       }}
                     >
@@ -1370,12 +1428,17 @@ const RecruiterMoreJobDetails = () => {
                           count={index + 1}
                           style={{
                             backgroundColor:
-                              index === 0 ? colors.success : 
-                              index === 1 ? colors.warning : colors.info,
+                              index === 0
+                                ? colors.success
+                                : index === 1
+                                ? colors.warning
+                                : colors.info,
                           }}
                         />
                         <Text strong style={{ color: colors.primary }}>
-                          {wo.title.length > 20 ? wo.title.substring(0, 20) + "..." : wo.title}
+                          {wo.title.length > 20
+                            ? wo.title.substring(0, 20) + "..."
+                            : wo.title}
                         </Text>
                         <Text style={{ fontSize: "20px", fontWeight: "bold" }}>
                           {wo.total} candidates
@@ -1389,51 +1452,84 @@ const RecruiterMoreJobDetails = () => {
             <Divider />
 
             {/* Key Metrics */}
-            <Title level={4} style={{ color: colors.primary, marginBottom: "16px" }}>
+            <Title
+              level={4}
+              style={{ color: colors.primary, marginBottom: "16px" }}
+            >
               Key Performance Indicators
             </Title>
             <Row gutter={[24, 16]} justify="center">
               <Col xs={12} sm={6}>
-                <Text type="secondary" style={{ display: "block", fontSize: "14px" }}>
+                <Text
+                  type="secondary"
+                  style={{ display: "block", fontSize: "14px" }}
+                >
                   Average Candidates per WO
                 </Text>
                 <Text strong style={{ color: colors.info, fontSize: "18px" }}>
-                  {analytics.totalWorkOrders > 0 
-                    ? Math.round(analytics.totalCandidates / analytics.totalWorkOrders)
+                  {analytics.totalWorkOrders > 0
+                    ? Math.round(
+                        analytics.totalCandidates / analytics.totalWorkOrders
+                      )
                     : 0}
                 </Text>
               </Col>
               <Col xs={12} sm={6}>
-                <Text type="secondary" style={{ display: "block", fontSize: "14px" }}>
+                <Text
+                  type="secondary"
+                  style={{ display: "block", fontSize: "14px" }}
+                >
                   Most Common Status
                 </Text>
-                <Text strong style={{ color: colors.warning, fontSize: "18px" }}>
+                <Text
+                  strong
+                  style={{ color: colors.warning, fontSize: "18px" }}
+                >
                   {Object.entries(analytics.statusBreakdown)
-                    .sort(([,a], [,b]) => b - a)[0]?.[0]
-                    ?.charAt(0).toUpperCase() + 
-                   Object.entries(analytics.statusBreakdown)
-                    .sort(([,a], [,b]) => b - a)[0]?.[0]
-                    ?.slice(1) || 'N/A'}
+                    .sort(([, a], [, b]) => b - a)[0]?.[0]
+                    ?.charAt(0)
+                    .toUpperCase() +
+                    Object.entries(analytics.statusBreakdown)
+                      .sort(([, a], [, b]) => b - a)[0]?.[0]
+                      ?.slice(1) || "N/A"}
                 </Text>
               </Col>
               <Col xs={12} sm={6}>
-                <Text type="secondary" style={{ display: "block", fontSize: "14px" }}>
+                <Text
+                  type="secondary"
+                  style={{ display: "block", fontSize: "14px" }}
+                >
                   Pipeline Conversion
                 </Text>
                 <Text strong style={{ color: colors.purple, fontSize: "18px" }}>
-                  {analytics.statusBreakdown.pipeline > 0 && analytics.statusBreakdown.hired > 0
-                    ? ((analytics.statusBreakdown.hired / analytics.statusBreakdown.pipeline) * 100).toFixed(1) + '%'
-                    : 'N/A'}
+                  {analytics.statusBreakdown.pipeline > 0 &&
+                  analytics.statusBreakdown.hired > 0
+                    ? (
+                        (analytics.statusBreakdown.hired /
+                          analytics.statusBreakdown.pipeline) *
+                        100
+                      ).toFixed(1) + "%"
+                    : "N/A"}
                 </Text>
               </Col>
               <Col xs={12} sm={6}>
-                <Text type="secondary" style={{ display: "block", fontSize: "14px" }}>
+                <Text
+                  type="secondary"
+                  style={{ display: "block", fontSize: "14px" }}
+                >
                   Interview Success Rate
                 </Text>
                 <Text strong style={{ color: colors.cyan, fontSize: "18px" }}>
-                  {analytics.statusBreakdown.interview > 0 && (analytics.statusBreakdown.hired || analytics.statusBreakdown.completed)
-                    ? (((analytics.statusBreakdown.hired || 0) + (analytics.statusBreakdown.completed || 0)) / analytics.statusBreakdown.interview * 100).toFixed(1) + '%'
-                    : 'N/A'}
+                  {analytics.statusBreakdown.interview > 0 &&
+                  (analytics.statusBreakdown.hired ||
+                    analytics.statusBreakdown.completed)
+                    ? (
+                        (((analytics.statusBreakdown.hired || 0) +
+                          (analytics.statusBreakdown.completed || 0)) /
+                          analytics.statusBreakdown.interview) *
+                        100
+                      ).toFixed(1) + "%"
+                    : "N/A"}
                 </Text>
               </Col>
             </Row>
