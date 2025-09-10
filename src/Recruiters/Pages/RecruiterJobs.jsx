@@ -45,7 +45,10 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useGetRecruiterJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetRecruiterJobsQuery,
+  useUpdateJobStatusMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -61,6 +64,10 @@ const RecruiterJobs = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [mobileFiltersVisible, setMobileFiltersVisible] = useState(false);
   const [currentRecruiterEmail, setCurrentRecruiterEmail] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState(""); // 'activate' or 'deactivate'
+  const [selectedJobForModal, setSelectedJobForModal] = useState(null);
+  const [description, setDescription] = useState("");
   const navigate = useNavigate();
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -78,6 +85,9 @@ const RecruiterJobs = () => {
     searchText: debouncedSearch,
     status: filterStatus !== "all" ? filterStatus : undefined,
   });
+
+  const [updateJobStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateJobStatusMutation();
 
   const primaryColor = "#da2c46";
 
@@ -177,31 +187,59 @@ const RecruiterJobs = () => {
 
   const handleDeactivateJob = (job, e) => {
     e.stopPropagation();
-    Modal.confirm({
-      title: "Confirm Deactivation",
-      content: `Are you sure you want to deactivate "${job.title}"?`,
-      okText: "Deactivate",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk() {
-        message.success(`Deactivation request sent for ${job.title}`);
-        // Here you would call your API to deactivate the job
-      },
-    });
+    setSelectedJobForModal(job);
+    setModalType("deactivate");
+    setDescription("");
+    setModalVisible(true);
   };
 
   const handleActivateJob = (job, e) => {
     e.stopPropagation();
-    Modal.confirm({
-      title: "Confirm Activation",
-      content: `Are you sure you want to activate "${job.title}"?`,
-      okText: "Activate",
-      cancelText: "Cancel",
-      onOk() {
-        message.success(`Activation request sent for ${job.title}`);
-        // Here you would call your API to activate the job
-      },
-    });
+    setSelectedJobForModal(job);
+    setModalType("activate");
+    setDescription("");
+    setModalVisible(true);
+  };
+
+  const handleModalConfirm = async () => {
+    if (!description.trim()) {
+      message.error("Please provide a description");
+      return;
+    }
+
+    try {
+      const status = modalType === "activate" ? "active" : "inactive";
+
+      await updateJobStatus({
+        jobId: selectedJobForModal._id,
+        status: status,
+        description: description.trim(),
+      }).unwrap();
+
+      message.success(
+        `Job ${
+          modalType === "activate" ? "activated" : "deactivated"
+        } successfully`
+      );
+
+      // Close modal and reset state
+      setModalVisible(false);
+      setDescription("");
+      setSelectedJobForModal(null);
+      setModalType("");
+    } catch (error) {
+      console.error("Error updating job status:", error);
+      message.error(
+        error?.data?.message || `Failed to ${modalType} job. Please try again.`
+      );
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    setDescription("");
+    setSelectedJobForModal(null);
+    setModalType("");
   };
 
   // Updated function to only check assignedRecruiters array
@@ -795,7 +833,7 @@ const RecruiterJobs = () => {
                 setPageSize(size);
               }}
               showSizeChanger={true}
-               pageSizeOptions={['5', '10', '20', '50', '100', '150']}
+              pageSizeOptions={["5", "10", "20", "50", "100", "150"]}
               showTotal={(total, range) =>
                 `${range[0]}-${range[1]} of ${total} jobs`
               } // Optional: show total info
@@ -853,6 +891,49 @@ const RecruiterJobs = () => {
           </Empty>
         </Card>
       )}
+
+      <Modal
+        title={`${modalType === "activate" ? "Activate" : "Deactivate"} Job`}
+        open={modalVisible}
+        onOk={handleModalConfirm}
+        onCancel={handleModalCancel}
+        okText={modalType === "activate" ? "Activate" : "Deactivate"}
+        okType={modalType === "activate" ? "primary" : "danger"}
+        cancelText="Cancel"
+        confirmLoading={isUpdatingStatus}
+        okButtonProps={{
+          style: {
+            backgroundColor: "#da2c46",
+            borderColor: "#da2c46",
+            color: "white",
+            marginTop: "15px"
+          },
+        }}
+      >
+        <div style={{ marginBottom: "16px" }}>
+          <Text strong>
+            Are you sure you want to {modalType} "{selectedJobForModal?.title}"?
+          </Text>
+        </div>
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: "8px" }}>
+            Please provide a reason: <span style={{ color: "red" }}>*</span>
+          </Text>
+          <Input.TextArea
+            placeholder={`Enter reason for ${
+              modalType === "activate" ? "activating" : "deactivating"
+            } this job...`}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            maxLength={500}
+            showCount
+            style={{ resize: "none" }}
+          />
+        </div>
+      </Modal>
+
       <style jsx>{`
         .ant-pagination-item-active {
           border-color: #da2c46 !important;

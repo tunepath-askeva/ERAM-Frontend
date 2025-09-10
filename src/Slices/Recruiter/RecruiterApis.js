@@ -563,6 +563,17 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    updateJobStatus: builder.mutation({
+      query: ({ jobId, status, description }) => ({
+        url: `/workorderstatus-notify`,
+        method: "POST",
+        body: {
+          workOrderId: jobId,
+          status: status,
+          description: description,
+        },
+      }),
+    }),
   }),
 });
 
@@ -623,4 +634,5 @@ export const {
   useApproveRejectRequisitionMutation,
   useFilterAllCandidatesMutation,
   useGetAllJobStageDetailsQuery,
+  useUpdateJobStatusMutation,
 } = recruiterApi;
