@@ -32,6 +32,7 @@ import {
   UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 
@@ -338,8 +339,7 @@ const RecruiterEmployee = () => {
   if (isLoading) {
     return (
       <div style={{ padding: "12px", textAlign: "center" }}>
-        <Spin size="large" />
-        <p>Loading employees...</p>
+        <SkeletonLoader />
       </div>
     );
   }
@@ -384,7 +384,7 @@ const RecruiterEmployee = () => {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24}>
             <Input
-            allowClear
+              allowClear
               placeholder="Search employees, positions, or departments..."
               prefix={<SearchOutlined style={iconTextStyle} />}
               value={searchTerm}

@@ -158,7 +158,6 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
   const { data: notificationData, refetch: refetchNotifications } =
     useGetRecruiterNotificationQuery({ page: 1, limit: 50 });
 
-  console.log(notificationData, "NOT DATA");
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
   const [markAllAsRead, { isLoading: markingAllRead }] =
@@ -265,8 +264,6 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     ...(notificationData?.notifications || []), // ✅ plural
     ...notificationList,
   ];
-
-  console.log(combinedNotifications, "NOTIFY");
 
   const unreadNotifications = combinedNotifications.filter((n) => !n.isRead);
 

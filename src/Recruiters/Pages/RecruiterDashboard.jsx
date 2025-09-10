@@ -26,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import { Pie, Column } from "@ant-design/plots";
 import { useNavigate } from "react-router-dom";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 
@@ -295,7 +296,7 @@ const RecruiterDashboard = () => {
           minHeight: "50vh",
         }}
       >
-        <Spin size="large" tip="Loading dashboard data..." />
+        <SkeletonLoader />
       </div>
     );
   }
