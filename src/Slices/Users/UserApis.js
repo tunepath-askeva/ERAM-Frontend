@@ -1,22 +1,22 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// const baseUrl =
-//   window.location.hostname === "localhost"
-//     ? "http://localhost:5000/api/users"
-//     : "https://eram-backend-2gvv.onrender.com/api/users";
+const baseUrl =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000/api/users"
+    : "https://eram-backend-2gvv.onrender.com/api/users";
 
-let baseUrl;
+// let baseUrl;
 
-if (window.location.hostname === "localhost") {
-  // local dev
-  baseUrl = "http://localhost:5000/api/users";
-} else if (window.location.hostname === "103.205.65.133") {
-  // your new server
-  baseUrl = "http://103.205.65.133/api/users";
-} else {
-  // render server
-  baseUrl = "https://eram-backend-2gvv.onrender.com/api/users";
-}
+// if (window.location.hostname === "localhost") {
+//   // local dev
+//   baseUrl = "http://localhost:5000/api/users";
+// } else if (window.location.hostname === "103.205.65.133") {
+//   // your new server
+//   baseUrl = "http://103.205.65.133/api/users";
+// } else {
+//   // render server
+//   baseUrl = "https://eram-backend-2gvv.onrender.com/api/users";
+// }
 
 export const userApi = createApi({
   reducerPath: "userApi",
