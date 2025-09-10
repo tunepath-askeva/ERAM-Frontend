@@ -9,14 +9,15 @@ const baseUrl =
 
 // if (window.location.hostname === "localhost") {
 //   // local dev
-//   baseUrl = "http://localhost:5000/api/admin";
+//   baseUrl = "http://localhost:5000/api/users";
 // } else if (window.location.hostname === "103.205.65.133") {
 //   // your new server
-//   baseUrl = "http://103.205.65.133/api/admin";
+//   baseUrl = "http://103.205.65.133/api/users";
 // } else {
 //   // render server
-//   baseUrl = "https://eram-backend-2gvv.onrender.com/api/admin";
+//   baseUrl = "https://eram-backend-2gvv.onrender.com/api/users";
 // }
+
 
 export const adminApi = createApi({
   reducerPath: "adminApi",
