@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseUrl =
   window.location.hostname === "localhost"
-    ? "http://localhost:5000/api/admin"
+    ? "http://localhost:5000/api/recruiter"
     : "http://tradelivetoday.com/api/recuiter"; 
 
 // let baseUrl;
