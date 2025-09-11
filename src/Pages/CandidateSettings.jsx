@@ -1331,7 +1331,7 @@ const CandidateSettings = () => {
                       placeholder="Enter current salary"
                       disabled={!isProfileEditable}
                       formatter={(value) =>
-                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
                     />
@@ -1348,7 +1348,7 @@ const CandidateSettings = () => {
                       placeholder="Enter expected salary"
                       disabled={!isProfileEditable}
                       formatter={(value) =>
-                        `₹${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
                     />
