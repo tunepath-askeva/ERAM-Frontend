@@ -1,9 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const baseUrl =
-  window.location.hostname === "localhost"
-    ? "http://localhost:5000/api/users"
-    : "https://tradelivetoday.com/api/users"; 
+const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/users`;
 
 // let baseUrl;
 

@@ -1,10 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const baseUrl =
-  window.location.hostname === "localhost"
-    ? "http://localhost:5000/api/admin"
-    : "https://tradelivetoday.com/api/admin"; 
-
+const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/admin`;
 
 // let baseUrl;
 
@@ -19,9 +15,7 @@ const baseUrl =
 //   baseUrl = "https://eram-backend-2gvv.onrender.com/api/users";
 // }
 
-
 export const adminApi = createApi({
-
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
     baseUrl,
