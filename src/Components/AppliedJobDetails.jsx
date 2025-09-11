@@ -1525,78 +1525,54 @@ const AppliedJobDetails = () => {
         <Title level={4} style={{ marginBottom: "24px" }}>
           Interview Details
         </Title>
+        {appliedJob.interviewDetails.map((interview, index) => {
+          const interviewDate = new Date(interview.date);
 
-        <Descriptions
-          bordered
-          column={1}
-          labelStyle={{ fontWeight: "600", width: "200px" }}
-        >
-          <Descriptions.Item label="Status">
-            <Tag
-              color={
-                interview.status === "scheduled"
-                  ? "blue"
-                  : interview.status === "completed"
-                  ? "green"
-                  : interview.status === "cancelled"
-                  ? "red"
-                  : "orange"
-              }
-            >
-              {interview.status?.toUpperCase() || "PENDING"}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Date">
-            {interviewDate.toLocaleDateString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Time">
-            {interviewDate.toLocaleTimeString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Mode">
-            <Tag color={interview.mode === "online" ? "blue" : "green"}>
-              {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
-            </Tag>
-          </Descriptions.Item>
-
-          {interview.mode === "online" && interview.meetingLink && (
-            <Descriptions.Item label="Meeting Link">
-              <Button
-                type="link"
-                href={interview.meetingLink}
-                target="_blank"
-                icon={<UserOutlined />}
+          return (
+            <Card key={interview._id || index} style={{ marginBottom: "16px" }}>
+              <Descriptions
+                bordered
+                column={1}
+                labelStyle={{ fontWeight: "600", width: "200px" }}
               >
-                Join Meeting
-              </Button>
-            </Descriptions.Item>
-          )}
-
-          {interview.mode === "in-person" && interview.location && (
-            <Descriptions.Item label="Location">
-              {interview.location}
-            </Descriptions.Item>
-          )}
-
-          {interview.notes && (
-            <Descriptions.Item label="Notes">
-              <Text>{interview.notes}</Text>
-            </Descriptions.Item>
-          )}
-        </Descriptions>
-
-        <Divider />
-
-        <Title level={5} style={{ marginBottom: "16px" }}>
-          Preparation Tips
-        </Title>
-        <ul>
-          <li>Join 5 minutes before the scheduled time</li>
-          <li>Have your resume and portfolio ready</li>
-          {interview.mode === "online" && (
-            <li>Test your audio and video beforehand</li>
-          )}
-          <li>Prepare questions to ask the interviewer</li>
-        </ul>
+                <Descriptions.Item label="Title">
+                  {interview.title || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag
+                    color={
+                      interview.status === "scheduled"
+                        ? "blue"
+                        : interview.status === "completed"
+                        ? "green"
+                        : interview.status === "cancelled"
+                        ? "red"
+                        : "orange"
+                    }
+                  >
+                    {interview.status?.toUpperCase() || "PENDING"}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Date">
+                  {interviewDate.toLocaleDateString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Time">
+                  {interviewDate.toLocaleTimeString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mode">
+                  <Tag color={interview.mode === "online" ? "blue" : "green"}>
+                    {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
+                  </Tag>
+                </Descriptions.Item>
+                {interview.notes && (
+                  <Descriptions.Item label="Notes">
+                    <Text>{interview.notes}</Text>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+          );
+        })}
       </Card>
     );
   };
