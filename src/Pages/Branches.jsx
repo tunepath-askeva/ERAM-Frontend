@@ -47,16 +47,14 @@ const Branches = () => {
 
   const handleView = (branch) => {
     if (branch.url) {
-      if (
-        branch.url.startsWith("http://") ||
-        branch.url.startsWith("https://")
-      ) {
-        window.location.href = branch.url; // ✅ Goes to external branch site
-      } else {
-        window.location.href = `https://${branch.url}?branchId=${branch._id}`;
-      }
+      // Ensure it always goes to the child site
+      const targetUrl = branch.url.startsWith("http")
+        ? `${branch.url}/home?branchId=${branch._id}`
+        : `https://${branch.url}/home?branchId=${branch._id}`;
+
+      window.location.href = targetUrl;
     } else {
-      navigate(`/login?branchId=${branch._id}`); // fallback
+      navigate(`/login?branchId=${branch._id}`); // fallback if no child URL
     }
   };
 
