@@ -20,6 +20,7 @@ const baseUrl =
 
 
 export const adminApi = createApi({
+  
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
     baseUrl,
