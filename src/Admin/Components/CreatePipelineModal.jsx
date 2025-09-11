@@ -242,7 +242,7 @@ function SortableStageItem({
             >
               {dependencyConfig.label}
             </Tag>
-        </div>
+          </div>
 
           {stage.requiredDocuments && stage.requiredDocuments.length > 0 && (
             <div
@@ -294,19 +294,15 @@ const CreatePipelineModal = ({
     useDeleteStageMutation();
 
   const commonDocuments = [
-    "Resume/CV",
-    "Cover Letter",
-    "Portfolio",
-    "References",
-    "Transcripts",
-    "Certificates",
-    "Identity Proof",
-    "Previous Employment Letter",
-    "Salary Slips",
-    "No Objection Certificate",
-    "Aadhar",
-    "PAN Card",
+    "CV",
     "Passport",
+    "Iqama",
+    " National ID",
+    "Driving License",
+    "ExperienceLetter",
+    "Education Certificates",
+    "Professional Certifications",
+    " Police Clearance",
   ];
 
   useEffect(() => {
@@ -406,7 +402,9 @@ const CreatePipelineModal = ({
 
         if (updatePromises.length > 0) {
           await Promise.all(updatePromises);
-          enqueueSnackbar("Stages reordered successfully", { variant: "success" });
+          enqueueSnackbar("Stages reordered successfully", {
+            variant: "success",
+          });
         }
       } catch (error) {
         const errorMessage =
@@ -533,7 +531,9 @@ const CreatePipelineModal = ({
     try {
       if (isEditMode && stageToDelete._id) {
         await deleteStage(stageToDelete._id).unwrap();
-        enqueueSnackbar("Stage deleted successfully from database", { variant: "success" });
+        enqueueSnackbar("Stage deleted successfully from database", {
+          variant: "success",
+        });
       }
       const updatedStages = stages.filter((_, i) => i !== index);
       const reorderedStages = updatedStages.map((stage, i) => ({
@@ -586,10 +586,14 @@ const CreatePipelineModal = ({
           pipelineId: editingPipeline._id,
           pipelineData,
         }).unwrap();
-        enqueueSnackbar("Pipeline updated successfully!", { variant: "success" });
+        enqueueSnackbar("Pipeline updated successfully!", {
+          variant: "success",
+        });
       } else {
         result = await addPipeline(pipelineData).unwrap();
-        enqueueSnackbar("Pipeline created successfully!", { variant: "success" });
+        enqueueSnackbar("Pipeline created successfully!", {
+          variant: "success",
+        });
       }
 
       console.log(`${isEditMode ? "Updated" : "Created"} pipeline:`, result);
