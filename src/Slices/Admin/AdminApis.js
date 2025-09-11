@@ -3,6 +3,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 const baseUrl =
   window.location.hostname === "localhost"
     ? "http://localhost:5000/api/admin"
+
     : "https://eram-backend-2gvv.onrender.com/api/admin";
 
 // let baseUrl;
@@ -20,6 +21,7 @@ const baseUrl =
 
 
 export const adminApi = createApi({
+  
   reducerPath: "adminApi",
   baseQuery: fetchBaseQuery({
     baseUrl,
