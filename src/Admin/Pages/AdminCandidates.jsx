@@ -1072,6 +1072,7 @@ const AdminCandidates = () => {
               marginTop: 16,
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               border: "none",
+              color: "white"
             }}
           >
             {isImporting ? "Importing..." : "Import Candidates"}
