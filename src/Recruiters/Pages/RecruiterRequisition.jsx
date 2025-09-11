@@ -32,6 +32,7 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -55,7 +56,6 @@ const RecruiterRequisition = () => {
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
-
 
   const { data: clientData } = useGetClientsQuery();
   const {
@@ -591,8 +591,8 @@ const RecruiterRequisition = () => {
           {/* Grouped Requisitions Display */}
           <div style={{ minHeight: "400px" }}>
             {requisitionsLoading ? (
-              <div style={{ textAlign: "center", padding: "50px 0" }}>
-                Loading...
+              <div>
+                <SkeletonLoader />
               </div>
             ) : groupedRequisitions.length === 0 ? (
               <div

@@ -735,6 +735,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                   <Form.Item
                     label="Languages Required"
                     name="languagesRequired"
+                    initialValue={["English", "Arabic"]}
                   >
                     <Select mode="tags" placeholder="Enter Languages"></Select>
                   </Form.Item>
