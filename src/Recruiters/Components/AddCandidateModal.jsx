@@ -356,7 +356,15 @@ const AddCandidateModal = ({
               name="experience"
               rules={[{ required: true, message: "Please enter experience" }]}
             >
-              <Input placeholder="Enter work experience in years" />
+              <Select placeholder="Select experience">
+                <Option value="0-1">0-1 Years</Option>
+                <Option value="1-2">1-2 Years</Option>
+                <Option value="2-3">2-3 Years</Option>
+                <Option value="3-5">3-5 Years</Option>
+                <Option value="5-7">5-7 Years</Option>
+                <Option value="7-10">7-10 Years</Option>
+                <Option value="10+">10+ Years</Option>
+              </Select>
             </Form.Item>
           </Col>
           <Col span={12}>
