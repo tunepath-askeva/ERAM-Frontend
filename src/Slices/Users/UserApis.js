@@ -169,13 +169,11 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
-
     getCandidateNotification: builder.query({
       query: ({ page = 1, limit = 10 }) => ({
         url: `/notify?page=${page}&limit=${limit}`,
         method: "GET",
       }),
-      providesTags: ["Notifications"],
     }),
 
     uploadStageDocuments: builder.mutation({

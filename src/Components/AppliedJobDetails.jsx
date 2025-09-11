@@ -325,16 +325,16 @@ const AppliedJobDetails = () => {
             : "Not available"}
         </Descriptions.Item>
         <Descriptions.Item label="Sourced Status">
-          <Tag color={sourcedJob.isSourced === "true" ? "green" : "red"}>
-            {sourcedJob.isSourced === "true" ? "SOURCED" : "NOT SOURCED"}
+          <Tag color={appliedJob.isSourced === "true" ? "green" : "red"}>
+            {appliedJob.isSourced === "true" ? "SOURCED" : "NOT SOURCED"}
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Selected Moving Comment">
-          {sourcedJob.selectedMovingComment || "No comment provided"}
+          {appliedJob.selectedMovingComment || "No comment provided"}
         </Descriptions.Item>
         <Descriptions.Item label="Applied Date">
-          {sourcedJob.createdAt
-            ? new Date(sourcedJob.createdAt).toLocaleDateString()
+          {appliedJob.createdAt
+            ? new Date(appliedJob.createdAt).toLocaleDateString()
             : "Not available"}
         </Descriptions.Item>
         <Descriptions.Item label="Last Updated">
