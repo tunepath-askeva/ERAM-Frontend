@@ -2100,6 +2100,7 @@ const AddWorkOrder = () => {
                   <Form.Item
                     name="languagesRequired"
                     label="Languages Required (comma separated)"
+                     initialValue={["English", "Arabic"]} 
                   >
                     <Select
                       mode="tags"
