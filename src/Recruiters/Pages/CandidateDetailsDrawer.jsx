@@ -338,7 +338,7 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                         <Text strong>Client:</Text>
                         <br />
                         <Text>
-                          {candidate.ClientCode || "Not specified"}
+                          {candidate.clientCode || "Not specified"}
                         </Text>
                       </Col>
                     </Row>

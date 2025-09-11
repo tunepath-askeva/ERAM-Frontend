@@ -338,7 +338,7 @@ const AddCandidateModal = ({
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item label="Work Order Hint" name="workorderhint">
+            <Form.Item label="Search Hint" name="workorderhint">
               <Input placeholder="Hint for making search easier" />
             </Form.Item>
           </Col>

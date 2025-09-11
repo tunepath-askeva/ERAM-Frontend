@@ -270,7 +270,7 @@ const CandidateEditPage = () => {
         candidateType: candidate.candidateType || "External",
         agency: candidate.agency || "N/A",
         workorderhint: candidate.workorderhint || "N/A",
-        ClientCode: candidate.ClientCode || "N/A",
+        clientCode: candidate.clientCode || "N/A",
       });
 
       if (candidate.industry) {
@@ -749,7 +749,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={12} lg={8}>
-                  <Form.Item label="Client" name="ClientCode">
+                  <Form.Item label="Client" name="clientCode">
                     <Input
                       style={{ width: "100%" }}
                       placeholder="Enter client name"

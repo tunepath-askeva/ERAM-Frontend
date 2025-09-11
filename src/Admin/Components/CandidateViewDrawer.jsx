@@ -294,7 +294,7 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           <Col xs={24} sm={12}>
             <Text strong>Client:</Text>
             <br />
-            <Text>{candidate.ClientCode || "Not specified"}</Text>
+            <Text>{candidate.clientCode || "Not specified"}</Text>
           </Col>
         </Row>
 

@@ -113,7 +113,7 @@ const CandidateFormModal = ({
           candidateType: editingCandidate.candidateType || "",
           agency: editingCandidate.agency || "",
           workorderhint: editingCandidate.workorderhint || "",
-          client: editingCandidate.client || "",
+          client: editingCandidate.clientCode || "",
         });
       } else if (!isEditMode) {
         form.resetFields();
