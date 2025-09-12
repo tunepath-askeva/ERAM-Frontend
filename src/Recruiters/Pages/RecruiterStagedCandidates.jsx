@@ -312,6 +312,7 @@ const RecruiterStagedCandidates = () => {
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{ width: "100%" }}
                 loading={isFetching}
+                allowClear
               />
             </Col>
 
