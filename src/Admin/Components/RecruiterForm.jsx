@@ -179,7 +179,7 @@ const RecruiterForm = ({
   const isLoading = isCreating || isEditing;
 
   const modalTitle =
-    title || (mode === "edit" ? "Edit Recruiter" : "Add New Recruiter");
+    title || (mode === "edit" ? "Edit Member" : "Add New Member");
 
   useEffect(() => {
     if (open) {
@@ -352,7 +352,7 @@ const RecruiterForm = ({
       }}
       confirmLoading={isLoading}
       width={1000}
-      okText={mode === "add" ? "Create Recruiter" : "Update Recruiter"}
+      okText={mode === "add" ? "Create Member" : "Update Member"}
       cancelText="Cancel"
       destroyOnClose={true}
     >
@@ -389,16 +389,16 @@ const RecruiterForm = ({
             </Col>
             <Col span={12}>
               <Form.Item
-                label="Recruiter Type"
+                label="Member Type"
                 name="recruiterType"
                 rules={[
-                  { required: true, message: "Please select recruiter type" },
+                  { required: true, message: "Please select member type" },
                 ]}
               >
                 <Select
                   showSearch
                   allowClear
-                  placeholder="Select or type recruiter type"
+                  placeholder="Select or type member type"
                   size="large"
                   optionFilterProp="children"
                   filterOption={(input, option) =>

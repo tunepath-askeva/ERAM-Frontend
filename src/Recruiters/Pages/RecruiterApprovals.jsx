@@ -435,7 +435,7 @@ const RecruiterApprovals = () => {
         },
       },
       {
-        title: "Recruiter",
+        title: "Recruitment Team Member",
         dataIndex: "recruiterName",
         key: "recruiterName",
         width: isMobile ? 150 : isTablet ? 160 : 200,
@@ -721,7 +721,7 @@ const RecruiterApprovals = () => {
         },
       },
       {
-        title: "Recruiter",
+        title: "Recruitment Team Member",
         dataIndex: "recruiterName",
         key: "recruiterName",
         width: isMobile ? 150 : isTablet ? 160 : 200,

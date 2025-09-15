@@ -224,7 +224,7 @@ const RecruiterViewJob = () => {
         {workOrder.assignedRecruiters?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ fontSize: "13px", display: "block" }}>
-              Assigned Recruiters
+              Assigned Members
             </Text>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {workOrder.assignedRecruiters.map((recruiter, index) => (
@@ -774,7 +774,7 @@ const RecruiterViewJob = () => {
                               strong
                               style={{ fontSize: "12px", display: "block" }}
                             >
-                              Assigned Recruiters
+                              Assigned Members
                             </Text>
                             <div
                               style={{

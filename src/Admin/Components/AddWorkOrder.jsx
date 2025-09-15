@@ -1472,12 +1472,12 @@ const AddWorkOrder = () => {
           }}
         >
           <Form.Item
-            label="Default Recruiters (will be assigned to all stages)"
+            label="Default members (will be assigned to all stages)"
             style={{ marginBottom: 0 }}
           >
             <Select
               mode="multiple"
-              placeholder="Select default recruiters for all stages"
+              placeholder="Select default members for all stages"
               value={defaultRecruiters}
               onChange={handleDefaultRecruitersChange}
               style={{ width: "100%" }}
@@ -1656,14 +1656,14 @@ const AddWorkOrder = () => {
                     {/* Recruiter Assignment */}
                     <Col xs={24} sm={12} md={12} lg={8}>
                       <Form.Item
-                        label="Assigned Recruiters"
+                        label="Assigned Members"
                         style={{ marginBottom: 0 }}
                         labelCol={{ span: 24 }}
                         wrapperCol={{ span: 24 }}
                       >
                         <Select
                           mode="multiple"
-                          placeholder="Select recruiters"
+                          placeholder="Select members"
                           value={dateEntry?.recruiterIds || []}
                           onChange={(value) =>
                             handleStageDateChange(
@@ -2040,17 +2040,17 @@ const AddWorkOrder = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="assignedId"
-                    label="Assigned Recruiters"
+                    label="Assigned Members"
                     rules={[
                       {
                         required: true,
-                        message: "Please assign at least one recruiter",
+                        message: "Please assign at least one member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select recruiters"
+                      placeholder="Select members"
                       optionLabelProp="label"
                     >
                       {activeRecruiters.map((recruiter) => (

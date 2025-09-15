@@ -668,7 +668,7 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
 
       {/* Certificates */}
       {candidate.certificates && candidate.certificates.length > 0 && (
-        <Card title="Certificates" style={{ borderRadius: "12px" }}>
+        <Card title="Certificates/Documents" style={{ borderRadius: "12px" }}>
           <List
             dataSource={candidate.certificates}
             renderItem={(cert) => (

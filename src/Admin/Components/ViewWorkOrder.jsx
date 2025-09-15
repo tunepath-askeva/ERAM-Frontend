@@ -152,7 +152,7 @@ const ViewWorkOrder = () => {
                   marginBottom: "8px",
                 }}
               >
-                Assigned Recruiters
+                Assigned Members
               </Text>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                 {workOrder.assignedRecruiters.map((recruiter, index) => (
@@ -742,7 +742,7 @@ const ViewWorkOrder = () => {
                             strong
                             style={{ fontSize: "12px", display: "block" }}
                           >
-                            Recruiters
+                            Recruitment Team Members
                           </Text>
                           <div style={{ marginTop: "4px" }}>
                             {stage.recruiterIds?.map((recruiter, idx) => (

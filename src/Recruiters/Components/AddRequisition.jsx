@@ -273,7 +273,7 @@ const AddRequisition = ({ onNavigateBack }) => {
       width: 120,
     },
     {
-      title: "Assigned Recruiter",
+      title: "Assigned Member",
       dataIndex: "assignedRecruiters",
       key: "assignedRecruiters",
       render: (recruiterIds) => {
@@ -289,7 +289,7 @@ const AddRequisition = ({ onNavigateBack }) => {
       width: 150,
     },
     {
-      title: "Approval Recruiter",
+      title: "Approval Member",
       dataIndex: "approvalRecruiter",
       key: "approvalRecruiter",
       render: (recruiterIds) => {
@@ -447,24 +447,24 @@ const AddRequisition = ({ onNavigateBack }) => {
             {/* Recruiter Assignment Section */}
             <Card
               type="inner"
-              title="Recruiter Assignment"
+              title="Recruitment Team Assignment"
               style={{ marginBottom: "16px" }}
             >
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="assignedRecruiters"
-                    label="Assigned Recruiter"
+                    label="Assigned Member"
                     rules={[
                       {
                         required: true,
-                        message: "Please select an assigned recruiter",
+                        message: "Please select an assigned member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select assigned recruiter"
+                      placeholder="Select assigned member"
                       onChange={(value) =>
                         handleCommonFieldChange("assignedRecruiters", value)
                       }
@@ -480,17 +480,17 @@ const AddRequisition = ({ onNavigateBack }) => {
                 <Col span={12}>
                   <Form.Item
                     name="approvalRecruiter"
-                    label="Approval Recruiter"
+                    label="Approval Member"
                     rules={[
                       {
                         required: true,
-                        message: "Please select an approval recruiter",
+                        message: "Please select an approval member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select approval recruiter"
+                      placeholder="Select approval member"
                       onChange={(value) =>
                         handleCommonFieldChange("approvalRecruiter", value)
                       }
@@ -507,17 +507,17 @@ const AddRequisition = ({ onNavigateBack }) => {
                 <Col span={12}>
                   <Form.Item
                     name="notifyRecruiter"
-                    label="Notify Recruiter"
+                    label="Notify Members"
                     rules={[
                       {
                         required: true,
-                        message: "Please select an approval recruiter",
+                        message: "Please select an approval member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select notify recruiter"
+                      placeholder="Select notify member"
                       onChange={(value) =>
                         handleCommonFieldChange("notifyRecruiter", value)
                       }

@@ -1885,7 +1885,7 @@ const RecruiterEditJob = () => {
 
                 <Col xs={24} sm={12} md={12} lg={8}>
                   <Form.Item
-                    label="Assigned Recruiters"
+                    label="Assigned Members"
                     style={{ marginBottom: 0 }}
                   >
                     <Select

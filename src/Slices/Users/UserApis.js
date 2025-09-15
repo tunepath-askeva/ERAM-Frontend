@@ -75,6 +75,14 @@ export const userApi = createApi({
       query: () => "/branch",
     }),
 
+    changePassword: builder.mutation({
+      query: (payload) => ({
+        url: "/user-pwd-change",
+        method: "PATCH",
+        body: payload,
+      }),
+    }),
+
     //jobs
     getJobsByBranch: builder.query({
       query: ({ page = 1, limit = 10 } = {}) => ({
@@ -275,7 +283,7 @@ export const {
   useVerifyOtpMutation,
   useResendOtpMutation,
   useGetBranchesQuery,
-
+  useChangePasswordMutation,
   //Jobs for candidates
   useGetJobsByBranchQuery,
   useGetSourcedJobsQuery,

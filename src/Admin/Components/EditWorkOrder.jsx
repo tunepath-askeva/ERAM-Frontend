@@ -1590,14 +1590,14 @@ const EditWorkOrder = () => {
                   {/* Recruiter Assignment */}
                   <Col xs={24} sm={12} md={12} lg={8}>
                     <Form.Item
-                      label="Assigned Recruiters"
+                      label="Assigned Members"
                       style={{ marginBottom: 0 }}
                       labelCol={{ span: 24 }}
                       wrapperCol={{ span: 24 }}
                     >
                       <Select
                         mode="multiple"
-                        placeholder="Select recruiters"
+                        placeholder="Select members"
                         value={dateEntry?.recruiterIds || []}
                         onChange={(value) =>
                           handleStageDateChange(
@@ -1999,17 +1999,17 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="assignedRecruiters"
-                    label="Assigned Recruiters"
+                    label="Assigned Members"
                     rules={[
                       {
                         required: true,
-                        message: "Please assign at least one recruiter",
+                        message: "Please assign at least one member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select recruiters"
+                      placeholder="Select member"
                       optionLabelProp="label"
                     >
                       {activeRecruiters?.map((recruiter) => (

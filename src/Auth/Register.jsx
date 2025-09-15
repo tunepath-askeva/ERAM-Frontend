@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { Card, Form, Input, Button, Select, Typography, Row, Col } from "antd";
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Select,
+  Typography,
+  Row,
+  Col,
+  Checkbox,
+} from "antd";
 import {
   EyeInvisibleOutlined,
   EyeTwoTone,
@@ -590,6 +600,27 @@ const Register = () => {
                   visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
                 }
               />
+            </Form.Item>
+
+            <Form.Item
+              name="terms"
+              valuePropName="checked"
+              initialValue={true}
+              rules={[
+                {
+                  validator: (_, value) =>
+                    value
+                      ? Promise.resolve()
+                      : Promise.reject(
+                          new Error("You must accept the Terms and Conditions")
+                        ),
+                },
+              ]}
+            >
+              <Checkbox defaultChecked>
+                I agree to the{" "}
+                <Link style={{ color: "#f5222d" }}>Terms and Conditions</Link>
+              </Checkbox>
             </Form.Item>
 
             <Form.Item style={{ marginTop: "24px", marginBottom: 0 }}>
