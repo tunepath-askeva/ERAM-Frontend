@@ -268,9 +268,9 @@ const CandidateEditPage = () => {
         },
         accountStatus: candidate.accountStatus || "active",
         candidateType: candidate.candidateType || "External",
-        agency: candidate.agency || "N/A",
-        workorderhint: candidate.workorderhint || "N/A",
-        clientCode: candidate.clientCode || "N/A",
+        agency: candidate.agency ,
+        workorderhint: candidate.workorderhint,
+        clientCode: candidate.clientCode,
       });
 
       if (candidate.industry) {

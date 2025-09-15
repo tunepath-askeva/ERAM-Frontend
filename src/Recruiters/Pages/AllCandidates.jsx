@@ -409,12 +409,11 @@ function AllCandidates() {
           <div style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               {text}
-          {isRecentlyUpdated(record.updatedAt) && (
-  <Tooltip title="Recently updated profile within the last 2 days">
-    <span className="glow-dot" />
-  </Tooltip>
-)}
-
+              {isRecentlyUpdated(record.updatedAt) && (
+                <Tooltip title="Recently updated profile within the last 2 days">
+                  <span className="glow-dot" />
+                </Tooltip>
+              )}
             </div>
             <Text type="secondary">{record.title || "No title"}</Text>
           </div>
@@ -494,13 +493,19 @@ function AllCandidates() {
             size="small"
             icon={<EyeOutlined />}
             onClick={() => showCandidateDetails(record)}
-          />
+          >
+            {" "}
+            View
+          </Button>
           {hasPermission("edit-candidate-details") && (
             <Button
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
-            />
+            >
+              {" "}
+              Edit
+            </Button>
           )}
         </Space>
       ),

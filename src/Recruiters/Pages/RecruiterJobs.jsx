@@ -116,10 +116,10 @@ const RecruiterJobs = () => {
   useEffect(() => {
     if (apiData?.jobs) {
       const transformedJobs = transformJobData(apiData.jobs);
-      
+
       const sortedJobs = [...transformedJobs].sort((a, b) => {
         if (a.isActive === b.isActive) return 0;
-        return a.isActive ? -1 : 1; 
+        return a.isActive ? -1 : 1;
       });
 
       setFilteredJobs(sortedJobs);
@@ -180,6 +180,8 @@ const RecruiterJobs = () => {
       deadline: job.deadlineDate,
       numberOfCandidate: job.numberOfCandidate || 0,
       numberOfEmployees: job.numberOfEmployees || 0,
+      requisitionNo: job.requisitionNo || null,
+      referenceNo: job.referenceNo || null,
     }));
   };
 
@@ -547,7 +549,21 @@ const RecruiterJobs = () => {
                               marginTop: "2px",
                             }}
                           >
-                            Code: {job.jobCode}
+                            Job Code: {job.jobCode}
+                          </Text>
+                        )}
+
+                        {job.requisitionNo && job.referenceNo && (
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: "11px",
+                              display: "block",
+                              marginTop: "2px",
+                            }}
+                          >
+                            Req No: {job.requisitionNo} | Ref No:{" "}
+                            {job.referenceNo}
                           </Text>
                         )}
                       </div>

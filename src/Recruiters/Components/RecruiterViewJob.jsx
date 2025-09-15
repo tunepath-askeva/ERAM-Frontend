@@ -145,6 +145,39 @@ const RecruiterViewJob = () => {
               </Text>
             </div>
           </Col>
+
+          {workOrder.requisitionNo && (
+            <Col xs={12} sm={8}>
+              <div>
+                <Text strong style={{ fontSize: "13px", display: "block" }}>
+                  Requisition No
+                </Text>
+                <Text
+                  copyable
+                  style={{ fontSize: "12px", wordBreak: "break-all" }}
+                >
+                  {workOrder.requisitionNo}
+                </Text>
+              </div>
+            </Col>
+          )}
+
+          {workOrder.referenceNo && (
+            <Col xs={12} sm={8}>
+              <div>
+                <Text strong style={{ fontSize: "13px", display: "block" }}>
+                  Reference No
+                </Text>
+                <Text
+                  copyable
+                  style={{ fontSize: "12px", wordBreak: "break-all" }}
+                >
+                  {workOrder.referenceNo}
+                </Text>
+              </div>
+            </Col>
+          )}
+
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
