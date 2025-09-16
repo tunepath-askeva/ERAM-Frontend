@@ -44,6 +44,7 @@ import {
   useAddCandidateMutation,
   useBulkImportCandidatesMutation,
   useFilterAllCandidatesMutation,
+  useExportCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate } from "react-router-dom";
 import SkeletonLoader from "../../Global/SkeletonLoader";
@@ -51,8 +52,6 @@ import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
 import AdvancedFiltersModal from "../Components/AdvancedFiltersModal";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
@@ -175,6 +174,9 @@ function AllCandidates() {
 
   const [addCandidate, { isLoading: isAddingCandidate }] =
     useAddCandidateMutation();
+
+  const [exportCandidates, { isLoading: isExporting }] =
+    useExportCandidatesMutation();
 
   const [bulkImportCandidates, { isLoading: isBulkImporting }] =
     useBulkImportCandidatesMutation();
@@ -345,41 +347,38 @@ function AllCandidates() {
     }
   };
 
-  const handleExportExcel = () => {
-    // pick the correct dataset
-    const dataToExport = isAdvancedFilterApplied
-      ? filteredCandidates
-      : candidatesResponse?.users || [];
+  const handleExportExcel = async () => {
+    try {
+      // Prepare filters based on current state
+      const exportFilters = isAdvancedFilterApplied
+        ? advancedFilters
+        : {
+            ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+            ...(selectedSkills.length > 0 && {
+              skills: selectedSkills.join(","),
+            }),
+            ...(selectedLocation && { location: selectedLocation }),
+            ...(selectedExperience && { experience: selectedExperience }),
+            ...(selectedIndustry && { industry: selectedIndustry }),
+          };
 
-    if (!dataToExport.length) {
-      message.warning("No candidates to export");
-      return;
+      const blob = await exportCandidates(exportFilters).unwrap();
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "candidates.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      message.success("Excel file downloaded successfully");
+    } catch (error) {
+      message.error("Failed to export candidates");
+      console.error("Export error:", error);
     }
-
-    // transform data into rows
-    const exportData = dataToExport.map((c) => ({
-      Name: c.fullName,
-      Email: c.email,
-      Phone: c.phone || "N/A",
-      Location: c.location || "N/A",
-      Experience: c.totalExperienceYears
-        ? `${c.totalExperienceYears} years`
-        : "N/A",
-      Skills: c.skills?.join(", ") || "N/A",
-      Status: c.accountStatus,
-      Type: c.candidateType || "N/A",
-      UpdatedAt: new Date(c.updatedAt).toLocaleString(),
-    }));
-
-    // create worksheet + workbook
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Candidates");
-
-    // export
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    saveAs(data, "candidates.xlsx");
   };
 
   const handleNormalPageChange = useCallback(
@@ -649,7 +648,7 @@ function AllCandidates() {
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={12}>
-            <Space >
+            <Space>
               <Button
                 icon={<SettingOutlined />}
                 onClick={() => setAdvancedFiltersVisible(true)}
@@ -664,6 +663,7 @@ function AllCandidates() {
               <Button
                 icon={<DownloadOutlined />}
                 onClick={handleExportExcel}
+                loading={isExporting}
               >
                 Export to Excel
               </Button>

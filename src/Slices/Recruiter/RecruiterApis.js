@@ -602,6 +602,14 @@ export const recruiterApi = createApi({
         },
       }),
     }),
+    exportCandidates: builder.mutation({
+      query: (filters = {}) => ({
+        url: "/exportall-candidate",
+        method: "GET",
+        params: filters,
+        responseHandler: (response) => response.blob(), 
+      }),
+    }),
   }),
 });
 
@@ -663,4 +671,6 @@ export const {
   useFilterAllCandidatesMutation,
   useGetAllJobStageDetailsQuery,
   useUpdateJobStatusMutation,
+  useExportCandidatesMutation
 } = recruiterApi;
+
