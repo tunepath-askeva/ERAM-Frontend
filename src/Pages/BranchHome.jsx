@@ -44,8 +44,6 @@ const BranchHome = () => {
   const findBranchByDomain = (branchesData) => {
     const currentHost = window.location.hostname;
 
-
-
     const matchedBranch = branchesData.find((branch) => {
       if (!branch.url) return false;
 
