@@ -45,28 +45,15 @@ const Branches = () => {
     return `${street}, ${city}, ${state} ${postalCode}, ${country}`;
   };
 
-  // Replace the handleView function in your Branches.jsx with this:
-
   const handleView = (branch) => {
-    console.log("Navigating to branch:", branch);
+    if (branch.url) {
+      const targetUrl = branch.url.startsWith("http")
+        ? `${branch.url}/home?branchId=${branch._id}`
+        : `${branch.url}`;
 
-    // Check if branch has a custom domain URL
-    if (branch.url && branch.url.trim() !== "") {
-      let targetUrl = branch.url.trim();
-
-      // Add protocol if missing
-      if (!targetUrl.startsWith("http")) {
-        targetUrl = `https://${targetUrl}`;
-      }
-
-      // Remove trailing slash
-      targetUrl = targetUrl.replace(/\/$/, "");
-
-      // Navigate to the branch's domain with the home route
-      window.location.href = `${targetUrl}/home`;
+      window.location.href = targetUrl;
     } else {
-      // If no custom URL, navigate within the same domain
-      navigate(`/home?branchId=${branch._id}`);
+      navigate(`/login?branchId=${branch._id}`); 
     }
   };
 
