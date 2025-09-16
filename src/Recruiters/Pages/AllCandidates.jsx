@@ -629,8 +629,9 @@ function AllCandidates() {
       </Card>
 
       <Card style={{ marginBottom: "24px" }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8} lg={12}>
+        <Row gutter={[16, 16]} align="middle">
+          {/* Search Input */}
+          <Col xs={24} md={12} lg={14}>
             <Search
               placeholder="Search candidates, skills, email, title..."
               value={searchTerm}
@@ -647,8 +648,9 @@ function AllCandidates() {
             )}
           </Col>
 
-          <Col xs={24} sm={12} md={8} lg={12}>
-            <Space>
+          {/* Buttons */}
+          <Col xs={24} md={12} lg={10} style={{ textAlign: "right" }}>
+            <Space wrap>
               <Button
                 icon={<SettingOutlined />}
                 onClick={() => setAdvancedFiltersVisible(true)}
@@ -664,6 +666,8 @@ function AllCandidates() {
                 icon={<DownloadOutlined />}
                 onClick={handleExportExcel}
                 loading={isExporting}
+                type="primary"
+                style={{ background: "#da2c46", border: "none" }}
               >
                 Export to Excel
               </Button>

@@ -308,7 +308,9 @@ const RecruiterAssignedInterviews = () => {
           size="small"
           onClick={() => handleViewDetails(record)}
           style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
-        />
+        >
+          View
+        </Button>
       ),
     },
   ];
