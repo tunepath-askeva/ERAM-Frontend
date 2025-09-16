@@ -303,7 +303,7 @@ const Login = () => {
                 marginBottom: "8px",
               }}
             >
-              Welcome Backd
+              Welcome Back
             </h1>
             <p
               style={{
