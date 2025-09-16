@@ -41,13 +41,11 @@ const BranchHome = () => {
   const { data: branches, isLoading, error } = useGetBranchesQuery();
   const [currentBranch, setCurrentBranch] = useState(null);
 
-  // Function to find branch by current domain
   const findBranchByDomain = (branchesData) => {
     const currentHost = window.location.hostname;
-    console.log("Current hostname:", currentHost);
-    console.log("Available branches:", branchesData);
 
-    // Find branch that matches current domain
+
+
     const matchedBranch = branchesData.find((branch) => {
       if (!branch.url) return false;
 
@@ -67,34 +65,28 @@ const BranchHome = () => {
     return matchedBranch;
   };
 
-  useEffect(() => {
-    if (branches?.branch && Array.isArray(branches.branch)) {
-      console.log("Branches loaded:", branches.branch);
+useEffect(() => {
+  if (branches?.branch && Array.isArray(branches.branch)) {
+    console.log("Branches loaded:", branches.branch);
 
-      // Try to find branch by current domain
-      const branchByDomain = findBranchByDomain(branches.branch);
+    const branchByDomain = findBranchByDomain(branches.branch);
 
-      if (branchByDomain) {
-        console.log("Branch found by domain:", branchByDomain);
-        setCurrentBranch(branchByDomain);
+    if (branchByDomain) {
+      console.log("Branch found by domain:", branchByDomain);
+      setCurrentBranch(branchByDomain);
+    } else {
+      const branchId = searchParams.get("branchId");
+      if (branchId) {
+        const branchById = branches.branch.find((b) => b._id === branchId);
+        console.log("Branch found by ID:", branchById);
+        setCurrentBranch(branchById || null);
       } else {
-        // If no domain match, check if there's a branchId in URL params
-        const branchId = searchParams.get("branchId");
-        if (branchId) {
-          const branchById = branches.branch.find((b) => b._id === branchId);
-          console.log("Branch found by ID:", branchById);
-          setCurrentBranch(branchById);
-        } else {
-          // No match found - this might be the main domain
-          console.log(
-            "No branch match found for domain:",
-            window.location.hostname
-          );
-          setCurrentBranch(null);
-        }
+        setCurrentBranch(null);
       }
     }
-  }, [branches, searchParams]);
+  }
+}, [branches, searchParams]);
+
 
   const formatAddress = (location) => {
     if (!location) return "";
@@ -168,7 +160,7 @@ const BranchHome = () => {
   }
 
   // No branch found state
-  if (!currentBranch) {
+  if (!isLoading && branches && !currentBranch) {
     return (
       <Layout style={{ minHeight: "100vh" }}>
         <Header />
