@@ -49,6 +49,7 @@ import {
   useGetRecruiterJobsQuery,
   useUpdateJobStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -58,7 +59,7 @@ const RecruiterJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -284,11 +285,7 @@ const RecruiterJobs = () => {
   if (isLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <Skeleton active />
-          <Skeleton active />
-          <Skeleton active />
-        </div>
+        <SkeletonLoader />
       </div>
     );
   }
@@ -466,275 +463,262 @@ const RecruiterJobs = () => {
 
       {getCurrentPageJobs().length > 0 ? (
         <>
-          <div
+          {/* <div
             style={{
-              background: "#fff",
-              borderRadius: "12px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "24px",
             }}
           >
-            {getCurrentPageJobs().map((job, index) => (
-              <div
-                key={job._id}
-                style={{
-                  padding: "16px",
-                  borderBottom:
-                    index === getCurrentPageJobs().length - 1
-                      ? "none"
-                      : "1px solid #f0f0f0",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onClick={() => handleJobClick(job)}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#f8f9fa")
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={apiData?.totalCount || 0} // ✅ Use totalCount from transformResponse
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+              showSizeChanger={true}
+              pageSizeOptions={["5", "10", "20", "50", "100", "150"]}
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} of ${total} jobs`
+              } // Optional: show total info
+              itemRender={(current, type, originalElement) => {
+                if (type === "prev") {
+                  return <Button>Previous</Button>;
                 }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
+                if (type === "next") {
+                  return <Button>Next</Button>;
                 }
-              >
-                <div className="mobile-job-card" style={{ display: "block" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      marginBottom: "12px",
-                      gap: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "12px",
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      <Avatar
-                        src={job.companyLogo}
-                        size={40}
-                        style={{ backgroundColor: "#f0f0f0", flexShrink: 0 }}
-                        icon={<BankOutlined />}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Title
-                          level={4}
-                          style={{
-                            margin: 0,
-                            fontSize: "clamp(16px, 3vw, 18px)",
-                            lineHeight: "1.3",
-                            color: "#1a1a1a",
-                          }}
-                        >
-                          {job.title}
-                        </Title>
-                        <Text
-                          style={{
-                            fontSize: "clamp(12px, 2.5vw, 14px)",
-                            color: "#666",
-                            display: "block",
-                            marginTop: "2px",
-                          }}
-                        >
-                          {job.company}
-                        </Text>
-                        {job.jobCode && (
-                          <Text
-                            type="secondary"
-                            style={{
-                              fontSize: "11px",
-                              display: "block",
-                              marginTop: "2px",
-                            }}
-                          >
-                            Job Code: {job.jobCode}
-                          </Text>
-                        )}
+                return originalElement;
+              }}
+            />
+          </div> */}
 
-                        {job.requisitionNo && job.referenceNo && (
-                          <Text
-                            type="secondary"
-                            style={{
-                              fontSize: "11px",
-                              display: "block",
-                              marginTop: "2px",
-                            }}
-                          >
-                            Req No: {job.requisitionNo} | Ref No:{" "}
-                            {job.referenceNo}
-                          </Text>
-                        )}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: "8px",
-                      }}
-                    >
-                      <Space>
-                        {/* Only show edit button if recruiter is in the main assignedRecruiters array */}
-                        {isRecruiterAssigned(job.assignedRecruiters) && (
-                          <>
-                            {hasPermission("edit-job") && (
-                              <Tooltip title="Edit Job">
-                                <Button
-                                  type="text"
-                                  icon={<EditOutlined />}
-                                  onClick={(e) => handleEditJob(job, e)}
+          <Row gutter={[16, 16]}>
+            {getCurrentPageJobs().map((job) => (
+              <Col xs={24} sm={12} md={8} lg={6} xl={6} key={job._id}>
+                <Card
+                  hoverable
+                  style={{
+                    height: "100%",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => handleJobClick(job)}
+                  actions={[
+                    // Only show actions if recruiter is assigned
+                    ...(isRecruiterAssigned(job.assignedRecruiters)
+                      ? [
+                          hasPermission("edit-job") && (
+                            <Tooltip title="Edit Job" key="edit">
+                              <EditOutlined
+                                onClick={(e) => handleEditJob(job, e)}
+                                style={{ fontSize: "16px" }}
+                              />
+                            </Tooltip>
+                          ),
+                          hasPermission("deactivate-job") &&
+                            (job.isActive ? (
+                              <Tooltip title="Deactivate Job" key="deactivate">
+                                <PoweroffOutlined
+                                  onClick={(e) => handleDeactivateJob(job, e)}
+                                  style={{ fontSize: "16px", color: "#ff4d4f" }}
                                 />
                               </Tooltip>
-                            )}
-                            {hasPermission("deactivate-job") && (
-                              <>
-                                {job.isActive ? (
-                                  <Tooltip title="Deactivate Job">
-                                    <Button
-                                      type="text"
-                                      icon={<PoweroffOutlined />}
-                                      danger
-                                      onClick={(e) =>
-                                        handleDeactivateJob(job, e)
-                                      }
-                                    />
-                                  </Tooltip>
-                                ) : (
-                                  <Tooltip title="Activate Job">
-                                    <Button
-                                      type="text"
-                                      icon={<CheckCircleOutlined />}
-                                      style={{ color: "#52c41a" }}
-                                      onClick={(e) => handleActivateJob(job, e)}
-                                    />
-                                  </Tooltip>
-                                )}
-                              </>
-                            )}
-                          </>
-                        )}
-                      </Space>
-                      <Tag
-                        color={job.isActive ? "green" : "red"}
-                        style={{
-                          fontSize: "10px",
-                          textTransform: "uppercase",
-                          fontWeight: 500,
+                            ) : (
+                              <Tooltip title="Activate Job" key="activate">
+                                <CheckCircleOutlined
+                                  onClick={(e) => handleActivateJob(job, e)}
+                                  style={{ fontSize: "16px", color: "#52c41a" }}
+                                />
+                              </Tooltip>
+                            )),
+                        ].filter(Boolean)
+                      : []),
+                    <Tooltip title="View Details" key="view">
+                      <EyeOutlined
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleJobClick(job);
                         }}
-                      >
-                        {job.isActive ? "Active" : "Inactive"}
-                      </Tag>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <div
+                        style={{ fontSize: "16px", color: primaryColor }}
+                      />
+                    </Tooltip>,
+                  ].filter(Boolean)}
+                >
+                  <div style={{ position: "relative" }}>
+                    {/* Status Tag - Top Right */}
+                    <Tag
+                      color={job.isActive ? "green" : "red"}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
+                        position: "absolute",
+                        top: -8,
+                        right: -8,
+                        fontSize: "10px",
+                        textTransform: "uppercase",
+                        fontWeight: 500,
+                        zIndex: 1,
                       }}
                     >
-                      <EnvironmentOutlined
-                        style={{ fontSize: "12px", color: "#666" }}
+                      {job.isActive ? "Active" : "Inactive"}
+                    </Tag>
+
+                    {/* Company Avatar and Title */}
+                    <div style={{ textAlign: "center", marginBottom: "16px" }}>
+                      <Avatar
+                        src={job.companyLogo}
+                        size={48}
+                        style={{
+                          backgroundColor: "#f0f0f0",
+                          marginBottom: "8px",
+                        }}
+                        icon={<BankOutlined />}
                       />
+                      <Title
+                        level={5}
+                        style={{
+                          margin: 0,
+                          fontSize: "16px",
+                          lineHeight: "1.3",
+                          color: "#1a1a1a",
+                          height: "40px",
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                        title={job.title}
+                      >
+                        {job.title}
+                      </Title>
                       <Text
                         style={{
-                          fontSize: "12px",
+                          fontSize: "14px",
                           color: "#666",
+                          display: "block",
                         }}
                       >
-                        {job.location} • {job.workType}
-                      </Text>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <DollarOutlined
-                        style={{ fontSize: "12px", color: "#666" }}
-                      />
-                      <Text
-                        style={{
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        {job.salary}
+                        {job.company}
                       </Text>
                     </div>
 
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
+                        justifyContent: "center",
+                        gap: "16px", // spacing between items
+                        marginBottom: "8px",
                       }}
                     >
-                      <CalendarOutlined
-                        style={{ fontSize: "12px", color: "#666" }}
-                      />
-                      <Text
-                        style={{
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        Deadline: {new Date(job.deadline).toLocaleDateString()}
-                      </Text>
-                    </div>
-                  </div>
+                      {job.jobCode && (
+                        <Text style={{ fontSize: "10px" }}>
+                          Job Code: {job.jobCode}
+                        </Text>
+                      )}
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      flex: 1,
-                      minWidth: "120px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <UsergroupAddOutlined
-                      style={{ fontSize: "14px", color: "#666" }}
-                    />
-                    <Tooltip
-                      title={
-                        job.numberOfEmployees > job.numberOfCandidate
-                          ? "You have exceeded the required employees for this work order!"
-                          : `${job.numberOfEmployees} out of ${job.numberOfCandidate} employees converted`
-                      }
-                    >
+                      {job.requisitionNo && (
+                        <Text style={{ fontSize: "10px" }}>
+                          Requisition No: {job.requisitionNo}
+                        </Text>
+                      )}
+
+                      {job.referenceNo && (
+                        <Text style={{ fontSize: "10px" }}>
+                          Reference No: {job.referenceNo}
+                        </Text>
+                      )}
+                    </div>
+
+                    {/* Key Details */}
+                    <div style={{ marginBottom: "12px" }}>
                       <div
                         style={{
                           display: "flex",
-                          flexDirection: "column",
-                          width: "100%",
+                          alignItems: "center",
+                          gap: "4px",
+                          marginBottom: "6px",
                         }}
                       >
+                        <EnvironmentOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text
+                          style={{ fontSize: "11px", color: "#666" }}
+                          title={`${job.location} • ${job.workType}`}
+                        >
+                          {job.location.length > 15
+                            ? `${job.location.substring(0, 15)}...`
+                            : job.location}{" "}
+                          • {job.workType}
+                        </Text>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <DollarOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text
+                          style={{ fontSize: "11px", color: "#666" }}
+                          title={job.salary}
+                        >
+                          {job.salary.length > 20
+                            ? `${job.salary.substring(0, 20)}...`
+                            : job.salary}
+                        </Text>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        <CalendarOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
+                        <Text style={{ fontSize: "11px", color: "#666" }}>
+                          Deadline:{" "}
+                          {new Date(job.deadline).toLocaleDateString()}
+                        </Text>
+                      </div>
+                    </div>
+
+                    {/* Employee Progress */}
+                    <div style={{ marginBottom: "12px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <UsergroupAddOutlined
+                          style={{ fontSize: "12px", color: "#666" }}
+                        />
                         <Text
                           strong
                           style={{
-                            fontSize: "12px",
+                            fontSize: "10px",
                             color:
                               job.numberOfEmployees > job.numberOfCandidate
                                 ? "red"
                                 : "#444",
                           }}
                         >
-                          Employees Converted: {job.numberOfEmployees} /{" "}
+                          Employees: {job.numberOfEmployees}/
                           {job.numberOfCandidate}
                           {job.numberOfEmployees > job.numberOfCandidate && (
                             <WarningOutlined
@@ -742,103 +726,78 @@ const RecruiterJobs = () => {
                             />
                           )}
                         </Text>
-                        <Progress
-                          percent={Math.min(
-                            (job.numberOfEmployees / job.numberOfCandidate) *
-                              100,
-                            100
-                          )}
-                          size="small"
-                          showInfo={false}
-                          strokeColor={
-                            job.numberOfEmployees > job.numberOfCandidate
-                              ? "red"
-                              : "#52c41a"
-                          }
-                          style={{ marginTop: "2px", width: "25%" }}
-                        />
                       </div>
-                    </Tooltip>
-                  </div>
+                      <Progress
+                        percent={Math.min(
+                          (job.numberOfEmployees / job.numberOfCandidate) * 100,
+                          100
+                        )}
+                        size="small"
+                        showInfo={false}
+                        strokeColor={
+                          job.numberOfEmployees > job.numberOfCandidate
+                            ? "red"
+                            : "#52c41a"
+                        }
+                      />
+                    </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "4px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <Tag color="blue" style={{ fontSize: "10px" }}>
-                      Pipeline: {job.pipeline}
-                    </Tag>
-                    {job.stages.slice(0, 2).map((stage, index) => (
+                    {/* Pipeline & Stages */}
+                    <div style={{ marginBottom: "12px" }}>
                       <Tag
-                        key={index}
-                        style={{
-                          fontSize: "10px",
-                          padding: "0 6px",
-                          borderRadius: "4px",
-                        }}
+                        color="blue"
+                        style={{ fontSize: "9px", marginBottom: "4px" }}
                       >
-                        {stage}
+                        {job.pipeline}
                       </Tag>
-                    ))}
-                    {job.stages.length > 2 && (
-                      <Tooltip
-                        title={job.stages.slice(2).join(", ")}
-                        placement="top"
-                      >
-                        <Tag
-                          style={{
-                            fontSize: "10px",
-                            padding: "0 6px",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          +{job.stages.length - 2} more
-                        </Tag>
-                      </Tooltip>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
+                      <div>
+                        {job.stages.slice(0, 2).map((stage, index) => (
+                          <Tag
+                            key={index}
+                            style={{
+                              fontSize: "9px",
+                              padding: "0 4px",
+                              borderRadius: "4px",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            {stage.length > 8
+                              ? `${stage.substring(0, 8)}...`
+                              : stage}
+                          </Tag>
+                        ))}
+                        {job.stages.length > 2 && (
+                          <Tooltip
+                            title={job.stages.slice(2).join(", ")}
+                            placement="top"
+                          >
+                            <Tag style={{ fontSize: "9px", padding: "0 4px" }}>
+                              +{job.stages.length - 2}
+                            </Tag>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Posted Date */}
                     <Text
                       type="secondary"
                       style={{
-                        fontSize: "11px",
+                        fontSize: "10px",
                         display: "flex",
                         alignItems: "center",
                         gap: "4px",
+                        justifyContent: "center",
                       }}
                     >
                       <CalendarOutlined />
                       Posted {formatDate(job.postedDate)}
                     </Text>
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{
-                        background: primaryColor,
-                        border: "none",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleJobClick(job);
-                      }}
-                    >
-                      View Details
-                    </Button>
                   </div>
-                </div>
-              </div>
+                </Card>
+              </Col>
             ))}
-          </div>
+          </Row>
           <div
             style={{
               display: "flex",
