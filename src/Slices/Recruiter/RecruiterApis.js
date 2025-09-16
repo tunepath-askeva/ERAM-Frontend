@@ -249,6 +249,26 @@ export const recruiterApi = createApi({
         };
       },
     }),
+
+    getPipelineJobsExport: builder.query({
+      query: ({ search = "", status = "all", jobId = "all" } = {}) => {
+        const params = new URLSearchParams({ export: "true" });
+
+        if (search) params.append("search", search);
+        if (status && status !== "all") params.append("status", status);
+        if (jobId && jobId !== "all") params.append("jobId", jobId);
+
+        return {
+          url: `/pipelineJobs?${params.toString()}`,
+          method: "GET",
+          responseHandler: async (response) => {
+            const blob = await response.blob();
+            return blob;
+          },
+        };
+      },
+    }),
+
     getPipelineJobsById: builder.query({
       query: (id) => ({
         url: `/pipelinejobs/${id}`,
@@ -607,7 +627,7 @@ export const recruiterApi = createApi({
         url: "/exportall-candidate",
         method: "GET",
         params: filters,
-        responseHandler: (response) => response.blob(), 
+        responseHandler: (response) => response.blob(),
       }),
     }),
   }),
@@ -629,6 +649,7 @@ export const {
   useGetRecruiterStagesQuery,
   useMoveToPipelineMutation,
   useGetPipelineJobsQuery,
+  useLazyGetPipelineJobsExportQuery,
   useGetPipelineJobsByIdQuery,
   useGetApprovalInfoQuery,
   useApproveCandidateDocumentsMutation,
@@ -671,6 +692,5 @@ export const {
   useFilterAllCandidatesMutation,
   useGetAllJobStageDetailsQuery,
   useUpdateJobStatusMutation,
-  useExportCandidatesMutation
+  useExportCandidatesMutation,
 } = recruiterApi;
-
