@@ -49,8 +49,8 @@ const Branches = () => {
     if (branch.url) {
       const targetUrl = branch.url.startsWith("http")
         ? `${branch.url}/home?branchId=${branch._id}`
-        : `${branch.url}`;
-
+        : `${branch.url}/home?branchId=${branch._id}`;
+      console.log(targetUrl,'hi url-=-')
       window.location.href = targetUrl;
     } else {
       navigate(`/login?branchId=${branch._id}`); 

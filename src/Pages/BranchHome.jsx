@@ -51,18 +51,16 @@ const BranchHome = () => {
     const matchedBranch = branchesData.find((branch) => {
       if (!branch.url) return false;
 
-      // Clean the branch URL to get just the domain
-      let branchDomain = branch.url
+      // Ensure branch.url is a string
+      let branchDomain = String(branch.url)
         .replace(/^https?:\/\//, "")
         .replace(/\/$/, "");
 
       console.log(`Comparing: ${currentHost} with ${branchDomain}`);
 
-      // Check if current host matches branch domain
       return (
-        currentHost === branchDomain ||
-        currentHost.includes(branchDomain) ||
-        branchDomain.includes(currentHost)
+        (currentHost && currentHost.includes(branchDomain)) ||
+        (branchDomain && branchDomain.includes(currentHost))
       );
     });
 
