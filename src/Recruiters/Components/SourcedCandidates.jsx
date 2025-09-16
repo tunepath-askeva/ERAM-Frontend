@@ -269,7 +269,7 @@ const SourcedCandidates = ({ jobId }) => {
     isLoading: isWorkOrderLoadingOne,
     error: workOrderErrorOne,
   } = useGetCurrentWorkOrderDetailsForFilteringQuery(jobId, {
-    skip: !isWorkOrderModalVisible,
+    skip: !isFilterModalVisible,
   });
 
   const [CurrentWorkorderFiltering] =
@@ -1436,8 +1436,10 @@ const SourcedCandidates = ({ jobId }) => {
                           <ToolOutlined /> {filters.jobRoles.join(", ")}
                         </Tag>
                       )}
-                      {(filters.experience[0].trim() ||
-                        filters.experience[1].trim()) && (
+                      {((filters.experience[0] &&
+                        filters.experience[0].toString().trim()) ||
+                        (filters.experience[1] &&
+                          filters.experience[1].toString().trim())) && (
                         <Tag
                           color="red"
                           closable
@@ -1449,31 +1451,34 @@ const SourcedCandidates = ({ jobId }) => {
                           {filters.experience[1] || "∞"} years
                         </Tag>
                       )}
-
-                      {(filters.salary[0].trim() ||
-                        filters.salary[1].trim()) && (
+                      {((filters.salary[0] &&
+                        filters.salary[0].toString().trim()) ||
+                        (filters.salary[1] &&
+                          filters.salary[1].toString().trim())) && (
                         <Tag
                           color="gold"
                           closable
                           onClose={() => handleClearSpecificFilter("salary")}
                         >
-                          <DollarOutlined /> SAR
-                          {filters.salary[0] || "0"} - SAR{" "}
-                          {filters.salary[1] || "∞"}
+                          <DollarOutlined /> SAR {filters.salary[0] || "0"} -
+                          SAR {filters.salary[1] || "∞"}
                         </Tag>
                       )}
 
-                      {(filters.ageRange[0].trim() ||
-                        filters.ageRange[1].trim()) && (
+                      {((filters.ageRange[0] &&
+                        filters.ageRange[0].toString().trim()) ||
+                        (filters.ageRange[1] &&
+                          filters.ageRange[1].toString().trim())) && (
                         <Tag
                           color="cyan"
                           closable
                           onClose={() => handleClearSpecificFilter("ageRange")}
                         >
-                          Age: {filters.ageRange[0] || "0"}-
+                          Age: {filters.ageRange[0] || "0"} -{" "}
                           {filters.ageRange[1] || "∞"}
                         </Tag>
                       )}
+
                       {filters.industries.length > 0 && (
                         <Tag
                           color="geekblue"
@@ -1707,19 +1712,21 @@ const SourcedCandidates = ({ jobId }) => {
             }}
           >
             <span> Candidate Filters</span>
-            {hasActiveFilters && (
-              <Button
-                type="link"
-                size="small"
-                danger
-                onClick={() => {
-                  setTempFilters(initialFilters);
-                  setSkillInput("");
-                }}
-              >
-                Reset All Filters
-              </Button>
-            )}
+            {hasActiveFilters ||
+              (workOrderDetails && (
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  onClick={() => {
+                    setTempFilters(initialFilters);
+                    setSkillInput("");
+                  }}
+                  style={{ marginRight: 10 }}
+                >
+                  Reset All Filters
+                </Button>
+              ))}
           </div>
         }
         open={isFilterModalVisible}
@@ -1730,6 +1737,38 @@ const SourcedCandidates = ({ jobId }) => {
         cancelText="Cancel"
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
       >
+        <Button
+          type="primary"
+          style={{ marginBottom: 16, backgroundColor: "#da2c46" }}
+          loading={isWorkOrderLoadingOne}
+          onClick={() => {
+            if (workOrderDetails) {
+              setTempFilters((prev) => ({
+                ...prev,
+                experience: [
+                  workOrderDetails.experienceMin || "",
+                  workOrderDetails.experienceMax || "",
+                ],
+                salary: [
+                  workOrderDetails.salaryMin || "",
+                  workOrderDetails.salaryMax || "",
+                ],
+                qualifications: workOrderDetails.Education
+                  ? [workOrderDetails.Education]
+                  : [],
+                skills: workOrderDetails.requiredSkills || [],
+                languages: workOrderDetails.languagesRequired || [],
+                industries: workOrderDetails.companyIndustry
+                  ? [workOrderDetails.companyIndustry]
+                  : [],
+                nationality: workOrderDetails.nationality || "",
+              }));
+            }
+          }}
+        >
+          Get Work Order Details
+        </Button>
+
         <Form layout="vertical">
           <Form.Item label="Skills">
             <Space.Compact style={{ width: "100%" }}>
