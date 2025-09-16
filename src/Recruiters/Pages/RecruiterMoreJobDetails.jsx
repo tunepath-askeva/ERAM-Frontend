@@ -40,6 +40,7 @@ import {
 } from "@ant-design/icons";
 import { Pie, Column } from "@ant-design/plots";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
@@ -264,7 +265,6 @@ const RecruiterMoreJobDetails = () => {
       acc.pipeline = (acc.pipeline || 0) + row.pipeline;
       acc.interview = (acc.interview || 0) + row.interview;
       acc.completed = (acc.completed || 0) + row.completed;
-      acc.approvals = (acc.approvals || 0) + row.approvals;
       return acc;
     }, {});
   }, [workOrderData]);
@@ -325,6 +325,54 @@ const RecruiterMoreJobDetails = () => {
     if (filters.status.length > 0) count++;
     if (filters.searchTerm) count++;
     return count;
+  };
+
+  const handleExportExcel = () => {
+    if (!workOrderData || workOrderData.length === 0) return;
+
+    // Prepare data for Excel
+    const exportData = workOrderData.map((row) => ({
+      "Work Order": row.rawData?.workOrderTitle || "Untitled",
+      "Job Code": row.rawData?.jobCode || "N/A",
+      "Requisition No": row.rawData?.requisitionNo || "N/A",
+      "Reference No": row.rawData?.referenceNo || "N/A",
+      "Total Candidates": row.total,
+      Sourced: row.sourced,
+      Selected: row.selected,
+      Applied: row.applied,
+      Declined: row.declined,
+      Pending: row.pending,
+      Screening: row.screening,
+      Pipeline: row.pipeline,
+      Interview: row.interview,
+      Completed: row.completed,
+    }));
+
+    // Add totals row
+    exportData.push({
+      "Work Order": "TOTAL",
+      "Job Code": "",
+      "Requisition No": "",
+      "Reference No": "",
+      "Total Candidates": totals.total || 0,
+      Sourced: totals.sourced || 0,
+      Selected: totals.selected || 0,
+      Applied: totals.applied || 0,
+      Declined: totals.declined || 0,
+      Pending: totals.pending || 0,
+      Screening: totals.screening || 0,
+      Pipeline: totals.pipeline || 0,
+      Interview: totals.interview || 0,
+      Completed: totals.completed || 0,
+    });
+
+    // Convert to worksheet
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "WorkOrders");
+
+    // Trigger download
+    XLSX.writeFile(workbook, "WorkOrder status.xlsx");
   };
 
   // Chart data preparation
@@ -420,15 +468,37 @@ const RecruiterMoreJobDetails = () => {
   const workOrderColumns = [
     {
       title: "WorkOrder",
-      dataIndex: "workOrder",
+      dataIndex: "workOrder", // this is the flattened title
       key: "workOrder",
       fixed: "left",
-      width: 150,
-      render: (text) => (
-        <Text strong style={{ color: colors.primary }}>
-          {text}
-        </Text>
-      ),
+      width: 220,
+      render: (text, record) => {
+        const wo = record.rawData || {};
+        return (
+          <div>
+            <Text strong style={{ color: colors.primary }}>
+              {wo.workOrderTitle || "Untitled"}
+            </Text>
+            <div style={{ fontSize: "12px", color: "#666" }}>
+              {wo.jobCode && (
+                <div>
+                  Job Code: <Text code>{wo.jobCode}</Text>
+                </div>
+              )}
+              {wo.requisitionNo && (
+                <div>
+                  Req No: <Text code>{wo.requisitionNo}</Text>
+                </div>
+              )}
+              {wo.referenceNo && (
+                <div>
+                  Ref No: <Text code>{wo.referenceNo}</Text>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: "Total Candidates",
@@ -546,18 +616,6 @@ const RecruiterMoreJobDetails = () => {
       align: "center",
       render: (count) => (
         <Tag color="green" style={{ minWidth: "40px", textAlign: "center" }}>
-          {count}
-        </Tag>
-      ),
-    },
-    {
-      title: "Pending Approvals",
-      dataIndex: "approvals",
-      key: "approvals",
-      width: 140,
-      align: "center",
-      render: (count) => (
-        <Tag color="volcano" style={{ minWidth: "40px", textAlign: "center" }}>
           {count}
         </Tag>
       ),
@@ -1022,6 +1080,19 @@ const RecruiterMoreJobDetails = () => {
                 <Text strong>Detailed Work Order Status Breakdown</Text>
               </Space>
             }
+            extra={
+              <Button
+                icon={<FileExcelOutlined />}
+                onClick={handleExportExcel}
+                style={{
+                  backgroundColor: "#52c41a",
+                  color: "#fff",
+                  borderRadius: "6px",
+                }}
+              >
+                Export to Excel
+              </Button>
+            }
             style={{ borderRadius: "12px" }}
           >
             <Table
@@ -1121,14 +1192,6 @@ const RecruiterMoreJobDetails = () => {
                       style={{ minWidth: "40px", textAlign: "center" }}
                     >
                       <strong>{totals.completed || 0}</strong>
-                    </Tag>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={11} align="center">
-                    <Tag
-                      color="volcano"
-                      style={{ minWidth: "40px", textAlign: "center" }}
-                    >
-                      <strong>{totals.approvals || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
