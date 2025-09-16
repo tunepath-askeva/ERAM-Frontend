@@ -107,7 +107,7 @@ const AppRoutes = () => {
       <Route path="/contacts" element={<Contacts />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/branches" element={<Branches />} />
+      <Route path="/bre" element={<Branches />} />
       <Route path="/home" element={<BranchHome />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/404" element={<NotFound />} />
