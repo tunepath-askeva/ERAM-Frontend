@@ -683,14 +683,7 @@ const RecruiterMoreJobDetails = () => {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "50vh",
-        }}
-      >
+      <div>
         <SkeletonLoader />
       </div>
     );

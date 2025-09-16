@@ -79,6 +79,7 @@ import {
 import {
   useGetCandidateQuery,
   useProfileCompletionMutation,
+  useChangePasswordMutation,
 } from "../Slices/Users/UserApis";
 import { useDispatch } from "react-redux";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
@@ -263,6 +264,7 @@ const CandidateSettings = () => {
 
   const { data: getCandidate } = useGetCandidateQuery();
   const [profileComplete] = useProfileCompletionMutation();
+  const [changePassword] = useChangePasswordMutation();
 
   const [profileForm] = Form.useForm();
   const [personalForm] = Form.useForm();
@@ -509,22 +511,20 @@ const CandidateSettings = () => {
   const handlePasswordChange = async (values) => {
     setLoading(true);
     try {
-      const payload = {
+      await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-      };
+      }).unwrap();
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      enqueueSnackbar("Password changed successfully!", {
-        variant: "success",
-      });
+      enqueueSnackbar("Password changed successfully!", { variant: "success" });
       passwordForm.resetFields();
     } catch (error) {
-      enqueueSnackbar("Failed to change password", {
+      enqueueSnackbar(error?.data?.message || "Failed to change password", {
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAvatarUpload = ({ fileList: newFileList }) => {
@@ -1691,105 +1691,6 @@ const CandidateSettings = () => {
               />
             )}
           </Card>
-
-          <Card
-            title={
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-                  <SafetyOutlined
-                    style={{ marginRight: 8, color: "#da2c46" }}
-                  />
-                  <span style={{ color: "#da2c46" }}>
-                    Certificates & Documents
-                  </span>
-                </span>
-                {isProfileEditable && (
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<PlusOutlined />}
-                    onClick={addCertificate}
-                    style={{ background: "#da2c46", border: "none" }}
-                  >
-                    Add Certificate/Document
-                  </Button>
-                )}
-              </div>
-            }
-            style={{ marginBottom: 24, borderRadius: "12px" }}
-          >
-            {userData.certificates.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 16 }}>
-                <Text type="secondary">
-                  No certificates or documents added yet
-                </Text>
-              </div>
-            ) : (
-              <List
-                dataSource={userData.certificates}
-                renderItem={(item) => (
-                  <List.Item
-                    actions={
-                      isProfileEditable
-                        ? [
-                            <Button
-                              type="text"
-                              icon={<EditOutlined />}
-                              onClick={() => handleEditCertificate(item)}
-                            />,
-                            <Button
-                              type="text"
-                              danger
-                              icon={<DeleteOutlined />}
-                              onClick={() => removeCertificate(item.id)}
-                            />,
-                          ]
-                        : null
-                    }
-                  >
-                    <List.Item.Meta
-                      title={
-                        <Text strong>
-                          {item.fileName || item.documentName || item.title}
-                        </Text>
-                      }
-                      description={
-                        <div>
-                          {item.fileUrl && (
-                            <div style={{ marginTop: 4 }}>
-                              <Button
-                                type="link"
-                                size="small"
-                                icon={<EyeOutlined />}
-                                onClick={() => {
-                                  const ext = item.fileUrl
-                                    .split(".")
-                                    .pop()
-                                    .toLowerCase();
-                                  if (
-                                    ["pdf", "jpg", "jpeg", "png"].includes(ext)
-                                  ) {
-                                    window.open(item.fileUrl, "_blank");
-                                  } else {
-                                    window.open(
-                                      `https://docs.google.com/viewer?url=${item.fileUrl}&embedded=true`,
-                                      "_blank"
-                                    );
-                                  }
-                                }}
-                              >
-                                View Certificate
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            )}
-          </Card>
         </TabPane>
 
         <TabPane
@@ -1903,8 +1804,6 @@ const CandidateSettings = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-
-                
 
                 <Col xs={24} sm={8}>
                   <Form.Item
@@ -2055,6 +1954,121 @@ const CandidateSettings = () => {
                 </Col>
               </Row>
             </Form>
+          </Card>
+        </TabPane>
+
+        <TabPane
+          tab={
+            <span>
+              <IdcardOutlined />
+              Documents
+            </span>
+          }
+          key="documents"
+        >
+          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+            <Card
+              title={
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <span>
+                    <SafetyOutlined
+                      style={{ marginRight: 8, color: "#da2c46" }}
+                    />
+                    <span style={{ color: "#da2c46" }}>
+                      Certificates & Documents
+                    </span>
+                  </span>
+                  {isProfileEditable && (
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={addCertificate}
+                      style={{ background: "#da2c46", border: "none" }}
+                    >
+                      Add Certificate/Document
+                    </Button>
+                  )}
+                </div>
+              }
+              style={{ marginBottom: 24, borderRadius: "12px" }}
+            >
+              {userData.certificates.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 16 }}>
+                  <Text type="secondary">
+                    No certificates or documents added yet
+                  </Text>
+                </div>
+              ) : (
+                <List
+                  dataSource={userData.certificates}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={
+                        isProfileEditable
+                          ? [
+                              <Button
+                                type="text"
+                                icon={<EditOutlined />}
+                                onClick={() => handleEditCertificate(item)}
+                              />,
+                              <Button
+                                type="text"
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => removeCertificate(item.id)}
+                              />,
+                            ]
+                          : null
+                      }
+                    >
+                      <List.Item.Meta
+                        title={
+                          <Text strong>
+                            {item.fileName || item.documentName || item.title}
+                          </Text>
+                        }
+                        description={
+                          <div>
+                            {item.fileUrl && (
+                              <div style={{ marginTop: 4 }}>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  icon={<EyeOutlined />}
+                                  onClick={() => {
+                                    const ext = item.fileUrl
+                                      .split(".")
+                                      .pop()
+                                      .toLowerCase();
+                                    if (
+                                      ["pdf", "jpg", "jpeg", "png"].includes(
+                                        ext
+                                      )
+                                    ) {
+                                      window.open(item.fileUrl, "_blank");
+                                    } else {
+                                      window.open(
+                                        `https://docs.google.com/viewer?url=${item.fileUrl}&embedded=true`,
+                                        "_blank"
+                                      );
+                                    }
+                                  }}
+                                >
+                                  View Certificate
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
+            </Card>
           </Card>
         </TabPane>
 

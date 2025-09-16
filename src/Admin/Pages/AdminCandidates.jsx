@@ -453,6 +453,9 @@ const AdminCandidates = () => {
               row["Company Name"]?.trim() || row["Company"]?.trim() || "",
             specialization: row["Specialization"]?.trim() || "",
             qualifications: row["Qualifications"]?.trim() || "",
+            agency: row["Agency"]?.toString()?.trim() || "",
+            workorderhint: row["Work Order Hint"]?.toString()?.trim() || "",
+            client: row["Client"]?.toString()?.trim() || "",
           });
         }
         if (!(fullName && email && password)) {
@@ -1072,7 +1075,7 @@ const AdminCandidates = () => {
               marginTop: 16,
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
               border: "none",
-              color: "white"
+              color: "white",
             }}
           >
             {isImporting ? "Importing..." : "Import Candidates"}

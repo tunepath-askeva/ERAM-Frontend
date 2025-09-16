@@ -114,7 +114,7 @@ const AdminRecruiter = () => {
   useEffect(() => {
     if (isError) {
       message.error(
-        `Failed to load recruiters: ${
+        `Failed to load members: ${
           error?.data?.message || error?.message || "Unknown error"
         }`
       );
@@ -137,7 +137,7 @@ const AdminRecruiter = () => {
   useEffect(() => {
     if (isRecruiterDetailsError && viewModalVisible) {
       message.error(
-        `Failed to load recruiter details: ${
+        `Failed to load member details: ${
           recruiterDetailsError?.data?.message ||
           recruiterDetailsError?.message ||
           "Unknown error"
@@ -170,7 +170,7 @@ const AdminRecruiter = () => {
 
       const action = newStatus === "active" ? "enabled" : "disabled";
       enqueueSnackbar(
-        `Recruiter "${getRecruiterDisplayName(
+        `Member "${getRecruiterDisplayName(
           recruiterToToggle
         )}" ${action} successfully`,
         {
@@ -186,7 +186,7 @@ const AdminRecruiter = () => {
         error?.data?.message ||
           `Failed to ${
             recruiterToToggle.accountStatus === "active" ? "disable" : "enable"
-          } recruiter`,
+          } member`,
         {
           variant: "error",
         }
@@ -218,7 +218,7 @@ const AdminRecruiter = () => {
       await deleteRecruiter(recruiterToDelete._id).unwrap();
 
       enqueueSnackbar(
-        `Recruiter "${getRecruiterDisplayName(
+        `Member "${getRecruiterDisplayName(
           recruiterToDelete
         )}" deleted successfully`,
         {
@@ -255,7 +255,7 @@ const AdminRecruiter = () => {
   const handleRecruiterSuccess = (newRecruiter) => {
     refetch();
     const action = editingRecruiter ? "updated" : "created";
-    message.success(`Recruiter ${action} successfully!`);
+    message.success(`Member ${action} successfully!`);
   };
 
   const handleViewRecruiter = (recruiterId) => {
@@ -270,7 +270,7 @@ const AdminRecruiter = () => {
 
   // Helper function to get recruiter display name
   const getRecruiterDisplayName = (recruiter) => {
-    return recruiter?.fullName || recruiter?.companyName || "Unknown Recruiter";
+    return recruiter?.fullName || recruiter?.companyName || "Unknown Member";
   };
 
   const getRecruiterLocation = (recruiter) => {
@@ -345,7 +345,7 @@ const AdminRecruiter = () => {
               }}
             >
               <Input.Search
-                placeholder="Search Recruiters"
+                placeholder="Search Members"
                 allowClear
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -464,7 +464,7 @@ const AdminRecruiter = () => {
                             onClick={() => handleViewRecruiter(recruiter._id)}
                           />
                         </Tooltip>
-                        <Tooltip title="Edit Recruiter">
+                        <Tooltip title="Edit Member">
                           <Button
                             type="text"
                             size="small"
@@ -475,8 +475,8 @@ const AdminRecruiter = () => {
                         <Tooltip
                           title={
                             recruiter.accountStatus === "active"
-                              ? "Disable Recruiter"
-                              : "Enable Recruiter"
+                              ? "Disable Member"
+                              : "Enable Member"
                           }
                         >
                           <Button
@@ -498,7 +498,7 @@ const AdminRecruiter = () => {
                             }}
                           />
                         </Tooltip>
-                        <Tooltip title="Delete Recruiter">
+                        <Tooltip title="Delete Member">
                           <Button
                             type="text"
                             size="small"
@@ -675,7 +675,7 @@ const AdminRecruiter = () => {
               style={{ marginRight: 8, color: "#da2c46", fontSize: 18 }}
             />
             <span style={{ fontSize: "16px", fontWeight: 600 }}>
-              Recruiter Details
+              Member Details
             </span>
           </div>
         }
@@ -703,13 +703,13 @@ const AdminRecruiter = () => {
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <Spin size="large" />
               <div style={{ marginTop: 16 }}>
-                <Text>Loading recruiter details...</Text>
+                <Text>Loading member details...</Text>
               </div>
             </div>
           ) : isRecruiterDetailsError ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <Text type="danger" style={{ fontSize: "16px" }}>
-                Failed to load recruiter details
+                Failed to load member details
               </Text>
               <div style={{ marginTop: 16 }}>
                 <Button type="link" onClick={() => window.location.reload()}>
@@ -827,7 +827,7 @@ const AdminRecruiter = () => {
                       <CalendarOutlined
                         style={{ marginRight: 8, color: "#da2c46" }}
                       />
-                      Recruiter Type
+                      Member Type
                     </span>
                   }
                 >
@@ -900,7 +900,7 @@ const AdminRecruiter = () => {
               {recruiterToToggle?.accountStatus === "active"
                 ? "Disable"
                 : "Enable"}{" "}
-              Recruiter
+              Member
             </span>
           </div>
         }
@@ -967,7 +967,7 @@ const AdminRecruiter = () => {
             }}
           >
             <DeleteOutlined style={{ marginRight: 8, fontSize: 18 }} />
-            <span style={{ fontSize: "16px" }}>Delete Recruiter</span>
+            <span style={{ fontSize: "16px" }}>Delete Member</span>
           </div>
         }
         open={deleteModalVisible}

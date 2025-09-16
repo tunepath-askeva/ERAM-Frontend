@@ -21,25 +21,21 @@ const LEADERSHIP_TEAM = [
     name: "John Smith",
     position: "Chairman & CEO",
     bio: "With over 25 years of experience in human capital management, John founded ERAM Workforce with a vision to revolutionize global recruitment.",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=334&q=80"
   },
   {
     name: "Sarah Johnson",
     position: "Chief Operating Officer",
     bio: "Sarah oversees all operational aspects of ERAM Workforce, ensuring seamless service delivery across all our global offices.",
-    image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=334&q=80"
   },
   {
     name: "Michael Chen",
     position: "Director of Global Recruitment",
     bio: "Michael leads our international recruitment teams, specializing in cross-border talent acquisition strategies.",
-    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=crop&w=334&q=80"
   },
   {
     name: "Aisha Al-Mansoori",
     position: "Middle East Regional Director",
     bio: "Aisha manages our operations across the GCC, bringing deep expertise in the regional labor markets.",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=334&q=80"
   }
 ];
 

@@ -268,9 +268,9 @@ const CandidateEditPage = () => {
         },
         accountStatus: candidate.accountStatus || "active",
         candidateType: candidate.candidateType || "External",
-        agency: candidate.agency || "N/A",
-        workorderhint: candidate.workorderhint || "N/A",
-        clientCode: candidate.clientCode || "N/A",
+        agency: candidate.agency ,
+        workorderhint: candidate.workorderhint,
+        clientCode: candidate.clientCode,
       });
 
       if (candidate.industry) {
@@ -584,13 +584,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="First Name"
-                    name="firstName"
-                    rules={[
-                      { required: true, message: "Please enter first name" },
-                    ]}
-                  >
+                  <Form.Item label="First Name" name="firstName">
                     <Input placeholder="Enter first name" />
                   </Form.Item>
                 </Col>
@@ -602,13 +596,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Last Name"
-                    name="lastName"
-                    rules={[
-                      { required: true, message: "Please enter last name" },
-                    ]}
-                  >
+                  <Form.Item label="Last Name" name="lastName">
                     <Input placeholder="Enter last name" />
                   </Form.Item>
                 </Col>
@@ -618,7 +606,6 @@ const CandidateEditPage = () => {
                     label="Email"
                     name="email"
                     rules={[
-                      { required: true, message: "Please enter email" },
                       { type: "email", message: "Please enter a valid email" },
                     ]}
                   >
@@ -639,11 +626,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Professional Title"
-                    name="title"
-                    rules={[{ required: true, message: "Please enter title" }]}
-                  >
+                  <Form.Item label="Professional Title" name="title">
                     <Input placeholder="e.g. Full Stack Developer" />
                   </Form.Item>
                 </Col>
@@ -652,12 +635,6 @@ const CandidateEditPage = () => {
                   <Form.Item
                     label="Total Experience (Years)"
                     name="totalExperienceYears"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter total experience",
-                      },
-                    ]}
                   >
                     <Select placeholder="Select experience">
                       <Option value="0-1">0-1 Years</Option>
@@ -684,13 +661,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Current Location"
-                    name="location"
-                    rules={[
-                      { required: true, message: "Please enter location" },
-                    ]}
-                  >
+                  <Form.Item label="Current Location" name="location">
                     <Input
                       prefix={<EnvironmentOutlined />}
                       placeholder="Enter location"
@@ -757,6 +728,40 @@ const CandidateEditPage = () => {
                   </Form.Item>
                 </Col>
 
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Password" name="password">
+                    <Input.Password
+                      style={{ width: "100%" }}
+                      placeholder="Enter the password"
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    dependencies={["password"]}
+                    rules={[
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue("password") === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(
+                            new Error("Passwords do not match!")
+                          );
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password
+                      style={{ width: "100%" }}
+                      placeholder="Re-enter the password"
+                    />
+                  </Form.Item>
+                </Col>
+
                 <Col span={24}>
                   <Divider orientation="left">Social Media Links</Divider>
                 </Col>
@@ -804,16 +809,7 @@ const CandidateEditPage = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="Candidate Type"
-                    name="candidateType"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select or enter candidate type",
-                      },
-                    ]}
-                  >
+                  <Form.Item label="Candidate Type" name="candidateType">
                     <Select
                       showSearch
                       allowClear
@@ -1100,28 +1096,13 @@ const CandidateEditPage = () => {
             <Form form={personalForm} layout="vertical">
               <Row gutter={24}>
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Nationality"
-                    name="nationality"
-                    rules={[
-                      { required: true, message: "Please enter nationality" },
-                    ]}
-                  >
+                  <Form.Item label="Nationality" name="nationality">
                     <Input placeholder="Enter nationality" />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Country of Birth"
-                    name="countryOfBirth"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter country of birth",
-                      },
-                    ]}
-                  >
+                  <Form.Item label="Country of Birth" name="countryOfBirth">
                     <Input placeholder="Enter country of birth" />
                   </Form.Item>
                 </Col>
@@ -1175,11 +1156,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Age"
-                    name="age"
-                    rules={[{ required: true, message: "Please enter age" }]}
-                  >
+                  <Form.Item label="Age" name="age">
                     <InputNumber
                       style={{ width: "100%" }}
                       min={18}
@@ -1190,16 +1167,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col span={24}>
-                  <Form.Item
-                    label="Industry"
-                    name="industry"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add at least one industry",
-                      },
-                    ]}
-                  >
+                  <Form.Item label="Industry" name="industry">
                     <Select
                       mode="tags"
                       style={{ width: "100%" }}
@@ -1213,16 +1181,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col span={24}>
-                  <Form.Item
-                    label="Visa Status"
-                    name="visaStatus"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add at least one visa status",
-                      },
-                    ]}
-                  >
+                  <Form.Item label="Visa Status" name="visaStatus">
                     <Select
                       mode="tags"
                       style={{ width: "100%" }}
@@ -1299,33 +1258,19 @@ const CandidateEditPage = () => {
             <Form form={addressForm} layout="vertical">
               <Row gutter={24}>
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="Country"
-                    name="country"
-                    rules={[
-                      { required: true, message: "Please enter country" },
-                    ]}
-                  >
+                  <Form.Item label="Country" name="country">
                     <Input placeholder="Enter country" />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="State/Province"
-                    name="state"
-                    rules={[{ required: true, message: "Please enter state" }]}
-                  >
+                  <Form.Item label="State/Province" name="state">
                     <Input placeholder="Enter state/province" />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item
-                    label="City"
-                    name="city"
-                    rules={[{ required: true, message: "Please enter city" }]}
-                  >
+                  <Form.Item label="City" name="city">
                     <Input placeholder="Enter city" />
                   </Form.Item>
                 </Col>
@@ -1366,12 +1311,6 @@ const CandidateEditPage = () => {
                   <Form.Item
                     label="Emergency Contact Person Name"
                     name="contactPersonName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter contact person name",
-                      },
-                    ]}
                   >
                     <Input placeholder="Enter name" />
                   </Form.Item>
@@ -1423,11 +1362,7 @@ const CandidateEditPage = () => {
         cancelText="Cancel"
       >
         <Form form={educationForm} layout="vertical">
-          <Form.Item
-            name="degree"
-            label="Degree"
-            rules={[{ required: true, message: "Please select degree" }]}
-          >
+          <Form.Item name="degree" label="Degree">
             <Select placeholder="Select degree">
               {degreeOptions.map((degree) => (
                 <Option key={degree} value={degree}>
@@ -1437,27 +1372,15 @@ const CandidateEditPage = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="field"
-            label="Field of Study"
-            rules={[{ required: true, message: "Please enter field of study" }]}
-          >
+          <Form.Item name="field" label="Field of Study">
             <Input placeholder="e.g. Computer Science" />
           </Form.Item>
 
-          <Form.Item
-            name="institution"
-            label="Institution"
-            rules={[{ required: true, message: "Please enter institution" }]}
-          >
+          <Form.Item name="institution" label="Institution">
             <Input placeholder="e.g. Harvard University" />
           </Form.Item>
 
-          <Form.Item
-            name="year"
-            label="Year of Completion"
-            rules={[{ required: true, message: "Please enter year" }]}
-          >
+          <Form.Item name="year" label="Year of Completion">
             <Input placeholder="e.g. 2015" />
           </Form.Item>
         </Form>
@@ -1474,20 +1397,12 @@ const CandidateEditPage = () => {
         <Form form={workForm} layout="vertical">
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="jobTitle"
-                label="Job Title"
-                rules={[{ required: true, message: "Please enter job title" }]}
-              >
+              <Form.Item name="jobTitle" label="Job Title">
                 <Input placeholder="e.g. Software Engineer" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="company"
-                label="Company"
-                rules={[{ required: true, message: "Please enter company" }]}
-              >
+              <Form.Item name="company" label="Company">
                 <Input placeholder="e.g. Google" />
               </Form.Item>
             </Col>
@@ -1495,13 +1410,7 @@ const CandidateEditPage = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="startDate"
-                label="Start Date"
-                rules={[
-                  { required: true, message: "Please select start date" },
-                ]}
-              >
+              <Form.Item name="startDate" label="Start Date">
                 <DatePicker style={{ width: "100%" }} />
               </Form.Item>
             </Col>

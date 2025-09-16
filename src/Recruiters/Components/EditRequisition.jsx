@@ -238,21 +238,21 @@ const EditRequisition = () => {
             {/* Recruiter Assignment Section */}
             <Card
               type="inner"
-              title="Recruiter Assignment"
+              title="Recruitment Team Assignment"
               style={{ marginBottom: "16px" }}
             >
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    label="Assigned Recruiter"
+                    label="Assigned Members"
                     name="assignedRecruiters"
                     rules={[
-                      { required: true, message: "Please select a recruiter" },
+                      { required: true, message: "Please select a member" },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select recruiter for this requisition"
+                      placeholder="Select member for this requisition"
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -264,18 +264,18 @@ const EditRequisition = () => {
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="Approval Recruiter"
+                    label="Approval Members"
                     name="approvalRecruiter"
                     rules={[
                       {
                         required: true,
-                        message: "Please select an approval recruiter",
+                        message: "Please select an approval member",
                       },
                     ]}
                   >
                     <Select
                       mode="multiple"
-                      placeholder="Select recruiter for approval"
+                      placeholder="Select member for approval"
                       disabled
                     >
                       {recruiters.map((recruiter) => (
@@ -288,18 +288,18 @@ const EditRequisition = () => {
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="Notify Recruiter"
+                    label="Notify Members"
                     name="notifyRecruiter"
                     rules={[
                       {
                         required: true,
-                        message: "Please select an approval recruiter",
+                        message: "Please select an approval member",
                       },
                     ]}
                   >      
                     <Select
                       mode="multiple"
-                      placeholder="Select recruiter for approval"
+                      placeholder="Select member for approval"
                       disabled
                     >
                       {recruiters.map((recruiter) => (

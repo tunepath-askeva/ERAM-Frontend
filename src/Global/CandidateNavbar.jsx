@@ -623,7 +623,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                   Mark all
                 </Button>
               )}
-              <Popconfirm
+              {/* <Popconfirm
                 title="Clear all notifications?"
                 onConfirm={clearAllNotification}
                 okText="Yes"
@@ -646,7 +646,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
                 >
                   Clear all
                 </Button>
-              </Popconfirm>
+              </Popconfirm> */}
             </Space>
           </div>
           <List

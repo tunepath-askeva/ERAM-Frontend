@@ -367,13 +367,13 @@ const Notifications = () => {
         disabled: item.isRead,
         onClick: () => handleMarkAsRead(item._id),
       },
-      {
-        key: "delete",
-        label: "Delete",
-        icon: <DeleteOutlined />,
-        danger: true,
-        onClick: () => handleDeleteNotification(item._id),
-      },
+      // {
+      //   key: "delete",
+      //   label: "Delete",
+      //   icon: <DeleteOutlined />,
+      //   danger: true,
+      //   onClick: () => handleDeleteNotification(item._id),
+      // },
     ];
 
     return (
@@ -503,7 +503,7 @@ const Notifications = () => {
                 Mark all as read
               </Button>
             )}
-            {notifications.length > 0 && (
+            {/* {notifications.length > 0 && (
               <Popconfirm
                 title="Clear all notifications?"
                 description="This will permanently delete all your notifications."
@@ -516,7 +516,7 @@ const Notifications = () => {
                   Clear all
                 </Button>
               </Popconfirm>
-            )}
+            )} */}
           </Space>
         </div>
 

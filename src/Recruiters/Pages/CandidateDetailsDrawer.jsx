@@ -334,12 +334,10 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                           {candidate.workorderhint || "Not specified"}
                         </Text>
                       </Col>
-                       <Col xs={24} sm={12}>
+                      <Col xs={24} sm={12}>
                         <Text strong>Client:</Text>
                         <br />
-                        <Text>
-                          {candidate.clientCode || "Not specified"}
-                        </Text>
+                        <Text>{candidate.clientCode || "Not specified"}</Text>
                       </Col>
                     </Row>
 
@@ -522,6 +520,57 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                       </>
                     )}
                   </Card>
+                </TabPane>
+
+                <TabPane
+                  tab={
+                    <span>
+                      <FileTextOutlined />
+                      Documents
+                    </span>
+                  }
+                  key="certificates"
+                >
+                  {candidate.certificates &&
+                  candidate.certificates.length > 0 ? (
+                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+                      <List
+                        dataSource={candidate.certificates}
+                        renderItem={(cert) => (
+                          <List.Item>
+                            <List.Item.Meta
+                              title={
+                                <Text strong>
+                                  {cert.documentName || cert.fileName}
+                                </Text>
+                              }
+                              description={
+                                <div>
+                                  <Text type="secondary">
+                                    Uploaded on:{" "}
+                                    {dayjs(cert.uploadedAt).format(
+                                      "MMM DD, YYYY"
+                                    )}
+                                  </Text>
+                                  <br />
+                                  <Button
+                                    type="link"
+                                    href={cert.fileUrl}
+                                    target="_blank"
+                                    icon={<FilePdfOutlined />}
+                                  >
+                                    View Document
+                                  </Button>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </Card>
+                  ) : (
+                    <Empty description="No documents available" />
+                  )}
                 </TabPane>
 
                 <TabPane
@@ -723,56 +772,6 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                     </Card>
                   ) : (
                     <Empty description="No work experience available" />
-                  )}
-                </TabPane>
-                <TabPane
-                  tab={
-                    <span>
-                      <FileTextOutlined />
-                      Certificates
-                    </span>
-                  }
-                  key="certificates"
-                >
-                  {candidate.certificates &&
-                  candidate.certificates.length > 0 ? (
-                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
-                      <List
-                        dataSource={candidate.certificates}
-                        renderItem={(cert) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={
-                                <Text strong>
-                                  {cert.documentName || cert.fileName}
-                                </Text>
-                              }
-                              description={
-                                <div>
-                                  <Text type="secondary">
-                                    Uploaded on:{" "}
-                                    {dayjs(cert.uploadedAt).format(
-                                      "MMM DD, YYYY"
-                                    )}
-                                  </Text>
-                                  <br />
-                                  <Button
-                                    type="link"
-                                    href={cert.fileUrl}
-                                    target="_blank"
-                                    icon={<FilePdfOutlined />}
-                                  >
-                                    View Certificate
-                                  </Button>
-                                </div>
-                              }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    </Card>
-                  ) : (
-                    <Empty description="No certificates available" />
                   )}
                 </TabPane>
 

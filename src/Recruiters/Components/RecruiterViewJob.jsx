@@ -145,6 +145,39 @@ const RecruiterViewJob = () => {
               </Text>
             </div>
           </Col>
+
+          {workOrder.requisitionNo && (
+            <Col xs={12} sm={8}>
+              <div>
+                <Text strong style={{ fontSize: "13px", display: "block" }}>
+                  Requisition No
+                </Text>
+                <Text
+                  copyable
+                  style={{ fontSize: "12px", wordBreak: "break-all" }}
+                >
+                  {workOrder.requisitionNo}
+                </Text>
+              </div>
+            </Col>
+          )}
+
+          {workOrder.referenceNo && (
+            <Col xs={12} sm={8}>
+              <div>
+                <Text strong style={{ fontSize: "13px", display: "block" }}>
+                  Reference No
+                </Text>
+                <Text
+                  copyable
+                  style={{ fontSize: "12px", wordBreak: "break-all" }}
+                >
+                  {workOrder.referenceNo}
+                </Text>
+              </div>
+            </Col>
+          )}
+
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
@@ -224,7 +257,7 @@ const RecruiterViewJob = () => {
         {workOrder.assignedRecruiters?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text strong style={{ fontSize: "13px", display: "block" }}>
-              Assigned Recruiters
+              Assigned Members
             </Text>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
               {workOrder.assignedRecruiters.map((recruiter, index) => (
@@ -774,7 +807,7 @@ const RecruiterViewJob = () => {
                               strong
                               style={{ fontSize: "12px", display: "block" }}
                             >
-                              Assigned Recruiters
+                              Assigned Members
                             </Text>
                             <div
                               style={{
