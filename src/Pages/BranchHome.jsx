@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Card,
   Row,
@@ -24,6 +24,8 @@ import {
   UserOutlined,
   ArrowLeftOutlined,
   GlobalOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useGetBranchesQuery } from "../Slices/Users/UserApis.js";
 import HomeFooter from "../Global/Footer";
@@ -34,19 +36,67 @@ const { Content } = Layout;
 
 const BranchHome = () => {
   const [searchParams] = useSearchParams();
-  const branchId = searchParams.get("branchId");
   const navigate = useNavigate();
 
   const { data: branches, isLoading, error } = useGetBranchesQuery();
   const [currentBranch, setCurrentBranch] = useState(null);
 
+  // Function to find branch by current domain
+  const findBranchByDomain = (branchesData) => {
+    const currentHost = window.location.hostname;
+    console.log("Current hostname:", currentHost);
+    console.log("Available branches:", branchesData);
+
+    // Find branch that matches current domain
+    const matchedBranch = branchesData.find((branch) => {
+      if (!branch.url) return false;
+
+      // Clean the branch URL to get just the domain
+      let branchDomain = branch.url
+        .replace(/^https?:\/\//, "")
+        .replace(/\/$/, "");
+
+      console.log(`Comparing: ${currentHost} with ${branchDomain}`);
+
+      // Check if current host matches branch domain
+      return (
+        currentHost === branchDomain ||
+        currentHost.includes(branchDomain) ||
+        branchDomain.includes(currentHost)
+      );
+    });
+
+    return matchedBranch;
+  };
+
   useEffect(() => {
-    if (branches?.branch) {
-      const host = window.location.hostname; // e.g. branch1.company.com
-      const branch = branches.branch.find((b) => b.url.includes(host));
-      setCurrentBranch(branch);
+    if (branches?.branch && Array.isArray(branches.branch)) {
+      console.log("Branches loaded:", branches.branch);
+
+      // Try to find branch by current domain
+      const branchByDomain = findBranchByDomain(branches.branch);
+
+      if (branchByDomain) {
+        console.log("Branch found by domain:", branchByDomain);
+        setCurrentBranch(branchByDomain);
+      } else {
+        // If no domain match, check if there's a branchId in URL params
+        const branchId = searchParams.get("branchId");
+        if (branchId) {
+          const branchById = branches.branch.find((b) => b._id === branchId);
+          console.log("Branch found by ID:", branchById);
+          setCurrentBranch(branchById);
+        } else {
+          // No match found - this might be the main domain
+          console.log(
+            "No branch match found for domain:",
+            window.location.hostname
+          );
+          setCurrentBranch(null);
+        }
+      }
     }
-  }, [branches]);
+  }, [branches, searchParams]);
 
   const formatAddress = (location) => {
     if (!location) return "";
@@ -54,17 +104,19 @@ const BranchHome = () => {
     return `${street}, ${city}, ${state} ${postalCode}, ${country}`;
   };
 
-  const handleGoBack = () => {
-    navigate("/branches");
+  const handleGoToMainSite = () => {
+    // Navigate to your main domain where all branches are listed
+    window.location.href = "https://your-main-domain.com/branches"; // Replace with your actual main domain
   };
 
   const handleLogin = () => {
-    navigate(`/login?branchId=${branchId}`);
+    navigate(`/login?branchId=${currentBranch._id}`);
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <Layout>
+      <Layout style={{ minHeight: "100vh" }}>
         <Header />
         <Content
           style={{
@@ -74,26 +126,39 @@ const BranchHome = () => {
             minHeight: "60vh",
           }}
         >
-          <Spin size="large" />
+          <div style={{ textAlign: "center" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: "16px" }}>
+              <Text>Loading branch information...</Text>
+            </div>
+          </div>
         </Content>
         <HomeFooter />
       </Layout>
     );
   }
 
-  if (error || !currentBranch) {
+  // Error state
+  if (error) {
     return (
-      <Layout>
+      <Layout style={{ minHeight: "100vh" }}>
         <Header />
         <Content style={{ padding: "50px 20px", minHeight: "60vh" }}>
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <div
+            style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}
+          >
             <Alert
-              message="Branch Not Found"
-              description="The requested branch could not be found. Please check the URL or try again."
+              message="Error Loading Branch Data"
+              description="There was an error loading the branch information. Please try again."
               type="error"
+              showIcon
               action={
-                <Button size="small" danger onClick={handleGoBack}>
-                  Back to Branches
+                <Button
+                  size="small"
+                  danger
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
                 </Button>
               }
             />
@@ -104,43 +169,66 @@ const BranchHome = () => {
     );
   }
 
-  return (
-    <Layout>
-      <Header />
+  // No branch found state
+  if (!currentBranch) {
+    return (
+      <Layout style={{ minHeight: "100vh" }}>
+        <Header />
+        <Content style={{ padding: "50px 20px", minHeight: "60vh" }}>
+          <div
+            style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center" }}
+          >
+            <Alert
+              message="Branch Not Found"
+              description={`No branch is configured for this domain: ${window.location.hostname}`}
+              type="warning"
+              showIcon
+              action={
+                <Button size="small" onClick={handleGoToMainSite}>
+                  View All Branches
+                </Button>
+              }
+            />
 
-      {/* Breadcrumb */}
-      <div
-        style={{
-          backgroundColor: "#f8fafc",
-          padding: "16px 0",
-          borderBottom: "1px solid #e2e8f0",
-        }}
-      >
-        <div
-          style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}
-        >
-          <Breadcrumb>
-            <Breadcrumb.Item>
-              <HomeOutlined
-                onClick={handleGoBack}
-                style={{ cursor: "pointer" }}
-              />
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <a onClick={handleGoBack} style={{ cursor: "pointer" }}>
-                Branches
-              </a>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>{currentBranch.name}</Breadcrumb.Item>
-          </Breadcrumb>
-        </div>
-      </div>
+            <div
+              style={{
+                marginTop: "30px",
+                padding: "20px",
+                background: "#f9f9f9",
+                borderRadius: "8px",
+              }}
+            >
+              <Text type="secondary">
+                <strong>Debug Info:</strong>
+                <br />
+                Current Domain: {window.location.hostname}
+                <br />
+                Available Branches: {branches?.branch?.length || 0}
+                <br />
+                Branch URLs:{" "}
+                {branches?.branch
+                  ?.filter((b) => b.url)
+                  .map((b) => b.url)
+                  .join(", ") || "None"}
+              </Text>
+            </div>
+          </div>
+        </Content>
+        <HomeFooter />
+      </Layout>
+    );
+  }
+
+  // Success state - render branch page
+  return (
+    <Layout style={{ minHeight: "100vh" }}>
+      <Header />
 
       {/* Hero Section */}
       <section
         style={{
           background: `linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(16, 185, 129, 0.9) 100%)`,
-          padding: "60px 0",
+          padding: "80px 0",
           color: "white",
         }}
       >
@@ -216,6 +304,13 @@ const BranchHome = () => {
           <Space size="large">
             <Tag
               color={currentBranch.isActive ? "success" : "error"}
+              icon={
+                currentBranch.isActive ? (
+                  <CheckCircleOutlined />
+                ) : (
+                  <CloseCircleOutlined />
+                )
+              }
               style={{
                 padding: "8px 16px",
                 fontSize: "14px",
@@ -235,7 +330,7 @@ const BranchHome = () => {
                   borderRadius: "20px",
                 }}
               >
-                Online Services
+                Online Services Available
               </Tag>
             )}
           </Space>
@@ -409,9 +504,20 @@ const BranchHome = () => {
                     ))}
                   </div>
                 ) : (
-                  <Text type="secondary">
-                    No services information available.
-                  </Text>
+                  <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <BankOutlined
+                      style={{
+                        fontSize: "48px",
+                        color: "#d1d5db",
+                        marginBottom: "16px",
+                      }}
+                    />
+                    <div>
+                      <Text type="secondary" style={{ fontSize: "16px" }}>
+                        Services information will be available soon
+                      </Text>
+                    </div>
+                  </div>
                 )}
               </Card>
             </Col>
@@ -428,15 +534,15 @@ const BranchHome = () => {
             <Space size="large">
               <Button
                 size="large"
-                icon={<ArrowLeftOutlined />}
-                onClick={handleGoBack}
+                icon={<HomeOutlined />}
+                onClick={handleGoToMainSite}
                 style={{
                   borderRadius: "25px",
                   padding: "10px 30px",
                   height: "auto",
                 }}
               >
-                Back to Branches
+                View All Branches
               </Button>
 
               <Button
@@ -452,7 +558,7 @@ const BranchHome = () => {
                   border: "none",
                 }}
               >
-                Login to Branch Portal
+                Login to {currentBranch.name}
               </Button>
             </Space>
           </div>
