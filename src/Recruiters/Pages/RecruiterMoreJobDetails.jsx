@@ -332,7 +332,10 @@ const RecruiterMoreJobDetails = () => {
 
     // Prepare data for Excel
     const exportData = workOrderData.map((row) => ({
-      "Work Order": row.workOrder,
+      "Work Order": row.rawData?.workOrderTitle || "Untitled",
+      "Job Code": row.rawData?.jobCode || "N/A",
+      "Requisition No": row.rawData?.requisitionNo || "N/A",
+      "Reference No": row.rawData?.referenceNo || "N/A",
       "Total Candidates": row.total,
       Sourced: row.sourced,
       Selected: row.selected,
@@ -348,6 +351,9 @@ const RecruiterMoreJobDetails = () => {
     // Add totals row
     exportData.push({
       "Work Order": "TOTAL",
+      "Job Code": "",
+      "Requisition No": "",
+      "Reference No": "",
       "Total Candidates": totals.total || 0,
       Sourced: totals.sourced || 0,
       Selected: totals.selected || 0,
@@ -366,7 +372,7 @@ const RecruiterMoreJobDetails = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "WorkOrders");
 
     // Trigger download
-    XLSX.writeFile(workbook, "WorkOrderStatusBreakdown.xlsx");
+    XLSX.writeFile(workbook, "WorkOrder status.xlsx");
   };
 
   // Chart data preparation
@@ -462,15 +468,37 @@ const RecruiterMoreJobDetails = () => {
   const workOrderColumns = [
     {
       title: "WorkOrder",
-      dataIndex: "workOrder",
+      dataIndex: "workOrder", // this is the flattened title
       key: "workOrder",
       fixed: "left",
-      width: 150,
-      render: (text) => (
-        <Text strong style={{ color: colors.primary }}>
-          {text}
-        </Text>
-      ),
+      width: 220,
+      render: (text, record) => {
+        const wo = record.rawData || {};
+        return (
+          <div>
+            <Text strong style={{ color: colors.primary }}>
+              {wo.workOrderTitle || "Untitled"}
+            </Text>
+            <div style={{ fontSize: "12px", color: "#666" }}>
+              {wo.jobCode && (
+                <div>
+                  Job Code: <Text code>{wo.jobCode}</Text>
+                </div>
+              )}
+              {wo.requisitionNo && (
+                <div>
+                  Req No: <Text code>{wo.requisitionNo}</Text>
+                </div>
+              )}
+              {wo.referenceNo && (
+                <div>
+                  Ref No: <Text code>{wo.referenceNo}</Text>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: "Total Candidates",
@@ -592,7 +620,6 @@ const RecruiterMoreJobDetails = () => {
         </Tag>
       ),
     },
-    
   ];
 
   // Analytics table columns for work order summary
@@ -1167,7 +1194,6 @@ const RecruiterMoreJobDetails = () => {
                       <strong>{totals.completed || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
-                  
                 </Table.Summary.Row>
               )}
             />

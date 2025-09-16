@@ -51,6 +51,8 @@ import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
 import BulkImportModal from "../Components/BulkImportModal";
 import AdvancedFiltersModal from "../Components/AdvancedFiltersModal";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
@@ -343,6 +345,43 @@ function AllCandidates() {
     }
   };
 
+  const handleExportExcel = () => {
+    // pick the correct dataset
+    const dataToExport = isAdvancedFilterApplied
+      ? filteredCandidates
+      : candidatesResponse?.users || [];
+
+    if (!dataToExport.length) {
+      message.warning("No candidates to export");
+      return;
+    }
+
+    // transform data into rows
+    const exportData = dataToExport.map((c) => ({
+      Name: c.fullName,
+      Email: c.email,
+      Phone: c.phone || "N/A",
+      Location: c.location || "N/A",
+      Experience: c.totalExperienceYears
+        ? `${c.totalExperienceYears} years`
+        : "N/A",
+      Skills: c.skills?.join(", ") || "N/A",
+      Status: c.accountStatus,
+      Type: c.candidateType || "N/A",
+      UpdatedAt: new Date(c.updatedAt).toLocaleString(),
+    }));
+
+    // create worksheet + workbook
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Candidates");
+
+    // export
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "candidates.xlsx");
+  };
+
   const handleNormalPageChange = useCallback(
     (page, size) => {
       setCurrentPage(page);
@@ -610,7 +649,7 @@ function AllCandidates() {
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={12}>
-            <Space>
+            <Space >
               <Button
                 icon={<SettingOutlined />}
                 onClick={() => setAdvancedFiltersVisible(true)}
@@ -621,6 +660,12 @@ function AllCandidates() {
               </Button>
               <Button onClick={clearFilters} icon={<FilterOutlined />}>
                 Clear All Filters
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExportExcel}
+              >
+                Export to Excel
               </Button>
             </Space>
           </Col>
