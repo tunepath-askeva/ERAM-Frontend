@@ -40,9 +40,13 @@ import {
   MailOutlined,
   PhoneOutlined,
   CodeOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useGetPipelineJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetPipelineJobsQuery,
+  useLazyGetPipelineJobsExportQuery,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -91,6 +95,9 @@ const RecruiterStagedCandidates = () => {
     status: filterStatus,
     jobId: filterJob,
   });
+
+  const [triggerExport, { isFetching: isExporting }] =
+    useLazyGetPipelineJobsExportQuery();
 
   const processedData = useMemo(() => {
     if (!apiData?.pipelineCandidates)
@@ -197,6 +204,28 @@ const RecruiterStagedCandidates = () => {
     setIsMoveModalVisible(true);
   };
 
+  const handleExport = async () => {
+    try {
+      const blob = await triggerExport({
+        search: debouncedSearchText,
+        status: filterStatus,
+        jobId: filterJob,
+      }).unwrap();
+
+      // Download Excel
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pipeline_candidates.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      message.error("Failed to export candidates");
+    }
+  };
+
   const confirmMoveCandidate = () => {
     if (!movingCandidate || !targetStage) {
       message.warning("Please select a target stage");
@@ -295,62 +324,80 @@ const RecruiterStagedCandidates = () => {
           </Text>
         </div>
 
-        <Card
-          style={{
-            marginBottom: "16px",
-            borderRadius: "12px",
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-          }}
-        >
-          <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} sm={12} md={12} lg={12} xl={12}>
-              <Input
-                placeholder="Search by name, email, or job title"
-                size="large"
-                prefix={<SearchOutlined style={{ color: primaryColor }} />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: "100%" }}
-                loading={isFetching}
-                allowClear
-              />
-            </Col>
+<Card
+  style={{
+    marginBottom: "16px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+  }}
+>
+  <Row gutter={[16, 16]} align="middle" wrap>
+    {/* Search Input */}
+    <Col xs={24} md={10}>
+      <Input
+        placeholder="Search by name, email, or job title"
+        size="large"
+        prefix={<SearchOutlined style={{ color: primaryColor }} />}
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+        style={{ width: "100%" }}
+        loading={isFetching}
+        allowClear
+      />
+    </Col>
 
-            <Col xs={12} sm={6} md={6} lg={6} xl={6}>
-              <Select
-                placeholder="Filter by Job"
-                style={{ width: "100%" }}
-                value={filterJob}
-                onChange={setFilterJob}
-                size="large"
-                loading={isFetching}
-              >
-                <Option value="all">All Jobs</Option>
-                {jobs.map((job) => (
-                  <Option key={job._id} value={job._id}>
-                    {job.title}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
+    {/* Job Filter */}
+    <Col xs={12} md={4}>
+      <Select
+        placeholder="Filter by Job"
+        style={{ width: "100%" }}
+        value={filterJob}
+        onChange={setFilterJob}
+        size="large"
+        loading={isFetching}
+      >
+        <Option value="all">All Jobs</Option>
+        {jobs.map((job) => (
+          <Option key={job._id} value={job._id}>
+            {job.title}
+          </Option>
+        ))}
+      </Select>
+    </Col>
 
-            <Col xs={12} sm={6} md={6} lg={6} xl={6}>
-              <Button
-                type="primary"
-                size="large"
-                icon={<FilterOutlined />}
-                onClick={() => setMobileFiltersVisible(true)}
-                style={{
-                  width: "100%",
-                  background: primaryColor,
-                  border: "none",
-                }}
-              >
-                Filters
-              </Button>
-            </Col>
-          </Row>
-        </Card>
+    {/* Filters Button */}
+    <Col xs={12} md={4}>
+      <Button
+        type="primary"
+        size="large"
+        icon={<FilterOutlined />}
+        onClick={() => setMobileFiltersVisible(true)}
+        style={{
+          width: "100%",
+          background: primaryColor,
+          border: "none",
+        }}
+      >
+        Filters
+      </Button>
+    </Col>
+
+    {/* Export Button */}
+    <Col xs={12} md={6}>
+      <Button
+        type="primary"
+        size="large"
+        icon={<DownloadOutlined />}
+        loading={isExporting}
+        onClick={handleExport}
+        style={{ width: "100%", background: primaryColor, border: "none" }}
+      >
+        Export Excel
+      </Button>
+    </Col>
+  </Row>
+</Card>
+
 
         <Drawer
           title="Filter Candidates"
