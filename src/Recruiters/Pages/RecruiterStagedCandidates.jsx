@@ -346,42 +346,6 @@ const RecruiterStagedCandidates = () => {
       />
     </Col>
 
-    {/* Job Filter */}
-    <Col xs={12} md={4}>
-      <Select
-        placeholder="Filter by Job"
-        style={{ width: "100%" }}
-        value={filterJob}
-        onChange={setFilterJob}
-        size="large"
-        loading={isFetching}
-      >
-        <Option value="all">All Jobs</Option>
-        {jobs.map((job) => (
-          <Option key={job._id} value={job._id}>
-            {job.title}
-          </Option>
-        ))}
-      </Select>
-    </Col>
-
-    {/* Filters Button */}
-    <Col xs={12} md={4}>
-      <Button
-        type="primary"
-        size="large"
-        icon={<FilterOutlined />}
-        onClick={() => setMobileFiltersVisible(true)}
-        style={{
-          width: "100%",
-          background: primaryColor,
-          border: "none",
-        }}
-      >
-        Filters
-      </Button>
-    </Col>
-
     {/* Export Button */}
     <Col xs={12} md={6}>
       <Button
