@@ -106,11 +106,12 @@ const AppRoutes = () => {
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/contacts" element={<Contacts />} />
-      <Route path="/branch-register" element={<BranchRegister />} />
+
       <Route path="/login" element={<Login />} />
       <Route path="/branches" element={<Branches />} />
       <Route path="/home" element={<BranchHome />} />
       <Route path="/branch-login" element={<BranchLogin />} />
+      <Route path="/branch-register" element={<BranchRegister />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/404" element={<NotFound />} />
 

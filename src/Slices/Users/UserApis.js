@@ -7,7 +7,6 @@ const baseUrl =
     ? "http://localhost:5000/api/users"
     : `https://${window.location.hostname}/api/users`;
 
-
 // let baseUrl;
 
 // if (window.location.hostname === "localhost") {
@@ -289,6 +288,13 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    submitCVApplication: builder.mutation({
+      query: (formData) => ({
+        url: "/submit-cv-application",
+        method: "POST",
+        body: formData, // must be FormData
+      }),
+    }),
   }),
 });
 
@@ -328,4 +334,5 @@ export const {
   //branch apis
   useGetBranchByIdQuery,
   useGetBranchJobsQuery,
+  useSubmitCVApplicationMutation,
 } = userApi;
