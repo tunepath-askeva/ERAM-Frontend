@@ -324,44 +324,47 @@ const RecruiterStagedCandidates = () => {
           </Text>
         </div>
 
-<Card
-  style={{
-    marginBottom: "16px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-  }}
->
-  <Row gutter={[16, 16]} align="middle" wrap>
-    {/* Search Input */}
-    <Col xs={24} md={10}>
-      <Input
-        placeholder="Search by name, email, or job title"
-        size="large"
-        prefix={<SearchOutlined style={{ color: primaryColor }} />}
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        style={{ width: "100%" }}
-        loading={isFetching}
-        allowClear
-      />
-    </Col>
+        <Card
+          style={{
+            marginBottom: "16px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+          }}
+        >
+          <Row gutter={[16, 16]} align="middle" wrap>
+            {/* Search Input */}
+            <Col xs={24} md={10}>
+              <Input
+                placeholder="Search by name, email, or job title"
+                size="large"
+                prefix={<SearchOutlined style={{ color: primaryColor }} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: "100%" }}
+                loading={isFetching}
+                allowClear
+              />
+            </Col>
 
-    {/* Export Button */}
-    <Col xs={12} md={6}>
-      <Button
-        type="primary"
-        size="large"
-        icon={<DownloadOutlined />}
-        loading={isExporting}
-        onClick={handleExport}
-        style={{ width: "100%", background: primaryColor, border: "none" }}
-      >
-        Export Excel
-      </Button>
-    </Col>
-  </Row>
-</Card>
-
+            {/* Export Button */}
+            <Col xs={12} md={6}>
+              <Button
+                type="primary"
+                size="large"
+                icon={<DownloadOutlined />}
+                loading={isExporting}
+                onClick={handleExport}
+                style={{
+                  width: "100%",
+                  background: primaryColor,
+                  border: "none",
+                }}
+              >
+                Export Excel
+              </Button>
+            </Col>
+          </Row>
+        </Card>
 
         <Drawer
           title="Filter Candidates"
