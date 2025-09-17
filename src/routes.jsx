@@ -99,6 +99,7 @@ import BranchHome from "./Pages/BranchHome";
 import BranchLogin from "./Pages/BranchLogin";
 import BranchRegister from "./Pages/BranchRegister";
 import BranchNotFound from "./Pages/BranchNotFound";
+import { Navigate } from "react-router-dom";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
