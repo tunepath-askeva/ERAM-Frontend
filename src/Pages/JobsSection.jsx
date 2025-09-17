@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -29,6 +29,7 @@ import {
   CalendarOutlined,
   UserOutlined,
   LoginOutlined,
+  ShareAltOutlined,
 } from "@ant-design/icons";
 import { useGetBranchJobsQuery } from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +55,21 @@ const JobsSection = ({ currentBranch, branchId }) => {
 
   const jobs = jobsResponse?.jobs || [];
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get("jobId");
+    if (jobId) {
+      const el = document.getElementById(`job-${jobId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.boxShadow = "0 0 10px 2px #da2c46"; // temporary highlight
+        setTimeout(() => {
+          el.style.boxShadow = "";
+        }, 3000);
+      }
+    }
+  }, []);
+
   const filteredJobs = jobs.filter(
     (job) =>
       job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,7 +84,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setVisibleJobsCount(JOBS_PER_PAGE); 
+    setVisibleJobsCount(JOBS_PER_PAGE);
   };
 
   const handleShowMore = () => {
@@ -147,13 +163,13 @@ const JobsSection = ({ currentBranch, branchId }) => {
     <Card
       hoverable
       style={{
-        height: "460px", 
+        height: "460px",
         borderRadius: "12px",
         boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
         border: "1px solid #e2e8f0",
         transition: "all 0.3s ease",
         cursor: "pointer",
-        width: "100%"
+        width: "100%",
       }}
       bodyStyle={{
         padding: "16px",
@@ -174,7 +190,6 @@ const JobsSection = ({ currentBranch, branchId }) => {
               marginBottom: "8px",
             }}
           >
-           
             <div style={{ flex: 1, minWidth: 0 }}>
               <Title
                 level={5}
@@ -400,6 +415,26 @@ const JobsSection = ({ currentBranch, branchId }) => {
                 </Text>
               </Space>
             )}
+            <Tooltip title="Share this job">
+              <Button
+                type="text"
+                icon={<ShareAltOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+const jobUrl = `${window.location.origin}${window.location.pathname}?jobId=${job._id}`;
+                  if (navigator.share) {
+                    navigator.share({
+                      title: job.title,
+                      text: "Check out this job opportunity!",
+                      url: jobUrl,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(jobUrl);
+                    alert("Job link copied to clipboard!");
+                  }
+                }}
+              />
+            </Tooltip>
           </div>
 
           {/* Apply Button - Inside Card */}
@@ -554,7 +589,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
               Open Positions
             </Text>
           </div>
-         
+
           <Divider type="vertical" style={{ height: "40px" }} />
           <div>
             <Title
@@ -610,6 +645,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
                   xl={4}
                   xxl={4}
                   key={job._id}
+                  id={`job-${job._id}`}
                   style={{ display: "flex" }}
                 >
                   <div style={{ width: "100%" }}>
@@ -710,9 +746,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
             padding: "0 24px",
             height: "40px",
           }}
-          onClick={() =>
-            navigate(`/branch-login?branchId=${branchId}`)
-          }
+          onClick={() => navigate(`/branch-login?branchId=${branchId}`)}
         >
           Submit Your Resume
         </Button>
