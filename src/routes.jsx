@@ -97,8 +97,7 @@ import NotFound from "./Pages/NotFound";
 import CandidateEditPage from "./Recruiters/Components/CandidateEditPage";
 import RecruiterMoreJobDetails from "./Recruiters/Pages/RecruiterMoreJobDetails";
 import BranchHome from "./Pages/BranchHome";
-import HomePage from "./Pages/HomePage";
-
+import BranchLogin from "./Pages/BranchLogin";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -110,7 +109,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/branches" element={<Branches />} />
       <Route path="/home" element={<BranchHome />} />
-      {/* <Route path="/home" element={<BranchHome />} /> */}
+      <Route path="/branch-login" element={<BranchLogin />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/404" element={<NotFound />} />
 

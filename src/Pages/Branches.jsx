@@ -53,7 +53,7 @@ const Branches = () => {
       console.log(targetUrl,'hi url-=-')
       window.location.href = targetUrl;
     } else {
-      navigate(`/login?branchId=${branch._id}`); 
+      navigate(`/home?branchId=${branch._id}`); 
     }
   };
 

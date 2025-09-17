@@ -274,6 +274,20 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+
+    getBranchById: builder.query({
+      query: (branchId) => ({
+        url: `/branch-details/${branchId}`,
+        method: "GET",
+      }),
+    }),
+
+    getBranchJobs: builder.query({
+      query: (branchId) => ({
+        url: `/branch-jobs/${branchId}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -309,4 +323,8 @@ export const {
   useUpdateCandidateOfferStatusMutation,
   useRequestOfferRevisionMutation,
   useGetJobSuggestionsQuery,
+
+  //branch apis
+  useGetBranchByIdQuery,
+  useGetBranchJobsQuery,
 } = userApi;
