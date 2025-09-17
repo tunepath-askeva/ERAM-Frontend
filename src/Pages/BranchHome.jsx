@@ -24,9 +24,7 @@ import {
 } from "../Slices/Users/UserApis.js";
 import BranchHeader from "../Global/BranchHeader.jsx";
 import BranchFooter from "../Global/BranchFooter.jsx";
-import LoginSection from "./LoginSection.jsx";
 import JobsSection from "./JobsSection.jsx";
-import CVUploadSection from "./CVUploadSection.jsx";
 import SkeletonLoader from "../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;

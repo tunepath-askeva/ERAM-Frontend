@@ -19,23 +19,89 @@ import {
   MailOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUserCredentials } from "../Slices/Users/UserSlice";
+import { useLoginUserMutation } from "../Slices/Users/UserApis";
 
 const { Title, Text, Link } = Typography;
 
 const LoginSection = ({ currentBranch }) => {
   const navigate = useNavigate();
 
+  const dispatch = useDispatch();
+  const [loginUser] = useLoginUserMutation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (values) => {
     setLoading(true);
     try {
-      console.log("Login attempt:", values);
-      // Add your login logic here
+      const response = await loginUser({
+        email: values.email,
+        password: values.password,
+        branchId: currentBranch?._id,
+      }).unwrap();
+
+      if (response.requireOtp) {
+        message.info(
+          "OTP sent to your email. Please verify to complete login."
+        );
+        navigate("/verify-otp", {
+          state: { email: response.email, message: response.message },
+        });
+        return;
+      }
+
       message.success("Login successful!");
+
+      const userRole = response.user.roles;
+      const permissions = response.user.permissions || [];
+      const userInfo = {
+        email: response.user.email,
+        name: response.user.name,
+        roles: response.user.roles,
+        employeeAdmin: response.user.employeeAdmin || null,
+      };
+
+      const payload = {
+        userInfo: userInfo,
+        role: userRole,
+      };
+
+      if (userRole === "recruiter") {
+        payload.permissions = permissions;
+      }
+
+      // ✅ store in Redux + localStorage
+      dispatch(setUserCredentials(payload));
+
+      // ✅ Navigate by role
+      switch (userRole) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "candidate":
+          navigate("/candidate-jobs");
+          break;
+        case "employee":
+          navigate("/employee/company-news");
+          break;
+        case "recruiter":
+          if (response.user.employeeAdmin === "Employee Admin") {
+            navigate("/employee-admin/dashboard");
+          } else {
+            navigate("/recruiter/dashboard");
+          }
+          break;
+        case "super_admin":
+          navigate("/super-admin/dashboard");
+          break;
+        default:
+          navigate("/");
+      }
     } catch (error) {
-      message.error("Login failed. Please check your credentials.");
+      console.error("Login error:", error);
+      message.error(error?.data?.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }

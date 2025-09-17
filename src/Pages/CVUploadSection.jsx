@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Upload,
@@ -21,24 +21,31 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
-const { Step } = Steps;
 
-const CVUploadSection = ({ currentBranch }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+const CVUploadSection = ({ 
+  currentBranch, 
+  onApplicationSubmit, // Callback to parent component
+  submissionStatus = null, // Prop to control the current state
+  onResetApplication // Callback to reset the application state
+}) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Determine current step based on submission status
+  const currentStep = submissionStatus?.isSubmitted ? 1 : 0;
 
   const uploadProps = {
     name: "file",
     multiple: false,
     accept: ".pdf,.doc,.docx",
     beforeUpload: (file) => {
-      const isValidType = 
+      const isValidType =
         file.type === "application/pdf" ||
         file.type === "application/msword" ||
-        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
       if (!isValidType) {
         message.error("You can only upload PDF, DOC, or DOCX files!");
         return false;
@@ -51,7 +58,7 @@ const CVUploadSection = ({ currentBranch }) => {
       }
 
       setUploading(true);
-      
+
       // Simulate upload progress
       let progress = 0;
       const interval = setInterval(() => {
@@ -59,13 +66,15 @@ const CVUploadSection = ({ currentBranch }) => {
         if (progress >= 100) {
           clearInterval(interval);
           setUploading(false);
-          setUploadedFiles([{
-            uid: file.uid,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            status: 'done',
-          }]);
+          setUploadedFiles([
+            {
+              uid: file.uid,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              status: "done",
+            },
+          ]);
           message.success(`${file.name} uploaded successfully.`);
         }
       }, 200);
@@ -73,7 +82,7 @@ const CVUploadSection = ({ currentBranch }) => {
       return false; // Prevent automatic upload
     },
     onRemove: (file) => {
-      setUploadedFiles(uploadedFiles.filter(item => item.uid !== file.uid));
+      setUploadedFiles(uploadedFiles.filter((item) => item.uid !== file.uid));
     },
   };
 
@@ -84,27 +93,39 @@ const CVUploadSection = ({ currentBranch }) => {
     }
 
     setSubmitting(true);
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log("Application submitted:", {
+      // Prepare submission data
+      const submissionData = {
         files: uploadedFiles,
         branchId: currentBranch?._id,
-      });
-      
+        branchName: currentBranch?.name,
+        submittedAt: new Date().toISOString(),
+      };
+
+      // Call parent component's submit handler
+      if (onApplicationSubmit) {
+        await onApplicationSubmit(submissionData);
+      }
+
+      console.log("Application submitted:", submissionData);
       message.success("Application submitted successfully!");
-      setCurrentStep(1);
+      
+      // Clear uploaded files after successful submission
+      setUploadedFiles([]);
     } catch (error) {
+      console.error("Submission failed:", error);
       message.error("Submission failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setCurrentStep(0);
+  const handleReset = () => {
     setUploadedFiles([]);
+    if (onResetApplication) {
+      onResetApplication();
+    }
   };
 
   const SuccessStep = () => (
@@ -125,38 +146,55 @@ const CVUploadSection = ({ currentBranch }) => {
       >
         <CheckCircleOutlined style={{ fontSize: "36px", color: "white" }} />
       </div>
-      
+
       <Title level={3} style={{ color: "white", marginBottom: "16px" }}>
         Application Submitted!
       </Title>
-      
-      <Paragraph style={{ color: "rgba(255, 255, 255, 0.8)", marginBottom: "24px" }}>
-        Thank you for your interest in joining {currentBranch?.name}. 
-        We'll review your application and get back to you within 5-7 business days.
+
+      <Paragraph
+        style={{ color: "rgba(255, 255, 255, 0.8)", marginBottom: "24px" }}
+      >
+        Thank you for your interest in joining {submissionStatus?.branchName || currentBranch?.name}. We'll
+        review your application and get back to you within 5-7 business days.
       </Paragraph>
 
       <Space direction="vertical" size="middle">
         <Text style={{ color: "rgba(255, 255, 255, 0.9)", fontSize: "14px" }}>
-          Reference ID: CV-{Date.now().toString().slice(-6)}
+          Reference ID: {submissionStatus?.referenceId || `CV-${Date.now().toString().slice(-6)}`}
         </Text>
-        
-        <Button
-          type="default"
-          onClick={resetForm}
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
-            borderColor: "rgba(255, 255, 255, 0.3)",
-            color: "white",
-            borderRadius: "8px",
-          }}
-        >
-          Submit Another Application
-        </Button>
+
+        <Space>
+          <Button
+            type="default"
+            onClick={handleReset}
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              borderColor: "rgba(255, 255, 255, 0.3)",
+              color: "white",
+              borderRadius: "8px",
+            }}
+          >
+            Submit Another Application
+          </Button>
+          
+          <Button
+            type="default"
+            onClick={() => onResetApplication && onResetApplication(false)} // Reset but keep showing form
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              color: "white",
+              borderRadius: "8px",
+            }}
+          >
+            View Form
+          </Button>
+        </Space>
       </Space>
     </div>
   );
 
-  if (currentStep === 1) {
+  if (currentStep === 1 && submissionStatus?.isSubmitted) {
     return <SuccessStep />;
   }
 
@@ -173,7 +211,7 @@ const CVUploadSection = ({ currentBranch }) => {
         >
           Quick Apply
         </Title>
-        
+
         <Text
           style={{
             fontSize: "16px",
@@ -224,18 +262,27 @@ const CVUploadSection = ({ currentBranch }) => {
           borderRadius: "16px",
           boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
         }}
-        bodyStyle={{ padding: "32px"}}
+        bodyStyle={{ padding: "32px" }}
       >
         <div>
-          <Title level={4} style={{ textAlign: "center", marginBottom: "20px", color: "#1e293b" }}>
+          <Title
+            level={4}
+            style={{
+              textAlign: "center",
+              marginBottom: "20px",
+              color: "#1e293b",
+            }}
+          >
             Upload Your Resume/CV
           </Title>
-          
+
           <Dragger {...uploadProps} style={{ marginBottom: "20px" }}>
             <p className="ant-upload-drag-icon">
               <InboxOutlined style={{ color: "#da2c46", fontSize: "48px" }} />
             </p>
-            <p style={{ fontSize: "16px", fontWeight: "500", color: "#1e293b" }}>
+            <p
+              style={{ fontSize: "16px", fontWeight: "500", color: "#1e293b" }}
+            >
               Click or drag your CV to this area
             </p>
             <p style={{ color: "#64748b", fontSize: "14px" }}>
@@ -257,7 +304,7 @@ const CVUploadSection = ({ currentBranch }) => {
               <List
                 size="small"
                 dataSource={uploadedFiles}
-                renderItem={item => (
+                renderItem={(item) => (
                   <List.Item
                     actions={[
                       <Button
@@ -285,7 +332,8 @@ const CVUploadSection = ({ currentBranch }) => {
                 block
                 icon={<SendOutlined />}
                 style={{
-                  background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                  background:
+                    "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
                   border: "none",
                   borderRadius: "8px",
                   height: "48px",
@@ -301,7 +349,9 @@ const CVUploadSection = ({ currentBranch }) => {
           )}
 
           <div style={{ textAlign: "center" }}>
-            <Text style={{ color: "#64748b", fontSize: "13px", display: "block" }}>
+            <Text
+              style={{ color: "#64748b", fontSize: "13px", display: "block" }}
+            >
               By uploading your CV, you agree to our privacy policy
             </Text>
           </div>

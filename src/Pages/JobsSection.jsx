@@ -554,21 +554,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
               Open Positions
             </Text>
           </div>
-          <Divider type="vertical" style={{ height: "40px" }} />
-          <div>
-            <Title
-              level={3}
-              style={{ color: "#da2c46", margin: 0, fontSize: "24px" }}
-            >
-              {
-                filteredJobs.filter((job) => job.workOrderStatus === "urgent")
-                  .length
-              }
-            </Title>
-            <Text style={{ color: "#64748b", fontSize: "14px" }}>
-              Urgent Hiring
-            </Text>
-          </div>
+         
           <Divider type="vertical" style={{ height: "40px" }} />
           <div>
             <Title
