@@ -98,6 +98,7 @@ import RecruiterMoreJobDetails from "./Recruiters/Pages/RecruiterMoreJobDetails"
 import BranchHome from "./Pages/BranchHome";
 import BranchLogin from "./Pages/BranchLogin";
 import BranchRegister from "./Pages/BranchRegister";
+import BranchNotFound from "./Pages/BranchNotFound";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -124,11 +125,12 @@ const AppRoutes = () => {
         </>
       ) : (
         <>
+          <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<BranchHome />} />
           <Route path="/branch-login" element={<BranchLogin />} />
           <Route path="/branch-register" element={<BranchRegister />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="/404" element={<BranchNotFound />} />
         </>
       )}
       {/* Super Admin */}
