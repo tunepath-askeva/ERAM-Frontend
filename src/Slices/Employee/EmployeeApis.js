@@ -1,7 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-
-
 // const baseUrl = "/api/employees"
 
 // const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/employees`;
@@ -9,7 +7,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 const baseUrl =
   window.location.hostname === "localhost"
     ? "http://localhost:5000/api/employees"
-    : "https://tradelivetoday.com/api/employees";
+    : `https://${window.location.hostname}/api/employees`;
 
 // let baseUrl;
 
