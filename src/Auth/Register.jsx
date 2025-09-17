@@ -368,8 +368,9 @@ const Register = ({ currentBranch }) => {
               }}
             >
               <img
-                src="/logo-2.png"
-                alt="Company Logo"
+                src={currentBranch?.brand_logo || "/logo-2.png"} // 👈 use branch logo if available
+                alt={currentBranch?.name || "Company Logo"}
+                style={{ maxHeight: "60px", objectFit: "contain" }}
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
@@ -377,6 +378,7 @@ const Register = ({ currentBranch }) => {
               />
               <span style={{ display: "none" }}>Logo</span>
             </div>
+
             <p
               style={{
                 margin: 0,
