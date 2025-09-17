@@ -1,26 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// const baseUrl = "/api/super-admin"
-
-// const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/super-admin`;
-
-const baseUrl =
+    const baseUrl =
   window.location.hostname === "localhost"
     ? "http://localhost:5000/api/super-admin"
-    : "https://tradelivetoday.com/api/super-admin";
+    : `https://${window.location.hostname}/api/super-admin`;
 
-// let baseUrl;
-
-// if (window.location.hostname === "localhost") {
-//   // local dev
-//   baseUrl = "http://localhost:5000/api/super-admin";
-// } else if (window.location.hostname === "103.205.65.133") {
-//   // your new server
-//   baseUrl = "http://103.205.65.133/api/super-admin";
-// } else {
-//   // render server
-//   baseUrl = "https://eram-backend-2gvv.onrender.com/api/super-admin";
-// }
 
 export const superAdminApi = createApi({
   reducerPath: "superAdminApi",
