@@ -20,6 +20,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useSnackbar } from "notistack";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import { useLoginUserMutation } from "../Slices/Users/UserApis";
 
@@ -32,6 +33,7 @@ const LoginSection = ({ currentBranch }) => {
   const [loginUser] = useLoginUserMutation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleLogin = async (values) => {
     setLoading(true);
@@ -101,7 +103,16 @@ const LoginSection = ({ currentBranch }) => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      message.error(error?.data?.message || "Login failed. Please try again.");
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Login failed. Please try again.",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
     } finally {
       setLoading(false);
     }
