@@ -50,10 +50,13 @@ const Branches = () => {
       const targetUrl = branch.url.startsWith("http")
         ? `${branch.url}/home?branchId=${branch._id}`
         : `${branch.url}/home?branchId=${branch._id}`;
-      console.log(targetUrl,'hi url-=-')
-      window.location.href = targetUrl;
+
+      console.log(targetUrl, "hi url-=-");
+
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
     } else {
-      navigate(`/home?branchId=${branch._id}`); 
+      const targetUrl = `/home?branchId=${branch._id}`;
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
     }
   };
 
