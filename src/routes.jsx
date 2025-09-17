@@ -120,7 +120,7 @@ const AppRoutes = () => {
 
           <Route path="/login" element={<Login />} />
           <Route path="/branches" element={<Branches />} />
-
+          <Route path="*" element={<NotFound />} />
           <Route path="/404" element={<NotFound />} />
         </>
       ) : (
