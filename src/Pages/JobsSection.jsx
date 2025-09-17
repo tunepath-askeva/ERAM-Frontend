@@ -58,18 +58,25 @@ const JobsSection = ({ currentBranch, branchId }) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const jobId = params.get("jobId");
-    if (jobId) {
-      const el = document.getElementById(`job-${jobId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.style.boxShadow = "0 0 10px 2px #da2c46"; // temporary highlight
-        setTimeout(() => {
-          el.style.boxShadow = "";
-        }, 3000);
-      }
-    }
-  }, []);
 
+    if (jobId) {
+      setTimeout(() => {
+        const el = document.getElementById(`job-${jobId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          el.style.border = "2px solid #da2c46";
+          el.style.boxShadow = "0 0 25px 6px rgba(218,44,70,0.6)";
+
+          setTimeout(() => {
+            el.style.border = "2px solid transparent";
+            el.style.boxShadow = "";
+          }, 5000);
+        }
+      }, 300); 
+    }
+  }, [jobsResponse]); 
+  
   const filteredJobs = jobs.filter(
     (job) =>
       job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -159,15 +166,16 @@ const JobsSection = ({ currentBranch, branchId }) => {
     return `${Math.ceil(diffDays / 30)} months ago`;
   };
 
-  const JobCard = ({ job }) => (
+  const JobCard = ({ job, jobId }) => (
     <Card
+      id={`job-${job._id}`}
       hoverable
       style={{
         height: "460px",
         borderRadius: "12px",
         boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-        border: "1px solid #e2e8f0",
-        transition: "all 0.3s ease",
+        border: "2px solid transparent",
+        transition: "all 0.5s ease-in-out",
         cursor: "pointer",
         width: "100%",
       }}
@@ -421,7 +429,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
                 icon={<ShareAltOutlined />}
                 onClick={(e) => {
                   e.stopPropagation();
-const jobUrl = `${window.location.origin}${window.location.pathname}?jobId=${job._id}`;
+                  const jobUrl = `${window.location.origin}${window.location.pathname}?branchId=${currentBranch?._id}?jobId=${job._id}`;
                   if (navigator.share) {
                     navigator.share({
                       title: job.title,
@@ -645,11 +653,10 @@ const jobUrl = `${window.location.origin}${window.location.pathname}?jobId=${job
                   xl={4}
                   xxl={4}
                   key={job._id}
-                  id={`job-${job._id}`}
                   style={{ display: "flex" }}
                 >
                   <div style={{ width: "100%" }}>
-                    <JobCard job={job} />
+                    <JobCard job={job} jobId={job._id} />
                   </div>
                 </Col>
               ))}
