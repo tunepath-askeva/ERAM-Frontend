@@ -100,21 +100,37 @@ import BranchLogin from "./Pages/BranchLogin";
 import BranchRegister from "./Pages/BranchRegister";
 
 const AppRoutes = () => {
+  const host = window.location.hostname;
+
+  const isMainDomain =
+    host === "tradelivetoday.com" ||
+    host === "www.tradelivetoday.com" ||
+    host === "localhost" ||
+    host === "127.0.0.1";
+
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/services" element={<Services />} />
-      <Route path="/contacts" element={<Contacts />} />
+      {isMainDomain ? (
+        <>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/contacts" element={<Contacts />} />
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/branches" element={<Branches />} />
-      <Route path="/home" element={<BranchHome />} />
-      <Route path="/branch-login" element={<BranchLogin />} />
-      <Route path="/branch-register" element={<BranchRegister />} />
-      <Route path="*" element={<NotFound />} />
-      <Route path="/404" element={<NotFound />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/branches" element={<Branches />} />
 
+          <Route path="/404" element={<NotFound />} />
+        </>
+      ) : (
+        <>
+          <Route path="/home" element={<BranchHome />} />
+          <Route path="/branch-login" element={<BranchLogin />} />
+          <Route path="/branch-register" element={<BranchRegister />} />
+          <Route path="*" element={<NotFound />} />
+          <Route path="/404" element={<NotFound />} />
+        </>
+      )}
       {/* Super Admin */}
       <Route path="/superadmin/login" element={<SuperAdminLogin />} />
       <Route element={<SuperMainLayout />}>
