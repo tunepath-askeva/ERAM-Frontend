@@ -18,10 +18,13 @@ import {
   EyeTwoTone,
   MailOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text, Link } = Typography;
 
 const LoginSection = ({ currentBranch }) => {
+  const navigate = useNavigate();
+
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -42,10 +45,35 @@ const LoginSection = ({ currentBranch }) => {
     message.info("Password reset link will be sent to your email.");
   };
 
+  const getLogoSrc = () => {
+    if (currentBranch?.brand_logo) {
+      return currentBranch.brand_logo;
+    }
+    return "/Workforce.svg";
+  };
+
+  const getBranchName = () => {
+    return currentBranch?.name || "ERAM TALENT";
+  };
+
   return (
     <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
-      <div style={{ textAlign: "center", marginBottom: "30px" }}>    
-        
+      <div style={{ textAlign: "center", marginBottom: "30px" }}>
+        <img
+          src={getLogoSrc()}
+          alt={`${getBranchName()} Logo`}
+          style={{
+            height: "60px",
+            width: "auto",
+            maxWidth: "180px",
+            objectFit: "contain",
+          }}
+          onError={(e) => {
+            // Fallback to default logo if branch logo fails to load
+            e.target.src = "/Workforce.svg";
+          }}
+        />
+
         <Title
           level={2}
           style={{
@@ -54,16 +82,16 @@ const LoginSection = ({ currentBranch }) => {
             fontWeight: "700",
           }}
         >
-          Staff Login
+          Welcome to Login
         </Title>
-        
+
         <Text
           style={{
             fontSize: "16px",
             display: "block",
           }}
         >
-          Access your {currentBranch?.name || 'Branch'} account
+          Access your {currentBranch?.name || "Branch"} account
         </Text>
       </div>
 
@@ -86,7 +114,13 @@ const LoginSection = ({ currentBranch }) => {
         >
           <Form.Item
             label={
-              <span style={{ color: "#374151", fontWeight: "500", fontSize: "14px" }}>
+              <span
+                style={{
+                  color: "#374151",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                }}
+              >
                 Email Address
               </span>
             }
@@ -116,7 +150,13 @@ const LoginSection = ({ currentBranch }) => {
 
           <Form.Item
             label={
-              <span style={{ color: "#374151", fontWeight: "500", fontSize: "14px" }}>
+              <span
+                style={{
+                  color: "#374151",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                }}
+              >
                 Password
               </span>
             }
@@ -196,7 +236,24 @@ const LoginSection = ({ currentBranch }) => {
             </Button>
           </Form.Item>
 
- 
+          <Divider />
+
+          {/* ✅ Sign up section */}
+          <div style={{ textAlign: "center" }}>
+            <Text>Don’t have an account? </Text>
+            <Link
+              style={{ color: "#da2c46", fontWeight: "500" }}
+              onClick={() =>
+                navigate(
+                  currentBranch?._id
+                    ? `/branch-register?branchId=${currentBranch._id}`
+                    : "/branch-register"
+                )
+              }
+            >
+              Sign up here
+            </Link>
+          </div>
         </Form>
       </Card>
     </div>

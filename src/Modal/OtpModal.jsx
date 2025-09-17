@@ -107,7 +107,6 @@ const OtpModal = ({ visible, onCancel, email, onVerifySuccess }) => {
         onVerifySuccess(response);
       }
 
-      navigate("/login");
     } catch (error) {
       console.error("OTP verification failed:", error);
       enqueueSnackbar(error?.data?.message || error?.message || "Invalid OTP. Please try again.", {

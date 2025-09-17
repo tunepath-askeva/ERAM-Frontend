@@ -23,13 +23,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useRegisterUserMutation } from "../Slices/Users/UserApis.js";
 import OtpModal from "../Modal/OtpModal";
-import Header from "../Global/Header";
-import HomeFooter from "../Global/Footer";
+import BranchHeader from "../Global/BranchHeader.jsx";
+import BranchFooter from "../Global/BranchFooter.jsx";
 import { phoneUtils, countryInfo } from "../utils/countryMobileLimits.js";
 
 const { Option } = Select;
 
-const Register = () => {
+const Register = ({ currentBranch }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -243,6 +243,7 @@ const Register = () => {
         email: values.email.trim().toLowerCase(),
         phone: formattedPhone,
         cPassword: values.cPassword,
+        branchId: currentBranch?._id || null,
       };
 
       console.log("Registration data:", userData);
@@ -302,7 +303,8 @@ const Register = () => {
       anchorOrigin: { vertical: "top", horizontal: "right" },
       autoHideDuration: 3000,
     });
-    navigate("/login");
+
+    navigate(`/branch-login?branchId=${currentBranch._id}`);
   };
 
   const handleOtpModalCancel = () => {
@@ -329,13 +331,11 @@ const Register = () => {
 
   return (
     <>
-      <Header />
       <div
         style={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          background: "#f0f0f0",
           padding: "20px",
         }}
       >
@@ -647,29 +647,6 @@ const Register = () => {
               </Button>
             </Form.Item>
           </Form>
-
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "32px",
-              paddingTop: "24px",
-              borderTop: "1px solid #ecf0f1",
-            }}
-          >
-            <span style={{ color: "#7f8c8d", fontSize: "14px" }}>
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                style={{
-                  color: "#f5222d",
-                  fontWeight: "600",
-                  textDecoration: "none",
-                }}
-              >
-                Sign in here
-              </Link>
-            </span>
-          </div>
         </Card>
       </div>
 
@@ -679,8 +656,6 @@ const Register = () => {
         email={registeredEmail}
         onVerifySuccess={handleOtpVerifySuccess}
       />
-
-      <HomeFooter />
     </>
   );
 };

@@ -466,7 +466,7 @@ const Login = () => {
               Don't have an account?{" "}
               <Button
                 type="link"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/branches")}
                 style={{
                   padding: 0,
                   fontSize: "14px",

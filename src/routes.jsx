@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./Auth/Login";
-import Register from "./Auth/Register";
 import Home from "./Pages/Home";
 import About from "./Pages/About";
 import Branches from "./Pages/Branches";
@@ -98,6 +97,8 @@ import CandidateEditPage from "./Recruiters/Components/CandidateEditPage";
 import RecruiterMoreJobDetails from "./Recruiters/Pages/RecruiterMoreJobDetails";
 import BranchHome from "./Pages/BranchHome";
 import BranchLogin from "./Pages/BranchLogin";
+import BranchRegister from "./Pages/BranchRegister";
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -105,7 +106,7 @@ const AppRoutes = () => {
       <Route path="/about" element={<About />} />
       <Route path="/services" element={<Services />} />
       <Route path="/contacts" element={<Contacts />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/branch-register" element={<BranchRegister />} />
       <Route path="/login" element={<Login />} />
       <Route path="/branches" element={<Branches />} />
       <Route path="/home" element={<BranchHome />} />

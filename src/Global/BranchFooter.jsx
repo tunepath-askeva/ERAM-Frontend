@@ -154,7 +154,10 @@ const BranchFooter = ({ currentBranch }) => {
               {/* Branch Info */}
               {currentBranch && (
                 <div style={{ marginBottom: "16px" }}>
-                  <Title level={4} style={{ color: "#1e293b", margin: 0, fontSize: "18px" }}>
+                  <Title
+                    level={4}
+                    style={{ color: "#1e293b", margin: 0, fontSize: "18px" }}
+                  >
                     {currentBranch.name}
                   </Title>
                   {currentBranch.branchCode && (
@@ -176,7 +179,7 @@ const BranchFooter = ({ currentBranch }) => {
                       {currentBranch.description}
                     </Paragraph>
                   )}
-                  
+
                   {/* Branch Status & URL */}
                   <Space wrap style={{ marginBottom: "12px" }}>
                     <Tag
@@ -186,7 +189,11 @@ const BranchFooter = ({ currentBranch }) => {
                       {currentBranch.isActive ? "Active" : "Inactive"}
                     </Tag>
                     {currentBranch.url && (
-                      <Tag color="blue" icon={<GlobalOutlined />} style={{ fontSize: "11px" }}>
+                      <Tag
+                        color="blue"
+                        icon={<GlobalOutlined />}
+                        style={{ fontSize: "11px" }}
+                      >
                         Online
                       </Tag>
                     )}
@@ -209,13 +216,26 @@ const BranchFooter = ({ currentBranch }) => {
 
               <Space direction="vertical" size="small">
                 <div
-                  style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "10px",
+                  }}
                 >
                   <EnvironmentOutlined
-                    style={{ color: "#da2c46", fontSize: "16px", marginTop: "2px", flexShrink: 0 }}
+                    style={{
+                      color: "#da2c46",
+                      fontSize: "16px",
+                      marginTop: "2px",
+                      flexShrink: 0,
+                    }}
                   />
                   <Text
-                    style={{ color: "rgba(0, 0, 0, 0.7)", fontSize: "14px", lineHeight: "1.4" }}
+                    style={{
+                      color: "rgba(0, 0, 0, 0.7)",
+                      fontSize: "14px",
+                      lineHeight: "1.4",
+                    }}
                   >
                     {contactInfo.address}
                   </Text>
@@ -269,38 +289,55 @@ const BranchFooter = ({ currentBranch }) => {
                 style={{ width: "100%" }}
               >
                 {[
-                  { label: "Home", path: branchId ? `/home?branchId=${branchId}` : "/home" },
-                  { label: "Apply / Login", path: branchId ? `/branch-login?branchId=${branchId}` : "/branch-login" },
+                  {
+                    label: "Home",
+                    path: branchId ? `/home?branchId=${branchId}` : "/home",
+                  },
+                  {
+                    label: "Apply / Login",
+                    path: branchId
+                      ? `/branch-login?branchId=${branchId}`
+                      : "/branch-login",
+                  },
+                  {
+                    label: "Register",
+                    path: branchId
+                      ? `/branch-register?branchId=${branchId}`
+                      : "/branch-register",
+                  },
                 ].map((item) => {
-                    const isActive = window.location.pathname === item.path || 
-                      (item.label === "Home" && window.location.pathname === "/home") ||
-                      (item.label === "Apply / Login" && window.location.pathname.includes("branch-login"));
+                  const isActive =
+                    window.location.pathname === item.path ||
+                    (item.label === "Home" &&
+                      window.location.pathname === "/home") ||
+                    (item.label === "Apply / Login" &&
+                      window.location.pathname.includes("branch-login"));
 
-                    return (
-                      <Link
-                        key={item.label}
-                        to={item.path}
-                        style={{
-                          ...linkStyle,
-                          textDecoration: isActive ? "underline" : "none",
-                          color: isActive ? "#da2c46" : "rgba(0, 0, 0, 0.7)",
-                          display: "block",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive) {
-                            e.target.style.color = "#da2c46";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) {
-                            e.target.style.color = "rgba(0, 0, 0, 0.7)";
-                          }
-                        }}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  })}
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.path}
+                      style={{
+                        ...linkStyle,
+                        textDecoration: isActive ? "underline" : "none",
+                        color: isActive ? "#da2c46" : "rgba(0, 0, 0, 0.7)",
+                        display: "block",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.target.style.color = "#da2c46";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.target.style.color = "rgba(0, 0, 0, 0.7)";
+                        }
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </Space>
             </div>
           </Col>
@@ -316,44 +353,44 @@ const BranchFooter = ({ currentBranch }) => {
                   fontSize: "18px",
                 }}
               >
-                {currentBranch?.services && currentBranch.services.length > 0 ? "Our Services" : "Available Services"}
+                {currentBranch?.services && currentBranch.services.length > 0
+                  ? "Our Services"
+                  : "Available Services"}
               </Title>
               <Space
                 direction="vertical"
                 size="small"
                 style={{ width: "100%" }}
               >
-                {currentBranch?.services && currentBranch.services.length > 0 ? (
-                  currentBranch.services.slice(0, 5).map((service, index) => (
-                    <Text
-                      key={index}
-                      style={{
-                        ...linkStyle,
-                        cursor: "default",
-                      }}
-                    >
-                      {service}
-                    </Text>
-                  ))
-                ) : (
-                  [
-                    "Talent Acquisition",
-                    "Executive Search", 
-                    "HR Consulting",
-                    "Recruitment Process",
-                    "Career Guidance",
-                  ].map((item) => (
-                    <Text
-                      key={item}
-                      style={{
-                        ...linkStyle,
-                        cursor: "default",
-                      }}
-                    >
-                      {item}
-                    </Text>
-                  ))
-                )}
+                {currentBranch?.services && currentBranch.services.length > 0
+                  ? currentBranch.services.slice(0, 5).map((service, index) => (
+                      <Text
+                        key={index}
+                        style={{
+                          ...linkStyle,
+                          cursor: "default",
+                        }}
+                      >
+                        {service}
+                      </Text>
+                    ))
+                  : [
+                      "Talent Acquisition",
+                      "Executive Search",
+                      "HR Consulting",
+                      "Recruitment Process",
+                      "Career Guidance",
+                    ].map((item) => (
+                      <Text
+                        key={item}
+                        style={{
+                          ...linkStyle,
+                          cursor: "default",
+                        }}
+                      >
+                        {item}
+                      </Text>
+                    ))}
               </Space>
             </div>
           </Col>
@@ -379,7 +416,8 @@ const BranchFooter = ({ currentBranch }) => {
                   lineHeight: "1.6",
                 }}
               >
-                Subscribe to our newsletter for the latest job opportunities and updates.
+                Subscribe to our newsletter for the latest job opportunities and
+                updates.
               </Paragraph>
 
               <Search
@@ -464,7 +502,8 @@ const BranchFooter = ({ currentBranch }) => {
                 display: "block",
               }}
             >
-              © {new Date().getFullYear()} {getCompanyName()}. All rights reserved.
+              © {new Date().getFullYear()} {getCompanyName()}. All rights
+              reserved.
               {currentBranch?.branchCode && (
                 <span> • Branch: {currentBranch.branchCode}</span>
               )}

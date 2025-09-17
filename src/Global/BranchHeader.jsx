@@ -36,6 +36,7 @@ const BranchHeader = ({ currentBranch }) => {
 
   const getActiveKey = () => {
     if (location.pathname.includes("branch-login")) return "branch-login";
+    if (location.pathname.includes("branch-register")) return "branch-register";
     return "home";
   };
 
@@ -50,6 +51,11 @@ const BranchHeader = ({ currentBranch }) => {
       icon: <LoginOutlined />,
       label: "Apply / Login",
     },
+    {
+      key: "branch-register",
+      icon: <LoginOutlined />,
+      label: "Register",
+    },
   ];
 
   const handleMenuClick = (e) => {
@@ -57,7 +63,14 @@ const BranchHeader = ({ currentBranch }) => {
       navigate(branchId ? `/home?branchId=${branchId}` : "/home");
     }
     if (e.key === "branch-login") {
-      navigate(branchId ? `/branch-login?branchId=${branchId}` : "/branch-login");
+      navigate(
+        branchId ? `/branch-login?branchId=${branchId}` : "/branch-login"
+      );
+    }
+    if (e.key === "branch-register") {
+      navigate(
+        branchId ? `/branch-register?branchId=${branchId}` : "/branch-register"
+      );
     }
   };
 
@@ -75,6 +88,12 @@ const BranchHeader = ({ currentBranch }) => {
     navigate(branchId ? `/branch-login?branchId=${branchId}` : "/branch-login");
   };
 
+  const handleRegister = () => {
+    navigate(
+      branchId ? `/branch-register?branchId=${branchId}` : "/branch-register"
+    );
+  };
+
   const handleLogoClick = () => {
     navigate(branchId ? `/home?branchId=${branchId}` : "/home");
   };
@@ -83,7 +102,7 @@ const BranchHeader = ({ currentBranch }) => {
     if (currentBranch?.brand_logo) {
       return currentBranch.brand_logo;
     }
-    return "/Workforce.svg"; 
+    return "/Workforce.svg";
   };
 
   const getBranchName = () => {
@@ -147,7 +166,13 @@ const BranchHeader = ({ currentBranch }) => {
               }}
             />
             {currentBranch && (
-              <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  lineHeight: "1.2",
+                }}
+              >
                 <Text strong style={{ fontSize: "16px", color: "#1e293b" }}>
                   {currentBranch.name}
                 </Text>
@@ -237,9 +262,7 @@ const BranchHeader = ({ currentBranch }) => {
                 <Text strong style={{ fontSize: "14px", color: "#1e293b" }}>
                   {currentBranch.name}
                 </Text>
-                {currentBranch.branchCode && (
-                  <br />
-                )}
+                {currentBranch.branchCode && <br />}
                 {currentBranch.branchCode && (
                   <Text style={{ fontSize: "11px", color: "#64748b" }}>
                     {currentBranch.branchCode}
@@ -286,7 +309,7 @@ const BranchHeader = ({ currentBranch }) => {
             padding: "10px",
           }}
         />
-        <div style={{ padding: "20px" }}>
+        {/* <div style={{ padding: "20px" }}>
           <Button
             block
             type="primary"
@@ -307,6 +330,28 @@ const BranchHeader = ({ currentBranch }) => {
             Apply / Login
           </Button>
         </div>
+
+        <div style={{ padding: "20px" }}>
+          <Button
+            block
+            type="primary"
+            icon={<LoginOutlined />}
+            onClick={() => {
+              handleRegister();
+              closeMobileMenu();
+            }}
+            style={{
+              backgroundColor: "#da2c46",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              fontWeight: "500",
+              height: "40px",
+            }}
+          >
+            Register
+          </Button>
+        </div> */}
       </Drawer>
 
       {/* Responsive CSS */}
