@@ -71,7 +71,7 @@ const BranchNotFound = () => {
           </p>
 
           <button className="btn-home" onClick={handleGoHome}>
-            Return to Login
+            Return to Home
           </button>
         </div>
       </div>
