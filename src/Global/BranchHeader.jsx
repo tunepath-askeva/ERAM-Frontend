@@ -10,7 +10,7 @@ import {
   BankOutlined,
   LoginOutlined,
 } from "@ant-design/icons";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;

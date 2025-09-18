@@ -28,15 +28,6 @@ function BranchRegister() {
     );
   }
 
-  if (error) {
-    return (
-      <div>
-        <BranchHeader currentBranch={null} />
-        <div>Error loading branch details</div>
-        <BranchFooter currentBranch={null} />
-      </div>
-    );
-  }
 
   return (
     <>
