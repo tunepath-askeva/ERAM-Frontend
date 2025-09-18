@@ -39,7 +39,7 @@ import {
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
 import PhoneInput from "../../Global/PhoneInput.jsx";
-import { phoneUtils  } from "../../utils/countryMobileLimits.js";
+import { phoneUtils } from "../../utils/countryMobileLimits.js";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -70,6 +70,7 @@ const permissionGroups = [
       { key: "jobs", label: "Jobs" },
       { key: "jobs-timeline", label: "Jobs Timeline" },
       { key: "all-candidates", label: "All Candidates" },
+      { key: "all-cvs", label: "Low Level Candidates" },
       { key: "candidates", label: "Interview Candidates" },
       { key: "interviews", label: "Assigned Interviews" },
       { key: "staged-candidates", label: "Staged Candidates" },

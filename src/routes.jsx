@@ -100,6 +100,7 @@ import BranchLogin from "./Pages/BranchLogin";
 import BranchRegister from "./Pages/BranchRegister";
 import BranchNotFound from "./Pages/BranchNotFound";
 import { Navigate } from "react-router-dom";
+import LowLevelCandidates from "./Recruiters/Pages/LowLevelCandidates";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -346,6 +347,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/allcandidates"
           element={<ProtectedRecruiter element={<AllCandidates />} />}
+        />
+        <Route
+          path="/recruiter/all-cvs"
+          element={<ProtectedRecruiter element={<LowLevelCandidates />} />}
         />
         <Route
           path="/recruiter/allcandidates/:id"

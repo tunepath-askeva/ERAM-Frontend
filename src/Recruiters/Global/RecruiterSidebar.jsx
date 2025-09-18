@@ -13,6 +13,7 @@ import {
   DiffOutlined,
   BellOutlined,
   TeamOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -91,6 +92,12 @@ const RecruiterSidebar = ({
       icon: <UsergroupAddOutlined />,
       label: "All Candidates",
       permission: "all-candidates",
+    },
+    {
+      key: "/recruiter/all-cvs",
+      icon: <FileTextOutlined />,
+      label: "Low Level Candidates",
+      permission: "all-cvs",
     },
     {
       key: "/recruiter/candidates",
