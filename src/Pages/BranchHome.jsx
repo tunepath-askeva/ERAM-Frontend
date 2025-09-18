@@ -18,9 +18,9 @@ import {
   BankOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
-import { 
-  useGetBranchesQuery, 
-  useGetBranchByIdQuery 
+import {
+  useGetBranchesQuery,
+  useGetBranchByIdQuery,
 } from "../Slices/Users/UserApis.js";
 import BranchHeader from "../Global/BranchHeader.jsx";
 import BranchFooter from "../Global/BranchFooter.jsx";
@@ -34,18 +34,22 @@ const BranchHome = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { data: branches, isLoading: branchesLoading, error: branchesError } = useGetBranchesQuery();
-  
+  const {
+    data: branches,
+    isLoading: branchesLoading,
+    error: branchesError,
+  } = useGetBranchesQuery();
+
   const [currentBranchId, setCurrentBranchId] = useState(null);
   const [foundByDomain, setFoundByDomain] = useState(false);
 
-  const { 
-    data: branchData, 
-    isLoading: branchLoading, 
+  const {
+    data: branchData,
+    isLoading: branchLoading,
     error: branchError,
-    skip: skipBranchQuery 
+    skip: skipBranchQuery,
   } = useGetBranchByIdQuery(currentBranchId, {
-    skip: !currentBranchId
+    skip: !currentBranchId,
   });
 
   const findBranchByDomain = (branchesData) => {
@@ -94,12 +98,81 @@ const BranchHome = () => {
   }, [branches, searchParams]);
 
   const isLoading = branchesLoading || branchLoading;
-  
+
   const error = branchesError || branchError;
 
-  const currentBranch = foundByDomain 
-    ? branches?.branch?.find(b => b._id === currentBranchId)
+  const currentBranch = foundByDomain
+    ? branches?.branch?.find((b) => b._id === currentBranchId)
     : branchData?.branch;
+
+  useEffect(() => {
+    if (currentBranch) {
+      console.log("Updating metadata for branch:", currentBranch);
+      updateBranchMetadata(currentBranch);
+    }
+  }, [currentBranch]);
+
+  const updateBranchMetadata = (branch) => {
+    document.title = `${branch.name}`;
+
+    if (branch.brand_logo) {
+      updateFavicon(branch.brand_logo);
+    }
+
+    updateMetaTags(branch);
+
+    console.log("Metadata updated for:", branch.name);
+  };
+
+  const updateFavicon = (logoUrl) => {
+    const existingFavicons = document.querySelectorAll("link[rel*='icon']");
+    existingFavicons.forEach((favicon) => favicon.remove());
+
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/png";
+    link.href = logoUrl;
+    document.head.appendChild(link);
+
+    const appleLink = document.createElement("link");
+    appleLink.rel = "apple-touch-icon";
+    appleLink.href = logoUrl;
+    document.head.appendChild(appleLink);
+  };
+
+  const updateMetaTags = (branch) => {
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement("meta");
+      metaDescription.name = "description";
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.content =
+      branch.description ||
+      `Welcome to ${branch.name} - Professional services in ${
+        branch.location?.city || "your area"
+      }`;
+
+    const ogTags = [
+      { property: "og:title", content: `${branch.name}` },
+      {
+        property: "og:description",
+        content: branch.description || `${branch.name} services`,
+      },
+      { property: "og:image", content: branch.brand_logo },
+      { property: "og:url", content: window.location.href },
+    ];
+
+    ogTags.forEach((tag) => {
+      let metaTag = document.querySelector(`meta[property="${tag.property}"]`);
+      if (!metaTag) {
+        metaTag = document.createElement("meta");
+        metaTag.setAttribute("property", tag.property);
+        document.head.appendChild(metaTag);
+      }
+      metaTag.content = tag.content || "";
+    });
+  };
 
   if (isLoading) {
     return (
@@ -119,7 +192,12 @@ const BranchHome = () => {
       <Layout>
         <BranchHeader />
         <div
-          style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center", padding: "50px 20px" }}
+          style={{
+            maxWidth: "800px",
+            margin: "0 auto",
+            textAlign: "center",
+            padding: "50px 20px",
+          }}
         >
           <Alert
             message="Error Loading Branch Data"
@@ -162,10 +240,7 @@ const BranchHome = () => {
               type="warning"
               showIcon
               action={
-                <Button 
-                  size="small"
-                  onClick={() => navigate('/branches')}
-                >
+                <Button size="small" onClick={() => navigate("/branches")}>
                   View All Branches
                 </Button>
               }
@@ -201,7 +276,10 @@ const BranchHome = () => {
               flexDirection: "column",
             }}
           >
-            <JobsSection currentBranch={currentBranch} branchId={currentBranchId} />
+            <JobsSection
+              currentBranch={currentBranch}
+              branchId={currentBranchId}
+            />
           </div>
         </div>
       </Content>
