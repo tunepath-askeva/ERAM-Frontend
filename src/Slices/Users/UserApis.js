@@ -290,8 +290,8 @@ export const userApi = createApi({
     }),
 
     getBranchJobs: builder.query({
-      query: (branchId) => ({
-        url: `/branch-jobs/${branchId}`,
+      query: (domain) => ({
+        url: `/branch-jobs?domain=${encodeURIComponent(domain)}`,
         method: "GET",
       }),
     }),

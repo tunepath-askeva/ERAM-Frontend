@@ -39,7 +39,7 @@ const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
 
-const JobsSection = ({ currentBranch, branchId }) => {
+const JobsSection = ({ currentBranch}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleJobsCount, setVisibleJobsCount] = useState(JOBS_PER_PAGE);
   const navigate = useNavigate();
