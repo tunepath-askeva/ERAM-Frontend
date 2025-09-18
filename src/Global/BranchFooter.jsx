@@ -27,6 +27,7 @@ import {
   GlobalOutlined,
   BankOutlined,
 } from "@ant-design/icons";
+import { useBranch } from "../utils/useBranch";
 
 const { Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -35,9 +36,11 @@ const { Search } = Input;
 const BranchFooter = ({ currentBranch }) => {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
-  const [searchParams] = useSearchParams();
+  // const [searchParams] = useSearchParams();
 
-  const branchId = searchParams.get("branchId");
+  // const branchId = searchParams.get("branchId");
+
+  const { branchId } = useBranch();
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 100);

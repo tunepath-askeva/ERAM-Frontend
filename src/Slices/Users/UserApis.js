@@ -282,6 +282,14 @@ export const userApi = createApi({
       }),
     }),
 
+    getBranchByDomain: builder.query({
+      query: (domain) => ({
+        url: `/branch-details/by-domain`,
+        method: "POST",
+        body: { domain },
+      }),
+    }),
+
     getBranchJobs: builder.query({
       query: (branchId) => ({
         url: `/branch-jobs/${branchId}`,
@@ -335,4 +343,5 @@ export const {
   useGetBranchByIdQuery,
   useGetBranchJobsQuery,
   useSubmitCVApplicationMutation,
+  useGetBranchByDomainQuery,
 } = userApi;

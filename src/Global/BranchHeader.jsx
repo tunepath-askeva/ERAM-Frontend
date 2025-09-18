@@ -11,6 +11,7 @@ import {
   LoginOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useBranch } from "../utils/useBranch";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -18,11 +19,12 @@ const { Text } = Typography;
 const BranchHeader = ({ currentBranch }) => {
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [searchParams] = useSearchParams();
+  // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const branchId = searchParams.get("branchId");
+  // const branchId = searchParams.get("branchId");
+  const { branchId } = useBranch();
 
   useEffect(() => {
     const handleResize = () => {

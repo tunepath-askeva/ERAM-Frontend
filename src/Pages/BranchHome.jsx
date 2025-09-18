@@ -26,31 +26,40 @@ import BranchHeader from "../Global/BranchHeader.jsx";
 import BranchFooter from "../Global/BranchFooter.jsx";
 import JobsSection from "./JobsSection.jsx";
 import SkeletonLoader from "../Global/SkeletonLoader.jsx";
+import { useBranch } from "../utils/useBranch.js";
 
 const { Title, Text, Paragraph } = Typography;
 const { Content } = Layout;
 
 const BranchHome = () => {
-  const [searchParams] = useSearchParams();
+  // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const {
-    data: branches,
-    isLoading: branchesLoading,
-    error: branchesError,
-  } = useGetBranchesQuery();
+  // const {
+  //   data: branches,
+  //   isLoading: branchesLoading,
+  //   error: branchesError,
+  // } = useGetBranchesQuery();
 
-  const [currentBranchId, setCurrentBranchId] = useState(null);
-  const [foundByDomain, setFoundByDomain] = useState(false);
+  // const [currentBranchId, setCurrentBranchId] = useState(null);
+  // const [foundByDomain, setFoundByDomain] = useState(false);
+
+  // const {
+  //   data: branchData,
+  //   isLoading: branchLoading,
+  //   error: branchError,
+  //   skip: skipBranchQuery,
+  // } = useGetBranchByIdQuery(currentBranchId, {
+  //   skip: !currentBranchId,
+  // });
 
   const {
-    data: branchData,
-    isLoading: branchLoading,
-    error: branchError,
-    skip: skipBranchQuery,
-  } = useGetBranchByIdQuery(currentBranchId, {
-    skip: !currentBranchId,
-  });
+    currentBranch,
+    isLoading,
+    error,
+    branchId: currentBranchId,
+    foundByDomain,
+  } = useBranch();
 
   const findBranchByDomain = (branchesData) => {
     const currentHost = window.location.hostname;
@@ -73,37 +82,37 @@ const BranchHome = () => {
     return matchedBranch;
   };
 
-  useEffect(() => {
-    if (branches?.branch && Array.isArray(branches.branch)) {
-      console.log("Branches loaded:", branches.branch);
+  // useEffect(() => {
+  //   if (branches?.branch && Array.isArray(branches.branch)) {
+  //     console.log("Branches loaded:", branches.branch);
 
-      const branchByDomain = findBranchByDomain(branches.branch);
+  //     const branchByDomain = findBranchByDomain(branches.branch);
 
-      if (branchByDomain) {
-        console.log("Branch found by domain:", branchByDomain);
-        setCurrentBranchId(branchByDomain._id);
-        setFoundByDomain(true);
-      } else {
-        const branchId = searchParams.get("branchId");
-        if (branchId) {
-          console.log("Branch ID from URL params:", branchId);
-          setCurrentBranchId(branchId);
-          setFoundByDomain(false);
-        } else {
-          setCurrentBranchId(null);
-          setFoundByDomain(false);
-        }
-      }
-    }
-  }, [branches, searchParams]);
+  //     if (branchByDomain) {
+  //       console.log("Branch found by domain:", branchByDomain);
+  //       setCurrentBranchId(branchByDomain._id);
+  //       setFoundByDomain(true);
+  //     } else {
+  //       const branchId = searchParams.get("branchId");
+  //       if (branchId) {
+  //         console.log("Branch ID from URL params:", branchId);
+  //         setCurrentBranchId(branchId);
+  //         setFoundByDomain(false);
+  //       } else {
+  //         setCurrentBranchId(null);
+  //         setFoundByDomain(false);
+  //       }
+  //     }
+  //   }
+  // }, [branches, searchParams]);
 
-  const isLoading = branchesLoading || branchLoading;
+  // const isLoading = branchesLoading || branchLoading;
 
-  const error = branchesError || branchError;
+  // const error = branchesError || branchError;
 
-  const currentBranch = foundByDomain
-    ? branches?.branch?.find((b) => b._id === currentBranchId)
-    : branchData?.branch;
+  // const currentBranch = foundByDomain
+  //   ? branches?.branch?.find((b) => b._id === currentBranchId)
+  //   : branchData?.branch;
 
   useEffect(() => {
     if (currentBranch) {
@@ -221,7 +230,7 @@ const BranchHome = () => {
   }
 
   // No branch found state
-  if (!isLoading && branches && !currentBranch) {
+  if (!isLoading && !currentBranch) {
     return (
       <Layout>
         <BranchHeader />

@@ -4,19 +4,34 @@ import LoginSection from "./LoginSection";
 import CVUploadSection from "./CVUploadSection";
 import BranchHeader from "../Global/BranchHeader";
 import BranchFooter from "../Global/BranchFooter";
-import { useGetBranchByIdQuery } from "../Slices/Users/UserApis.js";
-import { useSearchParams } from "react-router-dom";
+import SkeletonLoader from "../Global/SkeletonLoader";
+// import { useGetBranchByIdQuery } from "../Slices/Users/UserApis.js";
+// import { useSearchParams } from "react-router-dom";
+
+import { useBranch } from "../utils/useBranch";
 
 function BranchLogin() {
-  const [searchParams] = useSearchParams();
-  const branchId = searchParams.get("branchId");
+  const { currentBranch, isLoading, error } = useBranch();
 
-  const { data: branchData, isLoading } = useGetBranchByIdQuery(branchId, {
-    skip: !branchId,
-  });
+  if (isLoading) {
+    return (
+      <div>
+        <BranchHeader currentBranch={null} />
+        <SkeletonLoader />
+        <BranchFooter currentBranch={null} />
+      </div>
+    );
+  }
 
-  const currentBranch = branchData?.branch;
-
+  if (error) {
+    return (
+      <div>
+        <BranchHeader currentBranch={null} />
+        <div>Error loading branch details</div>
+        <BranchFooter currentBranch={null} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -35,9 +50,7 @@ function BranchLogin() {
             </Col>
 
             <Col xs={24} lg={12}>
-              <CVUploadSection 
-                currentBranch={currentBranch} 
-              />
+              <CVUploadSection currentBranch={currentBranch} />
             </Col>
           </Row>
         </div>

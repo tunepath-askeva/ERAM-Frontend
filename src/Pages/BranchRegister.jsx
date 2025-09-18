@@ -1,21 +1,42 @@
 import React from "react";
 import { Row, Col } from "antd";
-import LoginSection from "./LoginSection";
-import CVUploadSection from "./CVUploadSection";
 import BranchHeader from "../Global/BranchHeader";
 import BranchFooter from "../Global/BranchFooter";
-import { useGetBranchByIdQuery } from "../Slices/Users/UserApis.js";
-import { useSearchParams } from "react-router-dom";
+// import { useGetBranchByIdQuery } from "../Slices/Users/UserApis.js";
+// import { useSearchParams } from "react-router-dom";
 import Register from "../Auth/Register.jsx";
+import { useBranch } from "../utils/useBranch.js";
+import SkeletonLoader from "../Global/SkeletonLoader.jsx";
+
 function BranchRegister() {
-  const [searchParams] = useSearchParams();
-  const branchId = searchParams.get("branchId");
+  // const [searchParams] = useSearchParams();
+  // const branchId = searchParams.get("branchId");
 
-  const { data: branchData, isLoading } = useGetBranchByIdQuery(branchId, {
-    skip: !branchId,
-  });
+  // const { data: branchData, isLoading } = useGetBranchByIdQuery(branchId, {
+  //   skip: !branchId,
+  // });
 
-  const currentBranch = branchData?.branch;
+  const { currentBranch, isLoading, error } = useBranch(); // Use the new hook
+
+  if (isLoading) {
+    return (
+      <div>
+        <BranchHeader currentBranch={null} />
+        <SkeletonLoader />
+        <BranchFooter currentBranch={null} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <BranchHeader currentBranch={null} />
+        <div>Error loading branch details</div>
+        <BranchFooter currentBranch={null} />
+      </div>
+    );
+  }
 
   return (
     <>
