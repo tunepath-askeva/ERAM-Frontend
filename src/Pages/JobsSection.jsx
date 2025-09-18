@@ -69,7 +69,7 @@ const JobsSection = ({ currentBranch}) => {
           setTimeout(() => {
             el.style.border = "2px solid transparent";
             el.style.boxShadow = "";
-          }, 5000);
+          }, 20000);
         }
       }, 300);
     }
