@@ -41,7 +41,7 @@ const LoginSection = ({ currentBranch }) => {
       const response = await loginUser({
         email: values.email,
         password: values.password,
-        branchId: currentBranch?._id,
+        domain: window.location.hostname,
       }).unwrap();
 
       if (response.requireOtp) {
@@ -320,13 +320,7 @@ const LoginSection = ({ currentBranch }) => {
             <Text>Don’t have an account? </Text>
             <Link
               style={{ color: "#da2c46", fontWeight: "500" }}
-              onClick={() =>
-                navigate(
-                  currentBranch?._id
-                    ? `/branch-register?branchId=${currentBranch._id}`
-                    : "/branch-register"
-                )
-              }
+              onClick={() => navigate("/branch-register")}
             >
               Sign up here
             </Link>

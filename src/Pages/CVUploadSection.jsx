@@ -70,7 +70,7 @@ const CVUploadSection = ({ currentBranch }) => {
         }
       }, 200);
 
-      return false; 
+      return false;
     },
     onRemove: (file) => {
       setUploadedFiles(uploadedFiles.filter((item) => item.uid !== file.uid));
@@ -87,8 +87,7 @@ const CVUploadSection = ({ currentBranch }) => {
     uploadedFiles.forEach((file, index) => {
       formData.append(`file_${index}`, file.originFileObj);
     });
-    formData.append("branchId", currentBranch?._id);
-    
+    formData.append("domain", window.location.hostname);
 
     try {
       await submitCV(formData).unwrap();

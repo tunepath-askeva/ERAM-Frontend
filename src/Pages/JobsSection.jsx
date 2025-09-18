@@ -49,9 +49,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
     isLoading: jobsLoading,
     error: jobsError,
     refetch: refetchJobs,
-  } = useGetBranchJobsQuery(branchId, {
-    skip: !branchId,
-  });
+  } = useGetBranchJobsQuery(window.location.hostname);
 
   const jobs = jobsResponse?.jobs || [];
 
@@ -73,10 +71,10 @@ const JobsSection = ({ currentBranch, branchId }) => {
             el.style.boxShadow = "";
           }, 5000);
         }
-      }, 300); 
+      }, 300);
     }
-  }, [jobsResponse]); 
-  
+  }, [jobsResponse]);
+
   const filteredJobs = jobs.filter(
     (job) =>
       job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,7 +99,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
   };
 
   const handleJobClick = () => {
-    navigate(`/branch-login?branchId=${branchId}`);
+    navigate("/branch-login");
   };
 
   const getJobTypeColor = (type) => {
@@ -429,7 +427,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
                 icon={<ShareAltOutlined />}
                 onClick={(e) => {
                   e.stopPropagation();
-                  const jobUrl = `${window.location.origin}${window.location.pathname}?branchId=${currentBranch?._id}?jobId=${job._id}`;
+                  const jobUrl = `${window.location.origin}${window.location.pathname}?jobId=${job._id}`; // Remove branchId part
                   if (navigator.share) {
                     navigator.share({
                       title: job.title,
@@ -753,7 +751,7 @@ const JobsSection = ({ currentBranch, branchId }) => {
             padding: "0 24px",
             height: "40px",
           }}
-          onClick={() => navigate(`/branch-login?branchId=${branchId}`)}
+          onClick={() => navigate(`/branch-login`)}
         >
           Submit Your Resume
         </Button>

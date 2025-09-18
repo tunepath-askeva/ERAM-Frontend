@@ -27,7 +27,6 @@ import {
   GlobalOutlined,
   BankOutlined,
 } from "@ant-design/icons";
-import { useBranch } from "../utils/useBranch";
 
 const { Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -36,11 +35,6 @@ const { Search } = Input;
 const BranchFooter = ({ currentBranch }) => {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
-  // const [searchParams] = useSearchParams();
-
-  // const branchId = searchParams.get("branchId");
-
-  const { branchId } = useBranch();
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 100);
@@ -292,22 +286,9 @@ const BranchFooter = ({ currentBranch }) => {
                 style={{ width: "100%" }}
               >
                 {[
-                  {
-                    label: "Home",
-                    path: branchId ? `/home?branchId=${branchId}` : "/home",
-                  },
-                  {
-                    label: "Apply / Login",
-                    path: branchId
-                      ? `/branch-login?branchId=${branchId}`
-                      : "/branch-login",
-                  },
-                  {
-                    label: "Register",
-                    path: branchId
-                      ? `/branch-register?branchId=${branchId}`
-                      : "/branch-register",
-                  },
+                  { label: "Home", path: "/home" },
+                  { label: "Apply / Login", path: "/branch-login" },
+                  { label: "Register", path: "/branch-register" },
                 ].map((item) => {
                   const isActive =
                     window.location.pathname === item.path ||

@@ -243,7 +243,7 @@ const Register = ({ currentBranch }) => {
         email: values.email.trim().toLowerCase(),
         phone: formattedPhone,
         cPassword: values.cPassword,
-        branchId: currentBranch?._id || null,
+        domain: window.location.hostname,
       };
 
       console.log("Registration data:", userData);
@@ -304,7 +304,7 @@ const Register = ({ currentBranch }) => {
       autoHideDuration: 3000,
     });
 
-    navigate(`/branch-login?branchId=${currentBranch._id}`);
+    navigate(`/branch-login`);
   };
 
   const handleOtpModalCancel = () => {

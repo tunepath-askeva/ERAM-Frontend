@@ -12,16 +12,6 @@ import {
   Avatar,
   Tag,
 } from "antd";
-import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  BankOutlined,
-  GlobalOutlined,
-} from "@ant-design/icons";
-import {
-  useGetBranchesQuery,
-  useGetBranchByIdQuery,
-} from "../Slices/Users/UserApis.js";
 import BranchHeader from "../Global/BranchHeader.jsx";
 import BranchFooter from "../Global/BranchFooter.jsx";
 import JobsSection from "./JobsSection.jsx";
@@ -32,87 +22,9 @@ const { Title, Text, Paragraph } = Typography;
 const { Content } = Layout;
 
 const BranchHome = () => {
-  // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // const {
-  //   data: branches,
-  //   isLoading: branchesLoading,
-  //   error: branchesError,
-  // } = useGetBranchesQuery();
-
-  // const [currentBranchId, setCurrentBranchId] = useState(null);
-  // const [foundByDomain, setFoundByDomain] = useState(false);
-
-  // const {
-  //   data: branchData,
-  //   isLoading: branchLoading,
-  //   error: branchError,
-  //   skip: skipBranchQuery,
-  // } = useGetBranchByIdQuery(currentBranchId, {
-  //   skip: !currentBranchId,
-  // });
-
-  const {
-    currentBranch,
-    isLoading,
-    error,
-    branchId: currentBranchId,
-    foundByDomain,
-  } = useBranch();
-
-  const findBranchByDomain = (branchesData) => {
-    const currentHost = window.location.hostname;
-
-    const matchedBranch = branchesData.find((branch) => {
-      if (!branch.url) return false;
-
-      let branchDomain = String(branch.url)
-        .replace(/^https?:\/\//, "")
-        .replace(/\/$/, "");
-
-      console.log(`Comparing: ${currentHost} with ${branchDomain}`);
-
-      return (
-        (currentHost && currentHost.includes(branchDomain)) ||
-        (branchDomain && branchDomain.includes(currentHost))
-      );
-    });
-
-    return matchedBranch;
-  };
-
-  // useEffect(() => {
-  //   if (branches?.branch && Array.isArray(branches.branch)) {
-  //     console.log("Branches loaded:", branches.branch);
-
-  //     const branchByDomain = findBranchByDomain(branches.branch);
-
-  //     if (branchByDomain) {
-  //       console.log("Branch found by domain:", branchByDomain);
-  //       setCurrentBranchId(branchByDomain._id);
-  //       setFoundByDomain(true);
-  //     } else {
-  //       const branchId = searchParams.get("branchId");
-  //       if (branchId) {
-  //         console.log("Branch ID from URL params:", branchId);
-  //         setCurrentBranchId(branchId);
-  //         setFoundByDomain(false);
-  //       } else {
-  //         setCurrentBranchId(null);
-  //         setFoundByDomain(false);
-  //       }
-  //     }
-  //   }
-  // }, [branches, searchParams]);
-
-  // const isLoading = branchesLoading || branchLoading;
-
-  // const error = branchesError || branchError;
-
-  // const currentBranch = foundByDomain
-  //   ? branches?.branch?.find((b) => b._id === currentBranchId)
-  //   : branchData?.branch;
+  const { currentBranch, isLoading, error, domain } = useBranch();
 
   useEffect(() => {
     if (currentBranch) {
@@ -287,7 +199,6 @@ const BranchHome = () => {
           >
             <JobsSection
               currentBranch={currentBranch}
-              branchId={currentBranchId}
             />
           </div>
         </div>

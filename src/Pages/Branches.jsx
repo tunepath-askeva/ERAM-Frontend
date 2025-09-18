@@ -48,14 +48,12 @@ const Branches = () => {
   const handleView = (branch) => {
     if (branch.url) {
       const targetUrl = branch.url.startsWith("http")
-        ? `${branch.url}/home?branchId=${branch._id}`
-        : `${branch.url}/home?branchId=${branch._id}`;
-
-      console.log(targetUrl, "hi url-=-");
+        ? `${branch.url}/home` // Remove ?branchId=${branch._id}
+        : `${branch.url}/home`;
 
       window.open(targetUrl, "_blank", "noopener,noreferrer");
     } else {
-      const targetUrl = `/home?branchId=${branch._id}`;
+      const targetUrl = "/home"; // Remove ?branchId=${branch._id}
       window.open(targetUrl, "_blank", "noopener,noreferrer");
     }
   };
