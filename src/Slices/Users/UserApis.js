@@ -284,9 +284,8 @@ export const userApi = createApi({
 
     getBranchByDomain: builder.query({
       query: (domain) => ({
-        url: `/branch-details/by-domain`,
-        method: "POST",
-        body: { domain },
+        url: `/branch-details/by-domain?domain=${encodeURIComponent(domain)}`,
+        method: "GET",
       }),
     }),
 
