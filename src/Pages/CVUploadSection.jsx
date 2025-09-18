@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Card, Upload, Button, Typography, List, Progress } from "antd";
+import { Card, Upload, Button, Typography, List, Progress, Input  } from "antd";
 import {
   InboxOutlined,
   UploadOutlined,
   FileTextOutlined,
   DeleteOutlined,
   SendOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import { useSubmitCVApplicationMutation } from "../Slices/Users/UserApis";
@@ -16,6 +17,7 @@ const { Dragger } = Upload;
 const CVUploadSection = ({ currentBranch }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [applicantName, setApplicantName] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const [submitCV, { isLoading }] = useSubmitCVApplicationMutation();
 
@@ -23,6 +25,7 @@ const CVUploadSection = ({ currentBranch }) => {
     name: "file",
     multiple: false,
     accept: ".pdf,.doc,.docx",
+    showUploadList: false,
     beforeUpload: (file) => {
       const isValidType =
         file.type === "application/pdf" ||
@@ -78,6 +81,11 @@ const CVUploadSection = ({ currentBranch }) => {
   };
 
   const handleSubmit = async () => {
+    if (!applicantName.trim()) {
+      enqueueSnackbar("Please enter your name!", { variant: "warning" });
+      return;
+    }
+
     if (uploadedFiles.length === 0) {
       enqueueSnackbar("Please upload your CV first!", { variant: "warning" });
       return;
@@ -88,13 +96,15 @@ const CVUploadSection = ({ currentBranch }) => {
       formData.append(`file_${index}`, file.originFileObj);
     });
     formData.append("domain", window.location.hostname);
+    formData.append("applicantName", applicantName.trim());
 
     try {
       await submitCV(formData).unwrap();
       enqueueSnackbar("Application submitted successfully!", {
         variant: "success",
       });
-      setUploadedFiles([]); // reset after success
+      setUploadedFiles([]);
+      setApplicantName("");
     } catch (error) {
       enqueueSnackbar(
         error?.data?.message || "Submission failed! Please try again.",
@@ -127,6 +137,19 @@ const CVUploadSection = ({ currentBranch }) => {
         }}
         bodyStyle={{ padding: "32px" }}
       >
+        <Input
+          placeholder="Enter your full name"
+          value={applicantName}
+          onChange={(e) => setApplicantName(e.target.value)}
+          prefix={<UserOutlined style={{ color: "#da2c46" }} />}
+          size="large"
+          style={{
+            marginBottom: "20px",
+            borderRadius: "8px",
+            borderColor: "#da2c46",
+          }}
+        />
+
         <Dragger {...uploadProps} style={{ marginBottom: "20px" }}>
           <p className="ant-upload-drag-icon">
             <InboxOutlined style={{ color: "#da2c46", fontSize: "48px" }} />
