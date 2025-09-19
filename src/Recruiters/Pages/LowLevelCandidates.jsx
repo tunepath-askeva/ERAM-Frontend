@@ -29,6 +29,7 @@ import {
   EyeOutlined,
   DeleteOutlined,
   FileTextOutlined,
+  SignatureOutlined,
   CalendarOutlined,
   UserOutlined,
   FilterOutlined,
@@ -44,6 +45,7 @@ import { useSelector } from "react-redux";
 import {
   useGetAllRecruiterCvsQuery,
   useDeleteRecruiterCvMutation,
+  useAddRemarksCvCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
@@ -68,6 +70,8 @@ const LowLevelCandidates = () => {
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [addRemarksModalVisible, setAddRemarksModalVisible] = useState(false);
+  const [remarksText, setRemarksText] = useState("");
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -99,6 +103,9 @@ const LowLevelCandidates = () => {
   const [deleteRecruiterCv, { isLoading: isDeleting }] =
     useDeleteRecruiterCvMutation();
 
+  const [addRemarks, { isLoading: isAdding }] =
+    useAddRemarksCvCandidatesMutation();
+
   useEffect(() => {
     if (data?.getAllCV) {
       const formatted = data.getAllCV.map((cv) => ({
@@ -111,6 +118,7 @@ const LowLevelCandidates = () => {
         domain: cv.branch || "N/A",
         jobTitle: cv.jobId?.title || "Common Apply",
         jobCode: cv.jobId?.jobCode || "Common Apply",
+        remarks: cv.remarks || "No remarks added yet...",
       }));
       setCandidates(formatted);
       setFilteredCandidates(formatted);
@@ -286,7 +294,16 @@ const LowLevelCandidates = () => {
       ),
       responsive: ["md"],
     },
-
+    {
+      title: "Remarks",
+      dataIndex: "remarks",
+      key: "remarks",
+      render: (text) => (
+        <span style={{ fontSize: "13px", color: "#374151" }}>
+          {text || "—"}
+        </span>
+      ),
+    },
     {
       title: "Upload Date",
       dataIndex: "uploadDate",
@@ -370,6 +387,17 @@ const LowLevelCandidates = () => {
                 Convert to Candidate
               </Menu.Item>
             )}
+
+            <Menu.Item
+              key="remarks"
+              icon={<SignatureOutlined />}
+              onClick={() => {
+                setSelectedCandidate(record);
+                setAddRemarksModalVisible(true);
+              }}
+            >
+              Add Remarks
+            </Menu.Item>
 
             <Divider style={{ margin: "4px 0" }} />
 
@@ -682,6 +710,9 @@ const LowLevelCandidates = () => {
                 <Descriptions.Item label="Job Code">
                   {selectedCandidate.jobCode}
                 </Descriptions.Item>
+                <Descriptions.Item label="Remarks">
+                  {selectedCandidate.remarks || "No remarks added"}
+                </Descriptions.Item>
 
                 <Descriptions.Item label="Upload Date">
                   {formatDate(selectedCandidate.uploadDate)}
@@ -768,6 +799,10 @@ const LowLevelCandidates = () => {
               {selectedCandidate.jobCode}
             </Descriptions.Item>
 
+            <Descriptions.Item label="Remarks">
+              {selectedCandidate.remarks || "No remarks added"}
+            </Descriptions.Item>
+
             <Descriptions.Item label="Upload Date">
               {formatDate(selectedCandidate.uploadDate)}
             </Descriptions.Item>
@@ -792,6 +827,64 @@ const LowLevelCandidates = () => {
           Are you sure you want to delete{" "}
           <strong>{candidateToDelete?.name}</strong>?
         </p>
+      </Modal>
+
+      <Modal
+        title={`Add Remarks for ${selectedCandidate?.name || ""}`}
+        open={addRemarksModalVisible}
+        onCancel={() => {
+          setAddRemarksModalVisible(false);
+          setRemarksText("");
+        }}
+        onOk={async () => {
+          if (!remarksText.trim()) {
+            message.error("Please enter remarks before submitting!");
+            return;
+          }
+          try {
+            await addRemarks({
+              candidateId: selectedCandidate?.id,
+              remarks: remarksText,
+            }).unwrap();
+
+            setCandidates((prev) =>
+              prev.map((c) =>
+                c.id === selectedCandidate?.id
+                  ? { ...c, remarks: remarksText }
+                  : c
+              )
+            );
+            setFilteredCandidates((prev) =>
+              prev.map((c) =>
+                c.id === selectedCandidate?.id
+                  ? { ...c, remarks: remarksText }
+                  : c
+              )
+            );
+
+            message.success("Remarks added successfully!");
+            setAddRemarksModalVisible(false);
+            setRemarksText("");
+          } catch (error) {
+            message.error("Failed to add remarks!");
+          }
+        }}
+        okText={isAdding ? "Saving..." : "Save"}
+        confirmLoading={isAdding}
+        okButtonProps={{
+          style: {
+            background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+            border: "none",
+            color: "#fff",
+          },
+        }}
+      >
+        <Input.TextArea
+          rows={4}
+          value={remarksText}
+          onChange={(e) => setRemarksText(e.target.value)}
+          placeholder="Enter remarks here..."
+        />
       </Modal>
 
       <style jsx>{`
