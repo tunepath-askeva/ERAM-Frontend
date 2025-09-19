@@ -152,7 +152,7 @@ const CVUploadSection = ({ currentBranch, jobId }) => {
           Quick Apply
         </Title>
         <Text style={{ fontSize: "16px", display: "block" }}>
-          Submit your CV for entry-level positions
+          Submit your CV for Quick Apply.
         </Text>
       </div>
 
