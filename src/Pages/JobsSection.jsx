@@ -35,6 +35,7 @@ import {
 import { useGetBranchJobsQuery } from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
 import CVUploadSection from "./CVUploadSection.jsx";
+import SkeletonLoader from "../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -179,274 +180,282 @@ const JobsSection = ({ currentBranch }) => {
     return `${Math.ceil(diffDays / 30)} months ago`;
   };
 
-const JobCard = ({ job }) => (
-  <Card
-    id={`job-${job._id}`}
-    hoverable
-    style={{
-      borderRadius: "12px",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-      border: "2px solid transparent",
-      transition: "all 0.3s ease-in-out",
-      cursor: "pointer",
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      height: "100%", // allow auto-adjust in grid
-    }}
-    bodyStyle={{
-      padding: "16px",
-      display: "flex",
-      flexDirection: "column",
-      height: "100%",
-    }}
-  >
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ marginBottom: "12px" }}>
+  const JobCard = ({ job }) => (
+    <Card
+      id={`job-${job._id}`}
+      hoverable
+      style={{
+        borderRadius: "12px",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        border: "2px solid transparent",
+        transition: "all 0.3s ease-in-out",
+        cursor: "pointer",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%", // allow auto-adjust in grid
+      }}
+      bodyStyle={{
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      }}
+    >
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "8px",
+              marginBottom: "8px",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title
+                level={5}
+                style={{
+                  margin: 0,
+                  color: "#1e293b",
+                  fontSize: "clamp(14px, 2vw, 16px)", // responsive font
+                  fontWeight: "600",
+                  lineHeight: "1.3",
+                }}
+                ellipsis={{ rows: 2, tooltip: job.title }}
+              >
+                {job.title}
+              </Title>
+            </div>
+            {job.workOrderStatus === "urgent" && (
+              <Badge
+                status="error"
+                text="Urgent"
+                style={{
+                  color: "#dc2626",
+                  fontSize: "10px",
+                  fontWeight: "500",
+                  flexShrink: 0,
+                }}
+              />
+            )}
+          </div>
+
+          {job.jobCode && (
+            <Tag color="blue" style={{ fontSize: "11px", padding: "2px 6px" }}>
+              {job.jobCode}
+            </Tag>
+          )}
+        </div>
+
+        {/* Function / Industry */}
+        <Text
+          style={{
+            color: "#64748b",
+            marginBottom: "10px",
+            display: "block",
+            fontSize: "13px",
+            lineHeight: "1.2",
+          }}
+          ellipsis
+        >
+          {job.jobFunction || job.companyIndustry || "General"}
+        </Text>
+
+        {/* Tags (employment type, workplace) */}
+        <Space wrap size="small" style={{ marginBottom: "10px" }}>
+          <Tag
+            color={getJobTypeColor(job.EmploymentType)}
+            style={{
+              borderRadius: "3px",
+              fontSize: "11px",
+              padding: "2px 6px",
+            }}
+          >
+            {job.EmploymentType || "Full-time"}
+          </Tag>
+          <Tag
+            color={getWorkplaceColor(job.workplace)}
+            style={{
+              borderRadius: "3px",
+              fontSize: "11px",
+              padding: "2px 6px",
+            }}
+          >
+            {job.workplace}
+          </Tag>
+        </Space>
+
+        {/* Location */}
         <div
           style={{
             display: "flex",
-            alignItems: "flex-start",
-            gap: "8px",
-            marginBottom: "8px",
+            alignItems: "center",
+            gap: "6px",
+            marginBottom: "10px",
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Title
-              level={5}
-              style={{
-                margin: 0,
-                color: "#1e293b",
-                fontSize: "clamp(14px, 2vw, 16px)", // responsive font
-                fontWeight: "600",
-                lineHeight: "1.3",
-              }}
-              ellipsis={{ rows: 2, tooltip: job.title }}
-            >
-              {job.title}
-            </Title>
-          </div>
-          {job.workOrderStatus === "urgent" && (
-            <Badge
-              status="error"
-              text="Urgent"
-              style={{
-                color: "#dc2626",
-                fontSize: "10px",
-                fontWeight: "500",
-                flexShrink: 0,
-              }}
-            />
-          )}
+          <EnvironmentOutlined style={{ color: "#10b981", fontSize: "12px" }} />
+          <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
+            {job.officeLocation}
+          </Text>
         </div>
 
-        {job.jobCode && (
-          <Tag color="blue" style={{ fontSize: "11px", padding: "2px 6px" }}>
-            {job.jobCode}
-          </Tag>
-        )}
-      </div>
+        {/* Experience & Education */}
+        <Space wrap size="small" style={{ marginBottom: "10px" }}>
+          {job.experienceMin && job.experienceMax && (
+            <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
+              {job.experienceMin}-{job.experienceMax} yrs
+            </Tag>
+          )}
+          {job.Education && (
+            <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
+              {job.Education}
+            </Tag>
+          )}
+        </Space>
 
-      {/* Function / Industry */}
-      <Text
-        style={{
-          color: "#64748b",
-          marginBottom: "10px",
-          display: "block",
-          fontSize: "13px",
-          lineHeight: "1.2",
-        }}
-        ellipsis
-      >
-        {job.jobFunction || job.companyIndustry || "General"}
-      </Text>
-
-      {/* Tags (employment type, workplace) */}
-      <Space wrap size="small" style={{ marginBottom: "10px" }}>
-        <Tag
-          color={getJobTypeColor(job.EmploymentType)}
+        {/* Description */}
+        <Paragraph
           style={{
-            borderRadius: "3px",
-            fontSize: "11px",
-            padding: "2px 6px",
+            color: "#64748b",
+            fontSize: "12px",
+            lineHeight: "1.4",
+            marginBottom: "10px",
+            flex: 1,
+          }}
+          ellipsis={{ rows: 3 }}
+        >
+          {job.description}
+        </Paragraph>
+
+        {/* Skills */}
+        {job.requiredSkills && job.requiredSkills.length > 0 && (
+          <div style={{ marginBottom: "12px" }}>
+            <Text strong style={{ fontSize: "11px", color: "#374151" }}>
+              Skills:
+            </Text>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+              {job.requiredSkills.slice(0, 2).map((skill, index) => (
+                <Tag
+                  key={index}
+                  style={{
+                    fontSize: "10px",
+                    borderRadius: "3px",
+                    padding: "2px 6px",
+                  }}
+                >
+                  {skill.length > 12 ? skill.substring(0, 12) + "..." : skill}
+                </Tag>
+              ))}
+              {job.requiredSkills.length > 2 && (
+                <Tag style={{ fontSize: "10px", padding: "2px 6px" }}>
+                  +{job.requiredSkills.length - 2}
+                </Tag>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer (salary + buttons) */}
+        <div
+          style={{
+            marginTop: "auto",
+            paddingTop: "8px",
+            borderTop: "1px solid #f1f5f9",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
           }}
         >
-          {job.EmploymentType || "Full-time"}
-        </Tag>
-        <Tag
-          color={getWorkplaceColor(job.workplace)}
-          style={{
-            borderRadius: "3px",
-            fontSize: "11px",
-            padding: "2px 6px",
-          }}
-        >
-          {job.workplace}
-        </Tag>
-      </Space>
-
-      {/* Location */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          marginBottom: "10px",
-        }}
-      >
-        <EnvironmentOutlined style={{ color: "#10b981", fontSize: "12px" }} />
-        <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
-          {job.officeLocation}
-        </Text>
-      </div>
-
-      {/* Experience & Education */}
-      <Space wrap size="small" style={{ marginBottom: "10px" }}>
-        {job.experienceMin && job.experienceMax && (
-          <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
-            {job.experienceMin}-{job.experienceMax} yrs
-          </Tag>
-        )}
-        {job.Education && (
-          <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
-            {job.Education}
-          </Tag>
-        )}
-      </Space>
-
-      {/* Description */}
-      <Paragraph
-        style={{
-          color: "#64748b",
-          fontSize: "12px",
-          lineHeight: "1.4",
-          marginBottom: "10px",
-          flex: 1,
-        }}
-        ellipsis={{ rows: 3 }}
-      >
-        {job.description}
-      </Paragraph>
-
-      {/* Skills */}
-      {job.requiredSkills && job.requiredSkills.length > 0 && (
-        <div style={{ marginBottom: "12px" }}>
-          <Text strong style={{ fontSize: "11px", color: "#374151" }}>
-            Skills:
-          </Text>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-            {job.requiredSkills.slice(0, 2).map((skill, index) => (
-              <Tag
-                key={index}
+          {/* Salary + Date Info */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+            }}
+          >
+            <Space size="small">
+              <DollarOutlined style={{ color: "#3b82f6", fontSize: "11px" }} />
+              <Text
                 style={{
-                  fontSize: "10px",
-                  borderRadius: "3px",
-                  padding: "2px 6px",
+                  fontSize: "11px",
+                  color: "#374151",
+                  fontWeight: "500",
                 }}
               >
-                {skill.length > 12 ? skill.substring(0, 12) + "..." : skill}
-              </Tag>
-            ))}
-            {job.requiredSkills.length > 2 && (
-              <Tag style={{ fontSize: "10px", padding: "2px 6px" }}>
-                +{job.requiredSkills.length - 2}
-              </Tag>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Footer (salary + buttons) */}
-      <div
-        style={{
-          marginTop: "auto",
-          paddingTop: "8px",
-          borderTop: "1px solid #f1f5f9",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
-      >
-        {/* Salary + Date Info */}
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
-          <Space size="small">
-            <DollarOutlined style={{ color: "#3b82f6", fontSize: "11px" }} />
-            <Text style={{ fontSize: "11px", color: "#374151", fontWeight: "500" }}>
-              {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
-            </Text>
-          </Space>
-          {job.deadlineDate && (
-            <Space size="small">
-              <CalendarOutlined style={{ color: "#f59e0b", fontSize: "11px" }} />
-              <Text style={{ fontSize: "10px", color: "#f59e0b" }}>
-                {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
+                {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
               </Text>
             </Space>
-          )}
-        </div>
+            {job.deadlineDate && (
+              <Space size="small">
+                <CalendarOutlined
+                  style={{ color: "#f59e0b", fontSize: "11px" }}
+                />
+                <Text style={{ fontSize: "10px", color: "#f59e0b" }}>
+                  {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
+                </Text>
+              </Space>
+            )}
+          </div>
 
-        {/* Buttons (responsive row) */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <Button
-            type="primary"
-            icon={<LoginOutlined />}
-            style={{
-              flex: 1,
-              background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-              border: "none",
-              borderRadius: "6px",
-              height: "36px",
-              fontSize: "12px",
-              fontWeight: "600",
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleJobClick();
-            }}
-          >
-            Apply Now
-          </Button>
+          {/* Buttons (responsive row) */}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <Button
+              type="primary"
+              icon={<LoginOutlined />}
+              style={{
+                flex: 1,
+                background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                border: "none",
+                borderRadius: "6px",
+                height: "36px",
+                fontSize: "12px",
+                fontWeight: "600",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleJobClick();
+              }}
+            >
+              Apply Now
+            </Button>
 
-          <Button
-            type="primary"
-            icon={<LoginOutlined />}
-            style={{
-              flex: 1,
-              background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-              border: "none",
-              borderRadius: "6px",
-              height: "36px",
-              fontSize: "12px",
-              fontWeight: "600",
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              openCvModal(job._id);
-            }}
-          >
-            CV Apply
-          </Button>
+            <Button
+              type="primary"
+              icon={<LoginOutlined />}
+              style={{
+                flex: 1,
+                background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                border: "none",
+                borderRadius: "6px",
+                height: "36px",
+                fontSize: "12px",
+                fontWeight: "600",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openCvModal(job._id);
+              }}
+            >
+              CV Apply
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  </Card>
-);
+    </Card>
+  );
 
-
-  // Loading state
   if (jobsLoading) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <Spin size="large" />
-        <div style={{ marginTop: "20px" }}>
-          <Text style={{ color: "#64748b" }}>Loading job opportunities...</Text>
-        </div>
+        <SkeletonLoader />
       </div>
     );
   }
 
-  // Error state
   if (jobsError) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>

@@ -72,65 +72,26 @@ const LowLevelCandidates = () => {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
+  const { data, isLoading } = useGetAllRecruiterCvsQuery();
+
   useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        name: "John Smith",
-        email: "john.smith@email.com",
-        phone: "+966501234567",
-        fileName: "John_Smith_CV.pdf",
-        fileSize: "2.3 MB",
-        uploadDate: "2024-03-15T10:30:00Z",
-        domain: "branch1.company.com",
-        status: "new",
-      },
-      {
-        id: 2,
-        name: "Sarah Johnson",
-        email: "sarah.j@email.com",
-        phone: "+966509876543",
-        fileName: "Sarah_Johnson_Resume.docx",
-        fileSize: "1.8 MB",
-        uploadDate: "2024-03-14T14:20:00Z",
-        domain: "branch2.company.com",
-        status: "reviewed",
-      },
-      {
-        id: 3,
-        name: "Ahmed Al-Rashid",
-        email: "ahmed.rashid@email.com",
-        phone: "+966512345678",
-        fileName: "Ahmed_CV_2024.pdf",
-        fileSize: "3.1 MB",
-        uploadDate: "2024-03-13T09:15:00Z",
-        domain: "main.company.com",
-        status: "shortlisted",
-      },
-      {
-        id: 4,
-        name: "Maria Garcia",
-        email: "maria.garcia@email.com",
-        phone: "+966587654321",
-        fileName: "Maria_Garcia_CV.pdf",
-        fileSize: "2.7 MB",
-        uploadDate: "2024-03-12T16:45:00Z",
-        domain: "branch1.company.com",
-        status: "new",
-      },
-    ];
+    if (data?.getAllCV) {
+      const formatted = data.getAllCV.map((cv) => ({
+        id: cv._id,
+        name: cv.applicantName || `${cv.firstName} ${cv.lastName}`,
+        email: cv.email,
+        fileName: cv.Resume?.[0]?.fileName || "N/A",
+        fileUrl: cv.Resume?.[0]?.fileUrl || "",
+        uploadDate: cv.Resume?.[0]?.uploadedAt || cv.createdAt,
+        domain: cv.branch || "N/A",
+        jobTitle: cv.jobId?.title || "Common Apply",
+        jobCode: cv.jobId?.jobCode || "Common Apply",
+      }));
+      setCandidates(formatted);
+      setFilteredCandidates(formatted);
+    }
+  }, [data]);
 
-    setLoading(true);
-    setTimeout(() => {
-      setCandidates(mockData);
-      setFilteredCandidates(mockData);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const { data } = useGetAllRecruiterCvsQuery();
-
-  // Search functionality
   const handleSearch = (value) => {
     setSearchTerm(value);
     const filtered = candidates.filter(
@@ -147,23 +108,6 @@ const LowLevelCandidates = () => {
     return recruiterPermissions.includes(permissionKey);
   };
 
-  // Status color mapping
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "new":
-        return "#da2c46";
-      case "reviewed":
-        return "#f59e0b";
-      case "shortlisted":
-        return "#10b981";
-      case "rejected":
-        return "#ef4444";
-      default:
-        return "#6b7280";
-    }
-  };
-
-  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -222,41 +166,23 @@ const LowLevelCandidates = () => {
               >
                 {record.name}
               </div>
-              <Tag
-                color={getStatusColor(record.status)}
-                style={{
-                  borderRadius: "4px",
-                  fontSize: "10px",
-                  padding: "2px 6px",
-                  textTransform: "capitalize",
-                }}
-              >
-                {record.status}
-              </Tag>
             </div>
           </div>
-
           <div
             style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
           >
             <MailOutlined style={{ marginRight: "4px" }} />
             {record.email}
           </div>
-          <div
-            style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
-          >
-            <PhoneOutlined style={{ marginRight: "4px" }} />
-            {record.phone}
-          </div>
-          <div
-            style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}
-          >
-            <FileTextOutlined style={{ marginRight: "4px" }} />
-            {record.fileName} ({record.fileSize})
-          </div>
+          {record.fileName}
           <div style={{ fontSize: "11px", color: "#64748b" }}>
             <CalendarOutlined style={{ marginRight: "4px" }} />
             {formatDate(record.uploadDate)}
+          </div>
+          <div
+            style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
+          >
+            <strong>Job:</strong> {record.jobTitle} ({record.jobCode})
           </div>
         </div>
 
@@ -297,9 +223,6 @@ const LowLevelCandidates = () => {
             <div style={{ fontSize: "12px", color: "#64748b" }}>
               {record.email}
             </div>
-            <div style={{ fontSize: "12px", color: "#64748b" }}>
-              {record.phone}
-            </div>
           </div>
         </div>
       ),
@@ -313,7 +236,10 @@ const LowLevelCandidates = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <FileTextOutlined style={{ color: "#da2c46", fontSize: "16px" }} />
           <div>
-            <div
+            <a
+              href={record.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
                 fontWeight: "500",
                 color: "#1e293b",
@@ -324,15 +250,28 @@ const LowLevelCandidates = () => {
               }}
             >
               {text}
-            </div>
-            <div style={{ fontSize: "12px", color: "#64748b" }}>
-              {record.fileSize}
-            </div>
+            </a>
           </div>
         </div>
       ),
       responsive: ["md"],
     },
+    {
+      title: "Job Details",
+      key: "jobDetails",
+      render: (_, record) => (
+        <div>
+          <div style={{ fontWeight: "500", color: "#1e293b" }}>
+            {record.jobTitle}
+          </div>
+          <div style={{ fontSize: "12px", color: "#64748b" }}>
+            {record.jobCode}
+          </div>
+        </div>
+      ),
+      responsive: ["md"],
+    },
+
     {
       title: "Upload Date",
       dataIndex: "uploadDate",
@@ -346,24 +285,7 @@ const LowLevelCandidates = () => {
         </div>
       ),
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <Tag
-          color={getStatusColor(status)}
-          style={{
-            borderRadius: "6px",
-            fontSize: "12px",
-            padding: "4px 8px",
-            textTransform: "capitalize",
-          }}
-        >
-          {status}
-        </Tag>
-      ),
-    },
+
     {
       title: "Actions",
       key: "actions",
@@ -441,10 +363,6 @@ const LowLevelCandidates = () => {
       },
     },
   ];
-
-  const handleViewCV = (record) => {
-    message.info(`Viewing CV for ${record.name}`);
-  };
 
   const handleDownloadCV = (record) => {
     message.success(`Downloading ${record.fileName}`);
@@ -630,7 +548,7 @@ const LowLevelCandidates = () => {
             <Table
               columns={columns}
               dataSource={filteredCandidates}
-              rowKey="id"
+              rowKey="_id"
               loading={loading}
               scroll={{ x: 800 }}
               pagination={{
@@ -710,17 +628,6 @@ const LowLevelCandidates = () => {
                   >
                     {selectedCandidate.name}
                   </div>
-                  <Tag
-                    color={getStatusColor(selectedCandidate.status)}
-                    style={{
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      padding: "4px 8px",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {selectedCandidate.status}
-                  </Tag>
                 </div>
               </div>
 
@@ -728,17 +635,25 @@ const LowLevelCandidates = () => {
                 <Descriptions.Item label="Email">
                   {selectedCandidate.email}
                 </Descriptions.Item>
-                <Descriptions.Item label="Phone">
-                  {selectedCandidate.phone}
-                </Descriptions.Item>
                 <Descriptions.Item label="CV File">
-                  {selectedCandidate.fileName} ({selectedCandidate.fileSize})
+                  <a
+                    href={selectedCandidate.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {selectedCandidate.fileName}
+                  </a>{" "}
                 </Descriptions.Item>
+
+                <Descriptions.Item label="Job Title">
+                  {selectedCandidate.jobTitle}
+                </Descriptions.Item>
+                <Descriptions.Item label="Job Code">
+                  {selectedCandidate.jobCode}
+                </Descriptions.Item>
+
                 <Descriptions.Item label="Upload Date">
                   {formatDate(selectedCandidate.uploadDate)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Domain">
-                  {selectedCandidate.domain}
                 </Descriptions.Item>
               </Descriptions>
 
@@ -753,7 +668,17 @@ const LowLevelCandidates = () => {
                 <Button
                   type="primary"
                   icon={<EyeOutlined />}
-                  onClick={() => handleViewCV(selectedCandidate)}
+                  onClick={() => {
+                    if (selectedCandidate?.fileUrl) {
+                      window.open(
+                        selectedCandidate.fileUrl,
+                        "_blank",
+                        "noopener,noreferrer"
+                      );
+                    } else {
+                      message.error("CV file not available!");
+                    }
+                  }}
                   style={{
                     background:
                       "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
@@ -763,6 +688,7 @@ const LowLevelCandidates = () => {
                 >
                   View CV
                 </Button>
+
                 <Button
                   icon={<DownloadOutlined />}
                   onClick={() => handleDownloadCV(selectedCandidate)}
@@ -794,17 +720,25 @@ const LowLevelCandidates = () => {
             <Descriptions.Item label="Email">
               {selectedCandidate.email}
             </Descriptions.Item>
-            <Descriptions.Item label="Phone">
-              {selectedCandidate.phone}
-            </Descriptions.Item>
             <Descriptions.Item label="CV File">
-              {selectedCandidate.fileName} ({selectedCandidate.fileSize})
+              <a
+                href={selectedCandidate.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {selectedCandidate.fileName}
+              </a>{" "}
             </Descriptions.Item>
+
+            <Descriptions.Item label="Job Title">
+              {selectedCandidate.jobTitle}
+            </Descriptions.Item>
+            <Descriptions.Item label="Job Code">
+              {selectedCandidate.jobCode}
+            </Descriptions.Item>
+
             <Descriptions.Item label="Upload Date">
               {formatDate(selectedCandidate.uploadDate)}
-            </Descriptions.Item>
-            <Descriptions.Item label="Domain">
-              {selectedCandidate.domain}
             </Descriptions.Item>
           </Descriptions>
         )}
