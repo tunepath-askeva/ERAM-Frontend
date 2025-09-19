@@ -288,17 +288,6 @@ const Branches = () => {
                       >
                         {branch.branchCode}
                       </Text>
-                      <div style={{ marginTop: "8px" }}>
-                        <Tag
-                          color="blue"
-                          style={{
-                            borderRadius: "8px",
-                            fontSize: "11px",
-                          }}
-                        >
-                          Order: {branch.branchOrder}
-                        </Tag>
-                      </div>
                     </div>
 
                     {/* Branch URL Display */}
