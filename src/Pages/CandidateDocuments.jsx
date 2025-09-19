@@ -38,6 +38,7 @@ import {
   CaretRightOutlined,
 } from "@ant-design/icons";
 import { useGetCandidateDocumentsQuery } from "../Slices/Users/UserApis";
+import SkeletonLoader from "../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -200,8 +201,8 @@ const CandidateDocuments = () => {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Text>Loading documents...</Text>
+      <div >
+        <SkeletonLoader />
       </div>
     );
   }

@@ -85,6 +85,7 @@ import { useDispatch } from "react-redux";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import dayjs from "dayjs";
 import PhoneInput from "../Global/PhoneInput";
+import SkeletonLoader from "../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -262,7 +263,7 @@ const CandidateSettings = () => {
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [editingWorkData, setEditingWorkData] = useState({});
 
-  const { data: getCandidate } = useGetCandidateQuery();
+  const { data: getCandidate, isLoading } = useGetCandidateQuery();
   const [profileComplete] = useProfileCompletionMutation();
   const [changePassword] = useChangePasswordMutation();
 
@@ -2234,6 +2235,14 @@ const CandidateSettings = () => {
       </Tabs>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div className="container">

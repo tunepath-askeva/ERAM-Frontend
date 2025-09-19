@@ -58,6 +58,7 @@ import {
   useLazyFilterJobsQuery,
   useGetJobSuggestionsQuery,
 } from "../Slices/Users/UserApis";
+import SkeletonLoader from "../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -640,15 +641,23 @@ const CandidateJobs = () => {
     ],
   };
 
+  const isJobsLoading = initialLoading;
+
   const isLoading =
-    initialLoading ||
-    (isSearching && searchLoading) ||
-    (isFiltering && filterLoading);
+    (isSearching && searchLoading) || (isFiltering && filterLoading);
 
   const error =
     initialError ||
     (showingSearchResults && searchError) ||
     (showingFilterResults && filterError);
+
+  if (isJobsLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

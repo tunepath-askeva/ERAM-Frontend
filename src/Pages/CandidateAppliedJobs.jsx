@@ -84,6 +84,7 @@ import {
   useGetSourcedJobsQuery,
 } from "../Slices/Users/UserApis";
 import { useNavigate } from "react-router-dom";
+import SkeletonLoader from "../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -511,12 +512,8 @@ const CandidateAppliedJobs = () => {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <Skeleton active />
-          <Skeleton active />
-          <Skeleton active />
-        </div>
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }
