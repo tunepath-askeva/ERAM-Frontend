@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, Upload, Button, Typography, List, Progress, Input  } from "antd";
+import { Card, Upload, Button, Typography, List, Progress, Input } from "antd";
 import {
   InboxOutlined,
   UploadOutlined,
@@ -7,6 +7,7 @@ import {
   DeleteOutlined,
   SendOutlined,
   UserOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import { useSubmitCVApplicationMutation } from "../Slices/Users/UserApis";
@@ -14,10 +15,13 @@ import { useSubmitCVApplicationMutation } from "../Slices/Users/UserApis";
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
-const CVUploadSection = ({ currentBranch }) => {
+const CVUploadSection = ({ currentBranch, jobId }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [applicantName, setApplicantName] = useState("");
+  const [email, setEmail] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const [submitCV, { isLoading }] = useSubmitCVApplicationMutation();
 
@@ -81,8 +85,21 @@ const CVUploadSection = ({ currentBranch }) => {
   };
 
   const handleSubmit = async () => {
-    if (!applicantName.trim()) {
-      enqueueSnackbar("Please enter your name!", { variant: "warning" });
+    if (!firstName.trim()) {
+      enqueueSnackbar("Please enter your first name!", { variant: "warning" });
+      return;
+    }
+
+    if (!lastName.trim()) {
+      enqueueSnackbar("Please enter your last name!", { variant: "warning" });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      enqueueSnackbar("Please enter a valid email address!", {
+        variant: "warning",
+      });
       return;
     }
 
@@ -91,12 +108,21 @@ const CVUploadSection = ({ currentBranch }) => {
       return;
     }
 
+    const applicantName = `${firstName.trim()} ${lastName.trim()}`;
+
     const formData = new FormData();
     uploadedFiles.forEach((file, index) => {
       formData.append(`file_${index}`, file.originFileObj);
     });
     formData.append("domain", window.location.hostname);
+    formData.append("firstName", firstName.trim());
+    formData.append("lastName", lastName.trim());
     formData.append("applicantName", applicantName.trim());
+    formData.append("email", email.trim());
+
+    if (jobId) {
+      formData.append("jobId", jobId);
+    }
 
     try {
       await submitCV(formData).unwrap();
@@ -104,7 +130,9 @@ const CVUploadSection = ({ currentBranch }) => {
         variant: "success",
       });
       setUploadedFiles([]);
-      setApplicantName("");
+      setFirstName("");
+      setLastName("");
+      setEmail("");
     } catch (error) {
       enqueueSnackbar(
         error?.data?.message || "Submission failed! Please try again.",
@@ -113,9 +141,35 @@ const CVUploadSection = ({ currentBranch }) => {
     }
   };
 
+  const getLogoSrc = () => {
+    if (currentBranch?.brand_logo) {
+      return currentBranch.brand_logo;
+    }
+    return "/Workforce.svg";
+  };
+
+  const getBranchName = () => {
+    return currentBranch?.name || "ERAM TALENT";
+  };
+
   return (
     <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "30px" }}>
+        <img
+          src={getLogoSrc()}
+          alt={`${getBranchName()} Logo`}
+          style={{
+            height: "60px",
+            width: "auto",
+            maxWidth: "180px",
+            objectFit: "contain",
+          }}
+          onError={(e) => {
+            // Fallback to default logo if branch logo fails to load
+            e.target.src = "/Workforce.svg";
+          }}
+        />
+
         <Title
           level={2}
           style={{ marginBottom: "8px", fontSize: "28px", fontWeight: "700" }}
@@ -138,10 +192,37 @@ const CVUploadSection = ({ currentBranch }) => {
         bodyStyle={{ padding: "32px" }}
       >
         <Input
-          placeholder="Enter your full name"
-          value={applicantName}
-          onChange={(e) => setApplicantName(e.target.value)}
+          placeholder="Enter your first name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
           prefix={<UserOutlined style={{ color: "#da2c46" }} />}
+          size="large"
+          style={{
+            marginBottom: "20px",
+            borderRadius: "8px",
+            borderColor: "#da2c46",
+          }}
+        />
+
+        <Input
+          placeholder="Enter your last name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          prefix={<UserOutlined style={{ color: "#da2c46" }} />}
+          size="large"
+          style={{
+            marginBottom: "20px",
+            borderRadius: "8px",
+            borderColor: "#da2c46",
+          }}
+        />
+
+        <Input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          prefix={<MailOutlined style={{ color: "#da2c46" }} />}
           size="large"
           style={{
             marginBottom: "20px",

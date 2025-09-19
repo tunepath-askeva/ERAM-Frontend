@@ -15,6 +15,7 @@ import {
   Avatar,
   Spin,
   Alert,
+  Modal,
 } from "antd";
 import {
   SearchOutlined,
@@ -33,15 +34,19 @@ import {
 } from "@ant-design/icons";
 import { useGetBranchJobsQuery } from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
+import CVUploadSection from "./CVUploadSection.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
 
-const JobsSection = ({ currentBranch}) => {
+const JobsSection = ({ currentBranch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleJobsCount, setVisibleJobsCount] = useState(JOBS_PER_PAGE);
+  const [cvModalVisible, setCvModalVisible] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState(null);
+
   const navigate = useNavigate();
 
   const {
@@ -100,6 +105,16 @@ const JobsSection = ({ currentBranch}) => {
 
   const handleJobClick = () => {
     navigate("/branch-login");
+  };
+
+  const openCvModal = (jobId) => {
+    setSelectedJobId(jobId);
+    setCvModalVisible(true);
+  };
+
+  const closeCvModal = () => {
+    setSelectedJobId(null);
+    setCvModalVisible(false);
   };
 
   const getJobTypeColor = (type) => {
@@ -164,295 +179,224 @@ const JobsSection = ({ currentBranch}) => {
     return `${Math.ceil(diffDays / 30)} months ago`;
   };
 
-  const JobCard = ({ job, jobId }) => (
-    <Card
-      id={`job-${job._id}`}
-      hoverable
-      style={{
-        height: "460px",
-        borderRadius: "12px",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-        border: "2px solid transparent",
-        transition: "all 0.5s ease-in-out",
-        cursor: "pointer",
-        width: "100%",
-      }}
-      bodyStyle={{
-        padding: "16px",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-      }}
-      onClick={handleJobClick}
-    >
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Header */}
-        <div style={{ marginBottom: "12px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "8px",
-              marginBottom: "8px",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Title
-                level={5}
-                style={{
-                  margin: 0,
-                  color: "#1e293b",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  lineHeight: "1.3",
-                }}
-                ellipsis={{ rows: 2, tooltip: job.title }}
-              >
-                {job.title}
-              </Title>
-            </div>
-            {job.workOrderStatus === "urgent" && (
-              <Badge
-                status="error"
-                text="Urgent"
-                style={{
-                  color: "#dc2626",
-                  fontSize: "10px",
-                  fontWeight: "500",
-                  flexShrink: 0,
-                }}
-              />
-            )}
-          </div>
-
-          {job.jobCode && (
-            <Tag color="blue" style={{ fontSize: "9px", padding: "2px 6px" }}>
-              {job.jobCode}
-            </Tag>
-          )}
-        </div>
-
-        {/* Company/Function */}
-        <Text
-          style={{
-            color: "#64748b",
-            marginBottom: "10px",
-            display: "block",
-            fontSize: "13px",
-            lineHeight: "1.2",
-          }}
-          ellipsis
-        >
-          {job.jobFunction || job.companyIndustry || "General"}
-        </Text>
-
-        {/* Tags */}
-        <Space wrap size="small" style={{ marginBottom: "10px" }}>
-          <Tag
-            color={getJobTypeColor(job.EmploymentType)}
-            style={{
-              borderRadius: "3px",
-              fontSize: "10px",
-              padding: "2px 6px",
-            }}
-          >
-            {job.EmploymentType || "Full-time"}
-          </Tag>
-          <Tag
-            color={getWorkplaceColor(job.workplace)}
-            style={{
-              borderRadius: "3px",
-              fontSize: "10px",
-              padding: "2px 6px",
-            }}
-          >
-            {job.workplace}
-          </Tag>
-        </Space>
-
-        {/* Location */}
+const JobCard = ({ job }) => (
+  <Card
+    id={`job-${job._id}`}
+    hoverable
+    style={{
+      borderRadius: "12px",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+      border: "2px solid transparent",
+      transition: "all 0.3s ease-in-out",
+      cursor: "pointer",
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      height: "100%", // allow auto-adjust in grid
+    }}
+    bodyStyle={{
+      padding: "16px",
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+    }}
+  >
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ marginBottom: "12px" }}>
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            marginBottom: "10px",
+            alignItems: "flex-start",
+            gap: "8px",
+            marginBottom: "8px",
           }}
         >
-          <EnvironmentOutlined
-            style={{ color: "#10b981", fontSize: "12px", flexShrink: 0 }}
-          />
-          <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
-            {job.officeLocation}
-          </Text>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Title
+              level={5}
+              style={{
+                margin: 0,
+                color: "#1e293b",
+                fontSize: "clamp(14px, 2vw, 16px)", // responsive font
+                fontWeight: "600",
+                lineHeight: "1.3",
+              }}
+              ellipsis={{ rows: 2, tooltip: job.title }}
+            >
+              {job.title}
+            </Title>
+          </div>
+          {job.workOrderStatus === "urgent" && (
+            <Badge
+              status="error"
+              text="Urgent"
+              style={{
+                color: "#dc2626",
+                fontSize: "10px",
+                fontWeight: "500",
+                flexShrink: 0,
+              }}
+            />
+          )}
         </div>
 
-        {/* Experience & Education */}
-        <Space wrap size="small" style={{ marginBottom: "10px" }}>
-          {job.experienceMin && job.experienceMax && (
-            <Tag
-              style={{
-                borderRadius: "3px",
-                fontSize: "10px",
-                padding: "2px 6px",
-              }}
-            >
-              {job.experienceMin}-{job.experienceMax} yrs
-            </Tag>
-          )}
-          {job.Education && (
-            <Tag
-              style={{
-                borderRadius: "3px",
-                fontSize: "10px",
-                padding: "2px 6px",
-              }}
-            >
-              {job.Education}
-            </Tag>
-          )}
-        </Space>
-
-        {/* Description */}
-        <Paragraph
-          style={{
-            color: "#64748b",
-            fontSize: "12px",
-            lineHeight: "1.4",
-            marginBottom: "10px",
-            flex: 1,
-          }}
-          ellipsis={{ rows: 2 }}
-        >
-          {job.description}
-        </Paragraph>
-
-        {/* Skills */}
-        {job.requiredSkills && job.requiredSkills.length > 0 && (
-          <div style={{ marginBottom: "12px" }}>
-            <Text
-              strong
-              style={{
-                fontSize: "11px",
-                color: "#374151",
-                display: "block",
-                marginBottom: "4px",
-              }}
-            >
-              Skills:
-            </Text>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {job.requiredSkills.slice(0, 2).map((skill, index) => (
-                <Tag
-                  key={index}
-                  style={{
-                    fontSize: "9px",
-                    borderRadius: "3px",
-                    padding: "1px 4px",
-                    margin: 0,
-                  }}
-                >
-                  {skill.length > 12 ? skill.substring(0, 12) + "..." : skill}
-                </Tag>
-              ))}
-              {job.requiredSkills.length > 2 && (
-                <Tag
-                  style={{
-                    fontSize: "9px",
-                    borderRadius: "3px",
-                    padding: "1px 4px",
-                    margin: 0,
-                  }}
-                >
-                  +{job.requiredSkills.length - 2}
-                </Tag>
-              )}
-            </div>
-          </div>
+        {job.jobCode && (
+          <Tag color="blue" style={{ fontSize: "11px", padding: "2px 6px" }}>
+            {job.jobCode}
+          </Tag>
         )}
+      </div>
 
-        {/* Salary & Date Info */}
-        <div
+      {/* Function / Industry */}
+      <Text
+        style={{
+          color: "#64748b",
+          marginBottom: "10px",
+          display: "block",
+          fontSize: "13px",
+          lineHeight: "1.2",
+        }}
+        ellipsis
+      >
+        {job.jobFunction || job.companyIndustry || "General"}
+      </Text>
+
+      {/* Tags (employment type, workplace) */}
+      <Space wrap size="small" style={{ marginBottom: "10px" }}>
+        <Tag
+          color={getJobTypeColor(job.EmploymentType)}
           style={{
-            marginTop: "auto",
-            paddingTop: "8px",
-            borderTop: "1px solid #f1f5f9",
+            borderRadius: "3px",
+            fontSize: "11px",
+            padding: "2px 6px",
           }}
         >
-          <div style={{ marginBottom: "8px" }}>
-            <Space size="small" wrap>
-              <DollarOutlined style={{ color: "#3b82f6", fontSize: "11px" }} />
-              <Text
+          {job.EmploymentType || "Full-time"}
+        </Tag>
+        <Tag
+          color={getWorkplaceColor(job.workplace)}
+          style={{
+            borderRadius: "3px",
+            fontSize: "11px",
+            padding: "2px 6px",
+          }}
+        >
+          {job.workplace}
+        </Tag>
+      </Space>
+
+      {/* Location */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          marginBottom: "10px",
+        }}
+      >
+        <EnvironmentOutlined style={{ color: "#10b981", fontSize: "12px" }} />
+        <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
+          {job.officeLocation}
+        </Text>
+      </div>
+
+      {/* Experience & Education */}
+      <Space wrap size="small" style={{ marginBottom: "10px" }}>
+        {job.experienceMin && job.experienceMax && (
+          <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
+            {job.experienceMin}-{job.experienceMax} yrs
+          </Tag>
+        )}
+        {job.Education && (
+          <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
+            {job.Education}
+          </Tag>
+        )}
+      </Space>
+
+      {/* Description */}
+      <Paragraph
+        style={{
+          color: "#64748b",
+          fontSize: "12px",
+          lineHeight: "1.4",
+          marginBottom: "10px",
+          flex: 1,
+        }}
+        ellipsis={{ rows: 3 }}
+      >
+        {job.description}
+      </Paragraph>
+
+      {/* Skills */}
+      {job.requiredSkills && job.requiredSkills.length > 0 && (
+        <div style={{ marginBottom: "12px" }}>
+          <Text strong style={{ fontSize: "11px", color: "#374151" }}>
+            Skills:
+          </Text>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            {job.requiredSkills.slice(0, 2).map((skill, index) => (
+              <Tag
+                key={index}
                 style={{
-                  fontSize: "11px",
-                  color: "#374151",
-                  fontWeight: "500",
+                  fontSize: "10px",
+                  borderRadius: "3px",
+                  padding: "2px 6px",
                 }}
-                ellipsis
               >
-                {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
-              </Text>
-            </Space>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "12px",
-            }}
-          >
-            <Space size="small">
-              <ClockCircleOutlined
-                style={{ color: "#64748b", fontSize: "11px" }}
-              />
-              <Text style={{ fontSize: "10px", color: "#64748b" }}>
-                {formatDate(job.createdAt)}
-              </Text>
-            </Space>
-            {job.deadlineDate && (
-              <Space size="small">
-                <CalendarOutlined
-                  style={{ color: "#f59e0b", fontSize: "11px" }}
-                />
-                <Text style={{ fontSize: "10px", color: "#f59e0b" }}>
-                  {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
-                </Text>
-              </Space>
+                {skill.length > 12 ? skill.substring(0, 12) + "..." : skill}
+              </Tag>
+            ))}
+            {job.requiredSkills.length > 2 && (
+              <Tag style={{ fontSize: "10px", padding: "2px 6px" }}>
+                +{job.requiredSkills.length - 2}
+              </Tag>
             )}
-            <Tooltip title="Share this job">
-              <Button
-                type="text"
-                icon={<ShareAltOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const jobUrl = `${window.location.origin}${window.location.pathname}?jobId=${job._id}`; // Remove branchId part
-                  if (navigator.share) {
-                    navigator.share({
-                      title: job.title,
-                      text: "Check out this job opportunity!",
-                      url: jobUrl,
-                    });
-                  } else {
-                    navigator.clipboard.writeText(jobUrl);
-                    alert("Job link copied to clipboard!");
-                  }
-                }}
-              />
-            </Tooltip>
           </div>
+        </div>
+      )}
 
-          {/* Apply Button - Inside Card */}
+      {/* Footer (salary + buttons) */}
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: "8px",
+          borderTop: "1px solid #f1f5f9",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+        }}
+      >
+        {/* Salary + Date Info */}
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
+          <Space size="small">
+            <DollarOutlined style={{ color: "#3b82f6", fontSize: "11px" }} />
+            <Text style={{ fontSize: "11px", color: "#374151", fontWeight: "500" }}>
+              {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
+            </Text>
+          </Space>
+          {job.deadlineDate && (
+            <Space size="small">
+              <CalendarOutlined style={{ color: "#f59e0b", fontSize: "11px" }} />
+              <Text style={{ fontSize: "10px", color: "#f59e0b" }}>
+                {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
+              </Text>
+            </Space>
+          )}
+        </div>
+
+        {/* Buttons (responsive row) */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <Button
             type="primary"
-            block
             icon={<LoginOutlined />}
             style={{
+              flex: 1,
               background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
               border: "none",
               borderRadius: "6px",
-              height: "32px",
+              height: "36px",
               fontSize: "12px",
               fontWeight: "600",
             }}
@@ -463,10 +407,32 @@ const JobsSection = ({ currentBranch}) => {
           >
             Apply Now
           </Button>
+
+          <Button
+            type="primary"
+            icon={<LoginOutlined />}
+            style={{
+              flex: 1,
+              background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+              border: "none",
+              borderRadius: "6px",
+              height: "36px",
+              fontSize: "12px",
+              fontWeight: "600",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openCvModal(job._id);
+            }}
+          >
+            CV Apply
+          </Button>
         </div>
       </div>
-    </Card>
-  );
+    </div>
+  </Card>
+);
+
 
   // Loading state
   if (jobsLoading) {
@@ -756,6 +722,16 @@ const JobsSection = ({ currentBranch}) => {
           Submit Your Resume
         </Button>
       </div>
+
+      <Modal
+        open={cvModalVisible}
+        onCancel={closeCvModal}
+        footer={null}
+        centered
+        width={600}
+      >
+        <CVUploadSection currentBranch={currentBranch} jobId={selectedJobId} />
+      </Modal>
     </div>
   );
 };
