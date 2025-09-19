@@ -15,17 +15,18 @@ import {
   UserOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useGetAllRecruiterCvsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetLowLevelCandidatesByJobQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-const SourcedCvs = () => {
+const SourcedCvs = ({ jobId }) => {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [search, setSearch] = useState("");
 
-  const { data, isLoading, isError } = useGetAllRecruiterCvsQuery({
+  const { data, isLoading, isError } = useGetLowLevelCandidatesByJobQuery({
+    jobId,
     page,
     limit,
     search,
@@ -69,13 +70,7 @@ const SourcedCvs = () => {
       {/* Candidate Cards */}
       <Row gutter={[16, 16]}>
         {candidates.map((candidate) => (
-          <Col
-            key={candidate._id}
-            xs={24} // 1 card per row on mobile
-            sm={12} // 2 cards per row on tablets
-            md={8} // 3 cards per row on medium screens
-            lg={6} // 4 cards per row on desktops
-          >
+          <Col key={candidate._id} xs={24} sm={12} md={8} lg={6}>
             <Card
               hoverable
               style={{
@@ -131,7 +126,7 @@ const SourcedCvs = () => {
         <Pagination
           current={page}
           pageSize={limit}
-          total={data?.total || candidates.length * 5} // backend should send total ideally
+          total={data?.total || candidates.length * 5}
           onChange={(p) => setPage(p)}
           showSizeChanger={false}
         />
