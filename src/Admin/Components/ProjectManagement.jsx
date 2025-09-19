@@ -39,6 +39,7 @@ import {
   useDisableProjectStatusMutation,
 } from "../../Slices/Admin/AdminApis.js";
 import ProjectFormModal from "../Components/ProjectFormModal";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
@@ -324,7 +325,7 @@ const ProjectManagement = () => {
       </div>
 
       {isLoadingProjects ? (
-        <Card loading style={{ borderRadius: "16px" }} />
+        <SkeletonLoader />
       ) : projects?.length > 0 ? (
         <>
           <Row gutter={[16, 16]} style={{ marginTop: "16px" }}>

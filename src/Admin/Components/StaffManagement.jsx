@@ -31,7 +31,7 @@ import {
   ExclamationCircleOutlined,
   WarningOutlined,
   CheckOutlined,
-  StopOutlined
+  StopOutlined,
 } from "@ant-design/icons";
 import {
   useAddStaffMutation,
@@ -40,6 +40,7 @@ import {
   useDeleteStaffMutation,
   useDisableStaffMutation,
 } from "../../Slices/Admin/AdminApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -218,15 +219,8 @@ const StaffManagement = () => {
 
   if (isLoadingStaffs) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "400px",
-        }}
-      >
-        <Spin size="large" />
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }

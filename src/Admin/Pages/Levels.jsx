@@ -38,6 +38,7 @@ import { useSnackbar } from "notistack";
 import CreateLevelModal from "../Components/CreateLevelModal";
 import "../../index.css";
 import { useGetApprovalQuery } from "../../Slices/Admin/AdminApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -82,7 +83,7 @@ const Levels = () => {
       ...approval,
       name: approval.groupName,
       stages: approval.levels,
-      levelStatus: "active", 
+      levelStatus: "active",
     })) || [];
 
   const totalCount = approvalData?.total || 0;
@@ -304,7 +305,7 @@ const Levels = () => {
         </div>
 
         {isLoading ? (
-          <Card loading style={{ borderRadius: "16px" }} />
+          <SkeletonLoader />
         ) : levels?.length > 0 ? (
           <>
             <Row
@@ -971,8 +972,7 @@ const Levels = () => {
           )}
         </div>
       </Modal>
-         <style jsx>{`
-       
+      <style jsx>{`
         .ant-pagination-item-active {
           border-color: #da2c46 !important;
           background-color: #da2c46 !important;
@@ -986,7 +986,6 @@ const Levels = () => {
         .ant-pagination-item:hover a {
           color: #da2c46 !important;
         }
-        
       `}</style>
     </>
   );

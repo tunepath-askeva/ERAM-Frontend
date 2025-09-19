@@ -14,14 +14,19 @@ import {
   Modal,
   Switch,
 } from "antd";
-import { MinusCircleOutlined, PlusOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  MinusCircleOutlined,
+  PlusOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import axios from "axios";
 import {
   useGetWhatsappConfigQuery,
   useSubmitWhatsappApiMutation,
-  useUpdateTemplateStatusMutation, 
+  useUpdateTemplateStatusMutation,
 } from "../../Slices/Admin/AdminApis";
 import { enqueueSnackbar } from "notistack";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Paragraph } = Typography;
 
@@ -36,8 +41,12 @@ const WhatsAppConfig = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const [submitConfiguration] = useSubmitWhatsappApiMutation();
-  const [updateTemplateStatus] = useUpdateTemplateStatusMutation(); 
-  const { data: WhatsAppConfigData, refetch } = useGetWhatsappConfigQuery();
+  const [updateTemplateStatus] = useUpdateTemplateStatusMutation();
+  const {
+    data: WhatsAppConfigData,
+    isLoading,
+    refetch,
+  } = useGetWhatsappConfigQuery();
 
   useEffect(() => {
     const existingConfig = WhatsAppConfigData?.whatsapp?.[0];
@@ -155,14 +164,14 @@ const WhatsAppConfig = () => {
   };
 
   const handleStatusToggle = (templateId, currentStatus, templateName) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+
     setSelectedTemplate({
       id: templateId,
       name: templateName,
       currentStatus: currentStatus,
       newStatus: newStatus,
-      action: newStatus === 'active' ? 'activate' : 'deactivate'
+      action: newStatus === "active" ? "activate" : "deactivate",
     });
     setIsModalOpen(true);
   };
@@ -171,20 +180,20 @@ const WhatsAppConfig = () => {
     try {
       await updateTemplateStatus({
         templateId: selectedTemplate.id,
-         parentId: existingConfig._id,
+        parentId: existingConfig._id,
         body: {
-          status: selectedTemplate.newStatus
-        }
+          status: selectedTemplate.newStatus,
+        },
       }).unwrap();
-      
+
       enqueueSnackbar(`Template ${selectedTemplate.action}d successfully!`, {
         variant: "success",
         autoHideDuration: 3000,
       });
-      
+
       setIsModalOpen(false);
       setSelectedTemplate(null);
-      
+
       refetch();
     } catch (error) {
       console.error(error);
@@ -234,8 +243,8 @@ const WhatsAppConfig = () => {
       key: "status",
       width: 120,
       render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status || 'inactive'}
+        <Tag color={status === "active" ? "green" : "red"}>
+          {status || "inactive"}
         </Tag>
       ),
     },
@@ -258,8 +267,10 @@ const WhatsAppConfig = () => {
       width: 120,
       render: (_, record) => (
         <Switch
-          checked={record.status === 'active'}
-          onChange={() => handleStatusToggle(record._id, record.status, record.name)}
+          checked={record.status === "active"}
+          onChange={() =>
+            handleStatusToggle(record._id, record.status, record.name)
+          }
           checkedChildren="Active"
           unCheckedChildren="Inactive"
           size="small"
@@ -267,6 +278,14 @@ const WhatsAppConfig = () => {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -375,7 +394,9 @@ const WhatsAppConfig = () => {
                                       >
                                         <Select
                                           placeholder="Select variable"
-                                          value={templateVariables[index][varKey]}
+                                          value={
+                                            templateVariables[index][varKey]
+                                          }
                                           onChange={(value) =>
                                             handleVariableChange(
                                               index,
@@ -447,20 +468,26 @@ const WhatsAppConfig = () => {
           },
         ]}
       />
-      
+
       <Modal
-        title={`${selectedTemplate?.action?.charAt(0).toUpperCase() + selectedTemplate?.action?.slice(1)} Template`}
+        title={`${
+          selectedTemplate?.action?.charAt(0).toUpperCase() +
+          selectedTemplate?.action?.slice(1)
+        } Template`}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         okText="Yes"
         cancelText="No"
-        okType={selectedTemplate?.newStatus === 'active' ? 'primary' : 'danger'}
+        okType={selectedTemplate?.newStatus === "active" ? "primary" : "danger"}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ExclamationCircleOutlined style={{ color: '#faad14', fontSize: '22px' }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <ExclamationCircleOutlined
+            style={{ color: "#faad14", fontSize: "22px" }}
+          />
           <span>
-            Are you sure you want to {selectedTemplate?.action} the template "{selectedTemplate?.name}"?
+            Are you sure you want to {selectedTemplate?.action} the template "
+            {selectedTemplate?.name}"?
           </span>
         </div>
       </Modal>

@@ -46,6 +46,7 @@ import {
   useToggleWorkOrderStatusMutation,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -463,14 +464,8 @@ const WorkOrder = () => {
         </div>
 
         {isLoading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "20px",
-            }}
-          >
-            <Skeleton />
+          <div>
+            <SkeletonLoader />
           </div>
         ) : workOrders?.length > 0 ? (
           <>

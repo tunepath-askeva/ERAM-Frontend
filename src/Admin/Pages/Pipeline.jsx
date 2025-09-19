@@ -18,6 +18,7 @@ import {
   Switch,
   Input,
   Pagination,
+  Skeleton,
 } from "antd";
 import {
   PlusOutlined,
@@ -48,6 +49,7 @@ import {
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal";
 import "../../index.css";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -345,7 +347,7 @@ const Pipeline = () => {
         </div>
 
         {isLoading ? (
-          <Card loading style={{ borderRadius: "16px" }} />
+          <SkeletonLoader />
         ) : pipelines?.length > 0 ? (
           <>
             <Row
@@ -1226,8 +1228,7 @@ const Pipeline = () => {
           )}
         </div>
       </Modal>
-         <style jsx>{`
-       
+      <style jsx>{`
         .ant-pagination-item-active {
           border-color: #da2c46 !important;
           background-color: #da2c46 !important;
@@ -1241,7 +1242,6 @@ const Pipeline = () => {
         .ant-pagination-item:hover a {
           color: #da2c46 !important;
         }
-        
       `}</style>
     </>
   );

@@ -41,6 +41,7 @@ import {
   useDeleteClientMutation,
   useDisableClientMutation,
 } from "../../Slices/Admin/AdminApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -254,8 +255,8 @@ const ClientsManagement = () => {
 
       {/* Loading Spinner */}
       {isLoadingClients && (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <Spin size="large" />
+        <div >
+         <SkeletonLoader />
         </div>
       )}
 

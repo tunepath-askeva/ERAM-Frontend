@@ -67,6 +67,7 @@ import {
 import CandidateFormModal from "../Components/CandidateFormModal";
 import CandidateViewDrawer from "../Components/CandidateViewDrawer.jsx";
 import { useForm } from "antd/es/form/Form.js";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -825,14 +826,8 @@ const AdminCandidates = () => {
         }}
       >
         {isLoading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "20px",
-            }}
-          >
-            <Skeleton active paragraph={{ rows: 10 }} />
+          <div>
+            <SkeletonLoader />
           </div>
         ) : candidates?.length > 0 ? (
           <>

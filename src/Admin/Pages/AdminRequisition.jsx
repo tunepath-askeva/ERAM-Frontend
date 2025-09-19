@@ -38,6 +38,7 @@ import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { useGetAdminRequisiionQuery } from "../../Slices/Admin/AdminApis";
 import dayjs from "dayjs";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -611,8 +612,8 @@ const AdminRequisition = () => {
           }}
         >
           {isLoading ? (
-            <div style={{ textAlign: "center", padding: "50px 0" }}>
-              <Spin size="large" />
+            <div >
+              <SkeletonLoader />
             </div>
           ) : groupedRequisitions.length === 0 ? (
             <Empty

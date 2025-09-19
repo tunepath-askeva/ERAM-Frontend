@@ -49,6 +49,7 @@ import {
   useGetRecruiterByIdQuery,
   useDeleteRecruiterMutation,
 } from "../../Slices/Admin/AdminApis.js";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -379,7 +380,7 @@ const AdminRecruiter = () => {
         </div>
 
         {isLoading ? (
-          <Card loading style={{ borderRadius: "16px" }} />
+         <SkeletonLoader />
         ) : recruiters?.length > 0 ? (
           <>
             <Row
