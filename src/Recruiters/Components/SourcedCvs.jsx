@@ -29,7 +29,7 @@ const SourcedCvs = ({ jobId }) => {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setPage(1); 
+      setPage(1);
       setSearch(searchInput);
     }, 1300);
 
@@ -101,7 +101,7 @@ const SourcedCvs = ({ jobId }) => {
               <div style={{ marginBottom: 12 }}>
                 <Text strong style={{ color: "#da2c46" }}>
                   {candidate.jobId
-                    ? `${candidate.jobId.title} (${candidate.jobId.jobCode})`
+                    ? `Applied for ${candidate.jobId.title} (${candidate.jobId.jobCode})`
                     : "Common Apply"}
                 </Text>
               </div>
