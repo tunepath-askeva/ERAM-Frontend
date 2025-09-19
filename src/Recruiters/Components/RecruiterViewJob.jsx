@@ -30,6 +30,8 @@ import PendingCandidates from "./PendingCandidates";
 import WorkOrderStatus from "./WorkOrderStatus";
 
 import { useSelector } from "react-redux";
+import SourcedCvs from "./SourcedCvs";
+import AppliedCvs from "./AppliedCvs";
 
 const { TabPane } = Tabs;
 const { Title, Paragraph, Text } = Typography;
@@ -1004,17 +1006,17 @@ const RecruiterViewJob = () => {
               </TabPane>
             )}
             {hasPermission("view-job-sourced-cv") && (
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Source CVs
-                </span>
-              }
-              key="source-cvs"
-            >
-              <h1>Coming Soon...</h1>
-            </TabPane>
-            )} 
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Source CVs
+                  </span>
+                }
+                key="source-cvs"
+              >
+                <SourcedCvs jobId={id} />
+              </TabPane>
+            )}
 
             {hasPermission("view-job-selected") && (
               <TabPane
@@ -1043,17 +1045,17 @@ const RecruiterViewJob = () => {
             )}
 
             {hasPermission("view-job-applied-cv") && (
-            <TabPane
-              tab={
-                <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                  Applied CVs
-                </span>
-              }
-              key="applied-cvs"
-            >
-              <h1>Coming Soon...</h1>
-            </TabPane>
-             )} 
+              <TabPane
+                tab={
+                  <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                    Applied CVs
+                  </span>
+                }
+                key="applied-cvs"
+              >
+                <AppliedCvs jobId={id} />
+              </TabPane>
+            )}
 
             {hasPermission("view-job-declined") && (
               <TabPane

@@ -324,13 +324,33 @@ const LowLevelCandidates = () => {
               <Menu.Item
                 key="download"
                 icon={<DownloadOutlined />}
-                onClick={() => {
-                  if (record.fileUrl) {
-                    window.open(record.fileUrl, "_blank");
-                  } else {
-                    message.error("CV file not available!");
-                  }
-                }}
+               onClick={async () => {
+  if (record.fileUrl) {
+    try {
+      const response = await fetch(record.fileUrl, {
+        mode: "cors",
+      });
+      const blob = await response.blob();
+
+      const fileName = record.fileName || "cv.pdf";
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      message.error("Failed to download CV!");
+    }
+  } else {
+    message.error("CV file not available!");
+  }
+}}
+
               >
                 Download CV
               </Menu.Item>
