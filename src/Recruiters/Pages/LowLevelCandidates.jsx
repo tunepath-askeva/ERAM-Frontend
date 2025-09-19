@@ -21,6 +21,7 @@ import {
   Dropdown,
   Menu,
   Modal,
+  Divider,
 } from "antd";
 import {
   SearchOutlined,
@@ -36,6 +37,8 @@ import {
   PhoneOutlined,
   MailOutlined,
   UserAddOutlined,
+  ImportOutlined,
+  ExportOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 
@@ -114,6 +117,7 @@ const LowLevelCandidates = () => {
         domain: "branch1.company.com",
         status: "new",
       },
+    
     ];
 
     setLoading(true);
@@ -357,14 +361,17 @@ const LowLevelCandidates = () => {
           {status}
         </Tag>
       ),
-      
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => {
         const menu = (
-          <Menu>
+          <Menu
+            style={{
+              padding: "4px 0",
+            }}
+          >
             {hasPermission("view-cv") && (
               <Menu.Item
                 key="view"
@@ -407,6 +414,8 @@ const LowLevelCandidates = () => {
                 Convert to Candidate
               </Menu.Item>
             )}
+
+            <Divider style={{ margin: "4px 0" }} />
 
             {hasPermission("delete-cv") && (
               <Menu.Item
@@ -518,11 +527,13 @@ const LowLevelCandidates = () => {
           <div
             style={{
               display: "flex",
-              gap: "16px",
-              alignItems: "center",
               flexDirection: isMobile ? "column" : "row",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "12px",
             }}
           >
+            {/* 🔎 Search */}
             <Search
               placeholder="Search by name, email, filename..."
               allowClear
@@ -542,8 +553,10 @@ const LowLevelCandidates = () => {
               size={isMobile ? "middle" : "large"}
               onSearch={handleSearch}
               onChange={(e) => handleSearch(e.target.value)}
-              style={{ width: "100%" }}
+              style={{ flex: 1, minWidth: "250px" }} // 🔥 keeps search bar wide
             />
+
+            {/* 🧾 Filter */}
             <Badge count={filteredCandidates.length} showZero>
               <Button
                 icon={<FilterOutlined />}
@@ -551,12 +564,38 @@ const LowLevelCandidates = () => {
                 style={{
                   borderColor: "#da2c46",
                   color: "#da2c46",
-                  minWidth: isMobile ? "auto" : "100px",
+                  minWidth: isMobile ? "auto" : "120px",
                 }}
               >
-                {isMobile ? "" : "Filter"}
+                {isMobile ? "Filter" : "Filter"}
               </Button>
             </Badge>
+
+            {/* 📥 Import */}
+            <Button
+              icon={<ImportOutlined />}
+              size={isMobile ? "middle" : "large"}
+              style={{
+                borderColor: "#da2c46",
+                color: "#da2c46",
+                minWidth: isMobile ? "auto" : "120px",
+              }}
+            >
+              {isMobile ? "Import CVs" : "Import CVs"}
+            </Button>
+
+            {/* 📤 Export */}
+            <Button
+              icon={<ExportOutlined />}
+              size={isMobile ? "middle" : "large"}
+              style={{
+                borderColor: "#da2c46",
+                color: "#da2c46",
+                minWidth: isMobile ? "auto" : "120px",
+              }}
+            >
+              {isMobile ? "Export CVs" : "Export CVs"}
+            </Button>
           </div>
         </Card>
 
