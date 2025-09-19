@@ -136,7 +136,6 @@ const LowLevelCandidates = () => {
     });
   };
 
-  // Mobile Card Component
   const MobileCard = ({ record }) => (
     <Card
       style={{
@@ -216,7 +215,6 @@ const LowLevelCandidates = () => {
     </Card>
   );
 
-  // Desktop Table columns
   const columns = [
     {
       title: "Candidate",

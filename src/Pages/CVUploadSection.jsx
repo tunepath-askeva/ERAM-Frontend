@@ -15,7 +15,7 @@ import { useSubmitCVApplicationMutation } from "../Slices/Users/UserApis";
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
-const CVUploadSection = ({ currentBranch, jobId }) => {
+const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -133,6 +133,7 @@ const CVUploadSection = ({ currentBranch, jobId }) => {
       setFirstName("");
       setLastName("");
       setEmail("");
+      closeCvModal();
     } catch (error) {
       enqueueSnackbar(
         error?.data?.message || "Submission failed! Please try again.",
@@ -144,7 +145,6 @@ const CVUploadSection = ({ currentBranch, jobId }) => {
   return (
     <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "30px" }}>
-
         <Title
           level={2}
           style={{ marginBottom: "8px", fontSize: "28px", fontWeight: "700" }}

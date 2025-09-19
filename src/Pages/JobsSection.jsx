@@ -739,7 +739,7 @@ const JobsSection = ({ currentBranch }) => {
         centered
         width={600}
       >
-        <CVUploadSection currentBranch={currentBranch} jobId={selectedJobId} />
+        <CVUploadSection currentBranch={currentBranch} jobId={selectedJobId} closeCvModal={closeCvModal} />
       </Modal>
     </div>
   );
