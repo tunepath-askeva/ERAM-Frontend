@@ -96,7 +96,7 @@ const RecruiterSidebar = ({
     {
       key: "/recruiter/all-cvs",
       icon: <FileTextOutlined />,
-      label: "Low Level Candidates",
+      label: "All CVs",
       permission: "all-cvs",
     },
     {

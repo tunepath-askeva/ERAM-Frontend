@@ -122,34 +122,10 @@ const LoginSection = ({ currentBranch }) => {
     message.info("Password reset link will be sent to your email.");
   };
 
-  const getLogoSrc = () => {
-    if (currentBranch?.brand_logo) {
-      return currentBranch.brand_logo;
-    }
-    return "/Workforce.svg";
-  };
-
-  const getBranchName = () => {
-    return currentBranch?.name || "ERAM TALENT";
-  };
 
   return (
     <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "30px" }}>
-        <img
-          src={getLogoSrc()}
-          alt={`${getBranchName()} Logo`}
-          style={{
-            height: "60px",
-            width: "auto",
-            maxWidth: "180px",
-            objectFit: "contain",
-          }}
-          onError={(e) => {
-            // Fallback to default logo if branch logo fails to load
-            e.target.src = "/Workforce.svg";
-          }}
-        />
 
         <Title
           level={2}

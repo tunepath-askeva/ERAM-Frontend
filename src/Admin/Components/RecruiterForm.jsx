@@ -70,7 +70,7 @@ const permissionGroups = [
       { key: "jobs", label: "Jobs" },
       { key: "jobs-timeline", label: "Jobs Timeline" },
       { key: "all-candidates", label: "All Candidates" },
-      { key: "all-cvs", label: "Low Level Candidates" },
+      { key: "all-cvs", label: "All CVs" },
       { key: "candidates", label: "Interview Candidates" },
       { key: "interviews", label: "Assigned Interviews" },
       { key: "staged-candidates", label: "Staged Candidates" },
@@ -97,8 +97,11 @@ const permissionGroups = [
       { key: "deactivate-job", label: "Deactivate/Activate Job" },
       { key: "view-job-status", label: "View Work Order Status Tab" },
       { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
+      { key: "view-job-sourced-cv", label: "View Sourced CVs Tab" },
+      { key: "view-job-selected", label: "View Selected Candidates Tab" },
       { key: "view-job-selected", label: "View Selected Candidates Tab" },
       { key: "view-job-applied", label: "View Applied Candidates Tab" },
+      { key: "view-job-applied-cv", label: "View Applied CVs Tab" },
       { key: "view-job-declined", label: "View Declined Candidates Tab" },
       { key: "view-job-pending", label: "View Pending Candidates Tab" },
       { key: "view-job-screening", label: "View Screening Candidates Tab" },
@@ -112,6 +115,16 @@ const permissionGroups = [
       { key: "add-candidate", label: "Add Candidate" },
       { key: "bulk-upload", label: "Bulk Upload Candidates" },
       { key: "edit-candidate-details", label: "Edit Candidate" },
+    ],
+  },
+  {
+    title: "CVs Management",
+    icon: <TeamOutlined />,
+    permissions: [
+      { key: "view-cv", label: "View CV" },
+      { key: "convert-candidate", label: "Convert CV to Candidate" },
+      { key: "download-cv", label: "Download CV" },
+      { key: "delete-cv", label: "Delete CV" },
     ],
   },
   {
@@ -534,89 +547,87 @@ const RecruiterForm = ({
           </Row>
         </Card>
 
-        {mode === "add" && (
-          <Card
-            size="small"
-            title={
-              <Space>
-                <LockOutlined />
-                <span>Security</span>
-                {mode === "edit" && (
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#666",
-                      fontWeight: "normal",
-                    }}
-                  >
-                    (Leave empty to keep current password)
-                  </span>
-                )}
-              </Space>
-            }
-            style={{ marginBottom: 16 }}
-          >
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  label="Password"
-                  name="password"
-                  rules={[
-                    {
-                      required: mode === "add",
-                      message: "Please enter password",
-                    },
-                    {
-                      min: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                    {
-                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message:
-                        "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-                    },
-                  ]}
-                  hasFeedback
+        <Card
+          size="small"
+          title={
+            <Space>
+              <LockOutlined />
+              <span>Security</span>
+              {mode === "edit" && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    fontWeight: "normal",
+                  }}
                 >
-                  <Input.Password
-                    placeholder={
-                      mode === "edit"
-                        ? "Enter new password (optional)"
-                        : "Enter password"
-                    }
-                    prefix={<LockOutlined />}
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  label="Confirm Password"
-                  name="confirmPassword"
-                  dependencies={["password"]}
-                  rules={[
-                    {
-                      required: mode === "add",
-                      message: "Please confirm password",
-                    },
-                    validateConfirmPassword,
-                  ]}
-                  hasFeedback
-                >
-                  <Input.Password
-                    placeholder={
-                      mode === "edit"
-                        ? "Confirm new password"
-                        : "Confirm password"
-                    }
-                    prefix={<LockOutlined />}
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-        )}
+                  (Leave empty to keep current password)
+                </span>
+              )}
+            </Space>
+          }
+          style={{ marginBottom: 16 }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Password"
+                name="password"
+                rules={[
+                  {
+                    required: mode === "add",
+                    message: "Please enter password",
+                  },
+                  {
+                    min: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                  {
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                    message:
+                      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+                  },
+                ]}
+                hasFeedback
+              >
+                <Input.Password
+                  placeholder={
+                    mode === "edit"
+                      ? "Enter new password (optional)"
+                      : "Enter password"
+                  }
+                  prefix={<LockOutlined />}
+                  size="large"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Confirm Password"
+                name="confirmPassword"
+                dependencies={["password"]}
+                rules={[
+                  {
+                    required: mode === "add",
+                    message: "Please confirm password",
+                  },
+                  validateConfirmPassword,
+                ]}
+                hasFeedback
+              >
+                <Input.Password
+                  placeholder={
+                    mode === "edit"
+                      ? "Confirm new password"
+                      : "Confirm password"
+                  }
+                  prefix={<LockOutlined />}
+                  size="large"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
         <Card
           size="small"

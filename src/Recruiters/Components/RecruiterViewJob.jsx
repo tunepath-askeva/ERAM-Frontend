@@ -1003,6 +1003,18 @@ const RecruiterViewJob = () => {
                 <SourcedCandidates jobId={id} candidateType="source" />
               </TabPane>
             )}
+            {hasPermission("view-job-sourced-cv") && (
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Source CVs
+                </span>
+              }
+              key="source-cvs"
+            >
+              <h1>Coming Soon...</h1>
+            </TabPane>
+            )} 
 
             {hasPermission("view-job-selected") && (
               <TabPane
@@ -1029,6 +1041,19 @@ const RecruiterViewJob = () => {
                 <AppliedCandidates jobId={id} candidateType="applied" />
               </TabPane>
             )}
+
+            {hasPermission("view-job-applied-cv") && (
+            <TabPane
+              tab={
+                <span style={{ fontSize: "13px", color: " #da2c46" }}>
+                  Applied CVs
+                </span>
+              }
+              key="applied-cvs"
+            >
+              <h1>Coming Soon...</h1>
+            </TabPane>
+             )} 
 
             {hasPermission("view-job-declined") && (
               <TabPane

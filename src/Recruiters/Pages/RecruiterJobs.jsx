@@ -566,17 +566,8 @@ const RecruiterJobs = () => {
                       {job.isActive ? "Active" : "Inactive"}
                     </Tag>
 
-                    {/* Company Avatar and Title */}
                     <div style={{ textAlign: "center", marginBottom: "16px" }}>
-                      <Avatar
-                        src={job.companyLogo}
-                        size={48}
-                        style={{
-                          backgroundColor: "#f0f0f0",
-                          marginBottom: "8px",
-                        }}
-                        icon={<BankOutlined />}
-                      />
+                     
                       <Title
                         level={5}
                         style={{

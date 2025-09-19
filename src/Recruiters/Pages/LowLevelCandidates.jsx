@@ -18,6 +18,9 @@ import {
   Popconfirm,
   Drawer,
   Descriptions,
+  Dropdown,
+  Menu,
+  Modal,
 } from "antd";
 import {
   SearchOutlined,
@@ -32,12 +35,18 @@ import {
   MoreOutlined,
   PhoneOutlined,
   MailOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
 const LowLevelCandidates = () => {
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
   const [candidates, setCandidates] = useState([]);
   const [filteredCandidates, setFilteredCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,19 +54,20 @@ const LowLevelCandidates = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState(null);
 
-  // Check screen size
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Mock data - replace with your API call
   useEffect(() => {
     const mockData = [
       {
@@ -127,6 +137,10 @@ const LowLevelCandidates = () => {
     setFilteredCandidates(filtered);
   };
 
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
+
   // Status color mapping
   const getStatusColor = (status) => {
     switch (status) {
@@ -165,9 +179,22 @@ const LowLevelCandidates = () => {
       }}
       bodyStyle={{ padding: "16px" }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "8px",
+            }}
+          >
             <Avatar
               size={32}
               style={{
@@ -180,7 +207,13 @@ const LowLevelCandidates = () => {
               {record.name.charAt(0).toUpperCase()}
             </Avatar>
             <div>
-              <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "14px" }}>
+              <div
+                style={{
+                  fontWeight: "600",
+                  color: "#1e293b",
+                  fontSize: "14px",
+                }}
+              >
                 {record.name}
               </div>
               <Tag
@@ -196,16 +229,22 @@ const LowLevelCandidates = () => {
               </Tag>
             </div>
           </div>
-          
-          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+
+          <div
+            style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
+          >
             <MailOutlined style={{ marginRight: "4px" }} />
             {record.email}
           </div>
-          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+          <div
+            style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}
+          >
             <PhoneOutlined style={{ marginRight: "4px" }} />
             {record.phone}
           </div>
-          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+          <div
+            style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}
+          >
             <FileTextOutlined style={{ marginRight: "4px" }} />
             {record.fileName} ({record.fileSize})
           </div>
@@ -214,7 +253,7 @@ const LowLevelCandidates = () => {
             {formatDate(record.uploadDate)}
           </div>
         </div>
-        
+
         <Button
           type="text"
           icon={<MoreOutlined />}
@@ -258,7 +297,7 @@ const LowLevelCandidates = () => {
           </div>
         </div>
       ),
-      responsive: ['lg'],
+      responsive: ["lg"],
     },
     {
       title: "CV File",
@@ -286,7 +325,7 @@ const LowLevelCandidates = () => {
           </div>
         </div>
       ),
-      responsive: ['md'],
+      responsive: ["md"],
     },
     {
       title: "Upload Date",
@@ -300,8 +339,6 @@ const LowLevelCandidates = () => {
           </span>
         </div>
       ),
-      sorter: (a, b) => new Date(a.uploadDate) - new Date(b.uploadDate),
-      responsive: ['lg'],
     },
     {
       title: "Status",
@@ -320,39 +357,79 @@ const LowLevelCandidates = () => {
           {status}
         </Tag>
       ),
-      filters: [
-        { text: "New", value: "new" },
-        { text: "Reviewed", value: "reviewed" },
-        { text: "Shortlisted", value: "shortlisted" },
-        { text: "Rejected", value: "rejected" },
-      ],
-      onFilter: (value, record) => record.status === value,
-      responsive: ['sm'],
+      
     },
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View CV">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewCV(record)}
-              style={{ color: "#3b82f6" }}
-            />
-          </Tooltip>
-          <Tooltip title="Download CV">
-            <Button
-              type="text"
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownloadCV(record)}
-              style={{ color: "#10b981" }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-      responsive: ['sm'],
+      render: (_, record) => {
+        const menu = (
+          <Menu>
+            {hasPermission("view-cv") && (
+              <Menu.Item
+                key="view"
+                icon={<EyeOutlined />}
+                onClick={() => {
+                  setSelectedCandidate(record);
+                  setViewModalVisible(true);
+                }}
+              >
+                View
+              </Menu.Item>
+            )}
+
+            {hasPermission("download-cv") && (
+              <Menu.Item
+                key="download"
+                icon={<DownloadOutlined />}
+                onClick={() => {
+                  // ✅ trigger file download
+                  if (record.fileUrl) {
+                    window.open(record.fileUrl, "_blank");
+                  } else {
+                    message.error("CV file not available!");
+                  }
+                }}
+              >
+                Download CV
+              </Menu.Item>
+            )}
+
+            {hasPermission("convert-candidate") && (
+              <Menu.Item
+                key="convert"
+                icon={<UserAddOutlined />}
+                onClick={() => {
+                  message.success(`Converted ${record.name} to candidate`);
+                  // your API call for convert goes here
+                }}
+              >
+                Convert to Candidate
+              </Menu.Item>
+            )}
+
+            {hasPermission("delete-cv") && (
+              <Menu.Item
+                key="delete"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  setCandidateToDelete(record);
+                  setDeleteModalVisible(true);
+                }}
+              >
+                Delete
+              </Menu.Item>
+            )}
+          </Menu>
+        );
+
+        return (
+          <Dropdown overlay={menu} trigger={["click"]}>
+            <Button type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        );
+      },
     },
   ];
 
@@ -394,7 +471,7 @@ const LowLevelCandidates = () => {
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: isMobile ? "16px" : "32px" }}>
-          <div
+          <Card
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -416,24 +493,16 @@ const LowLevelCandidates = () => {
               >
                 CV Applications
               </Title>
-              <Text style={{ color: "#64748b", fontSize: isMobile ? "14px" : "16px" }}>
+              <Text
+                style={{
+                  color: "#64748b",
+                  fontSize: isMobile ? "14px" : "16px",
+                }}
+              >
                 Manage and review candidate CVs submitted through quick apply
               </Text>
             </div>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-              loading={loading}
-              size={isMobile ? "middle" : "large"}
-              style={{
-                borderColor: "#da2c46",
-                color: "#da2c46",
-                alignSelf: isMobile ? "flex-start" : "auto",
-              }}
-            >
-              {isMobile ? "" : "Refresh"}
-            </Button>
-          </div>
+          </Card>
         </div>
 
         {/* Search Bar */}
@@ -592,7 +661,14 @@ const LowLevelCandidates = () => {
         >
           {selectedCandidate && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "16px",
+                }}
+              >
                 <Avatar
                   size={48}
                   style={{
@@ -605,7 +681,13 @@ const LowLevelCandidates = () => {
                   {selectedCandidate.name.charAt(0).toUpperCase()}
                 </Avatar>
                 <div>
-                  <div style={{ fontWeight: "600", color: "#1e293b", fontSize: "18px" }}>
+                  <div
+                    style={{
+                      fontWeight: "600",
+                      color: "#1e293b",
+                      fontSize: "18px",
+                    }}
+                  >
                     {selectedCandidate.name}
                   </div>
                   <Tag
@@ -640,13 +722,21 @@ const LowLevelCandidates = () => {
                 </Descriptions.Item>
               </Descriptions>
 
-              <div style={{ marginTop: "24px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div
+                style={{
+                  marginTop: "24px",
+                  display: "flex",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
                 <Button
                   type="primary"
                   icon={<EyeOutlined />}
                   onClick={() => handleViewCV(selectedCandidate)}
                   style={{
-                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                    background:
+                      "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                     border: "none",
                     flex: 1,
                   }}
@@ -669,6 +759,55 @@ const LowLevelCandidates = () => {
           )}
         </Drawer>
       </div>
+
+      <Modal
+        title="Candidate Details"
+        visible={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={null}
+      >
+        {selectedCandidate && (
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="Name">
+              {selectedCandidate.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email">
+              {selectedCandidate.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phone">
+              {selectedCandidate.phone}
+            </Descriptions.Item>
+            <Descriptions.Item label="CV File">
+              {selectedCandidate.fileName} ({selectedCandidate.fileSize})
+            </Descriptions.Item>
+            <Descriptions.Item label="Upload Date">
+              {formatDate(selectedCandidate.uploadDate)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Domain">
+              {selectedCandidate.domain}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+
+      <Modal
+        title="Confirm Delete"
+        visible={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        onOk={() => {
+          if (candidateToDelete) {
+            handleDeleteCV(candidateToDelete);
+          }
+          setDeleteModalVisible(false);
+        }}
+        okText="Delete"
+        okButtonProps={{ danger: true }}
+      >
+        <p>
+          Are you sure you want to delete{" "}
+          <strong>{candidateToDelete?.name}</strong>?
+        </p>
+      </Modal>
 
       <style jsx>{`
         .ant-table-thead > tr > th {
@@ -709,11 +848,11 @@ const LowLevelCandidates = () => {
           .ant-card-body {
             padding: 12px !important;
           }
-          
+
           .ant-typography h2 {
             font-size: 20px !important;
           }
-          
+
           .ant-btn {
             height: auto !important;
             padding: 6px 12px !important;
