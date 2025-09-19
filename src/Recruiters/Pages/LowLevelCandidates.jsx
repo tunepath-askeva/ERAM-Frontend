@@ -61,6 +61,10 @@ const LowLevelCandidates = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -72,7 +76,22 @@ const LowLevelCandidates = () => {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  const { data, isLoading } = useGetAllRecruiterCvsQuery();
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 1000);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [search]);
+
+  const { data, isLoading } = useGetAllRecruiterCvsQuery({
+    page,
+    limit,
+    search: debouncedSearch,
+  });
 
   useEffect(() => {
     if (data?.getAllCV) {
@@ -93,15 +112,7 @@ const LowLevelCandidates = () => {
   }, [data]);
 
   const handleSearch = (value) => {
-    setSearchTerm(value);
-    const filtered = candidates.filter(
-      (candidate) =>
-        candidate.name.toLowerCase().includes(value.toLowerCase()) ||
-        candidate.email.toLowerCase().includes(value.toLowerCase()) ||
-        candidate.fileName.toLowerCase().includes(value.toLowerCase()) ||
-        candidate.domain.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredCandidates(filtered);
+    setSearch(value);
   };
 
   const hasPermission = (permissionKey) => {
@@ -456,24 +467,10 @@ const LowLevelCandidates = () => {
                 </Button>
               }
               size={isMobile ? "middle" : "large"}
-              onSearch={handleSearch}
+              value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              style={{ flex: 1, minWidth: "250px" }} // 🔥 keeps search bar wide
+              style={{ flex: 1, minWidth: "250px" }}
             />
-
-            <Badge count={filteredCandidates.length} showZero>
-              <Button
-                icon={<FilterOutlined />}
-                size={isMobile ? "middle" : "large"}
-                style={{
-                  borderColor: "#da2c46",
-                  color: "#da2c46",
-                  minWidth: isMobile ? "auto" : "120px",
-                }}
-              >
-                {isMobile ? "Filter" : "Filter"}
-              </Button>
-            </Badge>
 
             <Button
               icon={<ImportOutlined />}
@@ -552,7 +549,12 @@ const LowLevelCandidates = () => {
               loading={loading}
               scroll={{ x: 800 }}
               pagination={{
-                pageSize: 10,
+                current: page,
+                pageSize: limit,
+                onChange: (newPage, newLimit) => {
+                  setPage(newPage);
+                  setLimit(newLimit);
+                },
                 showSizeChanger: true,
                 showQuickJumper: !isMobile,
                 showTotal: (total, range) =>

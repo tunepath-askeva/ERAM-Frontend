@@ -614,9 +614,10 @@ export const recruiterApi = createApi({
       }),
     }),
     getAllRecruiterCvs: builder.query({
-      query: () => ({
+      query: ({ page = 1, limit = 10, search = "" } = {}) => ({
         url: "/cv",
-        Method: "GET",
+        method: "GET",
+        params: { page, limit, search },
       }),
     }),
   }),
