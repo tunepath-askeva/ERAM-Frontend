@@ -47,6 +47,7 @@ import {
   useDeleteRecruiterCvMutation,
   useAddRemarksCvCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -443,6 +444,14 @@ const LowLevelCandidates = () => {
       message.error("Failed to delete CV!");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div

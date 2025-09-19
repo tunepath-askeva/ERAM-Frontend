@@ -31,6 +31,7 @@ import {
   useGetRecruiterInterviewsQuery,
   useChangeInterviewStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -363,6 +364,14 @@ const RecruiterAssignedInterviews = () => {
     borderColor:
       action === "pass" ? "#52c41a" : action === "fail" ? "#ff4d4f" : "#faad14",
   });
+
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div>

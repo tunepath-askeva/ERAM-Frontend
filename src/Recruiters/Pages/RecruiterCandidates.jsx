@@ -72,6 +72,7 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -1646,6 +1647,14 @@ const RecruiterCandidates = () => {
     );
   };
 
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "12px", minHeight: "100vh" }}>
       {/* Header */}
@@ -1706,7 +1715,7 @@ const RecruiterCandidates = () => {
         >
           <Table
             columns={columns}
-            dataSource={candidates} // Use candidates directly instead of filteredCandidates
+            dataSource={candidates}
             rowKey="id"
             loading={isLoading}
             pagination={tablePagination}

@@ -45,6 +45,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useGetRecruiterJobsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -195,17 +196,13 @@ const RecruiterJobsTimeline = () => {
   };
 
   const getCurrentPageJobs = () => {
-    return filteredJobs; // no slicing, API already paginates
+    return filteredJobs; 
   };
 
   if (isLoading) {
     return (
       <div style={{ padding: "8px 16px", minHeight: "100vh" }}>
-        <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <Skeleton active />
-          <Skeleton active />
-          <Skeleton active />
-        </div>
+        <SkeletonLoader />
       </div>
     );
   }
