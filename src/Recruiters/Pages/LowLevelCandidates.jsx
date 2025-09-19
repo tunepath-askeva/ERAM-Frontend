@@ -390,7 +390,6 @@ const LowLevelCandidates = () => {
                 key="download"
                 icon={<DownloadOutlined />}
                 onClick={() => {
-                  // ✅ trigger file download
                   if (record.fileUrl) {
                     window.open(record.fileUrl, "_blank");
                   } else {
@@ -408,7 +407,6 @@ const LowLevelCandidates = () => {
                 icon={<UserAddOutlined />}
                 onClick={() => {
                   message.success(`Converted ${record.name} to candidate`);
-                  // your API call for convert goes here
                 }}
               >
                 Convert to Candidate
@@ -442,15 +440,12 @@ const LowLevelCandidates = () => {
     },
   ];
 
-  // Action handlers
   const handleViewCV = (record) => {
     message.info(`Viewing CV for ${record.name}`);
-    // Implement CV viewing logic
   };
 
   const handleDownloadCV = (record) => {
     message.success(`Downloading ${record.fileName}`);
-    // Implement CV download logic
   };
 
   const handleDeleteCV = (record) => {
@@ -459,15 +454,6 @@ const LowLevelCandidates = () => {
     setFilteredCandidates(updatedCandidates);
     message.success(`Deleted CV for ${record.name}`);
     setDrawerVisible(false);
-  };
-
-  const handleRefresh = () => {
-    setLoading(true);
-    // Implement refresh logic
-    setTimeout(() => {
-      setLoading(false);
-      message.success("Data refreshed successfully");
-    }, 1000);
   };
 
   return (
@@ -533,7 +519,6 @@ const LowLevelCandidates = () => {
               gap: "12px",
             }}
           >
-            {/* 🔎 Search */}
             <Search
               placeholder="Search by name, email, filename..."
               allowClear
@@ -556,7 +541,6 @@ const LowLevelCandidates = () => {
               style={{ flex: 1, minWidth: "250px" }} // 🔥 keeps search bar wide
             />
 
-            {/* 🧾 Filter */}
             <Badge count={filteredCandidates.length} showZero>
               <Button
                 icon={<FilterOutlined />}
@@ -571,7 +555,6 @@ const LowLevelCandidates = () => {
               </Button>
             </Badge>
 
-            {/* 📥 Import */}
             <Button
               icon={<ImportOutlined />}
               size={isMobile ? "middle" : "large"}
@@ -584,7 +567,6 @@ const LowLevelCandidates = () => {
               {isMobile ? "Import CVs" : "Import CVs"}
             </Button>
 
-            {/* 📤 Export */}
             <Button
               icon={<ExportOutlined />}
               size={isMobile ? "middle" : "large"}
@@ -599,7 +581,6 @@ const LowLevelCandidates = () => {
           </div>
         </Card>
 
-        {/* Mobile View */}
         {isMobile ? (
           <div>
             {loading ? (
@@ -636,7 +617,6 @@ const LowLevelCandidates = () => {
             )}
           </div>
         ) : (
-          /* Desktop/Tablet Table */
           <Card
             style={{
               borderRadius: "12px",
@@ -690,7 +670,6 @@ const LowLevelCandidates = () => {
           </Card>
         )}
 
-        {/* Mobile Details Drawer */}
         <Drawer
           title="Candidate Details"
           placement="bottom"
