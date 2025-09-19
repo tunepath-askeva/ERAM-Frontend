@@ -613,6 +613,12 @@ export const recruiterApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    getAllRecruiterCvs: builder.query({
+      query: () => ({
+        url: "/cv",
+        Method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -676,4 +682,5 @@ export const {
   useGetAllJobStageDetailsQuery,
   useUpdateJobStatusMutation,
   useExportCandidatesMutation,
+  useGetAllRecruiterCvsQuery,
 } = recruiterApi;

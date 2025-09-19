@@ -41,6 +41,7 @@ import {
   ExportOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
+import { useGetAllRecruiterCvsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -117,7 +118,6 @@ const LowLevelCandidates = () => {
         domain: "branch1.company.com",
         status: "new",
       },
-    
     ];
 
     setLoading(true);
@@ -127,6 +127,8 @@ const LowLevelCandidates = () => {
       setLoading(false);
     }, 1000);
   }, []);
+
+  const { data } = useGetAllRecruiterCvsQuery();
 
   // Search functionality
   const handleSearch = (value) => {
