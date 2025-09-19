@@ -620,6 +620,13 @@ export const recruiterApi = createApi({
         params: { page, limit, search },
       }),
     }),
+
+    deleteRecruiterCv: builder.mutation({
+      query: (id) => ({
+        url: `/cv/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -684,4 +691,5 @@ export const {
   useUpdateJobStatusMutation,
   useExportCandidatesMutation,
   useGetAllRecruiterCvsQuery,
+  useDeleteRecruiterCvMutation,
 } = recruiterApi;

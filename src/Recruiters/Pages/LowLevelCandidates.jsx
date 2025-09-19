@@ -41,7 +41,10 @@ import {
   ExportOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
-import { useGetAllRecruiterCvsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetAllRecruiterCvsQuery,
+  useDeleteRecruiterCvMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -92,6 +95,9 @@ const LowLevelCandidates = () => {
     limit,
     search: debouncedSearch,
   });
+
+  const [deleteRecruiterCv, { isLoading: isDeleting }] =
+    useDeleteRecruiterCvMutation();
 
   useEffect(() => {
     if (data?.getAllCV) {
@@ -398,12 +404,18 @@ const LowLevelCandidates = () => {
     message.success(`Downloading ${record.fileName}`);
   };
 
-  const handleDeleteCV = (record) => {
-    const updatedCandidates = candidates.filter((c) => c.id !== record.id);
-    setCandidates(updatedCandidates);
-    setFilteredCandidates(updatedCandidates);
-    message.success(`Deleted CV for ${record.name}`);
-    setDrawerVisible(false);
+  const handleDeleteCV = async (record) => {
+    try {
+      await deleteRecruiterCv(record.id).unwrap();
+      message.success(`Deleted CV for ${record.name}`);
+
+      const updatedCandidates = candidates.filter((c) => c.id !== record.id);
+      setCandidates(updatedCandidates);
+      setFilteredCandidates(updatedCandidates);
+      setDrawerVisible(false);
+    } catch (error) {
+      message.error("Failed to delete CV!");
+    }
   };
 
   return (
@@ -769,14 +781,14 @@ const LowLevelCandidates = () => {
         title="Confirm Delete"
         visible={deleteModalVisible}
         onCancel={() => setDeleteModalVisible(false)}
-        onOk={() => {
+        onOk={async () => {
           if (candidateToDelete) {
-            handleDeleteCV(candidateToDelete);
+            await handleDeleteCV(candidateToDelete);
           }
           setDeleteModalVisible(false);
         }}
-        okText="Delete"
-        okButtonProps={{ danger: true }}
+        okText={isDeleting ? "Deleting..." : "Delete"}
+        okButtonProps={{ danger: true, loading: isDeleting }}
       >
         <p>
           Are you sure you want to delete{" "}
