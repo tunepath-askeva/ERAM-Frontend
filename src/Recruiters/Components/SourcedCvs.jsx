@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Row,
@@ -23,7 +23,18 @@ const { Search } = Input;
 const SourcedCvs = ({ jobId }) => {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
+
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPage(1); 
+      setSearch(searchInput);
+    }, 1300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const { data, isLoading, isError } = useGetLowLevelCandidatesByJobQuery({
     jobId,
@@ -43,7 +54,7 @@ const SourcedCvs = ({ jobId }) => {
         Candidate CVs
       </Title>
 
-      {/* Search Bar */}
+      {/* Search Bar with Debounce */}
       <Search
         placeholder="Search candidates..."
         allowClear
@@ -60,14 +71,11 @@ const SourcedCvs = ({ jobId }) => {
           </Button>
         }
         size="large"
-        onSearch={(value) => {
-          setPage(1);
-          setSearch(value);
-        }}
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
         style={{ maxWidth: 650, marginBottom: 20 }}
       />
 
-      {/* Candidate Cards */}
       <Row gutter={[16, 16]}>
         {candidates.map((candidate) => (
           <Col key={candidate._id} xs={24} sm={12} md={8} lg={6}>
@@ -85,13 +93,11 @@ const SourcedCvs = ({ jobId }) => {
                 </Space>
               }
             >
-              {/* Email */}
               <div style={{ marginBottom: 10 }}>
                 <MailOutlined style={{ marginRight: 6, color: "#da2c46" }} />
                 <Text>{candidate.email}</Text>
               </div>
 
-              {/* Job Title & Code */}
               <div style={{ marginBottom: 12 }}>
                 <Text strong style={{ color: "#da2c46" }}>
                   {candidate.jobId
@@ -100,7 +106,6 @@ const SourcedCvs = ({ jobId }) => {
                 </Text>
               </div>
 
-              {/* Resume Button */}
               {candidate.Resume?.length > 0 && (
                 <Button
                   type="primary"
@@ -121,7 +126,6 @@ const SourcedCvs = ({ jobId }) => {
         ))}
       </Row>
 
-      {/* Pagination */}
       <div style={{ textAlign: "center", marginTop: 20 }}>
         <Pagination
           current={page}
