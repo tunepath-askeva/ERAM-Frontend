@@ -36,6 +36,7 @@ import { useGetRecruiterNotificationQuery } from "../../Slices/Recruiter/Recruit
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 
 dayjs.extend(relativeTime);
 
@@ -197,9 +198,8 @@ const EmployeeAdminNotifications = () => {
 
   if (loading || apiLoading) {
     return (
-      <div style={{ padding: "16px" }}>
-        <Skeleton active paragraph={{ rows: 4 }} />
-        <Skeleton active paragraph={{ rows: 4 }} />
+      <div>
+       <SkeletonLoader />
       </div>
     );
   }

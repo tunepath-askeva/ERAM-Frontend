@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 dayjs.extend(relativeTime);
 
@@ -97,7 +98,6 @@ const EmployeeAdminFeedback = () => {
       key: "type",
       width: 120,
       render: (type) => getTypeTag(type),
-
     },
     {
       title: "Message",
@@ -156,13 +156,21 @@ const EmployeeAdminFeedback = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewDetails(record)}
           size="small"
-          style={{color: "#da2c46", border: "1px solid #da2c46"}}
+          style={{ color: "#da2c46", border: "1px solid #da2c46" }}
         >
           View
         </Button>
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "24px" }}>

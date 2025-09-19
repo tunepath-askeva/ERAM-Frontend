@@ -3,9 +3,10 @@ import { Card, Row, Col, Statistic } from 'antd';
 import { UserOutlined, CalendarOutlined, FileTextOutlined } from '@ant-design/icons';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useGetEmployeeAdminDashboardQuery } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from '../../Global/SkeletonLoader';
 
 const EmployeeAdminDashboard = () => {
-  const { data } = useGetEmployeeAdminDashboardQuery();
+  const { data, isLoading } = useGetEmployeeAdminDashboardQuery();
 
   // Prepare chart data for Recharts
   const chartData = data ? [
@@ -40,14 +41,9 @@ const EmployeeAdminDashboard = () => {
     return null;
   };
 
-  if (!data) {
-    return (
-      <div style={{ padding: '24px' }}>
-        <h1 style={{ marginBottom: '24px', color: '#da2c46' }}>Employee Admin Dashboard</h1>
-        <div>Loading...</div>
-      </div>
-    );
-  }
+ if(isLoading){
+  return <SkeletonLoader />
+ }
 
   return (
     <div style={{ padding: '24px'}}>

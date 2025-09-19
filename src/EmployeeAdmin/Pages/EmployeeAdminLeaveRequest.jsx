@@ -18,6 +18,7 @@ import { debounce } from "lodash";
 import { EyeOutlined, AlertOutlined } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 import LeaveRequestModal from "../Components/LeaveRequestModal";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -231,11 +232,8 @@ const EmployeeAdminLeaveRequest = () => {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Spin size="large" />
-        <div style={{ marginTop: "16px" }}>
-          <Text>Loading leave requests...</Text>
-        </div>
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }

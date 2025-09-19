@@ -1,4 +1,4 @@
-import React, { useState,useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Form,
@@ -37,6 +37,7 @@ import {
 } from "../../Slices/Employee/EmployeeApis";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
@@ -312,6 +313,14 @@ const EmployeeAdminNews = () => {
       imgWindow?.document.write(image.outerHTML);
     },
   };
+
+  if (isLoadingNews) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh" }}>

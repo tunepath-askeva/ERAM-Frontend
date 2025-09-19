@@ -27,6 +27,7 @@ import {
   useBulkNotifyExpiredDocumentsMutation,
   useSingleNotifyExpiredDocumentMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -330,6 +331,14 @@ const EmployeeAdminExpiredDocuments = () => {
         "Your document has expired or is about to expire. Please renew it as soon as possible to avoid any compliance issues.",
     });
   };
+
+  if(isLoading){
+    return(
+      <div>
+        <SkeletonLoader />
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: "24px" }}>

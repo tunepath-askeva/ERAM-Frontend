@@ -19,6 +19,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useGetEmployeeAdminDocumentsQuery } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title } = Typography;
 
@@ -146,16 +147,8 @@ const EmployeeAdminDocuments = () => {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "50vh",
-          padding: "16px",
-        }}
-      >
-        <Spin size="large" />
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }
@@ -198,7 +191,7 @@ const EmployeeAdminDocuments = () => {
             prefix={<SearchOutlined />}
             placeholder="Search by ERAM ID"
             allowClear
-            style={{ width: 250, height:35 }}
+            style={{ width: 250, height: 35 }}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>

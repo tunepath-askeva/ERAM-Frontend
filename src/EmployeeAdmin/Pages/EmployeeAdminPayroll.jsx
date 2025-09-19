@@ -33,6 +33,7 @@ import {
   useGetPayrollByIdQuery,
 } from "../../Slices/Employee/EmployeeApis";
 import { debounce } from "lodash";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -1128,6 +1129,14 @@ const EmployeeAdminPayroll = () => {
       </Form>
     );
   };
+
+  if (isPayrollLoading) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "24px" }}>

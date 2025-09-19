@@ -46,6 +46,7 @@ import {
   useArchivePolicyMutation,
   useSearchPoliciesQuery,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -617,6 +618,14 @@ const EmployeeAdminCompanyPolicy = () => {
     showUploadList: false,
     disabled: isUploading,
   };
+
+  if (isLoadingPolicies) {
+    return (
+      <div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>

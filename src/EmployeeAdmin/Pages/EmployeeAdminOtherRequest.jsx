@@ -41,6 +41,7 @@ import {
   useApproveSelectedTicketMutation,
   useChangeOtherRequestStatusMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -239,44 +240,58 @@ const EmployeeAdminOtherRequest = () => {
     );
   };
 
-const handleSendTicketInfo = async () => {
-  console.log("Handler called");
-  console.log("Ticket Details:", ticketDetails);
+  const handleSendTicketInfo = async () => {
+    console.log("Handler called");
+    console.log("Ticket Details:", ticketDetails);
 
-  try {
-    const isValid = ticketDetails.every(
-      (detail) => detail.date && detail.price
-    );
+    try {
+      const isValid = ticketDetails.every(
+        (detail) => detail.date && detail.price
+      );
 
-    if (!isValid) {
-      console.log("Validation failed");
-      message.error("Please fill all ticket detail fields");
-      return;
-    }
-
-    const formData = new FormData();
-    ticketDetails.forEach((detail, index) => {
-      formData.append(`ticketDetails[${index}][date]`, detail.date.format("YYYY-MM-DD"));
-      formData.append(`ticketDetails[${index}][ticketPrice]`, detail.price);
-      formData.append(`ticketDetails[${index}][description]`, detail.description);
-      if (detail.file) {
-        formData.append(`ticketDetails[${index}][file]`, detail.file);
+      if (!isValid) {
+        console.log("Validation failed");
+        message.error("Please fill all ticket detail fields");
+        return;
       }
-    });
 
-    console.log("FormData before sending:", [...formData.entries()]);
+      const formData = new FormData();
+      ticketDetails.forEach((detail, index) => {
+        formData.append(
+          `ticketDetails[${index}][date]`,
+          detail.date.format("YYYY-MM-DD")
+        );
+        formData.append(`ticketDetails[${index}][ticketPrice]`, detail.price);
+        formData.append(
+          `ticketDetails[${index}][description]`,
+          detail.description
+        );
+        if (detail.file) {
+          formData.append(`ticketDetails[${index}][file]`, detail.file);
+        }
+      });
 
-    await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
+      console.log("FormData before sending:", [...formData.entries()]);
 
-    message.success("Ticket information sent successfully!");
-    setShowTicketForm(false);
-    setTicketDetails([{ id: Date.now(), date: null, price: null, description: "", file: null }]);
-    ticketDetailsForm.resetFields();
-  } catch (error) {
-    console.error("Error sending ticket info:", error);
-    message.error("Failed to send ticket information. Please try again.");
-  }
-};
+      await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
+
+      message.success("Ticket information sent successfully!");
+      setShowTicketForm(false);
+      setTicketDetails([
+        {
+          id: Date.now(),
+          date: null,
+          price: null,
+          description: "",
+          file: null,
+        },
+      ]);
+      ticketDetailsForm.resetFields();
+    } catch (error) {
+      console.error("Error sending ticket info:", error);
+      message.error("Failed to send ticket information. Please try again.");
+    }
+  };
 
   const handleDownloadDocument = (fileUrl, documentName) => {
     const link = document.createElement("a");
@@ -460,11 +475,8 @@ const handleSendTicketInfo = async () => {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Spin size="large" />
-        <div style={{ marginTop: "16px" }}>
-          <Text>Loading other requests...</Text>
-        </div>
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }
