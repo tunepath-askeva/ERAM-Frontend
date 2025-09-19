@@ -32,6 +32,7 @@ import {
   useGetRequestHistoryQuery,
   useSubmitSelectedTicketsMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 
@@ -149,6 +150,10 @@ const EmployeeRaiseRequest = () => {
       throw error;
     }
   };
+
+  if (isLoadingHistory) {
+    return <SkeletonLoader />;
+  }
 
   return (
     <div style={{ padding: mobileView ? 16 : 24 }}>

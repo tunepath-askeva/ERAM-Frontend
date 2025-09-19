@@ -44,6 +44,7 @@ import {
   useReplaceEmployeeDocumentMutation,
   useSetEmployeeDocumentAlertDateMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
@@ -420,15 +421,8 @@ const EmployeeDocuments = () => {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Spin size="large" />
+      <div>
+        <SkeletonLoader />
       </div>
     );
   }
@@ -1265,7 +1259,7 @@ const EmployeeDocuments = () => {
                   <Button
                     type="primary"
                     onClick={handleExpiryFormSubmit}
-                    loading={isSettingAlert} 
+                    loading={isSettingAlert}
                     disabled={
                       expiryForm.hasExpiry === null ||
                       (expiryForm.hasExpiry === true && !expiryForm.expiryDate)

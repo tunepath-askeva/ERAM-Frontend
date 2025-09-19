@@ -39,13 +39,14 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeePoliciesQuery } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Content } = Layout;
 const { Search } = Input;
 
 const EmployeeCompanyPolicy = () => {
-  const { data } = useGetEmployeePoliciesQuery();
+  const { data, isLoading } = useGetEmployeePoliciesQuery();
 
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [viewMode, setViewMode] = useState("list");
@@ -169,7 +170,7 @@ const EmployeeCompanyPolicy = () => {
               type="primary"
               icon={<EyeOutlined />}
               size="small"
-              style={{backgroundColor: "#da2c46"}}
+              style={{ backgroundColor: "#da2c46" }}
               onClick={() => {
                 setSelectedPolicy(record);
                 setViewMode("detail");
@@ -183,6 +184,10 @@ const EmployeeCompanyPolicy = () => {
     },
   ];
 
+  if (isLoading) {
+    return <SkeletonLoader />;
+  }
+
   if (!policiesData || policiesData.length === 0) {
     return (
       <Layout style={{ minHeight: "100vh" }}>
@@ -192,6 +197,7 @@ const EmployeeCompanyPolicy = () => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            background: "#fff",
           }}
         >
           <Empty
@@ -500,7 +506,7 @@ const EmployeeCompanyPolicy = () => {
           />
         </Card>
       </Content>
-      
+
       <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;

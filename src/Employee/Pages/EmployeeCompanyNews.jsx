@@ -14,18 +14,19 @@ import {
   Button,
 } from "antd";
 import { useState } from "react";
-import { 
-  CalendarOutlined, 
-  UserOutlined, 
+import {
+  CalendarOutlined,
+  UserOutlined,
   FileTextOutlined,
   CloseOutlined,
-  ArrowRightOutlined
+  ArrowRightOutlined,
 } from "@ant-design/icons";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
 
 const EmployeeCompanyNews = () => {
-  const { data: companyNews } = useGetCompanyNewsQuery();
+  const { data: companyNews, isLoading } = useGetCompanyNewsQuery();
   const [selectedNews, setSelectedNews] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -49,6 +50,10 @@ const EmployeeCompanyNews = () => {
     setIsModalVisible(false);
   };
 
+  if (isLoading) {
+    return <SkeletonLoader />;
+  }
+
   return (
     <div className="news-container">
       <div className="news-header">
@@ -64,79 +69,78 @@ const EmployeeCompanyNews = () => {
         {companyNews?.news
           ?.filter((newsItem) => newsItem.status === "published")
           ?.map((newsItem) => (
-          <Card
-            key={newsItem._id}
-            className="news-wide-card"
-            hoverable
-          >
-            <Row gutter={24} align="middle">
-              {/* Left side - Image */}
-              <Col xs={24} sm={8} md={6}>
-                <div className="news-image-container">
-                  <Image
-                    src={newsItem.coverImage}
-                    alt={newsItem.title}
-                    className="news-image"
-                    preview={false}
-                  />
-                  <div className="news-badge">
-                    <Tag color="blue">{newsItem.status.toUpperCase()}</Tag>
+            <Card key={newsItem._id} className="news-wide-card" hoverable>
+              <Row gutter={24} align="middle">
+                {/* Left side - Image */}
+                <Col xs={24} sm={8} md={6}>
+                  <div className="news-image-container">
+                    <Image
+                      src={newsItem.coverImage}
+                      alt={newsItem.title}
+                      className="news-image"
+                      preview={false}
+                    />
+                    <div className="news-badge">
+                      <Tag color="blue">{newsItem.status.toUpperCase()}</Tag>
+                    </div>
                   </div>
-                </div>
-              </Col>
+                </Col>
 
-              {/* Right side - Content */}
-              <Col xs={24} sm={16} md={18}>
-                <div className="news-content">
-                  {/* Meta Information */}
-                  <div className="news-meta">
-                    <Space size="large">
-                      <Space size="small">
-                        <Avatar icon={<UserOutlined />} size="small" />
-                        <Text type="secondary">Admin</Text>
+                {/* Right side - Content */}
+                <Col xs={24} sm={16} md={18}>
+                  <div className="news-content">
+                    {/* Meta Information */}
+                    <div className="news-meta">
+                      <Space size="large">
+                        <Space size="small">
+                          <Avatar icon={<UserOutlined />} size="small" />
+                          <Text type="secondary">Admin</Text>
+                        </Space>
+                        <Space size="small">
+                          <CalendarOutlined style={{ color: "#888" }} />
+                          <Text type="secondary">
+                            {new Date(newsItem.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </Text>
+                        </Space>
                       </Space>
-                      <Space size="small">
-                        <CalendarOutlined style={{ color: "#888" }} />
-                        <Text type="secondary">
-                          {new Date(newsItem.createdAt).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </Text>
-                      </Space>
-                    </Space>
-                  </div>
+                    </div>
 
-                  {/* Title */}
-                  <Title level={3} className="news-card-title">
-                    {newsItem.title}
-                  </Title>
+                    {/* Title */}
+                    <Title level={3} className="news-card-title">
+                      {newsItem.title}
+                    </Title>
 
-                  {/* Description */}
-                  <Paragraph
-                    ellipsis={{ rows: 2 }}
-                    className="news-card-description"
-                  >
-                    {newsItem.description}
-                  </Paragraph>
-
-                  {/* Read More Button */}
-                  <div className="news-actions">
-                    <Button
-                      type="primary"
-                      icon={<ArrowRightOutlined />}
-                      onClick={(e) => handleReadMore(newsItem, e)}
-                      className="read-more-btn"
+                    {/* Description */}
+                    <Paragraph
+                      ellipsis={{ rows: 2 }}
+                      className="news-card-description"
                     >
-                      Read More
-                    </Button>
+                      {newsItem.description}
+                    </Paragraph>
+
+                    {/* Read More Button */}
+                    <div className="news-actions">
+                      <Button
+                        type="primary"
+                        icon={<ArrowRightOutlined />}
+                        onClick={(e) => handleReadMore(newsItem, e)}
+                        className="read-more-btn"
+                      >
+                        Read More
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-        ))}
+                </Col>
+              </Row>
+            </Card>
+          ))}
       </div>
 
       {/* Modal remains the same */}
@@ -147,9 +151,11 @@ const EmployeeCompanyNews = () => {
         footer={null}
         width={900}
         className="news-modal"
-        closeIcon={<CloseOutlined style={{ fontSize: "20px", color: "#999" }} />}
+        closeIcon={
+          <CloseOutlined style={{ fontSize: "20px", color: "#999" }} />
+        }
         styles={{
-          body: { padding: 0, maxHeight: "80vh", overflowY: "auto" }
+          body: { padding: 0, maxHeight: "80vh", overflowY: "auto" },
         }}
       >
         {selectedNews && (
@@ -160,7 +166,9 @@ const EmployeeCompanyNews = () => {
               <div style={{ marginBottom: "24px" }}>
                 <Space wrap style={{ marginBottom: "16px" }}>
                   <Tag
-                    color={selectedNews.status === "published" ? "green" : "orange"}
+                    color={
+                      selectedNews.status === "published" ? "green" : "orange"
+                    }
                     style={{ fontSize: "12px", padding: "4px 8px" }}
                   >
                     {selectedNews.status?.toUpperCase() || "DRAFT"}
@@ -175,10 +183,10 @@ const EmployeeCompanyNews = () => {
 
                 <Title
                   level={1}
-                  style={{ 
-                    color: customStyles.primaryColor, 
+                  style={{
+                    color: customStyles.primaryColor,
                     marginBottom: "16px",
-                    fontSize: "28px"
+                    fontSize: "28px",
                   }}
                 >
                   {selectedNews.title}
@@ -213,7 +221,10 @@ const EmployeeCompanyNews = () => {
                 {/* Description */}
                 {selectedNews.description && (
                   <>
-                    <Title level={4} style={{ color: customStyles.primaryColor }}>
+                    <Title
+                      level={4}
+                      style={{ color: customStyles.primaryColor }}
+                    >
                       <FileTextOutlined style={{ marginRight: "8px" }} />
                       Overview
                     </Title>
@@ -232,95 +243,99 @@ const EmployeeCompanyNews = () => {
               </div>
 
               {/* Subsections */}
-              {selectedNews.subsections && selectedNews.subsections.length > 0 && (
-                <>
-                  <Divider
-                    style={{
-                      margin: "32px 0",
-                      borderColor: customStyles.primaryColor,
-                    }}
-                  />
+              {selectedNews.subsections &&
+                selectedNews.subsections.length > 0 && (
+                  <>
+                    <Divider
+                      style={{
+                        margin: "32px 0",
+                        borderColor: customStyles.primaryColor,
+                      }}
+                    />
 
-                  <Title
-                    level={3}
-                    style={{ 
-                      color: customStyles.primaryColor, 
-                      marginBottom: "24px" 
-                    }}
-                  >
-                    Article Sections
-                  </Title>
+                    <Title
+                      level={3}
+                      style={{
+                        color: customStyles.primaryColor,
+                        marginBottom: "24px",
+                      }}
+                    >
+                      Article Sections
+                    </Title>
 
-                  <Row gutter={[24, 24]}>
-                    {selectedNews.subsections.map((section, index) => (
-                      <Col xs={24} key={section._id || index}>
-                        <Card
-                          style={{
-                            borderRadius: "8px",
-                            border: `1px solid rgba(218, 44, 70, 0.1)`,
-                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                          }}
-                        >
-                          <Title
-                            level={4}
-                            style={{ marginBottom: "16px", color: "#333" }}
-                          >
-                            {section.subtitle}
-                          </Title>
-
-                          <Paragraph
+                    <Row gutter={[24, 24]}>
+                      {selectedNews.subsections.map((section, index) => (
+                        <Col xs={24} key={section._id || index}>
+                          <Card
                             style={{
-                              fontSize: "15px",
-                              lineHeight: "1.7",
-                              marginBottom: section.image ? "20px" : "0",
-                              color: "#555",
+                              borderRadius: "8px",
+                              border: `1px solid rgba(218, 44, 70, 0.1)`,
+                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
                             }}
                           >
-                            {section.subdescription
-                              ?.split("\r\n")
-                              .map((paragraph, i) => (
-                                <span key={i}>
-                                  {paragraph}
-                                  {i < section.subdescription.split("\r\n").length - 1 && (
-                                    <>
-                                      <br />
-                                      <br />
-                                    </>
-                                  )}
-                                </span>
-                              ))}
-                          </Paragraph>
+                            <Title
+                              level={4}
+                              style={{ marginBottom: "16px", color: "#333" }}
+                            >
+                              {section.subtitle}
+                            </Title>
 
-                          {section.image && (
-                            <div style={{ textAlign: "center" }}>
-                              <Image
-                                src={section.image}
-                                alt={section.subtitle}
-                                style={{
-                                  maxWidth: "100%",
-                                  borderRadius: "8px",
-                                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                                }}
-                                placeholder={
-                                  <div
-                                    style={{
-                                      padding: "40px",
-                                      backgroundColor: "#f5f5f5",
-                                      borderRadius: "8px",
-                                    }}
-                                  >
-                                    <Spin />
-                                  </div>
-                                }
-                              />
-                            </div>
-                          )}
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
-                </>
-              )}
+                            <Paragraph
+                              style={{
+                                fontSize: "15px",
+                                lineHeight: "1.7",
+                                marginBottom: section.image ? "20px" : "0",
+                                color: "#555",
+                              }}
+                            >
+                              {section.subdescription
+                                ?.split("\r\n")
+                                .map((paragraph, i) => (
+                                  <span key={i}>
+                                    {paragraph}
+                                    {i <
+                                      section.subdescription.split("\r\n")
+                                        .length -
+                                        1 && (
+                                      <>
+                                        <br />
+                                        <br />
+                                      </>
+                                    )}
+                                  </span>
+                                ))}
+                            </Paragraph>
+
+                            {section.image && (
+                              <div style={{ textAlign: "center" }}>
+                                <Image
+                                  src={section.image}
+                                  alt={section.subtitle}
+                                  style={{
+                                    maxWidth: "100%",
+                                    borderRadius: "8px",
+                                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                                  }}
+                                  placeholder={
+                                    <div
+                                      style={{
+                                        padding: "40px",
+                                        backgroundColor: "#f5f5f5",
+                                        borderRadius: "8px",
+                                      }}
+                                    >
+                                      <Spin />
+                                    </div>
+                                  }
+                                />
+                              </div>
+                            )}
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  </>
+                )}
 
               {/* Footer with timestamps */}
               <Divider style={{ margin: "40px 0 20px 0" }} />
@@ -465,11 +480,11 @@ const EmployeeCompanyNews = () => {
             height: 200px;
             margin-bottom: 16px;
           }
-          
+
           .news-content {
             padding: 0;
           }
-          
+
           .news-card-title {
             font-size: 18px;
           }

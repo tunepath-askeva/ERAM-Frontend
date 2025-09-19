@@ -35,6 +35,7 @@ import {
 } from "../../Slices/Users/UserApis";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 dayjs.extend(relativeTime);
 
@@ -196,9 +197,8 @@ const EmployeeNotifications = () => {
 
   if (loading || apiLoading) {
     return (
-      <div style={{ padding: "16px" }}>
-        <Skeleton active paragraph={{ rows: 4 }} />
-        <Skeleton active paragraph={{ rows: 4 }} />
+      <div >
+       <SkeletonLoader />F
       </div>
     );
   }

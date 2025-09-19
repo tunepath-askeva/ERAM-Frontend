@@ -7,6 +7,7 @@ import PersonalInformationCard from "../Components/PersonalInformationCard";
 import ProfileCompletionCard from "../Components/ProfileCompletetionCard";
 import EmploymentDetailsCard from "../Components/EmploymentDetailsCard";
 import SecurityContent from "../Components/SecurityContent";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TabPane } = Tabs;
 
@@ -45,13 +46,14 @@ const EmployeeProfileSettings = () => {
       employeeData.gender,
       employeeData.age,
       employeeData.passportNo,
-      employeeData.skills?.length > 0 ? 'skills' : null,
-      employeeData.education?.length > 0 ? 'education' : null,
-      employeeData.workExperience?.length > 0 ? 'workExperience' : null,
+      employeeData.skills?.length > 0 ? "skills" : null,
+      employeeData.education?.length > 0 ? "education" : null,
+      employeeData.workExperience?.length > 0 ? "workExperience" : null,
     ];
 
     const filledFields = requiredFields.filter(
-      (field) => field && (typeof field === 'string' ? field.trim() !== "" : true)
+      (field) =>
+        field && (typeof field === "string" ? field.trim() !== "" : true)
     ).length;
 
     return Math.round((filledFields / requiredFields.length) * 100);
@@ -61,21 +63,30 @@ const EmployeeProfileSettings = () => {
     setLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      setEmployeeData(prevData => ({
+
+      setEmployeeData((prevData) => ({
         ...prevData,
         ...values,
         employmentDetails: {
           ...prevData.employmentDetails,
           ...Object.keys(values).reduce((acc, key) => {
-            if (['officialEmail', 'badgeNo', 'gatePassId', 'aramcoId', 'otherId', 'plantId'].includes(key)) {
+            if (
+              [
+                "officialEmail",
+                "badgeNo",
+                "gatePassId",
+                "aramcoId",
+                "otherId",
+                "plantId",
+              ].includes(key)
+            ) {
               acc[key] = values[key];
             }
             return acc;
-          }, {})
-        }
+          }, {}),
+        },
       }));
-      
+
       message.success("Profile updated successfully!");
     } catch (error) {
       message.error("Failed to update profile");
@@ -92,7 +103,7 @@ const EmployeeProfileSettings = () => {
     message.success("All changes saved successfully!");
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <SkeletonLoader />;
   if (error) return <div>Error loading profile data</div>;
   if (!employeeData) return <div>No profile data available</div>;
 

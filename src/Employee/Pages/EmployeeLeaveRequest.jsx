@@ -29,19 +29,21 @@ import {
   useGetEmployeeProfileQuery,
   useGetEmployeeLeaveHistoryQuery,
 } from "../../Slices/Employee/EmployeeApis";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 const { Title, Text } = Typography;
 
 const EmployeeLeaveRequest = () => {
   const [activeTab, setActiveTab] = useState("apply");
   const [mobileView, setMobileView] = useState(false);
 
-  const { data } = useGetEmployeeProfileQuery();
+  const { data, isLoading } = useGetEmployeeProfileQuery();
 
   // Get basic stats without filters for the overview cards
-  const { data: statsData } = useGetEmployeeLeaveHistoryQuery({
-    page: 1,
-    limit: 1000, // Get all records for stats calculation
-  });
+  const { data: statsData, isLoading: LeaveHistoryLoading } =
+    useGetEmployeeLeaveHistoryQuery({
+      page: 1,
+      limit: 1000, // Get all records for stats calculation
+    });
 
   const user = data?.employee;
 
@@ -119,6 +121,10 @@ const EmployeeLeaveRequest = () => {
     // Switch to history tab after successful submission
     setActiveTab("history");
   };
+
+  if (isLoading && LeaveHistoryLoading) {
+    return <SkeletonLoader />;
+  }
 
   return (
     <div style={{ padding: mobileView ? 16 : 24 }}>

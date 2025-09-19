@@ -23,6 +23,7 @@ import {
   useGeneratePayslipMutation,
 } from "../../Slices/Employee/EmployeeApis";
 import dayjs from "dayjs";
+import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -920,6 +921,10 @@ const EmployeePayroll = () => {
       </div>
     );
   };
+
+  if (isLoading) {
+    return <SkeletonLoader />;
+  }
 
   return (
     <div style={{ padding: "24px", minHeight: "100vh" }}>
