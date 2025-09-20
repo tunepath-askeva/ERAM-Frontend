@@ -713,7 +713,6 @@ const AdminCandidates = () => {
             gap: "16px",
           }}
         >
-          {/* Title Section */}
           <div
             style={{
               display: "flex",

@@ -639,6 +639,15 @@ export const recruiterApi = createApi({
         body: { remarks },
       }),
     }),
+    convertToCandidate: builder.mutation({
+      query: ({ values, id }) => ({
+        url: `/converts/${id}`,
+        method: "POST",
+        body: {
+          values,
+        },
+      }),
+    }),
   }),
 });
 
@@ -706,4 +715,5 @@ export const {
   useDeleteRecruiterCvMutation,
   useGetLowLevelCandidatesByJobQuery,
   useAddRemarksCvCandidatesMutation,
+  useConvertToCandidateMutation,
 } = recruiterApi;

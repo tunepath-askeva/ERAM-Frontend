@@ -50,6 +50,7 @@ import {
   useUpdateJobStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -69,6 +70,7 @@ const RecruiterJobs = () => {
   const [modalType, setModalType] = useState(""); // 'activate' or 'deactivate'
   const [selectedJobForModal, setSelectedJobForModal] = useState(null);
   const [description, setDescription] = useState("");
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -360,77 +362,8 @@ const RecruiterJobs = () => {
               style={{ width: "100%" }}
             />
           </Col>
-          {/* 
-          <Col xs={12} sm={4} md={4} lg={4} xl={4}>
-            <Button
-              type="primary"
-              size="large"
-              icon={<FilterOutlined />}
-              onClick={() => setMobileFiltersVisible(true)}
-              style={{
-                width: "100%",
-                background: primaryColor,
-                border: "none",
-              }}
-            >
-              Filters
-            </Button>
-          </Col> */}
         </Row>
       </Card>
-
-      <Drawer
-        title="Filter Jobs"
-        placement="bottom"
-        closable={true}
-        onClose={() => setMobileFiltersVisible(false)}
-        open={mobileFiltersVisible}
-        height="auto"
-        style={{ maxHeight: "80vh" }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div>
-            <Text strong style={{ display: "block", marginBottom: "8px" }}>
-              Job Status
-            </Text>
-            <Select
-              placeholder="Select status"
-              style={{ width: "100%" }}
-              value={filterStatus}
-              onChange={setFilterStatus}
-              allowClear
-            >
-              <Option value="all">All Status</Option>
-              <Option value="active">Active</Option>
-              <Option value="inactive">Inactive</Option>
-            </Select>
-          </div>
-
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            <Button
-              type="link"
-              onClick={() => {
-                setFilterStatus("all");
-                setSearchText("");
-              }}
-              style={{ flex: 1 }}
-            >
-              Clear All
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => setMobileFiltersVisible(false)}
-              style={{
-                flex: 1,
-                background: primaryColor,
-                border: "none",
-              }}
-            >
-              Apply Filters
-            </Button>
-          </div>
-        </div>
-      </Drawer>
 
       <div style={{ marginBottom: "16px" }}>
         <Text
@@ -463,38 +396,6 @@ const RecruiterJobs = () => {
 
       {getCurrentPageJobs().length > 0 ? (
         <>
-          {/* <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: "24px",
-            }}
-          >
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={apiData?.totalCount || 0} // ✅ Use totalCount from transformResponse
-              onChange={(page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              }}
-              showSizeChanger={true}
-              pageSizeOptions={["5", "10", "20", "50", "100", "150"]}
-              showTotal={(total, range) =>
-                `${range[0]}-${range[1]} of ${total} jobs`
-              } // Optional: show total info
-              itemRender={(current, type, originalElement) => {
-                if (type === "prev") {
-                  return <Button>Previous</Button>;
-                }
-                if (type === "next") {
-                  return <Button>Next</Button>;
-                }
-                return originalElement;
-              }}
-            />
-          </div> */}
-
           <Row gutter={[16, 16]}>
             {getCurrentPageJobs().map((job) => (
               <Col xs={24} sm={12} md={8} lg={6} xl={6} key={job._id}>
@@ -507,9 +408,19 @@ const RecruiterJobs = () => {
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                   }}
-                  onClick={() => handleJobClick(job)}
+                  onClick={() => {
+                    if (!job.isActive) {
+                      enqueueSnackbar(
+                        "Your deadline is up. Please contact your admin.",
+                        {
+                          variant: "warning",
+                        }
+                      );
+                      return;
+                    }
+                    handleJobClick(job);
+                  }}
                   actions={[
-                    // Only show actions if recruiter is assigned
                     ...(isRecruiterAssigned(job.assignedRecruiters)
                       ? [
                           hasPermission("edit-job") && (
@@ -541,7 +452,17 @@ const RecruiterJobs = () => {
                     <Tooltip title="View Details" key="view">
                       <EyeOutlined
                         onClick={(e) => {
+                          console.log("Card clicked:", job.isActive);
                           e.stopPropagation();
+                          if (!job.isActive) {
+                            enqueueSnackbar(
+                              "Your deadline is up. Please contact your admin.",
+                              {
+                                variant: "warning",
+                              }
+                            );
+                            return;
+                          }
                           handleJobClick(job);
                         }}
                         style={{ fontSize: "16px", color: primaryColor }}
@@ -550,7 +471,6 @@ const RecruiterJobs = () => {
                   ].filter(Boolean)}
                 >
                   <div style={{ position: "relative" }}>
-                    {/* Status Tag - Top Right */}
                     <Tag
                       color={job.isActive ? "green" : "red"}
                       style={{
@@ -567,7 +487,6 @@ const RecruiterJobs = () => {
                     </Tag>
 
                     <div style={{ textAlign: "center", marginBottom: "16px" }}>
-                     
                       <Title
                         level={5}
                         style={{

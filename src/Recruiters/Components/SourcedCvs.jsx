@@ -16,11 +16,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useGetLowLevelCandidatesByJobQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useNavigate } from "react-router-dom"; // <-- import useNavigate
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
 const SourcedCvs = ({ jobId }) => {
+  const navigate = useNavigate(); // <-- initialize navigate
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
 
@@ -46,7 +48,7 @@ const SourcedCvs = ({ jobId }) => {
   if (isLoading) return <p>Loading candidates...</p>;
   if (isError) return <p>Error fetching candidates.</p>;
 
-  const candidates = data?.getAllCV || [];
+  const candidates = data?.lowlevelCandidates || [];
 
   return (
     <div style={{ padding: 20 }}>
@@ -54,7 +56,6 @@ const SourcedCvs = ({ jobId }) => {
         Candidate CVs
       </Title>
 
-      {/* Search Bar with Debounce */}
       <Search
         placeholder="Search candidates..."
         allowClear
@@ -116,11 +117,27 @@ const SourcedCvs = ({ jobId }) => {
                     background: "#da2c46",
                     borderColor: "#da2c46",
                     borderRadius: 6,
+                    marginBottom: 10,
                   }}
                 >
                   View Resume
                 </Button>
               )}
+
+              <Button
+                type="default"
+                style={{
+                  width: "100%",
+                  borderRadius: 6,
+                  marginTop: 5,
+                  backgroundColor: "#f0f0f0",
+                  color: "#da2c46",
+                  borderColor: "#da2c46",
+                }}
+                onClick={() => navigate("/recruiter/all-cvs")} 
+              >
+                Convert to Candidate
+              </Button>
             </Card>
           </Col>
         ))}

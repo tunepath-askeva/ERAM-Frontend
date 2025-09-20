@@ -46,8 +46,10 @@ import {
   useGetAllRecruiterCvsQuery,
   useDeleteRecruiterCvMutation,
   useAddRemarksCvCandidatesMutation,
+  useConvertToCandidateMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import ConvertToCandidateModal from "../Components/ConvertToCandidatModal";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -73,7 +75,9 @@ const LowLevelCandidates = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [addRemarksModalVisible, setAddRemarksModalVisible] = useState(false);
   const [remarksText, setRemarksText] = useState("");
-
+  const [convertModalVisible, setConvertModalVisible] = useState(false);
+  const [candidateToConvert, setCandidateToConvert] = useState(null);
+  const [candidateConverting] = useConvertToCandidateMutation();
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -100,6 +104,7 @@ const LowLevelCandidates = () => {
     limit,
     search: debouncedSearch,
   });
+
 
   const [deleteRecruiterCv, { isLoading: isDeleting }] =
     useDeleteRecruiterCvMutation();
@@ -132,6 +137,16 @@ const LowLevelCandidates = () => {
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
+  };
+
+  const handleConvertCandidate = (record) => {
+    setCandidateToConvert({
+      id: record.id,
+      firstName: record.firstName || record.name.split(" ")[0],
+      lastName: record.lastName || record.name.split(" ")[1] || "",
+      email: record.email,
+    });
+    setConvertModalVisible(true);
   };
 
   const formatDate = (dateString) => {
@@ -381,9 +396,7 @@ const LowLevelCandidates = () => {
               <Menu.Item
                 key="convert"
                 icon={<UserAddOutlined />}
-                onClick={() => {
-                  message.success(`Converted ${record.name} to candidate`);
-                }}
+                onClick={() => handleConvertCandidate(record)}
               >
                 Convert to Candidate
               </Menu.Item>
@@ -461,7 +474,6 @@ const LowLevelCandidates = () => {
       }}
     >
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header */}
         <div style={{ marginBottom: isMobile ? "16px" : "32px" }}>
           <Card
             style={{
@@ -952,6 +964,23 @@ const LowLevelCandidates = () => {
           }
         }
       `}</style>
+      {convertModalVisible && (
+        <ConvertToCandidateModal
+          visible={convertModalVisible}
+          onCancel={() => setConvertModalVisible(false)}
+          initialValues={candidateToConvert}
+          handleSubmit={async (values) => {
+            await candidateConverting({
+              id: candidateToConvert.id,
+              values,
+            }).unwrap();
+            message.success(
+              `${values.firstName} ${values.lastName} converted to candidate!`
+            );
+            setConvertModalVisible(false);
+          }}
+        />
+      )}
     </div>
   );
 };
