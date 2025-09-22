@@ -650,12 +650,12 @@ const JobsSection = ({ currentBranch }) => {
         />
       </div>
 
-      <Col style={{ marginBottom: 15 , marginTop: 5}}>
+      <Col style={{ marginBottom: 15, marginTop: 5 }}>
         <TrendingSkillsCarousel />
       </Col>
 
       <Col>
-        <TrendingJobsCarousel style={{ marginBottom: 15 , marginTop: 15}} />
+        <TrendingJobsCarousel style={{ marginBottom: 15, marginTop: 15 }} />
       </Col>
 
       {/* Job Stats */}
@@ -879,11 +879,14 @@ const JobsSection = ({ currentBranch }) => {
 
           .carousel-item {
             flex-shrink: 0;
-            border-radius: 20px;
             padding: 4px 12px;
             font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
+            color: #fff;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #da2c46 0%, #a51632 100%);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
           }
 
           /* Skills move left → right */
@@ -921,7 +924,7 @@ const JobsSection = ({ currentBranch }) => {
             top: 50%;
             transform: translateY(-50%);
             z-index: 2;
-            background: rgba(255, 255, 255, 0.8);
+            background: #fff;
             border: none;
             cursor: pointer;
           }

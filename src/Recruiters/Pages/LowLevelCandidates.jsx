@@ -47,6 +47,7 @@ import {
   useDeleteRecruiterCvMutation,
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
+  useExportRecruiterCvsMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import ConvertToCandidateModal from "../Components/ConvertToCandidatModal";
@@ -108,6 +109,9 @@ const LowLevelCandidates = () => {
   const [deleteRecruiterCv, { isLoading: isDeleting }] =
     useDeleteRecruiterCvMutation();
 
+  const [exportCvs, { isLoading: isExporting }] =
+    useExportRecruiterCvsMutation();
+
   const [addRemarks, { isLoading: isAdding }] =
     useAddRemarksCvCandidatesMutation();
 
@@ -164,6 +168,32 @@ const LowLevelCandidates = () => {
       setConvertModalVisible(false);
     } catch (error) {
       message.error("Failed to convert candidate!");
+    }
+  };
+
+  const handleExportCvs = async () => {
+    try {
+      const blob = await exportCvs().unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        })
+      );
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "resumes.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+
+      message.success("CVs exported successfully!");
+    } catch (error) {
+      console.error(error);
+      message.error("Failed to export CVs!");
     }
   };
 
@@ -583,13 +613,15 @@ const LowLevelCandidates = () => {
             <Button
               icon={<ExportOutlined />}
               size={isMobile ? "middle" : "large"}
+              loading={isExporting}
+              onClick={handleExportCvs}
               style={{
                 borderColor: "#da2c46",
                 color: "#da2c46",
                 minWidth: isMobile ? "auto" : "120px",
               }}
             >
-              {isMobile ? "Export CVs" : "Export CVs"}
+              {isMobile ? "Export" : "Export CVs"}
             </Button>
           </div>
         </Card>

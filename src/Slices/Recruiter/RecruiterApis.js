@@ -656,6 +656,16 @@ export const recruiterApi = createApi({
         },
       }),
     }),
+    exportRecruiterCvs: builder.mutation({
+      query: () => ({
+        url: "/export-cvs",
+        method: "POST",
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          return blob;
+        },
+      }),
+    }),
   }),
 });
 
@@ -725,4 +735,5 @@ export const {
   useGetLowLevelAppliedCandidatesByJobQuery,
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
+  useExportRecruiterCvsMutation
 } = recruiterApi;
