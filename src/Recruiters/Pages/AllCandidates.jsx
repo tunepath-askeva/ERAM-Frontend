@@ -415,6 +415,21 @@ function AllCandidates() {
     [advancedFilters, advancedPageSize, filterCandidates]
   );
 
+  const getCandidateSource = (candidate) => {
+    switch (candidate.lowLevelCandidate) {
+      case "lowlevel":
+        return "Converted from CV";
+      case "registered":
+        return "Registered";
+      case "addedcandidate":
+        return "Added";
+      case "bulk":
+        return "Bulk imported";
+      default:
+        return "Bulk imported"; // fallback
+    }
+  };
+
   const currentPaginationHandler = isAdvancedFilterApplied
     ? handleAdvancedPageChange
     : handleNormalPageChange;
@@ -456,6 +471,13 @@ function AllCandidates() {
             <Text type="secondary">{record.title || "No title"}</Text>
           </div>
         </Space>
+      ),
+    },
+    {
+      title: "Source",
+      dataIndex: "lowLevelCandidate",
+      render: (_, record) => (
+        <Tag color="purple">{getCandidateSource(record)}</Tag>
       ),
     },
 

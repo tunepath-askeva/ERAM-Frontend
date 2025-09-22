@@ -343,6 +343,21 @@ const AdminCandidates = () => {
     setFileList(info.fileList.slice(-1));
   };
 
+  const getCandidateSource = (candidate) => {
+    switch (candidate.lowLevelCandidate) {
+      case "lowlevel":
+        return "Converted from CV";
+      case "registered":
+        return "Registered";
+      case "addedcandidate":
+        return "Added";
+      case "bulk":
+        return "Bulk imported";
+      default:
+        return "Bulk imported"; // fallback
+    }
+  };
+
   const processImport = async () => {
     if (fileList.length === 0) {
       enqueueSnackbar("Please select a file first", { variant: "error" });
@@ -582,6 +597,14 @@ const AdminCandidates = () => {
         </div>
       ),
     },
+    {
+      title: "Source",
+      dataIndex: "lowLevelCandidate",
+      render: (_, record) => (
+        <Tag color="purple">{getCandidateSource(record)}</Tag>
+      ),
+    },
+
     {
       title: "Email",
       dataIndex: "email",
