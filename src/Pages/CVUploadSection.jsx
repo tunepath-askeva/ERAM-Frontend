@@ -135,10 +135,7 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
       setEmail("");
       closeCvModal();
     } catch (error) {
-      enqueueSnackbar(
-        error?.data?.message || "Submission failed! Please try again.",
-        { variant: "error" }
-      );
+      enqueueSnackbar(error?.data?.message, { variant: "error" });
     }
   };
 
