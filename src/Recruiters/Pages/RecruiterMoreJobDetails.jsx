@@ -1085,7 +1085,7 @@ const RecruiterMoreJobDetails = () => {
                 icon={<FileExcelOutlined />}
                 onClick={handleExportExcel}
                 style={{
-                  backgroundColor: "#52c41a",
+                  backgroundColor: "#da2c46",
                   color: "#fff",
                   borderRadius: "6px",
                 }}

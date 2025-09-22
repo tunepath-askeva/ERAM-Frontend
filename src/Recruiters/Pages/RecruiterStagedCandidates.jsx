@@ -331,9 +331,9 @@ const RecruiterStagedCandidates = () => {
             boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
           }}
         >
-          <Row gutter={[16, 16]} align="middle" wrap>
+          <Row gutter={[16, 16]} align="middle" justify="space-between" wrap>
             {/* Search Input */}
-            <Col xs={24} md={10}>
+            <Col xs={24} md={16}>
               <Input
                 placeholder="Search by name, email, or job title"
                 size="large"
@@ -347,15 +347,15 @@ const RecruiterStagedCandidates = () => {
             </Col>
 
             {/* Export Button */}
-            <Col xs={12} md={6}>
+            <Col xs={24} md={6}>
               <Button
                 type="primary"
                 size="large"
                 icon={<DownloadOutlined />}
                 loading={isExporting}
                 onClick={handleExport}
+                block
                 style={{
-                  width: "100%",
                   background: primaryColor,
                   border: "none",
                 }}

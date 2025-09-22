@@ -114,6 +114,7 @@ const SourcedCvs = ({ jobId }) => {
                   href={candidate.Resume[0].fileUrl}
                   target="_blank"
                   style={{
+                      width: "100%",
                     background: "#da2c46",
                     borderColor: "#da2c46",
                     borderRadius: 6,
@@ -130,7 +131,6 @@ const SourcedCvs = ({ jobId }) => {
                   width: "100%",
                   borderRadius: 6,
                   marginTop: 5,
-                  backgroundColor: "#f0f0f0",
                   color: "#da2c46",
                   borderColor: "#da2c46",
                 }}

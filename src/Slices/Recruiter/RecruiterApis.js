@@ -625,6 +625,14 @@ export const recruiterApi = createApi({
       query: ({ jobId, page = 1, limit = 20, search = "" }) =>
         `/lowlevel-candidate/${jobId}?page=${page}&limit=${limit}&search=${search}`,
     }),
+    getLowLevelAppliedCandidatesByJob: builder.query({
+      query: ({ jobId, page = 1, limit = 20, search = "" }) => {
+        let params = new URLSearchParams({ page, limit });
+        if (search) params.append("search", search);
+
+        return `/applied-cvs/${jobId}?${params.toString()}`;
+      },
+    }),
 
     deleteRecruiterCv: builder.mutation({
       query: (id) => ({
@@ -714,6 +722,7 @@ export const {
   useGetAllRecruiterCvsQuery,
   useDeleteRecruiterCvMutation,
   useGetLowLevelCandidatesByJobQuery,
+  useGetLowLevelAppliedCandidatesByJobQuery,
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
 } = recruiterApi;
