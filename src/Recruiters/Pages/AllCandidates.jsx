@@ -416,7 +416,7 @@ function AllCandidates() {
   );
 
   const getCandidateSource = (candidate) => {
-    switch (candidate.lowLevelCandidate) {
+    switch (candidate.enteringCandidate) {
       case "lowlevel":
         return "Converted from CV";
       case "registered":
@@ -475,7 +475,7 @@ function AllCandidates() {
     },
     {
       title: "Source",
-      dataIndex: "lowLevelCandidate",
+      dataIndex: "enteringCandidate",
       render: (_, record) => (
         <Tag color="purple">{getCandidateSource(record)}</Tag>
       ),

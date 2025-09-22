@@ -16,11 +16,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { useGetLowLevelAppliedCandidatesByJobQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
 const AppliedCvs = ({ jobId }) => {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
 
@@ -48,7 +50,7 @@ const AppliedCvs = ({ jobId }) => {
   if (isLoading) return <p>Loading applied candidates...</p>;
   if (isError) return <p>Error fetching applied candidates.</p>;
 
-  const candidates = data?.lowlevelAppliedCandidates || [];
+  const candidates = data?.appliedLowLevelCandidates || [];
 
   return (
     <div style={{ padding: 20 }}>
@@ -99,14 +101,6 @@ const AppliedCvs = ({ jobId }) => {
                 <Text>{candidate.email}</Text>
               </div>
 
-              <div style={{ marginBottom: 12 }}>
-                <Text strong style={{ color: "#da2c46" }}>
-                  {candidate.jobId
-                    ? `Applied for ${candidate.jobId.title} (${candidate.jobId.jobCode})`
-                    : "Direct Apply"}
-                </Text>
-              </div>
-
               {candidate.Resume?.length > 0 && (
                 <Button
                   type="primary"
@@ -124,6 +118,20 @@ const AppliedCvs = ({ jobId }) => {
                   View Resume
                 </Button>
               )}
+
+              <Button
+                type="default"
+                style={{
+                  width: "100%",
+                  borderRadius: 6,
+                  marginTop: 5,
+                  color: "#da2c46",
+                  borderColor: "#da2c46",
+                }}
+                onClick={() => navigate("/recruiter/all-cvs")}
+              >
+                Convert to Candidate
+              </Button>
             </Card>
           </Col>
         ))}

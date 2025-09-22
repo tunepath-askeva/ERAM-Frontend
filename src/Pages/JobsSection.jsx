@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   Typography,
@@ -31,6 +31,8 @@ import {
   UserOutlined,
   LoginOutlined,
   ShareAltOutlined,
+  FireOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
 import { useGetBranchJobsQuery } from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +44,39 @@ const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
 
+const trendingSkills = [
+  "React",
+  "JavaScript",
+  "Node.js",
+  "Python",
+  "AWS",
+  "TypeScript",
+  "MongoDB",
+  "DevOps",
+  "UI/UX",
+  "Machine Learning",
+  "Cloud Computing",
+  "Data Analysis",
+  "Project Management",
+  "Agile Methodology",
+  "Cybersecurity",
+];
+
+const trendingJobs = [
+  "Full Stack Developer",
+  "Data Scientist",
+  "DevOps Engineer",
+  "Product Manager",
+  "UX Designer",
+  "Cloud Architect",
+  "Machine Learning Engineer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Mobile Developer",
+  "Data Analyst",
+  "Software Architect",
+];
+
 const JobsSection = ({ currentBranch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleJobsCount, setVisibleJobsCount] = useState(JOBS_PER_PAGE);
@@ -49,6 +84,8 @@ const JobsSection = ({ currentBranch }) => {
   const [selectedJobId, setSelectedJobId] = useState(null);
 
   const navigate = useNavigate();
+  const trendingSkillsRef = useRef(null);
+  const trendingJobsRef = useRef(null);
 
   const {
     data: jobsResponse,
@@ -80,6 +117,27 @@ const JobsSection = ({ currentBranch }) => {
       }, 300);
     }
   }, [jobsResponse]);
+
+  useEffect(() => {
+    const skillsContainer = trendingSkillsRef.current;
+    const jobsContainer = trendingJobsRef.current;
+
+    if (skillsContainer) {
+      const scrollSkills = () => {
+        if (
+          skillsContainer.scrollLeft >=
+          skillsContainer.scrollWidth - skillsContainer.clientWidth
+        ) {
+          skillsContainer.scrollLeft = 0;
+        } else {
+          skillsContainer.scrollLeft += 1;
+        }
+      };
+
+      const skillsInterval = setInterval(scrollSkills, 50);
+      return () => clearInterval(skillsInterval);
+    }
+  }, []);
 
   const filteredJobs = jobs.filter(
     (job) =>
@@ -448,6 +506,56 @@ const JobsSection = ({ currentBranch }) => {
     </Card>
   );
 
+  const TrendingSkillsCarousel = () => (
+    <div className="trending-section">
+      <div
+        style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
+      >
+        <FireOutlined style={{ color: "#ff6b35", marginRight: "8px" }} />
+        <Text strong style={{ color: "#374151", fontSize: "14px" }}>
+          Trending Skills
+        </Text>
+      </div>
+
+      <div className="carousel-wrapper">
+        <Button className="left-arrow">{"<"}</Button>
+        <div className="carousel-track skills-track">
+          {[...trendingSkills, ...trendingSkills].map((skill, index) => (
+            <Tag key={index} className="carousel-item">
+              {skill}
+            </Tag>
+          ))}
+        </div>
+        <Button className="right-arrow">{">"}</Button>
+      </div>
+    </div>
+  );
+
+  const TrendingJobsCarousel = () => (
+    <div className="trending-section">
+      <div
+        style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
+      >
+        <TrophyOutlined style={{ color: "#d69e2e", marginRight: "8px" }} />
+        <Text strong style={{ color: "#374151", fontSize: "14px" }}>
+          Trending Jobs
+        </Text>
+      </div>
+
+      <div className="carousel-wrapper">
+        <Button className="left-arrow">{"<"}</Button>
+        <div className="carousel-track jobs-track">
+          {[...trendingJobs, ...trendingJobs].map((job, index) => (
+            <Tag key={index} className="carousel-item">
+              {job}
+            </Tag>
+          ))}
+        </div>
+        <Button className="right-arrow">{">"}</Button>
+      </div>
+    </div>
+  );
+
   if (jobsLoading) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
@@ -542,9 +650,18 @@ const JobsSection = ({ currentBranch }) => {
         />
       </div>
 
+      <Col style={{ marginBottom: 15 , marginTop: 5}}>
+        <TrendingSkillsCarousel />
+      </Col>
+
+      <Col>
+        <TrendingJobsCarousel style={{ marginBottom: 15 , marginTop: 15}} />
+      </Col>
+
       {/* Job Stats */}
       <Card
         style={{
+          marginTop: "24px",
           marginBottom: "24px",
           borderRadius: "12px",
           background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
@@ -739,8 +856,84 @@ const JobsSection = ({ currentBranch }) => {
         centered
         width={600}
       >
-        <CVUploadSection currentBranch={currentBranch} jobId={selectedJobId} closeCvModal={closeCvModal} />
+        <CVUploadSection
+          currentBranch={currentBranch}
+          jobId={selectedJobId}
+          closeCvModal={closeCvModal}
+        />
       </Modal>
+
+      <style jsx>
+        {`
+          .carousel-wrapper {
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+          }
+
+          .carousel-track {
+            display: flex;
+            gap: 8px;
+            width: max-content;
+          }
+
+          .carousel-item {
+            flex-shrink: 0;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+          }
+
+          /* Skills move left → right */
+          .skills-track {
+            animation: scrollRight 25s linear infinite;
+          }
+
+          /* Jobs move right → left */
+          .jobs-track {
+            animation: scrollLeft 25s linear infinite;
+          }
+
+          /* Keyframes */
+          @keyframes scrollLeft {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+
+          @keyframes scrollRight {
+            0% {
+              transform: translateX(-50%);
+            }
+            100% {
+              transform: translateX(0);
+            }
+          }
+
+          .left-arrow,
+          .right-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+          }
+
+          .left-arrow {
+            left: 0;
+          }
+          .right-arrow {
+            right: 0;
+          }
+        `}
+      </style>
     </div>
   );
 };
