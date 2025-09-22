@@ -105,7 +105,6 @@ const LowLevelCandidates = () => {
     search: debouncedSearch,
   });
 
-
   const [deleteRecruiterCv, { isLoading: isDeleting }] =
     useDeleteRecruiterCvMutation();
 
@@ -147,6 +146,25 @@ const LowLevelCandidates = () => {
       email: record.email,
     });
     setConvertModalVisible(true);
+  };
+
+  const handleConvertSubmit = async (values) => {
+    const { phoneNumber, phoneNumberCountryCode, ...rest } = values;
+    const fullPhone = `+${phoneNumberCountryCode}${phoneNumber}`;
+
+    try {
+      await candidateConverting({
+        id: candidateToConvert.id,
+        values: { ...rest, phone: fullPhone },
+      }).unwrap();
+
+      message.success(
+        `${values.firstName} ${values.lastName} converted to candidate!`
+      );
+      setConvertModalVisible(false);
+    } catch (error) {
+      message.error("Failed to convert candidate!");
+    }
   };
 
   const formatDate = (dateString) => {
@@ -969,16 +987,7 @@ const LowLevelCandidates = () => {
           visible={convertModalVisible}
           onCancel={() => setConvertModalVisible(false)}
           initialValues={candidateToConvert}
-          handleSubmit={async (values) => {
-            await candidateConverting({
-              id: candidateToConvert.id,
-              values,
-            }).unwrap();
-            message.success(
-              `${values.firstName} ${values.lastName} converted to candidate!`
-            );
-            setConvertModalVisible(false);
-          }}
+          handleSubmit={handleConvertSubmit}
         />
       )}
     </div>

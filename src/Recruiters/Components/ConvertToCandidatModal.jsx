@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Button,
-  Row,
-  Col,
-  Select,
-} from "antd";
+import { Modal, Form, Input, Button, Row, Col, Select } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -16,6 +8,7 @@ import {
   BankOutlined,
   StarOutlined,
 } from "@ant-design/icons";
+import PhoneInput from "../../Global/PhoneInput";
 
 const { Option } = Select;
 
@@ -140,46 +133,12 @@ const ConvertToCandidateModal = ({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="Phone Number" style={{ marginBottom: 0 }}>
-              <Input.Group compact>
-                <Form.Item
-                  name="countryCode"
-                  style={{ width: "40%" }}
-                  rules={[{ required: true, message: "Select country" }]}
-                >
-                  <Select
-                    showSearch
-                    placeholder="Country"
-                    value={selectedCountryCode}
-                    onChange={handleCountryCodeChange}
-                    filterOption={(input, option) =>
-                      option.searchText?.includes(input.toLowerCase())
-                    }
-                    style={{ width: "100%" }}
-                  >
-                    {getCountryOptions().map((option) => (
-                      <Option
-                        key={option.value}
-                        value={option.value}
-                        searchText={option.searchText}
-                      >
-                        {option.label}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  name="phoneNumber"
-                  style={{ width: "60%" }}
-                  rules={[{ validator: validatePhoneNumber }]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined />}
-                    placeholder="Enter phone number"
-                  />
-                </Form.Item>
-              </Input.Group>
-            </Form.Item>
+            <PhoneInput
+              form={form}
+              name="phoneNumber"
+              label="Phone Number"
+              required
+            />
           </Col>
         </Row>
 
@@ -200,7 +159,9 @@ const ConvertToCandidateModal = ({
             <Form.Item
               label="Specialization"
               name="specialization"
-              rules={[{ required: true, message: "Please enter specialization" }]}
+              rules={[
+                { required: true, message: "Please enter specialization" },
+              ]}
             >
               <Input
                 prefix={<StarOutlined />}
@@ -250,7 +211,9 @@ const ConvertToCandidateModal = ({
             <Form.Item
               label="Qualifications"
               name="qualifications"
-              rules={[{ required: true, message: "Please enter qualifications" }]}
+              rules={[
+                { required: true, message: "Please enter qualifications" },
+              ]}
             >
               <Input placeholder="Enter educational qualifications, certifications, degrees, etc." />
             </Form.Item>
@@ -278,7 +241,10 @@ const ConvertToCandidateModal = ({
               label="Confirm Password"
               name="confirmPassword"
               dependencies={["password"]}
-              rules={[{ required: true, message: "Please confirm password" }, { validator: validateConfirmPassword }]}
+              rules={[
+                { required: true, message: "Please confirm password" },
+                { validator: validateConfirmPassword },
+              ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
