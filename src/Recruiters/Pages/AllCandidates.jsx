@@ -20,6 +20,7 @@ import {
   Form,
   Modal,
   Upload,
+  Alert 
 } from "antd";
 import {
   UserOutlined,
@@ -87,6 +88,7 @@ function AllCandidates() {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedExperience, setSelectedExperience] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [bulkImportResult, setBulkImportResult] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -329,7 +331,6 @@ function AllCandidates() {
       throw error;
     }
   };
-
   const handleBulkImport = async (candidates) => {
     try {
       const response = await bulkImportCandidates({
@@ -340,10 +341,13 @@ function AllCandidates() {
       setBulkUploadModalVisible(false);
       refetch();
 
+      setBulkImportResult(response);
+
       return { success: true, data: response };
     } catch (error) {
       console.error("❌ Bulk import error:", error);
-      throw error;
+      message.error("Bulk import failed. Please try again.");
+      return { success: false };
     }
   };
 
@@ -697,6 +701,55 @@ function AllCandidates() {
           </Col>
         </Row>
       </Card>
+
+      {bulkImportResult &&
+        (bulkImportResult.duplicateCount > 0 ||
+          bulkImportResult.invalidCount > 0) && (
+          <Alert
+            message="Bulk Import Summary"
+            description={
+              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                <p>
+                  <b>{bulkImportResult.insertedCount}</b> candidates inserted
+                  successfully.
+                </p>
+                {bulkImportResult.duplicateCount > 0 && (
+                  <>
+                    <p>
+                      <b>{bulkImportResult.duplicateCount}</b> duplicates found:
+                    </p>
+                    <ul>
+                      {bulkImportResult.duplicates.map((dup, idx) => (
+                        <li key={idx}>
+                          <b>{dup.email}</b> – {dup.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {bulkImportResult.invalidCount > 0 && (
+                  <>
+                    <p>
+                      <b>{bulkImportResult.invalidCount}</b> invalid records:
+                    </p>
+                    <ul>
+                      {bulkImportResult.invalid.map((inv, idx) => (
+                        <li key={idx}>
+                          <b>{inv.email}</b> – {inv.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            }
+            type="info"
+            showIcon
+            closable
+            style={{ marginBottom: 16 }}
+            onClose={() => setBulkImportResult(null)}
+          />
+        )}
 
       {candidates.length === 0 && !isLoading ? (
         <Empty

@@ -225,11 +225,31 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
       // Only proceed if import was successful
       if (result && result.success !== false) {
         setFileList([]);
-        enqueueSnackbar(
-          `Successfully imported ${candidates.length} candidate(s)!`,
-          { variant: "success" }
-        );
-        onCancel(); // Close modal only on success
+
+        const inserted = result.data?.insertedCount || 0;
+        const duplicates = result.data?.duplicateCount || 0;
+        const invalids = result.data?.invalidCount || 0;
+
+        if (inserted > 0) {
+          enqueueSnackbar(
+            `✅ Successfully imported ${inserted} candidate(s).`,
+            {
+              variant: "success",
+            }
+          );
+        }
+
+        if (duplicates > 0 || invalids > 0) {
+          enqueueSnackbar(
+            `${duplicates} duplicates and ${invalids} invalid records skipped.`,
+            { variant: "warning" }
+          );
+        }
+
+        // Only close modal if at least 1 candidate was imported
+        if (inserted > 0) {
+          onCancel();
+        }
       }
     } catch (error) {
       console.error("Import error:", error);

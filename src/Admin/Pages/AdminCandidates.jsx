@@ -25,6 +25,7 @@ import {
   Checkbox,
   Dropdown,
   Menu,
+  Alert,
 } from "antd";
 import {
   PlusOutlined,
@@ -94,6 +95,7 @@ const AdminCandidates = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [fetchingCandidateId, setFetchingCandidateId] = useState(null);
+const [bulkImportResult, setBulkImportResult] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -502,9 +504,27 @@ const AdminCandidates = () => {
         role: "candidate",
       }).unwrap();
 
-      enqueueSnackbar(`Successfully imported ${response.count} candidates`, {
-        variant: "success",
-      });
+      const inserted = response?.insertedCount || 0;
+      const duplicates = response?.duplicateCount || 0;
+      const invalids = response?.invalidCount || 0;
+
+    setBulkImportResult(response);
+
+      if (inserted > 0) {
+        enqueueSnackbar(`✅ Imported ${inserted} candidate(s).`, {
+          variant: "success",
+        });
+      }
+      if (duplicates > 0 || invalids > 0) {
+        enqueueSnackbar(
+          `⚠️ ${duplicates} duplicates and ${invalids} invalid skipped.`,
+          { variant: "warning" }
+        );
+      }
+      if (inserted === 0 && (duplicates > 0 || invalids > 0)) {
+        enqueueSnackbar("❌ No candidates imported.", { variant: "error" });
+      }
+
       refetch();
       setBulkImportVisible(false);
       setFileList([]);
@@ -834,6 +854,53 @@ const AdminCandidates = () => {
           </div>
         </div>
       </div>
+
+      {bulkImportResult && (
+        <Alert
+          message="Bulk Import Summary"
+          description={
+            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              <p>
+                <b>{bulkImportResult.insertedCount}</b> candidates inserted
+                successfully.
+              </p>
+              {bulkImportResult.duplicateCount > 0 && (
+                <>
+                  <p>
+                    <b>{bulkImportResult.duplicateCount}</b> duplicates found:
+                  </p>
+                  <ul>
+                    {bulkImportResult.duplicates.map((dup, idx) => (
+                      <li key={idx}>
+                        <b>{dup.email}</b> – {dup.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {bulkImportResult.invalidCount > 0 && (
+                <>
+                  <p>
+                    <b>{bulkImportResult.invalidCount}</b> invalid records:
+                  </p>
+                  <ul>
+                    {bulkImportResult.invalid.map((inv, idx) => (
+                      <li key={idx}>
+                        <b>{inv.email}</b> – {inv.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          }
+          type="info"
+          showIcon
+          closable
+          style={{ marginBottom: 16 }}
+          onClose={() => setBulkImportResult(null)}
+        />
+      )}
 
       <div
         style={{
