@@ -41,6 +41,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import CVUploadSection from "./CVUploadSection.jsx";
 import SkeletonLoader from "../Global/SkeletonLoader.jsx";
+import JobDetailsModal from "../Components/JobDetailsModa.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -69,6 +70,8 @@ const JobsSection = ({ currentBranch }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [cvModalVisible, setCvModalVisible] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [detailsJobId, setDetailsJobId] = useState(null);
 
   const navigate = useNavigate();
   const trendingSkillsRef = useRef(null);
@@ -97,7 +100,7 @@ const JobsSection = ({ currentBranch }) => {
 
   const jobs = jobsResponse?.jobs || [];
   const totalJobs = jobsResponse?.total || 0;
-  const totalPages = jobsResponse?.totalPages || 1;
+  const totalPages = jobsResponse?.totalPages || 12;
   const apiTrendingSkills = skillsResponse?.trendingSkills || [];
   const apiTrendingJobs =
     skillsResponse?.last15Jobs?.map((job) => job.title) || [];
@@ -176,6 +179,16 @@ const JobsSection = ({ currentBranch }) => {
 
   const handleJobClick = () => {
     navigate("/branch-login");
+  };
+
+  const openDetailsModal = (jobId) => {
+    setDetailsJobId(jobId);
+    setDetailsVisible(true);
+  };
+
+  const closeDetailsModal = () => {
+    setDetailsVisible(false);
+    setDetailsJobId(null);
   };
 
   const openCvModal = (jobId) => {
@@ -444,14 +457,16 @@ const JobsSection = ({ currentBranch }) => {
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
               flexWrap: "wrap",
+              gap: "6px",
             }}
           >
-            <Space size="small">
-              <DollarOutlined style={{ color: "#3b82f6", fontSize: "11px" }} />
+            <Space size="small" align="center">
+              <DollarOutlined style={{ color: "#3b82f6", fontSize: "12px" }} />
               <Text
                 style={{
-                  fontSize: "11px",
+                  fontSize: "12px",
                   color: "#374151",
                   fontWeight: "500",
                 }}
@@ -459,25 +474,46 @@ const JobsSection = ({ currentBranch }) => {
                 {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
               </Text>
             </Space>
-            {job.deadlineDate && (
-              <Space size="small">
+
+            {job.createdAt && (
+              <Space size="small" align="center">
                 <CalendarOutlined
-                  style={{ color: "#f59e0b", fontSize: "11px" }}
+                  style={{ color: "#f59e0b", fontSize: "12px" }}
                 />
-                <Text style={{ fontSize: "10px", color: "#f59e0b" }}>
-                  {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
+                <Text style={{ fontSize: "11px", color: "#f59e0b" }}>
+                  Posted: {new Date(job.createdAt).toLocaleDateString("en-GB")}
+                </Text>
+              </Space>
+            )}
+
+            {job.createdAt && (
+              <Space size="small" align="center">
+                <CalendarOutlined
+                  style={{ color: "#da2c46", fontSize: "12px" }}
+                />
+                <Text style={{ fontSize: "11px", color: "#da2c46" }}>
+                  Deadline:{" "}
+                  {new Date(job.createdAt).toLocaleDateString("en-GB")}
                 </Text>
               </Space>
             )}
           </div>
 
-          {/* Buttons (responsive row) */}
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {/* Buttons Row */}
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
             <Button
               type="primary"
               icon={<LoginOutlined />}
               style={{
                 flex: 1,
+                minWidth: "120px",
                 background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
                 border: "none",
                 borderRadius: "6px",
@@ -498,6 +534,7 @@ const JobsSection = ({ currentBranch }) => {
               icon={<LoginOutlined />}
               style={{
                 flex: 1,
+                minWidth: "120px",
                 background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
                 border: "none",
                 borderRadius: "6px",
@@ -512,63 +549,109 @@ const JobsSection = ({ currentBranch }) => {
             >
               CV Apply
             </Button>
+
+            <Button
+              type="default"
+              icon={<EyeOutlined />}
+              style={{
+                flex: 1,
+                minWidth: "120px",
+                borderRadius: "6px",
+                height: "36px",
+                fontSize: "12px",
+                fontWeight: "600",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openDetailsModal(job._id);
+              }}
+            >
+              View Details
+            </Button>
           </div>
         </div>
       </div>
     </Card>
   );
 
-  const TrendingSkillsCarousel = () => (
-    <div className="trending-section">
-      <div
-        style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
-      >
-        <FireOutlined style={{ color: "#ff6b35", marginRight: "8px" }} />
-        <Text strong style={{ color: "#374151", fontSize: "14px" }}>
-          Trending Skills
-        </Text>
-      </div>
+  const TrendingSkillsCarousel = () => {
+    const createInfiniteArray = (arr, minLength = 20) => {
+      if (!arr || arr.length === 0) return [];
+      const result = [...arr];
+      while (result.length < minLength) {
+        result.push(...arr);
+      }
+      return result;
+    };
 
-      <div className="carousel-wrapper">
-        <Button className="left-arrow">{"<"}</Button>
-        <div className="carousel-track skills-track">
-          {[...apiTrendingSkills, ...apiTrendingSkills].map((skill, index) => (
-            <Tag key={index} className="carousel-item">
-              {skill}
-            </Tag>
-          ))}
+    const infiniteSkills = createInfiniteArray(apiTrendingSkills);
+
+    if (infiniteSkills.length === 0) return null;
+
+    return (
+      <div className="trending-section">
+        <div
+          style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
+        >
+          <FireOutlined style={{ color: "#ff6b35", marginRight: "8px" }} />
+          <Text strong style={{ color: "#374151", fontSize: "14px" }}>
+            Trending Skills
+          </Text>
         </div>
-        <Button className="right-arrow">{">"}</Button>
-      </div>
-    </div>
-  );
 
-  const TrendingJobsCarousel = () => (
-    <div className="trending-section">
-      <div
-        style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
-      >
-        <TrophyOutlined style={{ color: "#d69e2e", marginRight: "8px" }} />
-        <Text strong style={{ color: "#374151", fontSize: "14px" }}>
-          Trending Jobs
-        </Text>
+        <div className="carousel-wrapper">
+          <div className="carousel-track skills-track">
+            {infiniteSkills.map((skill, index) => (
+              <Tag key={`skill-${index}`} className="carousel-item">
+                {skill}
+              </Tag>
+            ))}
+          </div>
+        </div>
       </div>
+    );
+  };
 
-      <div className="carousel-wrapper">
-        <Button className="left-arrow">{"<"}</Button>
-        <div className="carousel-track jobs-track">
-          {[...displayTrendingJobs, ...displayTrendingJobs].map(
-            (job, index) => (
-              <Tag key={index} className="carousel-item">
+  const TrendingJobsCarousel = () => {
+    const createInfiniteArray = (arr, minLength = 20) => {
+      if (!arr || arr.length === 0) return [];
+      const result = [...arr];
+      while (result.length < minLength) {
+        result.push(...arr);
+      }
+      return result;
+    };
+
+    const validJobTitles = displayTrendingJobs.filter(
+      (job) => job && job.trim().length > 0
+    );
+    const infiniteJobs = createInfiniteArray(validJobTitles);
+
+    if (infiniteJobs.length === 0) return null;
+
+    return (
+      <div className="trending-section">
+        <div
+          style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
+        >
+          <TrophyOutlined style={{ color: "#d69e2e", marginRight: "8px" }} />
+          <Text strong style={{ color: "#374151", fontSize: "14px" }}>
+            Trending Jobs
+          </Text>
+        </div>
+
+        <div className="carousel-wrapper">
+          <div className="carousel-track jobs-track">
+            {infiniteJobs.map((job, index) => (
+              <Tag key={`job-${index}`} className="carousel-item">
                 {job}
               </Tag>
-            )
-          )}
+            ))}
+          </div>
         </div>
-        <Button className="right-arrow">{">"}</Button>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (jobsLoading && currentPage === 1) {
     return (
@@ -741,7 +824,7 @@ const JobsSection = ({ currentBranch }) => {
               zIndex: 10,
             }}
           >
-            <SkeletonLoader/>
+            <SkeletonLoader />
           </div>
         )}
 
@@ -909,23 +992,51 @@ const JobsSection = ({ currentBranch }) => {
         />
       </Modal>
 
+      <JobDetailsModal
+        jobId={detailsJobId}
+        visible={detailsVisible}
+        onClose={closeDetailsModal}
+      />
+
       <style jsx>
         {`
+          .trending-section {
+            margin-bottom: 20px;
+          }
+
           .carousel-wrapper {
             overflow: hidden;
             position: relative;
             width: 100%;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px 0;
+            mask-image: linear-gradient(
+              to right,
+              transparent,
+              black 5%,
+              black 95%,
+              transparent
+            );
+            -webkit-mask-image: linear-gradient(
+              to right,
+              transparent,
+              black 5%,
+              black 95%,
+              transparent
+            );
           }
 
           .carousel-track {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             width: max-content;
+            padding: 0 16px;
           }
 
           .carousel-item {
             flex-shrink: 0;
-            padding: 4px 12px;
+            padding: 6px 16px;
             font-size: 12px;
             font-weight: 500;
             white-space: nowrap;
@@ -936,11 +1047,11 @@ const JobsSection = ({ currentBranch }) => {
           }
 
           .skills-track {
-            animation: scrollRight 25s linear infinite;
+            animation: scrollRight 60s linear infinite;
           }
 
           .jobs-track {
-            animation: scrollLeft 25s linear infinite;
+            animation: scrollLeft 60s linear infinite;
           }
 
           @keyframes scrollLeft {
@@ -961,22 +1072,23 @@ const JobsSection = ({ currentBranch }) => {
             }
           }
 
-          .left-arrow,
-          .right-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 2;
-            background: #fff;
-            border: none;
-            cursor: pointer;
+          .carousel-track:hover {
+            animation-play-state: paused;
           }
 
-          .left-arrow {
-            left: 0;
+          .carousel-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(218, 44, 70, 0.3);
           }
-          .right-arrow {
-            right: 0;
+
+          @media (max-width: 768px) {
+            .skills-track {
+              animation: scrollRight 40s linear infinite;
+            }
+
+            .jobs-track {
+              animation: scrollLeft 40s linear infinite;
+            }
           }
         `}
       </style>

@@ -318,6 +318,9 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getBranchJobById: builder.query({
+      query: (id) => `/branch-jobs/${id}`, 
+    }),
     getTrendingSkills: builder.query({
       query: (domain) => ({
         url: `/trending-skills?domain=${encodeURIComponent(domain)}`,
@@ -374,6 +377,7 @@ export const {
   //branch apis
   useGetBranchByIdQuery,
   useGetBranchJobsQuery,
+  useGetBranchJobByIdQuery,
   useSubmitCVApplicationMutation,
   useGetBranchByDomainQuery,
   useGetTrendingSkillsQuery,
