@@ -23,6 +23,7 @@ import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
 import { useLoginUserMutation } from "../Slices/Users/UserApis";
+import ForgotPasswordModal from "../Auth/ForgotPasswordModal";
 
 const { Title, Text, Link } = Typography;
 
@@ -33,6 +34,8 @@ const LoginSection = ({ currentBranch }) => {
   const [loginUser] = useLoginUserMutation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [isForgotPasswordModalVisible, setIsForgotPasswordModalVisible] =
+    useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
   const handleLogin = async (values) => {
@@ -119,14 +122,12 @@ const LoginSection = ({ currentBranch }) => {
   };
 
   const handleForgotPassword = () => {
-    message.info("Password reset link will be sent to your email.");
+    setIsForgotPasswordModalVisible(true);
   };
-
 
   return (
     <div style={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "30px" }}>
-
         <Title
           level={2}
           style={{
@@ -303,6 +304,11 @@ const LoginSection = ({ currentBranch }) => {
           </div>
         </Form>
       </Card>
+
+      <ForgotPasswordModal
+        visible={isForgotPasswordModalVisible}
+        onClose={() => setIsForgotPasswordModalVisible(false)}
+      />
     </div>
   );
 };

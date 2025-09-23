@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Card, Divider } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { setUserCredentials } from "../Slices/Users/UserSlice.js";
 import Header from "../Global/Header";
 import HomeFooter from "../Global/Footer";
 import { useSearchParams } from "react-router-dom";
+import ForgotPasswordModal from "./ForgotPasswordModal.jsx";
 
 const Login = () => {
   const [form] = Form.useForm();
@@ -20,6 +21,9 @@ const Login = () => {
   const [loginUser, { isLoading }] = useLoginUserMutation();
   const [searchParams] = useSearchParams();
   const branchId = searchParams.get("branchId");
+  // State for forgot password modal
+  const [isForgotPasswordModalVisible, setIsForgotPasswordModalVisible] =
+    useState(false);
   console.log(branchId, "id-branch");
 
   useEffect(() => {
@@ -241,7 +245,7 @@ const Login = () => {
   };
 
   const handleForgotPassword = () => {
-    navigate("/forgot-password");
+    setIsForgotPasswordModalVisible(true);
   };
 
   return (
@@ -480,6 +484,12 @@ const Login = () => {
           </div>
         </Card>
       </div>
+
+      <ForgotPasswordModal
+        visible={isForgotPasswordModalVisible}
+        onClose={() => setIsForgotPasswordModalVisible(false)}
+      />
+
       <HomeFooter />
     </>
   );

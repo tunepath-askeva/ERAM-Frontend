@@ -83,6 +83,28 @@ export const userApi = createApi({
       }),
     }),
 
+    forgotPassword: builder.mutation({
+      query: (email) => ({
+        url: "/forgotPassword",
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    verifyForgotOtp: builder.mutation({
+      query: ({ email, otp }) => ({
+        url: "/verifyForgotOtp",
+        method: "POST",
+        body: { email, otp },
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: ({ email, newPassword }) => ({
+        url: "/resetPassword",
+        method: "POST",
+        body: { email, newPassword },
+      }),
+    }),
+
     //jobs
     getJobsByBranch: builder.query({
       query: ({ page = 1, limit = 10 } = {}) => ({
@@ -318,6 +340,10 @@ export const {
   useResendOtpMutation,
   useGetBranchesQuery,
   useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useVerifyForgotOtpMutation,
+  useResetPasswordMutation,
+
   //Jobs for candidates
   useGetJobsByBranchQuery,
   useGetSourcedJobsQuery,
