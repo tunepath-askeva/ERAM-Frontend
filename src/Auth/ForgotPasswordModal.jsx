@@ -264,15 +264,15 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
   const steps = [
     {
       title: "Email",
-      icon: <MailOutlined />,
+      icon: <MailOutlined style={{color:"#da2c46"}} />,
     },
     {
       title: "Verify OTP",
-      icon: <SafetyOutlined />,
+      icon: <SafetyOutlined style={{color:"#da2c46"}} />,
     },
     {
       title: "Reset Password",
-      icon: <LockOutlined />,
+      icon: <LockOutlined  style={{color:"#da2c46"}}/>,
     },
   ];
 
