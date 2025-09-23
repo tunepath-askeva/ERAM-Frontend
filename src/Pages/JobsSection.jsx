@@ -48,7 +48,6 @@ const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
 
-// Custom hook for debounced value
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -68,6 +67,7 @@ const useDebounce = (value, delay) => {
 const JobsSection = ({ currentBranch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
   const [cvModalVisible, setCvModalVisible] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
@@ -77,10 +77,8 @@ const JobsSection = ({ currentBranch }) => {
   const trendingSkillsRef = useRef(null);
   const trendingJobsRef = useRef(null);
 
-  // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // API query with pagination and search
   const {
     data: jobsResponse,
     isLoading: jobsLoading,
@@ -90,7 +88,7 @@ const JobsSection = ({ currentBranch }) => {
   } = useGetBranchJobsQuery({
     domain: window.location.hostname,
     page: currentPage,
-    limit: JOBS_PER_PAGE,
+    limit: pageSize,
     search: debouncedSearchTerm,
   });
 
@@ -99,8 +97,10 @@ const JobsSection = ({ currentBranch }) => {
   );
 
   const jobs = jobsResponse?.jobs || [];
-  const totalJobs = jobsResponse?.total || 0;
-  const totalPages = jobsResponse?.totalPages || 12;
+  const totalJobs = jobsResponse?.pagination?.totalJobs || 0;
+  const totalPages = jobsResponse?.pagination?.totalPages || 1;
+  // const pageSize = jobsResponse?.pagination?.pageSize || JOBS_PER_PAGE;
+
   const apiTrendingSkills = skillsResponse?.trendingSkills || [];
   const apiTrendingJobs =
     skillsResponse?.last15Jobs?.map((job) => job.title) || [];
@@ -797,7 +797,7 @@ const JobsSection = ({ currentBranch }) => {
               level={3}
               style={{ color: "#da2c46", margin: 0, fontSize: "24px" }}
             >
-              {jobs.length}
+              {currentPage}
             </Title>
             <Text style={{ color: "#64748b", fontSize: "14px" }}>
               Current Page
@@ -885,10 +885,15 @@ const JobsSection = ({ currentBranch }) => {
                 <Pagination
                   current={currentPage}
                   total={totalJobs}
-                  pageSize={JOBS_PER_PAGE}
+                  pageSize={pageSize}
                   onChange={handlePageChange}
-                  showSizeChanger={false}
+                  showSizeChanger
                   showQuickJumper
+                  pageSizeOptions={["12", "24", "48", "96", "192"]}
+                  onShowSizeChange={(page, newSize) => {
+                    setCurrentPage(1); // reset to first page when size changes
+                    setPageSize(newSize);
+                  }}
                   showTotal={(total, range) =>
                     `${range[0]}-${range[1]} of ${total} jobs`
                   }
