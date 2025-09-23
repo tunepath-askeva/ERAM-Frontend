@@ -42,6 +42,7 @@ import {
   useDisableClientMutation,
 } from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import PhoneInput from "../../Global/PhoneInput";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -102,9 +103,13 @@ const ClientsManagement = () => {
   const showEditModal = (client) => {
     setModalMode("edit");
     setEditingClient(client);
+
+    console.log("Client data:", client);
+    console.log("Client Code:", client.ClientCode);
+
     form.setFieldsValue({
       name: client.fullName,
-      code: client.ClientCode,
+      code: client.ClientCode || client.clientCode || client.code,
       email: client.email,
       contactNo: client.phone,
       contactPersonNumber: client.contactPersonMobile,
@@ -116,13 +121,36 @@ const ClientsManagement = () => {
 
   const handleFormSubmit = async (values) => {
     try {
+      // Merge country code and phone number for contactNo
+      const countryCode = values.contactNoCountryCode || "91";
+      const phoneNumber = values.contactNo || "";
+      const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
+
       if (modalMode === "create") {
-        await addClient(values).unwrap();
+        const payload = {
+          name: values.name,
+          code: values.code,
+          email: values.email,
+          contactNo: fullPhoneNumber, // Merged phone number
+          contactPersonNumber: values.contactPersonNumber,
+          sapCode: values.sapCode,
+          type: values.type,
+        };
+        await addClient(payload).unwrap();
         enqueueSnackbar("Client created successfully", { variant: "success" });
       } else {
+        const payload = {
+          name: values.name,
+          code: values.code,
+          email: values.email,
+          contactNo: fullPhoneNumber, // Merged phone number
+          contactPersonNumber: values.contactPersonNumber,
+          sapCode: values.sapCode,
+          type: values.type,
+        };
         await updateClient({
           clientId: editingClient._id,
-          ...values,
+          ...payload,
         }).unwrap();
         enqueueSnackbar("Client updated successfully", { variant: "success" });
       }
@@ -255,8 +283,8 @@ const ClientsManagement = () => {
 
       {/* Loading Spinner */}
       {isLoadingClients && (
-        <div >
-         <SkeletonLoader />
+        <div>
+          <SkeletonLoader />
         </div>
       )}
 
@@ -566,22 +594,12 @@ const ClientsManagement = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
+              <PhoneInput
+                form={form}
                 name="contactNo"
                 label="Phone Number"
-                rules={[
-                  { required: true, message: "Please enter phone number" },
-                  {
-                    pattern: /^[0-9]+$/,
-                    message: "Please enter valid phone number",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="Enter phone number"
-                  prefix={<PhoneOutlined />}
-                />
-              </Form.Item>
+                required={true}
+              />
             </Col>
           </Row>
 

@@ -41,6 +41,7 @@ import {
   useDisableStaffMutation,
 } from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import PhoneInput from "../../Global/PhoneInput";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -114,12 +115,16 @@ const StaffManagement = () => {
 
   const handleFormSubmit = async (values) => {
     try {
+      const countryCode = values.contactNoCountryCode || "91";
+      const phoneNumber = values.contactNo || "";
+      const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
+
       if (modalMode === "create") {
         const payload = {
           name: values.name,
           staffType: values.staffType,
           email: values.email,
-          contactNo: values.contactNo,
+          contactNo: fullPhoneNumber ,
           role: "staff",
         };
         await addStaff(payload).unwrap();
@@ -131,7 +136,7 @@ const StaffManagement = () => {
           name: values.name,
           staffType: values.staffType,
           email: values.email,
-          contactNo: values.contactNo,
+          contactNo: fullPhoneNumber,
         };
         await editStaff({
           staffId: editingStaff._id,
@@ -590,22 +595,12 @@ const StaffManagement = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item
+              <PhoneInput
+                form={form}
                 name="contactNo"
                 label="Contact Number"
-                rules={[
-                  { required: true, message: "Please enter contact number" },
-                  {
-                    pattern: /^[0-9]+$/,
-                    message: "Please enter valid contact number",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="Enter contact number"
-                  prefix={<PhoneOutlined />}
-                />
-              </Form.Item>
+                required={true}
+              />
             </Col>
           </Row>
         </Form>
