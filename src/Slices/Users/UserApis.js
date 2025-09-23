@@ -295,6 +295,12 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getTrendingSkills: builder.query({
+      query: (domain) => ({
+        url: `/trending-skills?domain=${encodeURIComponent(domain)}`,
+        method: "GET",
+      }),
+    }),
     submitCVApplication: builder.mutation({
       query: (formData) => ({
         url: "/submit-cv-application",
@@ -343,4 +349,5 @@ export const {
   useGetBranchJobsQuery,
   useSubmitCVApplicationMutation,
   useGetBranchByDomainQuery,
+  useGetTrendingSkillsQuery,
 } = userApi;

@@ -8,6 +8,7 @@ import {
   Typography,
   Button,
   Space,
+  Skeleton
 } from "antd";
 import {
   FilePdfOutlined,
@@ -47,7 +48,14 @@ const AppliedCvs = ({ jobId }) => {
       search,
     });
 
-  if (isLoading) return <p>Loading applied candidates...</p>;
+  if (isLoading)
+    return (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        <Skeleton active />
+        <Skeleton active />
+        <Skeleton active />
+      </div>
+    );
   if (isError) return <p>Error fetching applied candidates.</p>;
 
   const candidates = data?.appliedLowLevelCandidates || [];

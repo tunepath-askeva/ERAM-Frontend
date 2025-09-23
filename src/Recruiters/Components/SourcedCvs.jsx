@@ -8,6 +8,7 @@ import {
   Typography,
   Button,
   Space,
+  Skeleton,
 } from "antd";
 import {
   FilePdfOutlined,
@@ -45,7 +46,14 @@ const SourcedCvs = ({ jobId }) => {
     search,
   });
 
-  if (isLoading) return <p>Loading candidates...</p>;
+  if (isLoading)
+    return (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        <Skeleton active />
+        <Skeleton active />
+        <Skeleton active />
+      </div>
+    );
   if (isError) return <p>Error fetching candidates.</p>;
 
   const candidates = data?.lowlevelCandidates || [];
@@ -114,7 +122,7 @@ const SourcedCvs = ({ jobId }) => {
                   href={candidate.Resume[0].fileUrl}
                   target="_blank"
                   style={{
-                      width: "100%",
+                    width: "100%",
                     background: "#da2c46",
                     borderColor: "#da2c46",
                     borderRadius: 6,
@@ -134,7 +142,7 @@ const SourcedCvs = ({ jobId }) => {
                   color: "#da2c46",
                   borderColor: "#da2c46",
                 }}
-                onClick={() => navigate("/recruiter/all-cvs")} 
+                onClick={() => navigate("/recruiter/all-cvs")}
               >
                 Convert to Candidate
               </Button>

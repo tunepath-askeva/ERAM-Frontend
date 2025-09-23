@@ -34,7 +34,10 @@ import {
   FireOutlined,
   TrophyOutlined,
 } from "@ant-design/icons";
-import { useGetBranchJobsQuery } from "../Slices/Users/UserApis.js";
+import {
+  useGetBranchJobsQuery,
+  useGetTrendingSkillsQuery,
+} from "../Slices/Users/UserApis.js";
 import { useNavigate } from "react-router-dom";
 import CVUploadSection from "./CVUploadSection.jsx";
 import SkeletonLoader from "../Global/SkeletonLoader.jsx";
@@ -43,39 +46,6 @@ const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
-
-const trendingSkills = [
-  "React",
-  "JavaScript",
-  "Node.js",
-  "Python",
-  "AWS",
-  "TypeScript",
-  "MongoDB",
-  "DevOps",
-  "UI/UX",
-  "Machine Learning",
-  "Cloud Computing",
-  "Data Analysis",
-  "Project Management",
-  "Agile Methodology",
-  "Cybersecurity",
-];
-
-const trendingJobs = [
-  "Full Stack Developer",
-  "Data Scientist",
-  "DevOps Engineer",
-  "Product Manager",
-  "UX Designer",
-  "Cloud Architect",
-  "Machine Learning Engineer",
-  "Frontend Developer",
-  "Backend Developer",
-  "Mobile Developer",
-  "Data Analyst",
-  "Software Architect",
-];
 
 const JobsSection = ({ currentBranch }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,7 +64,16 @@ const JobsSection = ({ currentBranch }) => {
     refetch: refetchJobs,
   } = useGetBranchJobsQuery(window.location.hostname);
 
+  const { data: skillsResponse } = useGetTrendingSkillsQuery(
+    window.location.hostname
+  );
+
   const jobs = jobsResponse?.jobs || [];
+  const apiTrendingSkills = skillsResponse?.trendingSkills || [];
+  const apiTrendingJobs =
+    jobsResponse?.last12Jobs?.map((job) => job.title) || [];
+
+  const displayTrendingJobs = apiTrendingJobs;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -520,7 +499,7 @@ const JobsSection = ({ currentBranch }) => {
       <div className="carousel-wrapper">
         <Button className="left-arrow">{"<"}</Button>
         <div className="carousel-track skills-track">
-          {[...trendingSkills, ...trendingSkills].map((skill, index) => (
+          {[...apiTrendingSkills, ...apiTrendingSkills].map((skill, index) => (
             <Tag key={index} className="carousel-item">
               {skill}
             </Tag>
@@ -545,11 +524,13 @@ const JobsSection = ({ currentBranch }) => {
       <div className="carousel-wrapper">
         <Button className="left-arrow">{"<"}</Button>
         <div className="carousel-track jobs-track">
-          {[...trendingJobs, ...trendingJobs].map((job, index) => (
-            <Tag key={index} className="carousel-item">
-              {job}
-            </Tag>
-          ))}
+          {[...displayTrendingJobs, ...displayTrendingJobs].map(
+            (job, index) => (
+              <Tag key={index} className="carousel-item">
+                {job}
+              </Tag>
+            )
+          )}
         </div>
         <Button className="right-arrow">{">"}</Button>
       </div>
@@ -650,13 +631,17 @@ const JobsSection = ({ currentBranch }) => {
         />
       </div>
 
-      <Col style={{ marginBottom: 15, marginTop: 5 }}>
-        <TrendingSkillsCarousel />
-      </Col>
+      {apiTrendingSkills.length > 0 && (
+        <Col style={{ marginBottom: 15, marginTop: 5 }}>
+          <TrendingSkillsCarousel />
+        </Col>
+      )}
 
-      <Col>
-        <TrendingJobsCarousel style={{ marginBottom: 15, marginTop: 15 }} />
-      </Col>
+      {displayTrendingJobs.length > 0 && (
+        <Col>
+          <TrendingJobsCarousel style={{ marginBottom: 15, marginTop: 15 }} />
+        </Col>
+      )}
 
       {/* Job Stats */}
       <Card
