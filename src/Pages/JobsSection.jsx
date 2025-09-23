@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Card,
   Typography,
@@ -13,9 +13,9 @@ import {
   Empty,
   Tooltip,
   Avatar,
-  Spin,
   Alert,
   Modal,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
@@ -47,9 +47,26 @@ const { Search } = Input;
 
 const JOBS_PER_PAGE = 12;
 
+// Custom hook for debounced value
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 const JobsSection = ({ currentBranch }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [visibleJobsCount, setVisibleJobsCount] = useState(JOBS_PER_PAGE);
+  const [currentPage, setCurrentPage] = useState(1);
   const [cvModalVisible, setCvModalVisible] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState(null);
 
@@ -57,29 +74,52 @@ const JobsSection = ({ currentBranch }) => {
   const trendingSkillsRef = useRef(null);
   const trendingJobsRef = useRef(null);
 
+  // Debounce search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // API query with pagination and search
   const {
     data: jobsResponse,
     isLoading: jobsLoading,
     error: jobsError,
     refetch: refetchJobs,
-  } = useGetBranchJobsQuery(window.location.hostname);
+    isFetching,
+  } = useGetBranchJobsQuery({
+    domain: window.location.hostname,
+    page: currentPage,
+    limit: JOBS_PER_PAGE,
+    search: debouncedSearchTerm,
+  });
 
   const { data: skillsResponse } = useGetTrendingSkillsQuery(
     window.location.hostname
   );
 
   const jobs = jobsResponse?.jobs || [];
+  const totalJobs = jobsResponse?.total || 0;
+  const totalPages = jobsResponse?.totalPages || 1;
   const apiTrendingSkills = skillsResponse?.trendingSkills || [];
   const apiTrendingJobs =
-    jobsResponse?.last12Jobs?.map((job) => job.title) || [];
-
+    skillsResponse?.last15Jobs?.map((job) => job.title) || [];
   const displayTrendingJobs = apiTrendingJobs;
+
+  console.log("Jobs Response:", jobsResponse);
+  console.log("Current Page:", currentPage);
+  console.log("Total Jobs:", totalJobs);
+  console.log("Search Term:", debouncedSearchTerm);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== searchTerm) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const jobId = params.get("jobId");
 
-    if (jobId) {
+    if (jobId && jobs.length > 0) {
       setTimeout(() => {
         const el = document.getElementById(`job-${jobId}`);
         if (el) {
@@ -95,7 +135,7 @@ const JobsSection = ({ currentBranch }) => {
         }
       }, 300);
     }
-  }, [jobsResponse]);
+  }, [jobsResponse, jobs]);
 
   useEffect(() => {
     const skillsContainer = trendingSkillsRef.current;
@@ -118,27 +158,20 @@ const JobsSection = ({ currentBranch }) => {
     }
   }, []);
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.jobFunction?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.officeLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.companyIndustry?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const visibleJobs = filteredJobs.slice(0, visibleJobsCount);
-  const hasMoreJobs = filteredJobs.length > visibleJobsCount;
-
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setVisibleJobsCount(JOBS_PER_PAGE);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
-  const handleShowMore = () => {
-    setVisibleJobsCount((prev) =>
-      Math.min(prev + JOBS_PER_PAGE, filteredJobs.length)
-    );
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleJobClick = () => {
@@ -230,7 +263,7 @@ const JobsSection = ({ currentBranch }) => {
         width: "100%",
         display: "flex",
         flexDirection: "column",
-        height: "100%", // allow auto-adjust in grid
+        height: "100%",
       }}
       bodyStyle={{
         padding: "16px",
@@ -256,7 +289,7 @@ const JobsSection = ({ currentBranch }) => {
                 style={{
                   margin: 0,
                   color: "#1e293b",
-                  fontSize: "clamp(14px, 2vw, 16px)", // responsive font
+                  fontSize: "clamp(14px, 2vw, 16px)",
                   fontWeight: "600",
                   lineHeight: "1.3",
                 }}
@@ -537,7 +570,7 @@ const JobsSection = ({ currentBranch }) => {
     </div>
   );
 
-  if (jobsLoading) {
+  if (jobsLoading && currentPage === 1) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
         <SkeletonLoader />
@@ -620,14 +653,16 @@ const JobsSection = ({ currentBranch }) => {
                 border: "none",
                 color: "white",
               }}
+              loading={isFetching}
             >
               Search
             </Button>
           }
           size="large"
           onSearch={handleSearch}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
           style={{ borderRadius: "8px" }}
+          value={searchTerm}
         />
       </div>
 
@@ -666,10 +701,10 @@ const JobsSection = ({ currentBranch }) => {
               level={3}
               style={{ color: "#da2c46", margin: 0, fontSize: "24px" }}
             >
-              {filteredJobs.length}
+              {totalJobs}
             </Title>
             <Text style={{ color: "#64748b", fontSize: "14px" }}>
-              Open Positions
+              Total Positions
             </Text>
           </div>
 
@@ -679,22 +714,38 @@ const JobsSection = ({ currentBranch }) => {
               level={3}
               style={{ color: "#da2c46", margin: 0, fontSize: "24px" }}
             >
-              {
-                [
-                  ...new Set(filteredJobs.map((job) => job.companyIndustry)),
-                ].filter(Boolean).length
-              }
+              {jobs.length}
             </Title>
             <Text style={{ color: "#64748b", fontSize: "14px" }}>
-              Industries
+              Current Page
             </Text>
           </div>
         </div>
       </Card>
 
       {/* Jobs Grid */}
-      <div style={{ flex: 1 }}>
-        {visibleJobs.length > 0 ? (
+      <div style={{ flex: 1, position: "relative" }}>
+        {/* Loading overlay */}
+        {isFetching && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10,
+            }}
+          >
+            <SkeletonLoader/>
+          </div>
+        )}
+
+        {jobs.length > 0 ? (
           <>
             <div
               style={{
@@ -705,8 +756,10 @@ const JobsSection = ({ currentBranch }) => {
               }}
             >
               <Text style={{ color: "#64748b", fontSize: "14px" }}>
-                Showing {visibleJobs.length} of {filteredJobs.length} job
-                {filteredJobs.length !== 1 ? "s" : ""}
+                Showing {(currentPage - 1) * JOBS_PER_PAGE + 1} to{" "}
+                {Math.min(currentPage * JOBS_PER_PAGE, totalJobs)} of{" "}
+                {totalJobs} job
+                {totalJobs !== 1 ? "s" : ""}
                 {searchTerm && ` for "${searchTerm}"`}
               </Text>
               <Button
@@ -719,7 +772,7 @@ const JobsSection = ({ currentBranch }) => {
             </div>
 
             <Row gutter={[16, 16]} style={{ marginBottom: "32px" }}>
-              {visibleJobs.map((job) => (
+              {jobs.map((job) => (
                 <Col
                   xs={24}
                   sm={12}
@@ -737,27 +790,35 @@ const JobsSection = ({ currentBranch }) => {
               ))}
             </Row>
 
-            {/* Show More Button */}
-            {hasMoreJobs && (
-              <div style={{ textAlign: "center", marginTop: "24px" }}>
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleShowMore}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  marginTop: "32px",
+                  marginBottom: "24px",
+                }}
+              >
+                <Pagination
+                  current={currentPage}
+                  total={totalJobs}
+                  pageSize={JOBS_PER_PAGE}
+                  onChange={handlePageChange}
+                  showSizeChanger={false}
+                  showQuickJumper
+                  showTotal={(total, range) =>
+                    `${range[0]}-${range[1]} of ${total} jobs`
+                  }
                   style={{
-                    background:
-                      "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-                    border: "none",
-                    borderRadius: "8px",
-                    padding: "0 32px",
-                    height: "48px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    boxShadow: "0 4px 16px rgba(218, 44, 70, 0.3)",
+                    "& .ant-pagination-item-active": {
+                      backgroundColor: "#da2c46",
+                      borderColor: "#da2c46",
+                    },
+                    "& .ant-pagination-item-active a": {
+                      color: "white",
+                    },
                   }}
-                >
-                  Show More Jobs
-                </Button>
+                />
               </div>
             )}
           </>
@@ -778,7 +839,7 @@ const JobsSection = ({ currentBranch }) => {
                 type="primary"
                 onClick={() => {
                   setSearchTerm("");
-                  setVisibleJobsCount(JOBS_PER_PAGE);
+                  setCurrentPage(1);
                 }}
                 style={{
                   background:
@@ -874,17 +935,14 @@ const JobsSection = ({ currentBranch }) => {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
           }
 
-          /* Skills move left → right */
           .skills-track {
             animation: scrollRight 25s linear infinite;
           }
 
-          /* Jobs move right → left */
           .jobs-track {
             animation: scrollLeft 25s linear infinite;
           }
 
-          /* Keyframes */
           @keyframes scrollLeft {
             0% {
               transform: translateX(0);
