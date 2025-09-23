@@ -726,7 +726,7 @@ const JobsSection = ({ currentBranch }) => {
       {/* Search Bar */}
       <div style={{ marginBottom: "24px" }}>
         <Search
-          placeholder="Search jobs by title, function, location, or industry..."
+          placeholder="Search jobs by title, function......"
           allowClear
           enterButton={
             <Button
