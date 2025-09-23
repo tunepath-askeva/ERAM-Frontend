@@ -94,6 +94,21 @@ const RecruiterEditJob = () => {
     { id: "visa", name: "Visa", isMandatory: false },
     { id: "passport", name: "Passport", isMandatory: false },
     { id: "iqma", name: "IQMA Certificate", isMandatory: false },
+    { id: "cv", name: "CV", isMandatory: false },
+    { id: "national-id", name: "National ID", isMandatory: false },
+    { id: "driving-license", name: "Driving License", isMandatory: false },
+    { id: "experience-letter", name: "Experience Letter", isMandatory: false },
+    {
+      id: "education-certificate",
+      name: "Education Certificates",
+      isMandatory: false,
+    },
+    {
+      id: "preofessional-certificates",
+      name: "Professional Certifications",
+      isMandatory: false,
+    },
+    { id: "police-clearance", name: "Police Clearance", isMandatory: false },
   ]);
 
   const {
@@ -2437,7 +2452,7 @@ const RecruiterEditJob = () => {
       <div
         style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}
       >
-        <div style={{marginBottom: 15}}>
+        <div style={{ marginBottom: 15 }}>
           <Breadcrumb>
             <Breadcrumb.Item>
               <Button

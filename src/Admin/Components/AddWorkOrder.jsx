@@ -94,6 +94,26 @@ const AddWorkOrder = () => {
   const [hasLoadedRequisition, setHasLoadedRequisition] = useState(false);
   const [defaultRecruiters, setDefaultRecruiters] = useState([]);
   const [isRequisitionBased, setIsRequisitionBased] = useState(false);
+  const [standardDocuments, setStandardDocuments] = useState([
+    { id: "visa", name: "Visa", isMandatory: false },
+    { id: "passport", name: "Passport", isMandatory: false },
+    { id: "iqma", name: "IQMA Certificate", isMandatory: false },
+    { id: "cv", name: "CV", isMandatory: false },
+    { id: "national-id", name: "National ID", isMandatory: false },
+    { id: "driving-license", name: "Driving License", isMandatory: false },
+    { id: "experience-letter", name: "Experience Letter", isMandatory: false },
+    {
+      id: "education-certificate",
+      name: "Education Certificates",
+      isMandatory: false,
+    },
+    {
+      id: "professional-certificates",
+      name: "Professional Certifications",
+      isMandatory: false,
+    },
+    { id: "police-clearance", name: "Police Clearance", isMandatory: false },
+  ]);
   const [requisitionData, setRequisitionData] = useState({
     requisitionNo: null,
     referenceNo: null,
@@ -593,6 +613,40 @@ const AddWorkOrder = () => {
     setDraggedStage(null);
   };
 
+  const handleStandardDocumentChange = (id, isMandatory) => {
+    setStandardDocuments((prev) =>
+      prev.map((doc) => (doc.id === id ? { ...doc, isMandatory } : doc))
+    );
+
+    // Also update the main documents array
+    const docName = standardDocuments.find((d) => d.id === id)?.name;
+    if (docName) {
+      const existingDocIndex = requiredDocuments.findIndex(
+        (d) => d.name === docName
+      );
+      if (existingDocIndex !== -1) {
+        // Update existing document
+        const updatedDocs = [...requiredDocuments];
+        updatedDocs[existingDocIndex] = {
+          ...updatedDocs[existingDocIndex],
+          isMandatory,
+        };
+        setRequiredDocuments(updatedDocs);
+      } else if (isMandatory) {
+        // Add new document if it's being marked as mandatory
+        setRequiredDocuments([
+          ...requiredDocuments,
+          {
+            id: Date.now(),
+            name: docName,
+            description: "",
+            isMandatory: true,
+          },
+        ]);
+      }
+    }
+  };
+
   const handleNextStep = () => {
     jobForm
       .validateFields()
@@ -715,13 +769,35 @@ const AddWorkOrder = () => {
         );
       });
 
+      const allDocuments = [
+        ...standardDocuments
+          .filter((doc) => doc.isMandatory)
+          .map((doc) => ({
+            name: doc.name,
+            description: "",
+            isMandatory: true,
+          })),
+        ...requiredDocuments
+          .filter(
+            (doc) =>
+              !standardDocuments.some(
+                (stdDoc) => stdDoc.name.toLowerCase() === doc.name.toLowerCase()
+              )
+          )
+          .map((doc) => ({
+            name: doc.name,
+            description: doc.description || "",
+            isMandatory: doc.isMandatory !== false,
+          })),
+      ];
+
       const workOrderData = {
         ...jobData,
         customFields: applicationFields,
         WorkorderStatus: status,
         isActive: status === "published" ? "active" : "inactive",
         pipelineStageTimeline,
-        requiredDocuments,
+        requiredDocuments: allDocuments,
         client: jobForm.getFieldValue("client"),
         languagesRequired: jobForm.getFieldValue("languagesRequired") || [],
         isRequisition: isRequisitionBased,
@@ -965,7 +1041,13 @@ const AddWorkOrder = () => {
           </div>
         )}
 
-        {requiredDocuments?.length > 0 && (
+        {(standardDocuments.filter((doc) => doc.isMandatory).length > 0 ||
+          requiredDocuments.filter(
+            (doc) =>
+              !standardDocuments.some(
+                (stdDoc) => stdDoc.name.toLowerCase() === doc.name.toLowerCase()
+              )
+          ).length > 0) && (
           <div style={{ marginBottom: "12px" }}>
             <h4
               style={{
@@ -979,20 +1061,41 @@ const AddWorkOrder = () => {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "6px" }}
             >
-              {requiredDocuments.map((doc, index) => (
-                <div
-                  key={index}
-                  style={{ display: "flex", alignItems: "center" }}
-                >
-                  <span style={{ marginRight: "4px" }}>
-                    {doc.isMandatory ? "•" : "◦"}
-                  </span>
-                  <span style={{ fontSize: "12px" }}>
-                    <strong>{doc.name}</strong>
-                    {doc.description && ` - ${doc.description}`}
-                  </span>
-                </div>
-              ))}
+              {/* Standard documents */}
+              {standardDocuments
+                .filter((doc) => doc.isMandatory)
+                .map((doc, index) => (
+                  <div
+                    key={`std-${doc.id}`}
+                    style={{ display: "flex", alignItems: "center" }}
+                  >
+                    <span style={{ marginRight: "4px" }}>•</span>
+                    <span style={{ fontSize: "12px" }}>
+                      <strong>{doc.name}</strong>
+                    </span>
+                  </div>
+                ))}
+
+              {/* Custom documents */}
+              {requiredDocuments
+                .filter(
+                  (doc) =>
+                    !standardDocuments.some((std) => std.name === doc.name)
+                )
+                .map((doc, index) => (
+                  <div
+                    key={index}
+                    style={{ display: "flex", alignItems: "center" }}
+                  >
+                    <span style={{ marginRight: "4px" }}>
+                      {doc.isMandatory ? "•" : "◦"}
+                    </span>
+                    <span style={{ fontSize: "12px" }}>
+                      <strong>{doc.name}</strong>
+                      {doc.description && ` - ${doc.description}`}
+                    </span>
+                  </div>
+                ))}
             </div>
           </div>
         )}
@@ -2100,7 +2203,7 @@ const AddWorkOrder = () => {
                   <Form.Item
                     name="languagesRequired"
                     label="Languages Required (comma separated)"
-                     initialValue={["English", "Arabic"]} 
+                    initialValue={["English", "Arabic"]}
                   >
                     <Select
                       mode="tags"
@@ -2463,71 +2566,100 @@ const AddWorkOrder = () => {
               style={{ marginBottom: "16px" }}
             >
               <div style={{ marginBottom: "16px" }}>
-                {requiredDocuments.map((doc, index) => (
-                  <Card
-                    key={doc.id}
-                    size="small"
-                    style={{ marginBottom: "12px" }}
-                    title={`Document ${index + 1}`}
-                    extra={
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeDocument(doc.id)}
-                      />
-                    }
-                  >
-                    <Row gutter={[16, 8]}>
-                      <Col span={24}>
-                        <Form.Item label="Document Name">
-                          <Input
-                            value={doc.name}
-                            onChange={(e) =>
-                              updateDocument(doc.id, { name: e.target.value })
-                            }
-                            placeholder="e.g., Resume, Cover Letter, ID Proof"
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col span={24}>
-                        <Form.Item label="Description">
-                          <Input.TextArea
-                            value={doc.description}
-                            onChange={(e) =>
-                              updateDocument(doc.id, {
-                                description: e.target.value,
-                              })
-                            }
-                            placeholder="Enter document description or instructions"
-                            rows={2}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col span={24}>
-                        <Form.Item>
-                          <Checkbox
-                            checked={doc.isMandatory}
-                            onChange={(e) =>
-                              updateDocument(doc.id, {
-                                isMandatory: e.target.checked,
-                              })
-                            }
-                          >
-                            Mandatory Document
-                          </Checkbox>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Card>
-                ))}
+                <h4>Standard Documents</h4>
+                <Row gutter={[16, 8]}>
+                  {standardDocuments.map((doc) => (
+                    <Col xs={24} sm={8} key={doc.id}>
+                      <Checkbox
+                        checked={doc.isMandatory}
+                        onChange={(e) =>
+                          handleStandardDocumentChange(doc.id, e.target.checked)
+                        }
+                      >
+                        {doc.name}
+                      </Checkbox>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+
+              <Divider />
+
+              <h4>Additional Documents</h4>
+              <div style={{ marginBottom: "16px" }}>
+                {requiredDocuments
+                  .filter(
+                    (doc) =>
+                      !standardDocuments.some(
+                        (stdDoc) =>
+                          stdDoc.name.toLowerCase() === doc.name.toLowerCase()
+                      )
+                  )
+                  .map((doc, index) => (
+                    <Card
+                      key={doc.id}
+                      size="small"
+                      style={{ marginBottom: "12px" }}
+                      title={`Document ${index + 1}`}
+                      extra={
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeDocument(doc.id)}
+                        />
+                      }
+                    >
+                      <Row gutter={[16, 8]}>
+                        <Col span={24}>
+                          <Form.Item label="Document Name">
+                            <Input
+                              value={doc.name}
+                              onChange={(e) =>
+                                updateDocument(doc.id, { name: e.target.value })
+                              }
+                              placeholder="e.g., Resume, Cover Letter, ID Proof"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={24}>
+                          <Form.Item label="Description">
+                            <Input.TextArea
+                              value={doc.description}
+                              onChange={(e) =>
+                                updateDocument(doc.id, {
+                                  description: e.target.value,
+                                })
+                              }
+                              placeholder="Enter document description or instructions"
+                              rows={2}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={24}>
+                          <Form.Item>
+                            <Checkbox
+                              checked={doc.isMandatory}
+                              onChange={(e) =>
+                                updateDocument(doc.id, {
+                                  isMandatory: e.target.checked,
+                                })
+                              }
+                            >
+                              Mandatory Document
+                            </Checkbox>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Card>
+                  ))}
                 <Button
                   type="dashed"
                   onClick={addDocument}
                   icon={<PlusOutlined />}
                   block
                 >
-                  Add Required Document
+                  Add Additional Document
                 </Button>
               </div>
             </Card>

@@ -547,7 +547,9 @@ const RecruiterAssignedInterviews = () => {
             </Descriptions>
 
             {/* Only show action buttons if interview is scheduled */}
-            {selectedInterview.status.toLowerCase() === "scheduled" && (
+            {(selectedInterview.status.toLowerCase() === "scheduled" ||
+              selectedInterview.status.toLowerCase() === "interview hold" ||
+              selectedInterview.status.toLowerCase() === "on hold") && (
               <Card
                 title="Interview Actions"
                 style={{ marginTop: window.innerWidth < 768 ? "16px" : "24px" }}
@@ -557,7 +559,15 @@ const RecruiterAssignedInterviews = () => {
                 }}
               >
                 <Row gutter={[8, 8]}>
-                  <Col xs={24} sm={8}>
+                  {/* Show Pass button for both scheduled and hold status */}
+                  <Col
+                    xs={24}
+                    sm={
+                      selectedInterview.status.toLowerCase() === "scheduled"
+                        ? 8
+                        : 12
+                    }
+                  >
                     <Button
                       type="primary"
                       icon={<CheckOutlined />}
@@ -569,7 +579,16 @@ const RecruiterAssignedInterviews = () => {
                       Pass
                     </Button>
                   </Col>
-                  <Col xs={24} sm={8}>
+
+                  {/* Show Fail button for both scheduled and hold status */}
+                  <Col
+                    xs={24}
+                    sm={
+                      selectedInterview.status.toLowerCase() === "scheduled"
+                        ? 8
+                        : 12
+                    }
+                  >
                     <Button
                       type="primary"
                       icon={<CloseOutlined />}
@@ -581,18 +600,22 @@ const RecruiterAssignedInterviews = () => {
                       Fail
                     </Button>
                   </Col>
-                  <Col xs={24} sm={8}>
-                    <Button
-                      type="primary"
-                      icon={<PauseOutlined />}
-                      block
-                      size={window.innerWidth < 768 ? "middle" : "large"}
-                      style={getActionButtonStyle("hold")}
-                      onClick={() => handleActionClick("hold")}
-                    >
-                      Hold
-                    </Button>
-                  </Col>
+
+                  {/* Show Hold button only for scheduled interviews */}
+                  {selectedInterview.status.toLowerCase() === "scheduled" && (
+                    <Col xs={24} sm={8}>
+                      <Button
+                        type="primary"
+                        icon={<PauseOutlined />}
+                        block
+                        size={window.innerWidth < 768 ? "middle" : "large"}
+                        style={getActionButtonStyle("hold")}
+                        onClick={() => handleActionClick("hold")}
+                      >
+                        Hold
+                      </Button>
+                    </Col>
+                  )}
                 </Row>
               </Card>
             )}
