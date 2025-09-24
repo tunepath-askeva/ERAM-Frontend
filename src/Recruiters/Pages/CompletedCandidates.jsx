@@ -47,6 +47,7 @@ import {
   useGetPipelineCompletedCandidateByIdQuery,
 } from "../../Slices/Recruiter/RecruiterApis"; // Update this path
 import { debounce } from "lodash";
+import { useSelector } from "react-redux";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -69,6 +70,14 @@ const CompletedCandidates = () => {
   const [convertModalVisible, setConvertModalVisible] = useState(false);
   const [convertForm] = Form.useForm();
   const [candidateToConvert, setCandidateToConvert] = useState(null);
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const debouncedSearch = useCallback(
     debounce((value) => {
@@ -552,34 +561,35 @@ const CompletedCandidates = () => {
           >
             View
           </Button>
-
-          <Button
-            type="default"
-            onClick={() => {
-              setCandidateToConvert(record);
-              convertForm.setFieldsValue({
-                fullName: record.user?.fullName || "",
-                dateOfJoining: null,
-                category: "",
-                assignedJobTitle: "",
-                eramId: "",
-                badgeNo: "",
-                gatePassId: "",
-                aramcoId: "",
-                otherId: "",
-                plantId: "",
-                officialEmail: "",
-                basicAssets: "",
-              });
-              setConvertModalVisible(true);
-            }}
-            style={{
-              borderColor: "#da2c46",
-              color: "#da2c46",
-            }}
-          >
-            Convert
-          </Button>
+          {hasPermission("convert-to-employee") && (
+            <Button
+              type="default"
+              onClick={() => {
+                setCandidateToConvert(record);
+                convertForm.setFieldsValue({
+                  fullName: record.user?.fullName || "",
+                  dateOfJoining: null,
+                  category: "",
+                  assignedJobTitle: "",
+                  eramId: "",
+                  badgeNo: "",
+                  gatePassId: "",
+                  aramcoId: "",
+                  otherId: "",
+                  plantId: "",
+                  officialEmail: "",
+                  basicAssets: "",
+                });
+                setConvertModalVisible(true);
+              }}
+              style={{
+                borderColor: "#da2c46",
+                color: "#da2c46",
+              }}
+            >
+              Convert
+            </Button>
+          )}
         </Space>
       ),
     },

@@ -55,36 +55,47 @@ const RecruiterAssignedInterviews = () => {
     const transformedData = [];
 
     apiData.interviews.forEach((candidateInterview) => {
+      if (!candidateInterview?.interviews) return;
+
       candidateInterview.interviews.forEach((interview) => {
         transformedData.push({
-          id: interview._id,
-          customFieldResponseId: candidateInterview.customFieldResponseId,
-          candidateId: candidateInterview.candidate._id,
-          candidateEmail: candidateInterview.candidate.email,
-          candidateName: candidateInterview.candidate.email.split("@")[0],
-          position: candidateInterview.workOrder.title,
-          jobCode: candidateInterview.workOrder.jobCode,
-          workplace: candidateInterview.workOrder.workplace,
-          workOrderId: candidateInterview.workOrder._id,
-          scheduledDate: new Date(interview.date).toLocaleDateString("en-GB"),
-          scheduledTime: new Date(interview.date).toLocaleTimeString("en-GB", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          fullDateTime: interview.date,
-          status: interview.status
-            .replace("_", " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-          interviewType: interview.title,
-          mode: interview.mode,
-          meetingLink: interview.meetingLink,
-          location: interview.location,
-          notes: interview.notes,
-          interviewerIds: interview.interviewerIds,
+          id: interview?._id || null,
+          customFieldResponseId:
+            candidateInterview?.customFieldResponseId || null,
+          candidateId: candidateInterview?.candidate?._id || null,
+          candidateEmail: candidateInterview?.candidate?.email || "N/A",
+          candidateName: candidateInterview?.candidate?.email
+            ? candidateInterview.candidate.email.split("@")[0]
+            : "Unknown",
+          position: candidateInterview?.workOrder?.title || "N/A",
+          jobCode: candidateInterview?.workOrder?.jobCode || "N/A",
+          workplace: candidateInterview?.workOrder?.workplace || "N/A",
+          workOrderId: candidateInterview?.workOrder?._id || null,
+          scheduledDate: interview?.date
+            ? new Date(interview.date).toLocaleDateString("en-GB")
+            : "N/A",
+          scheduledTime: interview?.date
+            ? new Date(interview.date).toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A",
+          fullDateTime: interview?.date || null,
+          status: interview?.status
+            ? interview.status
+                .replace("_", " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())
+            : "N/A",
+          interviewType: interview?.title || "N/A",
+          mode: interview?.mode || "N/A",
+          meetingLink: interview?.meetingLink || null,
+          location: interview?.location || null,
+          notes: interview?.notes || null,
+          interviewerIds: interview?.interviewerIds || [],
           originalInterview: interview,
-          originalCandidate: candidateInterview.candidate,
-          originalWorkOrder: candidateInterview.workOrder,
+          originalCandidate: candidateInterview?.candidate || {},
+          originalWorkOrder: candidateInterview?.workOrder || {},
         });
       });
     });
