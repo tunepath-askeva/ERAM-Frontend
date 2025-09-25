@@ -99,7 +99,7 @@ const permissionGroups = [
       { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
       { key: "view-job-sourced-cv", label: "View Sourced CVs Tab" },
       { key: "view-job-selected", label: "View Selected Candidates Tab" },
-      { key: "view-job-selected", label: "View Selected Candidates Tab" },
+      // { key: "view-job-selected", label: "View Selected Candidates Tab" },
       { key: "view-job-applied", label: "View Applied Candidates Tab" },
       { key: "view-job-applied-cv", label: "View Applied CVs Tab" },
       { key: "view-job-declined", label: "View Declined Candidates Tab" },
