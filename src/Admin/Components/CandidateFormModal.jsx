@@ -114,6 +114,7 @@ const CandidateFormModal = ({
           agency: editingCandidate.agency || "",
           workorderhint: editingCandidate.workorderhint || "",
           client: editingCandidate.clientCode || "",
+          nationality: editingCandidate.nationality || "",
         });
       } else if (!isEditMode) {
         form.resetFields();
@@ -439,7 +440,7 @@ const CandidateFormModal = ({
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Company Name"
                 name="companyName"
@@ -453,7 +454,7 @@ const CandidateFormModal = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Specialization"
                 name="specialization"
@@ -465,6 +466,17 @@ const CandidateFormModal = ({
                   prefix={<StarOutlined />}
                   placeholder="e.g., React.js, Node.js, Python"
                 />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Nationality"
+                name="nationality"
+                rules={[
+                  { required: true, message: "Please enter nationality" },
+                ]}
+              >
+                <Input placeholder="e.g., Indian..." />
               </Form.Item>
             </Col>
           </Row>
@@ -572,6 +584,7 @@ const CandidateFormModal = ({
                     message: "Please select or enter candidate type",
                   },
                 ]}
+                initialValue="General"
               >
                 <Select
                   showSearch

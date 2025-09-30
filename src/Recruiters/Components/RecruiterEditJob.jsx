@@ -890,10 +890,26 @@ const RecruiterEditJob = () => {
         customFields: applicationFields,
         documents: allDocuments,
         pipelineStageTimeline,
-        startDate: values.startDate?.format("YYYY-MM-DD"),
-        endDate: values.endDate?.format("YYYY-MM-DD"),
-        deadlineDate: values.deadlineDate?.format("YYYY-MM-DD"),
-        alertDate: values.alertDate?.format("YYYY-MM-DD"),
+        startDate: values.startDate
+          ? dayjs.isDayjs(values.startDate)
+            ? values.startDate.format("YYYY-MM-DD")
+            : values.startDate
+          : jobData.startDate,
+        endDate: values.endDate
+          ? dayjs.isDayjs(values.endDate)
+            ? values.endDate.format("YYYY-MM-DD")
+            : values.endDate
+          : jobData.endDate,
+        deadlineDate: values.deadlineDate
+          ? dayjs.isDayjs(values.deadlineDate)
+            ? values.deadlineDate.format("YYYY-MM-DD")
+            : values.deadlineDate
+          : jobData.deadlineDate,
+        alertDate: values.alertDate
+          ? dayjs.isDayjs(values.alertDate)
+            ? values.alertDate.format("YYYY-MM-DD")
+            : values.alertDate
+          : jobData.alertDate,
         isActive: "active",
       };
 

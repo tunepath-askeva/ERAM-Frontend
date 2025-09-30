@@ -95,7 +95,7 @@ const AdminCandidates = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [fetchingCandidateId, setFetchingCandidateId] = useState(null);
-const [bulkImportResult, setBulkImportResult] = useState(null);
+  const [bulkImportResult, setBulkImportResult] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -471,6 +471,7 @@ const [bulkImportResult, setBulkImportResult] = useState(null);
               row["Company Name"]?.trim() || row["Company"]?.trim() || "",
             specialization: row["Specialization"]?.trim() || "",
             qualifications: row["Qualifications"]?.trim() || "",
+            nationality: row["Nationality"]?.trim() || "",
             agency: row["Agency"]?.toString()?.trim() || "",
             workorderhint: row["Work Order Hint"]?.toString()?.trim() || "",
             client: row["Client"]?.toString()?.trim() || "",
@@ -508,7 +509,7 @@ const [bulkImportResult, setBulkImportResult] = useState(null);
       const duplicates = response?.duplicateCount || 0;
       const invalids = response?.invalidCount || 0;
 
-    setBulkImportResult(response);
+      setBulkImportResult(response);
 
       if (inserted > 0) {
         enqueueSnackbar(`✅ Imported ${inserted} candidate(s).`, {
@@ -1202,6 +1203,7 @@ const [bulkImportResult, setBulkImportResult] = useState(null);
                   "Agency",
                   "Work Order Hint",
                   "Client",
+                  "Nationality"
                 ];
 
                 const sampleRow = [
@@ -1219,6 +1221,7 @@ const [bulkImportResult, setBulkImportResult] = useState(null);
                   "Demo",
                   "This is demo work order candidate",
                   "Demo-123",
+                  "Indian"
                 ];
 
                 const csvContent =

@@ -276,7 +276,6 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select member for approval"
-                      disabled
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -300,7 +299,6 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select member for approval"
-                      disabled
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>

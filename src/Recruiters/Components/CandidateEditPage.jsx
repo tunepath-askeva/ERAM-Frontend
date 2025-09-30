@@ -226,7 +226,7 @@ const CandidateEditPage = () => {
         nationality: candidate.nationality || "",
         countryOfBirth: candidate.countryOfBirth || "",
         maritalStatus: candidate.maritalStatus || "",
-        gender: candidate.gender || "",
+        gender: candidate.gender || "Prefer not to say",
         age: candidate.age || "",
         industry: candidate.industry || [],
         visaStatus: candidate.visaStatus || [],
@@ -268,7 +268,7 @@ const CandidateEditPage = () => {
         },
         accountStatus: candidate.accountStatus || "active",
         candidateType: candidate.candidateType || "External",
-        agency: candidate.agency ,
+        agency: candidate.agency,
         workorderhint: candidate.workorderhint,
         clientCode: candidate.clientCode,
       });
@@ -302,6 +302,18 @@ const CandidateEditPage = () => {
       setWorkExperience(candidate.workExperience);
     }
   }, [candidate]);
+
+  const updateFullName = () => {
+    const firstName = profileForm.getFieldValue("firstName") || "";
+    const middleName = profileForm.getFieldValue("middleName") || "";
+    const lastName = profileForm.getFieldValue("lastName") || "";
+
+    const fullName = [firstName, middleName, lastName]
+      .filter((name) => name.trim() !== "")
+      .join(" ");
+
+    profileForm.setFieldsValue({ fullName });
+  };
 
   const handleSubmit = async () => {
     try {
@@ -585,21 +597,34 @@ const CandidateEditPage = () => {
 
                 <Col xs={24} sm={8}>
                   <Form.Item label="First Name" name="firstName">
-                    <Input placeholder="Enter first name" />
+                    <Input
+                      placeholder="Enter first name"
+                      onChange={updateFullName}
+                    />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
                   <Form.Item label="Middle Name" name="middleName">
-                    <Input placeholder="Enter middle name" />
+                    <Input
+                      placeholder="Enter middle name"
+                      onChange={updateFullName}
+                    />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={8}>
                   <Form.Item label="Last Name" name="lastName">
-                    <Input placeholder="Enter last name" />
+                    <Input
+                      placeholder="Enter last name"
+                      onChange={updateFullName}
+                    />
                   </Form.Item>
                 </Col>
+
+                <Form.Item name="fullName" hidden>
+                  <Input />
+                </Form.Item>
 
                 <Col xs={24} sm={12}>
                   <Form.Item
@@ -1120,7 +1145,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item label="Gender" name="gender">
+                  <Form.Item label="Gender" name="gender" initialValue="Male" >
                     <Select placeholder="Select gender">
                       {genderOptions.map((status) => (
                         <Option key={status} value={status}>

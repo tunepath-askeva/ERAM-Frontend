@@ -193,6 +193,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
               row["Company"]?.toString()?.trim() ||
               "",
             specialization: row["Specialization"]?.toString()?.trim() || "",
+            nationality: row["Nationality"]?.toString()?.trim() || "",
             qualifications: row["Qualifications"]?.toString()?.trim() || "",
             role: "candidate",
             agency: row["Agency"]?.toString()?.trim() || "",
@@ -363,6 +364,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "Agency",
                   "Work Order Hint",
                   "Client",
+                  "Nationality",
                 ];
 
                 const sampleRow = [
@@ -380,6 +382,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
                   "Demo",
                   "This is work order 1 candidate",
                   "Demo-123",
+                  "Indian",
                 ];
 
                 const csvContent =

@@ -8,6 +8,7 @@ import {
   TrophyOutlined,
   LockOutlined,
   StarOutlined,
+  FlagOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import {
@@ -304,19 +305,19 @@ const AddCandidateModal = ({
         </Row>
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               label="Company Name"
               name="companyName"
               rules={[{ required: true, message: "Please enter company name" }]}
             >
               <Input
-                prefix={<BankOutlined />}
+               
                 placeholder="Enter current/previous company"
               />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               label="Specialization"
               name="specialization"
@@ -325,8 +326,22 @@ const AddCandidateModal = ({
               ]}
             >
               <Input
-                prefix={<StarOutlined />}
+               
                 placeholder="e.g., React.js, Node.js, Python"
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              label="Nationality"
+              name="nationality"
+              rules={[
+                { required: true, message: "Please enter nationality" },
+              ]}
+            >
+              <Input
+               
+                placeholder="e.g., Indian..."
               />
             </Form.Item>
           </Col>
