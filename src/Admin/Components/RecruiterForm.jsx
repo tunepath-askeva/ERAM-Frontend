@@ -34,8 +34,10 @@ import {
   SettingOutlined,
 } from "@ant-design/icons";
 import {
+  useAddCustomMemberTypesMutation,
   useCreateRecruiterMutation,
   useEditRecruiterMutation,
+  useGetMemberTypesQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import { useSnackbar } from "notistack";
 import PhoneInput from "../../Global/PhoneInput.jsx";
@@ -59,7 +61,6 @@ const recruiterTypes = [
   "Sales",
 ];
 
-// Grouped permissions for better organization
 const permissionGroups = [
   {
     title: "Side Navigation Tabs",
@@ -184,11 +185,12 @@ const RecruiterForm = ({
   const [createRecruiter, { isLoading: isCreating }] =
     useCreateRecruiterMutation();
   const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
+  const [customMemberTypes] = useAddCustomMemberTypesMutation();
+  const { data: memberTypesData } = useGetMemberTypesQuery();
+
   const { enqueueSnackbar } = useSnackbar();
 
-  // State to manage dynamic recruiter types
-  const [dynamicRecruiterTypes, setDynamicRecruiterTypes] =
-    useState(recruiterTypes);
+  const [dynamicRecruiterTypes, setDynamicRecruiterTypes] = useState([]);
 
   const isLoading = isCreating || isEditing;
 
@@ -196,12 +198,24 @@ const RecruiterForm = ({
     title || (mode === "edit" ? "Edit Member" : "Add New Member");
 
   useEffect(() => {
+    if (memberTypesData) {
+      const apiMemberTypes = memberTypesData.map((item) => item.name);
+      const allTypes = [...recruiterTypes, ...apiMemberTypes];
+      setDynamicRecruiterTypes(Array.from(new Set(allTypes)));
+    } else {
+      setDynamicRecruiterTypes(recruiterTypes);
+    }
+  }, [memberTypesData]);
+
+  useEffect(() => {
     if (open) {
       if (mode === "edit" && initialValues) {
-        // If the recruiter type from initialValues is not in the predefined list, add it
         if (
           initialValues.recruiterType &&
-          !recruiterTypes.includes(initialValues.recruiterType)
+          !recruiterTypes.includes(initialValues.recruiterType) &&
+          !memberTypesData?.some(
+            (item) => item.name === initialValues.recruiterType
+          )
         ) {
           setDynamicRecruiterTypes((prev) => [
             ...prev,
@@ -229,16 +243,20 @@ const RecruiterForm = ({
         });
       } else {
         form.resetFields();
-        // Reset dynamic types when adding new recruiter
-        setDynamicRecruiterTypes(recruiterTypes);
       }
     }
-  }, [open, mode, initialValues, form]);
+  }, [open, mode, initialValues, form, memberTypesData]);
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-
+      if (!recruiterTypes.includes(values.recruiterType)) {
+        try {
+          await customMemberTypes({ name: values.recruiterType });
+        } catch (err) {
+          console.error("Failed to save custom type", err);
+        }
+      }
       const payload = {
         fullName: values.fullName,
         email: values.email,
@@ -315,7 +333,6 @@ const RecruiterForm = ({
     },
   });
 
-  // Handle custom recruiter type selection
   const handleRecruiterTypeChange = (value) => {
     if (value && !dynamicRecruiterTypes.includes(value)) {
       setDynamicRecruiterTypes((prev) => [...prev, value]);

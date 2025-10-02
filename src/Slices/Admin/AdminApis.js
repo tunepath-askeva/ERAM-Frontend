@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-
 const baseUrl =
   window.location.hostname === "localhost"
     ? "http://localhost:5000/api/admin"
@@ -563,6 +562,19 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    getMemberTypes: builder.query({
+      query: () => ({
+        url: `/member-types`,
+        method: "GET",
+      }),
+    }),
+    addCustomMemberTypes: builder.mutation({
+      query: (clientData) => ({
+        url: "/member-types",
+        method: "POST",
+        body: clientData,
+      }),
+    }),
   }),
 });
 
@@ -649,4 +661,7 @@ export const {
 
   //notifications
   useGetAdminNotificationsQuery,
+
+  useAddCustomMemberTypesMutation,
+  useGetMemberTypesQuery
 } = adminApi;
