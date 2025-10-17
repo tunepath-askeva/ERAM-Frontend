@@ -2640,7 +2640,7 @@ const CandidateSettings = () => {
 
           <Form.Item label="Upload Certificate">
             <Upload
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              accept=".pdf"
               showUploadList={false}
               beforeUpload={(file) => {
                 const isLt5M = file.size / 1024 / 1024 < 5;
@@ -2651,15 +2651,11 @@ const CandidateSettings = () => {
 
                 const allowedTypes = [
                   "application/pdf",
-                  "application/msword",
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                  "image/jpeg",
-                  "image/jpg",
-                  "image/png",
+                 
                 ];
                 if (!allowedTypes.includes(file.type)) {
                   message.error(
-                    "Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed!"
+                    "Only PDF files are allowed!"
                   );
                   return false;
                 }
