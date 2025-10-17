@@ -2038,25 +2038,8 @@ const CandidateSettings = () => {
                                 <Button
                                   type="link"
                                   size="small"
+                                  href={item.fileUrl}
                                   icon={<EyeOutlined />}
-                                  onClick={() => {
-                                    const ext = item.fileUrl
-                                      .split(".")
-                                      .pop()
-                                      .toLowerCase();
-                                    if (
-                                      ["pdf", "jpg", "jpeg", "png"].includes(
-                                        ext
-                                      )
-                                    ) {
-                                      window.open(item.fileUrl, "_blank");
-                                    } else {
-                                      window.open(
-                                        `https://docs.google.com/viewer?url=${item.fileUrl}&embedded=true`,
-                                        "_blank"
-                                      );
-                                    }
-                                  }}
                                 >
                                   View Certificate
                                 </Button>
