@@ -46,6 +46,7 @@ import {
   useGetClientsQuery,
   useGetStaffsQuery,
   useGetRecruitersNameQuery,
+  useLazyGetJobCodesByProjectQuery,
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -139,6 +140,7 @@ const AddWorkOrder = () => {
   const { data: staffsData, isLoading: isLoadingStaffs } = useGetStaffsQuery({
     includePagination: false,
   });
+  const [getJobCodes] = useLazyGetJobCodesByProjectQuery();
 
   const [createWorkOrder] = useCreateWorkOrderMutation();
 
@@ -172,13 +174,21 @@ const AddWorkOrder = () => {
     const project = activeProjects.find((p) => p._id === projectId);
     if (!project || !project.prefix) return null;
 
-    // You can implement your own logic here for auto-incrementing
-    // For now, using timestamp-based unique code
-    const timestamp = Date.now().toString().slice(-6);
-    const randomNum = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, "0");
-    return `${project.prefix}-${timestamp}${randomNum}`;
+    try {
+      const { data } = await getJobCodes(project.prefix).unwrap();
+
+      if (data && data.lastCode) {
+        const lastNumber = parseInt(data.lastCode.split("-")[1]) || 0;
+        const nextNumber = lastNumber + 1;
+        const formattedNumber = nextNumber.toString().padStart(5, "0");
+        return `${project.prefix}-${formattedNumber}`;
+      } else {
+        return `${project.prefix}-00001`;
+      }
+    } catch (error) {
+      console.error("Error generating job code:", error);
+      return `${project.prefix}-00001`;
+    }
   };
 
   const handleProjectChange = async (projectId) => {

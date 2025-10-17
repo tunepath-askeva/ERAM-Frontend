@@ -575,10 +575,17 @@ export const adminApi = createApi({
         body: clientData,
       }),
     }),
-     deleteLevels: builder.mutation({
+    deleteLevels: builder.mutation({
       query: (id) => ({
         url: `/level/${id}`,
         method: "DELETE",
+      }),
+    }),
+    getJobCodesByProject: builder.query({
+      query: (prefix) => ({
+        url: `/job-codes`,
+        method: "GET",
+        params: { prefix },
       }),
     }),
   }),
@@ -670,5 +677,7 @@ export const {
   useGetAdminNotificationsQuery,
 
   useAddCustomMemberTypesMutation,
-  useGetMemberTypesQuery
+  useGetMemberTypesQuery,
+
+  useLazyGetJobCodesByProjectQuery,
 } = adminApi;
