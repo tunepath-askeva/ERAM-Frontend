@@ -37,7 +37,10 @@ import {
 import { useSnackbar } from "notistack";
 import CreateLevelModal from "../Components/CreateLevelModal";
 import "../../index.css";
-import { useGetApprovalQuery } from "../../Slices/Admin/AdminApis";
+import {
+  useDeleteLevelsMutation,
+  useGetApprovalQuery,
+} from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
@@ -58,7 +61,7 @@ const Levels = () => {
     current: 1,
     pageSize: 12,
   });
-
+  const [deleteLevelApi] = useDeleteLevelsMutation();
   const {
     data: approvalData,
     isLoading,
@@ -69,6 +72,7 @@ const Levels = () => {
     page: pagination.current,
     pageSize: pagination.pageSize,
   });
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -102,27 +106,30 @@ const Levels = () => {
     setLevelToDelete(null);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!levelToDelete) return;
+const handleDeleteConfirm = async () => {
+  if (!levelToDelete) return;
 
-    try {
-      // await deleteLevelApi(levelToDelete._id);
+  try {
+    const res = await deleteLevelApi(levelToDelete._id).unwrap(); 
 
-      await refetch();
 
-      enqueueSnackbar(
-        `Level "${levelToDelete.groupName}" deleted successfully`,
-        {
-          variant: "success",
-        }
-      );
-      setDeleteModalVisible(false);
-      setLevelToDelete(null);
-    } catch (error) {
-      enqueueSnackbar("Failed to delete level", { variant: "error" });
-      console.error("Delete error:", error);
-    }
-  };
+    await refetch();
+
+    enqueueSnackbar(
+      res.message || `Level "${levelToDelete.groupName}" deleted successfully`,
+      { variant: "success" }
+    );
+
+    setDeleteModalVisible(false);
+    setLevelToDelete(null);
+  } catch (error) {
+    enqueueSnackbar(error?.data?.message || "Failed to delete level", {
+      variant: "error",
+    });
+    console.error("Delete error:", error);
+  }
+};
+
 
   const showDisableModal = (level) => {
     setLevelToToggle(level);

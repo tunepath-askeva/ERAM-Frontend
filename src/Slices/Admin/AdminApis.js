@@ -575,6 +575,12 @@ export const adminApi = createApi({
         body: clientData,
       }),
     }),
+     deleteLevels: builder.mutation({
+      query: (id) => ({
+        url: `/level/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -636,6 +642,7 @@ export const {
   useGetApprovalQuery,
   useAddApprovalMutation,
   useUpdateApprovalMutation,
+  useDeleteLevelsMutation,
 
   //Client
   useAddClientMutation,
