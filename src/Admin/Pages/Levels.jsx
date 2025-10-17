@@ -52,8 +52,6 @@ const Levels = () => {
   const [levelToDelete, setLevelToDelete] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedLevelId, setSelectedLevelId] = useState(null);
-  const [disableModalVisible, setDisableModalVisible] = useState(false);
-  const [levelToToggle, setLevelToToggle] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -130,38 +128,6 @@ const handleDeleteConfirm = async () => {
   }
 };
 
-
-  const showDisableModal = (level) => {
-    setLevelToToggle(level);
-    setDisableModalVisible(true);
-  };
-
-  const handleDisableCancel = () => {
-    setDisableModalVisible(false);
-    setLevelToToggle(null);
-  };
-
-  const handleToggleStatus = async () => {
-    if (!levelToToggle) return;
-
-    try {
-      // await toggleLevelStatusApi(levelToToggle._id, !isLevelActive(levelToToggle));
-
-      await refetch();
-
-      enqueueSnackbar(
-        `Level "${levelToToggle.groupName}" is now ${
-          isLevelActive(levelToToggle) ? "inactive" : "active"
-        }`,
-        { variant: "success" }
-      );
-      setDisableModalVisible(false);
-      setLevelToToggle(null);
-    } catch (error) {
-      enqueueSnackbar("Failed to update level status", { variant: "error" });
-      console.error("Status change error:", error);
-    }
-  };
 
   const showCreateModal = () => {
     setEditingLevel(null);
@@ -471,31 +437,6 @@ const handleDeleteConfirm = async () => {
                               onClick={() => showEditModal(level)}
                             />
                           </Tooltip>
-                          <Tooltip
-                            title={
-                              isLevelActive(level)
-                                ? "Disable Level"
-                                : "Enable Level"
-                            }
-                          >
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={
-                                isLevelActive(level) ? (
-                                  <StopOutlined />
-                                ) : (
-                                  <CheckCircleOutlined />
-                                )
-                              }
-                              onClick={() => showDisableModal(level)}
-                              style={{
-                                color: isLevelActive(level)
-                                  ? "#ff4d4f"
-                                  : "#52c41a",
-                              }}
-                            />
-                          </Tooltip>
                           <Tooltip title="Delete Level">
                             <Button
                               type="text"
@@ -626,19 +567,6 @@ const handleDeleteConfirm = async () => {
                         style={{ backgroundColor: "#52c41a" }}
                       />
                     </Descriptions.Item>
-                    <Descriptions.Item label="Status">
-                      <Tag
-                        color={
-                          isLevelActive(getLevelDetails(selectedLevelId))
-                            ? "green"
-                            : "red"
-                        }
-                      >
-                        {isLevelActive(getLevelDetails(selectedLevelId))
-                          ? "Active"
-                          : "Inactive"}
-                      </Tag>
-                    </Descriptions.Item>
                   </Descriptions>
                 </Card>
 
@@ -749,136 +677,6 @@ const handleDeleteConfirm = async () => {
         onClose={handleModalClose}
         editingLevel={editingLevel}
       />
-
-      {/* Disable Level Modal */}
-      <Modal
-        title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              color:
-                levelToToggle && isLevelActive(levelToToggle)
-                  ? "#ff4d4f"
-                  : "#52c41a",
-            }}
-          >
-            <ExclamationCircleOutlined
-              style={{ marginRight: 8, fontSize: 18 }}
-            />
-            <span style={{ fontSize: "16px" }}>
-              {levelToToggle && isLevelActive(levelToToggle)
-                ? "Disable"
-                : "Enable"}{" "}
-              Level
-            </span>
-          </div>
-        }
-        open={disableModalVisible}
-        onCancel={handleDisableCancel}
-        width="90%"
-        style={{ maxWidth: 500 }}
-        centered
-        footer={[
-          <Button key="cancel" onClick={handleDisableCancel} size="large">
-            Cancel
-          </Button>,
-          <Button
-            key="confirm"
-            type="primary"
-            danger={levelToToggle && isLevelActive(levelToToggle)}
-            onClick={handleToggleStatus}
-            loading={isLoading}
-            size="large"
-            style={{
-              background:
-                levelToToggle && isLevelActive(levelToToggle)
-                  ? "#ff4d4f"
-                  : "#52c41a",
-              borderColor:
-                levelToToggle && isLevelActive(levelToToggle)
-                  ? "#ff4d4f"
-                  : "#52c41a",
-            }}
-          >
-            {levelToToggle && isLevelActive(levelToToggle)
-              ? "Disable"
-              : "Enable"}
-          </Button>,
-        ]}
-      >
-        <div style={{ padding: "16px 0" }}>
-          {levelToToggle && (
-            <>
-              <div
-                style={{
-                  background: isLevelActive(levelToToggle)
-                    ? "#fff2f0"
-                    : "#f6ffed",
-                  border: isLevelActive(levelToToggle)
-                    ? "1px solid #ffccc7"
-                    : "1px solid #b7eb8f",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                }}
-              >
-                <WarningOutlined
-                  style={{
-                    color: isLevelActive(levelToToggle) ? "#ff4d4f" : "#52c41a",
-                    fontSize: "16px",
-                    marginTop: "2px",
-                    flexShrink: 0,
-                  }}
-                />
-                <div>
-                  <Text
-                    strong
-                    style={{
-                      color: isLevelActive(levelToToggle)
-                        ? "#ff4d4f"
-                        : "#52c41a",
-                    }}
-                  >
-                    {isLevelActive(levelToToggle)
-                      ? "Disabling this level"
-                      : "Enabling this level"}
-                  </Text>
-                  <br />
-                  <Text style={{ color: "#8c8c8c" }}>
-                    {isLevelActive(levelToToggle)
-                      ? "This level will no longer be available for new hiring processes."
-                      : "This level will become available for new hiring processes."}
-                  </Text>
-                </div>
-              </div>
-
-              <div>
-                <Text>
-                  You are about to{" "}
-                  {isLevelActive(levelToToggle) ? "disable" : "enable"} the
-                  level{" "}
-                  <Text strong style={{ color: "#2c3e50" }}>
-                    "{levelToToggle.groupName}"
-                  </Text>
-                  .
-                </Text>
-                <div style={{ marginTop: 12 }}>
-                  <Text type="secondary">
-                    Current status:{" "}
-                    <Tag color={isLevelActive(levelToToggle) ? "green" : "red"}>
-                      {isLevelActive(levelToToggle) ? "Active" : "Inactive"}
-                    </Tag>
-                  </Text>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </Modal>
 
       {/* Delete Level Modal */}
       <Modal

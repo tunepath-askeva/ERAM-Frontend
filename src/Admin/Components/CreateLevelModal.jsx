@@ -45,18 +45,16 @@ const LevelItem = ({
   isEditMode,
   recruiters = [],
 }) => {
-  const approversList =
-    level.assignedRecruiters ||
-    (level.approvers
-      ? [
-          {
-            _id: level.approvers.user,
-            fullName:
-              recruiters.find((r) => r._id === level.approvers.user)
-                ?.fullName || level.approvers.user,
-          },
-        ]
-      : []);
+  const approversList = level.assignedRecruiters
+    ? level.assignedRecruiters
+    : level.approvers?.user
+    ? [
+        recruiters.find((r) => r._id === level.approvers.user) || {
+          _id: level.approvers.user,
+          fullName: level.approvers.user,
+        },
+      ]
+    : [];
 
   return (
     <Col xs={24} sm={12} lg={8}>
@@ -188,17 +186,17 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
 
       const formattedLevels = editingLevel.levels.map((level) => ({
         ...level,
-        approvers:
-          level.assignedRecruiters?.map((recruiter) => ({
-            user: recruiter._id,
-          })) || [],
+        // CHANGE THIS: Convert assignedRecruiters to approvers format
+        approvers: level.assignedRecruiters?.[0]
+          ? { user: level.assignedRecruiters[0]._id }
+          : null,
       }));
 
       setLevels(formattedLevels);
       setCurrentLevel({
         levelName: "",
         description: "",
-        approvers: [],
+        approvers: null, // CHANGE: null instead of []
         levelOrder: formattedLevels.length + 1,
       });
     } else if (visible) {
@@ -213,7 +211,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     setCurrentLevel({
       levelName: "",
       description: "",
-      approvers: [],
+      approvers: null,
       levelOrder: 1,
     });
     setIsEditingLevel(false);
@@ -253,7 +251,7 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     setCurrentLevel({
       levelName: "",
       description: "",
-      approvers: [],
+      approvers: null,
       levelOrder: levels.length + 2,
     });
   };
@@ -299,13 +297,33 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
     // Format the levels data to match your API expectations
     const levelData = {
       groupName: groupName.trim(),
-      levels: levels.map((level) => ({
-        ...level,
-        assignedRecruiters: level.approvers
-          ? [{ _id: level.approvers.user }]
-          : [],
-        approvers: undefined,
-      })),
+      levels: levels.map((level) => {
+        // Keep existing level data if it has an _id (already saved)
+        const baseLevel = {
+          levelName: level.levelName,
+          description: level.description,
+          levelOrder: level.levelOrder,
+        };
+
+        // If level has _id, include it to update existing level
+        if (level._id) {
+          baseLevel._id = level._id;
+        }
+
+        // Convert approvers to assignedRecruiters format
+        if (level.approvers?.user) {
+          baseLevel.assignedRecruiters = [{ _id: level.approvers.user }];
+        } else if (level.assignedRecruiters) {
+          // Keep existing assignedRecruiters if no changes
+          baseLevel.assignedRecruiters = level.assignedRecruiters.map(
+            (recruiter) => ({ _id: recruiter._id })
+          );
+        } else {
+          baseLevel.assignedRecruiters = [];
+        }
+
+        return baseLevel;
+      }),
     };
 
     try {
