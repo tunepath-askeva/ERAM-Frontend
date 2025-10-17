@@ -135,6 +135,20 @@ const EditRequisition = () => {
     }
   };
 
+  const handleProjectChange = (value) => {
+  // Generate a new requisition number whenever project changes
+  const randomDigits = Math.floor(10000 + Math.random() * 90000); // 5 random digits
+  const newReqNo = `REQ${randomDigits}`;
+
+  // Update both the project and requisition number fields in the form
+  form.setFieldsValue({
+    project: value,
+    requisitionNo: newReqNo,
+  });
+};
+
+
+
   const customStyles = `
     .ant-btn-primary {
       background-color: #da2c46 !important;
@@ -195,7 +209,7 @@ const EditRequisition = () => {
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Project" name="project">
-                    <Select placeholder="Select Project">
+                    <Select placeholder="Select Project"  onChange={(value) => handleProjectChange(value)}>
                       {projects.map((project) => (
                         <Option key={project.id} value={project.id}>
                           {project.name}
@@ -215,7 +229,7 @@ const EditRequisition = () => {
                       },
                     ]}
                   >
-                    <Input placeholder="Enter Requisition Number" />
+                     <Input placeholder="Auto Generated" readOnly />
                   </Form.Item>
                 </Col>
                 <Col span={6}>

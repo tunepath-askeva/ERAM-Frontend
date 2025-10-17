@@ -82,10 +82,17 @@ const AddRequisition = ({ onNavigateBack }) => {
   }, [commonFields, form]);
 
   const handleCommonFieldChange = (field, value) => {
-    setCommonFields((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setCommonFields((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Auto-generate requisition number when project is selected
+      if (field === "project" && value) {
+        const randomDigits = Math.floor(10000 + Math.random() * 90000); // 5 digits
+        updated.requisitionNo = `REQ${randomDigits}`;
+      }
+
+      return updated;
+    });
   };
 
   const handleAddRequisition = async () => {
@@ -415,10 +422,9 @@ const AddRequisition = ({ onNavigateBack }) => {
                     ]}
                   >
                     <Input
-                      placeholder="Enter Requisition Number"
-                      onChange={(e) =>
-                        handleCommonFieldChange("requisitionNo", e.target.value)
-                      }
+                      placeholder="Auto Generated"
+                      value={commonFields.requisitionNo}
+                      readOnly
                     />
                   </Form.Item>
                 </Col>
