@@ -561,7 +561,7 @@ const AdminRecruiter = () => {
                           <TeamOutlined
                             style={{ marginRight: 8, color: "#666" }}
                           />
-                          <Text>{getRecruiterLocation(recruiter)}</Text>
+                          <Text>{recruiter?.recruiterType}</Text>
                         </div>
                         {recruiter.experienceYears && (
                           <div

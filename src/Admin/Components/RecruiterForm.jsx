@@ -112,7 +112,8 @@ const permissionGroups = [
     title: "Candidate Management",
     icon: <TeamOutlined />,
     permissions: [
-      { key: "view-candidates", label: "View Candidates" },
+      { key: "view-all-candidates", label: "View All Candidates" },
+      { key: "view-candidates", label: "View Candidates Icon" },
       { key: "add-candidate", label: "Add Candidate" },
       { key: "bulk-upload", label: "Bulk Upload Candidates" },
       { key: "edit-candidate-details", label: "Edit Candidate" },
@@ -186,11 +187,18 @@ const RecruiterForm = ({
     useCreateRecruiterMutation();
   const [editRecruiter, { isLoading: isEditing }] = useEditRecruiterMutation();
   const [customMemberTypes] = useAddCustomMemberTypesMutation();
-  const { data: memberTypesData } = useGetMemberTypesQuery();
+  const {
+    data: memberTypesData,
+    refetch: refetchMemberTypes,
+    isFetching,
+  } = useGetMemberTypesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const { enqueueSnackbar } = useSnackbar();
 
   const [dynamicRecruiterTypes, setDynamicRecruiterTypes] = useState([]);
+  const [isLoadingMemberTypes, setIsLoadingMemberTypes] = useState(false);
 
   const isLoading = isCreating || isEditing;
 
@@ -209,43 +217,65 @@ const RecruiterForm = ({
 
   useEffect(() => {
     if (open) {
-      if (mode === "edit" && initialValues) {
-        if (
-          initialValues.recruiterType &&
-          !recruiterTypes.includes(initialValues.recruiterType) &&
-          !memberTypesData?.some(
-            (item) => item.name === initialValues.recruiterType
-          )
-        ) {
-          setDynamicRecruiterTypes((prev) => [
-            ...prev,
-            initialValues.recruiterType,
-          ]);
-        }
+      setIsLoadingMemberTypes(true);
 
-        const experienceValue = initialValues.totalExperienceYears
-          ? Number(initialValues.totalExperienceYears)
-          : 0;
+      refetchMemberTypes()
+        .then((res) => {
+          setIsLoadingMemberTypes(false);
 
-        form.setFieldsValue({
-          fullName: initialValues.fullName || "",
-          email: initialValues.email || "",
-          phoneno: initialValues.phone || "",
-          phonenoCountryCode:
-            initialValues.phoneCountryCode ||
-            initialValues.phone?.startsWith("+")
-              ? phoneUtils.parsePhoneNumber(initialValues.phone)?.countryCode
-              : "91",
-          specialization: initialValues.specialization || "",
-          experience: experienceValue || 0,
-          recruiterType: initialValues.recruiterType || "Recruiter",
-          permissions: initialValues.permissions || [],
+          // Merge default recruiter types with fetched API member types
+          const apiMemberTypes = res.data?.map((item) => item.name) || [];
+          const allTypes = [...recruiterTypes, ...apiMemberTypes];
+          setDynamicRecruiterTypes(Array.from(new Set(allTypes)));
+
+          if (mode === "edit" && initialValues) {
+            // Ensure recruiter type exists in the options list
+            if (
+              initialValues.recruiterType &&
+              !recruiterTypes.includes(initialValues.recruiterType) &&
+              !apiMemberTypes.includes(initialValues.recruiterType)
+            ) {
+              setDynamicRecruiterTypes((prev) => [
+                ...prev,
+                initialValues.recruiterType,
+              ]);
+            }
+
+            const experienceValue = initialValues.totalExperienceYears
+              ? Number(initialValues.totalExperienceYears)
+              : 0;
+
+            form.setFieldsValue({
+              fullName: initialValues.fullName || "",
+              email: initialValues.email || "",
+              ...(initialValues.phone?.startsWith("+")
+                ? (() => {
+                    const { countryCode, phoneNumber } =
+                      phoneUtils.parsePhoneNumber(initialValues.phone);
+                    return {
+                      phonenoCountryCode: countryCode || "91",
+                      phoneno: phoneNumber || "",
+                    };
+                  })()
+                : {
+                    phonenoCountryCode: initialValues.phoneCountryCode || "91",
+                    phoneno: initialValues.phone || "",
+                  }),
+              specialization: initialValues.specialization || "",
+              experience: experienceValue || 0,
+              recruiterType: initialValues.recruiterType || "Recruiter",
+              permissions: initialValues.permissions || [],
+            });
+          } else {
+            form.resetFields();
+          }
+        })
+        .catch(() => {
+          setIsLoadingMemberTypes(false);
+          setDynamicRecruiterTypes(recruiterTypes);
         });
-      } else {
-        form.resetFields();
-      }
     }
-  }, [open, mode, initialValues, form, memberTypesData]);
+  }, [open, mode, initialValues, form, refetchMemberTypes]);
 
   const handleSubmit = async () => {
     try {
@@ -432,6 +462,8 @@ const RecruiterForm = ({
                   placeholder="Select or type member type"
                   size="large"
                   optionFilterProp="children"
+                  loading={isLoadingMemberTypes || isFetching}
+                  disabled={isLoadingMemberTypes || isFetching}
                   filterOption={(input, option) =>
                     option.children
                       .toLowerCase()
@@ -452,7 +484,7 @@ const RecruiterForm = ({
                       form.setFieldsValue({ recruiterType: value });
                     }
                   }}
-                  notFoundContent={null}
+                  notFoundContent={isLoadingMemberTypes ? "Loading..." : null}
                   dropdownRender={(menu) => (
                     <div>
                       {menu}
