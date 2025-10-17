@@ -23,6 +23,7 @@ import {
   Spin,
   Segmented,
   FloatButton,
+  Upload,
 } from "antd";
 import {
   BellOutlined,
@@ -39,6 +40,7 @@ import {
   ClearOutlined,
   FilterOutlined,
   SettingOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -212,13 +214,17 @@ const Notifications = () => {
     try {
       setCurrentAction("accept");
 
-      const payload = {
-        workorderId: selectedNotification.workorderId,
-        status: "offer-accepted",
-        description: values.description || "",
-      };
+      const formData = new FormData();
+      formData.append("workorderId", selectedNotification.workorderId);
+      formData.append("status", "offer-accepted");
+      formData.append("description", values.description || "");
 
-      await updateOfferStatus(payload).unwrap();
+      // ✅ Append the uploaded file
+      if (values.signedOffer) {
+        formData.append("signedOffer", values.signedOffer.originFileObj);
+      }
+
+      await updateOfferStatus(formData).unwrap();
 
       message.success("Offer accepted successfully!");
       setAcceptModalVisible(false);
@@ -792,7 +798,7 @@ const Notifications = () => {
           onFinish={handleAcceptOfferSubmit}
         >
           <Alert
-            message="You are about to accept this offer letter. Please provide any additional comments or confirmation message."
+            message="You are about to accept this offer letter. Please provide any additional comments or confirmation message and please upload the signed offer letter copy as PDF."
             type="success"
             style={{ marginBottom: 16, borderRadius: "8px" }}
           />
@@ -812,6 +818,33 @@ const Notifications = () => {
               placeholder="Please provide any comments regarding your acceptance..."
               style={{ borderRadius: "8px" }}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="signedOffer"
+            label="Signed Offer (PDF)"
+            valuePropName="file"
+            getValueFromEvent={(e) => e?.fileList?.[0] || null}
+            rules={[
+              {
+                required: true,
+                message: "Please upload the signed offer PDF!",
+              },
+            ]}
+          >
+            <Upload
+              beforeUpload={(file) => {
+                const isPdf = file.type === "application/pdf";
+                if (!isPdf) {
+                  message.error("You can only upload PDF files!");
+                }
+                return isPdf || Upload.LIST_IGNORE; // prevent upload if not PDF
+              }}
+              maxCount={1} // allow only one file
+              accept=".pdf"
+            >
+              <Button icon={<UploadOutlined />}>Click to Upload PDF</Button>
+            </Upload>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>

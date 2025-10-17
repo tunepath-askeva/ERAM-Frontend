@@ -524,8 +524,16 @@ const CandidateEditPage = () => {
   return (
     <div style={{ padding: "24px" }}>
       <div style={{ marginBottom: 16 }}>
-        <Button icon={<LeftOutlined />} onClick={() => navigate(-1)}>
-          Back
+        <Button
+          type="link"
+          icon={<LeftOutlined />}
+          style={{
+            paddingLeft: 0,
+            color: "#da2c46",
+          }}
+          onClick={() => navigate(-1)}
+        >
+          Go Back
         </Button>
       </div>
       <Card
@@ -1145,7 +1153,7 @@ const CandidateEditPage = () => {
                 </Col>
 
                 <Col xs={24} sm={8}>
-                  <Form.Item label="Gender" name="gender" initialValue="Male" >
+                  <Form.Item label="Gender" name="gender" initialValue="Male">
                     <Select placeholder="Select gender">
                       {genderOptions.map((status) => (
                         <Option key={status} value={status}>
