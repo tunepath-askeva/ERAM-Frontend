@@ -342,7 +342,7 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                                   <br />
                                   <Button
                                     type="link"
-                                    href={cert.fileUrl}
+                                    href={`https://docs.google.com/viewer?url=${cert.fileUrl}&embedded=true`}
                                     target="_blank"
                                     icon={<FilePdfOutlined />}
                                   >

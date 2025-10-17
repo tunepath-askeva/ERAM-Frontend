@@ -331,6 +331,43 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
     </div>
   );
 
+  const renderDocuments = () => (
+    <div>
+      {candidate.certificates && candidate.certificates.length > 0 && (
+        <Card title="Certificates/Documents" style={{ borderRadius: "12px" }}>
+          <List
+            dataSource={candidate.certificates}
+            renderItem={(cert) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={
+                    <Text strong>{cert.documentName || cert.fileName}</Text>
+                  }
+                  description={
+                    <div>
+                      <Text type="secondary">
+                        Uploaded on: {formatDate(cert.uploadedAt)}
+                      </Text>
+                      <br />
+                      <Button
+                        type="link"
+                        href={`https://docs.google.com/viewer?url=${cert.fileUrl}&embedded=true`}
+                        target="_blank"
+                        icon={<EyeOutlined />}
+                      >
+                        View Certificate
+                      </Button>
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
+    </div>
+  );
+
   const renderPersonalInfo = () => (
     <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
       <Row gutter={16}>
@@ -665,40 +702,6 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           />
         </Card>
       )}
-
-      {/* Certificates */}
-      {candidate.certificates && candidate.certificates.length > 0 && (
-        <Card title="Certificates/Documents" style={{ borderRadius: "12px" }}>
-          <List
-            dataSource={candidate.certificates}
-            renderItem={(cert) => (
-              <List.Item>
-                <List.Item.Meta
-                  title={
-                    <Text strong>{cert.documentName || cert.fileName}</Text>
-                  }
-                  description={
-                    <div>
-                      <Text type="secondary">
-                        Uploaded on: {formatDate(cert.uploadedAt)}
-                      </Text>
-                      <br />
-                      <Button
-                        type="link"
-                        href={cert.fileUrl}
-                        target="_blank"
-                        icon={<EyeOutlined />}
-                      >
-                        View Certificate
-                      </Button>
-                    </div>
-                  }
-                />
-              </List.Item>
-            )}
-          />
-        </Card>
-      )}
     </div>
   );
 
@@ -782,6 +785,16 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           </span>
         ),
         children: renderProfileSummary(),
+      },
+      {
+        key: "document",
+        label: (
+          <span>
+            <FilePdfOutlined />
+            Documents
+          </span>
+        ),
+        children: renderDocuments(),
       },
       {
         key: "personal",

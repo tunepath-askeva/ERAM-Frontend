@@ -15,6 +15,7 @@ import {
   DatePicker,
   Pagination,
   Divider,
+  Collapse,
 } from "antd";
 import {
   PlusOutlined,
@@ -37,6 +38,7 @@ import SkeletonLoader from "../../Global/SkeletonLoader";
 const { Search } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+const { Panel } = Collapse;
 
 const RecruiterRequisition = () => {
   const navigate = useNavigate();
@@ -53,6 +55,8 @@ const RecruiterRequisition = () => {
   const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [requisitionToDelete, setRequisitionToDelete] = useState(null);
+  const [activeKeys, setActiveKeys] = useState([]);
+
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
@@ -416,6 +420,38 @@ const RecruiterRequisition = () => {
       font-size: 12px;
       margin-top: 4px;
     }
+       .ant-collapse-header {                        // ADD FROM HERE
+    background-color: #fafafa !important;
+    font-weight: 600 !important;
+  }
+  .ant-collapse-content-box {
+    padding: 16px !important;
+  }
+  .collapse-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-right: 24px;
+  }
+  .collapse-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .collapse-header-title {
+    font-size: 15px;
+    color: #da2c46;
+    font-weight: 600;
+  }
+  .collapse-header-stats {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }                                              // TO HERE
+  .requisition-group-card {
+    margin-bottom: 16px;
+  }
     .requisition-group-card {
       margin-bottom: 16px;
     }
@@ -607,70 +643,80 @@ const RecruiterRequisition = () => {
                   : "No requisitions available"}
               </div>
             ) : (
-              groupedRequisitions.map((group) => (
-                <Card
-                  key={group.key}
-                  className="requisition-group-card"
-                  size="small"
-                >
-                  <div className="requisition-group-header">
-                    <div className="group-title">
-                      Requisition.No: {group.requisitionNo || "N/A"}
-                    </div>
-                    <div className="group-title">
-                      Reference.No: {group.referenceNo || "N/A"}
-                    </div>
-                    <div className="group-subtitle">
-                      <span>
-                        <strong>Client:</strong>{" "}
-                        {clients.find((c) => c.id === group.client)?.name ||
-                          "N/A"}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        <strong>Project:</strong> {group.project?.name || "N/A"}
-                      </span>
-                    </div>
-                    <div className="group-stats">
-                      <Tag color="blue">
-                        {group.count} Position{group.count > 1 ? "s" : ""}
-                      </Tag>
-                      {(() => {
-                        const statusCounts = group.positions.reduce(
-                          (acc, pos) => {
-                            const status = pos.isActive || "draft";
-                            acc[status] = (acc[status] || 0) + 1;
-                            return acc;
-                          },
-                          {}
-                        );
-
-                        return Object.entries(statusCounts).map(
-                          ([status, count]) => (
-                            <Tag
-                              key={status}
-                              color={getStatusColor(status)}
-                              size="small"
-                            >
-                              {formatStatusText(status)}: {count}
+              <Collapse
+                activeKey={activeKeys}
+                onChange={setActiveKeys}
+                style={{ backgroundColor: "transparent", border: "none" }}
+              >
+                {groupedRequisitions.map((group) => (
+                  <Panel
+                    key={group.key}
+                    header={
+                      <div className="collapse-header-content">
+                        <div className="collapse-header-left">
+                          <div className="collapse-header-title">
+                            Requisition No: {group.requisitionNo || "N/A"} |
+                            Reference No: {group.referenceNo || "N/A"}
+                          </div>
+                          <div className="group-subtitle">
+                            <span>
+                              <strong>Client:</strong>{" "}
+                              {clients.find((c) => c.id === group.client)
+                                ?.name || "N/A"}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              <strong>Project:</strong>{" "}
+                              {group.project?.name || "N/A"}
+                            </span>
+                          </div>
+                          <div className="collapse-header-stats">
+                            <Tag color="blue">
+                              {group.count} Position{group.count > 1 ? "s" : ""}
                             </Tag>
-                          )
-                        );
-                      })()}
-                    </div>
-                  </div>
+                            {(() => {
+                              const statusCounts = group.positions.reduce(
+                                (acc, pos) => {
+                                  const status = pos.isActive || "draft";
+                                  acc[status] = (acc[status] || 0) + 1;
+                                  return acc;
+                                },
+                                {}
+                              );
 
-                  <Table
-                    columns={positionColumns}
-                    dataSource={group.positions}
-                    pagination={false}
-                    size="small"
-                    rowKey="key"
-                    scroll={{ x: 1000 }}
-                    style={{ marginTop: 0 }}
-                  />
-                </Card>
-              ))
+                              return Object.entries(statusCounts).map(
+                                ([status, count]) => (
+                                  <Tag
+                                    key={status}
+                                    color={getStatusColor(status)}
+                                    size="small"
+                                  >
+                                    {formatStatusText(status)}: {count}
+                                  </Tag>
+                                )
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    style={{
+                      marginBottom: 16,
+                      borderRadius: "8px",
+                      border: "1px solid #d9d9d9",
+                    }}
+                  >
+                    <Table
+                      columns={positionColumns}
+                      dataSource={group.positions}
+                      pagination={false}
+                      size="small"
+                      rowKey="key"
+                      scroll={{ x: 1000 }}
+                    />
+                  </Panel>
+                ))}
+              </Collapse>
             )}
           </div>
 

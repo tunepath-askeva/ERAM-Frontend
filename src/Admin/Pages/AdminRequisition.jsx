@@ -18,6 +18,7 @@ import {
   Col,
   Divider,
   Select,
+  Collapse,
 } from "antd";
 import {
   PlusOutlined,
@@ -43,6 +44,7 @@ import SkeletonLoader from "../../Global/SkeletonLoader";
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 const AdminRequisition = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +57,7 @@ const AdminRequisition = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeKeys, setActiveKeys] = useState([]);
 
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -142,14 +145,14 @@ const AdminRequisition = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setPagination((prev) => ({ ...prev, current: 1 })); // Reset to page 1 on search
+      setPagination((prev) => ({ ...prev, current: 1 }));
     }, 700);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const handleCreateWorkOrder = (requisition) => {
-    console.log("Creating work order for requisition:", requisition); // Debug log
+    console.log("Creating work order for requisition:", requisition);
 
     navigate(`/admin/add-workorder`, {
       state: {
@@ -296,7 +299,6 @@ const AdminRequisition = () => {
         </Tag>
       ),
     },
-
     {
       title: "Status",
       dataIndex: "status",
@@ -379,33 +381,12 @@ const AdminRequisition = () => {
   ];
 
   const customStyles = `
-    .requisition-group-card {
-      margin-bottom: 16px;
+    .ant-collapse-header {
+      background-color: #fafafa !important;
+      font-weight: 600 !important;
     }
-    .requisition-group-header {
-      padding: 12px 16px;
-      margin: -16px -16px 16px -16px;
-      border-radius: 6px 6px 0 0;
-      border-bottom: 1px solid #d9d9d9;
-      background-color: #fafafa;
-    }
-    .group-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #da2c46;
-      margin-bottom: 4px;
-    }
-    .group-subtitle {
-      font-size: 12px;
-      color: #666;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .group-stats {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
+    .ant-collapse-content-box {
+      padding: 16px !important;
     }
     .ant-btn-primary {
       background-color: #da2c46 !important;
@@ -414,6 +395,28 @@ const AdminRequisition = () => {
     .ant-btn-primary:hover {
       background-color: #c2253d !important;
       border-color: #c2253d !important;
+    }
+    .collapse-header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-right: 24px;
+    }
+    .collapse-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .collapse-header-title {
+      font-size: 15px;
+      color: #da2c46;
+      font-weight: 600;
+    }
+    .collapse-header-stats {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
     }
   `;
 
@@ -602,7 +605,7 @@ const AdminRequisition = () => {
           )}
         </div>
 
-        {/* Grouped Requisitions Display */}
+        {/* Grouped Requisitions with Collapse */}
         <Card
           style={{
             borderRadius: "12px",
@@ -612,7 +615,7 @@ const AdminRequisition = () => {
           }}
         >
           {isLoading ? (
-            <div >
+            <div>
               <SkeletonLoader />
             </div>
           ) : groupedRequisitions.length === 0 ? (
@@ -633,50 +636,59 @@ const AdminRequisition = () => {
               }
             />
           ) : (
-            <>
+            <Collapse
+              activeKey={activeKeys}
+              onChange={setActiveKeys}
+              style={{ backgroundColor: "transparent", border: "none" }}
+            >
               {groupedRequisitions.map((group) => (
-                <Card
+                <Panel
                   key={group.key}
-                  className="requisition-group-card"
-                  size="small"
+                  header={
+                    <div className="collapse-header-content">
+                      <div className="collapse-header-left">
+                        <div className="collapse-header-title">
+                          Requisition No: {group.requisitionNo || "N/A"} | 
+                          Reference No: {group.referenceNo || "N/A"}
+                        </div>
+                        <div className="collapse-header-stats">
+                          <Tag color="blue">
+                            {group.count} Position{group.count > 1 ? "s" : ""}
+                          </Tag>
+                          {(() => {
+                            const statusCounts = group.positions.reduce(
+                              (acc, pos) => {
+                                const status = pos.status || "draft";
+                                acc[status] = (acc[status] || 0) + 1;
+                                return acc;
+                              },
+                              {}
+                            );
+
+                            return Object.entries(statusCounts).map(
+                              ([status, count]) => (
+                                <Tag
+                                  key={status}
+                                  color={getStatusColor(status)}
+                                  size="small"
+                                >
+                                  {status.charAt(0).toUpperCase() +
+                                    status.slice(1)}
+                                  : {count}
+                                </Tag>
+                              )
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  style={{
+                    marginBottom: 16,
+                    borderRadius: "8px",
+                    border: "1px solid #d9d9d9",
+                  }}
                 >
-                  <div className="requisition-group-header">
-                    <div className="group-title">
-                      Requisition.No: {group.requisitionNo || "N/A"}
-                    </div>
-                    <div className="group-title">
-                      Reference.No: {group.referenceNo || "N/A"}
-                    </div>
-                    <div className="group-stats">
-                      <Tag color="blue">
-                        {group.count} Position{group.count > 1 ? "s" : ""}
-                      </Tag>
-                      {(() => {
-                        const statusCounts = group.positions.reduce(
-                          (acc, pos) => {
-                            const status = pos.status || "draft";
-                            acc[status] = (acc[status] || 0) + 1;
-                            return acc;
-                          },
-                          {}
-                        );
-
-                        return Object.entries(statusCounts).map(
-                          ([status, count]) => (
-                            <Tag
-                              key={status}
-                              color={getStatusColor(status)}
-                              size="small"
-                            >
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
-                              : {count}
-                            </Tag>
-                          )
-                        );
-                      })()}
-                    </div>
-                  </div>
-
                   <Table
                     columns={positionColumns}
                     dataSource={group.positions}
@@ -685,9 +697,9 @@ const AdminRequisition = () => {
                     rowKey="key"
                     scroll={{ x: 1000 }}
                   />
-                </Card>
+                </Panel>
               ))}
-            </>
+            </Collapse>
           )}
 
           {/* Pagination */}
@@ -731,7 +743,7 @@ const AdminRequisition = () => {
             Close
           </Button>,
           ...(selectedRequisition?.originalData?.convertedToWorkorder
-            ? [] // if converted, no button
+            ? []
             : [
                 <Button
                   key="create-work-order"
