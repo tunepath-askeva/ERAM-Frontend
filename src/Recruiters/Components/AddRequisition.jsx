@@ -85,12 +85,35 @@ const AddRequisition = ({ onNavigateBack }) => {
     setCommonFields((prev) => {
       const updated = { ...prev, [field]: value };
 
-      // Auto-generate requisition number when project is selected
-      if (field === "project" && value) {
-        const randomDigits = Math.floor(10000 + Math.random() * 90000); // 5 digits
-        updated.requisitionNo = `REQ${randomDigits}`;
+      // When client is selected
+      if (field === "client" && value) {
+        const selectedClient = clients.find((c) => c.id === value);
+        if (selectedClient) {
+          const prefix = selectedClient.name
+            .replace(/\s+/g, "")
+            .substring(0, 5)
+            .toUpperCase();
+          const randomDigits = Math.floor(10000 + Math.random() * 90000);
+          updated.requisitionNo = `${prefix}${randomDigits}`;
+        }
       }
 
+      // When project changes — regenerate using the selected client (if any)
+      if (field === "project" && value) {
+        const clientId = updated.client || form.getFieldValue("client");
+        const selectedClient = clients.find((c) => c.id === clientId);
+        if (selectedClient) {
+          const prefix = selectedClient.name
+            .replace(/\s+/g, "")
+            .substring(0, 5)
+            .toUpperCase();
+          const randomDigits = Math.floor(10000 + Math.random() * 90000);
+          updated.requisitionNo = `${prefix}${randomDigits}`;
+        }
+      }
+
+      // Update form fields
+      form.setFieldsValue(updated);
       return updated;
     });
   };
@@ -421,11 +444,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                       },
                     ]}
                   >
-                    <Input
-                      placeholder="Auto Generated"
-                      value={commonFields.requisitionNo}
-                      readOnly
-                    />
+                    <Input placeholder="Auto Generated" readOnly />
                   </Form.Item>
                 </Col>
                 <Col span={6}>

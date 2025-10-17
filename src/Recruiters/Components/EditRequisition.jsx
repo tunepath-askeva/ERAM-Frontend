@@ -135,19 +135,48 @@ const EditRequisition = () => {
     }
   };
 
+  const handleClientChange = (value) => {
+    const selectedClient = clients.find((c) => c.id === value);
+    form.setFieldsValue({ client: value });
+
+    if (selectedClient) {
+      // Generate prefix from first 5 letters of client name (uppercase)
+      const prefix = selectedClient.name
+        .replace(/\s+/g, "") // remove spaces
+        .substring(0, 5)
+        .toUpperCase();
+
+      // Generate random 5 digits
+      const randomDigits = Math.floor(10000 + Math.random() * 90000);
+      const newReqNo = `${prefix}${randomDigits}`;
+
+      form.setFieldsValue({ requisitionNo: newReqNo });
+    }
+  };
+
   const handleProjectChange = (value) => {
-  // Generate a new requisition number whenever project changes
-  const randomDigits = Math.floor(10000 + Math.random() * 90000); // 5 random digits
-  const newReqNo = `REQ${randomDigits}`;
+    const clientValue = form.getFieldValue("client");
 
-  // Update both the project and requisition number fields in the form
-  form.setFieldsValue({
-    project: value,
-    requisitionNo: newReqNo,
-  });
-};
+    // Only generate requisition number if a client is already selected
+    if (clientValue) {
+      const selectedClient = clients.find((c) => c.id === clientValue);
+      const prefix =
+        selectedClient?.name
+          ?.replace(/\s+/g, "")
+          ?.substring(0, 5)
+          ?.toUpperCase() || "GEN";
 
+      const randomDigits = Math.floor(10000 + Math.random() * 90000);
+      const newReqNo = `${prefix}${randomDigits}`;
 
+      form.setFieldsValue({
+        project: value,
+        requisitionNo: newReqNo,
+      });
+    } else {
+      form.setFieldsValue({ project: value });
+    }
+  };
 
   const customStyles = `
     .ant-btn-primary {
@@ -198,7 +227,7 @@ const EditRequisition = () => {
                       { required: true, message: "Please select a client" },
                     ]}
                   >
-                    <Select placeholder="Select Client">
+                    <Select placeholder="Select Client" onChange={handleClientChange}>
                       {clients.map((client) => (
                         <Option key={client.id} value={client.id}>
                           {client.name}
@@ -209,7 +238,10 @@ const EditRequisition = () => {
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Project" name="project">
-                    <Select placeholder="Select Project"  onChange={(value) => handleProjectChange(value)}>
+                    <Select
+                      placeholder="Select Project"
+                      onChange={(value) => handleProjectChange(value)}
+                    >
                       {projects.map((project) => (
                         <Option key={project.id} value={project.id}>
                           {project.name}
@@ -229,7 +261,7 @@ const EditRequisition = () => {
                       },
                     ]}
                   >
-                     <Input placeholder="Auto Generated" readOnly />
+                    <Input placeholder="Auto Generated" readOnly />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
@@ -309,7 +341,7 @@ const EditRequisition = () => {
                         message: "Please select an approval member",
                       },
                     ]}
-                  >      
+                  >
                     <Select
                       mode="multiple"
                       placeholder="Select member for approval"
