@@ -2104,6 +2104,24 @@ const RecruiterCandidates = () => {
                           )}
                         </Descriptions.Item>
 
+                        <Descriptions.Item label="Signed Offer Letter">
+                          {candidate.offerDetails?.[0]?.offerDocument
+                            ?.fileUrl ? (
+                            <a
+                              href={
+                                candidate.offerDetails[0].signedOfferDocument.fileUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {candidate.offerDetails[0].signedOfferDocument
+                                .fileName || "Download Offer Letter"}
+                            </a>
+                          ) : (
+                            "No file uploaded"
+                          )}
+                        </Descriptions.Item>
+
                         {candidate.offerDetails?.[0]?.statusHistory?.length >
                           0 && (
                           <Descriptions.Item label="Status History">
