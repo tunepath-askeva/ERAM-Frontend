@@ -175,11 +175,12 @@ const AddWorkOrder = () => {
     if (!project || !project.prefix) return null;
 
     try {
-      const { data } = await getJobCodes(project.prefix).unwrap();
+      const { latestNumber, latestJobCode } = await getJobCodes(
+        project.prefix
+      ).unwrap();
 
-      if (data && data.lastCode) {
-        const lastNumber = parseInt(data.lastCode.split("-")[1]) || 0;
-        const nextNumber = lastNumber + 1;
+      if (latestNumber && latestJobCode) {
+        const nextNumber = latestNumber + 1;
         const formattedNumber = nextNumber.toString().padStart(5, "0");
         return `${project.prefix}-${formattedNumber}`;
       } else {

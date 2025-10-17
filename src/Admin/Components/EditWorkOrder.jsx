@@ -22,6 +22,7 @@ import {
   Spin,
   Modal,
   Skeleton,
+  Breadcrumb,
 } from "antd";
 import {
   PlusOutlined,
@@ -34,6 +35,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   LoadingOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import CreatePipelineModal from "./CreatePipelineModal.jsx";
@@ -120,7 +122,7 @@ const EditWorkOrder = () => {
     includePagination: false,
   });
   const [editWorkOrder] = useEditWorkOrderMutation();
-  const [getJobCodes] = useLazyGetJobCodesByProjectQuery ();
+  const [getJobCodes] = useLazyGetJobCodesByProjectQuery();
 
   const branchId = Branch?.branch?._id;
 
@@ -1901,6 +1903,24 @@ const EditWorkOrder = () => {
       <div
         style={{ padding: "16px 8px", maxWidth: "1200px", margin: "0 auto" }}
       >
+        <div style={{ marginBottom: "18px" }}>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Button
+                type="link"
+                onClick={() => navigate(-1)}
+                icon={<LeftOutlined />}
+                style={{
+                  paddingLeft: 0,
+                  color: "#da2c46",
+                }}
+              >
+                Back to Jobs
+              </Button>
+            </Breadcrumb.Item>
+          </Breadcrumb>
+        </div>
+
         <Steps
           current={currentStep}
           style={{ marginBottom: "24px" }}
