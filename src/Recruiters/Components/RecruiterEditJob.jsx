@@ -307,6 +307,8 @@ const RecruiterEditJob = () => {
           nationality: job.nationality,
           visacategory: job.visacategory,
           visacategorytype: job.visacategorytype,
+          isCommon: job.isCommon || false,
+          isSalaryVisible: job.isSalaryVisible || false,
         };
 
         jobForm.setFieldsValue(formData);
@@ -887,6 +889,8 @@ const RecruiterEditJob = () => {
       const updatePayload = {
         ...jobData,
         ...values,
+        isCommon: Boolean(values.isCommon),
+        isSalaryVisible: Boolean(values.isSalaryVisible),
         customFields: applicationFields,
         documents: allDocuments,
         pipelineStageTimeline,
@@ -2859,13 +2863,35 @@ const RecruiterEditJob = () => {
               </Col>
             </Row>
 
-            <Form.Item
-              name="alertDate"
-              label="Alert Date (optional)"
-              help="Set a date to receive reminders about this job posting"
-            >
-              <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={10}>
+                <Form.Item
+                  name="alertDate"
+                  label="Alert Date (optional)"
+                  help="Set a date to receive reminders about this job posting"
+                >
+                  <DatePicker style={{ width: "100%" }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Form.Item
+                  name="isCommon"
+                  label="Common Work Order"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Form.Item
+                  name="isSalaryVisible"
+                  label="Show Salary"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+              </Col>
+            </Row>
 
             <Card
               type="inner"

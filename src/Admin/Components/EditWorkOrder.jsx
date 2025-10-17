@@ -246,6 +246,7 @@ const EditWorkOrder = () => {
           keyResponsibilities:
             workOrder.keyResponsibilities || "Responsibilities",
           isCommon: workOrder.isCommon || false,
+          isSalaryVisible: workOrder.isSalaryVisible || false,
           isActive: workOrder.isActive === "active",
           benefits: benefits,
         };
@@ -1946,6 +1947,7 @@ const EditWorkOrder = () => {
             layout="vertical"
             initialValues={{
               isCommon: false,
+              isSalaryVisible: false,
             }}
           >
             {/* Job Title and Project Assignment */}
@@ -2410,17 +2412,33 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} md={12}>
+                <Col xs={24} md={8}>
                   <Form.Item
-                    name="isActive"
-                    label="Active Status"
+                    name="isCommon"
+                    label="Common Workorder"
                     valuePropName="checked"
                   >
                     <Switch
-                      checked={workOrderData?.workOrder?.isActive === "active"}
+                      checked={workOrderData?.workOrder?.isCommon === true}
                       onChange={(checked) => {
                         jobForm.setFieldsValue({
-                          isActive: checked ? "active" : "inactive",
+                          isCommon: checked ? true : false,
+                        });
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="isSalaryVisible"
+                    label="Show Salary"
+                    valuePropName="checked"
+                  >
+                    <Switch
+                      checked={workOrderData?.workOrder?.isSalaryVisible === true}
+                      onChange={(checked) => {
+                        jobForm.setFieldsValue({
+                          isSalaryVisible: checked ? true : false,
                         });
                       }}
                     />

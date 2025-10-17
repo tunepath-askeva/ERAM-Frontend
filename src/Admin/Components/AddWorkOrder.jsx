@@ -208,107 +208,118 @@ const AddWorkOrder = () => {
   };
 
   useEffect(() => {
-    if (
-      location.state?.requisitionData &&
-      !hasLoadedRequisition &&
-      activeProjects.length > 0
-    ) {
-      const reqData = location.state.requisitionData;
-      setIsPrefilled(true);
-
-      setIsRequisitionBased(true);
-      setRequisitionData({
-        requisitionId: reqData._id,
-        requisitionNo: reqData.requisitionNo,
-        referenceNo: reqData.referenceNo,
-      });
-
-      // Parse dates properly
-      const startDate = reqData.startDate ? dayjs(reqData.startDate) : dayjs();
-      const endDate = reqData.endDate
-        ? dayjs(reqData.endDate)
-        : startDate.add(30, "day");
-      const alertDate = reqData.alertDate
-        ? dayjs(reqData.alertDate)
-        : startDate.add(7, "day");
-      const deadlineDate = reqData.deadlineDate
-        ? dayjs(reqData.deadlineDate)
-        : startDate.add(14, "day");
-
-      // Verify the project still exists in active projects
-      const project = activeProjects.find((p) => p._id === reqData.project._id);
-
-      if (project) {
-        setSelectedProject(reqData.project._id);
-      } else {
-        // Handle case where project is not found or inactive
-        console.warn("Project from requisition not found in active projects");
-        enqueueSnackbar("Project from requisition is no longer active", {
-          variant: "warning",
-        });
-      }
-
-      // Generate job code with project prefix
-      let finalJobCode = reqData.requisitionNo || "";
+    const loadRequisitionData = async () => {
       if (
-        project &&
-        project.prefix &&
-        !finalJobCode.startsWith(project.prefix)
+        location.state?.requisitionData &&
+        !hasLoadedRequisition &&
+        activeProjects.length > 0
       ) {
-        finalJobCode = `${project.prefix}-${finalJobCode}`;
-      }
+        const reqData = location.state.requisitionData;
+        setIsPrefilled(true);
+        setIsRequisitionBased(true);
+        setRequisitionData({
+          requisitionId: reqData._id,
+          requisitionNo: reqData.requisitionNo,
+          referenceNo: reqData.referenceNo,
+        });
 
-      // Set form values with all available data from API response
-      jobForm.setFieldsValue({
-        title: reqData.title,
-        description: reqData.description,
-        companyIndustry: reqData.companyIndustry,
-        officeLocation: reqData.officeLocation,
-        EmploymentType: reqData.EmploymentType,
-        experienceMin: reqData.experienceMin,
-        experienceMax: reqData.experienceMax,
-        salaryMin: reqData.salaryMin,
-        salaryMax: reqData.salaryMax,
-        workplace: reqData.workplace,
-        requiredSkills: reqData.requiredSkills || [],
-        numberOfCandidate: reqData.numberOfCandidate,
-        nationality: reqData.nationality,
-        startDate: startDate,
-        endDate: endDate,
-        alertDate: alertDate,
-        deadlineDate: deadlineDate,
-        keyResponsibilities: reqData.keyResponsibilities,
-        jobRequirements: reqData.jobRequirements,
-        qualification: reqData.qualification,
-        benefits: Array.isArray(reqData.benefits)
-          ? reqData.benefits.join("\n")
-          : reqData.benefits,
-        client: reqData.client._id,
-        project: reqData.project._id,
-        jobFunction: reqData.jobFunction,
-        salaryType: reqData.salaryType || "monthly",
-        visacategorytype: reqData.visacategorytype || "any",
-        visacategory: reqData.visacategory,
-        Education: reqData.Education,
-        languagesRequired: reqData.languagesRequired || [],
-        jobCode: finalJobCode,
-        // Set assigned recruiters from requisition data
-        assignedId: reqData.assignedRecruiters || reqData.recruiters || [],
-      });
+        // Parse dates properly
+        const startDate = reqData.startDate
+          ? dayjs(reqData.startDate)
+          : dayjs();
+        const endDate = reqData.endDate
+          ? dayjs(reqData.endDate)
+          : startDate.add(30, "day");
+        const alertDate = reqData.alertDate
+          ? dayjs(reqData.alertDate)
+          : startDate.add(7, "day");
+        const deadlineDate = reqData.deadlineDate
+          ? dayjs(reqData.deadlineDate)
+          : startDate.add(14, "day");
 
-      // Handle required documents if available
-      if (reqData.requiredDocuments && reqData.requiredDocuments.length > 0) {
-        const documentsWithIds = reqData.requiredDocuments.map(
-          (doc, index) => ({
-            ...doc,
-            id: doc.id || `req_doc_${Date.now()}_${index}`,
-          })
+        // Verify the project still exists in active projects
+        const project = activeProjects.find(
+          (p) => p._id === reqData.project._id
         );
-        setRequiredDocuments(documentsWithIds);
-      }
 
-      setHasLoadedRequisition(true);
-    }
+        if (!project) {
+          console.warn("Project from requisition not found in active projects");
+          enqueueSnackbar("Project from requisition is no longer active", {
+            variant: "warning",
+          });
+          return;
+        }
+
+        setSelectedProject(reqData.project._id);
+
+        // Generate sequential job code from API
+        let finalJobCode = reqData.requisitionNo || "";
+        if (project && project.prefix) {
+          try {
+            const generatedCode = await generateJobCode(project._id);
+            if (generatedCode) finalJobCode = generatedCode;
+          } catch (error) {
+            console.error(
+              "Failed to generate job code, falling back to requisitionNo",
+              error
+            );
+            finalJobCode = `${project.prefix}-${finalJobCode}`;
+          }
+        }
+
+        // Set form values with all available data from API response
+        jobForm.setFieldsValue({
+          title: reqData.title,
+          description: reqData.description,
+          companyIndustry: reqData.companyIndustry,
+          officeLocation: reqData.officeLocation,
+          EmploymentType: reqData.EmploymentType,
+          experienceMin: reqData.experienceMin,
+          experienceMax: reqData.experienceMax,
+          salaryMin: reqData.salaryMin,
+          salaryMax: reqData.salaryMax,
+          workplace: reqData.workplace,
+          requiredSkills: reqData.requiredSkills || [],
+          numberOfCandidate: reqData.numberOfCandidate,
+          nationality: reqData.nationality,
+          startDate: startDate,
+          endDate: endDate,
+          alertDate: alertDate,
+          deadlineDate: deadlineDate,
+          keyResponsibilities: reqData.keyResponsibilities,
+          jobRequirements: reqData.jobRequirements,
+          qualification: reqData.qualification,
+          benefits: Array.isArray(reqData.benefits)
+            ? reqData.benefits.join("\n")
+            : reqData.benefits,
+          client: reqData.client._id,
+          project: reqData.project._id,
+          jobFunction: reqData.jobFunction,
+          salaryType: reqData.salaryType || "monthly",
+          visacategorytype: reqData.visacategorytype || "any",
+          visacategory: reqData.visacategory,
+          Education: reqData.Education,
+          languagesRequired: reqData.languagesRequired || [],
+          jobCode: finalJobCode, // Use generated code here
+          assignedId: reqData.assignedRecruiters || reqData.recruiters || [],
+        });
+
+        // Handle required documents if available
+        if (reqData.requiredDocuments && reqData.requiredDocuments.length > 0) {
+          const documentsWithIds = reqData.requiredDocuments.map(
+            (doc, index) => ({
+              ...doc,
+              id: doc.id || `req_doc_${Date.now()}_${index}`,
+            })
+          );
+          setRequiredDocuments(documentsWithIds);
+        }
+
+        setHasLoadedRequisition(true);
+      }
+    };
+
+    loadRequisitionData();
   }, [
     location.state?.requisitionData,
     activeProjects.length,
@@ -2034,6 +2045,7 @@ const AddWorkOrder = () => {
             layout="vertical"
             initialValues={{
               isCommon: false,
+              isSalaryVisible: false,
               workplace: "on-site",
               EmploymentType: "full-time",
               salaryType: "monthly",
@@ -2537,10 +2549,19 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} md={12}>
+                <Col xs={24} md={8}>
                   <Form.Item
                     name="isCommon"
                     label="Common Work Order"
+                    valuePropName="checked"
+                  >
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="isSalaryVisible"
+                    label="Show salary"
                     valuePropName="checked"
                   >
                     <Switch />
