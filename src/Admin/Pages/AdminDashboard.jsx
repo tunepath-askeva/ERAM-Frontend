@@ -357,7 +357,7 @@ const AdminDashboard = () => {
             <Statistic
               title={
                 <span style={{ color: "rgba(255,255,255,0.8)" }}>
-                  Recruiters
+                  Recruitment Team Members
                 </span>
               }
               value={getCount("recruiter")}

@@ -107,7 +107,7 @@ const LowLevelCandidates = () => {
     };
   }, [search]);
 
-  const { data, isLoading } = useGetAllRecruiterCvsQuery({
+  const { data, isLoading, refetch } = useGetAllRecruiterCvsQuery({
     page,
     limit,
     search: debouncedSearch,
@@ -197,6 +197,7 @@ const LowLevelCandidates = () => {
     try {
       await importCvs(formData).unwrap();
       message.success("CVs imported successfully!");
+      refetch();
       setIsImportModalVisible(false);
       setFileList([]);
     } catch (error) {
@@ -532,6 +533,7 @@ const LowLevelCandidates = () => {
       message.success(`Deleted CV for ${record.name}`);
 
       const updatedCandidates = candidates.filter((c) => c.id !== record.id);
+      refetch();
       setCandidates(updatedCandidates);
       setFilteredCandidates(updatedCandidates);
       setDrawerVisible(false);
