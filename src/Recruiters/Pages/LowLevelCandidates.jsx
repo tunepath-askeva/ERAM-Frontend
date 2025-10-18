@@ -22,6 +22,7 @@ import {
   Menu,
   Modal,
   Divider,
+  Upload,
 } from "antd";
 import {
   SearchOutlined,
@@ -40,6 +41,8 @@ import {
   UserAddOutlined,
   ImportOutlined,
   ExportOutlined,
+  UploadOutlined,
+  FileExcelOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import {
@@ -48,6 +51,7 @@ import {
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
   useExportRecruiterCvsMutation,
+  useImportRecruiterCvsMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import ConvertToCandidateModal from "../Components/ConvertToCandidatModal";
@@ -78,7 +82,10 @@ const LowLevelCandidates = () => {
   const [remarksText, setRemarksText] = useState("");
   const [convertModalVisible, setConvertModalVisible] = useState(false);
   const [candidateToConvert, setCandidateToConvert] = useState(null);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [fileList, setFileList] = useState([]);
   const [candidateConverting] = useConvertToCandidateMutation();
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -112,6 +119,9 @@ const LowLevelCandidates = () => {
   const [exportCvs, { isLoading: isExporting }] =
     useExportRecruiterCvsMutation();
 
+  const [importCvs, { isLoading: isImporting }] =
+    useImportRecruiterCvsMutation();
+
   const [addRemarks, { isLoading: isAdding }] =
     useAddRemarksCvCandidatesMutation();
 
@@ -121,9 +131,9 @@ const LowLevelCandidates = () => {
         id: cv._id,
         name: cv.applicantName || `${cv.firstName} ${cv.lastName}`,
         email: cv.email,
-        fileName: cv.Resume?.[0]?.fileName || "N/A",
-        fileUrl: cv.Resume?.[0]?.fileUrl || "",
-        uploadDate: cv.Resume?.[0]?.uploadedAt || cv.createdAt,
+        fileName: cv.resume?.[0]?.fileName || "N/A",
+        fileUrl: cv.resume?.[0]?.fileUrl || "",
+        uploadDate: cv.resume?.[0]?.uploadedAt || cv.createdAt,
         domain: cv.branch || "N/A",
         jobTitle: cv.jobId?.title || "Common Apply",
         jobCode: cv.jobId?.jobCode || "Common Apply",
@@ -168,6 +178,30 @@ const LowLevelCandidates = () => {
       setConvertModalVisible(false);
     } catch (error) {
       message.error("Failed to convert candidate!");
+    }
+  };
+
+  const handleUploadChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList.slice(-1)); // keep only the latest file
+  };
+
+  const handleImportCvs = async () => {
+    if (fileList.length === 0) {
+      message.error("Please select an Excel file to upload!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileList[0].originFileObj);
+
+    try {
+      await importCvs(formData).unwrap();
+      message.success("CVs imported successfully!");
+      setIsImportModalVisible(false);
+      setFileList([]);
+    } catch (error) {
+      console.error(error);
+      message.error("Failed to import CVs!");
     }
   };
 
@@ -601,6 +635,7 @@ const LowLevelCandidates = () => {
             <Button
               icon={<ImportOutlined />}
               size={isMobile ? "middle" : "large"}
+              onClick={() => setIsImportModalVisible(true)}
               style={{
                 borderColor: "#da2c46",
                 color: "#da2c46",
@@ -956,6 +991,76 @@ const LowLevelCandidates = () => {
           onChange={(e) => setRemarksText(e.target.value)}
           placeholder="Enter remarks here..."
         />
+      </Modal>
+
+      <Modal
+        title="Import CVs"
+        open={isImportModalVisible}
+        onCancel={() => setIsImportModalVisible(false)}
+        onOk={handleImportCvs}
+        okText={isImporting ? "Importing..." : "Import"}
+        confirmLoading={isImporting}
+        okButtonProps={{
+          style: {
+            background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+            border: "none",
+            color: "#fff",
+          },
+        }}
+      >
+        <p style={{ marginBottom: 10 }}>
+          Upload an Excel file (.xlsx) in this format:
+          <br />
+          <strong>
+            Applicant Name, First Name, Last Name, Email, Resume File Name,
+            Resume File URL
+          </strong>
+        </p>
+
+        <Button
+          type="link"
+          icon={<FileExcelOutlined />}
+          onClick={() => {
+            const sampleData =
+              "Applicant Name,First Name,Last Name,Email,Resume File Name,Resume File URL\nJohn Doe,John,Doe,john@example.com,Resume.pdf,https://example.com/resume.pdf";
+            const blob = new Blob([sampleData], { type: "text/csv" });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "sample-cvs-template.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+          style={{ paddingLeft: 0 }}
+        >
+          Download Sample Template
+        </Button>
+
+        <Upload
+          accept=".xlsx"
+          beforeUpload={() => false} // prevent auto upload
+          fileList={fileList}
+          onChange={handleUploadChange}
+          maxCount={1}
+        >
+          <Button
+            icon={<UploadOutlined />}
+            style={{
+              borderColor: "#da2c46",
+              color: "#da2c46",
+              marginTop: 12,
+            }}
+          >
+            Select Excel File
+          </Button>
+        </Upload>
+
+        {fileList.length > 0 && (
+          <p style={{ marginTop: 12 }}>
+            <strong>Selected File:</strong> {fileList[0].name}
+          </p>
+        )}
       </Modal>
 
       <style jsx>{`

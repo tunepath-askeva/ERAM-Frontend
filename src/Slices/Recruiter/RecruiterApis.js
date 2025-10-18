@@ -666,6 +666,13 @@ export const recruiterApi = createApi({
         },
       }),
     }),
+    importRecruiterCvs: builder.mutation({
+      query: (formData) => ({
+        url: "/import-cvs",
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -735,5 +742,6 @@ export const {
   useGetLowLevelAppliedCandidatesByJobQuery,
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
-  useExportRecruiterCvsMutation
+  useExportRecruiterCvsMutation,
+  useImportRecruiterCvsMutation
 } = recruiterApi;
