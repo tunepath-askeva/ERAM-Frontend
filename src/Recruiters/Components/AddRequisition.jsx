@@ -801,7 +801,7 @@ const AddRequisition = ({ onNavigateBack }) => {
                       defaultValue="any"
                     >
                       <Option value="any">Any</Option>
-                      <Option value="relative">Relative</Option>
+                      <Option value="related">Relative</Option>
                       <Option value="same">Same</Option>
                     </Select>
                   </Form.Item>

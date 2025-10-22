@@ -368,7 +368,7 @@ const RecruiterCandidates = () => {
         id: selectedCandidate._id, 
         pipelineId: selectedNewPipeline, 
       }).unwrap();
-      
+
       message.success("Pipeline updated successfully!");
       setChangePipelineModalVisible(false);
 
@@ -1395,7 +1395,7 @@ const RecruiterCandidates = () => {
               />
             </Tooltip>
           )}
-          {hasPermission("send-messages") && (
+          {/* {hasPermission("send-messages") && (
             <Tooltip title="Send Message">
               <Button
                 type="text"
@@ -1404,7 +1404,7 @@ const RecruiterCandidates = () => {
                 onClick={() => handleSendMessage(record)}
               />
             </Tooltip>
-          )}
+          )} */}
           {(hasPermission("download-documents") ||
             getAvailableActions(record).length > 0) && (
             <Dropdown
@@ -1416,18 +1416,18 @@ const RecruiterCandidates = () => {
                     icon: <EyeOutlined style={iconTextStyle} />,
                     onClick: () => handleViewProfile(record),
                   },
-                  hasPermission("send-messages") && {
-                    key: "message",
-                    label: "Send Message",
-                    icon: <MessageOutlined style={iconTextStyle} />,
-                    onClick: () => handleSendMessage(record),
-                  },
-                  hasPermission("download-documents") && {
-                    key: "download",
-                    label: "Download Documents",
-                    icon: <DownloadOutlined style={iconTextStyle} />,
-                    onClick: () => handleDownloadResume(record),
-                  },
+                  // hasPermission("send-messages") && {
+                  //   key: "message",
+                  //   label: "Send Message",
+                  //   icon: <MessageOutlined style={iconTextStyle} />,
+                  //   onClick: () => handleSendMessage(record),
+                  // },
+                  // hasPermission("download-documents") && {
+                  //   key: "download",
+                  //   label: "Download Documents",
+                  //   icon: <DownloadOutlined style={iconTextStyle} />,
+                  //   onClick: () => handleDownloadResume(record),
+                  // },
                   ...(getAvailableActions(record).length > 0
                     ? [
                         {
@@ -1808,19 +1808,19 @@ const RecruiterCandidates = () => {
         width={window.innerWidth < 768 ? "100%" : 600}
         onClose={() => setCandidateDrawerVisible(false)}
         open={candidateDrawerVisible}
-        extra={
-          <Space>
-            <Button
-              icon={<MessageOutlined />}
-              onClick={() => {
-                setCandidateDrawerVisible(false);
-                handleSendMessage(selectedCandidate);
-              }}
-            >
-              Message
-            </Button>
-          </Space>
-        }
+        // extra={
+        //   <Space>
+        //     <Button
+        //       icon={<MessageOutlined />}
+        //       onClick={() => {
+        //         setCandidateDrawerVisible(false);
+        //         handleSendMessage(selectedCandidate);
+        //       }}
+        //     >
+        //       Message
+        //     </Button>
+        //   </Space>
+        // }
       >
         {isCandidateDetailsLoading || isCandidateDetailsFetching ? (
           <Skeleton tip="Loading candidate details..." />
@@ -2325,13 +2325,13 @@ const RecruiterCandidates = () => {
                                 <Text type="secondary">
                                   No separate pipeline tagged.
                                 </Text>
-                                <Button
+                                {/* <Button
                                   type="primary"
                                   size="small"
                                   onClick={handleChangePipeline}
                                 >
                                   Tag a Pipeline
-                                </Button>
+                                </Button> */}
                               </Space>
                             )}
                           </Card>
