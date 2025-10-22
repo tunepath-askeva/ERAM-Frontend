@@ -2091,7 +2091,8 @@ const RecruiterCandidates = () => {
                             ?.fileUrl ? (
                             <a
                               href={
-                                candidate?.offerDetails[0]?.offerDocument?.fileUrl
+                                candidate?.offerDetails[0]?.offerDocument
+                                  ?.fileUrl
                               }
                               target="_blank"
                               rel="noreferrer"
@@ -2109,7 +2110,8 @@ const RecruiterCandidates = () => {
                             ?.fileUrl ? (
                             <a
                               href={
-                                candidate?.offerDetails[0]?.signedOfferDocument?.fileUrl
+                                candidate?.offerDetails[0]?.signedOfferDocument
+                                  ?.fileUrl
                               }
                               target="_blank"
                               rel="noreferrer"
@@ -2299,14 +2301,34 @@ const RecruiterCandidates = () => {
                         {/* Pipeline Action Buttons */}
                         <Space>
                           {selectedCandidate.tagPipeline ? (
-                            <Button
-                              type="primary"
-                              style={{ background: "#da2c46", marginRight: 8 }}
-                              icon={<ArrowRightOutlined />}
-                              onClick={handleMoveToSeparatePipeline}
-                            >
-                              Move to Tagged Pipeline
-                            </Button>
+                            <>
+                              <Button
+                                type="primary"
+                                style={{
+                                  background: "#da2c46",
+                                  marginRight: 8,
+                                }}
+                                icon={<ArrowRightOutlined />}
+                                onClick={handleMoveToSeparatePipeline}
+                              >
+                                Move to Tagged Pipeline
+                              </Button>
+                              <Button
+                                type="primary"
+                                style={{
+                                  background: "#da2c46",
+                                  marginRight: 8,
+                                }}
+                                icon={<ArrowRightOutlined />}
+                                onClick={() =>
+                                  handleMoveCandidateToPipeline(
+                                    selectedCandidate
+                                  )
+                                }
+                              >
+                                Move to Work Order Pipeline
+                              </Button>
+                            </>
                           ) : (
                             <Button
                               type="primary"
