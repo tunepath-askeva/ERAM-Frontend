@@ -1521,10 +1521,11 @@ const AppliedJobDetails = () => {
     const interviewers = interview.interviewerIds || [];
 
     return (
-      <Card>
+      <>
         <Title level={4} style={{ marginBottom: "24px" }}>
           Interview Details
         </Title>
+
         {appliedJob.interviewDetails.map((interview, index) => {
           const interviewDate = new Date(interview.date);
 
@@ -1538,6 +1539,7 @@ const AppliedJobDetails = () => {
                 <Descriptions.Item label="Title">
                   {interview.title || "N/A"}
                 </Descriptions.Item>
+
                 <Descriptions.Item label="Status">
                   <Tag
                     color={
@@ -1553,17 +1555,54 @@ const AppliedJobDetails = () => {
                     {interview.status?.toUpperCase() || "PENDING"}
                   </Tag>
                 </Descriptions.Item>
+
                 <Descriptions.Item label="Date">
                   {interviewDate.toLocaleDateString()}
                 </Descriptions.Item>
+
                 <Descriptions.Item label="Time">
                   {interviewDate.toLocaleTimeString()}
                 </Descriptions.Item>
+
                 <Descriptions.Item label="Mode">
-                  <Tag color={interview.mode === "online" ? "blue" : "green"}>
+                  <Tag
+                    color={
+                      interview.mode === "online"
+                        ? "blue"
+                        : interview.mode === "telephonic"
+                        ? "orange"
+                        : "green"
+                    }
+                  >
                     {interview.mode?.toUpperCase() || "NOT SPECIFIED"}
                   </Tag>
                 </Descriptions.Item>
+
+                {/* Conditional fields based on interview mode */}
+                {interview.mode === "online" && interview.meetingLink && (
+                  <Descriptions.Item label="Meeting Link">
+                    <a
+                      href={interview.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Join Meeting
+                    </a>
+                  </Descriptions.Item>
+                )}
+
+                {interview.mode === "in-person" && interview.location && (
+                  <Descriptions.Item label="Location">
+                    {interview.location}
+                  </Descriptions.Item>
+                )}
+
+                {interview.mode === "telephonic" && (
+                  <Descriptions.Item label="Contact Method">
+                    Candidate will receive a phone call from the interviewer
+                  </Descriptions.Item>
+                )}
+
                 {interview.notes && (
                   <Descriptions.Item label="Notes">
                     <Text>{interview.notes}</Text>
@@ -1573,7 +1612,7 @@ const AppliedJobDetails = () => {
             </Card>
           );
         })}
-      </Card>
+      </>
     );
   };
 

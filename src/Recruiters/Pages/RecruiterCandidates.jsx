@@ -850,7 +850,7 @@ const RecruiterCandidates = () => {
       const firstStage = candidate.stageProgress[0];
       if (firstStage.uploadedDocuments?.length > 0) {
         const document = firstStage.uploadedDocuments[0];
-        window.open(document.fileUrl, "_blank");
+        window.open(document?.fileUrl, "_blank");
         message.success(`Downloading ${document.fileName}...`);
         return;
       }
@@ -2091,13 +2091,13 @@ const RecruiterCandidates = () => {
                             ?.fileUrl ? (
                             <a
                               href={
-                                candidate.offerDetails[0].offerDocument.fileUrl
+                                candidate?.offerDetails[0]?.offerDocument?.fileUrl
                               }
                               target="_blank"
                               rel="noreferrer"
                             >
-                              {candidate.offerDetails[0].offerDocument
-                                .fileName || "Download Offer Letter"}
+                              {candidate?.offerDetails[0]?.offerDocument
+                                ?.fileName || "Download Offer Letter"}
                             </a>
                           ) : (
                             "No file uploaded"
@@ -2109,13 +2109,13 @@ const RecruiterCandidates = () => {
                             ?.fileUrl ? (
                             <a
                               href={
-                                candidate.offerDetails[0].signedOfferDocument.fileUrl
+                                candidate?.offerDetails[0]?.signedOfferDocument?.fileUrl
                               }
                               target="_blank"
                               rel="noreferrer"
                             >
-                              {candidate.offerDetails[0].signedOfferDocument
-                                .fileName || "Download Offer Letter"}
+                              {candidate?.offerDetails[0]?.signedOfferDocument
+                                ?.fileName || "Download Offer Letter"}
                             </a>
                           ) : (
                             "No file uploaded"
