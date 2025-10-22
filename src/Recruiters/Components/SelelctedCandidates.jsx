@@ -202,13 +202,22 @@ const SelectedCandidates = ({ jobId }) => {
   };
 
   // Add new function to update status with pipeline
-  const updateStatusWithPipeline = async (candidate, newStatus, pipelineId) => {
+  const updateStatusWithPipeline = async (
+    candidate,
+    newStatus,
+    selectedPipelineId
+  ) => {
     try {
+      const pipelineToSend =
+        selectedPipelineId !== null && selectedPipelineId !== undefined
+          ? selectedPipelineId 
+          : candidate.tagPipelineId || ""; 
+
       await moveCandidateStatus({
         id: candidate.applicationId,
         status: newStatus,
-        jobId: jobId,
-        pipelineId: pipelineId,
+        jobId,
+        pipelineId: pipelineToSend, 
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
