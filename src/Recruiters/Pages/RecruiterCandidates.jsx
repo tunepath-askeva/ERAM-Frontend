@@ -70,6 +70,7 @@ import {
   useGetPipelineCompletedCandidateByIdQuery,
   useOfferInfoMutation,
   useUpdateTaggedPipelineMutation,
+  useGetPipelinesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
@@ -117,6 +118,9 @@ const RecruiterCandidates = () => {
   const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
     {}
   );
+  const [changePipelineModalVisible, setChangePipelineModalVisible] =
+    useState(false);
+  const [selectedNewPipeline, setSelectedNewPipeline] = useState(null);
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
   const [convertModalVisible, setConvertModalVisible] = useState(false);
@@ -162,6 +166,10 @@ const RecruiterCandidates = () => {
     useConvertEmployeeMutation();
   const [moveToPipeline, { isLoading: isMovingPipeline }] =
     useMoveToPipelineMutation();
+  const { data: pipelineData } = useGetPipelinesQuery();
+  const activePipelines = pipelineData?.pipelines || [];
+  const [updateTaggedPipeline, { isLoading: isUpdatingPipeline }] =
+    useUpdateTaggedPipelineMutation();
 
   const [offerInfo, { isLoading: isSubmittingOffer }] = useOfferInfoMutation();
 
@@ -342,6 +350,35 @@ const RecruiterCandidates = () => {
     setSelectedCandidate(candidate);
     setOfferModalVisible(true);
     offerForm.resetFields();
+  };
+
+  const handleChangePipeline = () => {
+    setChangePipelineModalVisible(true);
+    setSelectedNewPipeline(selectedCandidate?.tagPipeline?._id || null);
+  };
+
+  const handleUpdatePipeline = async () => {
+    if (!selectedNewPipeline) {
+      message.error("Please select a pipeline");
+      return;
+    }
+
+    try {
+      await updateTaggedPipeline({
+        id: selectedCandidate._id, 
+        pipelineId: selectedNewPipeline, 
+      }).unwrap();
+      
+      message.success("Pipeline updated successfully!");
+      setChangePipelineModalVisible(false);
+
+      // Refetch both queries
+      await refetch();
+      await refetchCandidateDetails();
+    } catch (error) {
+      message.error("Failed to update pipeline");
+      console.error("Update pipeline error:", error);
+    }
   };
 
   const handleMoveToOffer = async (candidate) => {
@@ -2232,26 +2269,53 @@ const RecruiterCandidates = () => {
                               borderRadius: 8,
                             }}
                           >
-                            {selectedCandidate.tagPipeline ? (
+                            {candidate?.tagPipelineId ? (
                               <Space
                                 direction="vertical"
                                 style={{ width: "100%" }}
                               >
-                                <Text strong>Tagged Pipeline:</Text>
-                                <Text>
-                                  {selectedCandidate.tagPipeline.name}
-                                </Text>
-                                <Button
-                                  type="link"
-                                  icon={<EyeOutlined />}
-                                  onClick={() =>
-                                    handleTagPipelineClick(
-                                      selectedCandidate.tagPipeline
-                                    )
-                                  }
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                  }}
                                 >
-                                  Configure Pipeline Details
-                                </Button>
+                                  <div>
+                                    <Text strong>Tagged Pipeline:</Text>
+                                    <br />
+                                    <Text>
+                                      {activePipelines.find(
+                                        (p) => p._id === candidate.tagPipelineId
+                                      )?.name || "Loading..."}
+                                    </Text>
+                                  </div>
+                                  <Button
+                                    type="default"
+                                    size="small"
+                                    onClick={handleChangePipeline}
+                                  >
+                                    Change Pipeline
+                                  </Button>
+                                </div>
+                                {activePipelines.find(
+                                  (p) => p._id === candidate.tagPipelineId
+                                ) && (
+                                  <Button
+                                    type="link"
+                                    icon={<EyeOutlined />}
+                                    onClick={() =>
+                                      handleTagPipelineClick(
+                                        activePipelines.find(
+                                          (p) =>
+                                            p._id === candidate.tagPipelineId
+                                        )
+                                      )
+                                    }
+                                  >
+                                    Configure Pipeline Details
+                                  </Button>
+                                )}
                               </Space>
                             ) : (
                               <Space
@@ -2259,18 +2323,31 @@ const RecruiterCandidates = () => {
                                 style={{ width: "100%" }}
                               >
                                 <Text type="secondary">
-                                  No seperate pipeline tagged.
+                                  No separate pipeline tagged.
                                 </Text>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  onClick={handleChangePipeline}
+                                >
+                                  Tag a Pipeline
+                                </Button>
                               </Space>
                             )}
                           </Card>
                         </div>
 
-                        {selectedCandidate.tagPipeline?.stages && (
+                        {activePipelines.find(
+                          (p) => p._id === candidate.tagPipelineId
+                        )?.stages && (
                           <div style={{ marginBottom: 16 }}>
                             <Title level={5}>Pipeline Stages</Title>
                             <List
-                              dataSource={selectedCandidate.tagPipeline.stages}
+                              dataSource={
+                                activePipelines.find(
+                                  (p) => p._id === candidate.tagPipelineId
+                                )?.stages || []
+                              }
                               renderItem={(stage, index) => (
                                 <List.Item>
                                   <List.Item.Meta
@@ -2325,14 +2402,11 @@ const RecruiterCandidates = () => {
 
                         {/* Pipeline Action Buttons */}
                         <Space>
-                          {selectedCandidate.tagPipeline ? (
+                          {candidate?.tagPipelineId ? (
                             <>
                               <Button
                                 type="primary"
-                                style={{
-                                  background: "#da2c46",
-                                  marginRight: 8,
-                                }}
+                                style={{ background: "#da2c46" }}
                                 icon={<ArrowRightOutlined />}
                                 onClick={handleMoveToSeparatePipeline}
                               >
@@ -2340,10 +2414,7 @@ const RecruiterCandidates = () => {
                               </Button>
                               <Button
                                 type="primary"
-                                style={{
-                                  background: "#da2c46",
-                                  marginRight: 8,
-                                }}
+                                style={{ background: "#da2c46" }}
                                 icon={<ArrowRightOutlined />}
                                 onClick={() =>
                                   handleMoveCandidateToPipeline(
@@ -2357,7 +2428,7 @@ const RecruiterCandidates = () => {
                           ) : (
                             <Button
                               type="primary"
-                              style={{ background: "#da2c46", marginRight: 8 }}
+                              style={{ background: "#da2c46" }}
                               icon={<ArrowRightOutlined />}
                               onClick={() =>
                                 handleMoveCandidateToPipeline(selectedCandidate)
@@ -3268,6 +3339,96 @@ const RecruiterCandidates = () => {
               <Button icon={<UploadOutlined />}>Click to Upload PDF</Button>
             </Upload>
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Change Tagged Pipeline"
+        open={changePipelineModalVisible}
+        onCancel={() => {
+          setChangePipelineModalVisible(false);
+          setSelectedNewPipeline(null);
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setChangePipelineModalVisible(false);
+              setSelectedNewPipeline(null);
+            }}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            style={buttonStyle}
+            loading={isUpdatingPipeline}
+            onClick={handleUpdatePipeline}
+          >
+            Update Pipeline
+          </Button>,
+        ]}
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary">
+            Select a new pipeline to tag for {selectedCandidate?.name}
+          </Text>
+        </div>
+
+        <Form layout="vertical">
+          <Form.Item label="Select Pipeline" required>
+            <Select
+              value={selectedNewPipeline}
+              onChange={setSelectedNewPipeline}
+              placeholder="Select a pipeline"
+              style={{ width: "100%" }}
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {activePipelines
+                .filter((pipeline) => pipeline.pipelineStatus === "active")
+                .map((pipeline) => (
+                  <Option key={pipeline._id} value={pipeline._id}>
+                    <div>
+                      <Text strong>{pipeline.name}</Text>
+                      {pipeline.description && (
+                        <>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {pipeline.description}
+                          </Text>
+                        </>
+                      )}
+                    </div>
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
+
+          {selectedNewPipeline && (
+            <Card size="small" style={{ background: "#f9f9f9" }}>
+              <Text strong>Pipeline Stages:</Text>
+              <List
+                size="small"
+                dataSource={
+                  activePipelines.find((p) => p._id === selectedNewPipeline)
+                    ?.stages || []
+                }
+                renderItem={(stage, index) => (
+                  <List.Item>
+                    <Text>
+                      {index + 1}. {stage.name}
+                    </Text>
+                  </List.Item>
+                )}
+              />
+            </Card>
+          )}
         </Form>
       </Modal>
 

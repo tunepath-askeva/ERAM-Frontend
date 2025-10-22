@@ -674,8 +674,8 @@ export const recruiterApi = createApi({
       }),
     }),
     updateTaggedPipeline: builder.mutation({
-      query: ({ candidateId, pipelineId }) => ({
-        url: `/candidates/${candidateId}/tagged-pipeline`,
+      query: ({ id, pipelineId }) => ({
+        url: `/tagged-pipeline/${id}`,
         method: "PATCH",
         body: { pipelineId },
       }),
