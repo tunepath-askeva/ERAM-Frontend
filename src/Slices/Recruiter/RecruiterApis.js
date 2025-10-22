@@ -673,6 +673,13 @@ export const recruiterApi = createApi({
         body: formData,
       }),
     }),
+    updateTaggedPipeline: builder.mutation({
+      query: ({ candidateId, pipelineId }) => ({
+        url: `/candidates/${candidateId}/tagged-pipeline`,
+        method: "PATCH",
+        body: { pipelineId },
+      }),
+    }),
   }),
 });
 
@@ -743,5 +750,6 @@ export const {
   useAddRemarksCvCandidatesMutation,
   useConvertToCandidateMutation,
   useExportRecruiterCvsMutation,
-  useImportRecruiterCvsMutation
+  useImportRecruiterCvsMutation,
+  useUpdateTaggedPipelineMutation
 } = recruiterApi;

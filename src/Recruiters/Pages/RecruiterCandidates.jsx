@@ -69,6 +69,7 @@ import {
   useMoveToPipelineMutation,
   useGetPipelineCompletedCandidateByIdQuery,
   useOfferInfoMutation,
+  useUpdateTaggedPipelineMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
@@ -2222,25 +2223,49 @@ const RecruiterCandidates = () => {
                           </Text>
                           <br />
 
-                          {selectedCandidate.tagPipeline ? (
-                            <>
-                              <Text strong>Tagged Pipeline: </Text>
-                              <Tag
-                                color="blue"
-                                style={{ marginTop: 8, cursor: "pointer" }}
-                                onClick={() =>
-                                  handleTagPipelineClick(
-                                    selectedCandidate.tagPipeline
-                                  )
-                                }
+                          <Card
+                            size="small"
+                            style={{
+                              marginTop: 8,
+                              background: "#f9f9f9",
+                              border: "1px dashed #1890ff",
+                              borderRadius: 8,
+                            }}
+                          >
+                            {selectedCandidate.tagPipeline ? (
+                              <Space
+                                direction="vertical"
+                                style={{ width: "100%" }}
                               >
-                                {selectedCandidate.tagPipeline.name}
-                              </Tag>
-                            </>
-                          ) : null}
+                                <Text strong>Tagged Pipeline:</Text>
+                                <Text>
+                                  {selectedCandidate.tagPipeline.name}
+                                </Text>
+                                <Button
+                                  type="link"
+                                  icon={<EyeOutlined />}
+                                  onClick={() =>
+                                    handleTagPipelineClick(
+                                      selectedCandidate.tagPipeline
+                                    )
+                                  }
+                                >
+                                  Configure Pipeline Details
+                                </Button>
+                              </Space>
+                            ) : (
+                              <Space
+                                direction="vertical"
+                                style={{ width: "100%" }}
+                              >
+                                <Text type="secondary">
+                                  No seperate pipeline tagged.
+                                </Text>
+                              </Space>
+                            )}
+                          </Card>
                         </div>
 
-                        {/* Pipeline Stages - show tagged pipeline stages if available */}
                         {selectedCandidate.tagPipeline?.stages && (
                           <div style={{ marginBottom: 16 }}>
                             <Title level={5}>Pipeline Stages</Title>
