@@ -93,7 +93,7 @@ const AddCandidateModal = ({
           value: code,
           label: `${country?.flag || ""} ${
             country?.name || `Country ${code}`
-          } (+${code})`,
+          } (${code})`,
           searchText: `${country?.name || ""} ${code}`.toLowerCase(),
         };
       })

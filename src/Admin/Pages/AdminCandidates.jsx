@@ -456,7 +456,7 @@ const AdminCandidates = () => {
           row["Country Code"]?.toString()?.trim().replace("+", "") || "91";
         const phoneNumber = row["Phone Number"]?.toString()?.trim() || "";
         const phone =
-          countryCode && phoneNumber ? `+${countryCode}${phoneNumber}` : "";
+          countryCode && phoneNumber ? `${countryCode}${phoneNumber}` : "";
 
         if (fullName && email && password) {
           candidates.push({

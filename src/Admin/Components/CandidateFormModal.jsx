@@ -56,7 +56,7 @@ const CandidateFormModal = ({
   const isLoading = isAdding || isEditing;
 
   const parsePhoneNumber = (fullPhone) => {
-    if (!fullPhone || !fullPhone.startsWith("+")) {
+    if (!fullPhone || !fullPhone.startsWith("")) {
       return { countryCode: "91", phoneNumber: fullPhone || "" };
     }
 
@@ -278,7 +278,7 @@ const CandidateFormModal = ({
           value: code,
           label: `${country?.flag || ""} ${
             country?.name || `Country ${code}`
-          } (+${code})`,
+          } (${code})`,
           searchText: `${country?.name || ""} ${code}`.toLowerCase(),
         };
       })

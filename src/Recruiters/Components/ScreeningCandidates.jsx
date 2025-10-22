@@ -56,6 +56,7 @@ import {
   useGetAllStaffsQuery,
   useMoveCandidateStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -1305,253 +1306,24 @@ const ScreeningCandidates = ({ jobId }) => {
                 Select all candidates on this page
               </Checkbox>
             </Card>
-
             {filteredCandidates
               .slice(
                 (pagination.current - 1) * pagination.pageSize,
                 pagination.current * pagination.pageSize
               )
               .map((candidate, index) => (
-                <div
+                <CandidateCard
                   key={candidate._id || index}
-                  style={{ marginBottom: "clamp(12px, 2vw, 16px)" }}
-                >
-                  <Card
-                    hoverable
-                    style={{
-                      padding: "clamp(16px, 3vw, 24px)",
-                      borderRadius: "12px",
-                    }}
-                    bodyStyle={{ padding: 0 }}
-                  >
-                    <Row align="middle" gutter={[16, 16]}>
-                      {/* Left side - Candidate Details */}
-                      <Col xs={24} md={18}>
-                        <Row align="top" gutter={[16, 12]}>
-                          {/* Checkbox Column */}
-                          <Col xs={2}>
-                            <Checkbox
-                              checked={selectedCandidates.includes(
-                                candidate._id
-                              )}
-                              onChange={(e) =>
-                                handleSelectCandidate(
-                                  candidate._id,
-                                  e.target.checked
-                                )
-                              }
-                            />
-                          </Col>
-
-                          {/* Main Details Column */}
-                          <Col xs={22}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                marginBottom: "clamp(8px, 1.5vw, 12px)",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  alignItems: "center",
-                                  gap: "8px 12px",
-                                }}
-                              >
-                                <Text
-                                  strong
-                                  style={{
-                                    fontSize: "clamp(16px, 1.8vw, 18px)",
-                                    lineHeight: 1.3,
-                                    marginRight: "8px",
-                                  }}
-                                >
-                                  {candidate.fullName}
-                                </Text>
-                                <Tag color="blue" style={{ margin: 0 }}>
-                                  {candidate.title}
-                                </Tag>
-                                <Text
-                                  type="secondary"
-                                  style={{
-                                    fontSize: "clamp(13px, 1.5vw, 14px)",
-                                  }}
-                                >
-                                  {candidate.totalExperienceYears || 0} years
-                                  exp
-                                </Text>
-                              </div>
-                            </div>
-
-                            {/* Company/Location Row */}
-                            <div
-                              style={{
-                                marginBottom: "clamp(8px, 1.5vw, 12px)",
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "8px 12px",
-                                alignItems: "center",
-                              }}
-                            >
-                              <Space size={4}>
-                                <BankOutlined
-                                  style={{ color: "#666", fontSize: "14px" }}
-                                />
-                                <Text
-                                  style={{
-                                    fontSize: "clamp(13px, 1.5vw, 14px)",
-                                  }}
-                                  ellipsis
-                                >
-                                  {candidate.currentCompany ||
-                                    candidate.workExperience?.[0]?.company ||
-                                    "Not specified"}
-                                </Text>
-                              </Space>
-
-                              <Divider
-                                type="vertical"
-                                style={{ margin: 0, height: "auto" }}
-                              />
-
-                              <Space size={4}>
-                                <EnvironmentOutlined
-                                  style={{ color: "#666", fontSize: "14px" }}
-                                />
-                                <Text
-                                  style={{
-                                    fontSize: "clamp(13px, 1.5vw, 14px)",
-                                  }}
-                                >
-                                  {candidate.location}
-                                </Text>
-                              </Space>
-
-                              <Divider
-                                type="vertical"
-                                style={{ margin: 0, height: "auto" }}
-                              />
-
-                              <Tag
-                                color={getScreeningStatusColor(
-                                  candidate.candidateStatus
-                                )}
-                              >
-                                {candidate.candidateStatus?.toUpperCase() ||
-                                  "SCREENING"}
-                              </Tag>
-                            </div>
-
-                            {/* Skills Section */}
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "6px 8px",
-                                alignItems: "center",
-                              }}
-                            >
-                              <ToolOutlined
-                                style={{ color: "#666", fontSize: "14px" }}
-                              />
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: "clamp(13px, 1.5vw, 14px)" }}
-                              >
-                                Skills:
-                              </Text>
-                              {candidate.skills
-                                ?.slice(0, 5)
-                                .map((skill, index) => (
-                                  <Tag
-                                    key={index}
-                                    style={{
-                                      margin: 0,
-                                      fontSize: "clamp(12px, 1.3vw, 13px)",
-                                      padding: "2px 8px",
-                                    }}
-                                  >
-                                    {skill}
-                                  </Tag>
-                                ))}
-                              {candidate.skills?.length > 5 && (
-                                <Tag
-                                  style={{
-                                    margin: 0,
-                                    fontSize: "clamp(12px, 1.3vw, 13px)",
-                                  }}
-                                >
-                                  +{candidate.skills.length - 5} more
-                                </Tag>
-                              )}
-                            </div>
-                          </Col>
-                        </Row>
-                      </Col>
-
-                      {/* Right side - Avatar and View Button */}
-                      <Col xs={24} md={6}>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: "clamp(8px, 1.5vw, 12px)",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "clamp(80px, 20vw, 100px)",
-                              height: "clamp(80px, 20vw, 100px)",
-                              borderRadius: "12px",
-                              backgroundColor: "#da2c46",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              overflow: "hidden",
-                            }}
-                          >
-                            {candidate.image ? (
-                              <img
-                                src={candidate.image}
-                                alt={candidate.fullName}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            ) : (
-                              <UserOutlined
-                                style={{
-                                  fontSize: "clamp(32px, 8vw, 40px)",
-                                  color: "#fff",
-                                }}
-                              />
-                            )}
-                          </div>
-
-                          <Button
-                            type="primary"
-                            style={{
-                              backgroundColor: "#da2c46",
-                              width: "100%",
-                              maxWidth: "100px",
-                              fontSize: "clamp(13px, 1.5vw, 14px)",
-                              padding: "6px 12px",
-                            }}
-                            icon={<EyeOutlined />}
-                            onClick={() => handleViewProfile(candidate)}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      </Col>
-                    </Row>
-                  </Card>
-                </div>
+                  candidate={candidate}
+                  index={index}
+                  onViewProfile={handleViewProfile}
+                  showExperience={true}
+                  showSkills={true}
+                  maxSkills={5}
+                  onSelectCandidate={handleSelectCandidate}
+                  isSelected={selectedCandidates.includes(candidate._id)}
+                  isSelectable={true}
+                />
               ))}
             <div style={{ marginTop: 16, textAlign: "right" }}>
               <Pagination

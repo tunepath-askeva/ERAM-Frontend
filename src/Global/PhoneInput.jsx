@@ -20,7 +20,7 @@ const PhoneInput = ({
     const currentPhone = form.getFieldValue(name);
     if (currentPhone && typeof currentPhone === "string") {
       // Handle phone numbers that start with '+' (international format)
-      if (currentPhone.startsWith("+")) {
+      if (currentPhone.startsWith("")) {
         const { countryCode, phoneNumber: number } =
           phoneUtils.parsePhoneNumber(currentPhone);
         if (countryCode) {
@@ -102,7 +102,7 @@ const PhoneInput = ({
           value: code,
           label: `${country?.flag || ""} ${
             country?.name || `Country ${code}`
-          } (+${code})`,
+          } (${code})`,
           searchText: `${country?.name || ""} ${code}`.toLowerCase(),
         };
       })

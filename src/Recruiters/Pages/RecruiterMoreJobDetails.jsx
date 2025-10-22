@@ -108,6 +108,7 @@ const RecruiterMoreJobDetails = () => {
         screening: 0,
         pipeline: 0,
         interview: 0,
+        offer: 0,
         completed: 0,
         approvals: 0,
       };
@@ -146,6 +147,9 @@ const RecruiterMoreJobDetails = () => {
               break;
             case "interview":
               statusCounts.interview = count;
+              break;
+            case "offer":
+              statusCounts.offer = count;
               break;
             case "completed":
             case "hired":
@@ -264,6 +268,7 @@ const RecruiterMoreJobDetails = () => {
       acc.screening = (acc.screening || 0) + row.screening;
       acc.pipeline = (acc.pipeline || 0) + row.pipeline;
       acc.interview = (acc.interview || 0) + row.interview;
+      acc.offer = (acc.offer || 0) + row.offer;
       acc.completed = (acc.completed || 0) + row.completed;
       return acc;
     }, {});
@@ -345,6 +350,7 @@ const RecruiterMoreJobDetails = () => {
       Screening: row.screening,
       Pipeline: row.pipeline,
       Interview: row.interview,
+      Offer: row.offer || 0,
       Completed: row.completed,
     }));
 
@@ -363,6 +369,7 @@ const RecruiterMoreJobDetails = () => {
       Screening: totals.screening || 0,
       Pipeline: totals.pipeline || 0,
       Interview: totals.interview || 0,
+      Offer: totals.offer || 0,
       Completed: totals.completed || 0,
     });
 
@@ -604,6 +611,18 @@ const RecruiterMoreJobDetails = () => {
       align: "center",
       render: (count) => (
         <Tag color="orange" style={{ minWidth: "40px", textAlign: "center" }}>
+          {count}
+        </Tag>
+      ),
+    },
+    {
+      title: "Offer Candidates",
+      dataIndex: "offer",
+      key: "offer",
+      width: 150,
+      align: "center",
+      render: (count) => (
+        <Tag color="purple" style={{ minWidth: "40px", textAlign: "center" }}>
           {count}
         </Tag>
       ),
@@ -1184,6 +1203,14 @@ const RecruiterMoreJobDetails = () => {
                       style={{ minWidth: "40px", textAlign: "center" }}
                     >
                       <strong>{totals.interview || 0}</strong>
+                    </Tag>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={9} align="center">
+                    <Tag
+                      color="purple"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
+                      <strong>{totals.offer || 0}</strong>
                     </Tag>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={10} align="center">
