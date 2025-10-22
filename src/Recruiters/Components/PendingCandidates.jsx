@@ -22,6 +22,7 @@ import {
   Tabs,
   List,
   Skeleton,
+  Form
 } from "antd";
 import {
   EyeOutlined,
@@ -39,6 +40,7 @@ import {
   useMoveCandidateStatusMutation,
   useGetPendingCandidatesQuery,
   useNotifyCandidateMutation,
+  useGetPipelinesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
@@ -58,6 +60,10 @@ const PendingCandidates = ({ jobId }) => {
     []
   );
   const [missingOptionalDocuments, setMissingOptionalDocuments] = useState([]);
+  const [isPipelineModalVisible, setIsPipelineModalVisible] = useState(false);
+  const [selectedPipelineForUpdate, setSelectedPipelineForUpdate] =
+    useState(null);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -80,6 +86,9 @@ const PendingCandidates = ({ jobId }) => {
     page: pagination.current,
     limit: pagination.pageSize,
   });
+
+  const { data: pipelineData } = useGetPipelinesQuery();
+  const activePipelines = pipelineData?.pipelines || [];
 
   useEffect(() => {
     if (pendingData) {
@@ -113,6 +122,8 @@ const PendingCandidates = ({ jobId }) => {
         interviewDetails: response.interviewDetails,
         createdAt: response.createdAt,
         updatedAt: response.updatedAt,
+              tagPipelineId: response.tagPipelineId || "",
+
       })) || []
     );
   }, [pendingData]);
@@ -164,13 +175,41 @@ const PendingCandidates = ({ jobId }) => {
   };
 
   const handleStatusUpdate = async (newStatus) => {
-    try {
-      if (!selectedCandidate) return;
+    if (!selectedCandidate) return;
 
+    // Show pipeline selection modal for screening status
+    if (newStatus === "screening") {
+      setPendingStatusUpdate(newStatus);
+      setSelectedPipelineForUpdate(selectedCandidate.tagPipelineId || null);
+      setIsPipelineModalVisible(true);
+      return;
+    }
+
+    await updateStatusWithPipeline(selectedCandidate, newStatus, null);
+  };
+
+  // Add new function to handle pipeline update confirmation
+  const handlePipelineUpdateConfirm = async () => {
+    if (!selectedCandidate || !pendingStatusUpdate) return;
+
+    setIsPipelineModalVisible(false);
+    await updateStatusWithPipeline(
+      selectedCandidate,
+      pendingStatusUpdate,
+      selectedPipelineForUpdate
+    );
+    setPendingStatusUpdate(null);
+    setSelectedPipelineForUpdate(null);
+  };
+
+  // Add new function to update status with pipeline
+  const updateStatusWithPipeline = async (candidate, newStatus, pipelineId) => {
+    try {
       await moveCandidateStatus({
-        id: selectedCandidate.applicationId, // Use applicationId instead of _id
+        id: candidate.applicationId,
         status: newStatus,
         jobId: jobId,
+        pipelineId: pipelineId,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
@@ -834,6 +873,91 @@ const PendingCandidates = ({ jobId }) => {
               <TabPane tab="Documents" key="documents">
                 {renderDocumentsTab()}
               </TabPane>
+
+                        {selectedCandidate?.tagPipelineId && (
+            <TabPane tab="Tagged Pipeline" key="taggedPipeline">
+              <div style={{ padding: "16px" }}>
+                {(() => {
+                  const pipeline = activePipelines.find(
+                    (p) => p._id === selectedCandidate.tagPipelineId
+                  );
+
+                  if (!pipeline) {
+                    return (
+                      <Text type="secondary">No pipeline details found.</Text>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <Title level={5} style={{ marginBottom: 12 }}>
+                        {pipeline.name}
+                      </Title>
+
+                      {pipeline.stages && pipeline.stages.length > 0 ? (
+                        <List
+                          itemLayout="vertical"
+                          dataSource={pipeline.stages}
+                          renderItem={(stage) => (
+                            <List.Item key={stage._id}>
+                              <List.Item.Meta
+                                title={
+                                  <Space>
+                                    <FileDoneOutlined
+                                      style={{ color: "#1890ff" }}
+                                    />
+                                    <Text strong>{stage.name}</Text>
+                                  </Space>
+                                }
+                                description={
+                                  <>
+                                    <p style={{ margin: "4px 0" }}>
+                                      <Text type="secondary">
+                                        {stage.description ||
+                                          "No description provided"}
+                                      </Text>
+                                    </p>
+                                    <p>
+                                      <b>Dependency Type:</b>{" "}
+                                      <Tag color="geekblue">
+                                        {stage.dependencyType}
+                                      </Tag>
+                                    </p>
+                                    {stage.requiredDocuments?.length > 0 ? (
+                                      <div>
+                                        <b>Required Documents:</b>
+                                        <ul style={{ marginTop: 4 }}>
+                                          {stage.requiredDocuments.map(
+                                            (doc, i) => (
+                                              <li key={i}>
+                                                <FileOutlined /> {doc}
+                                              </li>
+                                            )
+                                          )}
+                                        </ul>
+                                      </div>
+                                    ) : (
+                                      <Text type="secondary">
+                                        No required documents.
+                                      </Text>
+                                    )}
+                                  </>
+                                }
+                              />
+                            </List.Item>
+                          )}
+                        />
+                      ) : (
+                        <Text type="secondary">
+                          No stages found in this pipeline.
+                        </Text>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </TabPane>
+          )}
             </Tabs>
 
             {(missingMandatoryDocuments.length > 0 ||
@@ -921,6 +1045,45 @@ const PendingCandidates = ({ jobId }) => {
             </div>
           </>
         )}
+      </Modal>
+
+      <Modal
+        title="Select or Update Pipeline"
+        open={isPipelineModalVisible}
+        onCancel={() => {
+          setIsPipelineModalVisible(false);
+          setPendingStatusUpdate(null);
+          setSelectedPipelineForUpdate(null);
+        }}
+        onOk={handlePipelineUpdateConfirm}
+        okText="Confirm"
+        cancelText="Cancel"
+        okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Pipeline">
+            <Select
+              placeholder="Select a pipeline"
+              value={selectedPipelineForUpdate}
+              onChange={setSelectedPipelineForUpdate}
+              allowClear
+            >
+              {activePipelines.map((pipeline) => (
+                <Option key={pipeline._id} value={pipeline._id}>
+                  {pipeline.name}
+                </Option>
+              ))}
+            </Select>
+            {selectedCandidate?.tagPipelineId && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Current pipeline:{" "}
+                {typeof selectedCandidate.tagPipelineId === "string"
+                  ? selectedCandidate.tagPipelineId
+                  : selectedCandidate.tagPipelineId.name}
+              </Text>
+            )}
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

@@ -108,6 +108,10 @@ const ScreeningCandidates = ({ jobId }) => {
   const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
     {}
   );
+  const [isPipelineModalVisible, setIsPipelineModalVisible] = useState(false);
+  const [selectedPipelineForUpdate, setSelectedPipelineForUpdate] =
+    useState(null);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
   const [customStages, setCustomStages] = useState({});
 
   const [pagination, setPagination] = useState({
@@ -334,9 +338,44 @@ const ScreeningCandidates = ({ jobId }) => {
     try {
       if (!selectedCandidate) return;
 
+      // Show pipeline selection modal for interview status
+      if (newStatus === "interview") {
+        setPendingStatusUpdate(newStatus);
+        setSelectedPipelineForUpdate(
+          selectedCandidate.tagPipelineId?._id ||
+            selectedCandidate.tagPipelineId ||
+            null
+        );
+        setIsPipelineModalVisible(true);
+        return;
+      }
+
+      await updateStatusWithPipeline(selectedCandidate, newStatus, null);
+    } catch (error) {
+      console.error("Failed to change status:", error);
+      message.error(error.data?.message || "Failed to change candidate status");
+    }
+  };
+
+  const handlePipelineUpdateConfirm = async () => {
+    if (!selectedCandidate || !pendingStatusUpdate) return;
+
+    setIsPipelineModalVisible(false);
+    await updateStatusWithPipeline(
+      selectedCandidate,
+      pendingStatusUpdate,
+      selectedPipelineForUpdate
+    );
+    setPendingStatusUpdate(null);
+    setSelectedPipelineForUpdate(null);
+  };
+
+  const updateStatusWithPipeline = async (candidate, newStatus, pipelineId) => {
+    try {
       await statusChange({
-        id: selectedCandidate.applicationId,
+        id: candidate.applicationId,
         status: newStatus,
+        pipelineId: pipelineId,
       }).unwrap();
 
       message.success(`Candidate status changed to ${newStatus}`);
@@ -1759,6 +1798,45 @@ const ScreeningCandidates = ({ jobId }) => {
             </div>
           </>
         )}
+      </Modal>
+
+      <Modal
+        title="Select or Update Pipeline"
+        open={isPipelineModalVisible}
+        onCancel={() => {
+          setIsPipelineModalVisible(false);
+          setPendingStatusUpdate(null);
+          setSelectedPipelineForUpdate(null);
+        }}
+        onOk={handlePipelineUpdateConfirm}
+        okText="Confirm"
+        cancelText="Cancel"
+        okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Pipeline">
+            <Select
+              placeholder="Select a pipeline"
+              value={selectedPipelineForUpdate}
+              onChange={setSelectedPipelineForUpdate}
+              allowClear
+            >
+              {activePipelines.map((pipeline) => (
+                <Option key={pipeline._id} value={pipeline._id}>
+                  {pipeline.name}
+                </Option>
+              ))}
+            </Select>
+            {selectedCandidate?.tagPipelineId && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Current pipeline:{" "}
+                {typeof selectedCandidate.tagPipelineId === "object"
+                  ? selectedCandidate.tagPipelineId.name
+                  : selectedCandidate.tagPipelineId}
+              </Text>
+            )}
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
