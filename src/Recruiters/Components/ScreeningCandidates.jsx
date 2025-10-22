@@ -375,7 +375,7 @@ const ScreeningCandidates = ({ jobId }) => {
       await statusChange({
         id: candidate.applicationId,
         status: newStatus,
-        pipelineId: pipelineId,
+        pipelineId: pipelineId === null ? "" : pipelineId,
       }).unwrap();
 
       message.success(`Candidate status changed to ${newStatus}`);

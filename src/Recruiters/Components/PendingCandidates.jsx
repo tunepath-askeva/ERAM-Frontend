@@ -209,7 +209,7 @@ const PendingCandidates = ({ jobId }) => {
         id: candidate.applicationId,
         status: newStatus,
         jobId: jobId,
-        pipelineId: pipelineId,
+        pipelineId: pipelineId === null ? "" : pipelineId,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);

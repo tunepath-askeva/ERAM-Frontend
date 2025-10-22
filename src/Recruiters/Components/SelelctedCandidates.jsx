@@ -209,15 +209,15 @@ const SelectedCandidates = ({ jobId }) => {
   ) => {
     try {
       const pipelineToSend =
-        selectedPipelineId !== null && selectedPipelineId !== undefined
-          ? selectedPipelineId 
-          : candidate.tagPipelineId || ""; 
+        selectedPipelineId === null || selectedPipelineId === undefined
+          ? "" // Send empty string to remove pipeline
+          : selectedPipelineId;
 
       await moveCandidateStatus({
         id: candidate.applicationId,
         status: newStatus,
         jobId,
-        pipelineId: pipelineToSend, 
+        pipelineId: pipelineToSend,
       }).unwrap();
 
       message.success(`Candidate moved to ${newStatus} successfully`);
