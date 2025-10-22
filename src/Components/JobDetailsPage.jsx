@@ -549,14 +549,14 @@ const JobDetailsPage = () => {
 
       {/* Key Information Cards */}
       <Row gutter={[16, 16]} className="key-info-section">
-        {(job.salaryMin || job.salaryMax) && (
+        {job.isSalaryVisible && (job.salaryMin || job.salaryMax) && (
           <Col xs={12} sm={12} md={6}>
             <Card className="info-card salary-card">
-           
+              <DollarOutlined className="info-icon" />
               <div className="info-content">
                 <Text className="info-label">Salary</Text>
                 <Text className="info-value">
-                  {job.salaryMin?.toLocaleString()} - 
+                  {job.salaryMin?.toLocaleString()} -
                   {job.salaryMax?.toLocaleString()} {job.salaryType}
                 </Text>
               </div>
