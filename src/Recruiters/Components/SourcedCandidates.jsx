@@ -1187,7 +1187,7 @@ const SourcedCandidates = ({ jobId }) => {
               <li>
                 Work order company industry and candidate industry experience
               </li>
-              <li>Work order job function and candidate job title/role</li>
+              <li>Work order title and candidate job title/role</li>
             </ul>
             <Text type="secondary" style={{ fontSize: "12px" }}>
               The system analyzes these factors to find the most relevant
