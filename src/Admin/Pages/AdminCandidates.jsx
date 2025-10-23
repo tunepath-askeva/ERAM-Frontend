@@ -170,6 +170,14 @@ const AdminCandidates = () => {
     }
   }, [candidateDetails, fetchingCandidateId]);
 
+  const isRecentlyUpdated = (date) => {
+    if (!date) return false;
+    const updated = new Date(date);
+    const now = new Date();
+    const diff = (now - updated) / (1000 * 60 * 60 * 24); // in days
+    return diff <= 2;
+  };
+
   const showDisableModal = (candidate) => {
     setCandidateToToggle(candidate);
     setDisableModalVisible(true);
@@ -614,7 +622,16 @@ const AdminCandidates = () => {
       render: (text, record) => (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <UserOutlined style={{ color: "#da2c46" }} />
-          <span>{text}</span>
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {text}
+              {isRecentlyUpdated(record.updatedAt) && (
+                <Tooltip title="Recently updated profile within the last 2 days">
+                  <span className="glow-dot" />
+                </Tooltip>
+              )}
+            </div>
+          </div>
         </div>
       ),
     },
@@ -1203,7 +1220,7 @@ const AdminCandidates = () => {
                   "Agency",
                   "Work Order Hint",
                   "Client",
-                  "Nationality"
+                  "Nationality",
                 ];
 
                 const sampleRow = [
@@ -1221,7 +1238,7 @@ const AdminCandidates = () => {
                   "Demo",
                   "This is demo work order candidate",
                   "Demo-123",
-                  "Indian"
+                  "Indian",
                 ];
 
                 const csvContent =
