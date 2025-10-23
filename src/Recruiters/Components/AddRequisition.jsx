@@ -77,6 +77,9 @@ const AddRequisition = ({ onNavigateBack }) => {
 
   const recruiters = recruiterData?.otherRecruiters || [];
 
+  const disablePastDates = (current) =>
+    current && current < dayjs().startOf("day");
+
   useEffect(() => {
     form.setFieldsValue(commonFields);
   }, [commonFields, form]);
@@ -730,17 +733,26 @@ const AddRequisition = ({ onNavigateBack }) => {
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Start Date" name="startDate">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
                   <Form.Item label="End Date" name="endDate">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Application Deadline" name="deadlineDate">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -748,7 +760,10 @@ const AddRequisition = ({ onNavigateBack }) => {
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item label="Alert Date" name="alertDate">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={8}>

@@ -150,6 +150,9 @@ const EditWorkOrder = () => {
     staffsData?.staffs?.filter((staff) => staff.accountStatus === "active") ||
     [];
 
+      const disablePastDates = (current) =>
+        current && current < dayjs().startOf("day");
+
   useEffect(() => {
     console.log("Edit WorkOrder - Clients Data:", clientsData);
     console.log("Edit WorkOrder - Active Clients:", activeClients);
@@ -2019,22 +2022,22 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }}   disabledDate={disablePastDates} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates}  />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates}  />
                   </Form.Item>
                 </Col>
               </Row>

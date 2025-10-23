@@ -129,6 +129,10 @@ const RecruiterEditJob = () => {
   const recruiters = recruiterData?.otherRecruiters || [];
   const staffs = staffData?.otherRecruiters || [];
   const levelGroups = levelData?.otherRecruiters || [];
+
+  const disablePastDates = (current) =>
+    current && current < dayjs().startOf("day");
+
   useEffect(() => {
     if (fetchedJobData?.workOrder) {
       try {
@@ -2836,7 +2840,10 @@ const RecruiterEditJob = () => {
                     { required: true, message: "Please select start date" },
                   ]}
                 >
-                  <DatePicker style={{ width: "100%" }} />
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    disabledDate={disablePastDates}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
@@ -2847,7 +2854,10 @@ const RecruiterEditJob = () => {
                     { required: true, message: "Please select end date" },
                   ]}
                 >
-                  <DatePicker style={{ width: "100%" }} />
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    disabledDate={disablePastDates}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={8}>
@@ -2870,7 +2880,10 @@ const RecruiterEditJob = () => {
                   label="Alert Date (optional)"
                   help="Set a date to receive reminders about this job posting"
                 >
-                  <DatePicker style={{ width: "100%" }} />
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    disabledDate={disablePastDates}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={6}>

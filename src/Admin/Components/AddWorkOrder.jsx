@@ -170,6 +170,9 @@ const AddWorkOrder = () => {
     staffsData?.staffs?.filter((staff) => staff.accountStatus === "active") ||
     [];
 
+  const disablePastDates = (current) =>
+    current && current < dayjs().startOf("day");
+
   const generateJobCode = async (projectId) => {
     const project = activeProjects.find((p) => p._id === projectId);
     if (!project || !project.prefix) return null;
@@ -2121,23 +2124,23 @@ const AddWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates}  />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates}  />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }} />
+                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates} />
                   </Form.Item>
                 </Col>
               </Row>
