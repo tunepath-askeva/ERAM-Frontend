@@ -478,6 +478,13 @@ function AllCandidates() {
       ),
     },
     {
+      title: "Candidate Code",
+      dataIndex: "uniqueCode",
+      render: (_, record) => (
+        <Text type="secondary">{record.uniqueCode || "N/A"}</Text>
+      ),
+    },
+    {
       title: "Source",
       dataIndex: "enteringCandidate",
       render: (_, record) => (
