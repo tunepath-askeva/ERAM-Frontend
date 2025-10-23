@@ -342,7 +342,7 @@ const RecruiterViewTimeline = () => {
 
       <Timeline
         mode="left"
-        style={{ marginTop: "20px", maxHeight: "100px", overflow: "auto" }}
+        style={{ marginTop: "20px"}}
       >
         {allTimelineData.map(renderTimelineItem)}
       </Timeline>
