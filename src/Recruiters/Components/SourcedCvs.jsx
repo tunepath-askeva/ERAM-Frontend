@@ -15,6 +15,7 @@ import {
   MailOutlined,
   UserOutlined,
   SearchOutlined,
+  CodeOutlined,
 } from "@ant-design/icons";
 import { useGetLowLevelCandidatesByJobQuery } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate } from "react-router-dom"; // <-- import useNavigate
@@ -105,6 +106,11 @@ const SourcedCvs = ({ jobId }) => {
               <div style={{ marginBottom: 10 }}>
                 <MailOutlined style={{ marginRight: 6, color: "#da2c46" }} />
                 <Text>{candidate.email || "N/A" }</Text>
+              </div>
+
+               <div style={{ marginBottom: 10 }}>
+                <CodeOutlined style={{ marginRight: 6, color: "#da2c46" }} />
+                <Text>{candidate.uniqueCode || "N/A" }</Text>
               </div>
 
               <div style={{ marginBottom: 12 }}>

@@ -23,7 +23,8 @@ import {
   Modal,
   Divider,
   Upload,
-  Progress 
+  Progress,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -86,6 +87,7 @@ const LowLevelCandidates = () => {
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [importResult, setImportResult] = useState(null);
   const [candidateConverting] = useConvertToCandidateMutation();
 
   useEffect(() => {
@@ -131,8 +133,9 @@ const LowLevelCandidates = () => {
     if (data?.getAllCV) {
       const formatted = data.getAllCV.map((cv) => ({
         id: cv._id,
-        name: cv.applicantName || `${cv.firstName} ${cv.lastName}`,
-        email: cv.email,
+        name: cv.applicantName || `${cv.firstName} ${cv.lastName}` || "N/A",
+        email: cv.email || "N/A",
+        uniqueCode: cv.uniqueCode || "N/A",
         fileName: cv.resume?.[0]?.fileName || "N/A",
         fileUrl: cv.resume?.[0]?.fileUrl || "",
         uploadDate: cv.resume?.[0]?.uploadedAt || cv.createdAt,
@@ -203,7 +206,7 @@ const LowLevelCandidates = () => {
 
     const formData = new FormData();
     fileList.forEach((file) => {
-      formData.append("files", file.originFileObj); // Changed to "files" (plural)
+      formData.append("files", file.originFileObj);
     });
 
     try {
@@ -218,10 +221,14 @@ const LowLevelCandidates = () => {
         });
       }, 200);
 
-      await importCvs(formData).unwrap();
+      // Get the response from the import API
+      const response = await importCvs(formData).unwrap();
 
       clearInterval(progressInterval);
       setUploadProgress(100);
+
+      // Set the import result to show in alert
+      setImportResult(response);
 
       message.success(`${fileList.length} CV(s) imported successfully!`);
       refetch();
@@ -374,10 +381,21 @@ const LowLevelCandidates = () => {
             <div style={{ fontSize: "12px", color: "#64748b" }}>
               {record.email}
             </div>
+            
           </div>
         </div>
       ),
-      responsive: ["lg"],
+    },
+    {
+      title: "CV Code",
+      key: "uniqueCode",
+      render: (_, record) => (
+        <div>
+          <div style={{ fontWeight: "500", color: "#1e293b" }}>
+            {record.uniqueCode}
+          </div>
+        </div>
+      ),
     },
     {
       title: "CV File",
@@ -405,7 +423,6 @@ const LowLevelCandidates = () => {
           </div>
         </div>
       ),
-      responsive: ["md"],
     },
     {
       title: "Job Details",
@@ -420,7 +437,6 @@ const LowLevelCandidates = () => {
           </div>
         </div>
       ),
-      responsive: ["md"],
     },
     {
       title: "Remarks",
@@ -696,6 +712,69 @@ const LowLevelCandidates = () => {
           </div>
         </Card>
 
+        {importResult && (
+          <Alert
+            message="CV Import Summary"
+            description={
+              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                <p>
+                  <b>{importResult.summary?.totalUploaded || 0}</b> CV(s)
+                  processed successfully.
+                </p>
+
+                {/* Show newly added candidates */}
+                {importResult.summary?.newlyAdded > 0 && (
+                  <>
+                    <p>
+                      <b>{importResult.summary.newlyAdded}</b> new candidate(s)
+                      added:
+                    </p>
+                    <ul>
+                      {importResult.addedCandidates?.map((candidate, idx) => (
+                        <li key={idx}>
+                          <b>{candidate.email}</b> – {candidate.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {/* Show existing candidates that were updated */}
+                {importResult.summary?.existingUpdated > 0 && (
+                  <>
+                    <p>
+                      <b>{importResult.summary.existingUpdated}</b> existing
+                      candidate(s) updated:
+                    </p>
+                    <ul>
+                      {importResult.existingCandidates?.map(
+                        (candidate, idx) => (
+                          <li key={idx}>
+                            <b>{candidate.email}</b> – {candidate.message}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </>
+                )}
+
+                {/* Show if no new candidates were added but files were processed */}
+                {importResult.summary?.newlyAdded === 0 &&
+                  importResult.summary?.existingUpdated === 0 && (
+                    <p>
+                      All uploaded CVs were duplicates or couldn't be processed.
+                    </p>
+                  )}
+              </div>
+            }
+            type="info"
+            showIcon
+            closable
+            style={{ marginBottom: 16 }}
+            onClose={() => setImportResult(null)}
+          />
+        )}
+
         {isMobile ? (
           <div>
             {loading ? (
@@ -745,7 +824,7 @@ const LowLevelCandidates = () => {
               dataSource={filteredCandidates}
               rowKey="_id"
               loading={loading}
-              scroll={{ x: 800 }}
+              scroll={{ x: "max-content" }}
               pagination={{
                 current: page,
                 pageSize: limit,

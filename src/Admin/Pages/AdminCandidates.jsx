@@ -635,6 +635,17 @@ const AdminCandidates = () => {
         </div>
       ),
     },
+        {
+      title: "Candidate Code",
+      dataIndex: "uniqueCode",
+      key: "uniqueCode",
+      render: (text) => (
+       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          
+          <span>{text || "N/A"}</span>
+        </div>
+      ),
+    },
     {
       title: "Source",
       dataIndex: "enteringCandidate",
