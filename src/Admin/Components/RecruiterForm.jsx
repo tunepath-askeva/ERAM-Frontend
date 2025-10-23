@@ -82,6 +82,14 @@ const permissionGroups = [
       { key: "notifications", label: "Notifications" },
     ],
   },
+    {
+    title: "Dashbaord Management",
+    icon: <DashboardOutlined />,
+    permissions: [
+      { key: "view-get-details-button", label: "View Get More Details Button" },
+     
+    ],
+  },
   {
     title: "Requisition Management",
     icon: <FileTextOutlined />,

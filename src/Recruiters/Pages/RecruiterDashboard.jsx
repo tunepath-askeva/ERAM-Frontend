@@ -27,6 +27,7 @@ import {
 import { Pie, Column } from "@ant-design/plots";
 import { useNavigate } from "react-router-dom";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 
@@ -80,6 +81,14 @@ const RecruiterDashboard = () => {
       count: item.count,
       type: item._id,
     })) || [];
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   // AntV Chart configurations
   const pieConfig = {
@@ -288,8 +297,7 @@ const RecruiterDashboard = () => {
 
   if (isLoading) {
     return (
-      <div
-      >
+      <div>
         <SkeletonLoader />
       </div>
     );
@@ -344,18 +352,21 @@ const RecruiterDashboard = () => {
           <Title level={2} style={{ margin: 0, color: colors.primary }}>
             Recruiter Dashboard
           </Title>
-          <Button
-            type="primary"
-            size="large"
-            onClick={() => navigate("/recruiter/dashboard/details")}
-            style={{
-              backgroundColor: colors.primary,
-              borderColor: colors.primary,
-              borderRadius: "8px",
-            }}
-          >
-            Get More Job Details
-          </Button>
+
+          {hasPermission("view-get-details-button") && (
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => navigate("/recruiter/dashboard/details")}
+              style={{
+                backgroundColor: colors.primary,
+                borderColor: colors.primary,
+                borderRadius: "8px",
+              }}
+            >
+              Get More Job Details
+            </Button>
+          )}
         </div>
 
         {/* Key Metrics Cards */}

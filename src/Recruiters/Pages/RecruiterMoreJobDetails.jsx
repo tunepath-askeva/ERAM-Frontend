@@ -167,6 +167,7 @@ const RecruiterMoreJobDetails = () => {
       return {
         key: `wo-${index}`,
         workOrder: workOrder.workOrderTitle || `WO-${index + 1}`,
+          numberOfCandidate: workOrder.numberOfCandidate || 0, 
         ...statusCounts,
         rawData: workOrder,
       };
@@ -259,6 +260,7 @@ const RecruiterMoreJobDetails = () => {
     if (workOrderData.length === 0) return {};
 
     return workOrderData.reduce((acc, row) => {
+      acc.numberOfCandidate = (acc.numberOfCandidate || 0) + row.numberOfCandidate;
       acc.total = (acc.total || 0) + row.total;
       acc.sourced = (acc.sourced || 0) + row.sourced;
       acc.selected = (acc.selected || 0) + row.selected;
@@ -341,6 +343,7 @@ const RecruiterMoreJobDetails = () => {
       "Job Code": row.rawData?.jobCode || "N/A",
       "Requisition No": row.rawData?.requisitionNo || "N/A",
       "Reference No": row.rawData?.referenceNo || "N/A",
+       "Candidates Needed": row.numberOfCandidate || 0,
       "Total Candidates": row.total,
       Sourced: row.sourced,
       Selected: row.selected,
@@ -507,6 +510,18 @@ const RecruiterMoreJobDetails = () => {
         );
       },
     },
+    {
+    title: "Candidates Needed",
+    dataIndex: "numberOfCandidate",
+    key: "numberOfCandidate",
+    width: 150,
+    align: "center",
+    render: (count) => (
+      <Tag color="geekblue" style={{ minWidth: "40px", textAlign: "center", fontSize: "13px" }}>
+        {count}
+      </Tag>
+    ),
+  },
     {
       title: "Total Candidates",
       dataIndex: "total",
@@ -1133,6 +1148,11 @@ const RecruiterMoreJobDetails = () => {
                       TOTAL
                     </Text>
                   </Table.Summary.Cell>
+                   <Table.Summary.Cell index={1} align="center">
+      <Tag color="geekblue" style={{ minWidth: "40px", textAlign: "center" }}>
+        <strong>{totals.numberOfCandidate || 0}</strong>
+      </Tag>
+    </Table.Summary.Cell>
                   <Table.Summary.Cell index={1} align="center">
                     <Tag
                       color="blue"
