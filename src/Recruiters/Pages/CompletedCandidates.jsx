@@ -433,17 +433,22 @@ const CompletedCandidates = () => {
           renderItem={(document) => (
             <List.Item
               actions={[
-                <Button
-                  type="link"
-                  icon={<DownloadOutlined />}
-                  onClick={() =>
-                    handleDownloadDocument(document.fileUrl, document.fileName)
-                  }
-                  style={{ color: "#da2c46" }}
-                >
-                  Download
-                </Button>,
-              ]}
+                hasPermission("view-download-icon") && (
+                  <Button
+                    type="link"
+                    icon={<DownloadOutlined />}
+                    onClick={() =>
+                      handleDownloadDocument(
+                        document.fileUrl,
+                        document.fileName
+                      )
+                    }
+                    style={{ color: "#da2c46" }}
+                  >
+                    Download
+                  </Button>
+                ),
+              ].filter(Boolean)} // ✅ remove false/null entries
             >
               <List.Item.Meta
                 avatar={getFileIcon(document.fileName)}
@@ -699,39 +704,45 @@ const CompletedCandidates = () => {
         }
       >
         <Tabs defaultActiveKey="details" type="card">
-          <TabPane
-            tab={
-              <span>
-                <UserOutlined />
-                Candidate Details
-              </span>
-            }
-            key="details"
-          >
-            {renderCandidateDetails()}
-          </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <ClockCircleOutlined />
-                Timeline
-              </span>
-            }
-            key="timeline"
-          >
-            {renderTimeline()}
-          </TabPane>
-          <TabPane
-            tab={
-              <span>
-                <FileTextOutlined />
-                Documents
-              </span>
-            }
-            key="documents"
-          >
-            {renderDocuments()}
-          </TabPane>
+          {hasPermission("view-candidate-details-tab") && (
+            <TabPane
+              tab={
+                <span>
+                  <UserOutlined />
+                  Candidate Details
+                </span>
+              }
+              key="details"
+            >
+              {renderCandidateDetails()}
+            </TabPane>
+          )}
+          {hasPermission("view-timeline-tab") && (
+            <TabPane
+              tab={
+                <span>
+                  <ClockCircleOutlined />
+                  Timeline
+                </span>
+              }
+              key="timeline"
+            >
+              {renderTimeline()}
+            </TabPane>
+          )}
+          {hasPermission("view-documents-tab") && (
+            <TabPane
+              tab={
+                <span>
+                  <FileTextOutlined />
+                  Documents
+                </span>
+              }
+              key="documents"
+            >
+              {renderDocuments()}
+            </TabPane>
+          )}
         </Tabs>
       </Drawer>
 

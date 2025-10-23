@@ -47,6 +47,7 @@ import {
   useGetPipelineJobsQuery,
   useLazyGetPipelineJobsExportQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -69,6 +70,14 @@ const RecruiterStagedCandidates = () => {
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
 
   const primaryColor = "#da2c46";
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -348,20 +357,22 @@ const RecruiterStagedCandidates = () => {
 
             {/* Export Button */}
             <Col xs={24} md={6}>
-              <Button
-                type="primary"
-                size="large"
-                icon={<DownloadOutlined />}
-                loading={isExporting}
-                onClick={handleExport}
-                block
-                style={{
-                  background: primaryColor,
-                  border: "none",
-                }}
-              >
-                Export Excel
-              </Button>
+              {hasPermission("export-to-excel") && (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<DownloadOutlined />}
+                  loading={isExporting}
+                  onClick={handleExport}
+                  block
+                  style={{
+                    background: primaryColor,
+                    border: "none",
+                  }}
+                >
+                  Export Excel
+                </Button>
+              )}
             </Col>
           </Row>
         </Card>

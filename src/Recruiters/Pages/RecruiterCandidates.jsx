@@ -1474,7 +1474,7 @@ const RecruiterCandidates = () => {
     "offer",
     "rejected",
   ]
-    // .filter((status) => hasPermission(`view-${status}-tab`))
+     .filter((status) => hasPermission(`view-${status}-tab`))
     .map((status) => ({
       key: status,
       label: (
@@ -2078,7 +2078,7 @@ const RecruiterCandidates = () => {
                     </TabPane>
                   )}
 
-                  {(candidate.status === "offer_pending" ||
+                  {hasPermission("view-offer-details") && (candidate.status === "offer_pending" ||
                     candidate.status === "offer_revised" ||
                     candidate.status === "offer") && (
                     <TabPane tab="Offer Details" key="offer">
@@ -2246,7 +2246,7 @@ const RecruiterCandidates = () => {
                     </TabPane>
                   )}
 
-                  {selectedCandidate.status === "offer" && (
+                  { hasPermission("view-pipeline") && selectedCandidate.status === "offer" && (
                     <TabPane tab="Pipeline" key="2">
                       <div style={{ padding: 16 }}>
                         <Title level={4}>Pipeline Information</Title>

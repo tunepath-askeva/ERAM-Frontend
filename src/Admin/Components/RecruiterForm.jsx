@@ -32,6 +32,7 @@ import {
   CalendarOutlined,
   FileTextOutlined,
   SettingOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import {
   useAddCustomMemberTypesMutation,
@@ -126,49 +127,101 @@ const permissionGroups = [
       { key: "view-cv", label: "View CV" },
       { key: "convert-candidate", label: "Convert CV to Candidate" },
       { key: "download-cv", label: "Download CV" },
+      { key: "add-cv-remarks", label: "Add Remarks" },
       { key: "delete-cv", label: "Delete CV" },
+      { key: "import-cvs", label: "Import CV" },
+      { key: "export-cvs", label: "Export CV" },
     ],
   },
+
   {
     title: "Interview Candidate Actions",
     icon: <TeamOutlined />,
     permissions: [
-      { key: "download-documents", label: "Download Documents" },
-      { key: "send-messages", label: "Send Messages" },
+      // { key: "download-documents", label: "Download Documents" },
+      // { key: "send-messages", label: "Send Messages" },
       { key: "view-profile", label: "View Candidate Profile" },
-      { key: "move-to-interview", label: "Move to Interview" },
+      // { key: "move-to-interview", label: "Move to Interview" },
       { key: "make-offer", label: "Make Offer" },
       { key: "move-to-offer", label: "Move to Offer" },
       { key: "move-to-pipeline", label: "Move to Pipeline" },
       { key: "reject-candidate", label: "Reject Candidate" },
       { key: "schedule-interview", label: "Schedule Interview" },
       { key: "reschedule-interview", label: "Reschedule Interview" },
-      { key: "view-interviews", label: "View Interviews" },
+      {
+        key: "view-interviews",
+        label: "View Interviews tab (in candidate profile drawer)",
+      },
+      {
+        key: "view-pipeline",
+        label: "View Pipeline tab (in candidate profile drawer)",
+      },
+      {
+        key: "view-offer-details",
+        label: "View Offer details tab (in candidate profile drawer)",
+      },
       { key: "change-interview-status", label: "Change Interview Status" },
+    ],
+  },
+
+  {
+    title: "Staged Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [
+      {
+        key: "notify-candidate",
+        label: "Notify Candidate",
+      },
+      {
+        key: "export-to-excel",
+        label: "Export Button visible",
+      },
     ],
   },
   {
     title: "Completed Candidate Actions",
     icon: <SettingOutlined />,
-    permissions: [{ key: "convert-to-employee", label: "Convert to Employee" }],
+    permissions: [
+      { key: "convert-to-employee", label: "Convert to Employee" },
+      {
+        key: "view-candidate-details-tab",
+        label: "View Candidate Details Tab(in profile drawer)",
+      },
+      {
+        key: "view-timeline-tab",
+        label: "View Timeline tab (in profile drawer)",
+      },
+      {
+        key: "view-documents-tab",
+        label: "View Documents Tab (in profile drawer)",
+      },
+      {
+        key: "view-download-icon",
+        label: "View Downlaod icon (in documents tab in drawer)",
+      },
+    ],
   },
-  {
-    title: "Staged Candidate Actions",
-    icon: <SettingOutlined />,
-    permissions: [{ key: "notify-candidate", label: "Notify Candidate" }],
+    {
+    title: "Notifications Management",
+    icon: <BellOutlined />,
+    permissions: [
+      { key: "delete-notify", label: "Delete Notification Button" },
+      { key: "clear-all-notify", label: "Clear All notification Button" },
+    ],
   },
   {
     title: "Tab Views for Interview candidates",
     icon: <FileTextOutlined />,
     permissions: [
-      { key: "view-all-tab", label: "View All Tab" },
-      { key: "view-completed-tab", label: "View Completed Tab" },
       { key: "view-interview-tab", label: "View Interview Tab" },
+
+      { key: "view-offer_pending-tab", label: "View Offer Pending Tab" },
+      { key: "view-offer_revised-tab", label: "View Offer Revised Tab" },
       { key: "view-offer-tab", label: "View Offer Tab" },
       { key: "view-rejected-tab", label: "View Rejected Tab" },
-      { key: "view-overview-tab", label: "View Overview Tab" },
-      { key: "view-activity-tab", label: "View Activity Tab" },
-      { key: "view-documents-tab", label: "View Documents Tab" },
+      // { key: "view-overview-tab", label: "View Overview Tab" },
+      // { key: "view-activity-tab", label: "View Activity Tab" },
+      // { key: "view-documents-tab", label: "View Documents Tab" },
     ],
   },
 ];

@@ -45,6 +45,7 @@ import {
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
+import { useSelector } from "react-redux";
 
 dayjs.extend(relativeTime);
 
@@ -63,6 +64,14 @@ const RecruiterNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [form] = Form.useForm();
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -254,14 +263,14 @@ const RecruiterNotifications = () => {
         disabled: item.isRead,
         onClick: () => handleMarkAsRead(item._id),
       },
-      {
+      hasPermission("delete-notify") && {
         key: "delete",
         label: "Delete",
         icon: <DeleteOutlined />,
         danger: true,
         onClick: () => handleDeleteNotification(item._id),
       },
-    ];
+    ].filter(Boolean);
 
     return (
       <Dropdown
@@ -488,9 +497,11 @@ const RecruiterNotifications = () => {
                 cancelText="No"
                 placement="bottomRight"
               >
-                <Button type="link" size="small" danger loading={clearingAll}>
-                  Clear all
-                </Button>
+                {hasPermission("clear-all-notify") && (
+                  <Button type="link" size="small" danger loading={clearingAll}>
+                    Clear all
+                  </Button>
+                )}
               </Popconfirm>
             )}
           </Space>

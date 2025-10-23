@@ -484,18 +484,18 @@ const LowLevelCandidates = () => {
                 Convert to Candidate
               </Menu.Item>
             )}
-
-            <Menu.Item
-              key="remarks"
-              icon={<SignatureOutlined />}
-              onClick={() => {
-                setSelectedCandidate(record);
-                setAddRemarksModalVisible(true);
-              }}
-            >
-              Add Remarks
-            </Menu.Item>
-
+            {hasPermission("add-cv-remarks") && (
+              <Menu.Item
+                key="remarks"
+                icon={<SignatureOutlined />}
+                onClick={() => {
+                  setSelectedCandidate(record);
+                  setAddRemarksModalVisible(true);
+                }}
+              >
+                Add Remarks
+              </Menu.Item>
+            )}
             <Divider style={{ margin: "4px 0" }} />
 
             {hasPermission("delete-cv") && (
@@ -634,32 +634,36 @@ const LowLevelCandidates = () => {
               style={{ flex: 1, minWidth: "250px" }}
             />
 
-            <Button
-              icon={<ImportOutlined />}
-              size={isMobile ? "middle" : "large"}
-              onClick={() => setIsImportModalVisible(true)}
-              style={{
-                borderColor: "#da2c46",
-                color: "#da2c46",
-                minWidth: isMobile ? "auto" : "120px",
-              }}
-            >
-              {isMobile ? "Import CVs" : "Import CVs"}
-            </Button>
+            {hasPermission("import-cvs") && (
+              <Button
+                icon={<ImportOutlined />}
+                size={isMobile ? "middle" : "large"}
+                onClick={() => setIsImportModalVisible(true)}
+                style={{
+                  borderColor: "#da2c46",
+                  color: "#da2c46",
+                  minWidth: isMobile ? "auto" : "120px",
+                }}
+              >
+                {isMobile ? "Import CVs" : "Import CVs"}
+              </Button>
+            )}
 
-            <Button
-              icon={<ExportOutlined />}
-              size={isMobile ? "middle" : "large"}
-              loading={isExporting}
-              onClick={handleExportCvs}
-              style={{
-                borderColor: "#da2c46",
-                color: "#da2c46",
-                minWidth: isMobile ? "auto" : "120px",
-              }}
-            >
-              {isMobile ? "Export" : "Export CVs"}
-            </Button>
+            {hasPermission("export-cvs") && (
+              <Button
+                icon={<ExportOutlined />}
+                size={isMobile ? "middle" : "large"}
+                loading={isExporting}
+                onClick={handleExportCvs}
+                style={{
+                  borderColor: "#da2c46",
+                  color: "#da2c46",
+                  minWidth: isMobile ? "auto" : "120px",
+                }}
+              >
+                {isMobile ? "Export" : "Export CVs"}
+              </Button>
+            )}
           </div>
         </Card>
 
