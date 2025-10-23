@@ -98,13 +98,13 @@ const SourcedCvs = ({ jobId }) => {
               title={
                 <Space align="center">
                   <UserOutlined style={{ color: "#da2c46" }} />
-                  <Text strong>{candidate.applicantName}</Text>
+                  <Text strong>{candidate.applicantName || "N/A"}</Text>
                 </Space>
               }
             >
               <div style={{ marginBottom: 10 }}>
                 <MailOutlined style={{ marginRight: 6, color: "#da2c46" }} />
-                <Text>{candidate.email}</Text>
+                <Text>{candidate.email || "N/A" }</Text>
               </div>
 
               <div style={{ marginBottom: 12 }}>
@@ -115,11 +115,11 @@ const SourcedCvs = ({ jobId }) => {
                 </Text>
               </div>
 
-              {candidate.Resume?.length > 0 && (
+              {candidate.resume?.length > 0 && (
                 <Button
                   type="primary"
                   icon={<FilePdfOutlined />}
-                  href={candidate.Resume[0].fileUrl}
+                  href={candidate.resume[0].fileUrl}
                   target="_blank"
                   style={{
                     width: "100%",
