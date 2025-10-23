@@ -134,18 +134,26 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <Avatar
           size={80}
-          src={candidate.image}
+          src={candidate?.image}
           icon={
-            candidate.gender === "Male" ? <ManOutlined /> : <WomanOutlined />
+            candidate?.gender === "Male" ? <ManOutlined /> : <WomanOutlined />
           }
           style={{ border: "4px solid #da2c46" }}
         />
         <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>
-          {candidate.fullName}
+          {candidate?.fullName}
         </Title>
+
         <Text type="secondary" style={{ fontSize: 16 }}>
-          {candidate.title || "No title specified"}
+          {candidate?.title || "No title specified"}
         </Text>
+
+        <Title
+          type="secondary"
+          style={{ marginTop: 16, marginBottom: 4, fontSize: 16 }}
+        >
+          Unique Code : {candidate?.uniqueCode || "N/A"}
+        </Title>
 
         {/* Status Tags */}
         <div

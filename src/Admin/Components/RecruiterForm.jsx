@@ -82,12 +82,11 @@ const permissionGroups = [
       { key: "notifications", label: "Notifications" },
     ],
   },
-    {
+  {
     title: "Dashbaord Management",
     icon: <DashboardOutlined />,
     permissions: [
       { key: "view-get-details-button", label: "View Get More Details Button" },
-     
     ],
   },
   {
@@ -126,6 +125,11 @@ const permissionGroups = [
       { key: "add-candidate", label: "Add Candidate" },
       { key: "bulk-upload", label: "Bulk Upload Candidates" },
       { key: "edit-candidate-details", label: "Edit Candidate" },
+      { key: "export-candidate-details", label: "Export Candidate" },
+      {
+        key: "notify-candidates-button",
+        label: "View Notify Candidates Button",
+      },
     ],
   },
   {
@@ -209,7 +213,7 @@ const permissionGroups = [
       },
     ],
   },
-    {
+  {
     title: "Notifications Management",
     icon: <BellOutlined />,
     permissions: [

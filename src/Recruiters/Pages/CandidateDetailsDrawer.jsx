@@ -38,6 +38,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useGetAllcandidatebyIdQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useSelector } from "react-redux";
 
 import { useNotifyEmployeeMutation } from "../../Slices/Employee/EmployeeApis";
 
@@ -54,6 +55,14 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
 
   const [sendNotification, { isLoading: isNotificationLoading }] =
     useNotifyEmployeeMutation();
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const candidate = data?.candidateDetails;
 
@@ -161,17 +170,19 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
         visible={visible}
         width={700}
         extra={
-          <Button
-            icon={<NotificationOutlined />}
-            onClick={handleNotifyCandidate}
-            style={{
-              background: "#ff4d4f",
-              borderColor: "#ff4d4f",
-              color: "white",
-            }}
-          >
-            Notify
-          </Button>
+          hasPermission("notify-candidates-button") && (
+            <Button
+              icon={<NotificationOutlined />}
+              onClick={handleNotifyCandidate}
+              style={{
+                background: "#ff4d4f",
+                borderColor: "#ff4d4f",
+                color: "white",
+              }}
+            >
+              Notify
+            </Button>
+          )
         }
       >
         {isLoading ? (
@@ -195,6 +206,13 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                     `${candidate.firstName} ${candidate.lastName}`}
                 </Title>
                 <Text type="secondary">{candidate.title}</Text>
+
+                <Title
+                  type="secondary"
+                  style={{ marginTop: 16, marginBottom: 4, fontSize: 16 }}
+                >
+                  Unique Code : {candidate?.uniqueCode || "N/A"}
+                </Title>
 
                 {/* Profile Completion Section */}
                 <div style={{ marginTop: 16 }}>

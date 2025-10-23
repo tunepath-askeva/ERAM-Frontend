@@ -20,7 +20,7 @@ import {
   Form,
   Modal,
   Upload,
-  Alert 
+  Alert,
 } from "antd";
 import {
   UserOutlined,
@@ -688,15 +688,18 @@ function AllCandidates() {
               <Button onClick={clearFilters} icon={<FilterOutlined />}>
                 Clear All Filters
               </Button>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={handleExportExcel}
-                loading={isExporting}
-                type="primary"
-                style={{ background: "#da2c46", border: "none" }}
-              >
-                Export to Excel
-              </Button>
+
+              {hasPermission("export-candidate-details") && (
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportExcel}
+                  loading={isExporting}
+                  type="primary"
+                  style={{ background: "#da2c46", border: "none" }}
+                >
+                  Export to Excel
+                </Button>
+              )}
             </Space>
           </Col>
         </Row>
