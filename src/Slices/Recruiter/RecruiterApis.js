@@ -486,7 +486,8 @@ export const recruiterApi = createApi({
       invalidatesTags: ["BranchedCandidate"],
     }),
     getRecruiterJobTimelineId: builder.query({
-      query: (id) => `/job-timeline/${id}`,
+      query: ({ id, page = 1, limit = 10 }) =>
+        `/job-timeline/${id}?page=${page}&limit=${limit}`,
     }),
     convertEmployee: builder.mutation({
       query: (payload) => ({
@@ -751,5 +752,5 @@ export const {
   useConvertToCandidateMutation,
   useExportRecruiterCvsMutation,
   useImportRecruiterCvsMutation,
-  useUpdateTaggedPipelineMutation
+  useUpdateTaggedPipelineMutation,
 } = recruiterApi;

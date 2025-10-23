@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetRecruiterJobTimelineIdQuery } from "../../Slices/Recruiter/RecruiterApis";
 import {
@@ -12,6 +13,7 @@ import {
   Button,
   Row,
   Col,
+  Spin,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -31,7 +33,70 @@ const { Text, Title } = Typography;
 const RecruiterViewTimeline = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, isLoading, refetch } = useGetRecruiterJobTimelineIdQuery(id);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [allTimelineData, setAllTimelineData] = useState([]);
+
+  const loadMoreRef = useRef();
+
+  const { data, isLoading, refetch } = useGetRecruiterJobTimelineIdQuery({
+    id,
+    page: currentPage,
+    limit: pageSize,
+  });
+
+  const loadMoreData = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      setIsLoadingMore(true);
+      setCurrentPage((prev) => prev + 1);
+    }
+  }, [isLoadingMore, hasMore]);
+
+  useEffect(() => {
+    if (!hasMore || isLoading || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreData();
+        }
+      },
+      {
+        rootMargin: "200px", // Increased to trigger earlier
+        threshold: 0.1,
+      }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [hasMore, isLoading, isLoadingMore, loadMoreData]);
+
+  useEffect(() => {
+    if (data?.data) {
+      if (currentPage === 1) {
+        setAllTimelineData(data.data);
+      } else {
+        setAllTimelineData((prev) => [...prev, ...data.data]);
+      }
+
+      // Check if there's more data
+      const totalItems = data.totalCount || 0;
+      const loadedItems = currentPage * pageSize;
+      setHasMore(loadedItems < totalItems);
+
+      setIsLoadingMore(false);
+    }
+  }, [data, currentPage, pageSize]);
 
   const handleGoBack = () => {
     navigate(-1); // Go back to previous page
@@ -231,7 +296,7 @@ const RecruiterViewTimeline = () => {
     );
   }
 
-  if (!data?.data || data.data.length === 0) {
+  if (!isLoading && allTimelineData.length === 0) {
     return (
       <div style={{ padding: "24px" }}>
         <Button
@@ -275,9 +340,37 @@ const RecruiterViewTimeline = () => {
         </Col>
       </Row>
 
-      <Timeline mode="left" style={{ marginTop: "20px" }}>
-        {data.data.map(renderTimelineItem)}
+      <Timeline
+        mode="left"
+        style={{ marginTop: "20px", maxHeight: "100px", overflow: "auto" }}
+      >
+        {allTimelineData.map(renderTimelineItem)}
       </Timeline>
+
+      {/* Add load more trigger */}
+      {hasMore && (
+        <div
+          ref={loadMoreRef}
+          style={{ height: "20px", margin: "20px 0" }}
+        ></div>
+      )}
+
+      {/* Add loading indicator */}
+      {(isLoadingMore || isLoading) && (
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <Spin size="large" />
+          <Text style={{ display: "block", marginTop: "8px" }}>
+            Loading more timeline items...
+          </Text>
+        </div>
+      )}
+
+      {/* Add end of list message */}
+      {!hasMore && allTimelineData.length > 0 && (
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <Text type="secondary">You've reached the end of the timeline</Text>
+        </div>
+      )}
     </div>
   );
 };
