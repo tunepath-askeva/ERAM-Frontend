@@ -359,7 +359,7 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
                       <br />
                       <Button
                         type="link"
-                        href={`https://docs.google.com/viewer?url=${cert.fileUrl}&embedded=true`}
+                        href={cert.fileUrl}
                         target="_blank"
                         icon={<EyeOutlined />}
                       >
