@@ -1,0 +1,119 @@
+import React, { useState } from "react";
+import { Tabs, Card } from "antd";
+import ProjectManagement from "../../Admin/Components/ProjectManagement";
+import ClientsManagement from "../../Admin/Components/ClientManagement";
+import StaffManagement from "../../Admin/Components/StaffManagement";
+
+const { TabPane } = Tabs;
+
+const RecruiterMasters = () => {
+  const [activeTab, setActiveTab] = useState("projects");
+
+  const tabStyle = {
+    color: "#da2c46",
+    borderColor: "#da2c46",
+  };
+
+  return (
+    <div
+      style={{
+        padding: "16px",
+        "@media (max-width: 768px)": {
+          padding: "8px",
+        },
+      }}
+    >
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        tabBarStyle={{
+          marginBottom: 24,
+          "@media (max-width: 576px)": {
+            marginBottom: 16,
+          },
+        }}
+        tabBarGutter={32}
+        centered
+        type="line"
+      >
+        <TabPane
+          tab={
+            <span
+              style={{
+                color: activeTab === "projects" ? "#da2c46" : "inherit",
+                fontWeight: activeTab === "projects" ? 600 : "normal",
+                padding: "8px 16px",
+                "@media (max-width: 576px)": {
+                  padding: "8px",
+                  fontSize: "14px",
+                },
+              }}
+            >
+              Projects
+            </span>
+          }
+          key="projects"
+        >
+          <ProjectManagement />
+        </TabPane>
+        <TabPane
+          tab={
+            <span
+              style={{
+                color: activeTab === "clients" ? "#da2c46" : "inherit",
+                fontWeight: activeTab === "clients" ? 600 : "normal",
+                padding: "8px 16px",
+                "@media (max-width: 576px)": {
+                  padding: "8px",
+                  fontSize: "14px",
+                },
+              }}
+            >
+              Clients
+            </span>
+          }
+          key="clients"
+        >
+          <ClientsManagement />
+        </TabPane>
+        <TabPane
+          tab={
+            <span
+              style={{
+                color: activeTab === "staff" ? "#da2c46" : "inherit",
+                fontWeight: activeTab === "staff" ? 600 : "normal",
+                padding: "8px 16px",
+                "@media (max-width: 576px)": {
+                  padding: "8px",
+                  fontSize: "14px",
+                },
+              }}
+            >
+              Staff
+            </span>
+          }
+          key="staff"
+        >
+          <StaffManagement />
+        </TabPane>
+      </Tabs>
+      <style jsx>{`
+        .ant-pagination-item-active {
+          border-color: #da2c46 !important;
+          background-color: #da2c46 !important;
+        }
+        .ant-pagination-item-active a {
+          color: #fff !important;
+        }
+        .ant-pagination-item:hover {
+          border-color: #da2c46 !important;
+        }
+        .ant-pagination-item:hover a {
+          color: #da2c46 !important;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RecruiterMasters;

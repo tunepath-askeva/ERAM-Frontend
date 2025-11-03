@@ -789,6 +789,70 @@ const RecruiterForm = ({
           }
           style={{ marginBottom: 0 }}
         >
+          <div
+            style={{
+              marginBottom: "12px",
+              padding: "12px",
+              borderRadius: "6px",
+              backgroundColor: "#fff8e1",
+              border: "1px solid #ffe58f",
+            }}
+          >
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, cur) => prev.permissions !== cur.permissions}
+            >
+              {({ getFieldValue, setFieldsValue }) => {
+                const permissions = getFieldValue("permissions") || [];
+                const isFullAccess = permissions.includes("full-access-given");
+
+                const handleFullAccessChange = (checked) => {
+                  if (checked) {
+                    // Add all permissions + full-access-given marker
+                    const allPermissions = permissionGroups.flatMap((group) =>
+                      group.permissions.map((p) => p.key)
+                    );
+                    setFieldsValue({
+                      permissions: Array.from(
+                        new Set([...allPermissions, "full-access-given"])
+                      ),
+                    });
+                  } else {
+                    // Remove marker and clear all permissions
+                    const filtered = permissions.filter(
+                      (p) => p !== "full-access-given"
+                    );
+                    setFieldsValue({ permissions: filtered });
+                  }
+                };
+
+                return (
+                  <>
+                    <Checkbox
+                      checked={isFullAccess}
+                      onChange={(e) => handleFullAccessChange(e.target.checked)}
+                    >
+                      <span style={{ fontWeight: 600, color: "#ad6800" }}>
+                        Enable Full Access
+                      </span>
+                    </Checkbox>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#8c8c8c",
+                        marginTop: "4px",
+                      }}
+                    >
+                      While enabling, you will get <b>full permission access</b>{" "}
+                      to all modules — including Pipeline, Levels, Clients,
+                      Staffs, and Projects.
+                    </div>
+                  </>
+                );
+              }}
+            </Form.Item>
+          </div>
+
           <Form.Item name="permissions" style={{ marginBottom: 0 }}>
             <Checkbox.Group style={{ width: "100%" }}>
               <div

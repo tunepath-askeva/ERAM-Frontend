@@ -14,6 +14,8 @@ import {
   BellOutlined,
   TeamOutlined,
   FileTextOutlined,
+  DeploymentUnitOutlined,
+  BorderOuterOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -134,6 +136,24 @@ const RecruiterSidebar = ({
       icon: <UsergroupDeleteOutlined />,
       label: "Employees",
       permission: "employees",
+    },
+    {
+      key: "/recruiter/pipelines",
+      icon: <ApartmentOutlined />,
+      label: "Pipelines",
+      permission: "full-access-given",
+    },
+    {
+      key: "/recruiter/levels",
+      icon: <BorderOuterOutlined />,
+      label: "Levels",
+      permission: "full-access-given",
+    },
+    {
+      key: "/recruiter/masters",
+      icon: <DeploymentUnitOutlined />,
+      label: "Masters",
+      permission: "full-access-given",
     },
     {
       key: "/recruiter/notifications",

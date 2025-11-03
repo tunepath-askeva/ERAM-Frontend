@@ -39,6 +39,12 @@ import {
   BankOutlined,
   GlobalOutlined,
   DeleteOutlined,
+  LockOutlined ,
+  DashboardOutlined ,
+  FileTextOutlined ,
+  SettingOutlined,
+  BellOutlined,
+
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
 import { useSnackbar } from "notistack";
@@ -54,6 +60,182 @@ import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+
+const permissionGroups = [
+  {
+    title: "Side Navigation Tabs",
+    icon: <DashboardOutlined />,
+    permissions: [
+      { key: "dashboard", label: "Dashboard" },
+      { key: "requisition", label: "Requisition" },
+      { key: "jobs", label: "Jobs" },
+      { key: "jobs-timeline", label: "Jobs Timeline" },
+      { key: "all-candidates", label: "All Candidates" },
+      { key: "all-cvs", label: "All CVs" },
+      { key: "candidates", label: "Interview Candidates" },
+      { key: "interviews", label: "Assigned Interviews" },
+      { key: "staged-candidates", label: "Staged Candidates" },
+      { key: "completed-candidates", label: "Completed Candidates" },
+      { key: "approvals", label: "Approvals" },
+      { key: "employees", label: "Employees" },
+      { key: "notifications", label: "Notifications" },
+    ],
+  },
+  {
+    title: "Dashbaord Management",
+    icon: <DashboardOutlined />,
+    permissions: [
+      { key: "view-get-details-button", label: "View Get More Details Button" },
+    ],
+  },
+  {
+    title: "Requisition Management",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "edit-requisitions", label: "Edit Requisition" },
+      { key: "add-requisitions", label: "Add Requisition" },
+      { key: "delete-requisitions", label: "Delete Requisition" },
+    ],
+  },
+  {
+    title: "Job Management",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "edit-job", label: "Edit Job" },
+      { key: "deactivate-job", label: "Deactivate/Activate Job" },
+      { key: "view-job-status", label: "View Work Order Status Tab" },
+      { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
+      { key: "view-job-sourced-cv", label: "View Sourced CVs Tab" },
+      { key: "view-job-selected", label: "View Selected Candidates Tab" },
+      // { key: "view-job-selected", label: "View Selected Candidates Tab" },
+      { key: "view-job-applied", label: "View Applied Candidates Tab" },
+      { key: "view-job-applied-cv", label: "View Applied CVs Tab" },
+      { key: "view-job-declined", label: "View Declined Candidates Tab" },
+      { key: "view-job-pending", label: "View Pending Candidates Tab" },
+      { key: "view-job-screening", label: "View Screening Candidates Tab" },
+    ],
+  },
+  {
+    title: "Candidate Management",
+    icon: <TeamOutlined />,
+    permissions: [
+      { key: "view-all-candidates", label: "View All Candidates" },
+      { key: "view-candidates", label: "View Candidates Icon" },
+      { key: "add-candidate", label: "Add Candidate" },
+      { key: "bulk-upload", label: "Bulk Upload Candidates" },
+      { key: "edit-candidate-details", label: "Edit Candidate" },
+      { key: "export-candidate-details", label: "Export Candidate" },
+      {
+        key: "notify-candidates-button",
+        label: "View Notify Candidates Button",
+      },
+    ],
+  },
+  {
+    title: "CVs Management",
+    icon: <TeamOutlined />,
+    permissions: [
+      { key: "view-cv", label: "View CV" },
+      { key: "convert-candidate", label: "Convert CV to Candidate" },
+      { key: "download-cv", label: "Download CV" },
+      { key: "add-cv-remarks", label: "Add Remarks" },
+      { key: "delete-cv", label: "Delete CV" },
+      { key: "import-cvs", label: "Import CV" },
+      { key: "export-cvs", label: "Export CV" },
+    ],
+  },
+
+  {
+    title: "Interview Candidate Actions",
+    icon: <TeamOutlined />,
+    permissions: [
+      // { key: "download-documents", label: "Download Documents" },
+      // { key: "send-messages", label: "Send Messages" },
+      { key: "view-profile", label: "View Candidate Profile" },
+      // { key: "move-to-interview", label: "Move to Interview" },
+      { key: "make-offer", label: "Make Offer" },
+      { key: "move-to-offer", label: "Move to Offer" },
+      { key: "move-to-pipeline", label: "Move to Pipeline" },
+      { key: "reject-candidate", label: "Reject Candidate" },
+      { key: "schedule-interview", label: "Schedule Interview" },
+      { key: "reschedule-interview", label: "Reschedule Interview" },
+      {
+        key: "view-interviews",
+        label: "View Interviews tab (in candidate profile drawer)",
+      },
+      {
+        key: "view-pipeline",
+        label: "View Pipeline tab (in candidate profile drawer)",
+      },
+      {
+        key: "view-offer-details",
+        label: "View Offer details tab (in candidate profile drawer)",
+      },
+      { key: "change-interview-status", label: "Change Interview Status" },
+    ],
+  },
+
+  {
+    title: "Staged Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [
+      {
+        key: "notify-candidate",
+        label: "Notify Candidate",
+      },
+      {
+        key: "export-to-excel",
+        label: "Export Button visible",
+      },
+    ],
+  },
+  {
+    title: "Completed Candidate Actions",
+    icon: <SettingOutlined />,
+    permissions: [
+      { key: "convert-to-employee", label: "Convert to Employee" },
+      {
+        key: "view-candidate-details-tab",
+        label: "View Candidate Details Tab(in profile drawer)",
+      },
+      {
+        key: "view-timeline-tab",
+        label: "View Timeline tab (in profile drawer)",
+      },
+      {
+        key: "view-documents-tab",
+        label: "View Documents Tab (in profile drawer)",
+      },
+      {
+        key: "view-download-icon",
+        label: "View Downlaod icon (in documents tab in drawer)",
+      },
+    ],
+  },
+  {
+    title: "Notifications Management",
+    icon: <BellOutlined />,
+    permissions: [
+      { key: "delete-notify", label: "Delete Notification Button" },
+      { key: "clear-all-notify", label: "Clear All notification Button" },
+    ],
+  },
+  {
+    title: "Tab Views for Interview candidates",
+    icon: <FileTextOutlined />,
+    permissions: [
+      { key: "view-interview-tab", label: "View Interview Tab" },
+
+      { key: "view-offer_pending-tab", label: "View Offer Pending Tab" },
+      { key: "view-offer_revised-tab", label: "View Offer Revised Tab" },
+      { key: "view-offer-tab", label: "View Offer Tab" },
+      { key: "view-rejected-tab", label: "View Rejected Tab" },
+      // { key: "view-overview-tab", label: "View Overview Tab" },
+      // { key: "view-activity-tab", label: "View Activity Tab" },
+      // { key: "view-documents-tab", label: "View Documents Tab" },
+    ],
+  },
+];
 
 const AdminRecruiter = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -837,20 +1019,105 @@ const AdminRecruiter = () => {
                     : "Not specified"}
                 </Descriptions.Item>
 
-                <Descriptions.Item
-                  label={
-                    <span>
-                      <CalendarOutlined
-                        style={{ marginRight: 8, color: "#da2c46" }}
-                      />
-                      Permissions
-                    </span>
-                  }
+<Descriptions.Item
+  label={
+    <span>
+      <LockOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+      Permissions
+    </span>
+  }
+>
+  {selectedRecruiterData.permissions?.length ? (
+    <div
+      style={{
+        maxHeight: 300,
+        overflowY: "auto",
+        padding: "12px",
+        borderRadius: "8px",
+        border: "1px solid #f0f0f0",
+      }}
+    >
+      {selectedRecruiterData.permissions.includes("full-access-given") && (
+        <div
+          style={{
+            background: "#fffbe6",
+            border: "1px solid #ffe58f",
+            borderRadius: "6px",
+            padding: "8px 12px",
+            marginBottom: "10px",
+            fontSize: "13px",
+            color: "#ad8b00",
+            fontWeight: 500,
+          }}
+        >
+          🔒 Full Access Granted — user has full permission access to all modules.
+        </div>
+      )}
+
+      {permissionGroups.map((group) => {
+        const allowed = group.permissions.filter((p) =>
+          selectedRecruiterData.permissions.includes(p.key)
+        );
+        if (allowed.length === 0) return null;
+
+        return (
+          <div
+            key={group.title}
+            style={{
+              marginBottom: "12px",
+              paddingBottom: "8px",
+              borderBottom: "1px solid #f0f0f0",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+              <span
+                style={{
+                  marginRight: 8,
+                  color: "#da2c46",
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {group.icon}
+              </span>
+              <strong style={{ fontSize: "13px", color: "#212529" }}>
+                {group.title}
+              </strong>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                marginLeft: "24px",
+              }}
+            >
+              {allowed.map((perm) => (
+                <Tag
+                  key={perm.key}
+                  color="red"
+                  style={{
+                    background: "#fff2f0",
+                    borderColor: "#ffa39e",
+                    color: "#a8071a",
+                    fontSize: "12px",
+                    marginBottom: "4px",
+                  }}
                 >
-                  {selectedRecruiterData.permissions
-                    ? `${selectedRecruiterData.permissions}`
-                    : "Not specified"}
-                </Descriptions.Item>
+                  {perm.label}
+                </Tag>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <Text type="secondary">No permissions assigned</Text>
+  )}
+</Descriptions.Item>
+
               </Descriptions>
 
               {selectedRecruiterData.bio && (
