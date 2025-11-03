@@ -43,7 +43,8 @@ const CandidateFormModal = ({
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
   const { enqueueSnackbar } = useSnackbar();
   const { data: clientsData } = useGetClientsQuery({
-    includePagination: false,
+    page: 1,
+    limit: 100000,
   });
 
   const activeSuppliers =

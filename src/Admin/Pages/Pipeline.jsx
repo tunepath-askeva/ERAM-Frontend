@@ -544,6 +544,26 @@ const Pipeline = () => {
                         </div>
                       </div>
 
+                      <div style={{ marginTop: 6 }}>
+                        {pipeline?.createdBy ? (
+                          <>
+                            <Text
+                              type="primary"
+                              style={{ fontSize: "11px", display: "block" }}
+                            >
+                              {pipeline?.createdBy.fullName}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              {pipeline?.createdBy.email}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text type="secondary" style={{ fontSize: "11px" }}>
+                            N/A
+                          </Text>
+                        )}
+                      </div>
+
                       <div style={{ marginTop: "auto" }}>
                         <Space
                           size="small"
@@ -709,6 +729,11 @@ const Pipeline = () => {
         style={{ maxWidth: 800 }}
         centered
         destroyOnClose
+        bodyStyle={{
+          maxHeight: "70vh", // 👈 Fixed height relative to viewport
+          overflowY: "auto", // 👈 Enables vertical scroll inside modal body
+          paddingRight: 16,
+        }}
       >
         {isLoadingDetails ? (
           <div style={{ textAlign: "center", padding: "50px 0" }}>

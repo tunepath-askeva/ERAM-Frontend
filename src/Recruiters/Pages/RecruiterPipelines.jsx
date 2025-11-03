@@ -544,6 +544,39 @@ const RecruiterPipelines = () => {
                         </div>
                       </div>
 
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                        >
+                          <FileTextOutlined style={{ marginRight: 4 }} />
+                          Created By:
+                        </Text>
+
+                        <div style={{ marginTop: 6 }}>
+                          {pipeline?.createdBy ? (
+                            <>
+                              <Text
+                                type="primary"
+                                style={{ fontSize: "11px", display: "block" }}
+                              >
+                                {pipeline?.createdBy.fullName}
+                              </Text>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "11px" }}
+                              >
+                                {pipeline?.createdBy.email}
+                              </Text>
+                            </>
+                          ) : (
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              N/A
+                            </Text>
+                          )}
+                        </div>
+                      </div>
+
                       <div style={{ marginTop: "auto" }}>
                         <Space
                           size="small"
@@ -709,6 +742,11 @@ const RecruiterPipelines = () => {
         style={{ maxWidth: 800 }}
         centered
         destroyOnClose
+        bodyStyle={{
+          maxHeight: "70vh", // 👈 Fixed height relative to viewport
+          overflowY: "auto", // 👈 Enables vertical scroll inside modal body
+          paddingRight: 16,
+        }}
       >
         {isLoadingDetails ? (
           <div style={{ textAlign: "center", padding: "50px 0" }}>

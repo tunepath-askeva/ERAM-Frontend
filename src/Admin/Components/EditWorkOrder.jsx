@@ -98,13 +98,20 @@ const EditWorkOrder = () => {
 
   const { data: approvalData, isLoading: isLoadingApprovals } =
     useGetApprovalQuery({
-      includePagination: false,
+      page: 1,
+      limit: 100000,
     });
   const { data: Branch } = useGetAdminBranchQuery();
   // const { data: recruiters } = useGetRecruitersQuery();
   const { data: recruiters } = useGetRecruitersNameQuery();
-  const { data: projects } = useGetProjectsQuery();
-  const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery();
+  const { data: projects } = useGetProjectsQuery({
+      page: 1,
+      limit: 100000,
+    });
+  const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery({
+      page: 1,
+      limit: 100000,
+    });
   const {
     data: workOrderData,
     isLoading: isLoadingWorkOrder,
@@ -114,13 +121,15 @@ const EditWorkOrder = () => {
     skip: !id,
   });
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
-    {
-      includePagination: false,
+ {
+      page: 1,
+      limit: 100000,
     }
   );
   const { data: staffsData, isLoading: isLoadingStaffs } = useGetStaffsQuery({
-    includePagination: false,
-  });
+      page: 1,
+      limit: 100000,
+    });
   const [editWorkOrder] = useEditWorkOrderMutation();
   const [getJobCodes] = useLazyGetJobCodesByProjectQuery();
 
@@ -150,8 +159,8 @@ const EditWorkOrder = () => {
     staffsData?.staffs?.filter((staff) => staff.accountStatus === "active") ||
     [];
 
-      const disablePastDates = (current) =>
-        current && current < dayjs().startOf("day");
+  const disablePastDates = (current) =>
+    current && current < dayjs().startOf("day");
 
   useEffect(() => {
     console.log("Edit WorkOrder - Clients Data:", clientsData);
@@ -1657,6 +1666,13 @@ const EditWorkOrder = () => {
                         }
                         style={{ width: "100%" }}
                         size="small"
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (
+                            option?.children?.toString()?.toLowerCase() ?? ""
+                          ).includes(input.toLowerCase())
+                        }
                       >
                         {activeRecruiters.map((recruiter) => (
                           <Option key={recruiter._id} value={recruiter._id}>
@@ -1688,6 +1704,13 @@ const EditWorkOrder = () => {
                         }
                         style={{ width: "100%" }}
                         size="small"
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (
+                            option?.children?.toString()?.toLowerCase() ?? ""
+                          ).includes(input.toLowerCase())
+                        }
                       >
                         {approvalLevels.map((level) => (
                           <Option key={level.id} value={level.id}>
@@ -1719,6 +1742,13 @@ const EditWorkOrder = () => {
                         }
                         style={{ width: "100%" }}
                         size="small"
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (
+                            option?.children?.toString()?.toLowerCase() ?? ""
+                          ).includes(input.toLowerCase())
+                        }
                       >
                         {activeStaffs.map((staff) => (
                           <Option key={staff._id} value={staff._id}>
@@ -1748,6 +1778,13 @@ const EditWorkOrder = () => {
                             stageId,
                             value
                           )
+                        }
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (
+                            option?.children?.toString()?.toLowerCase() ?? ""
+                          ).includes(input.toLowerCase())
                         }
                       >
                         {dependencyTypes.map((level) => (
@@ -1982,6 +2019,13 @@ const EditWorkOrder = () => {
                     <Select
                       placeholder="Select project"
                       onChange={handleProjectChange}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {projects?.allProjects?.map((project) => (
                         <Option key={project._id} value={project._id}>
@@ -2022,22 +2066,34 @@ const EditWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }}   disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates}  />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates}  />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -2056,6 +2112,13 @@ const EditWorkOrder = () => {
                       placeholder="Select pipeline"
                       onChange={handlePipelineChange}
                       value={selectedPipelines}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {activePipelines.map((pipeline) => (
                         <Option key={pipeline._id} value={pipeline._id}>
@@ -2082,6 +2145,13 @@ const EditWorkOrder = () => {
                       mode="multiple"
                       placeholder="Select member"
                       optionLabelProp="label"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {activeRecruiters?.map((recruiter) => (
                         <Option
@@ -2106,7 +2176,17 @@ const EditWorkOrder = () => {
                       { required: false, message: "Please select a client" },
                     ]} // Make client optional
                   >
-                    <Select placeholder="Select client" allowClear>
+                    <Select
+                      placeholder="Select client"
+                      allowClear
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
+                    >
                       {activeClients.map((client) => (
                         <Option key={client._id} value={client._id}>
                           {client.fullName}
@@ -2438,7 +2518,9 @@ const EditWorkOrder = () => {
                     valuePropName="checked"
                   >
                     <Switch
-                      checked={workOrderData?.workOrder?.isSalaryVisible === true}
+                      checked={
+                        workOrderData?.workOrder?.isSalaryVisible === true
+                      }
                       onChange={(checked) => {
                         jobForm.setFieldsValue({
                           isSalaryVisible: checked ? true : false,

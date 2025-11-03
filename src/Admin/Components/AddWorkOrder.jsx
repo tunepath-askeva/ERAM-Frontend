@@ -125,20 +125,29 @@ const AddWorkOrder = () => {
 
   const { data: approvalData, isLoading: isLoadingApprovals } =
     useGetApprovalQuery({
-      includePagination: false,
+      page: 1,
+      pageSize: 100000,
     });
   const { data: Branch } = useGetAdminBranchQuery();
   // const { data: recruiters } = useGetRecruitersQuery();
   const { data: recruiters } = useGetRecruitersNameQuery();
-  const { data: projects } = useGetProjectsQuery();
-  const { data: pipeline, refetch } = useGetPipelinesQuery();
+  const { data: projects } = useGetProjectsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
+  const { data: pipeline, refetch } = useGetPipelinesQuery({
+    page: 1,
+    pageSize: 100000,
+  });
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
     {
-      includePagination: false,
+      page: 1,
+      pageSize: 100000,
     }
   );
   const { data: staffsData, isLoading: isLoadingStaffs } = useGetStaffsQuery({
-    includePagination: false,
+    page: 1,
+    pageSize: 100000,
   });
   const [getJobCodes] = useLazyGetJobCodesByProjectQuery();
 
@@ -1629,7 +1638,9 @@ const AddWorkOrder = () => {
               showSearch
               optionFilterProp="children"
               filterOption={(input, option) =>
-                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                  input.toLowerCase()
+                )
               }
             >
               {activeRecruiters.map((recruiter) => (
@@ -1819,6 +1830,13 @@ const AddWorkOrder = () => {
                           }
                           style={{ width: "100%" }}
                           size="small"
+                          showSearch
+                          optionFilterProp="children"
+                          filterOption={(input, option) =>
+                            (
+                              option?.children?.toString()?.toLowerCase() ?? ""
+                            ).includes(input.toLowerCase())
+                          }
                         >
                           {activeRecruiters.map((recruiter) => (
                             <Option key={recruiter._id} value={recruiter._id}>
@@ -1850,6 +1868,13 @@ const AddWorkOrder = () => {
                           }
                           style={{ width: "100%" }}
                           size="small"
+                          showSearch
+                          optionFilterProp="children"
+                          filterOption={(input, option) =>
+                            (
+                              option?.children?.toString()?.toLowerCase() ?? ""
+                            ).includes(input.toLowerCase())
+                          }
                         >
                           {approvalLevels.map((level) => (
                             <Option key={level.id} value={level.id}>
@@ -1885,9 +1910,9 @@ const AddWorkOrder = () => {
                           showSearch
                           optionFilterProp="children"
                           filterOption={(input, option) =>
-                            option.children
-                              .toLowerCase()
-                              .indexOf(input.toLowerCase()) >= 0
+                            (
+                              option?.children?.toString()?.toLowerCase() ?? ""
+                            ).includes(input.toLowerCase())
                           }
                         >
                           {activeStaffs.map((staff) => (
@@ -1923,6 +1948,13 @@ const AddWorkOrder = () => {
                               stageId,
                               value
                             )
+                          }
+                          showSearch
+                          optionFilterProp="children"
+                          filterOption={(input, option) =>
+                            (
+                              option?.children?.toString()?.toLowerCase() ?? ""
+                            ).includes(input.toLowerCase())
                           }
                         >
                           {dependencyTypes.map((level) => (
@@ -2084,6 +2116,13 @@ const AddWorkOrder = () => {
                     <Select
                       placeholder="Select project"
                       onChange={handleProjectChange}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {activeProjects.map((project) => (
                         <Option key={project._id} value={project._id}>
@@ -2124,23 +2163,35 @@ const AddWorkOrder = () => {
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="deadlineDate" label="Deadline Date">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="startDate" label="Start Date">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates}  />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="endDate" label="End Date">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates}  />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="alertDate" label="Alert Date">
-                    <DatePicker style={{ width: "100%" }}  disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -2161,6 +2212,13 @@ const AddWorkOrder = () => {
                         onChange={handlePipelineChange}
                         value={selectedPipelines}
                         style={{ width: "calc(100% - 120px)" }}
+                        showSearch
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (
+                            option?.children?.toString()?.toLowerCase() ?? ""
+                          ).includes(input.toLowerCase())
+                        }
                       >
                         {activePipelines.map((pipeline) => (
                           <Option key={pipeline._id} value={pipeline._id}>
@@ -2201,6 +2259,13 @@ const AddWorkOrder = () => {
                       mode="multiple"
                       placeholder="Select members"
                       optionLabelProp="label"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {activeRecruiters.map((recruiter) => (
                         <Option
@@ -2231,9 +2296,9 @@ const AddWorkOrder = () => {
                       showSearch
                       optionFilterProp="children"
                       filterOption={(input, option) =>
-                        option?.children
-                          ?.toLowerCase()
-                          .includes(input.toLowerCase())
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
                       }
                     >
                       {activeClients.map((client) => (

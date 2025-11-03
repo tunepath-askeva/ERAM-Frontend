@@ -31,6 +31,7 @@ import {
   useAddApprovalMutation,
   useUpdateApprovalMutation,
   useGetRecruitersQuery,
+  useGetRecruitersNameQuery,
 } from "../../Slices/Admin/AdminApis";
 
 const { Title, Text, Paragraph } = Typography;
@@ -160,11 +161,11 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
   const [levels, setLevels] = useState([]);
 
   const { data: recruitersData, isLoading: isRecruitersLoading } =
-    useGetRecruitersQuery();
+    useGetRecruitersNameQuery();
   const [addApproval] = useAddApprovalMutation();
   const [updateApproval] = useUpdateApprovalMutation();
 
-  const recruiters = recruitersData?.recruiters || [];
+  const recruiters = recruitersData?.recruitername || [];
 
   const [currentLevel, setCurrentLevel] = useState({
     levelName: "",
@@ -580,8 +581,11 @@ const CreateLevelModal = ({ visible, onClose, editingLevel, onSuccess }) => {
                 marginTop: "8px",
               }}
               optionFilterProp="label"
+              showSearch
               filterOption={(input, option) =>
-                option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                  input.toLowerCase()
+                )
               }
             >
               {recruiters.map((recruiter) => (
