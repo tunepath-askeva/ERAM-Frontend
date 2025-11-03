@@ -841,6 +841,13 @@ const PendingCandidates = ({ jobId }) => {
               value={selectedPipelineForUpdate}
               onChange={setSelectedPipelineForUpdate}
               allowClear
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                  input.toLowerCase()
+                )
+              }
             >
               {activePipelines.map((pipeline) => (
                 <Option key={pipeline._id} value={pipeline._id}>

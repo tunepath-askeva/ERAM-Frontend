@@ -26,11 +26,15 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
-  useGetClientsQuery,
   useSubmitRequisitionMutation,
-  useGetProjectsQuery,
-  useGetAllRecruitersQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
+
+import {
+  useGetClientsQuery,
+  useGetProjectsQuery,
+  useGetRecruitersNameQuery,
+} from "../../Slices/Admin/AdminApis";
+
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 
@@ -56,14 +60,14 @@ const AddRequisition = ({ onNavigateBack }) => {
     approvalRecruiter: [],
   });
 
-  const { data: clientData } = useGetClientsQuery();
-  const { data: projectData } = useGetProjectsQuery();
-  const { data: recruiterData } = useGetAllRecruitersQuery();
+  const { data: clientData } = useGetClientsQuery({ page: 1, pageSize: 100000 });
+  const { data: projectData } = useGetProjectsQuery({ page: 1, pageSize: 100000 });
+  const { data: recruiterData } = useGetRecruitersNameQuery();
 
   const [createRequisition] = useSubmitRequisitionMutation();
 
   const projects =
-    projectData?.projects?.map((proj) => ({
+    projectData?.allProjects?.map((proj) => ({
       id: proj._id,
       name: proj.projectName || proj.name,
     })) || [];
@@ -75,7 +79,7 @@ const AddRequisition = ({ onNavigateBack }) => {
       email: client.email,
     })) || [];
 
-  const recruiters = recruiterData?.otherRecruiters || [];
+  const recruiters = recruiterData?.recruitername || [];
 
   const disablePastDates = (current) =>
     current && current < dayjs().startOf("day");
@@ -410,6 +414,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                       onChange={(value) =>
                         handleCommonFieldChange("client", value)
                       }
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {clients.map((client) => (
                         <Option key={client.id} value={client.id}>
@@ -427,6 +438,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                         handleCommonFieldChange("project", value)
                       }
                       value={commonFields.project}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {projects.map((project) => (
                         <Option key={project.id} value={project.id}>
@@ -496,6 +514,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                       onChange={(value) =>
                         handleCommonFieldChange("assignedRecruiters", value)
                       }
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -521,6 +546,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                       placeholder="Select approval member"
                       onChange={(value) =>
                         handleCommonFieldChange("approvalRecruiter", value)
+                      }
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
                       }
                     >
                       {recruiters.map((recruiter) => (
@@ -548,6 +580,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                       placeholder="Select notify member"
                       onChange={(value) =>
                         handleCommonFieldChange("notifyRecruiter", value)
+                      }
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
                       }
                     >
                       {recruiters.map((recruiter) => (

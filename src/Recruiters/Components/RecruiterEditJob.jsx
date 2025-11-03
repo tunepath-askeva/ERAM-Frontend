@@ -48,6 +48,12 @@ import {
   useGetAllStaffsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 
+import {
+  useGetStaffsQuery,
+  useGetApprovalQuery,
+  useGetRecruitersNameQuery,
+} from "../../Slices/Admin/AdminApis";
+
 const { TextArea } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -118,17 +124,23 @@ const RecruiterEditJob = () => {
     refetch,
   } = useGetRecruiterJobIdQuery(id);
   const { data: pipelineData } = useGetPipelinesQuery();
-  const { data: recruiterData } = useGetAllRecruitersQuery();
-  const { data: staffData } = useGetAllStaffsQuery();
-  const { data: levelData } = useGetAllLevelsQuery();
+  const { data: recruiterData } = useGetRecruitersNameQuery();
+  const { data: staffData } = useGetStaffsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
+  const { data: levelData } = useGetApprovalQuery({
+    page: 1,
+    pageSize: 100000,
+  });
   // const { data: clientsData } = useGetClientsQuery();
   const [updateJob] = useUpdateRecruiterJobMutation();
 
   const activePipelines = pipelineData?.pipelines || [];
   // const clients = clientsData?.clients || [];
-  const recruiters = recruiterData?.otherRecruiters || [];
-  const staffs = staffData?.otherRecruiters || [];
-  const levelGroups = levelData?.otherRecruiters || [];
+  const recruiters = recruiterData?.recruitername || [];
+  const staffs = staffData?.staffs || [];
+  const levelGroups = levelData?.approvals || [];
 
   const disablePastDates = (current) =>
     current && current < dayjs().startOf("day");

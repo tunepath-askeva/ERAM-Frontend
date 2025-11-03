@@ -16,12 +16,16 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
-  useGetClientsQuery,
   useEditRequisitionMutation,
   useGetRequisitionsByIdQuery,
-  useGetProjectsQuery,
-  useGetAllRecruitersQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
+
+import {
+  useGetClientsQuery,
+  useGetProjectsQuery,
+  useGetRecruitersNameQuery,
+} from "../../Slices/Admin/AdminApis";
+
 import { useNavigate, useParams } from "react-router-dom";
 
 const { TextArea } = Input;
@@ -33,9 +37,9 @@ const EditRequisition = () => {
   const [form] = Form.useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: clientData } = useGetClientsQuery();
-  const { data: projectData } = useGetProjectsQuery();
-  const { data: recruiterData } = useGetAllRecruitersQuery();
+  const { data: clientData } = useGetClientsQuery({ page: 1, pageSize: 100000 });
+  const { data: projectData } = useGetProjectsQuery({ page: 1, pageSize: 100000 });
+  const { data: recruiterData } = useGetRecruitersNameQuery();
   const {
     data: requisitionData,
     isLoading,
@@ -46,7 +50,7 @@ const EditRequisition = () => {
   const [updateRequisition] = useEditRequisitionMutation();
 
   const projects =
-    projectData?.projects?.map((proj) => ({
+    projectData?.allProjects?.map((proj) => ({
       id: proj._id,
       name: proj.projectName || proj.name,
     })) || [];
@@ -58,10 +62,10 @@ const EditRequisition = () => {
       email: client.email,
     })) || [];
 
-  const recruiters = recruiterData?.otherRecruiters || [];
+  const recruiters = recruiterData?.recruitername || [];
 
-    const disablePastDates = (current) =>
-      current && current < dayjs().startOf("day");
+  const disablePastDates = (current) =>
+    current && current < dayjs().startOf("day");
 
   useEffect(() => {
     refetch(); // triggers fresh data whenever component mounts
@@ -230,7 +234,17 @@ const EditRequisition = () => {
                       { required: true, message: "Please select a client" },
                     ]}
                   >
-                    <Select placeholder="Select Client" onChange={handleClientChange}>
+                    <Select
+                      placeholder="Select Client"
+                      onChange={handleClientChange}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
+                    >
                       {clients.map((client) => (
                         <Option key={client.id} value={client.id}>
                           {client.name}
@@ -244,6 +258,13 @@ const EditRequisition = () => {
                     <Select
                       placeholder="Select Project"
                       onChange={(value) => handleProjectChange(value)}
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {projects.map((project) => (
                         <Option key={project.id} value={project.id}>
@@ -302,6 +323,13 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select member for this requisition"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -325,6 +353,13 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select member for approval"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -348,6 +383,13 @@ const EditRequisition = () => {
                     <Select
                       mode="multiple"
                       placeholder="Select member for approval"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
                     >
                       {recruiters.map((recruiter) => (
                         <Option key={recruiter._id} value={recruiter._id}>
@@ -532,17 +574,26 @@ const EditRequisition = () => {
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Start Date" name="startDate">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
                   <Form.Item label="End Date" name="endDate">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
                   <Form.Item label="Application Deadline" name="deadlineDate">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -550,7 +601,10 @@ const EditRequisition = () => {
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item label="Alert Date" name="alertDate">
-                    <DatePicker style={{ width: "100%" }} disabledDate={disablePastDates} />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      disabledDate={disablePastDates}
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={8}>

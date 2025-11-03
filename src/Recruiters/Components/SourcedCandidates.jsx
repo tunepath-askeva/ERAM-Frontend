@@ -204,6 +204,13 @@ const CommentModal = ({
             value={selectedPipeline}
             onChange={setSelectedPipeline}
             allowClear
+            showSearch
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                input.toLowerCase()
+              )
+            }
           >
             {pipelines.map((pipeline) => (
               <Option key={pipeline._id} value={pipeline._id}>
