@@ -99,19 +99,19 @@ const EditWorkOrder = () => {
   const { data: approvalData, isLoading: isLoadingApprovals } =
     useGetApprovalQuery({
       page: 1,
-      limit: 100000,
+      pageSize: 100000,
     });
   const { data: Branch } = useGetAdminBranchQuery();
   // const { data: recruiters } = useGetRecruitersQuery();
   const { data: recruiters } = useGetRecruitersNameQuery();
   const { data: projects } = useGetProjectsQuery({
-      page: 1,
-      limit: 100000,
-    });
+    page: 1,
+    pageSize: 100000,
+  });
   const { data: pipeline, refetch: refetchPipeline } = useGetPipelinesQuery({
-      page: 1,
-      limit: 100000,
-    });
+    page: 1,
+    pageSize: 100000,
+  });
   const {
     data: workOrderData,
     isLoading: isLoadingWorkOrder,
@@ -121,15 +121,15 @@ const EditWorkOrder = () => {
     skip: !id,
   });
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
- {
+    {
       page: 1,
-      limit: 100000,
+      pageSize: 100000,
     }
   );
   const { data: staffsData, isLoading: isLoadingStaffs } = useGetStaffsQuery({
-      page: 1,
-      limit: 100000,
-    });
+    page: 1,
+    pageSize: 100000,
+  });
   const [editWorkOrder] = useEditWorkOrderMutation();
   const [getJobCodes] = useLazyGetJobCodesByProjectQuery();
 
