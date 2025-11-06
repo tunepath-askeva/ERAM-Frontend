@@ -44,7 +44,12 @@ const SourcedJobDetails = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: response, isLoading, isError } = useGetSourcedJobByIdQuery(id);
+  const {
+    data: response,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetSourcedJobByIdQuery(id);
   const [uploadStageDocuments] = useUploadStageDocumentsMutation();
   const [submitWorkOrderDocuments] = useSubmitWorkOrderDocumentsMutation();
 
@@ -214,6 +219,7 @@ const SourcedJobDetails = () => {
         ...prev,
         [stageId]: [],
       }));
+      await refetch();
     } catch (error) {
       console.error("Failed to upload documents:", error);
       message.error(error?.data?.message || "Failed to submit documents");
@@ -576,6 +582,7 @@ const SourcedJobDetails = () => {
           ...prev,
           ["workOrder"]: [],
         }));
+        await refetch();
       } catch (error) {
         console.error("Failed to upload work order documents:", error);
         message.error(error?.data?.message || "Failed to submit documents");
@@ -631,6 +638,10 @@ const SourcedJobDetails = () => {
                   const isPending = uploadedFiles["workOrder"]?.some(
                     (pendingDoc) => pendingDoc.documentType === doc.name
                   );
+                  const uploadedDoc = getUploadedDocument(
+                    sourcedJob.workOrderuploadedDocuments,
+                    doc.name
+                  );
 
                   return (
                     <div
@@ -657,22 +668,53 @@ const SourcedJobDetails = () => {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "8px",
+                          justifyContent: "space-between",
                         }}
                       >
-                        <FileTextOutlined
+                        <div
                           style={{
-                            color: isUploaded
-                              ? "#52c41a"
-                              : isPending
-                              ? "#faad14"
-                              : "#8c8c8c",
-                            fontSize: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            flex: 1,
                           }}
-                        />
-                        <Text strong style={{ fontSize: "14px" }}>
-                          {doc.name}
-                        </Text>
+                        >
+                          <FileTextOutlined
+                            style={{
+                              color: isUploaded
+                                ? "#52c41a"
+                                : isPending
+                                ? "#faad14"
+                                : "#8c8c8c",
+                              fontSize: "16px",
+                            }}
+                          />
+                          <Text strong style={{ fontSize: "14px" }}>
+                            {doc.name}
+                          </Text>
+                        </div>
+
+                        {/* View Button for Uploaded Documents */}
+                        {isUploaded && uploadedDoc && (
+                          <Button
+                            type="primary"
+                            size="small"
+                            ghost
+                            onClick={() => {
+                              if (uploadedDoc.fileUrl) {
+                                window.open(uploadedDoc.fileUrl, "_blank");
+                              } else {
+                                message.info("File preview not available");
+                              }
+                            }}
+                            style={{
+                              borderColor: "#52c41a",
+                              color: "#52c41a",
+                            }}
+                          >
+                            View
+                          </Button>
+                        )}
                       </div>
 
                       {doc.description && (
@@ -686,29 +728,45 @@ const SourcedJobDetails = () => {
                           marginTop: "8px",
                           display: "flex",
                           alignItems: "center",
-                          gap: "8px",
+                          justifyContent: "space-between",
                         }}
                       >
-                        {isUploaded ? (
-                          <Tag
-                            color="success"
-                            size="small"
-                            icon={<CheckCircleOutlined />}
-                          >
-                            Uploaded
-                          </Tag>
-                        ) : isPending ? (
-                          <Tag
-                            color="warning"
-                            size="small"
-                            icon={<ClockCircleOutlined />}
-                          >
-                            Pending Submit
-                          </Tag>
-                        ) : (
-                          <Tag color="default" size="small">
-                            Not Uploaded
-                          </Tag>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          {isUploaded ? (
+                            <Tag
+                              color="success"
+                              size="small"
+                              icon={<CheckCircleOutlined />}
+                            >
+                              Uploaded
+                            </Tag>
+                          ) : isPending ? (
+                            <Tag
+                              color="warning"
+                              size="small"
+                              icon={<ClockCircleOutlined />}
+                            >
+                              Pending Submit
+                            </Tag>
+                          ) : (
+                            <Tag color="default" size="small">
+                              Not Uploaded
+                            </Tag>
+                          )}
+                        </div>
+
+                        {isUploaded && uploadedDoc?.uploadedAt && (
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {new Date(
+                              uploadedDoc.uploadedAt
+                            ).toLocaleDateString()}
+                          </Text>
                         )}
                       </div>
                     </div>
