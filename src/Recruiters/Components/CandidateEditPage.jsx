@@ -329,7 +329,7 @@ const CandidateEditPage = () => {
           if (key.endsWith("CountryCode") && values[key]) {
             const fieldName = key.replace("CountryCode", "");
             if (values[fieldName]) {
-              result[fieldName] = `+${values[key]}${values[fieldName]}`;
+              result[fieldName] = `${values[key]}${values[fieldName]}`;
             }
             delete result[key];
           }

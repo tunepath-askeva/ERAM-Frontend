@@ -18,31 +18,71 @@ const PhoneInput = ({
   useEffect(() => {
     // Extract country code and phone number from existing value
     const currentPhone = form.getFieldValue(name);
-    if (currentPhone && typeof currentPhone === "string") {
-      // Handle phone numbers that start with '+' (international format)
-      if (currentPhone.startsWith("")) {
-        const { countryCode, phoneNumber: number } =
-          phoneUtils.parsePhoneNumber(currentPhone);
-        if (countryCode) {
+    const currentCountryCodeField = form.getFieldValue(`${name}CountryCode`);
+    
+    if (currentPhone && typeof currentPhone === "string" && currentPhone.trim() !== "") {
+      // Clean the phone number - remove all non-digits (including +, spaces, dashes, etc.)
+      const cleanPhone = currentPhone.replace(/\D/g, "");
+      
+      if (cleanPhone) {
+        // Try to parse the phone number to extract country code from the clean digits
+        const { countryCode, phoneNumber: number } = phoneUtils.parsePhoneNumber(cleanPhone);
+        
+        if (countryCode && number && phoneUtils.validateMobileNumber(countryCode, number)) {
+          // Country code was successfully detected, extracted, and validated
           setSelectedCountryCode(countryCode);
-          form.setFieldsValue({ [`${name}CountryCode`]: countryCode });
-        }
-        if (number) {
           setPhoneNumber(number);
-          form.setFieldsValue({ [name]: number });
-        }
-      } else {
-        // Handle phone numbers without '+' - assume they might already be separated
-        // or use default country code (91 for India)
-        setPhoneNumber(currentPhone);
-        form.setFieldsValue({ [name]: currentPhone });
-        // Set default country code if not already set
-        if (!form.getFieldValue(`${name}CountryCode`)) {
-          form.setFieldsValue({ [`${name}CountryCode`]: selectedCountryCode });
+          form.setFieldsValue({ 
+            [`${name}CountryCode`]: countryCode,
+            [name]: number 
+          });
+        } else if (currentCountryCodeField && phoneUtils.isCountryCodeSupported(currentCountryCodeField)) {
+          // Use existing country code field if available and valid
+          // Check if the clean phone starts with this country code
+          if (cleanPhone.startsWith(currentCountryCodeField)) {
+            // Remove the country code prefix
+            const phoneWithoutCode = cleanPhone.slice(currentCountryCodeField.length);
+            setSelectedCountryCode(currentCountryCodeField);
+            setPhoneNumber(phoneWithoutCode);
+            form.setFieldsValue({ [name]: phoneWithoutCode });
+          } else {
+            // Phone doesn't have country code prefix, use as-is
+            setSelectedCountryCode(currentCountryCodeField);
+            setPhoneNumber(cleanPhone);
+            form.setFieldsValue({ [name]: cleanPhone });
+          }
+        } else {
+          // No valid country code detected, use default and treat entire number as phone
+          const codeToUse = selectedCountryCode;
+          
+          // Check if phone starts with the default country code
+          if (cleanPhone.startsWith(codeToUse)) {
+            const phoneWithoutCode = cleanPhone.slice(codeToUse.length);
+            setSelectedCountryCode(codeToUse);
+            setPhoneNumber(phoneWithoutCode);
+            form.setFieldsValue({ 
+              [`${name}CountryCode`]: codeToUse,
+              [name]: phoneWithoutCode 
+            });
+          } else {
+            // Use entire clean number as phone number
+            setSelectedCountryCode(codeToUse);
+            setPhoneNumber(cleanPhone);
+            form.setFieldsValue({ 
+              [`${name}CountryCode`]: codeToUse,
+              [name]: cleanPhone 
+            });
+          }
         }
       }
+    } else if (currentCountryCodeField) {
+      // If only country code exists, set it
+      setSelectedCountryCode(currentCountryCodeField);
+    } else {
+      // Set default country code if nothing exists
+      form.setFieldsValue({ [`${name}CountryCode`]: selectedCountryCode });
     }
-  }, [form, name, selectedCountryCode]);
+  }, [form, name]);
 
   const validatePhoneNumber = (_, value) => {
     if (!value && required) {
@@ -102,7 +142,7 @@ const PhoneInput = ({
           value: code,
           label: `${country?.flag || ""} ${
             country?.name || `Country ${code}`
-          } (${code})`,
+          } (+${code})`,
           searchText: `${country?.name || ""} ${code}`.toLowerCase(),
         };
       })
@@ -118,11 +158,13 @@ const PhoneInput = ({
           rules={
             required ? [{ required: true, message: "Select country" }] : []
           }
+          initialValue={selectedCountryCode}
         >
           <Select
             showSearch
             placeholder="Country"
             onChange={handleCountryCodeChange}
+            value={selectedCountryCode}
             filterOption={(input, option) =>
               option.searchText?.includes(input.toLowerCase())
             }
@@ -150,6 +192,7 @@ const PhoneInput = ({
             placeholder={`Enter ${
               phoneUtils.getLimits(selectedCountryCode)?.min || 0
             }-${phoneUtils.getLimits(selectedCountryCode)?.max || 0} digits`}
+            value={phoneNumber}
             onChange={handlePhoneNumberChange}
             maxLength={phoneUtils.getLimits(selectedCountryCode)?.max || 15}
             disabled={disabled}

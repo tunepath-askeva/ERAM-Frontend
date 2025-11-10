@@ -165,6 +165,9 @@ const CandidateSettings = () => {
     fullName: "",
     email: "",
     phone: "",
+    agency: "",
+    workorderhint: "",
+    clientCode: "",
     skills: [],
     languages: [],
     qualifications: [],
@@ -405,6 +408,9 @@ const CandidateSettings = () => {
           employmentType: "",
         },
         workMode: candidateData.workMode || "",
+        agency: candidateData.agency || "N/A",
+        workorderhint: candidateData.workorderhint || "N/A",
+        clientCode: candidateData.clientCode || "N/A",
       };
 
       setUserData(mappedData);
@@ -582,13 +588,13 @@ const CandidateSettings = () => {
 
         // Handle main phone
         if (values.phone && values.phoneCountryCode) {
-          result.phone = `+${values.phoneCountryCode}${values.phone}`;
+          result.phone = `${values.phoneCountryCode}${values.phone}`;
           delete result.phoneCountryCode;
         }
 
         // Handle emergency contacts
         if (values.emergencyContactNo && values.emergencyContactNoCountryCode) {
-          result.emergencyContactNo = `+${values.emergencyContactNoCountryCode}${values.emergencyContactNo}`;
+          result.emergencyContactNo = `${values.emergencyContactNoCountryCode}${values.emergencyContactNo}`;
           delete result.emergencyContactNoCountryCode;
         }
 
@@ -596,7 +602,7 @@ const CandidateSettings = () => {
           values.contactPersonMobile &&
           values.contactPersonMobileCountryCode
         ) {
-          result.contactPersonMobile = `+${values.contactPersonMobileCountryCode}${values.contactPersonMobile}`;
+          result.contactPersonMobile = `${values.contactPersonMobileCountryCode}${values.contactPersonMobile}`;
           delete result.contactPersonMobileCountryCode;
         }
 
@@ -604,7 +610,7 @@ const CandidateSettings = () => {
           values.contactPersonHomeNo &&
           values.contactPersonHomeNoCountryCode
         ) {
-          result.contactPersonHomeNo = `+${values.contactPersonHomeNoCountryCode}${values.contactPersonHomeNo}`;
+          result.contactPersonHomeNo = `${values.contactPersonHomeNoCountryCode}${values.contactPersonHomeNo}`;
           delete result.contactPersonHomeNoCountryCode;
         }
 
@@ -1352,6 +1358,36 @@ const CandidateSettings = () => {
                         `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
                       parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                  <Form.Item label="Agency" name="agency">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter agency name"
+                      disabled
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                  <Form.Item label="Search Hint" name="workorderhint">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter Work order hint."
+                      disabled
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={12} lg={8}>
+                  <Form.Item label="Client" name="clientCode">
+                    <Input
+                      style={{ width: "100%" }}
+                      placeholder="Enter client name"
+                      disabled
                     />
                   </Form.Item>
                 </Col>
