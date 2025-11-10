@@ -1,4 +1,3 @@
-// CandidateEditPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -226,7 +225,7 @@ const CandidateEditPage = () => {
         nationality: candidate.nationality || "",
         countryOfBirth: candidate.countryOfBirth || "",
         maritalStatus: candidate.maritalStatus || "",
-        gender: candidate.gender || "Prefer not to say",
+        gender: candidate.gender || "Others",
         age: candidate.age || "",
         industry: candidate.industry || [],
         visaStatus: candidate.visaStatus || [],

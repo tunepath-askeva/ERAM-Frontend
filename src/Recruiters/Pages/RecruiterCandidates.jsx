@@ -30,6 +30,7 @@ import {
   Checkbox,
   Radio,
   Skeleton,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -120,6 +121,7 @@ const RecruiterCandidates = () => {
   );
   const [changePipelineModalVisible, setChangePipelineModalVisible] =
     useState(false);
+  const [pipelineAlert, setPipelineAlert] = useState(null);
   const [selectedNewPipeline, setSelectedNewPipeline] = useState(null);
   const [form] = Form.useForm();
   const [messageForm] = Form.useForm();
@@ -365,8 +367,8 @@ const RecruiterCandidates = () => {
 
     try {
       await updateTaggedPipeline({
-        id: selectedCandidate._id, 
-        pipelineId: selectedNewPipeline, 
+        id: selectedCandidate._id,
+        pipelineId: selectedNewPipeline,
       }).unwrap();
 
       message.success("Pipeline updated successfully!");
@@ -803,6 +805,24 @@ const RecruiterCandidates = () => {
       const defaultStages = selectedCandidate.tagPipeline.stages || [];
       const customStagesList = customStages[pipelineId] || [];
       const allStages = [...defaultStages, ...customStagesList];
+
+      const isConfigured = allStages.some((stage) => {
+        const stageDate =
+          (pipelineStageDates[pipelineId] || []).find(
+            (d) => d.stageId === (stage._id || stage.id)
+          ) || {};
+        return stageDate.startDate || stageDate.endDate;
+      });
+
+      if (!isConfigured) {
+        // 👇 Instead of Modal, show inline alert inside Drawer
+        setPipelineAlert({
+          type: "warning",
+          message:
+            "Please configure the pipeline details before moving the candidate.",
+        });
+        return;
+      }
 
       const formattedStages = allStages.map((stage, index) => {
         const stageId = stage._id || stage.id;
@@ -1474,7 +1494,7 @@ const RecruiterCandidates = () => {
     "offer",
     "rejected",
   ]
-     .filter((status) => hasPermission(`view-${status}-tab`))
+    .filter((status) => hasPermission(`view-${status}-tab`))
     .map((status) => ({
       key: status,
       label: (
@@ -2078,340 +2098,370 @@ const RecruiterCandidates = () => {
                     </TabPane>
                   )}
 
-                  {hasPermission("view-offer-details") && (candidate.status === "offer_pending" ||
-                    candidate.status === "offer_revised" ||
-                    candidate.status === "offer") && (
-                    <TabPane tab="Offer Details" key="offer">
-                      <Descriptions bordered column={1} size="small">
-                        <Descriptions.Item label="Status">
-                          <Tag
-                            color={
-                              candidate.status === "offer_pending"
-                                ? "orange"
-                                : candidate.status === "offer"
-                                ? "green"
-                                : candidate.status === "offer_revised"
-                                ? "blue"
-                                : "default"
-                            }
-                          >
-                            {candidate.status}
-                          </Tag>
-                        </Descriptions.Item>
-
-                        {candidate.offerDetails?.[0]?.currentStatus && (
-                          <Descriptions.Item label="Candidate Response">
+                  {hasPermission("view-offer-details") &&
+                    (candidate.status === "offer_pending" ||
+                      candidate.status === "offer_revised" ||
+                      candidate.status === "offer") && (
+                      <TabPane tab="Offer Details" key="offer">
+                        <Descriptions bordered column={1} size="small">
+                          <Descriptions.Item label="Status">
                             <Tag
                               color={
-                                candidate.offerDetails[0].currentStatus ===
-                                "offer-accepted"
+                                candidate.status === "offer_pending"
+                                  ? "orange"
+                                  : candidate.status === "offer"
                                   ? "green"
-                                  : candidate.offerDetails[0].currentStatus ===
-                                    "offer-rejected"
-                                  ? "red"
-                                  : candidate.offerDetails[0].currentStatus ===
-                                    "offer-revised"
+                                  : candidate.status === "offer_revised"
                                   ? "blue"
                                   : "default"
                               }
                             >
-                              {candidate.offerDetails[0].currentStatus}
+                              {candidate.status}
                             </Tag>
                           </Descriptions.Item>
-                        )}
 
-                        <Descriptions.Item label="Description">
-                          {candidate.offerDetails?.[0]?.description || "N/A"}
-                        </Descriptions.Item>
-
-                        <Descriptions.Item label="Offer Letter">
-                          {candidate.offerDetails?.[0]?.offerDocument
-                            ?.fileUrl ? (
-                            <a
-                              href={
-                                candidate?.offerDetails[0]?.offerDocument
-                                  ?.fileUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {candidate?.offerDetails[0]?.offerDocument
-                                ?.fileName || "Download Offer Letter"}
-                            </a>
-                          ) : (
-                            "No file uploaded"
-                          )}
-                        </Descriptions.Item>
-
-                        <Descriptions.Item label="Signed Offer Letter">
-                          {candidate.offerDetails?.[0]?.offerDocument
-                            ?.fileUrl ? (
-                            <a
-                              href={
-                                candidate?.offerDetails[0]?.signedOfferDocument
-                                  ?.fileUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {candidate?.offerDetails[0]?.signedOfferDocument
-                                ?.fileName || "Download Offer Letter"}
-                            </a>
-                          ) : (
-                            "No file uploaded"
-                          )}
-                        </Descriptions.Item>
-
-                        {candidate.offerDetails?.[0]?.statusHistory?.length >
-                          0 && (
-                          <Descriptions.Item label="Status History">
-                            <Collapse>
-                              {candidate.offerDetails[0].statusHistory.map(
-                                (history, index) => (
-                                  <Panel
-                                    header={`${history.status} - ${new Date(
-                                      history.changedAt
-                                    ).toLocaleString()}`}
-                                    key={index}
-                                  >
-                                    <Text strong>Status: </Text>
-                                    <Tag
-                                      color={
-                                        history.status === "offer-accepted"
-                                          ? "green"
-                                          : history.status === "offer-rejected"
-                                          ? "red"
-                                          : history.status === "offer-revised"
-                                          ? "blue"
-                                          : "default"
-                                      }
-                                    >
-                                      {history.status}
-                                    </Tag>
-                                    <br />
-                                    <Text strong>Description: </Text>
-                                    <Text>{history.description}</Text>
-                                    <br />
-                                    <Text strong>Changed at: </Text>
-                                    <Text>
-                                      {new Date(
-                                        history.changedAt
-                                      ).toLocaleString()}
-                                    </Text>
-                                  </Panel>
-                                )
-                              )}
-                            </Collapse>
-                          </Descriptions.Item>
-                        )}
-                      </Descriptions>
-
-                      <div style={{ marginTop: 16 }}>
-                        {(candidate.status === "offer_pending" ||
-                          candidate.status === "offer_revised") && (
-                          <>
-                            <Button
-                              onClick={() => {
-                                setOfferAction("revise");
-                                setOfferModalVisible(true);
-                                offerForm.setFieldsValue({
-                                  description:
-                                    candidate.offerDetails?.[0]?.description,
-                                });
-                              }}
-                              style={{ marginRight: 8 }}
-                            >
-                              Revise Offer
-                            </Button>
-
-                            <Button
-                              type="primary"
-                              style={{ marginRight: 8 }}
-                              onClick={() => handleMoveToOffer(candidate)}
-                            >
-                              Move to Offer
-                            </Button>
-
-                            <Button
-                              danger
-                              onClick={() => handleRejectCandidate(candidate)}
-                            >
-                              Reject
-                            </Button>
-                          </>
-                        )}
-
-                        {candidate.status === "offer" && <></>}
-                      </div>
-                    </TabPane>
-                  )}
-
-                  { hasPermission("view-pipeline") && selectedCandidate.status === "offer" && (
-                    <TabPane tab="Pipeline" key="2">
-                      <div style={{ padding: 16 }}>
-                        <Title level={4}>Pipeline Information</Title>
-
-                        {/* Pipeline Details */}
-                        <div style={{ marginBottom: 16 }}>
-                          <Text strong>Work Order Pipeline: </Text>
-                          <Text>
-                            {selectedCandidate.workOrder?.pipelineName ||
-                              "Not assigned"}
-                          </Text>
-                          <br />
-
-                          <Card
-                            size="small"
-                            style={{
-                              marginTop: 8,
-                              background: "#f9f9f9",
-                              border: "1px dashed #1890ff",
-                              borderRadius: 8,
-                            }}
-                          >
-                            {candidate?.tagPipelineId ? (
-                              <Space
-                                direction="vertical"
-                                style={{ width: "100%" }}
+                          {candidate.offerDetails?.[0]?.currentStatus && (
+                            <Descriptions.Item label="Candidate Response">
+                              <Tag
+                                color={
+                                  candidate.offerDetails[0].currentStatus ===
+                                  "offer-accepted"
+                                    ? "green"
+                                    : candidate.offerDetails[0]
+                                        .currentStatus === "offer-rejected"
+                                    ? "red"
+                                    : candidate.offerDetails[0]
+                                        .currentStatus === "offer-revised"
+                                    ? "blue"
+                                    : "default"
+                                }
                               >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                  }}
+                                {candidate.offerDetails[0].currentStatus}
+                              </Tag>
+                            </Descriptions.Item>
+                          )}
+
+                          <Descriptions.Item label="Description">
+                            {candidate.offerDetails?.[0]?.description || "N/A"}
+                          </Descriptions.Item>
+
+                          <Descriptions.Item label="Offer Letter">
+                            {candidate.offerDetails?.[0]?.offerDocument
+                              ?.fileUrl ? (
+                              <a
+                                href={
+                                  candidate?.offerDetails[0]?.offerDocument
+                                    ?.fileUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {candidate?.offerDetails[0]?.offerDocument
+                                  ?.fileName || "Download Offer Letter"}
+                              </a>
+                            ) : (
+                              "No file uploaded"
+                            )}
+                          </Descriptions.Item>
+
+                          <Descriptions.Item label="Signed Offer Letter">
+                            {candidate.offerDetails?.[0]?.offerDocument
+                              ?.fileUrl ? (
+                              <a
+                                href={
+                                  candidate?.offerDetails[0]
+                                    ?.signedOfferDocument?.fileUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {candidate?.offerDetails[0]?.signedOfferDocument
+                                  ?.fileName || "Download Offer Letter"}
+                              </a>
+                            ) : (
+                              "No file uploaded"
+                            )}
+                          </Descriptions.Item>
+
+                          {candidate.offerDetails?.[0]?.statusHistory?.length >
+                            0 && (
+                            <Descriptions.Item label="Status History">
+                              <Collapse>
+                                {candidate.offerDetails[0].statusHistory.map(
+                                  (history, index) => (
+                                    <Panel
+                                      header={`${history.status} - ${new Date(
+                                        history.changedAt
+                                      ).toLocaleString()}`}
+                                      key={index}
+                                    >
+                                      <Text strong>Status: </Text>
+                                      <Tag
+                                        color={
+                                          history.status === "offer-accepted"
+                                            ? "green"
+                                            : history.status ===
+                                              "offer-rejected"
+                                            ? "red"
+                                            : history.status === "offer-revised"
+                                            ? "blue"
+                                            : "default"
+                                        }
+                                      >
+                                        {history.status}
+                                      </Tag>
+                                      <br />
+                                      <Text strong>Description: </Text>
+                                      <Text>{history.description}</Text>
+                                      <br />
+                                      <Text strong>Changed at: </Text>
+                                      <Text>
+                                        {new Date(
+                                          history.changedAt
+                                        ).toLocaleString()}
+                                      </Text>
+                                    </Panel>
+                                  )
+                                )}
+                              </Collapse>
+                            </Descriptions.Item>
+                          )}
+                        </Descriptions>
+
+                        <div style={{ marginTop: 16 }}>
+                          {(candidate.status === "offer_pending" ||
+                            candidate.status === "offer_revised") && (
+                            <>
+                              <Button
+                                onClick={() => {
+                                  setOfferAction("revise");
+                                  setOfferModalVisible(true);
+                                  offerForm.setFieldsValue({
+                                    description:
+                                      candidate.offerDetails?.[0]?.description,
+                                  });
+                                }}
+                                style={{ marginRight: 8 }}
+                              >
+                                Revise Offer
+                              </Button>
+
+                              <Button
+                                type="primary"
+                                style={{ marginRight: 8 }}
+                                onClick={() => handleMoveToOffer(candidate)}
+                              >
+                                Move to Offer
+                              </Button>
+
+                              <Button
+                                danger
+                                onClick={() => handleRejectCandidate(candidate)}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+
+                          {candidate.status === "offer" && <></>}
+                        </div>
+                      </TabPane>
+                    )}
+
+                  {hasPermission("view-pipeline") &&
+                    selectedCandidate.status === "offer" && (
+                      <TabPane tab="Pipeline" key="2">
+                        <div style={{ padding: 16 }}>
+                          <Title level={4}>Pipeline Information</Title>
+
+                            {pipelineAlert && (
+                            <Alert
+                              type={pipelineAlert.type}
+                              message={pipelineAlert.message}
+                              showIcon
+                              closable
+                              onClose={() => setPipelineAlert(null)}
+                              style={{ marginBottom: 16 }}
+                            />
+                          )}
+
+                          {/* Pipeline Details */}
+                          <div style={{ marginBottom: 16 }}>
+                            <Text strong>Work Order Pipeline: </Text>
+                            <Text>
+                              {selectedCandidate.workOrder?.pipelineName ||
+                                "Not assigned"}
+                            </Text>
+                            <br />
+
+                            <Card
+                              size="small"
+                              style={{
+                                marginTop: 8,
+                                background: "#f9f9f9",
+                                border: "1px dashed #1890ff",
+                                borderRadius: 8,
+                              }}
+                            >
+                              {candidate?.tagPipelineId ? (
+                                <Space
+                                  direction="vertical"
+                                  style={{ width: "100%" }}
                                 >
-                                  <div>
-                                    <Text strong>Tagged Pipeline:</Text>
-                                    <br />
-                                    <Text>
-                                      {activePipelines.find(
-                                        (p) => p._id === candidate.tagPipelineId
-                                      )?.name || "Loading..."}
-                                    </Text>
-                                  </div>
-                                  <Button
-                                    type="default"
-                                    size="small"
-                                    onClick={handleChangePipeline}
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
                                   >
-                                    Change Pipeline
-                                  </Button>
-                                </div>
-                                {activePipelines.find(
-                                  (p) => p._id === candidate.tagPipelineId
-                                ) && (
-                                  <Button
-                                    type="link"
-                                    icon={<EyeOutlined />}
-                                    onClick={() =>
-                                      handleTagPipelineClick(
-                                        activePipelines.find(
+                                    <div>
+                                      <Text strong>Tagged Pipeline:</Text>
+                                      <br />
+                                      <Text>
+                                        {activePipelines.find(
                                           (p) =>
                                             p._id === candidate.tagPipelineId
+                                        )?.name || "Loading..."}
+                                      </Text>
+                                    </div>
+                                    <Button
+                                      type="default"
+                                      size="small"
+                                      onClick={handleChangePipeline}
+                                    >
+                                      Change Pipeline
+                                    </Button>
+                                  </div>
+                                  {activePipelines.find(
+                                    (p) => p._id === candidate.tagPipelineId
+                                  ) && (
+                                    <Button
+                                      type="link"
+                                      icon={<EyeOutlined />}
+                                      onClick={() =>
+                                        handleTagPipelineClick(
+                                          activePipelines.find(
+                                            (p) =>
+                                              p._id === candidate.tagPipelineId
+                                          )
                                         )
-                                      )
-                                    }
-                                  >
-                                    Configure Pipeline Details
-                                  </Button>
-                                )}
-                              </Space>
-                            ) : (
-                              <Space
-                                direction="vertical"
-                                style={{ width: "100%" }}
-                              >
-                                <Text type="secondary">
-                                  No separate pipeline tagged.
-                                </Text>
-                                {/* <Button
+                                      }
+                                    >
+                                      Configure Pipeline Details
+                                    </Button>
+                                  )}
+                                </Space>
+                              ) : (
+                                <Space
+                                  direction="vertical"
+                                  style={{ width: "100%" }}
+                                >
+                                  <Text type="secondary">
+                                    No separate pipeline tagged.
+                                  </Text>
+                                  {/* <Button
                                   type="primary"
                                   size="small"
                                   onClick={handleChangePipeline}
                                 >
                                   Tag a Pipeline
                                 </Button> */}
-                              </Space>
-                            )}
-                          </Card>
-                        </div>
-
-                        {activePipelines.find(
-                          (p) => p._id === candidate.tagPipelineId
-                        )?.stages && (
-                          <div style={{ marginBottom: 16 }}>
-                            <Title level={5}>Pipeline Stages</Title>
-                            <List
-                              dataSource={
-                                activePipelines.find(
-                                  (p) => p._id === candidate.tagPipelineId
-                                )?.stages || []
-                              }
-                              renderItem={(stage, index) => (
-                                <List.Item>
-                                  <List.Item.Meta
-                                    title={`${index + 1}. ${stage.name}`}
-                                    description={
-                                      <>
-                                        {stage.description && (
-                                          <div>{stage.description}</div>
-                                        )}
-                                        {stage.requiredDocuments?.length >
-                                          0 && (
-                                          <div style={{ marginTop: 8 }}>
-                                            <Text strong>
-                                              Required Documents:{" "}
-                                            </Text>
-                                            {stage.requiredDocuments.map(
-                                              (doc, docIndex) => (
-                                                <Tag
-                                                  key={docIndex}
-                                                  size="small"
-                                                >
-                                                  {doc}
-                                                </Tag>
-                                              )
-                                            )}
-                                          </div>
-                                        )}
-                                        <div style={{ marginTop: 4 }}>
-                                          <Text type="secondary">
-                                            Dependency: {stage.dependencyType}
-                                          </Text>
-                                        </div>
-                                      </>
-                                    }
-                                  />
-                                </List.Item>
+                                </Space>
                               )}
-                            />
+                            </Card>
                           </div>
-                        )}
 
-                        <Divider />
+                          {activePipelines.find(
+                            (p) => p._id === candidate.tagPipelineId
+                          )?.stages && (
+                            <div style={{ marginBottom: 16 }}>
+                              <Title level={5}>Pipeline Stages</Title>
+                              <List
+                                dataSource={
+                                  activePipelines.find(
+                                    (p) => p._id === candidate.tagPipelineId
+                                  )?.stages || []
+                                }
+                                renderItem={(stage, index) => (
+                                  <List.Item>
+                                    <List.Item.Meta
+                                      title={`${index + 1}. ${stage.name}`}
+                                      description={
+                                        <>
+                                          {stage.description && (
+                                            <div>{stage.description}</div>
+                                          )}
+                                          {stage.requiredDocuments?.length >
+                                            0 && (
+                                            <div style={{ marginTop: 8 }}>
+                                              <Text strong>
+                                                Required Documents:{" "}
+                                              </Text>
+                                              {stage.requiredDocuments.map(
+                                                (doc, docIndex) => (
+                                                  <Tag
+                                                    key={docIndex}
+                                                    size="small"
+                                                  >
+                                                    {doc}
+                                                  </Tag>
+                                                )
+                                              )}
+                                            </div>
+                                          )}
+                                          <div style={{ marginTop: 4 }}>
+                                            <Text type="secondary">
+                                              Dependency: {stage.dependencyType}
+                                            </Text>
+                                          </div>
+                                        </>
+                                      }
+                                    />
+                                  </List.Item>
+                                )}
+                              />
+                            </div>
+                          )}
 
-                        <Title level={5}>Move to Pipeline</Title>
-                        <Text
-                          type="secondary"
-                          style={{ marginBottom: 16, display: "block" }}
-                        >
-                          Move this candidate to the pipeline stage to complete
-                          all required stages before converting to employee.
-                        </Text>
+                          <Divider />
 
-                        {/* Pipeline Action Buttons */}
-                        <Space>
-                          {candidate?.tagPipelineId ? (
-                            <>
-                              <Button
-                                type="primary"
-                                style={{ background: "#da2c46" }}
-                                icon={<ArrowRightOutlined />}
-                                onClick={handleMoveToSeparatePipeline}
-                              >
-                                Move to Tagged Pipeline
-                              </Button>
+                          <Title level={5}>Move to Pipeline</Title>
+                          <Text
+                            type="secondary"
+                            style={{ marginBottom: 16, display: "block" }}
+                          >
+                            Move this candidate to the pipeline stage to
+                            complete all required stages before converting to
+                            employee.
+                          </Text>
+
+                          {/* Pipeline Action Buttons */}
+                          <Space>
+                            {candidate?.tagPipelineId ? (
+                              <>
+                                <Button
+                                  type="primary"
+                                  style={{ background: "#da2c46" }}
+                                  icon={<ArrowRightOutlined />}
+                                  onClick={handleMoveToSeparatePipeline}
+                                >
+                                  Move to Tagged Pipeline
+                                </Button>
+                                <Button
+                                  type="primary"
+                                  style={{ background: "#da2c46" }}
+                                  icon={<ArrowRightOutlined />}
+                                  onClick={() =>
+                                    handleMoveCandidateToPipeline(
+                                      selectedCandidate
+                                    )
+                                  }
+                                >
+                                  Move to Work Order Pipeline
+                                </Button>
+                              </>
+                            ) : (
                               <Button
                                 type="primary"
                                 style={{ background: "#da2c46" }}
@@ -2424,23 +2474,11 @@ const RecruiterCandidates = () => {
                               >
                                 Move to Work Order Pipeline
                               </Button>
-                            </>
-                          ) : (
-                            <Button
-                              type="primary"
-                              style={{ background: "#da2c46" }}
-                              icon={<ArrowRightOutlined />}
-                              onClick={() =>
-                                handleMoveCandidateToPipeline(selectedCandidate)
-                              }
-                            >
-                              Move to Work Order Pipeline
-                            </Button>
-                          )}
-                        </Space>
-                      </div>
-                    </TabPane>
-                  )}
+                            )}
+                          </Space>
+                        </div>
+                      </TabPane>
+                    )}
                 </Tabs>
               </div>
             )}

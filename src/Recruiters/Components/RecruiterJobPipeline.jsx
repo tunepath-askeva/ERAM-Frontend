@@ -239,70 +239,47 @@ const RecruiterJobPipeline = () => {
   const getStageName = (stageId) => {
     if (!processedJobData) return "";
 
-    const currentCandidate = processedJobData.candidates[0];
-    const isTagged = !!currentCandidate?.tagPipelineId;
+    const isTagged = !!processedJobData.candidates[0]?.tagPipelineId;
 
     if (isTagged) {
-      const taggedStage = processedJobData.pipeline?.stages?.find(
-        (s) => s._id === stageId
+      return (
+        processedJobData.pipeline?.stages?.find((s) => s._id === stageId)
+          ?.name || "Unknown Stage"
       );
-      if (taggedStage) return taggedStage.name;
     }
 
-    const workOrderStage =
+    return (
       processedJobData.workOrder?.pipelineStageTimeline?.find(
         (s) => s.stageId === stageId
-      );
-    if (workOrderStage) return workOrderStage.stageName;
-
-    const pendingStage = currentCandidate?.pendingPipelineStages?.find(
-      (stage) => stage.stageId === stageId
+      )?.stageName || "Unknown Stage"
     );
-    if (pendingStage) return pendingStage.stageName;
-
-    return "Unknown Stage";
   };
 
   const getCandidatesInStage = (stageId) => {
     if (!processedJobData || !processedJobData.candidates) return [];
 
     return processedJobData.candidates.filter((candidate) => {
-      const isTagged = !!candidate.tagPipelineId;
+      if (
+        candidate.currentStageId === stageId ||
+        candidate.currentStage === stageId
+      ) {
+        return true;
+      }
 
-      if (isTagged) {
-        return candidate.pendingPipelineStages?.some(
+      const stageProgress = candidate.stageProgress?.find(
+        (progress) => progress.stageId === stageId
+      );
+      if (stageProgress) {
+        return true;
+      }
+
+      if (candidate.pendingPipelineStages) {
+        return candidate.pendingPipelineStages.some(
           (stage) => stage.stageId === stageId
         );
-      } else {
-        if (
-          candidate.currentStageId === stageId ||
-          candidate.currentStage === stageId
-        ) {
-          return true;
-        }
-
-        const stageProgress = candidate.stageProgress?.find(
-          (progress) => progress.stageId === stageId
-        );
-        if (stageProgress) {
-          return true;
-        }
-        const hasAnyStageData =
-          candidate.stageProgress && candidate.stageProgress.length > 0;
-        const hasPendingStages =
-          candidate.pendingPipelineStages &&
-          candidate.pendingPipelineStages.length > 0;
-
-        if (!hasAnyStageData && !hasPendingStages) {
-          const firstStage =
-            processedJobData.workOrder?.pipelineStageTimeline?.[0];
-          if (firstStage && firstStage.stageId === stageId) {
-            return true;
-          }
-        }
-
-        return false;
       }
+
+      return false;
     });
   };
 
@@ -910,28 +887,15 @@ const RecruiterJobPipeline = () => {
     const currentCandidate = processedJobData.candidates[0];
     const isTaggedPipeline = !!currentCandidate.tagPipelineId;
 
-    let stagesToShow = [];
-
-    if (isTaggedPipeline) {
-      // For tagged pipelines, ONLY show pendingPipelineStages
-      stagesToShow =
-        currentCandidate?.pendingPipelineStages?.map((stage) => ({
+    const stagesToShow = isTaggedPipeline
+      ? processedJobData.pipeline?.stages?.map((stage) => ({
+          stageId: stage._id,
+          stageName: stage.name,
+        }))
+      : processedJobData.workOrder?.pipelineStageTimeline?.map((stage) => ({
           stageId: stage.stageId,
           stageName: stage.stageName,
-          stageOrder: stage.stageOrder,
         })) || [];
-    } else {
-      // For non-tagged pipelines, show workOrder stages
-      stagesToShow =
-        processedJobData.workOrder?.pipelineStageTimeline?.map((stage) => ({
-          stageId: stage.stageId,
-          stageName: stage.stageName,
-          stageOrder: stage.stageOrder,
-        })) || [];
-    }
-
-    // Sort by stageOrder
-    stagesToShow.sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0));
 
     return (
       <Tabs
@@ -949,7 +913,6 @@ const RecruiterJobPipeline = () => {
           const stageName = stage.stageName;
 
           const isCurrentStage =
-            currentCandidate.currentStageId === stageId ||
             currentCandidate.currentStage === stageId ||
             currentCandidate.stageProgress?.some(
               (sp) => sp.stageId === stageId
@@ -987,6 +950,7 @@ const RecruiterJobPipeline = () => {
       </Tabs>
     );
   };
+
   if (isLoading) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>

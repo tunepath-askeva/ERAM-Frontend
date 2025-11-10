@@ -339,7 +339,7 @@ const CandidateSettings = () => {
         nationality: candidateData.nationality || "",
         countryOfBirth: candidateData.countryOfBirth || "",
         maritalStatus: candidateData.maritalStatus || "",
-        gender: candidateData.gender || "",
+        gender: candidateData.gender || "Others",
         age: candidateData.age || "",
         industry: Array.isArray(candidateData.industry)
           ? candidateData.industry
@@ -2632,14 +2632,9 @@ const CandidateSettings = () => {
                   return false;
                 }
 
-                const allowedTypes = [
-                  "application/pdf",
-                 
-                ];
+                const allowedTypes = ["application/pdf"];
                 if (!allowedTypes.includes(file.type)) {
-                  message.error(
-                    "Only PDF files are allowed!"
-                  );
+                  message.error("Only PDF files are allowed!");
                   return false;
                 }
 
