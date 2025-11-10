@@ -2360,10 +2360,6 @@ const EditWorkOrder = () => {
                     label="Minimum Salary (SAR)"
                     rules={[
                       {
-                        required: true,
-                        message: "Please enter minimum salary",
-                      },
-                      {
                         validator: (_, value) => {
                           if (value === undefined || value === null) {
                             return Promise.resolve();
@@ -2396,10 +2392,6 @@ const EditWorkOrder = () => {
                     name="salaryMax"
                     label="Maximum Salary (SAR)"
                     rules={[
-                      {
-                        required: true,
-                        message: "Please enter maximum salary",
-                      },
                       {
                         validator: (_, value) => {
                           if (value === undefined || value === null) {

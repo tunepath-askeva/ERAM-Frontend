@@ -2645,12 +2645,6 @@ const RecruiterEditJob = () => {
                 <Form.Item
                   name="experienceMin"
                   label="Minimum Experience (years)"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter minimum experience",
-                    },
-                  ]}
                 >
                   <InputNumber
                     min={0}
@@ -2664,12 +2658,6 @@ const RecruiterEditJob = () => {
                 <Form.Item
                   name="experienceMax"
                   label="Maximum Experience (years)"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter maximum experience",
-                    },
-                  ]}
                 >
                   <InputNumber
                     min={0}
@@ -2700,13 +2688,7 @@ const RecruiterEditJob = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={6}>
-                <Form.Item
-                  name="salaryMin"
-                  label="Minimum Salary"
-                  rules={[
-                    { required: true, message: "Please enter minimum salary" },
-                  ]}
-                >
+                <Form.Item name="salaryMin" label="Minimum Salary">
                   <InputNumber
                     min={0}
                     style={{ width: "100%" }}
@@ -2715,13 +2697,7 @@ const RecruiterEditJob = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={6}>
-                <Form.Item
-                  name="salaryMax"
-                  label="Maximum Salary"
-                  rules={[
-                    { required: true, message: "Please enter maximum salary" },
-                  ]}
-                >
+                <Form.Item name="salaryMax" label="Maximum Salary">
                   <InputNumber
                     min={0}
                     style={{ width: "100%" }}
