@@ -304,7 +304,7 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                     {candidate.workorderhint || "Not specified"}
                   </Descriptions.Item>
                   <Descriptions.Item label="Client Code">
-                    {candidate.ClientCode || "Not specified"}
+                    {candidate?.clientCode || "Not specified"}
                   </Descriptions.Item>
                 </Descriptions>
 

@@ -105,11 +105,11 @@ const ClientsManagement = () => {
     setEditingClient(client);
 
     console.log("Client data:", client);
-    console.log("Client Code:", client.ClientCode);
+    console.log("Client Code:", client.clientCode);
 
     form.setFieldsValue({
       name: client.fullName,
-      code: client.ClientCode || client.clientCode || client.code,
+      code: client.clientCode || client.code,
       email: client.email,
       contactNo: client.phone,
       contactPersonNumber: client.contactPersonMobile,
@@ -682,7 +682,7 @@ const ClientsManagement = () => {
                 <div>
                   <Text strong>Client Code:</Text>
                   <Text style={{ display: "block", marginTop: "4px" }}>
-                    {selectedClient.ClientCode}
+                    {selectedClient.clientCode}
                   </Text>
                 </div>
               </Col>
