@@ -170,7 +170,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                 textOverflow: "ellipsis"
               }}
             >
-              {user.fullName}
+              {user?.fullName}
             </div>
             <Text 
               type="secondary" 
@@ -181,7 +181,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                 textOverflow: "ellipsis"
               }}
             >
-              {user.email}
+              {user?.email}
             </Text>
           </div>
         </Space>
