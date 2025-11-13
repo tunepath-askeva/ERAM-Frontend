@@ -150,6 +150,7 @@ const Login = () => {
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
       });
+      window.location.reload()
 
       const userRole = response.user.roles;
 
