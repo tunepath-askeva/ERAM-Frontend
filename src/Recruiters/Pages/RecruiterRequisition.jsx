@@ -319,8 +319,8 @@ const RecruiterRequisition = () => {
     },
     {
       title: "Approval Status",
-      dataIndex: "approvalstatus",
-      key: "approvalstatus",
+      dataIndex: "overallapprovalstatus",
+      key: "overallapprovalstatus",
       render: (approvalstatus) => (
         <Tag
           color={

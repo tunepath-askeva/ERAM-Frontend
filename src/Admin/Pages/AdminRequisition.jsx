@@ -363,7 +363,10 @@ const AdminRequisition = () => {
               size="small"
               icon={<FileTextOutlined />}
               onClick={() => handleCreateWorkOrder(record)}
-              disabled={record.status === "inactive"}
+              disabled={
+                record.status === "inactive" ||
+                record.overallapprovalstatus === "pending"
+              }
               style={{
                 background:
                   record.status === "inactive"
@@ -648,7 +651,7 @@ const AdminRequisition = () => {
                     <div className="collapse-header-content">
                       <div className="collapse-header-left">
                         <div className="collapse-header-title">
-                          Requisition No: {group.requisitionNo || "N/A"} | 
+                          Requisition No: {group.requisitionNo || "N/A"} |
                           Reference No: {group.referenceNo || "N/A"}
                         </div>
                         <div className="collapse-header-stats">

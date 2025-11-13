@@ -54,6 +54,7 @@ import {
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../Global/SkeletonLoader";
+import ReactMarkdown from "react-markdown";
 
 dayjs.extend(relativeTime);
 
@@ -621,15 +622,15 @@ const Notifications = () => {
                   }
                   description={
                     <div style={{ marginTop: "8px" }}>
-                      <Paragraph
+                      <ReactMarkdown
                         style={{
                           marginBottom: "8px",
-                          fontSize: "14px",
-                          color: !item.isRead ? "#2c3e50" : "#7f8c8d",
+                          fontSize: "clamp(13px, 2.5vw, 14px)",
+                          whiteSpace: "pre-line",
                         }}
                       >
                         {item.message}
-                      </Paragraph>
+                      </ReactMarkdown>
 
                       <div
                         style={{

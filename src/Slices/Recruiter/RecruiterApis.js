@@ -572,13 +572,14 @@ export const recruiterApi = createApi({
       }),
     }),
     approveRejectRequisition: builder.mutation({
-      query: ({ notificationId, requisitionId, status, remarks }) => ({
+      query: ({ notificationId, requisitionId, status, remarks ,isAdmin}) => ({
         url: `/req-status/${notificationId}`,
         method: "PATCH",
         body: {
           requisitionId,
           status,
           remarks,
+          isAdmin,
         },
       }),
     }),

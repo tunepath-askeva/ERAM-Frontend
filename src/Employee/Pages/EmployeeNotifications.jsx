@@ -26,6 +26,7 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
+import ReactMarkdown from "react-markdown";
 import { useGetEmployeeNotificationQuery } from "../../Slices/Employee/EmployeeApis";
 import {
   useClearAllNotificationMutation,
@@ -197,8 +198,8 @@ const EmployeeNotifications = () => {
 
   if (loading || apiLoading) {
     return (
-      <div >
-       <SkeletonLoader />F
+      <div>
+        <SkeletonLoader />F
       </div>
     );
   }
@@ -208,7 +209,7 @@ const EmployeeNotifications = () => {
       <div style={{ padding: "16px" }}>
         <Result
           status="error"
-          title="Nothing to Show Here" 
+          title="Nothing to Show Here"
           // subTitle="Something went wrong while fetching notifications."
           extra={
             <Button
@@ -386,14 +387,15 @@ const EmployeeNotifications = () => {
                   }
                   description={
                     <div style={{ marginTop: "8px" }}>
-                      <Paragraph
+                      <ReactMarkdown
                         style={{
                           marginBottom: "8px",
                           fontSize: "clamp(13px, 2.5vw, 14px)",
+                          whiteSpace: "pre-line",
                         }}
                       >
                         {item.message}
-                      </Paragraph>
+                      </ReactMarkdown>
                       {!item.isRead && (
                         <Button
                           type="link"

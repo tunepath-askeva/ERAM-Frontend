@@ -46,6 +46,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 import { useSelector } from "react-redux";
+import ReactMarkdown from "react-markdown";
 
 dayjs.extend(relativeTime);
 
@@ -568,14 +569,15 @@ const RecruiterNotifications = () => {
                   }
                   description={
                     <div style={{ marginTop: "8px" }}>
-                      <Paragraph
+                      <ReactMarkdown
                         style={{
                           marginBottom: "8px",
                           fontSize: "clamp(13px, 2.5vw, 14px)",
+                          whiteSpace: "pre-line",
                         }}
                       >
                         {item.message}
-                      </Paragraph>
+                      </ReactMarkdown>
 
                       {/* Approval/Rejection buttons for requisition assignment notifications */}
                       {renderApprovalButtons(item)}

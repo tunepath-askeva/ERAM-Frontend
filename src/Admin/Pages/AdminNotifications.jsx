@@ -15,6 +15,10 @@ import {
   Result,
   Popconfirm,
   Pagination,
+  message,
+  Form,
+  Modal,
+  Input,
 } from "antd";
 import {
   BellOutlined,
@@ -24,6 +28,8 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
   MoreOutlined,
+  CloseOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -36,6 +42,8 @@ import { useGetAdminNotificationsQuery } from "../../Slices/Admin/AdminApis.js";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
+import ReactMarkdown from "react-markdown";
+import { useApproveRejectRequisitionMutation } from "../../Slices/Recruiter/RecruiterApis.js";
 
 dayjs.extend(relativeTime);
 
@@ -47,6 +55,13 @@ const AdminNotifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [actionType, setActionType] = useState(null);
+  const [form] = Form.useForm();
+
+  const [approveRejectRequisition, { isLoading: submittingAction }] =
+    useApproveRejectRequisitionMutation();
 
   const {
     data: apiData,
@@ -74,6 +89,54 @@ const AdminNotifications = () => {
       setLoading(false);
     }
   }, [apiData, apiError]);
+
+  const handleApproveReject = (notification, action) => {
+    setSelectedNotification(notification);
+    setActionType(action);
+    setModalVisible(true);
+  };
+
+  const handleModalSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      await approveRejectRequisition({
+        notificationId: selectedNotification._id,
+        requisitionId: selectedNotification.requisitionId,
+        status: actionType,
+        remarks: values.remarks,
+        isAdmin: true,
+      }).unwrap();
+
+      message.success(`Requisition ${actionType}d successfully`);
+      setModalVisible(false);
+      form.resetFields();
+      setSelectedNotification(null);
+      setActionType(null);
+      refetch();
+    } catch (error) {
+      if (error.name !== "ValidationError") {
+        message.error(`Failed to ${actionType} requisition`);
+        console.error(`${actionType} error:`, error);
+      }
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    form.resetFields();
+    setSelectedNotification(null);
+    setActionType(null);
+  };
+
+  const isRequisitionApprovalNotification = (notification) => {
+    return (
+      notification.requisitionId &&
+      notification.title?.toLowerCase().includes("requisition") &&
+      (notification.title?.toLowerCase().includes("assigned") ||
+        notification.title?.toLowerCase().includes("requisition"))
+    );
+  };
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -386,14 +449,55 @@ const AdminNotifications = () => {
                   }
                   description={
                     <div style={{ marginTop: "8px" }}>
-                      <Paragraph
+                      <ReactMarkdown
                         style={{
                           marginBottom: "8px",
                           fontSize: "clamp(13px, 2.5vw, 14px)",
+                          whiteSpace: "pre-line",
                         }}
                       >
                         {item.message}
-                      </Paragraph>
+                      </ReactMarkdown>
+                      {isRequisitionApprovalNotification(item) &&
+                        !item.Status && (
+                          <Space style={{ marginTop: "12px" }}>
+                            <Button
+                              type="primary"
+                              icon={<CheckOutlined />}
+                              size="small"
+                              style={{
+                                backgroundColor: "#52c41a",
+                                borderColor: "#52c41a",
+                              }}
+                              onClick={() =>
+                                handleApproveReject(item, "approved")
+                              }
+                            >
+                              Approve
+                            </Button>
+
+                            <Button
+                              danger
+                              icon={<CloseOutlined />}
+                              size="small"
+                              onClick={() =>
+                                handleApproveReject(item, "rejected")
+                              }
+                            >
+                              Reject
+                            </Button>
+                          </Space>
+                        )}
+
+                      {item.Status && (
+                        <Tag
+                          color={item.Status === "approved" ? "green" : "red"}
+                          style={{ marginTop: "12px", fontWeight: "bold" }}
+                        >
+                          {item.Status.toUpperCase()}
+                        </Tag>
+                      )}
+
                       {!item.isRead && (
                         <Button
                           type="link"
@@ -435,6 +539,46 @@ const AdminNotifications = () => {
           style={{ marginTop: 16, textAlign: "center" }}
         />
       </Card>
+      <Modal
+        title={`${
+          actionType === "approved" ? "Approve" : "Reject"
+        } Requisition`}
+        open={modalVisible}
+        onOk={handleModalSubmit}
+        onCancel={handleModalCancel}
+        confirmLoading={submittingAction}
+        okText={actionType === "approved" ? "Approve" : "Reject"}
+        okButtonProps={{
+          style:
+            actionType === "approved"
+              ? { backgroundColor: "#52c41a", borderColor: "#52c41a" }
+              : { backgroundColor: "#ff4d4f", borderColor: "#ff4d4f" },
+        }}
+        cancelText="Cancel"
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" initialValues={{ remarks: "" }}>
+          <Form.Item
+            name="remarks"
+            label="Remarks"
+            rules={[
+              {
+                required: true,
+                message: "Please provide remarks for your decision",
+              },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder={`Please provide your reason for ${
+                actionType === "approved" ? "approving" : "rejecting"
+              } this requisition...`}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
