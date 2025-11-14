@@ -1239,8 +1239,7 @@ const AppliedJobDetails = () => {
                 </div>
               )}
 
-              {(pendingRequiredDocs.length > 0 ||
-                requiredDocs.length === 0) && (
+              {pendingRequiredDocs.length > 0 && (
                 <>
                   <Divider />
                   <div>

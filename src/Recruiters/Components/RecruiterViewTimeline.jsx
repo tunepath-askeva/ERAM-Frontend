@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetRecruiterJobTimelineIdQuery } from "../../Slices/Recruiter/RecruiterApis";
 import {
@@ -14,6 +14,7 @@ import {
   Row,
   Col,
   Spin,
+  Divider
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -35,342 +36,226 @@ const RecruiterViewTimeline = () => {
   const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [pageSize] = useState(5);
   const [allTimelineData, setAllTimelineData] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
 
-  const loadMoreRef = useRef();
-
-  const { data, isLoading, refetch } = useGetRecruiterJobTimelineIdQuery({
-    id,
-    page: currentPage,
-    limit: pageSize,
-  });
-
-  const loadMoreData = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
-      setIsLoadingMore(true);
-      setCurrentPage((prev) => prev + 1);
-    }
-  }, [isLoadingMore, hasMore]);
-
-  useEffect(() => {
-    if (!hasMore || isLoading || isLoadingMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreData();
-        }
-      },
-      {
-        rootMargin: "200px", // Increased to trigger earlier
-        threshold: 0.1,
-      }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (loadMoreRef.current) {
-        observer.unobserve(loadMoreRef.current);
-      }
-    };
-  }, [hasMore, isLoading, isLoadingMore, loadMoreData]);
+  const { data, isLoading, refetch, isFetching } =
+    useGetRecruiterJobTimelineIdQuery({
+      id,
+      page: currentPage,
+      limit: pageSize,
+    });
 
   useEffect(() => {
     if (data?.data) {
-      if (currentPage === 1) {
-        setAllTimelineData(data.data);
-      } else {
-        setAllTimelineData((prev) => [...prev, ...data.data]);
-      }
-
-      // Check if there's more data
-      const totalItems = data.totalCount || 0;
-      const loadedItems = currentPage * pageSize;
-      setHasMore(loadedItems < totalItems);
-
-      setIsLoadingMore(false);
+      setAllTimelineData(data.data);
+      setHasMore(data?.hasMore);
     }
-  }, [data, currentPage, pageSize]);
+  }, [data]);
 
-  const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+  const handleNext = () => {
+    if (hasMore) setCurrentPage((prev) => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
 
   const getStatusTag = (status) => {
     switch (status) {
       case "approved":
-        return (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            Approved
-          </Tag>
-        );
+        return <Tag color="green" icon={<CheckCircleOutlined />}>Approved</Tag>;
       case "pending":
-        return (
-          <Tag icon={<ClockCircleOutlined />} color="warning">
-            Pending
-          </Tag>
-        );
+        return <Tag color="orange" icon={<ClockCircleOutlined />}>Pending</Tag>;
       case "rejected":
       case "interview_rejected":
-        return (
-          <Tag icon={<CloseCircleOutlined />} color="error">
-            Rejected
-          </Tag>
-        );
-      case "selected":
-        return <Tag color="green">Selected</Tag>;
-      case "interview":
-        return <Tag color="blue">Interview</Tag>;
+        return <Tag color="red" icon={<CloseCircleOutlined />}>Rejected</Tag>;
       case "pipeline":
-        return <Tag color="orange">Pipeline</Tag>;
+        return <Tag color="processing">Pipeline</Tag>;
       default:
         return <Tag>{status}</Tag>;
     }
   };
 
-  const renderStageProgress = (stage) => {
-    return (
-      <Card size="small" title={`Stage: ${stage.stageName}`}>
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Text strong>Status: </Text>
-            {getStatusTag(stage.stageStatus)}
-          </div>
+  const renderUploadedDocs = (docs) => (
+    <Card size="small" title="Uploaded Documents">
+      <List
+        itemLayout="horizontal"
+        dataSource={docs}
+        renderItem={(doc) => (
+          <List.Item>
+            <List.Item.Meta
+              avatar={<Avatar icon={<FilePdfOutlined />} />}
+              title={doc.documentName}
+              description={
+                <a href={doc.fileUrl} target="_blank" rel="noreferrer">
+                  {doc.fileName}
+                </a>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </Card>
+  );
 
-          {stage.stageCompletedAt && (
-            <div>
-              <Text strong>Completed at: </Text>
-              <Text>
-                {dayjs(stage.stageCompletedAt).format("DD MMM YYYY, hh:mm A")}
-              </Text>
-            </div>
-          )}
+  const renderStageProgress = (stage) => (
+    <Card size="small" title={`Stage: ${stage.stageName}`} style={{ marginBottom: 10 }}>
+      <Space direction="vertical" style={{ width: "100%" }}>
+        {/* Stage Status */}
+        <Text><strong>Status:</strong> {getStatusTag(stage.stageStatus)}</Text>
 
-          {stage.recruiterReviews?.length > 0 && (
-            <div>
-              <Text strong>Reviews:</Text>
-              <List
-                size="small"
-                dataSource={stage.recruiterReviews}
-                renderItem={(review) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      avatar={<Avatar icon={<UserOutlined />} />}
-                      title={`Status: ${review.status}`}
-                      description={review.reviewComments || "No comments"}
-                    />
-                  </List.Item>
-                )}
-              />
-            </div>
-          )}
+        {/* Stage Completed At */}
+        {stage.stageCompletedAt && (
+          <Text>
+            <strong>Completed At:</strong>{" "}
+            {dayjs(stage.stageCompletedAt).format("DD MMM YYYY, hh:mm A")}
+          </Text>
+        )}
 
-          {stage.uploadedDocuments?.length > 0 && (
-            <div>
-              <Text strong>Documents:</Text>
-              <List
-                size="small"
-                dataSource={stage.uploadedDocuments}
-                renderItem={(doc) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      avatar={<Avatar icon={<FilePdfOutlined />} />}
-                      title={doc.documentName}
-                      description={
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {doc.fileName}
-                        </a>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            </div>
-          )}
-        </Space>
-      </Card>
-    );
-  };
+        {/* Recruiter Reviews */}
+        {stage.recruiterReviews?.length > 0 && (
+          <Card size="small" title="Recruiter Reviews">
+            <List
+              dataSource={stage.recruiterReviews}
+              renderItem={(rev) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={<Avatar icon={<UserOutlined />} />}
+                    title={
+                      <>
+                        <strong>{rev.recruiterId?.fullName}</strong> • {rev.status}
+                      </>
+                    }
+                    description={
+                      <>
+                        <Text type="secondary">{rev.recruiterId?.email}</Text><br />
+                        <Text>{rev.reviewComments}</Text><br />
+                        <Text type="secondary">
+                          {dayjs(rev.reviewedAt).format("DD MMM YYYY, hh:mm A")}
+                        </Text>
+                      </>
+                    }
+                  ></List.Item.Meta>
+                </List.Item>
+              )}
+            />
+          </Card>
+        )}
 
-  const renderInterviewDetails = (interview) => {
-    return (
-      <Card size="small" title={`Interview: ${interview.title}`}>
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-          <div>
-            <Text strong>Status: </Text>
-            {getStatusTag(interview.status)}
-          </div>
-
-          <div>
-            <Space>
-              <ScheduleOutlined />
-              <Text>
-                {dayjs(interview.date).format("DD MMM YYYY, hh:mm A")}
-              </Text>
-            </Space>
-          </div>
-
-          <div>
-            <Space>
-              <EnvironmentOutlined />
-              <Text>{interview.location}</Text>
-            </Space>
-          </div>
-
-          <div>
-            <Text strong>Mode: </Text>
-            <Text>{interview.mode}</Text>
-          </div>
-        </Space>
-      </Card>
-    );
-  };
+        {/* Uploaded Documents */}
+        {stage.uploadedDocuments?.length > 0 && renderUploadedDocs(stage.uploadedDocuments)}
+      </Space>
+    </Card>
+  );
 
   const renderTimelineItem = (item) => {
+    const user = item.user;
+    const workOrder = item.workOrder;
+
     return (
       <Timeline.Item key={item._id}>
         <Card
           title={
-            <Space>
-              <Text strong>{item.user.fullName}</Text>
-              <Text type="secondary">{item.user.email}</Text>
+            <Space direction="vertical">
+              <Text strong style={{ fontSize: 18 }}>{user.fullName}</Text>
+              <Text type="secondary">{user.email} • {user.phone}</Text>
             </Space>
           }
           extra={getStatusTag(item.status)}
         >
-          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <div>
-              <Text strong>Work Order: </Text>
-              <Text>{item.workOrder.title}</Text>
-            </div>
+          <Space direction="vertical" style={{ width: "100%" }} size="large">
 
-            {item.selectedMovingComment && (
-              <div>
-                <Text strong>Comment: </Text>
-                <Text>{item.selectedMovingComment}</Text>
-              </div>
-            )}
+            {/* Candidate Details */}
+            <Card size="small" title="Candidate Details">
+              <Text><strong>Nationality:</strong> {user.nationality || "N/A"}</Text><br />
+              <Text><strong>Experience:</strong> {user.totalExperienceYears}</Text><br />
+              <Text><strong>Skills:</strong> {user.skills?.join(", ") || "N/A"}</Text>
+            </Card>
 
+            {/* Work Order Details */}
+            <Card size="small" title="Work Order Details">
+              <Text><strong>Title:</strong> {workOrder.title}</Text><br />
+              <Text><strong>Job Code:</strong> {workOrder.jobCode}</Text><br />
+              <Text><strong>Location:</strong> {workOrder.officeLocation}</Text><br />
+              <Text><strong>Industry:</strong> {workOrder.companyIndustry}</Text>
+            </Card>
+
+            {/* Work Order Uploaded Docs */}
+            {item.workOrderuploadedDocuments?.length > 0 &&
+              renderUploadedDocs(item.workOrderuploadedDocuments)}
+
+            {/* Stage Progress */}
             {item.stageProgress?.length > 0 && (
-              <div>
-                <Text strong>Stage Progress:</Text>
+              <Card size="small" title="Stage Progress">
                 {item.stageProgress.map(renderStageProgress)}
-              </div>
+              </Card>
             )}
 
+            {/* Interview Details */}
             {item.interviewDetails?.length > 0 && (
-              <div>
-                <Text strong>Interview Details:</Text>
-                {item.interviewDetails.map(renderInterviewDetails)}
-              </div>
+              <Card size="small" title="Interview Details">
+                interviewDetails UI you want?
+              </Card>
             )}
+
+            {/* Offer Details */}
+            {item.offerDetails?.length > 0 && (
+              <Card size="small" title="Offer Details">
+                offerDetails UI you want?
+              </Card>
+            )}
+
           </Space>
         </Card>
       </Timeline.Item>
     );
   };
 
-  if (isLoading) {
-    return (
-      <div style={{ padding: "24px" }}>
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={handleGoBack}
-          style={{ marginBottom: 16 }}
-        >
-          Back
-        </Button>
-        <div>Loading...</div>
-      </div>
-    );
-  }
+  if (isLoading)
+    return <Spin size="large" style={{ margin: 50 }} />;
 
   if (!isLoading && allTimelineData.length === 0) {
     return (
-      <div style={{ padding: "24px" }}>
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={handleGoBack}
-          style={{ marginBottom: 16 }}
-        >
-          Back
-        </Button>
-        <Result
-          icon={<FrownOutlined />}
-          title="No Timeline Data Available"
-          subTitle="There are no timeline records for this work order yet."
-          extra={
-            <Button type="primary" onClick={() => refetch()}>
-              Refresh
-            </Button>
-          }
-        />
-      </div>
+      <Result
+        icon={<FrownOutlined />}
+        title="No Timeline Data"
+        subTitle="No records found for this Work Order."
+        extra={<Button onClick={() => refetch()}>Refresh</Button>}
+      />
     );
   }
 
   return (
-    <div style={{ padding: "24px" }}>
-      <Row align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={handleGoBack}
-          >
-            Back
-          </Button>
-        </Col>
-        <Col flex="auto">
-          <Title level={2} style={{ margin: 0 }}>
-            Work Order Timeline
-          </Title>
-        </Col>
-      </Row>
+    <div style={{ padding: 24 }}>
+      <Title level={2}>Work Order Timeline</Title>
 
-      <Timeline
-        mode="left"
-        style={{ marginTop: "20px"}}
-      >
+      <Timeline mode="left">
         {allTimelineData.map(renderTimelineItem)}
       </Timeline>
 
-      {/* Add load more trigger */}
-      {hasMore && (
-        <div
-          ref={loadMoreRef}
-          style={{ height: "20px", margin: "20px 0" }}
-        ></div>
-      )}
+      {/* Pagination */}
+      <div style={{ textAlign: "center", marginTop: 24 }}>
+        <Space>
+          <Button
+            onClick={handlePrev}
+            disabled={currentPage === 1 || isFetching}
+          >
+            Previous
+          </Button>
 
-      {/* Add loading indicator */}
-      {(isLoadingMore || isLoading) && (
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <Spin size="large" />
-          <Text style={{ display: "block", marginTop: "8px" }}>
-            Loading more timeline items...
-          </Text>
-        </div>
-      )}
+          <Text>Page {currentPage}</Text>
 
-      {/* Add end of list message */}
-      {!hasMore && allTimelineData.length > 0 && (
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <Text type="secondary">You've reached the end of the timeline</Text>
-        </div>
-      )}
+          <Button
+            type="primary"
+            onClick={handleNext}
+            disabled={!hasMore || isFetching}
+          >
+            Next
+          </Button>
+        </Space>
+      </div>
     </div>
   );
 };

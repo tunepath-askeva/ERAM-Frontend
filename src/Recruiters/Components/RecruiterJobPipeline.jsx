@@ -159,6 +159,21 @@ const RecruiterJobPipeline = () => {
     }
   }, [apiData, id]);
 
+  const formatIST = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   useEffect(() => {
     if (processedJobData?.workOrder?.pipelineStageTimeline?.length > 0) {
       const currentCandidate = processedJobData.candidates[0];
@@ -742,7 +757,7 @@ const RecruiterJobPipeline = () => {
         if (!areDocumentsUploaded) {
           return "Required documents must be uploaded before this candidate can be moved to the next stage.";
         } else {
-          return "This stage has no approval requirements. Documents are uploaded and candidate is ready to be moved to the next stage.";
+          return "This stage has no approval requirements.  candidate is ready to be moved to the next stage.";
         }
       }
     };
@@ -1160,60 +1175,166 @@ const RecruiterJobPipeline = () => {
                       />
                     }
                     title={
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: screens.xs ? "column" : "row",
-                          alignItems: screens.xs ? "flex-start" : "center",
-                          gap: screens.xs ? "4px" : "8px",
-                        }}
-                      >
-                        <Text
-                          strong
-                          style={{
-                            fontSize: screens.xs ? "16px" : "18px",
-                            lineHeight: screens.xs ? "1.2" : "1.5",
-                          }}
-                        >
-                          {candidate.name}
-                        </Text>
+                      <div style={{ width: "100%" }}>
+                        <div style={{ marginBottom: "16px" }}>
+                          <Text
+                            strong
+                            style={{
+                              fontSize: screens.xs ? "16px" : "18px",
+                              lineHeight: screens.xs ? "1.2" : "1.5",
+                            }}
+                          >
+                            {candidate.name}
+                          </Text>
+
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              display: "flex",
+                              gap: "6px",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {candidate.isSourced && (
+                              <Tag color="orange">Sourced</Tag>
+                            )}
+                            <Tag
+                              color={
+                                candidate.stageStatus === "approved"
+                                  ? "green"
+                                  : candidate.stageStatus === "rejected"
+                                  ? "red"
+                                  : "blue"
+                              }
+                            >
+                              {candidate.stageStatus}
+                            </Tag>
+                          </div>
+
+                          <Space
+                            direction="vertical"
+                            size={2}
+                            style={{ marginTop: "6px" }}
+                          >
+                            <Text type="secondary">
+                              {candidate.email} • {candidate.phone}
+                            </Text>
+                            <Text type="secondary">
+                              Applied: {formatDate(candidate.appliedDate)}
+                            </Text>
+                          </Space>
+                        </div>
+
+                        {/* RECRUITER DETAILS (BELOW) */}
                         <div
                           style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "4px",
-                            marginTop: screens.xs ? "4px" : "0",
+                            width: "100%",
+                            background: "#fafafa",
+                            padding: "12px",
+                            borderRadius: "8px",
+                            marginTop: "10px",
                           }}
                         >
-                          {candidate.isSourced && (
-                            <Tag color="orange" size="small">
-                              Sourced
-                            </Tag>
+                          <Text strong style={{ fontSize: "16px" }}>
+                            Recruiter Details
+                          </Text>
+
+                          {candidate.stageProgress?.find(
+                            (sp) => sp.stageId === activeStage
+                          )?.recruiterInfo && (
+                            <div style={{ marginTop: "8px" }}>
+                              <Text strong>Main Recruiter:</Text>
+                              <div style={{ marginTop: "4px" }}>
+                                <Text>
+                                  <UserOutlined />{" "}
+                                  {
+                                    candidate.stageProgress.find(
+                                      (sp) => sp.stageId === activeStage
+                                    ).recruiterInfo.fullName
+                                  }
+                                </Text>
+                                <br />
+                                <Text type="secondary">
+                                  {
+                                    candidate.stageProgress.find(
+                                      (sp) => sp.stageId === activeStage
+                                    ).recruiterInfo.email
+                                  }
+                                </Text>
+                                <br />
+                                <Text type="secondary">
+                                  {
+                                    candidate.stageProgress.find(
+                                      (sp) => sp.stageId === activeStage
+                                    ).recruiterInfo.phone
+                                  }
+                                </Text>
+                              </div>
+                            </div>
                           )}
-                          <Tag
-                            color={
-                              candidate.stageStatus === "approved"
-                                ? "green"
-                                : candidate.stageStatus === "rejected"
-                                ? "red"
-                                : "blue"
-                            }
-                            size={screens.xs ? "small" : "default"}
-                          >
-                            {candidate.stageStatus}
-                          </Tag>
+
+                          {/* REVIEWS BELOW */}
+                          <div style={{ marginTop: "10px" }}>
+                            <Text strong style={{ fontSize: "14px" }}>
+                              Reviews:
+                            </Text>
+
+                            {candidate.stageProgress?.find(
+                              (sp) => sp.stageId === activeStage
+                            )?.recruiterReviews?.length > 0 ? (
+                              candidate.stageProgress
+                                .find((sp) => sp.stageId === activeStage)
+                                .recruiterReviews.map((review) => (
+                                  <Card
+                                    key={review._id}
+                                    size="small"
+                                    style={{
+                                      marginTop: "8px",
+                                      borderRadius: "8px",
+                                      background: "#ffffff",
+                                    }}
+                                  >
+                                    <Text strong>
+                                      <UserOutlined />{" "}
+                                      {review.recruiterInfo?.fullName}
+                                    </Text>
+                                    <br />
+                                    <Text type="secondary">
+                                      {review.recruiterInfo?.email}
+                                    </Text>
+                                    <br />
+                                    <Text
+                                      style={{
+                                        fontSize: "12px",
+                                        marginTop: "4px",
+                                      }}
+                                    >
+                                      {review.reviewComments}
+                                    </Text>
+                                    <Tag
+                                      color={
+                                        review.status === "approved"
+                                          ? "green"
+                                          : "orange"
+                                      }
+                                      style={{ marginTop: "4px" }}
+                                    >
+                                      {review.status} &nbsp;{" "}
+                                      {formatIST(review.reviewedAt)}
+                                    </Tag>
+                                  </Card>
+                                ))
+                            ) : (
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                No reviews yet
+                              </Text>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    }
-                    description={
-                      <Space direction="vertical" size={4}>
-                        <Text type="secondary">
-                          {candidate.email} • {candidate.phone}
-                        </Text>
-                        <Text type="secondary">
-                          Applied: {formatDate(candidate.appliedDate)}
-                        </Text>
-                      </Space>
                     }
                   />
 
