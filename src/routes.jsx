@@ -109,8 +109,8 @@ const AppRoutes = () => {
   const host = window.location.hostname;
 
   const isMainDomain =
-    host === "tradelivetoday.com" ||
-    host === "www.tradelivetoday.com" ||
+    host === "eramworkforce.com" ||
+    host === "www.eramworkforce.com" ||
     host === "localhost" ||
     host === "127.0.0.1";
 
