@@ -14,7 +14,8 @@ import {
   Row,
   Col,
   Spin,
-  Divider
+  Divider,
+  Breadcrumb
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -26,6 +27,7 @@ import {
   EnvironmentOutlined,
   FrownOutlined,
   ArrowLeftOutlined,
+  LeftOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -65,12 +67,24 @@ const RecruiterViewTimeline = () => {
   const getStatusTag = (status) => {
     switch (status) {
       case "approved":
-        return <Tag color="green" icon={<CheckCircleOutlined />}>Approved</Tag>;
+        return (
+          <Tag color="green" icon={<CheckCircleOutlined />}>
+            Approved
+          </Tag>
+        );
       case "pending":
-        return <Tag color="orange" icon={<ClockCircleOutlined />}>Pending</Tag>;
+        return (
+          <Tag color="orange" icon={<ClockCircleOutlined />}>
+            Pending
+          </Tag>
+        );
       case "rejected":
       case "interview_rejected":
-        return <Tag color="red" icon={<CloseCircleOutlined />}>Rejected</Tag>;
+        return (
+          <Tag color="red" icon={<CloseCircleOutlined />}>
+            Rejected
+          </Tag>
+        );
       case "pipeline":
         return <Tag color="processing">Pipeline</Tag>;
       default:
@@ -101,10 +115,16 @@ const RecruiterViewTimeline = () => {
   );
 
   const renderStageProgress = (stage) => (
-    <Card size="small" title={`Stage: ${stage.stageName}`} style={{ marginBottom: 10 }}>
+    <Card
+      size="small"
+      title={`Stage: ${stage.stageName}`}
+      style={{ marginBottom: 10 }}
+    >
       <Space direction="vertical" style={{ width: "100%" }}>
         {/* Stage Status */}
-        <Text><strong>Status:</strong> {getStatusTag(stage.stageStatus)}</Text>
+        <Text>
+          <strong>Status:</strong> {getStatusTag(stage.stageStatus)}
+        </Text>
 
         {/* Stage Completed At */}
         {stage.stageCompletedAt && (
@@ -125,13 +145,16 @@ const RecruiterViewTimeline = () => {
                     avatar={<Avatar icon={<UserOutlined />} />}
                     title={
                       <>
-                        <strong>{rev.recruiterId?.fullName}</strong> • {rev.status}
+                        <strong>{rev.recruiterId?.fullName}</strong> •{" "}
+                        {rev.status}
                       </>
                     }
                     description={
                       <>
-                        <Text type="secondary">{rev.recruiterId?.email}</Text><br />
-                        <Text>{rev.reviewComments}</Text><br />
+                        <Text type="secondary">{rev.recruiterId?.email}</Text>
+                        <br />
+                        <Text>{rev.reviewComments}</Text>
+                        <br />
                         <Text type="secondary">
                           {dayjs(rev.reviewedAt).format("DD MMM YYYY, hh:mm A")}
                         </Text>
@@ -145,7 +168,8 @@ const RecruiterViewTimeline = () => {
         )}
 
         {/* Uploaded Documents */}
-        {stage.uploadedDocuments?.length > 0 && renderUploadedDocs(stage.uploadedDocuments)}
+        {stage.uploadedDocuments?.length > 0 &&
+          renderUploadedDocs(stage.uploadedDocuments)}
       </Space>
     </Card>
   );
@@ -159,27 +183,49 @@ const RecruiterViewTimeline = () => {
         <Card
           title={
             <Space direction="vertical">
-              <Text strong style={{ fontSize: 18 }}>{user.fullName}</Text>
-              <Text type="secondary">{user.email} • {user.phone}</Text>
+              <Text strong style={{ fontSize: 18 }}>
+                {user.fullName}
+              </Text>
+              <Text type="secondary">
+                {user.email} • {user.phone}
+              </Text>
             </Space>
           }
           extra={getStatusTag(item.status)}
         >
           <Space direction="vertical" style={{ width: "100%" }} size="large">
-
             {/* Candidate Details */}
             <Card size="small" title="Candidate Details">
-              <Text><strong>Nationality:</strong> {user.nationality || "N/A"}</Text><br />
-              <Text><strong>Experience:</strong> {user.totalExperienceYears}</Text><br />
-              <Text><strong>Skills:</strong> {user.skills?.join(", ") || "N/A"}</Text>
+              <Text>
+                <strong>Nationality:</strong> {user.nationality || "N/A"}
+              </Text>
+              <br />
+              <Text>
+                <strong>Experience:</strong> {user.totalExperienceYears}
+              </Text>
+              <br />
+              <Text>
+                <strong>Skills:</strong> {user.skills?.join(", ") || "N/A"}
+              </Text>
             </Card>
 
             {/* Work Order Details */}
             <Card size="small" title="Work Order Details">
-              <Text><strong>Title:</strong> {workOrder.title}</Text><br />
-              <Text><strong>Job Code:</strong> {workOrder.jobCode}</Text><br />
-              <Text><strong>Location:</strong> {workOrder.officeLocation}</Text><br />
-              <Text><strong>Industry:</strong> {workOrder.companyIndustry}</Text>
+              <Text>
+                <strong>Title:</strong> {workOrder.title}
+              </Text>
+              <br />
+              <Text>
+                <strong>Job Code:</strong> {workOrder.jobCode}
+              </Text>
+              <br />
+              <Text>
+                <strong>Location:</strong> {workOrder.officeLocation}
+              </Text>
+              <br />
+              <Text>
+                <strong>Industry:</strong> {workOrder.companyIndustry}
+              </Text>
             </Card>
 
             {/* Work Order Uploaded Docs */}
@@ -206,15 +252,13 @@ const RecruiterViewTimeline = () => {
                 offerDetails UI you want?
               </Card>
             )}
-
           </Space>
         </Card>
       </Timeline.Item>
     );
   };
 
-  if (isLoading)
-    return <Spin size="large" style={{ margin: 50 }} />;
+  if (isLoading) return <Spin size="large" style={{ margin: 50 }} />;
 
   if (!isLoading && allTimelineData.length === 0) {
     return (
@@ -229,12 +273,25 @@ const RecruiterViewTimeline = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={2}>Work Order Timeline</Title>
-
-      <Timeline mode="left">
-        {allTimelineData.map(renderTimelineItem)}
-      </Timeline>
-
+   <div style={{ marginBottom: "16px" }}>
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            <Button
+              type="link"
+              onClick={() => navigate('/recruiter/jobs-timeline')}
+              icon={<LeftOutlined />}
+              style={{
+                paddingLeft: 0,
+                color: "#da2c46",
+              }}
+            >
+              Back to Jobs
+            </Button>
+          </Breadcrumb.Item>
+        </Breadcrumb>
+      </div>
+     
+      <Timeline mode="left">{allTimelineData.map(renderTimelineItem)}</Timeline>
       {/* Pagination */}
       <div style={{ textAlign: "center", marginTop: 24 }}>
         <Space>
