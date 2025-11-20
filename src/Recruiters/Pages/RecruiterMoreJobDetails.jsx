@@ -167,7 +167,9 @@ const RecruiterMoreJobDetails = () => {
       return {
         key: `wo-${index}`,
         workOrder: workOrder.workOrderTitle || `WO-${index + 1}`,
-          numberOfCandidate: workOrder.numberOfCandidate || 0, 
+        numberOfCandidate: workOrder.numberOfCandidate || 0,
+        clientName: workOrder.clientName,
+        projectName: workOrder.projectName,
         ...statusCounts,
         rawData: workOrder,
       };
@@ -260,7 +262,8 @@ const RecruiterMoreJobDetails = () => {
     if (workOrderData.length === 0) return {};
 
     return workOrderData.reduce((acc, row) => {
-      acc.numberOfCandidate = (acc.numberOfCandidate || 0) + row.numberOfCandidate;
+      acc.numberOfCandidate =
+        (acc.numberOfCandidate || 0) + row.numberOfCandidate;
       acc.total = (acc.total || 0) + row.total;
       acc.sourced = (acc.sourced || 0) + row.sourced;
       acc.selected = (acc.selected || 0) + row.selected;
@@ -343,7 +346,9 @@ const RecruiterMoreJobDetails = () => {
       "Job Code": row.rawData?.jobCode || "N/A",
       "Requisition No": row.rawData?.requisitionNo || "N/A",
       "Reference No": row.rawData?.referenceNo || "N/A",
-       "Candidates Needed": row.numberOfCandidate || 0,
+      Client: row.rawData?.clientName || "N/A",
+      Project: row.rawData?.projectName || "N/A",
+      "Candidates Needed": row.numberOfCandidate || 0,
       "Total Candidates": row.total,
       Sourced: row.sourced,
       Selected: row.selected,
@@ -363,6 +368,8 @@ const RecruiterMoreJobDetails = () => {
       "Job Code": "",
       "Requisition No": "",
       "Reference No": "",
+      Client: "",
+      Project: "",
       "Total Candidates": totals.total || 0,
       Sourced: totals.sourced || 0,
       Selected: totals.selected || 0,
@@ -505,23 +512,36 @@ const RecruiterMoreJobDetails = () => {
                   Ref No: <Text code>{wo.referenceNo}</Text>
                 </div>
               )}
+              {wo.clientName && (
+                <div>
+                  Client: <Text code>{wo.clientName}</Text>
+                </div>
+              )}
+              {wo.projectName && (
+                <div>
+                  Project: <Text code>{wo.projectName}</Text>
+                </div>
+              )}
             </div>
           </div>
         );
       },
     },
     {
-    title: "Candidates Needed",
-    dataIndex: "numberOfCandidate",
-    key: "numberOfCandidate",
-    width: 150,
-    align: "center",
-    render: (count) => (
-      <Tag color="geekblue" style={{ minWidth: "40px", textAlign: "center", fontSize: "13px" }}>
-        {count}
-      </Tag>
-    ),
-  },
+      title: "Candidates Needed",
+      dataIndex: "numberOfCandidate",
+      key: "numberOfCandidate",
+      width: 150,
+      align: "center",
+      render: (count) => (
+        <Tag
+          color="geekblue"
+          style={{ minWidth: "40px", textAlign: "center", fontSize: "13px" }}
+        >
+          {count}
+        </Tag>
+      ),
+    },
     {
       title: "Total Candidates",
       dataIndex: "total",
@@ -1148,11 +1168,14 @@ const RecruiterMoreJobDetails = () => {
                       TOTAL
                     </Text>
                   </Table.Summary.Cell>
-                   <Table.Summary.Cell index={1} align="center">
-      <Tag color="geekblue" style={{ minWidth: "40px", textAlign: "center" }}>
-        <strong>{totals.numberOfCandidate || 0}</strong>
-      </Tag>
-    </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} align="center">
+                    <Tag
+                      color="geekblue"
+                      style={{ minWidth: "40px", textAlign: "center" }}
+                    >
+                      <strong>{totals.numberOfCandidate || 0}</strong>
+                    </Tag>
+                  </Table.Summary.Cell>
                   <Table.Summary.Cell index={1} align="center">
                     <Tag
                       color="blue"

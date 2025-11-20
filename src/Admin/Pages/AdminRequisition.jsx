@@ -777,7 +777,10 @@ const AdminRequisition = () => {
                     handleCreateWorkOrder(selectedRequisition);
                     handleViewModalClose();
                   }}
-                  disabled={selectedRequisition?.status === "inactive"}
+                  disabled={
+                    selectedRequisition?.status === "inactive" ||
+                    selectedRequisition?.overallapprovalstatus === "pending"
+                  }
                   style={{
                     background:
                       selectedRequisition?.status === "inactive"
@@ -795,92 +798,128 @@ const AdminRequisition = () => {
         destroyOnClose
       >
         {selectedRequisition && (
-          <div>
-            <Card
-              title="Job Information"
-              style={{ marginBottom: 16 }}
-              size="small"
-            >
-              <Descriptions column={2} size="small">
-                <Descriptions.Item label="Job Title">
-                  <Text strong>{selectedRequisition.title}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Requisition Number">
-                  <Text strong>{selectedRequisition.requisitionNo}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Reference Number">
-                  <Text strong>{selectedRequisition.referenceNo}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Department">
-                  <Tag color="blue">{selectedRequisition.department}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Location">
-                  {selectedRequisition.location}
-                </Descriptions.Item>
-                <Descriptions.Item label="Work Mode">
-                  <Tag color="purple">{selectedRequisition.workMode}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Employment Type">
-                  <Tag>{selectedRequisition.employmentType}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Experience Required">
-                  {selectedRequisition.experience}
-                </Descriptions.Item>
-                <Descriptions.Item label="Salary Range">
-                  <Text style={{ color: "#52c41a", fontWeight: "500" }}>
-                    {selectedRequisition.salary}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Positions">
-                  <Badge
-                    count={selectedRequisition.positions}
-                    showZero
-                    style={{ backgroundColor: "#52c41a" }}
-                  />
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={getStatusColor(selectedRequisition.status)}>
-                    {selectedRequisition.status.charAt(0).toUpperCase() +
-                      selectedRequisition.status.slice(1)}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Priority">
-                  <Tag color={getPriorityColor(selectedRequisition.priority)}>
-                    {selectedRequisition.priority.charAt(0).toUpperCase() +
-                      selectedRequisition.priority.slice(1)}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Hiring Manager">
-                  {selectedRequisition.hiringManager}
-                </Descriptions.Item>
-                <Descriptions.Item label="Deadline">
-                  {new Date(selectedRequisition.deadline).toLocaleDateString()}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-
-            <Card
-              title="Job Description"
-              style={{ marginBottom: 16 }}
-              size="small"
-            >
-              <Text>{selectedRequisition.description}</Text>
-            </Card>
-
-            <Card title="Required Skills" size="small">
+          <Descriptions bordered column={2} size="small">
+            <Descriptions.Item label="Requisition Number">
+              {selectedRequisition.requisitionNo || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Reference Number">
+              {selectedRequisition.referenceNo || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Client" span={2}>
+              {selectedRequisition.clientName || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Project" span={2}>
+              {selectedRequisition.projectName || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Job Title" span={2}>
+              {selectedRequisition.title || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Employment Type">
+              <Tag color="purple">
+                {selectedRequisition.employmentType || "N/A"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Workplace">
+              <Tag color="purple">{selectedRequisition.workMode || "N/A"}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Office Location">
+              {selectedRequisition.location || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Department">
+              <Tag color="blue">{selectedRequisition.department || "N/A"}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Experience Required">
+              {selectedRequisition.experience || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Salary Range">
+              <Text style={{ color: "#52c41a", fontWeight: "500" }}>
+                {selectedRequisition.salary || "N/A"}
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Positions">
+              <Badge
+                count={selectedRequisition.positions}
+                showZero
+                style={{ backgroundColor: "#52c41a" }}
+              />
+            </Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Tag color={getStatusColor(selectedRequisition.status)}>
+                {selectedRequisition.status?.charAt(0).toUpperCase() +
+                  selectedRequisition.status?.slice(1) || "N/A"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Approval Status">
+              <Tag
+                color={
+                  selectedRequisition.overallapprovalstatus === "approved"
+                    ? "green"
+                    : selectedRequisition.overallapprovalstatus === "rejected"
+                    ? "red"
+                    : "orange"
+                }
+              >
+                {selectedRequisition.overallapprovalstatus?.toUpperCase() ||
+                  "PENDING"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Priority">
+              <Tag color={getPriorityColor(selectedRequisition.priority)}>
+                {selectedRequisition.priority?.charAt(0).toUpperCase() +
+                  selectedRequisition.priority?.slice(1) || "N/A"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Posted Date">
+              {selectedRequisition.postedDate || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Deadline">
+              {selectedRequisition.deadline
+                ? new Date(selectedRequisition.deadline).toLocaleDateString()
+                : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Nationality">
+              {selectedRequisition.originalData?.nationality || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Visa Category">
+              {selectedRequisition.originalData?.visacategory || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Education">
+              {selectedRequisition.originalData?.Education || "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Description" span={2}>
+              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                {selectedRequisition.description || "N/A"}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Key Responsibilities" span={2}>
+              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                {selectedRequisition.keyResponsibilities || "N/A"}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Qualifications" span={2}>
+              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                {selectedRequisition.originalData?.qualification || "N/A"}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Requirements" span={2}>
+              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                {selectedRequisition.originalData?.jobRequirements || "N/A"}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Required Skills" span={2}>
               <Space wrap>
-                {selectedRequisition.skills?.map((skill, index) => (
-                  <Tag key={index} color="geekblue">
-                    {skill}
-                  </Tag>
-                ))}
+                {selectedRequisition.skills?.length > 0 ? (
+                  selectedRequisition.skills.map((skill, index) => (
+                    <Tag key={index} color="geekblue">
+                      {skill}
+                    </Tag>
+                  ))
+                ) : (
+                  <Text type="secondary">No skills specified</Text>
+                )}
               </Space>
-            </Card>
-            <Card
-              title="Languages Required"
-              size="small"
-              style={{ marginTop: 16 }}
-            >
+            </Descriptions.Item>
+            <Descriptions.Item label="Languages Required" span={2}>
               <Space wrap>
                 {selectedRequisition.languages?.length > 0 ? (
                   selectedRequisition.languages.map((lang, index) => (
@@ -892,8 +931,22 @@ const AdminRequisition = () => {
                   <Text type="secondary">No languages specified</Text>
                 )}
               </Space>
-            </Card>
-          </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Benefits" span={2}>
+              <div style={{ maxHeight: "80px", overflowY: "auto" }}>
+                {Array.isArray(selectedRequisition.benefits)
+                  ? selectedRequisition.benefits.join(", ")
+                  : selectedRequisition.benefits || "N/A"}
+              </div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Converted to Work Order">
+              {selectedRequisition.originalData?.convertedToWorkorder ? (
+                <Tag color="purple">Yes</Tag>
+              ) : (
+                <Tag color="default">No</Tag>
+              )}
+            </Descriptions.Item>
+          </Descriptions>
         )}
       </Modal>
     </>
