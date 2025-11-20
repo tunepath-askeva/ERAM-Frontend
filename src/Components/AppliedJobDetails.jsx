@@ -44,7 +44,12 @@ const AppliedJobDetails = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: response, isLoading, isError } = useGetAppliedJobByIdQuery(id);
+  const {
+    data: response,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAppliedJobByIdQuery(id);
   const [uploadStageDocuments] = useUploadStageDocumentsMutation();
   const [submitWorkOrderDocuments] = useSubmitWorkOrderDocumentsMutation();
 
@@ -80,7 +85,6 @@ const AppliedJobDetails = () => {
     );
   }
 
-  // Updated to handle the correct data structure
   if (!response?.appliedJob) {
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
@@ -215,6 +219,7 @@ const AppliedJobDetails = () => {
         ...prev,
         [stageId]: [],
       }));
+      await refetch();
     } catch (error) {
       console.error("Failed to upload documents:", error);
       message.error(error?.data?.message || "Failed to submit documents");
@@ -319,15 +324,18 @@ const AppliedJobDetails = () => {
             {appliedJob.status?.replace("_", " ").toUpperCase() || "PENDING"}
           </Tag>
         </Descriptions.Item>
+        <Descriptions.Item label="Applied Status">
+          <Tag color={appliedJob.isSourced === "true" ? "green" : "red"}>
+            {appliedJob.isSourced === "true" ? "SOURCED" : "APPLIED"}
+          </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Selected Moving Comment">
+          {appliedJob.selectedMovingComment || "No comment provided"}
+        </Descriptions.Item>
         <Descriptions.Item label="Applied Date">
           {appliedJob.createdAt
             ? new Date(appliedJob.createdAt).toLocaleDateString()
             : "Not available"}
-        </Descriptions.Item>
-        <Descriptions.Item label="Sourced Status">
-          <Tag color={appliedJob.isSourced === "true" ? "green" : "red"}>
-            {appliedJob.isSourced === "true" ? "SOURCED" : "NOT SOURCED"}
-          </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Selected Moving Comment">
           {appliedJob.selectedMovingComment || "No comment provided"}
@@ -580,6 +588,7 @@ const AppliedJobDetails = () => {
           ...prev,
           ["workOrder"]: [],
         }));
+        await refetch();
       } catch (error) {
         console.error("Failed to upload work order documents:", error);
         message.error(error?.data?.message || "Failed to submit documents");
@@ -635,7 +644,10 @@ const AppliedJobDetails = () => {
                   const isPending = uploadedFiles["workOrder"]?.some(
                     (pendingDoc) => pendingDoc.documentType === doc.name
                   );
-
+                  const uploadedDoc = getUploadedDocument(
+                    appliedJob.workOrderuploadedDocuments,
+                    doc.name
+                  );
                   return (
                     <div
                       key={doc._id || docIndex}
@@ -677,6 +689,26 @@ const AppliedJobDetails = () => {
                         <Text strong style={{ fontSize: "14px" }}>
                           {doc.name}
                         </Text>
+                        {isUploaded && uploadedDoc && (
+                          <Button
+                            type="primary"
+                            size="small"
+                            ghost
+                            onClick={() => {
+                              if (uploadedDoc.fileUrl) {
+                                window.open(uploadedDoc.fileUrl, "_blank");
+                              } else {
+                                message.info("File preview not available");
+                              }
+                            }}
+                            style={{
+                              borderColor: "#52c41a",
+                              color: "#52c41a",
+                            }}
+                          >
+                            View
+                          </Button>
+                        )}
                       </div>
 
                       {doc.description && (
@@ -715,6 +747,14 @@ const AppliedJobDetails = () => {
                           </Tag>
                         )}
                       </div>
+
+                      {isUploaded && uploadedDoc?.uploadedAt && (
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          {new Date(
+                            uploadedDoc.uploadedAt
+                          ).toLocaleDateString()}
+                        </Text>
+                      )}
                     </div>
                   );
                 })}
@@ -1497,7 +1537,8 @@ const AppliedJobDetails = () => {
   };
 
   const InterviewContent = () => {
-    if (!appliedJob.interviewDetails) {
+    if (!appliedJob.interviewDetails  ||
+      appliedJob.interviewDetails.length === 0) {
       return (
         <Card>
           <div style={{ textAlign: "center", padding: "40px" }}>
