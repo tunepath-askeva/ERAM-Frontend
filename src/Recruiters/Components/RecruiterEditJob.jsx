@@ -95,6 +95,7 @@ const RecruiterEditJob = () => {
   const [stageRecruiterAssignments, setStageRecruiterAssignments] = useState(
     {}
   );
+  const [universalRecruiter, setUniversalRecruiter] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [standardDocuments, setStandardDocuments] = useState([
     { id: "visa", name: "Visa", isMandatory: false },
@@ -789,6 +790,31 @@ const RecruiterEditJob = () => {
         ]);
       }
     }
+  };
+
+  const applyUniversalRecruiter = (pipelineId, recruiterIds) => {
+    setUniversalRecruiter(recruiterIds);
+
+    // Get all stages for this pipeline
+    const pipeline = activePipelines.find((p) => p._id === pipelineId);
+    const allStageIds = [
+      ...(pipeline?.stages || []).map((s) => s._id),
+      ...(customStages[pipelineId] || []).map((s) => s._id || s.id),
+    ];
+
+    // Apply to all stages
+    setStageRecruiterAssignments((prev) => {
+      const newAssignments = { ...prev };
+      if (!newAssignments[pipelineId]) {
+        newAssignments[pipelineId] = {};
+      }
+
+      allStageIds.forEach((stageId) => {
+        newAssignments[pipelineId][stageId] = recruiterIds;
+      });
+
+      return newAssignments;
+    });
   };
 
   const handleSubmit = async () => {
@@ -1754,18 +1780,26 @@ const RecruiterEditJob = () => {
           currentPipelineForDates?.name || "Pipeline"
         }`}
         visible={pipelineDatesModalVisible}
-        onCancel={() => setPipelineDatesModalVisible(false)}
+        onCancel={() => {
+          setPipelineDatesModalVisible(false), setUniversalRecruiter(null);
+        }}
         footer={[
           <Button
             key="back"
-            onClick={() => setPipelineDatesModalVisible(false)}
+            onClick={() => {
+              setPipelineDatesModalVisible(false);
+              setUniversalRecruiter(null); // Reset on close
+            }}
           >
             Close
           </Button>,
           <Button
             key="submit"
             type="primary"
-            onClick={() => setPipelineDatesModalVisible(false)}
+            onClick={() => {
+              setPipelineDatesModalVisible(false);
+              setUniversalRecruiter(null); // Reset on close
+            }}
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
@@ -1781,6 +1815,52 @@ const RecruiterEditJob = () => {
           padding: "16px 24px",
         }}
       >
+        <Card
+          style={{
+            marginBottom: 16,
+            background: "#f0f5ff",
+            borderColor: "#1890ff",
+          }}
+        >
+          <Row gutter={16} align="middle">
+            <Col span={24}>
+              <Form.Item
+                label={
+                  <span style={{ fontWeight: 600, fontSize: "14px" }}>
+                    Universal Recruiter Assignment
+                  </span>
+                }
+                style={{ marginBottom: 0 }}
+                extra="Select recruiters to assign them to all stages at once"
+              >
+                <Select
+                  mode="multiple"
+                  value={universalRecruiter}
+                  onChange={(value) =>
+                    applyUniversalRecruiter(pipelineId, value)
+                  }
+                  style={{ width: "100%" }}
+                  placeholder="Select recruiters to apply to all stages"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  allowClear
+                >
+                  {recruiters.map((recruiter) => (
+                    <Option key={recruiter._id} value={recruiter._id}>
+                      {`${recruiter.fullName} - (${recruiter.email})`}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+        <Divider />
+
         {sortedStages.map((stage) => {
           const stageId = stage._id || stage.id;
           const dateEntry = pipelineStageDates[pipelineId]?.find(

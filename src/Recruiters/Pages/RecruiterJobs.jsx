@@ -143,6 +143,7 @@ const RecruiterJobs = () => {
       _id: job._id || "",
       title: job.title || "No title",
       company: job.project?.name || "Company Name",
+      clientName: job.client?.fullName || "Client",
       location: job.officeLocation || job.workplace || "Location not specified",
       workType:
         job.workplace === "on-site"
@@ -511,7 +512,16 @@ const RecruiterJobs = () => {
                           display: "block",
                         }}
                       >
-                        {job.company}
+                        Project - {job.company}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: "14px",
+                          color: "#666",
+                          display: "block",
+                        }}
+                      >
+                        Client - {job.clientName}
                       </Text>
                     </div>
 

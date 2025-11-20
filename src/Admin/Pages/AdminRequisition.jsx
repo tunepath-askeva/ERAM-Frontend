@@ -85,6 +85,8 @@ const AdminRequisition = () => {
       _id: req._id,
       title: req.title,
       requisitionNo: req.requisitionNo || "N/A",
+      projectName: req.project?.name || "PROJECT",
+      clientName: req.client?.fullName || "Client Name",
       referenceNo: req.referenceNo || "N/A",
       department: req.companyIndustry,
       location: req.officeLocation,
@@ -123,6 +125,8 @@ const AdminRequisition = () => {
           key: groupKey,
           requisitionNo: req.requisitionNo,
           referenceNo: req.referenceNo,
+          clientName: req.clientName, // <-- FIX
+          projectName: req.projectName, // <-- FIX
           count: 0,
           positions: [],
           groupData: req, // Use first requisition's data for group info
@@ -416,6 +420,13 @@ const AdminRequisition = () => {
       color: #da2c46;
       font-weight: 600;
     }
+     .collapse-status-title {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .collapse-header-stats {
       display: flex;
       gap: 8px;
@@ -653,6 +664,16 @@ const AdminRequisition = () => {
                         <div className="collapse-header-title">
                           Requisition No: {group.requisitionNo || "N/A"} |
                           Reference No: {group.referenceNo || "N/A"}
+                        </div>
+                        <div className="collapse-status-title">
+                          <span>
+                            <strong>Client:</strong> {group.clientName}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            <strong>Project:</strong>{" "}
+                            {group.projectName || "N/A"}
+                          </span>
                         </div>
                         <div className="collapse-header-stats">
                           <Tag color="blue">
