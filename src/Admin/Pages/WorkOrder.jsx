@@ -51,6 +51,15 @@ import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
+const ellipsisStyle = {
+  maxWidth: "265px", // adjust width as you like
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  display: "inline-block",
+  verticalAlign: "bottom",
+};
+
 const WorkOrder = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -580,20 +589,96 @@ const WorkOrder = () => {
                         flexDirection: "column",
                       }}
                     >
+                      <div style={{ width: "100%" }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: workOrder?.requisitionNo
+                              ? "1fr 1fr 1fr"
+                              : "1fr 1fr",
+                            gap: "16px",
+                            alignItems: "center",
+                          }}
+                        >
+                          {/* Project Column */}
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "13px", color: "#1f2937" }}
+                            >
+                              Project
+                            </Text>
+                            <div style={{ marginTop: 2 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                {workOrder?.project?.name || "—"}
+                              </Text>
+                            </div>
+                          </div>
+
+                          {/* Client Column */}
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "13px", color: "#1f2937" }}
+                            >
+                              Client
+                            </Text>
+                            <div style={{ marginTop: 4 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                {workOrder?.client?.fullName || "—"}
+                              </Text>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Divider style={{ margin: "12px 0" }} />
+                      </div>
+
                       <div style={{ marginBottom: 16 }}>
                         <Space size={[8, 16]} wrap>
                           <Tag icon={<BookOutlined />}>
-                            {workOrder.jobFunction}
+                            <Tooltip title={workOrder.jobFunction}>
+                              <span style={ellipsisStyle}>
+                                {workOrder.jobFunction}
+                              </span>
+                            </Tooltip>
                           </Tag>
+
                           <Tag icon={<GlobalOutlined />}>
-                            {getWorkplaceType(workOrder.workplace)}
+                            <Tooltip
+                              title={getWorkplaceType(workOrder.workplace)}
+                            >
+                              <span style={ellipsisStyle}>
+                                {getWorkplaceType(workOrder.workplace)}
+                              </span>
+                            </Tooltip>
                           </Tag>
+
                           <Tag icon={<ClockCircleOutlined />}>
-                            {getEmploymentType(workOrder.EmploymentType)}
+                            <Tooltip
+                              title={getEmploymentType(
+                                workOrder.EmploymentType
+                              )}
+                            >
+                              <span style={ellipsisStyle}>
+                                {getEmploymentType(workOrder.EmploymentType)}
+                              </span>
+                            </Tooltip>
                           </Tag>
+
                           {workOrder.annualSalary && (
                             <Tag icon={<DollarOutlined />}>
-                              ${workOrder.annualSalary}
+                              <Tooltip title={workOrder.annualSalary}>
+                                <span style={ellipsisStyle}>
+                                  ${workOrder.annualSalary}
+                                </span>
+                              </Tooltip>
                             </Tag>
                           )}
                         </Space>
@@ -642,19 +727,76 @@ const WorkOrder = () => {
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: 16 }}>
-                        <Text
-                          strong
-                          style={{ color: "#2c3e50", fontSize: "12px" }}
+                      <div style={{ width: "100%" }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 1fr)",
+                            gap: "16px",
+                            alignItems: "start",
+                          }}
                         >
-                          <FileTextOutlined style={{ marginRight: 4 }} />
-                          Job Code:
-                        </Text>
-                        <div style={{ marginTop: 6 }}>
-                          <Text type="secondary" style={{ fontSize: "11px" }}>
-                            {workOrder.jobCode}
-                          </Text>
+                          {/* Job Code */}
+                          <div>
+                            <Text
+                              strong
+                              style={{ fontSize: "12px", color: "#2c3e50" }}
+                            >
+                              <FileTextOutlined style={{ marginRight: 4 }} />
+                              Job Code
+                            </Text>
+                            <div style={{ marginTop: 4 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: "12px" }}
+                              >
+                                {workOrder.jobCode || "—"}
+                              </Text>
+                            </div>
+                          </div>
+
+                          {/* Requisition No */}
+                          {workOrder?.requisitionNo && (
+                            <div>
+                              <Text
+                                strong
+                                style={{ fontSize: "12px", color: "#2c3e50" }}
+                              >
+                                Requisition No
+                              </Text>
+                              <div style={{ marginTop: 4 }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  {workOrder.requisitionNo}
+                                </Text>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Reference No */}
+                          {workOrder?.referenceNo && (
+                            <div>
+                              <Text
+                                strong
+                                style={{ fontSize: "12px", color: "#2c3e50" }}
+                              >
+                                Reference No
+                              </Text>
+                              <div style={{ marginTop: 4 }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  {workOrder.referenceNo}
+                                </Text>
+                              </div>
+                            </div>
+                          )}
                         </div>
+
+                        <Divider style={{ margin: "12px 0" }} />
                       </div>
 
                       <div

@@ -176,7 +176,7 @@ const AdminWorkOrderStatus = ({
                 textOverflow: "ellipsis",
               }}
             >
-              {user.fullName}
+              {user?.fullName || "N/A"}
             </div>
             <Text
               type="secondary"
@@ -187,7 +187,7 @@ const AdminWorkOrderStatus = ({
                 textOverflow: "ellipsis",
               }}
             >
-              {user.email}
+              {user?.email}
             </Text>
           </div>
         </Space>

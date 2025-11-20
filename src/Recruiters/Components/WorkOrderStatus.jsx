@@ -524,17 +524,17 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           <Button key="close" onClick={() => setShowCompletionModal(false)}>
             Close
           </Button>,
-          <Button 
-            key="request" 
-            style={{ 
-              backgroundColor: "#da2c46", 
-              borderColor: "#da2c46",
-              color: "white"
-            }}
-            onClick={handleRaiseNewRequest}
-          >
-            Raise New Request
-          </Button>,
+          // <Button 
+          //   key="request" 
+          //   style={{ 
+          //     backgroundColor: "#da2c46", 
+          //     borderColor: "#da2c46",
+          //     color: "white"
+          //   }}
+          //   onClick={handleRaiseNewRequest}
+          // >
+          //   Raise New Request
+          // </Button>,
         ]}
         width={Math.min(600, window.innerWidth - 32)}
         centered

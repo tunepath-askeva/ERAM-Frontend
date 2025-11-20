@@ -128,6 +128,16 @@ const ViewWorkOrder = () => {
               </Text>
             </div>
           </Col>
+           <Col xs={12} sm={8}>
+            <div>
+              <Text strong style={{ fontSize: "13px", display: "block" }}>
+                Client
+              </Text>
+              <Text style={{ fontSize: "12px", wordBreak: "break-word" }}>
+                {workOrder.client?.fullName || "Not specified"}
+              </Text>
+            </div>
+          </Col>
           <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
