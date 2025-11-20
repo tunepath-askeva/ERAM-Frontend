@@ -1831,7 +1831,8 @@ const RecruiterEditJob = () => {
                   </span>
                 }
                 style={{ marginBottom: 0 }}
-                extra="Select recruiters to assign them to all stages at once"
+                extra="Members selected here will be applied to all stages below. You
+              can still customize individual stages afterwards."
               >
                 <Select
                   mode="multiple"

@@ -94,6 +94,7 @@ const EditWorkOrder = () => {
   const [draggedStage, setDraggedStage] = useState(null);
   const [stageApprovers, setStageApprovers] = useState({});
   const [documents, setDocuments] = useState([]);
+  const [universalRecruiters, setUniversalRecruiters] = useState([]);
   const navigate = useNavigate();
 
   const { data: approvalData, isLoading: isLoadingApprovals } =
@@ -387,7 +388,7 @@ const EditWorkOrder = () => {
     const pipeline = activePipelines.find((p) => p._id === pipelineId);
     if (pipeline) {
       setCurrentPipelineForDates(pipeline);
-
+      setUniversalRecruiters([]);
       const initialDates =
         workOrderData?.workOrder?.pipelineStageTimeline
           ?.filter((t) => t.pipelineId._id === pipelineId)
@@ -1477,6 +1478,66 @@ const EditWorkOrder = () => {
         }}
       >
         <div style={{ padding: "16px 0" }}>
+          <Card
+            style={{
+              marginBottom: "16px",
+              backgroundColor: "#f0f5ff",
+              border: "2px solid #1890ff",
+            }}
+          >
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <Form.Item
+                  label="Set Members for All Stages"
+                  style={{ marginBottom: 0 }}
+                >
+                  <Select
+                    mode="multiple"
+                    placeholder="Select members to apply to all stages"
+                    value={universalRecruiters}
+                    onChange={(value) => {
+                      setUniversalRecruiters(value);
+                      // Apply to all stages
+                      setPipelineStageDates((prev) => {
+                        const newDates = { ...prev };
+                        const pipelineId = currentPipelineForDates._id;
+
+                        if (newDates[pipelineId]) {
+                          newDates[pipelineId] = newDates[pipelineId].map(
+                            (stage) => ({
+                              ...stage,
+                              recruiterIds: value,
+                            })
+                          );
+                        }
+                        return newDates;
+                      });
+                    }}
+                    style={{ width: "100%" }}
+                    size="small"
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (
+                        option?.children?.toString()?.toLowerCase() ?? ""
+                      ).includes(input.toLowerCase())
+                    }
+                  >
+                    {activeRecruiters.map((recruiter) => (
+                      <Option key={recruiter._id} value={recruiter._id}>
+                        {recruiter.fullName} - {recruiter.email}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <div style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
+              ℹ️ Members selected here will be applied to all stages below. You
+              can still customize individual stages afterwards.
+            </div>
+          </Card>
+
           {allStages.map((stage, index) => {
             const stageId = stage._id || stage.id;
             // Find timeline data for this stage
