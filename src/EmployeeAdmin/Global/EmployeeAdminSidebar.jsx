@@ -14,6 +14,7 @@ import {
   FilePdfOutlined,
   WarningOutlined,
   BellOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -63,6 +64,11 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/dashboard",
       icon: <DashboardOutlined />,
       label: "Dashboard",
+    },
+    {
+      key: "/employee-admin/all-employees",
+      icon: <UsergroupAddOutlined />,
+      label: "All Employees",
     },
     {
       key: "/employee-admin/leave-request",

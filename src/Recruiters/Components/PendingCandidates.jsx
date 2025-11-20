@@ -43,6 +43,7 @@ import {
   useGetPipelinesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
+import { NotificationModal } from "../../Components/NotificationModal";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -60,6 +61,8 @@ const PendingCandidates = ({ jobId }) => {
   const [missingMandatoryDocuments, setMissingMandatoryDocuments] = useState(
     []
   );
+  const [isNotificationModalVisible, setIsNotificationModalVisible] =
+    useState(false);
   const [missingOptionalDocuments, setMissingOptionalDocuments] = useState([]);
   const [isPipelineModalVisible, setIsPipelineModalVisible] = useState(false);
   const [selectedPipelineForUpdate, setSelectedPipelineForUpdate] =
@@ -279,20 +282,29 @@ const PendingCandidates = ({ jobId }) => {
     }
   };
 
-  const handleNotifyCandidate = async () => {
+  const handleNotifyCandidate = () => {
+    setIsNotificationModalVisible(true);
+  };
+
+  const handleSendNotification = async (selectedMethods) => {
     if (!selectedCandidate) return;
 
-    try {
-      await notifyCandidate({
-        userId: selectedCandidate._id,
-        workOrderId: selectedCandidate.workOrder?._id,
-        customFieldId: selectedCandidate.applicationId,
-      }).unwrap();
+    // Only handle 'profile' method for now
+    if (selectedMethods.includes("profile")) {
+      try {
+        await notifyCandidate({
+          userId: selectedCandidate._id,
+          workOrderId: selectedCandidate.workOrder?._id,
+          customFieldId: selectedCandidate.applicationId,
+        }).unwrap();
 
-      message.success("Notification sent successfully");
-    } catch (error) {
-      console.error("Failed to send notification:", error);
-      message.error(error.data?.message || "Failed to send notification");
+        message.success("Notification sent successfully");
+      } catch (error) {
+        console.error("Failed to send notification:", error);
+        message.error(error.data?.message || "Failed to send notification");
+      }
+    } else {
+      message.info("Email and WhatsApp notifications will be implemented soon");
     }
   };
 
@@ -866,6 +878,14 @@ const PendingCandidates = ({ jobId }) => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <NotificationModal
+        open={isNotificationModalVisible}
+        onClose={() => setIsNotificationModalVisible(false)}
+        onSend={handleSendNotification}
+        title="Send Notification"
+        candidateName={selectedCandidate?.fullName || "candidate"}
+      />
     </div>
   );
 };

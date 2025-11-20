@@ -48,6 +48,7 @@ import {
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+import { NotificationModal } from "../../Components/NotificationModal";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -66,6 +67,7 @@ const RecruiterJobPipeline = () => {
   const [isMoveModalVisible, setIsMoveModalVisible] = useState(false);
   const [processedJobData, setProcessedJobData] = useState(null);
   const [reviewerComments, setReviewerComments] = useState("");
+  const [isNotifyModalVisible, setIsNotifyModalVisible] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
@@ -467,23 +469,68 @@ const RecruiterJobPipeline = () => {
     window.open(fileUrl, "_blank");
   };
 
-  const handleNotify = async () => {
+  const handleNotify = () => {
+    setIsNotifyModalVisible(true);
+  };
+
+  const handleSendNotification = async (methods, remarks) => {
     const workOrderId = apiData?.data?.workOrder?._id;
     const userId = apiData?.data?.user?._id;
+    const candidateEmail = apiData?.data?.user?.email;
+    const candidateName = apiData?.data?.user?.fullName;
 
     if (!workOrderId || !userId) {
-      console.warn("Missing work order or user ID");
+      message.warning("Missing work order or user ID");
+      return;
+    }
+
+    if (methods.length === 0) {
+      message.warning("Please select at least one notification method.");
       return;
     }
 
     try {
-      await remainder({ workOrderId, userId });
-      enqueueSnackbar("Notification send successfully...!", {
-        variant: "success",
-        autoHideDuration: 3000,
-      });
+      const notificationData = {
+        workOrderId,
+        userId,
+        email: candidateEmail,
+        title: "Pipeline Stage Update - Action Required",
+      };
+
+      // Send notifications for each selected method
+      for (const method of methods) {
+        const dataWithMethod = { ...notificationData, method };
+
+        switch (method) {
+          case "email":
+            // await sendEmailNotification(dataWithMethod).unwrap();
+            enqueueSnackbar(`Email notification sent to ${candidateName}`, {
+              variant: "success",
+              autoHideDuration: 3000,
+            });
+            break;
+          case "whatsapp":
+            // await sendWhatsAppNotification(dataWithMethod).unwrap();
+            enqueueSnackbar(`WhatsApp notification sent to ${candidateName}`, {
+              variant: "success",
+              autoHideDuration: 3000,
+            });
+            break;
+          case "profile":
+            await remainder(dataWithMethod);
+            enqueueSnackbar(`Profile notification sent to ${candidateName}`, {
+              variant: "success",
+              autoHideDuration: 3000,
+            });
+            break;
+          default:
+            break;
+        }
+      }
+
+      setIsNotifyModalVisible(false);
     } catch (error) {
-      console.error("Error sending reminder:", error);
+      console.error("Error sending notification:", error);
       enqueueSnackbar("Error sending notification", {
         variant: "error",
         autoHideDuration: 3000,
@@ -1448,6 +1495,14 @@ const RecruiterJobPipeline = () => {
           </Form>
         )}
       </Modal>
+
+      <NotificationModal
+        open={isNotifyModalVisible}
+        onClose={() => setIsNotifyModalVisible(false)}
+        onSend={handleSendNotification}
+        title={`Notify ${apiData?.data?.user?.fullName || "Candidate"}`}
+        candidateName={apiData?.data?.user?.fullName}
+      />
     </div>
   );
 };

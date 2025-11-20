@@ -71,6 +71,7 @@ import EmployeeAdminLeaveRequest from "./EmployeeAdmin/Pages/EmployeeAdminLeaveR
 import EmployeeCompanyPolicy from "./Employee/Pages/EmployeeCompanyPolicy";
 import EmployeeAdminCompanyPolicy from "./EmployeeAdmin/Pages/EmployeeAdminCompanyPolicy";
 import EmployeeAdminPayroll from "./EmployeeAdmin/Pages/EmployeeAdminPayroll";
+import EmployeeAdminAllEmployees from "./EmployeeAdmin/Pages/EmployeeAdminAllEmployees";
 import EmployeePayroll from "./Employee/Pages/EmployeePayroll";
 import CompletedCandidates from "./Recruiters/Pages/CompletedCandidates";
 import WhatsAppConfigPanel from "./Admin/Pages/WhatsappapiIntegration";
@@ -439,6 +440,12 @@ const AppRoutes = () => {
           path="/employee-admin/dashboard"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminDashboard />} />
+          }
+        />
+        <Route
+          path="/employee-admin/all-employees"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminAllEmployees />} />
           }
         />
         <Route

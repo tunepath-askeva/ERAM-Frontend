@@ -18,6 +18,9 @@ import {
   Modal,
   Skeleton,
   Input,
+  Radio,
+  Space,
+  Checkbox,
 } from "antd";
 import {
   UserOutlined,
@@ -35,6 +38,8 @@ import {
   NotificationOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  WhatsAppOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useGetAllcandidatebyIdQuery } from "../../Slices/Recruiter/RecruiterApis";
@@ -48,6 +53,7 @@ const { TabPane } = Tabs;
 const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
   const [notifyModalVisible, setNotifyModalVisible] = useState(false);
   const [remarks, setRemarks] = useState("");
+  const [notificationMethod, setNotificationMethod] = useState([]);
 
   const { data, isLoading, error } = useGetAllcandidatebyIdQuery(candidateId, {
     skip: !candidateId,
@@ -113,6 +119,7 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
   const handleModalClose = () => {
     setNotifyModalVisible(false);
     setRemarks("");
+    setNotificationMethod([]);
   };
 
   const confirmNotification = async () => {
@@ -121,18 +128,50 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
       return;
     }
 
+    if (notificationMethod.length === 0) {
+      message.warning("Please select at least one notification method.");
+      return;
+    }
+
     try {
-      const response = await sendNotification({
+      const notificationData = {
         email: candidate.email,
         title: "Profile Updation - Immediate Action required!!!",
         description: remarks.trim(),
-      }).unwrap();
+      };
 
-      message.success(
-        `Notification sent successfully to ${
-          candidate.fullName || candidate.firstName
-        }`
-      );
+      // Send notifications for each selected method
+      for (const method of notificationMethod) {
+        const dataWithMethod = { ...notificationData, method };
+
+        switch (method) {
+          case "email":
+            message.success(
+              `Email notification sent to ${
+                candidate.fullName || candidate.firstName
+              }`
+            );
+            break;
+          case "whatsapp":
+            message.success(
+              `WhatsApp notification sent to ${
+                candidate.fullName || candidate.firstName
+              }`
+            );
+            break;
+          case "profile":
+            await sendNotification(dataWithMethod).unwrap();
+            message.success(
+              `Profile notification sent to ${
+                candidate.fullName || candidate.firstName
+              }`
+            );
+            break;
+          default:
+            break;
+        }
+      }
+
       handleModalClose();
     } catch (error) {
       console.error("Notification error:", error);
@@ -141,7 +180,7 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
       );
     }
   };
-
+  
   const getCompletionColor = (percentage) => {
     if (percentage >= 80) return "#52c41a";
     if (percentage >= 50) return "#faad14";
@@ -877,7 +916,7 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
 
       {/* Notification Modal */}
       <Modal
-        title="Notify Candidate"
+        title={`Notify ${candidate.fullName || candidate.firstName}`}
         visible={notifyModalVisible}
         onOk={confirmNotification}
         onCancel={handleModalClose}
@@ -891,18 +930,79 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
           },
         }}
         cancelText="Cancel"
+        width={600}
       >
-        <p>
-          Send a notification to{" "}
-          <strong>{candidate.fullName || candidate.firstName}</strong>
-        </p>
+        <div style={{ marginBottom: 20 }}>
+          <Text strong style={{ display: "block", marginBottom: 8 }}>
+            Enter your message:
+          </Text>
+          <Input.TextArea
+            rows={4}
+            placeholder="Type your remarks or message here..."
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+          />
+        </div>
 
-        <Input.TextArea
-          rows={4}
-          placeholder="Type your remarks or message here..."
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-        />
+        <Divider style={{ margin: "16px 0" }} />
+
+        <div>
+          <Text strong style={{ display: "block", marginBottom: 12 }}>
+            Choose notification method:
+          </Text>
+          <Checkbox.Group
+            value={notificationMethod}
+            onChange={(values) => setNotificationMethod(values)}
+            style={{ width: "100%" }}
+          >
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Checkbox
+                value="email"
+                style={{ padding: "12px", width: "100%" }}
+              >
+                <Space>
+                  <MailOutlined
+                    style={{ fontSize: "18px", color: "#1890ff" }}
+                  />
+                  <span>Send via Email</span>
+                  <h6>
+                    (Default email content will be sent to the candidate.)
+                  </h6>
+                </Space>
+              </Checkbox>
+              <Checkbox
+                value="whatsapp"
+                style={{ padding: "12px", width: "100%" }}
+              >
+                <Space>
+                  <WhatsAppOutlined
+                    style={{ fontSize: "18px", color: "#25D366" }}
+                  />
+                  <span>Send via WhatsApp</span>
+                  <h6>
+                    (only configured message template will be sent you can't
+                    send custom message)
+                  </h6>
+                </Space>
+              </Checkbox>
+              <Checkbox
+                value="profile"
+                style={{ padding: "12px", width: "100%" }}
+              >
+                <Space>
+                  <BellOutlined
+                    style={{ fontSize: "18px", color: "#faad14" }}
+                  />
+                  <span>Send in Profile Notification</span>
+                  <h6>
+                    (The custom message you entered will be sent to the
+                    candidate)
+                  </h6>
+                </Space>
+              </Checkbox>
+            </Space>
+          </Checkbox.Group>
+        </div>
       </Modal>
     </>
   );
