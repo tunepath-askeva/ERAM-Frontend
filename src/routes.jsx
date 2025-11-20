@@ -105,6 +105,7 @@ import LowLevelCandidates from "./Recruiters/Pages/LowLevelCandidates";
 import RecruiterPipelines from "./Recruiters/Pages/RecruiterPipelines";
 import RecruiterLevels from "./Recruiters/Pages/RecruiterLevels";
 import RecruiterMasters from "./Recruiters/Pages/RecruiterMasters";
+import AdminDashboardDetails from "./Admin/Pages/AdminDashboardDetail";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -243,6 +244,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/whatsapp"
           element={<ProtectedAdmin element={<WhatsAppConfigPanel />} />}
+        />
+         <Route
+          path="/admin/dashboard/details"
+          element={<ProtectedAdmin element={<AdminDashboardDetails />} />}
         />
       </Route>
 

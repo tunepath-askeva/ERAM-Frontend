@@ -545,7 +545,6 @@ const EditBranch = () => {
                     prefix={<CloudServerOutlined />}
                     placeholder="Enter branch Domain"
                     size="large"
-                    disabled
                   />
                 </Form.Item>
               </Col>

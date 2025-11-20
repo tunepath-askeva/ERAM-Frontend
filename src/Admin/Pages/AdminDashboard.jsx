@@ -10,6 +10,7 @@ import {
   Space,
   Spin,
   Empty,
+  Button,
 } from "antd";
 import {
   PieChartOutlined,
@@ -21,10 +22,12 @@ import {
   UsergroupAddOutlined,
   FunnelPlotOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useGetAdminDashboardDataQuery();
 
   // Prepare role data for pie chart
@@ -297,19 +300,41 @@ const AdminDashboard = () => {
       }}
     >
       <div style={{ marginBottom: "32px" }}>
-        <Title
-          level={1}
+        <div
           style={{
-            fontSize: "2.5rem",
-            fontWeight: "bold",
-            marginBottom: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
           }}
         >
-          Admin Dashboard
-        </Title>
-        <Text style={{ fontSize: "16px", color: "#666" }}>
-          Overview of your platform statistics and user data
-        </Text>
+          <div>
+            <Title
+              level={1}
+              style={{
+                fontSize: "2.5rem",
+                fontWeight: "bold",
+                marginBottom: "8px",
+              }}
+            >
+              Admin Dashboard
+            </Title>
+            <Text style={{ fontSize: "16px", color: "#666" }}>
+              Overview of your platform statistics and user data
+            </Text>
+          </div>
+
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => navigate("/admin/dashboard/details")}
+            style={{
+              borderRadius: "8px",
+            }}
+          >
+            Get More Job Details
+          </Button>
+        </div>
       </div>
 
       {/* Summary Statistics */}

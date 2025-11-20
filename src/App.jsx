@@ -1,21 +1,30 @@
 import ErrorBoundary from "./Components/ErrorBoundary";
 import AppRoutes from "./routes";
 import { SnackbarProvider } from "notistack";
+import { ConfigProvider } from "antd";
 
 function App() {
   return (
     <ErrorBoundary>
-      <SnackbarProvider
-        maxSnack={3}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "right",
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#da2c46", 
+          },
         }}
-        autoHideDuration={3000}
-        preventDuplicate
       >
-        <AppRoutes />
-      </SnackbarProvider>
+        <SnackbarProvider
+          maxSnack={3}
+          anchorOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          autoHideDuration={3000}
+          preventDuplicate
+        >
+          <AppRoutes />
+        </SnackbarProvider>
+      </ConfigProvider>
     </ErrorBoundary>
   );
 }

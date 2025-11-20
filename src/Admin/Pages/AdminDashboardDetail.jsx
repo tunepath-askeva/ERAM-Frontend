@@ -47,7 +47,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const RecruiterMoreJobDetails = () => {
+const AdminDashboardDetails = () => {
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetAllJobStageDetailsQuery();
 
@@ -1643,4 +1643,4 @@ const RecruiterMoreJobDetails = () => {
   );
 };
 
-export default RecruiterMoreJobDetails;
+export default AdminDashboardDetails;
