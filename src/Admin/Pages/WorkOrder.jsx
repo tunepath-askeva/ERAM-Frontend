@@ -365,6 +365,15 @@ const WorkOrder = () => {
                 }}
               />
             </Tooltip>
+            <Tooltip title="Delete Work Order">
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => showDeleteModal(workOrder)}
+              />
+            </Tooltip>
           </>
         )}
       </Space>

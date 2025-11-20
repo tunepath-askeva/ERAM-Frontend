@@ -1,10 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-    const baseUrl =
+const baseUrl =
   window.location.hostname === "localhost"
     ? "http://localhost:5000/api/super-admin"
     : `https://${window.location.hostname}/api/super-admin`;
-
 
 export const superAdminApi = createApi({
   reducerPath: "superAdminApi",
@@ -135,6 +134,13 @@ export const superAdminApi = createApi({
         body: { adminId },
       }),
     }),
+    deleteAdmin: builder.mutation({
+      query: (adminId) => ({
+        url: `/delete-admin/${adminId}`,
+        method: "DELETE",
+      }),
+    }),
+
     requestUpdateProfile: builder.mutation({
       query: (profileData) => ({
         url: "/editProfile",
@@ -184,6 +190,7 @@ export const {
   useGetSingleAdminQuery,
   useUpdateAdminMutation,
   useDisableAdminMutation,
+  useDeleteAdminMutation,
 
   //login
   useLoginSuperAdminMutation,

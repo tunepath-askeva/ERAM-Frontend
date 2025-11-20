@@ -43,6 +43,7 @@ import {
   useGetSingleAdminQuery,
   useUpdateAdminMutation,
   useDisableAdminMutation,
+  useDeleteAdminMutation,
 } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 
 import SkeletonLoader from "../../Global/SkeletonLoader";
@@ -55,13 +56,15 @@ const AdminManagement = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [adminToDelete, setAdminToDelete] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [viewingAdminId, setViewingAdminId] = useState(null);
-  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
+  const [statusChangeModalVisible, setStatusChangeModalVisible] =
+    useState(false);
   const [adminToToggle, setAdminToToggle] = useState(null);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -69,7 +72,7 @@ const AdminManagement = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); 
+      setCurrentPage(1);
     }, 700);
 
     return () => clearTimeout(timer);
@@ -98,9 +101,14 @@ const AdminManagement = () => {
       skip: !viewingAdminId,
     });
 
-  const [createAdmin, { isLoading: createAdminLoading }] = useCreateAdminMutation();
-  const [updateAdmin, { isLoading: updateAdminLoading }] = useUpdateAdminMutation();
-  const [disableAdmin, { isLoading: disableAdminLoading }] = useDisableAdminMutation();
+  const [createAdmin, { isLoading: createAdminLoading }] =
+    useCreateAdminMutation();
+  const [updateAdmin, { isLoading: updateAdminLoading }] =
+    useUpdateAdminMutation();
+  const [disableAdmin, { isLoading: disableAdminLoading }] =
+    useDisableAdminMutation();
+  const [deleteAdmin, { isLoading: deleteAdminLoading }] =
+    useDeleteAdminMutation();
 
   const branches = branchesData?.branch || [];
   const admins = adminData?.allAdmins || [];
@@ -153,7 +161,7 @@ const AdminManagement = () => {
 
   const handleFilterChange = (value) => {
     setFilterStatus(value);
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const handlePaginationChange = (page, size) => {
@@ -220,6 +228,23 @@ const AdminManagement = () => {
   const handleCancelStatusChange = () => {
     setStatusChangeModalVisible(false);
     setAdminToToggle(null);
+  };
+
+  const showDeleteModal = (admin) => {
+    setAdminToDelete(admin);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteAdmin = async () => {
+    try {
+      await deleteAdmin(adminToDelete.id).unwrap();
+      message.success(`${adminToDelete.name} has been deleted successfully!`);
+      setDeleteModalVisible(false);
+      setAdminToDelete(null);
+      refetchAdmins();
+    } catch (error) {
+      message.error(error?.data?.message || "Failed to delete admin");
+    }
   };
 
   const handleViewAdmin = (admin) => {
@@ -357,6 +382,14 @@ const AdminManagement = () => {
               style={{ color: "#52c41a" }}
             />
           )}
+
+          <Button
+            type="text"
+            icon={<UserDeleteOutlined />}
+            danger
+            onClick={() => showDeleteModal(record)}
+            title="Delete Admin"
+          />
         </Space>
       ),
     },
@@ -405,7 +438,8 @@ const AdminManagement = () => {
               icon={<PlusOutlined />}
               onClick={() => setIsAddModalOpen(true)}
               style={{
-                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                background:
+                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 border: "none",
               }}
             >
@@ -463,7 +497,7 @@ const AdminManagement = () => {
               `${range[0]}-${range[1]} of ${total} admins`,
             onChange: handlePaginationChange,
             onShowSizeChange: handlePaginationChange,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            pageSizeOptions: ["10", "20", "50", "100"],
           }}
           scroll={{ x: "max-content" }}
         />
@@ -555,6 +589,38 @@ const AdminManagement = () => {
             </div>
           )}
         </div>
+      </Modal>
+
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: "red" }} />
+            <span>Delete Administrator</span>
+          </Space>
+        }
+        open={deleteModalVisible}
+        onOk={handleDeleteAdmin}
+        onCancel={() => setDeleteModalVisible(false)}
+        confirmLoading={deleteAdminLoading}
+        okText="Yes, Delete"
+        okButtonProps={{ danger: true }}
+        cancelText="Cancel"
+        centered
+      >
+        <Text>
+          Are you sure you want to permanently delete{" "}
+          <Text strong style={{ color: "red" }}>
+            {adminToDelete?.name}
+          </Text>
+          ?
+        </Text>
+        <br />
+        <br />
+        <Text type="secondary">
+          • This action cannot be undone <br />
+          • The admin will lose all access instantly <br />• All their
+          associated data will remain but not accessible to them
+        </Text>
       </Modal>
 
       {/* Other Modals */}
