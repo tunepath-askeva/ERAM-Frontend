@@ -127,7 +127,6 @@ const AdminFormModal = ({
       okButtonProps={{
         style: {
           background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-
         },
       }}
       confirmLoading={loading}
@@ -257,13 +256,13 @@ const AdminFormModal = ({
               placeholder="Select branch"
               size="large"
               showSearch
-              optionFilterProp="children"
+              optionFilterProp="searchLabel"
+              allowClear
               filterOption={(input, option) =>
-                option?.children?.toLowerCase().includes(input.toLowerCase())
+                option?.searchLabel?.includes(input.toLowerCase())
               }
-            >
-              {branches.map((branch) => (
-                <Option key={branch._id} value={branch._id}>
+              options={branches.map((branch) => ({
+                label: (
                   <Space>
                     <BankOutlined />
                     <span>{branch.name}</span>
@@ -271,9 +270,13 @@ const AdminFormModal = ({
                       ({branch.branchCode})
                     </span>
                   </Space>
-                </Option>
-              ))}
-            </Select>
+                ),
+                value: branch._id,
+                // plain text for search
+                searchLabel:
+                  `${branch.name} ${branch.branchCode}`.toLowerCase(),
+              }))}
+            />
           </Form.Item>
         </Card>
 

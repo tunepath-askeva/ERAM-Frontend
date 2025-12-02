@@ -32,6 +32,7 @@ import {
 } from "@ant-design/icons";
 import { useCreateBranchMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -39,11 +40,12 @@ const { Option } = Select;
 
 const AddBranch = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("1");
   const [fileList, setFileList] = useState([]);
-  const [imageFile, setImageFile] = useState(null); 
+  const [imageFile, setImageFile] = useState(null);
 
   const [createBranch, { isLoading, isError, error }] =
     useCreateBranchMutation();
@@ -115,6 +117,10 @@ const AddBranch = () => {
 
       console.log("Branch created successfully:", result);
       message.success("Branch created successfully!");
+      enqueueSnackbar("Branch created successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
 
       form.resetFields();
       navigate("/superadmin/branches");
@@ -126,6 +132,14 @@ const AddBranch = () => {
         error?.data?.message ||
           error?.message ||
           "Failed to create branch. Please try again."
+      );
+      enqueueSnackbar(
+        error?.data?.error ||
+          error?.error ||
+          error?.data?.message ||
+          error?.message ||
+          "Failed to create branch. Please try again.",
+        { variant: "error", autoHideDuration: 3000 }
       );
     }
   };
@@ -286,9 +300,9 @@ const AddBranch = () => {
     <div>
       <div style={{ textAlign: "center", marginBottom: "32px" }}>
         <BankOutlined
-          style={{ fontSize: "48px", color: '#da2c46', marginBottom: "16px" }}
+          style={{ fontSize: "48px", color: "#da2c46", marginBottom: "16px" }}
         />
-        <Title level={1} style={{ margin: 0, color: '#da2c46' }}>
+        <Title level={1} style={{ margin: 0, color: "#da2c46" }}>
           Add New Branch
         </Title>
         <Text type="secondary" style={{ fontSize: "16px" }}>
@@ -382,9 +396,9 @@ const AddBranch = () => {
                 <Form.Item
                   name="domain"
                   label="White Label Domain"
-                  rules={[
-                    { required: true, message: "Please enter a branch Domain" },
-                  ]}
+                  // rules={[
+                  //   { required: true, message: "Please enter a branch Domain" },
+                  // ]}
                 >
                   <Input
                     prefix={<CloudServerOutlined />}

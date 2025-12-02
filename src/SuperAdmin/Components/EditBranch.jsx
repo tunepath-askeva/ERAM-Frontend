@@ -32,11 +32,12 @@ import {
   ToolOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { 
+import {
   useGetBranchesQuery,
-  useUpdateBranchMutation 
+  useUpdateBranchMutation,
 } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -45,7 +46,8 @@ const { Option } = Select;
 const EditBranch = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  
+  const { enqueueSnackbar } = useSnackbar();
+
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("1");
   const [fileList, setFileList] = useState([]);
@@ -53,17 +55,17 @@ const EditBranch = () => {
   const [initialData, setInitialData] = useState(null);
 
   // RTK Query hooks
-  const { 
-    data: apiData, 
-    isLoading: isLoadingBranch, 
+  const {
+    data: apiData,
+    isLoading: isLoadingBranch,
     isError: isErrorBranch,
-    error: branchError 
+    error: branchError,
   } = useGetBranchesQuery();
 
   const [updateBranch, { isLoading: isUpdating }] = useUpdateBranchMutation();
 
   // Find the specific branch from the branches list
-  const currentBranch = apiData?.branch?.find(branch => branch._id === id);
+  const currentBranch = apiData?.branch?.find((branch) => branch._id === id);
 
   // Load branch data into form when data is fetched
   useEffect(() => {
@@ -119,9 +121,9 @@ const EditBranch = () => {
       if (branch.brand_logo) {
         setFileList([
           {
-            uid: '-1',
-            name: 'Current Logo',
-            status: 'done',
+            uid: "-1",
+            name: "Current Logo",
+            status: "done",
             url: branch.brand_logo,
           },
         ]);
@@ -174,7 +176,12 @@ const EditBranch = () => {
   const onFinish = async (values) => {
     try {
       console.log("Form values:", values);
-      console.log("isActive value:", values.isActive, "Type:", typeof values.isActive);
+      console.log(
+        "isActive value:",
+        values.isActive,
+        "Type:",
+        typeof values.isActive
+      );
 
       // Create FormData for multipart/form-data submission
       const formData = new FormData();
@@ -226,6 +233,10 @@ const EditBranch = () => {
 
       console.log("Branch updated successfully:", result);
       message.success("Branch updated successfully!");
+      enqueueSnackbar("Branch updated successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
 
       navigate("/superadmin/branches");
     } catch (error) {
@@ -235,10 +246,14 @@ const EditBranch = () => {
           error?.message ||
           "Failed to update branch. Please try again."
       );
+      enqueueSnackbar(
+        error?.data?.message ||
+          error?.message ||
+          "Failed to update branch. Please try again.",
+        { variant: "error" , autoHideDuration: 4000}
+      );
     }
   };
-
-
 
   const tabItems = [
     {
@@ -408,12 +423,16 @@ const EditBranch = () => {
         <Alert
           message="Error Loading Branch"
           description={
-            branchError?.message || "Failed to load branch data. Please try again."
+            branchError?.message ||
+            "Failed to load branch data. Please try again."
           }
           type="error"
           showIcon
           action={
-            <Button size="small" onClick={() => navigate("/superadmin/branches")}>
+            <Button
+              size="small"
+              onClick={() => navigate("/superadmin/branches")}
+            >
               Back to Branches
             </Button>
           }
@@ -432,7 +451,10 @@ const EditBranch = () => {
           type="warning"
           showIcon
           action={
-            <Button size="small" onClick={() => navigate("/superadmin/branches")}>
+            <Button
+              size="small"
+              onClick={() => navigate("/superadmin/branches")}
+            >
               Back to Branches
             </Button>
           }
@@ -463,11 +485,7 @@ const EditBranch = () => {
       </div>
 
       <Spin spinning={isUpdating} tip="Updating branch...">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-        >
+        <Form form={form} layout="vertical" onFinish={onFinish}>
           {/* Basic Information Section */}
           <Card
             title={
@@ -536,11 +554,7 @@ const EditBranch = () => {
                 </div>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item
-                  name="domain"
-                  label="White Label Domain"
-                 
-                >
+                <Form.Item name="domain" label="White Label Domain">
                   <Input
                     prefix={<CloudServerOutlined />}
                     placeholder="Enter branch Domain"

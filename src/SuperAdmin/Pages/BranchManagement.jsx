@@ -40,12 +40,15 @@ import {
   useDeleteBranchMutation,
 } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
 const BranchManagement = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -87,7 +90,6 @@ const BranchManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
-
   const handleAdd = () => {
     navigate("/superadmin/add");
   };
@@ -115,8 +117,16 @@ const BranchManagement = () => {
       refetch(); // Refresh the branch list
       setDeleteModalOpen(false);
       setBranchToDelete(null);
+      enqueueSnackbar("Branch Deleted successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
     } catch (error) {
       message.error("Failed to delete branch");
+      enqueueSnackbar("Failed to Deleted Branch!", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
       console.error("Delete error:", error);
     } finally {
       setDeleteLoading(false);
@@ -173,7 +183,7 @@ const BranchManagement = () => {
                 size={48}
                 style={{
                   background:
-                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)"
+                    "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 }}
                 icon={<BankOutlined />}
               />
@@ -195,7 +205,8 @@ const BranchManagement = () => {
               icon={<PlusOutlined />}
               onClick={handleAdd}
               style={{
-                background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+                background:
+                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
                 border: "none",
               }}
             >
@@ -249,7 +260,7 @@ const BranchManagement = () => {
                   <div style={{ height: "140px", overflow: "hidden" }}>
                     <img
                       alt={branch.name}
-                       src={branch.brandLogo} 
+                      src={branch.brandLogo}
                       style={{
                         width: "100%",
                         height: "100%",

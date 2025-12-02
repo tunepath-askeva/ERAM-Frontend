@@ -33,7 +33,7 @@ import {
   UserDeleteOutlined,
   CheckOutlined,
 } from "@ant-design/icons";
-
+import { useSnackbar } from "notistack";
 import AdminFormModal from "../Modal/AdminFormModal";
 import AdminViewModal from "../Modal/AdminViewModal";
 import {
@@ -52,6 +52,8 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const AdminManagement = () => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -172,13 +174,20 @@ const AdminManagement = () => {
   const handleAddAdmin = async (payload) => {
     try {
       const result = await createAdmin(payload).unwrap();
-      message.success("Admin created successfully!");
+      enqueueSnackbar("Admin created successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       setIsAddModalOpen(false);
       refetchAdmins();
     } catch (error) {
       console.error("Failed to create admin:", error);
       message.error(
         error?.data?.message || "Failed to create admin. Please try again."
+      );
+      enqueueSnackbar(
+        error?.data?.message || "Failed to create admin. Please try again.",
+        { variant: "error", autoHideDuration: 3000 }
       );
     }
   };
@@ -187,14 +196,18 @@ const AdminManagement = () => {
     try {
       const { adminId, ...updateData } = payload;
       const result = await updateAdmin({ adminId, ...updateData }).unwrap();
-      message.success("Admin updated successfully!");
+      enqueueSnackbar("Admin updated successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       setIsEditModalOpen(false);
       setSelectedAdmin(null);
       refetchAdmins();
     } catch (error) {
       console.error("Failed to update admin:", error);
-      message.error(
-        error?.data?.message || "Failed to update admin. Please try again."
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update admin. Please try again.",
+        { variant: "error", autoHideDuration: 3000 }
       );
     }
   };
@@ -213,6 +226,10 @@ const AdminManagement = () => {
       message.success(
         `${adminToToggle.name}'s account has been ${action} successfully!`
       );
+      enqueueSnackbar(
+        `${adminToToggle.name}'s account has been ${action} successfully!`,
+        { variant: "success", autoHideDuration: 3000 }
+      );
       setStatusChangeModalVisible(false);
       setAdminToToggle(null);
       refetchAdmins();
@@ -221,6 +238,11 @@ const AdminManagement = () => {
       message.error(
         error?.data?.message ||
           "Failed to update admin status. Please try again."
+      );
+      enqueueSnackbar(
+        error?.data?.message ||
+          "Failed to update admin status. Please try again.",
+        { variant: "error", autoHideDuration: 3000 }
       );
     }
   };
@@ -239,10 +261,18 @@ const AdminManagement = () => {
     try {
       await deleteAdmin(adminToDelete.id).unwrap();
       message.success(`${adminToDelete.name} has been deleted successfully!`);
+      enqueueSnackbar(`${adminToDelete.name} has been deleted successfully!`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       setDeleteModalVisible(false);
       setAdminToDelete(null);
       refetchAdmins();
     } catch (error) {
+      enqueueSnackbar(error?.data?.message || "Failed to delete admin", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
       message.error(error?.data?.message || "Failed to delete admin");
     }
   };
