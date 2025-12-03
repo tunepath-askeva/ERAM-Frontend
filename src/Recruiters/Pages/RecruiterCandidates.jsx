@@ -58,6 +58,7 @@ import {
   GiftOutlined,
   StopOutlined,
   DeleteOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import {
   useGetPipelineCompletedCandidatesQuery,
@@ -122,6 +123,8 @@ const RecruiterCandidates = () => {
   );
   const [changePipelineModalVisible, setChangePipelineModalVisible] =
     useState(false);
+  const [universalRecruiterIds, setUniversalRecruiterIds] = useState([]);
+  const [applyToAllStages, setApplyToAllStages] = useState(false);
   const [pipelineAlert, setPipelineAlert] = useState(null);
   const [selectedNewPipeline, setSelectedNewPipeline] = useState(null);
   const [form] = Form.useForm();
@@ -971,6 +974,36 @@ const RecruiterCandidates = () => {
           );
         })}
       </Space>
+    );
+  };
+
+  const handleUniversalRecruiterChange = (recruiterIds) => {
+    setUniversalRecruiterIds(recruiterIds);
+  };
+
+  const handleApplyToAllStagesChange = (e) => {
+    setApplyToAllStages(e.target.checked);
+  };
+
+  const handleApplyUniversalRecruiters = () => {
+    if (!selectedPipeline) return;
+
+    const allStages = [
+      ...(selectedPipeline.stages || []),
+      ...(customStages[selectedPipeline._id] || []),
+    ];
+
+    allStages.forEach((stage) => {
+      const stageId = stage._id || stage.id;
+      handleRecruiterAssignmentChange(
+        selectedPipeline._id,
+        stageId,
+        universalRecruiterIds
+      );
+    });
+
+    message.success(
+      `Applied ${universalRecruiterIds.length} recruiter(s) to all ${allStages.length} stages`
     );
   };
 
@@ -2723,6 +2756,8 @@ const RecruiterCandidates = () => {
         onCancel={() => {
           setPipelineModalVisible(false);
           setSelectedPipeline(null);
+          setUniversalRecruiterIds([]);
+          setApplyToAllStages(false);
         }}
         footer={[
           <Button
@@ -2755,6 +2790,72 @@ const RecruiterCandidates = () => {
           padding: "16px 24px",
         }}
       >
+        <Card
+          size="small"
+          style={{ marginBottom: 16, background: "#f9f9f9" }}
+          title={
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <SettingOutlined />
+              <Text strong>Universal Recruiter Settings</Text>
+            </div>
+          }
+        >
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} md={16}>
+              <Form.Item
+                label="Assign Recruiters to All Stages"
+                style={{ marginBottom: 0 }}
+              >
+                <Select
+                  mode="multiple"
+                  value={universalRecruiterIds}
+                  onChange={handleUniversalRecruiterChange}
+                  style={{ width: "100%" }}
+                  size="small"
+                  placeholder="Select recruiters for all stages"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                >
+                  {allRecruiters?.otherRecruiters?.map((recruiter) => (
+                    <Option key={recruiter._id} value={recruiter._id}>
+                      {recruiter.fullName || recruiter.email}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Checkbox
+                checked={applyToAllStages}
+                onChange={handleApplyToAllStagesChange}
+              >
+                Apply to all stages
+              </Checkbox>
+              {universalRecruiterIds.length > 0 && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={handleApplyUniversalRecruiters}
+                  style={{ marginLeft: 8 }}
+                >
+                  Apply Now
+                </Button>
+              )}
+            </Col>
+          </Row>
+          {universalRecruiterIds.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Selected: {universalRecruiterIds.length} recruiter(s)
+              </Text>
+            </div>
+          )}
+        </Card>
+
         {selectedPipeline && (
           <div>
             <div style={{ marginBottom: 20 }}>
@@ -2767,15 +2868,6 @@ const RecruiterCandidates = () => {
                 {selectedPipeline.pipelineStatus}
               </Tag>
             </div>
-
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={() => addCustomStage(selectedPipeline._id)}
-              style={{ marginBottom: 16 }}
-            >
-              Add Custom Stage
-            </Button>
 
             <List
               dataSource={[
@@ -3303,6 +3395,15 @@ const RecruiterCandidates = () => {
                 );
               }}
             />
+
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={() => addCustomStage(selectedPipeline._id)}
+              style={{ marginBottom: 16 }}
+            >
+              Add Custom Stage
+            </Button>
           </div>
         )}
       </Modal>
