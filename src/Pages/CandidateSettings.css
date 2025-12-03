@@ -1,0 +1,667 @@
+/* CandidateSettings.css - Responsive styles for all screen sizes */
+
+/* Container and Layout */
+.candidate-settings-container {
+  width: 100%;
+  padding: 16px;
+}
+
+.candidate-settings-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile Header */
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.profile-header-icon {
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.profile-header-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+/* Avatar Section */
+.avatar-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-upload-section {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Profile Completion Alert */
+.profile-completion-alert {
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #fff2e8 0%, #fff1f0 100%);
+  border: 1px solid #ffb8b8;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.completion-alert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.completion-alert-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.completion-alert-left span {
+  font-weight: bold;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.completion-alert-icon {
+  color: #ff4d4f;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.completion-alert-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.completion-alert-progress {
+  min-width: 120px;
+}
+
+.completion-alert-percentage {
+  font-weight: bold;
+  color: #da2c46;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.completion-alert-description {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(218, 44, 70, 0.1);
+}
+
+.completion-alert-description .ant-typography {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.completion-alert-missing {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.completion-alert-action {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Action Buttons */
+.action-buttons-section {
+  text-align: right;
+  margin-bottom: 16px;
+}
+
+.action-buttons-space {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Cards */
+.info-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+.card-title-icon {
+  margin-right: 8px;
+  color: #da2c46;
+}
+
+.card-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* List Items */
+.list-empty-state {
+  text-align: center;
+  padding: 16px;
+}
+
+/* Form Sections */
+.form-section {
+  padding: 24px;
+}
+
+.form-divider {
+  margin: 24px 0;
+}
+
+/* Resume Section */
+.resume-info {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Tabs Customization */
+.candidate-tabs {
+  min-height: 80vh;
+}
+
+.candidate-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+/* Social Links Grid */
+.social-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Tablet and below (768px) */
+@media screen and (max-width: 768px) {
+  .candidate-settings-container {
+    padding: 12px;
+  }
+
+  .profile-header-title {
+    font-size: 20px;
+  }
+
+  /* Change tabs from left to top on mobile/tablet */
+  .candidate-tabs {
+    min-height: auto;
+  }
+
+  .candidate-tabs .ant-tabs-tab {
+    padding: 8px 12px;
+  }
+
+  /* Responsive Alert for Tablets */
+  .profile-completion-alert {
+    padding: 14px;
+  }
+
+  .completion-alert-header {
+    gap: 12px;
+  }
+
+  .completion-alert-left span {
+    font-size: 14px;
+  }
+
+  .completion-alert-icon {
+    font-size: 16px;
+  }
+
+  .completion-alert-progress {
+    min-width: 100px;
+  }
+
+  .completion-alert-percentage {
+    font-size: 15px;
+  }
+
+  .completion-alert-description .ant-typography {
+    font-size: 13px;
+  }
+
+  .completion-alert-missing {
+    font-size: 12px;
+  }
+
+  /* Stack completion alert elements */
+  .completion-alert-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .completion-alert-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Stack action buttons */
+  .action-buttons-section {
+    text-align: center;
+  }
+
+  .action-buttons-space {
+    justify-content: center;
+  }
+
+  /* Single column for social links */
+  .social-links-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Adjust form padding */
+  .form-section {
+    padding: 16px;
+  }
+
+  /* Adjust modal widths */
+  .ant-modal {
+    max-width: 95%;
+    margin: 8px auto;
+  }
+
+  /* Stack resume buttons */
+  .resume-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Mobile phones (576px) */
+@media screen and (max-width: 576px) {
+  .candidate-settings-container {
+    padding: 8px;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-header-icon {
+    margin-bottom: 8px;
+  }
+
+  .profile-header-title {
+    font-size: 18px;
+  }
+
+  /* Alert responsive for mobile */
+  .profile-completion-alert {
+    padding: 12px;
+  }
+
+  .completion-alert-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .completion-alert-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .completion-alert-left span {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .completion-alert-icon {
+    font-size: 16px;
+  }
+
+  .completion-alert-right {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+  }
+
+  .completion-alert-progress {
+    min-width: 0;
+    flex: 1;
+    max-width: 150px;
+  }
+
+  .completion-alert-percentage {
+    font-size: 14px;
+    margin-left: 8px;
+  }
+
+  .completion-alert-description {
+    padding-top: 10px;
+    margin-top: 10px;
+  }
+
+  .completion-alert-description .ant-typography {
+    font-size: 12px;
+  }
+
+  .completion-alert-missing {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .completion-alert-action {
+    margin-top: 10px;
+    justify-content: stretch;
+  }
+
+  .completion-alert-action button {
+    width: 100%;
+  }
+
+  /* Smaller avatar on mobile */
+  .avatar-container .ant-avatar {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .avatar-upload-section {
+    flex-direction: column;
+  }
+
+  .avatar-upload-section button {
+    width: 100%;
+  }
+
+  /* Full width buttons */
+  .action-buttons-space {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-buttons-space button {
+    width: 100%;
+  }
+
+  /* Smaller card titles */
+  .ant-card-head-title {
+    font-size: 16px;
+  }
+
+  /* Adjust form item spacing */
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  /* Stack list item actions vertically */
+  .ant-list-item-action {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .ant-list-item-action > li {
+    padding: 0 4px;
+  }
+
+  /* Adjust card padding */
+  .ant-card-body {
+    padding: 16px;
+  }
+
+  /* Make progress bars smaller */
+  .completion-alert-right .ant-progress {
+    width: 80px !important;
+  }
+}
+
+/* Small mobile (400px) */
+@media screen and (max-width: 400px) {
+  .candidate-settings-container {
+    padding: 4px;
+  }
+
+  .form-section {
+    padding: 12px;
+  }
+
+  .ant-card-body {
+    padding: 12px;
+  }
+
+  .profile-header-title {
+    font-size: 16px;
+  }
+
+  /* Extra compact alert for small screens */
+  .profile-completion-alert {
+    padding: 10px;
+  }
+
+  .completion-alert-header {
+    gap: 8px;
+  }
+
+  .completion-alert-left {
+    gap: 6px;
+  }
+
+  .completion-alert-left span {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .completion-alert-icon {
+    font-size: 14px;
+  }
+
+  .completion-alert-right {
+    padding: 6px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .completion-alert-progress {
+    width: 100%;
+    max-width: none;
+  }
+
+  .completion-alert-percentage {
+    font-size: 13px;
+    text-align: center;
+    margin-left: 0;
+  }
+
+  .completion-alert-description {
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+
+  .completion-alert-description .ant-typography {
+    font-size: 11px;
+  }
+
+  .completion-alert-missing {
+    font-size: 10px;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .completion-alert-action {
+    margin-top: 8px;
+  }
+
+  .completion-alert-action button {
+    font-size: 12px;
+    padding: 4px 12px;
+    height: auto;
+  }
+
+  /* Extra small avatars */
+  .avatar-container .ant-avatar {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  /* Compact completion alert */
+  .completion-alert-left span {
+    font-size: 12px;
+  }
+
+  .completion-alert-right .ant-progress {
+    width: 60px !important;
+  }
+}
+
+/* Tablet landscape (992px - 1200px) */
+@media screen and (min-width: 768px) and (max-width: 1199px) {
+  .candidate-settings-container {
+    padding: 20px;
+  }
+
+  .social-links-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Tabs can stay on left but make them narrower */
+  .candidate-tabs .ant-tabs-tab {
+    padding: 12px 16px;
+  }
+}
+
+/* Large desktop (1200px+) */
+@media screen and (min-width: 1200px) {
+  .candidate-settings-container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .social-links-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Optimal tab spacing for large screens */
+  .candidate-tabs .ant-tabs-tab {
+    padding: 16px 24px;
+  }
+}
+
+/* Extra large desktop (1600px+) */
+@media screen and (min-width: 1600px) {
+  .candidate-settings-container {
+    max-width: 1600px;
+  }
+
+  .social-links-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Print styles */
+@media print {
+  .action-buttons-section,
+  .avatar-upload-section,
+  .ant-btn,
+  .profile-completion-alert {
+    display: none !important;
+  }
+
+  .candidate-settings-container {
+    padding: 0;
+  }
+
+  .ant-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}
+
+/* Utility classes */
+.full-width {
+  width: 100%;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gap-small {
+  gap: 8px;
+}
+
+.gap-medium {
+  gap: 16px;
+}
+
+.gap-large {
+  gap: 24px;
+}
+
+/* Ensure proper spacing for nested forms */
+.ant-form-vertical .ant-form-item {
+  margin-bottom: 20px;
+}
+
+@media screen and (max-width: 576px) {
+  .ant-form-vertical .ant-form-item {
+    margin-bottom: 16px;
+  }
+}
+
+/* Custom scrollbar for better UX */
+.candidate-tabs::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.candidate-tabs::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.candidate-tabs::-webkit-scrollbar-thumb {
+  background: #da2c46;
+  border-radius: 4px;
+}
+
+.candidate-tabs::-webkit-scrollbar-thumb:hover {
+  background: #b82238;
+}

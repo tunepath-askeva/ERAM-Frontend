@@ -86,6 +86,7 @@ import { setUserCredentials } from "../Slices/Users/UserSlice";
 import dayjs from "dayjs";
 import PhoneInput from "../Global/PhoneInput";
 import SkeletonLoader from "../Global/SkeletonLoader";
+import "./CandidateSettings.css";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -255,7 +256,7 @@ const CandidateSettings = () => {
   const [isCertModalVisible, setIsCertModalVisible] = useState(false);
   const [editingCertId, setEditingCertId] = useState(null);
   const [editingCertData, setEditingCertData] = useState({});
-
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
     degree: "",
@@ -279,6 +280,15 @@ const CandidateSettings = () => {
   const [educationForm] = Form.useForm();
   const [workForm] = Form.useForm();
   const [certForm] = Form.useForm();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (getCandidate && getCandidate.user) {
@@ -999,22 +1009,12 @@ const CandidateSettings = () => {
     return (
       <Alert
         message={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <FireOutlined
-                style={{ color: "#ff4d4f", marginRight: 8, fontSize: 16 }}
-              />
-              <span style={{ fontWeight: "bold" }}>
-                Complete your profile to get recruiters' attention!
-              </span>
+          <div className="completion-alert-header">
+            <div className="completion-alert-left">
+              <FireOutlined className="completion-alert-icon" />
+              <span>Complete your profile to get recruiters' attention!</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div className="completion-alert-right">
               <Progress
                 percent={profileCompletion}
                 size="small"
@@ -1023,16 +1023,16 @@ const CandidateSettings = () => {
                   "50%": "#faad14",
                   "100%": "#52c41a",
                 }}
-                style={{ width: 100, marginRight: 8 }}
+                className="completion-alert-progress"
               />
-              <Text strong style={{ color: "#da2c46" }}>
+              <Text className="completion-alert-percentage">
                 {profileCompletion}%
               </Text>
             </div>
           </div>
         }
         description={
-          <div style={{ marginTop: 8 }}>
+          <div className="completion-alert-description">
             <Text type="secondary">
               🎯 Profiles with 100% completion get{" "}
               <Text strong style={{ color: "#da2c46" }}>
@@ -1040,7 +1040,7 @@ const CandidateSettings = () => {
               </Text>{" "}
               from recruiters!
             </Text>
-            <div style={{ marginTop: 4 }}>
+            <div className="completion-alert-missing">
               <Text type="secondary">
                 Missing: {profileCompletion < 50 ? "Basic info, " : ""}
                 {!userData.nationality ? "Nationality, " : ""}
@@ -1052,23 +1052,20 @@ const CandidateSettings = () => {
           </div>
         }
         type="warning"
-        showIcon
-        style={{
-          marginBottom: 24,
-          background: "linear-gradient(135deg, #fff2e8 0%, #fff1f0 100%)",
-          border: "1px solid #ffb8b8",
-          borderRadius: 12,
-        }}
+        showIcon={false}
+        className="profile-completion-alert"
         action={
-          <Button
-            size="small"
-            type="primary"
-            onClick={toggleProfileEdit}
-            style={{ background: "#da2c46", border: "none" }}
-            icon={<EditOutlined />}
-          >
-            Complete Now
-          </Button>
+          <div className="completion-alert-action">
+            <Button
+              size="small"
+              type="primary"
+              onClick={toggleProfileEdit}
+              style={{ background: "#da2c46", border: "none" }}
+              icon={<EditOutlined />}
+            >
+              Complete Now
+            </Button>
+          </div>
         }
       />
     );
@@ -1078,31 +1075,33 @@ const CandidateSettings = () => {
     <div style={{ padding: 24 }}>
       <ProfileCompletionAlert />
 
-      <div style={{ textAlign: "right", marginBottom: 16 }}>
-        <Space>
-          {isProfileEditable && (
-            <Button onClick={toggleProfileEdit}>Cancel</Button>
-          )}
-          {isProfileEditable ? (
-            <Button
-              type="primary"
-              loading={loading}
-              onClick={handleProfileSave}
-              style={{ background: "#da2c46", border: "none" }}
-            >
-              Save Changes
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={toggleProfileEdit}
-              style={{ background: "#da2c46", border: "none" }}
-            >
-              Edit Profile
-            </Button>
-          )}
-        </Space>
+      <div className="action-buttons-section">
+        <div className="action-buttons-space">
+          <Space>
+            {isProfileEditable && (
+              <Button onClick={toggleProfileEdit}>Cancel</Button>
+            )}
+            {isProfileEditable ? (
+              <Button
+                type="primary"
+                loading={loading}
+                onClick={handleProfileSave}
+                style={{ background: "#da2c46", border: "none" }}
+              >
+                Save Changes
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={toggleProfileEdit}
+                style={{ background: "#da2c46", border: "none" }}
+              >
+                Edit Profile
+              </Button>
+            )}
+          </Space>
+        </div>
       </div>
 
       <Tabs defaultActiveKey="basic" type="card">
@@ -1115,16 +1114,11 @@ const CandidateSettings = () => {
           }
           key="summary"
         >
-          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+          <Card>
             <Form form={profileForm} layout="vertical" initialValues={userData}>
               <Row gutter={24}>
-                <Col
-                  span={24}
-                  style={{ textAlign: "center", marginBottom: 24 }}
-                >
-                  <div
-                    style={{ position: "relative", display: "inline-block" }}
-                  >
+                <Col span={24} className="avatar-section">
+                  <div className="avatar-container">
                     <Avatar
                       size={100}
                       src={userData.image}
@@ -1132,7 +1126,7 @@ const CandidateSettings = () => {
                       style={{ border: "4px solid #da2c46" }}
                     />
                     {isProfileEditable && (
-                      <div style={{ marginTop: 16 }}>
+                      <div className="avatar-upload-section">
                         <Upload
                           accept="image/*"
                           fileList={fileList}
@@ -1395,19 +1389,20 @@ const CandidateSettings = () => {
                 <Col span={24}>
                   <Divider orientation="left">Social Media Links</Divider>
                 </Col>
-
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="LinkedIn"
-                    name={["socialLinks", "linkedin"]}
-                  >
-                    <Input
-                      prefix={<LinkedinOutlined />}
-                      placeholder="LinkedIn profile URL"
-                      disabled={!isProfileEditable}
-                    />
-                  </Form.Item>
-                </Col>
+                <div className="social-links-grid">
+                  <Col xs={24} sm={24}>
+                    <Form.Item
+                      label="LinkedIn"
+                      name={["socialLinks", "linkedin"]}
+                    >
+                      <Input
+                        prefix={<LinkedinOutlined />}
+                        placeholder="LinkedIn profile URL"
+                        disabled={!isProfileEditable}
+                      />
+                    </Form.Item>
+                  </Col>
+                </div>
 
                 <Col xs={24} sm={12}>
                   <Form.Item label="GitHub" name={["socialLinks", "github"]}>
@@ -1739,7 +1734,7 @@ const CandidateSettings = () => {
           }
           key="personal"
         >
-          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+          <Card>
             <Form
               form={personalForm}
               layout="vertical"
@@ -2003,7 +1998,7 @@ const CandidateSettings = () => {
           }
           key="documents"
         >
-          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+          <Card>
             <Card
               title={
                 <div
@@ -2101,7 +2096,7 @@ const CandidateSettings = () => {
           }
           key="address"
         >
-          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+          <Card>
             <Form form={addressForm} layout="vertical" initialValues={userData}>
               <Row gutter={24}>
                 <Col xs={24} sm={8}>
@@ -2186,7 +2181,7 @@ const CandidateSettings = () => {
           }
           key="contact"
         >
-          <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+          <Card>
             <Form form={contactForm} layout="vertical" initialValues={userData}>
               <Row gutter={24}>
                 <Col xs={24} sm={12}>
@@ -2264,26 +2259,27 @@ const CandidateSettings = () => {
   }
 
   return (
-    <div className="container">
+    <div className="candidate-settings-container container">
+      {" "}
       <Row gutter={[24, 24]}>
         <Col span={24}>
           <Card
             title={
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <SettingOutlined style={{ marginRight: 12, fontSize: 20 }} />
-                <Title level={4} style={{ margin: 0 }}>
+              <div className="profile-header">
+                <SettingOutlined className="profile-header-icon" />
+                <Title level={4} className="profile-header-title">
                   Candidate Settings
                 </Title>
               </div>
             }
             bordered={false}
-            style={{ borderRadius: "12px" }}
+            className="candidate-settings-card"
           >
             <Tabs
               activeKey={activeTab}
               onChange={setActiveTab}
-              tabPosition="left"
-              style={{ minHeight: "80vh" }}
+              tabPosition={isMobile ? "top" : "left"}
+              className="candidate-tabs"
             >
               <TabPane
                 tab={
@@ -2500,7 +2496,6 @@ const CandidateSettings = () => {
           </Card>
         </Col>
       </Row>
-
       {/* Education Modal */}
       <Modal
         title={`${editingEducationId ? "Edit" : "Add"} Education`}
@@ -2550,7 +2545,6 @@ const CandidateSettings = () => {
           </Form.Item>
         </Form>
       </Modal>
-
       {/* Work Experience Modal */}
       <Modal
         title={`${editingWorkId ? "Edit" : "Add"} Work Experience`}
@@ -2636,7 +2630,6 @@ const CandidateSettings = () => {
           </Form.Item>
         </Form>
       </Modal>
-
       <Modal
         title={`${editingCertId ? "Edit" : "Add"} Certificate`}
         visible={isCertModalVisible}

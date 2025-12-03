@@ -182,6 +182,13 @@ const APPLICATION_STATUSES = {
     icon: <TrophyOutlined />,
     description: "Congratulations! You have been hired",
   },
+  COMPLETED: {
+    key: "completed",
+    label: "Completed",
+    color: "#059669",
+    icon: <TrophyOutlined />,
+    description: "Congratulations! You have Completed the Pipeline",
+  },
   REJECTED: {
     key: "rejected",
     label: "Not Selected",
@@ -331,6 +338,7 @@ const CandidateAppliedJobs = () => {
           "declined",
           "withdrawn",
           "offer",
+          'completed'
         ].includes(app.status);
       } else if (activeSubTab === "interviews") {
         matchesSubTab = [
@@ -339,9 +347,9 @@ const CandidateAppliedJobs = () => {
           "final_round",
         ].includes(app.status);
       } else if (activeSubTab === "offers") {
-        matchesSubTab = ["offer_extended", "offer"].includes(app.status);
+        matchesSubTab = ["offer_extended", "offer", 'completed'].includes(app.status);
       } else if (activeSubTab === "closed") {
-        matchesSubTab = ["rejected", "declined", "withdrawn", "offer"].includes(
+        matchesSubTab = ["rejected", "declined", "withdrawn", "offer", 'completed'].includes(
           app.status
         );
       }
@@ -418,6 +426,7 @@ const CandidateAppliedJobs = () => {
       "final_round",
       "offer_extended",
       "offer",
+      'completed'
     ];
     const currentIndex = statusOrder.indexOf(status);
     return ((currentIndex + 1) / statusOrder.length) * 100;
@@ -461,7 +470,7 @@ const CandidateAppliedJobs = () => {
 
       if (subTabKey === "all") return true;
       if (subTabKey === "active") {
-        return !["rejected", "declined", "withdrawn", "offer"].includes(
+        return !["rejected", "declined", "withdrawn", "offer", 'completed'].includes(
           app.status
         );
       }
@@ -473,10 +482,10 @@ const CandidateAppliedJobs = () => {
         ].includes(app.status);
       }
       if (subTabKey === "offers") {
-        return ["offer_extended", "offer"].includes(app.status);
+        return ["offer_extended", "offer", 'completed'].includes(app.status);
       }
       if (subTabKey === "closed") {
-        return ["rejected", "declined", "withdrawn", "offer"].includes(
+        return ["rejected", "declined", "withdrawn", "offer", 'completed'].includes(
           app.status
         );
       }
@@ -489,7 +498,7 @@ const CandidateAppliedJobs = () => {
       if (tabKey === "applied") return app.applicationType === "applied";
       if (tabKey === "sourced") return app.applicationType === "sourced";
       if (tabKey === "active")
-        return !["rejected", "declined", "withdrawn", "offer"].includes(
+        return !["rejected", "declined", "withdrawn", "offer", 'completed'].includes(
           app.status
         );
       if (tabKey === "interviews")
@@ -499,7 +508,7 @@ const CandidateAppliedJobs = () => {
           "final_round",
         ].includes(app.status);
       if (tabKey === "offers")
-        return ["offer_extended", "offer"].includes(app.status);
+        return ["offer_extended", "offer", 'completed'].includes(app.status);
       return false;
     }).length;
   };
@@ -1151,7 +1160,7 @@ const CandidateAppliedJobs = () => {
               </Button>
 
               {selectedApplication?.applicationType === "applied" &&
-                !["offer", "rejected", "withdrawn"].includes(
+                !["offer", "rejected", "withdrawn", 'completed'].includes(
                   selectedApplication.status
                 ) && (
                   <Button
