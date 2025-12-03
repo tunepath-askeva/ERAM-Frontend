@@ -26,6 +26,7 @@ import {
   Dropdown,
   Menu,
   Alert,
+  Result
 } from "antd";
 import {
   PlusOutlined,
@@ -635,13 +636,12 @@ const AdminCandidates = () => {
         </div>
       ),
     },
-        {
+    {
       title: "Candidate Code",
       dataIndex: "uniqueCode",
       key: "uniqueCode",
       render: (text) => (
-       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span>{text || "N/A"}</span>
         </div>
       ),
@@ -977,31 +977,25 @@ const AdminCandidates = () => {
               textAlign: "center",
             }}
           >
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <Text type="secondary">
-                  {isError
-                    ? "Failed to load candidates"
-                    : searchTerm
-                    ? "No candidates found matching your search"
-                    : "No candidates added yet"}
-                </Text>
-              }
-            >
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={showCreateModal}
-                style={{
-                  background:
-                    "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
-                  border: "none",
-                }}
-              >
-                Add Candidate
-              </Button>
-            </Empty>
+            {isError ? (
+              <Result
+                status="500"
+                title="500"
+                subTitle="Oops! Something went wrong while loading candidates."
+              />
+            ) : searchTerm ? (
+              <Result
+                status="404"
+                title="No Results"
+                subTitle="No candidates found matching your search."
+              />
+            ) : (
+              <Result
+               status="404"
+                title="No Candidates Yet"
+                subTitle="You haven't added any candidates so far."
+              />
+            )}
           </Card>
         )}
       </div>

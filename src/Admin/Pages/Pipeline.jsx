@@ -7,6 +7,7 @@ import {
   Typography,
   Tag,
   Tooltip,
+  Result,
   Empty,
   Space,
   Badge,
@@ -667,38 +668,47 @@ const Pipeline = () => {
               },
             }}
           >
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div style={{ textAlign: "center" }}>
-                  <Text
-                    style={{
-                      fontSize: "14px",
-                      color: "#7f8c8d",
-                      "@media (min-width: 576px)": {
-                        fontSize: "16px",
-                      },
-                    }}
-                  >
+            {isError ? (
+              <Result
+                status="500"
+                title="Failed to Load Pipelines"
+                subTitle="Please try refreshing the page."
+                extra={
+                  <Button type="primary" onClick={refetch}>
+                    Retry
+                  </Button>
+                }
+              />
+            ) : searchTerm ? (
+              <Result
+                status="404"
+                title={
+                  <span style={{ fontSize: "14px", color: "#7f8c8d" }}>
                     No pipelines found
-                  </Text>
-                  <br />
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: "12px",
-                      "@media (min-width: 576px)": {
-                        fontSize: "14px",
-                      },
-                    }}
-                  >
-                    {searchTerm
-                      ? "No pipelines match your search"
-                      : "Create your first pipeline to get started with structured hiring"}
-                  </Text>
-                </div>
-              }
-            />
+                  </span>
+                }
+                subTitle={
+                  <span style={{ fontSize: "12px" }}>
+                    No pipelines match your search
+                  </span>
+                }
+              />
+            ) : (
+              <Result
+                status="404"
+                title={
+                  <span style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                    No pipelines found
+                  </span>
+                }
+                subTitle={
+                  <span style={{ fontSize: "12px" }}>
+                    Create your first pipeline to get started with structured
+                    hiring
+                  </span>
+                }
+              />
+            )}
           </Card>
         )}
       </div>

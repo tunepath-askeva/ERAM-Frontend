@@ -7,7 +7,7 @@ import {
   Typography,
   Tag,
   Tooltip,
-  Empty,
+  Result,
   Space,
   Badge,
   Modal,
@@ -94,6 +94,7 @@ const WorkOrder = () => {
       pageSize: 12,
     },
     isLoading,
+    isError,
     refetch,
   } = useGetWorkOrdersQuery({
     searchTerm: debouncedSearchTerm,
@@ -930,40 +931,51 @@ const WorkOrder = () => {
               },
             }}
           >
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div style={{ textAlign: "center" }}>
-                  <Text
+            {isError ? (
+              <Result
+                status="500"
+                title="Failed to Load Work Orders"
+                subTitle="Please try refreshing the page."
+                
+              />
+            ) : searchTerm ? (
+              <Result
+                status="404"
+                title={
+                  <span style={{ fontSize: "14px", color: "#7f8c8d" }}>
+                    No work orders found matching your search
+                  </span>
+                }
+                subTitle={
+                  <span style={{ fontSize: "12px" }}>
+                    Try adjusting your search criteria
+                  </span>
+                }
+              />
+            ) : (
+              <Result
+                status="404"
+                title={
+                  <span
                     style={{
                       fontSize: "14px",
                       color: "#7f8c8d",
-                      "@media (min-width: 576px)": {
-                        fontSize: "16px",
-                      },
                     }}
                   >
-                    {searchTerm
-                      ? "No work orders found matching your search"
-                      : "No work orders created yet"}
-                  </Text>
-                  <br />
-                  <Text
-                    type="secondary"
+                    No work orders created yet
+                  </span>
+                }
+                subTitle={
+                  <span
                     style={{
                       fontSize: "12px",
-                      "@media (min-width: 576px)": {
-                        fontSize: "14px",
-                      },
                     }}
                   >
-                    {searchTerm
-                      ? "Try adjusting your search criteria"
-                      : "Create your first work order to get started"}
-                  </Text>
-                </div>
-              }
-            />
+                    Create your first work order to get started
+                  </span>
+                }
+              />
+            )}
           </Card>
         )}
       </div>

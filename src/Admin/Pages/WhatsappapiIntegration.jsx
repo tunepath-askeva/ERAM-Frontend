@@ -45,6 +45,7 @@ const WhatsAppConfig = () => {
   const {
     data: WhatsAppConfigData,
     isLoading,
+    isError,
     refetch,
   } = useGetWhatsappConfigQuery();
 

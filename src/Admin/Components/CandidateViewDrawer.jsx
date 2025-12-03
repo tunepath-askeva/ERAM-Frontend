@@ -17,6 +17,7 @@ import {
   Skeleton,
   Empty,
   Divider,
+  Result,
 } from "antd";
 import {
   InfoCircleOutlined,
@@ -770,7 +771,11 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
     if (isError) {
       return (
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <Text type="danger">Failed to load candidate details</Text>
+          <Result
+            status="500"
+            title="500"
+            subTitle="Sorry, something went wrong."
+          />
         </div>
       );
     }
@@ -778,7 +783,11 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
     if (!candidate) {
       return (
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <Text type="secondary">Candidate details not found</Text>
+          <Result
+            status="404"
+            title="404"
+            subTitle="Sorry, the page you visited does not exist."
+          />
         </div>
       );
     }

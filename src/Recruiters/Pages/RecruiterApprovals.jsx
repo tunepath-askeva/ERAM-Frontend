@@ -23,6 +23,7 @@ import {
   List,
   Drawer,
   Dropdown,
+  Result
 } from "antd";
 import {
   EyeOutlined,
@@ -1007,6 +1008,13 @@ const RecruiterApprovals = () => {
             size={isMobile ? "small" : isTablet ? "small" : "default"}
             rowClassName="table-row-hover"
             className="responsive-table"
+          />
+        </TabPane>
+        <TabPane tab="Requisition Approvals" key="requisition">
+          <Result
+            status="404"
+            title="Coming Soon"
+            subTitle="This Page is Under Development coming soon"
           />
         </TabPane>
       </Tabs>

@@ -20,6 +20,7 @@ import {
   Form,
   Select,
   Pagination,
+  Result
 } from "antd";
 import {
   PlusOutlined,
@@ -39,12 +40,11 @@ import {
   BankOutlined,
   GlobalOutlined,
   DeleteOutlined,
-  LockOutlined ,
-  DashboardOutlined ,
-  FileTextOutlined ,
+  LockOutlined,
+  DashboardOutlined,
+  FileTextOutlined,
   SettingOutlined,
   BellOutlined,
-
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
 import { useSnackbar } from "notistack";
@@ -562,7 +562,7 @@ const AdminRecruiter = () => {
         </div>
 
         {isLoading ? (
-         <SkeletonLoader />
+          <SkeletonLoader />
         ) : recruiters?.length > 0 ? (
           <>
             <Row
@@ -796,45 +796,25 @@ const AdminRecruiter = () => {
               marginTop: "16px",
             }}
           >
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div style={{ textAlign: "center" }}>
-                  <Text
-                    style={{
-                      fontSize: "14px",
-                      color: "#7f8c8d",
-                    }}
-                  >
-                    {isError
-                      ? "Failed to load recruiters"
-                      : searchTerm
-                      ? "No recruiters found matching your search"
-                      : "No recruiters added yet"}
-                  </Text>
-                  <br />
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: "12px",
-                    }}
-                  >
-                    {isError
-                      ? "Please try refreshing the page"
-                      : searchTerm
-                      ? "Try adjusting your search criteria"
-                      : "Add your first recruiter to get started"}
-                  </Text>
-                  {isError && (
-                    <div style={{ marginTop: 8 }}>
-                      <Button type="link" onClick={refetch}>
-                        Retry
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              }
-            />
+            {isError ? (
+              <Result
+                status="500"
+                title="Failed to Load Recruiters"
+                subTitle="Please try refreshing the page."
+              />
+            ) : searchTerm ? (
+              <Result
+                status="404"
+                title="No Recruiters Found"
+                subTitle="Try adjusting your search criteria."
+              />
+            ) : (
+              <Result
+                status="404"
+                title="No Recruiters Added Yet"
+                subTitle="Add your first recruiter to get started."
+              />
+            )}
           </Card>
         )}
       </div>
@@ -1019,105 +999,117 @@ const AdminRecruiter = () => {
                     : "Not specified"}
                 </Descriptions.Item>
 
-<Descriptions.Item
-  label={
-    <span>
-      <LockOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-      Permissions
-    </span>
-  }
->
-  {selectedRecruiterData.permissions?.length ? (
-    <div
-      style={{
-        maxHeight: 300,
-        overflowY: "auto",
-        padding: "12px",
-        borderRadius: "8px",
-        border: "1px solid #f0f0f0",
-      }}
-    >
-      {selectedRecruiterData.permissions.includes("full-access-given") && (
-        <div
-          style={{
-            background: "#fffbe6",
-            border: "1px solid #ffe58f",
-            borderRadius: "6px",
-            padding: "8px 12px",
-            marginBottom: "10px",
-            fontSize: "13px",
-            color: "#ad8b00",
-            fontWeight: 500,
-          }}
-        >
-          🔒 Full Access Granted — user has full permission access to all modules.
-        </div>
-      )}
-
-      {permissionGroups.map((group) => {
-        const allowed = group.permissions.filter((p) =>
-          selectedRecruiterData.permissions.includes(p.key)
-        );
-        if (allowed.length === 0) return null;
-
-        return (
-          <div
-            key={group.title}
-            style={{
-              marginBottom: "12px",
-              paddingBottom: "8px",
-              borderBottom: "1px solid #f0f0f0",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <span
-                style={{
-                  marginRight: 8,
-                  color: "#da2c46",
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                {group.icon}
-              </span>
-              <strong style={{ fontSize: "13px", color: "#212529" }}>
-                {group.title}
-              </strong>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "6px",
-                marginLeft: "24px",
-              }}
-            >
-              {allowed.map((perm) => (
-                <Tag
-                  key={perm.key}
-                  color="red"
-                  style={{
-                    background: "#fff2f0",
-                    borderColor: "#ffa39e",
-                    color: "#a8071a",
-                    fontSize: "12px",
-                    marginBottom: "4px",
-                  }}
+                <Descriptions.Item
+                  label={
+                    <span>
+                      <LockOutlined
+                        style={{ marginRight: 8, color: "#da2c46" }}
+                      />
+                      Permissions
+                    </span>
+                  }
                 >
-                  {perm.label}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  ) : (
-    <Text type="secondary">No permissions assigned</Text>
-  )}
-</Descriptions.Item>
+                  {selectedRecruiterData.permissions?.length ? (
+                    <div
+                      style={{
+                        maxHeight: 300,
+                        overflowY: "auto",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid #f0f0f0",
+                      }}
+                    >
+                      {selectedRecruiterData.permissions.includes(
+                        "full-access-given"
+                      ) && (
+                        <div
+                          style={{
+                            background: "#fffbe6",
+                            border: "1px solid #ffe58f",
+                            borderRadius: "6px",
+                            padding: "8px 12px",
+                            marginBottom: "10px",
+                            fontSize: "13px",
+                            color: "#ad8b00",
+                            fontWeight: 500,
+                          }}
+                        >
+                          🔒 Full Access Granted — user has full permission
+                          access to all modules.
+                        </div>
+                      )}
 
+                      {permissionGroups.map((group) => {
+                        const allowed = group.permissions.filter((p) =>
+                          selectedRecruiterData.permissions.includes(p.key)
+                        );
+                        if (allowed.length === 0) return null;
+
+                        return (
+                          <div
+                            key={group.title}
+                            style={{
+                              marginBottom: "12px",
+                              paddingBottom: "8px",
+                              borderBottom: "1px solid #f0f0f0",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                marginBottom: 4,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  marginRight: 8,
+                                  color: "#da2c46",
+                                  fontSize: "16px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                {group.icon}
+                              </span>
+                              <strong
+                                style={{ fontSize: "13px", color: "#212529" }}
+                              >
+                                {group.title}
+                              </strong>
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "6px",
+                                marginLeft: "24px",
+                              }}
+                            >
+                              {allowed.map((perm) => (
+                                <Tag
+                                  key={perm.key}
+                                  color="red"
+                                  style={{
+                                    background: "#fff2f0",
+                                    borderColor: "#ffa39e",
+                                    color: "#a8071a",
+                                    fontSize: "12px",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  {perm.label}
+                                </Tag>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <Text type="secondary">No permissions assigned</Text>
+                  )}
+                </Descriptions.Item>
               </Descriptions>
 
               {selectedRecruiterData.bio && (
