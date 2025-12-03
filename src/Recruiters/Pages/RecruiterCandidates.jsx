@@ -32,6 +32,7 @@ import {
   Skeleton,
   Alert,
 } from "antd";
+import { ObjectId } from "bson";
 import {
   SearchOutlined,
   FilterOutlined,
@@ -373,6 +374,15 @@ const RecruiterCandidates = () => {
 
       message.success("Pipeline updated successfully!");
       setChangePipelineModalVisible(false);
+
+      const newPipeline = activePipelines.find(
+        (p) => p._id === selectedNewPipeline
+      );
+
+      setSelectedCandidate((prev) => ({
+        ...prev,
+        tagPipeline: newPipeline,
+      }));
 
       // Refetch both queries
       await refetch();
@@ -798,7 +808,7 @@ const RecruiterCandidates = () => {
         return;
       }
 
-      const pipelineId = selectedCandidate.tagPipeline._id; // Use tagPipeline ID
+      const pipelineId = selectedCandidate.tagPipeline._id;
       const jobId = selectedCandidate.workOrder._id;
       const userId = selectedCandidate.candidateId;
 
@@ -815,7 +825,6 @@ const RecruiterCandidates = () => {
       });
 
       if (!isConfigured) {
-        // 👇 Instead of Modal, show inline alert inside Drawer
         setPipelineAlert({
           type: "warning",
           message:
@@ -967,7 +976,7 @@ const RecruiterCandidates = () => {
   // Add these functions to the component
   const addCustomStage = (pipelineId) => {
     const newStage = {
-      id: `temp-${Date.now()}`,
+      id: new ObjectId().toString(),
       name: `New Stage`,
       description: "",
       isCustom: true,
@@ -1193,7 +1202,7 @@ const RecruiterCandidates = () => {
 
   const addStageCustomField = (pipelineId, stageId) => {
     const newField = {
-      id: `field_${Date.now()}`,
+      id: new ObjectId().toString(),
       label: "New Field",
       type: "text",
       required: false,
@@ -2274,7 +2283,7 @@ const RecruiterCandidates = () => {
                         <div style={{ padding: 16 }}>
                           <Title level={4}>Pipeline Information</Title>
 
-                            {pipelineAlert && (
+                          {pipelineAlert && (
                             <Alert
                               type={pipelineAlert.type}
                               message={pipelineAlert.message}
@@ -2303,7 +2312,7 @@ const RecruiterCandidates = () => {
                                 borderRadius: 8,
                               }}
                             >
-                              {candidate?.tagPipelineId ? (
+                              {selectedCandidate?.tagPipeline ? (
                                 <Space
                                   direction="vertical"
                                   style={{ width: "100%" }}
@@ -2319,10 +2328,8 @@ const RecruiterCandidates = () => {
                                       <Text strong>Tagged Pipeline:</Text>
                                       <br />
                                       <Text>
-                                        {activePipelines.find(
-                                          (p) =>
-                                            p._id === candidate.tagPipelineId
-                                        )?.name || "Loading..."}
+                                        {selectedCandidate.tagPipeline.name ||
+                                          "Loading..."}
                                       </Text>
                                     </div>
                                     <Button
@@ -2333,24 +2340,17 @@ const RecruiterCandidates = () => {
                                       Change Pipeline
                                     </Button>
                                   </div>
-                                  {activePipelines.find(
-                                    (p) => p._id === candidate.tagPipelineId
-                                  ) && (
-                                    <Button
-                                      type="link"
-                                      icon={<EyeOutlined />}
-                                      onClick={() =>
-                                        handleTagPipelineClick(
-                                          activePipelines.find(
-                                            (p) =>
-                                              p._id === candidate.tagPipelineId
-                                          )
-                                        )
-                                      }
-                                    >
-                                      Configure Pipeline Details
-                                    </Button>
-                                  )}
+                                  <Button
+                                    type="link"
+                                    icon={<EyeOutlined />}
+                                    onClick={() =>
+                                      handleTagPipelineClick(
+                                        selectedCandidate.tagPipeline
+                                      )
+                                    }
+                                  >
+                                    Configure Pipeline Details
+                                  </Button>
                                 </Space>
                               ) : (
                                 <Space
@@ -2360,28 +2360,17 @@ const RecruiterCandidates = () => {
                                   <Text type="secondary">
                                     No separate pipeline tagged.
                                   </Text>
-                                  {/* <Button
-                                  type="primary"
-                                  size="small"
-                                  onClick={handleChangePipeline}
-                                >
-                                  Tag a Pipeline
-                                </Button> */}
                                 </Space>
                               )}
                             </Card>
                           </div>
 
-                          {activePipelines.find(
-                            (p) => p._id === candidate.tagPipelineId
-                          )?.stages && (
+                          {selectedCandidate.tagPipeline?.stages && (
                             <div style={{ marginBottom: 16 }}>
                               <Title level={5}>Pipeline Stages</Title>
                               <List
                                 dataSource={
-                                  activePipelines.find(
-                                    (p) => p._id === candidate.tagPipelineId
-                                  )?.stages || []
+                                  selectedCandidate.tagPipeline.stages || []
                                 }
                                 renderItem={(stage, index) => (
                                   <List.Item>
@@ -2438,7 +2427,7 @@ const RecruiterCandidates = () => {
 
                           {/* Pipeline Action Buttons */}
                           <Space>
-                            {candidate?.tagPipelineId ? (
+                            {selectedCandidate?.tagPipeline ? (
                               <>
                                 <Button
                                   type="primary"
