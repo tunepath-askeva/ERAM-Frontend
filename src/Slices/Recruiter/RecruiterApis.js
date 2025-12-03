@@ -150,7 +150,7 @@ export const recruiterApi = createApi({
       }),
     }),
     getWorkOrderDetails: builder.query({
-      query: ({ jobId, page = 1, limit = 10  }) => ({
+      query: ({ jobId, page = 1, limit = 10 }) => ({
         url: `/job-details/${jobId}`,
         method: "GET",
         params: {
@@ -716,6 +716,13 @@ export const recruiterApi = createApi({
         body: { pipelineId },
       }),
     }),
+    updateStageDates: builder.mutation({
+      query: ({ id, stageId, startDate, endDate }) => ({
+        url: `/update-stage-dates/${id}`,
+        method: "PATCH",
+        body: { stageId, startDate, endDate },
+      }),
+    }),
   }),
 });
 
@@ -793,4 +800,5 @@ export const {
   useExportRecruiterCvsMutation,
   useImportRecruiterCvsMutation,
   useUpdateTaggedPipelineMutation,
+  useUpdateStageDatesMutation,
 } = recruiterApi;

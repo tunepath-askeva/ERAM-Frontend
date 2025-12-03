@@ -4,6 +4,7 @@ import {
   useGetPipelineJobsByIdQuery,
   useMoveToNextStageMutation,
   useStagedCandidateNotifyMutation,
+  useUpdateStageDatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import {
   Card,
@@ -98,6 +99,8 @@ const RecruiterJobPipeline = () => {
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
   const [remainder] = useStagedCandidateNotifyMutation();
+  const [updateStageDates, { isLoading: isUpdatingDates }] =
+    useUpdateStageDatesMutation();
 
   useEffect(() => {
     if (apiData?.data) {
@@ -530,6 +533,34 @@ const RecruiterJobPipeline = () => {
 
   const handleNotify = () => {
     setIsNotifyModalVisible(true);
+  };
+
+  const handleUpdateStageDates = async () => {
+    try {
+      if (!activeStage) {
+        message.error("No active stage selected");
+        return;
+      }
+
+      const payload = {
+        id,
+        stageId: activeStage,
+        startDate: tempStartDate,
+        endDate: tempEndDate,
+      };
+
+      await updateStageDates(payload).unwrap();
+
+      message.success("Stage dates updated successfully");
+      setIsDateConfirmModalVisible(false);
+      setIsEditingDates(false);
+      setTempStartDate(null);
+      setTempEndDate(null);
+      refetch();
+    } catch (error) {
+      console.error("Error updating stage dates:", error);
+      message.error(error?.data?.message || "Failed to update stage dates");
+    }
   };
 
   const handleSendNotification = async (methods, remarks) => {
@@ -1770,25 +1801,13 @@ const RecruiterJobPipeline = () => {
       <Modal
         title="Confirm Date Update"
         visible={isDateConfirmModalVisible}
-        onOk={() => {
-          // TODO: Call API to update dates
-          console.log("Updating dates:", {
-            stageId: activeStage,
-            startDate: tempStartDate,
-            endDate: tempEndDate,
-          });
-          message.success("Stage dates updated successfully");
-          setIsDateConfirmModalVisible(false);
-          setIsEditingDates(false);
-          setTempStartDate(null);
-          setTempEndDate(null);
-          // refetch(); // Uncomment when API is ready
-        }}
+        onOk={handleUpdateStageDates}
         onCancel={() => setIsDateConfirmModalVisible(false)}
         okText="Confirm"
         cancelText="Cancel"
         okButtonProps={{
           style: { backgroundColor: primaryColor, borderColor: primaryColor },
+          loading: isUpdatingDates,
         }}
       >
         <p>Are you sure you want to update the stage dates?</p>
