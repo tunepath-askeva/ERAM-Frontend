@@ -150,7 +150,7 @@ export const recruiterApi = createApi({
       }),
     }),
     getWorkOrderDetails: builder.query({
-      query: ({ jobId, page, limit }) => ({
+      query: ({ jobId, page = 1, limit = 10  }) => ({
         url: `/job-details/${jobId}`,
         method: "GET",
         params: {

@@ -54,8 +54,14 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1); // Add state
+  const [pageSize, setPageSize] = useState(10); // Add state
 
-  const { data, isLoading, error } = useGetWorkOrderDetailsQuery({ jobId });
+  const { data, isLoading, error } = useGetWorkOrderDetailsQuery({
+    jobId,
+    page: currentPage,
+    limit: pageSize,
+  });
 
   // Status configuration
   const statusConfig = {
@@ -125,8 +131,8 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
     }, {});
   };
 
-  const statusCounts = getStatusCounts();
-  const totalCandidates = data ? data.candidates.length : 0;
+  const statusCounts = data?.summary?.statusDistribution || {};
+  const totalCandidates = data?.pagination?.totalRecords || 0;
   const convertedEmployees = numberOfEmployees || 0;
   const requiredCandidates = numberOfCandidate || 0;
   const isWorkOrderComplete = convertedEmployees >= requiredCandidates;
@@ -527,10 +533,17 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
           loading={isLoading}
           rowKey="_id"
           pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
+            current: currentPage,
+            pageSize: pageSize,
+            total: data?.pagination?.totalRecords || 0,
+            showSizeChanger: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
             size: "small",
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+            pageSizeOptions: ["5", "10", "20", "50"],
           }}
           scroll={{ x: "100%" }}
           size="small"
