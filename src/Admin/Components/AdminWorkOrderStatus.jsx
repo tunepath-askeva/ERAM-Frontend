@@ -15,6 +15,11 @@ import {
   Modal,
   Badge,
   Tooltip,
+  Timeline,
+  Descriptions,
+  Steps,
+  Divider,
+  Empty,
 } from "antd";
 import {
   UserOutlined,
@@ -32,10 +37,18 @@ import {
   EditOutlined,
   CloseCircleOutlined,
   HourglassOutlined,
+  CalendarOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  EnvironmentOutlined,
+  CheckOutlined,
+  LoadingOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
 import { useGetWorkOrderDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Title, Text } = Typography;
+const { Step } = Steps;
 
 const AdminWorkOrderStatus = ({
   jobId,
@@ -43,53 +56,29 @@ const AdminWorkOrderStatus = ({
   numberOfEmployees,
 }) => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+
   const { data, isLoading, error } = useGetWorkOrderDetailsQuery({ jobId });
 
-  console.log("Props:", { numberOfCandidate, numberOfEmployees });
-  console.log("Data:", data);
-
-  // Updated status configuration with primary color theme
+  // Status configuration
   const statusConfig = {
-    applied: {
-      color: "#da2c46",
-      text: "Applied",
-      icon: <FileTextOutlined />,
-    },
-    sourced: {
-      color: "#1890ff",
-      text: "Sourced",
-      icon: <UserAddOutlined />,
-    },
-    screening: {
-      color: "#fa8c16",
-      text: "Screening",
-      icon: <EyeOutlined />,
-    },
+    applied: { color: "#da2c46", text: "Applied", icon: <FileTextOutlined /> },
+    sourced: { color: "#1890ff", text: "Sourced", icon: <UserAddOutlined /> },
+    screening: { color: "#fa8c16", text: "Screening", icon: <EyeOutlined /> },
     pipeline: {
       color: "#722ed1",
       text: "Pipeline",
       icon: <ClockCircleOutlined />,
     },
-    interview: {
-      color: "#faad14",
-      text: "Interview",
-      icon: <TeamOutlined />,
-    },
+    interview: { color: "#faad14", text: "Interview", icon: <TeamOutlined /> },
     selected: {
       color: "#52c41a",
       text: "Selected",
       icon: <CheckCircleOutlined />,
     },
-    approved: {
-      color: "#13c2c2",
-      text: "Approved",
-      icon: <StarOutlined />,
-    },
-    offer: {
-      color: "#eb2f96",
-      text: "Offer",
-      icon: <GiftOutlined />,
-    },
+    approved: { color: "#13c2c2", text: "Approved", icon: <StarOutlined /> },
+    offer: { color: "#eb2f96", text: "Offer", icon: <GiftOutlined /> },
     offer_pending: {
       color: "#fa541c",
       text: "Offer Pending",
@@ -100,11 +89,7 @@ const AdminWorkOrderStatus = ({
       text: "Offer Revised",
       icon: <EditOutlined />,
     },
-    hired: {
-      color: "#52c41a",
-      text: "Hired",
-      icon: <TrophyOutlined />,
-    },
+    hired: { color: "#52c41a", text: "Hired", icon: <TrophyOutlined /> },
     completed: {
       color: "#389e0d",
       text: "Completed",
@@ -122,24 +107,32 @@ const AdminWorkOrderStatus = ({
     },
   };
 
+  const stageStatusConfig = {
+    pending: { color: "default", icon: <ClockCircleOutlined /> },
+    inProgress: { color: "processing", icon: <LoadingOutlined /> },
+    approved: { color: "success", icon: <CheckOutlined /> },
+    rejected: { color: "error", icon: <StopOutlined /> },
+  };
+
+  // Show candidate details modal
+  const showCandidateDetails = (candidate) => {
+    setSelectedCandidate(candidate);
+    setDetailModalVisible(true);
+  };
+
   // Calculate status counts
   const getStatusCounts = () => {
-    if (!data || !data.allWorkorderResponse) return {};
-
-    return data.allWorkorderResponse.reduce((acc, candidate) => {
-      acc[candidate.status] = (acc[candidate.status] || 0) + 1;
+    if (!data || !data.candidates) return {};
+    return data.candidates.reduce((acc, candidate) => {
+      acc[candidate.currentStatus] = (acc[candidate.currentStatus] || 0) + 1;
       return acc;
     }, {});
   };
 
   const statusCounts = getStatusCounts();
-  const totalCandidates = data ? data.allWorkorderResponse.length : 0;
-
-  // Use numberOfEmployees prop directly as it represents actual converted employees
+  const totalCandidates = data ? data.candidates.length : 0;
   const convertedEmployees = numberOfEmployees || 0;
   const requiredCandidates = numberOfCandidate || 0;
-
-  // Check if work order is complete
   const isWorkOrderComplete = convertedEmployees >= requiredCandidates;
   const completionPercentage =
     requiredCandidates > 0
@@ -152,14 +145,14 @@ const AdminWorkOrderStatus = ({
     }
   }, [isWorkOrderComplete, convertedEmployees]);
 
-  // Table columns with responsive design
+  // Enhanced table columns
   const columns = [
     {
       title: "Candidate",
-      dataIndex: "user",
+      dataIndex: "candidate",
       key: "candidate",
-      width: "40%",
-      render: (user) => (
+      width: "25%",
+      render: (candidate) => (
         <Space size="small">
           <Avatar
             icon={<UserOutlined />}
@@ -176,7 +169,7 @@ const AdminWorkOrderStatus = ({
                 textOverflow: "ellipsis",
               }}
             >
-              {user?.fullName || "N/A"}
+              {candidate?.fullName || "N/A"}
             </div>
             <Text
               type="secondary"
@@ -187,18 +180,17 @@ const AdminWorkOrderStatus = ({
                 textOverflow: "ellipsis",
               }}
             >
-              {user?.email}
+              {candidate?.email}
             </Text>
           </div>
         </Space>
       ),
-      responsive: ["xs", "sm", "md", "lg", "xl"],
     },
     {
-      title: "Status",
-      dataIndex: "status",
+      title: "Current Status",
+      dataIndex: "currentStatus",
       key: "status",
-      width: "35%",
+      width: "15%",
       render: (status) => (
         <Tag
           color={statusConfig[status]?.color || "default"}
@@ -208,26 +200,81 @@ const AdminWorkOrderStatus = ({
           {statusConfig[status]?.text || status}
         </Tag>
       ),
-      responsive: ["xs", "sm", "md", "lg", "xl"],
     },
     {
-      title: "Sourced",
-      dataIndex: "isSourced",
-      key: "sourced",
-      width: "25%",
-      render: (isSourced) => (
-        <Tag
-          color={isSourced === "true" ? "#52c41a" : "#ff4d4f"}
-          style={{ borderRadius: "6px" }}
-        >
-          {isSourced === "true" ? "Yes" : "No"}
-        </Tag>
+      title: "Current Pipeline",
+      dataIndex: "currentStage",
+      key: "pipeline",
+      width: "15%",
+      render: (currentStage) => (
+        <Text style={{ fontSize: "12px" }}>
+          {currentStage?.pipelineName || "N/A"}
+        </Text>
       ),
-      responsive: ["sm", "md", "lg", "xl"],
+      responsive: ["md", "lg", "xl"],
+    },
+    {
+      title: "Current Stage",
+      dataIndex: "currentStage",
+      key: "stage",
+      width: "20%",
+      render: (currentStage) => (
+        <div>
+          <div style={{ fontSize: "13px", fontWeight: 500 }}>
+            {currentStage?.stageName || "N/A"}
+          </div>
+          {currentStage && (
+            <Tag
+              color={stageStatusConfig[currentStage.stageStatus]?.color}
+              icon={stageStatusConfig[currentStage.stageStatus]?.icon}
+              style={{ fontSize: "11px", marginTop: "4px" }}
+            >
+              {currentStage.stageStatus}
+            </Tag>
+          )}
+        </div>
+      ),
+      responsive: ["lg", "xl"],
+    },
+    {
+      title: "Progress",
+      dataIndex: "stageProgressionSummary",
+      key: "progress",
+      width: "15%",
+      render: (summary) => (
+        <div>
+          <Progress
+            percent={summary?.progressPercentage || 0}
+            size="small"
+            strokeColor="#52c41a"
+            style={{ marginBottom: "4px" }}
+          />
+          <Text style={{ fontSize: "11px" }} type="secondary">
+            {summary?.completedStages || 0}/{summary?.totalStages || 0} stages
+          </Text>
+        </div>
+      ),
+      responsive: ["md", "lg", "xl"],
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: "10%",
+      render: (_, record) => (
+        <Button
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => showCandidateDetails(record)}
+          style={{ borderColor: "#da2c46", color: "#da2c46" }}
+        >
+          Details
+        </Button>
+      ),
     },
   ];
 
-  if (error) return <div>Error loading work order status</div>;
+  if (error)
+    return <Alert message="Error loading work order status" type="error" />;
 
   return (
     <div
@@ -238,6 +285,7 @@ const AdminWorkOrderStatus = ({
         overflow: "hidden",
       }}
     >
+      {/* Header */}
       <div style={{ marginBottom: "20px" }}>
         <Title
           level={2}
@@ -254,10 +302,11 @@ const AdminWorkOrderStatus = ({
         </Text>
       </div>
 
+      {/* Completion Alert */}
       {isWorkOrderComplete && (
         <Alert
           message="🎉 Work Order Complete!"
-          description={`Success! You have converted ${convertedEmployees} out of ${requiredCandidates} required candidates to employees. Consider raising a new request for additional hiring needs.`}
+          description={`Success! You have converted ${convertedEmployees} out of ${requiredCandidates} required candidates to employees.`}
           type="success"
           showIcon
           action={
@@ -282,14 +331,13 @@ const AdminWorkOrderStatus = ({
         />
       )}
 
-      {/* Key Metrics Row - Responsive Grid */}
+      {/* Key Metrics */}
       <Row gutter={[12, 12]} style={{ marginBottom: "20px" }}>
-        <Col xs={12} sm={12} md={6} lg={6} xl={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card
             size="small"
             style={{
               borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(218,44,70,0.1)",
               border: `1px solid #da2c46`,
               height: "100%",
             }}
@@ -310,12 +358,11 @@ const AdminWorkOrderStatus = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6} xl={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card
             size="small"
             style={{
               borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(82,196,26,0.1)",
               border: `1px solid #52c41a`,
               height: "100%",
             }}
@@ -336,12 +383,11 @@ const AdminWorkOrderStatus = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6} xl={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card
             size="small"
             style={{
               borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(114,46,209,0.1)",
               border: `1px solid #722ed1`,
               height: "100%",
             }}
@@ -362,12 +408,11 @@ const AdminWorkOrderStatus = ({
             />
           </Card>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6} xl={6}>
+        <Col xs={12} sm={12} md={6}>
           <Card
             size="small"
             style={{
               borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(250,140,22,0.1)",
               border: `1px solid #fa8c16`,
               height: "100%",
             }}
@@ -405,46 +450,34 @@ const AdminWorkOrderStatus = ({
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <div>
-          <Progress
-            percent={completionPercentage}
-            status={isWorkOrderComplete ? "success" : "active"}
-            strokeColor={
-              isWorkOrderComplete
-                ? "#52c41a"
-                : {
-                    "0%": "#da2c46",
-                    "100%": "#52c41a",
-                  }
-            }
-            strokeWidth={window.innerWidth < 768 ? 8 : 12}
-            style={{ marginBottom: "12px" }}
-          />
-          <Row justify="space-between" align="middle">
-            <Col>
-              <Text
-                type="secondary"
-                style={{ fontSize: "clamp(11px, 2vw, 13px)" }}
-              >
-                Employees Converted: {convertedEmployees}/{requiredCandidates}
-              </Text>
-            </Col>
-            <Col>
-              <Text
-                strong
-                style={{
-                  color: isWorkOrderComplete ? "#52c41a" : "#da2c46",
-                  fontSize: "clamp(11px, 2vw, 13px)",
-                }}
-              >
-                {completionPercentage}% Complete
-              </Text>
-            </Col>
-          </Row>
-        </div>
+        <Progress
+          percent={completionPercentage}
+          status={isWorkOrderComplete ? "success" : "active"}
+          strokeColor={
+            isWorkOrderComplete
+              ? "#52c41a"
+              : { "0%": "#da2c46", "100%": "#52c41a" }
+          }
+          strokeWidth={12}
+          style={{ marginBottom: "12px" }}
+        />
+        <Row justify="space-between">
+          <Text type="secondary" style={{ fontSize: "clamp(11px, 2vw, 13px)" }}>
+            Employees Converted: {convertedEmployees}/{requiredCandidates}
+          </Text>
+          <Text
+            strong
+            style={{
+              color: isWorkOrderComplete ? "#52c41a" : "#da2c46",
+              fontSize: "clamp(11px, 2vw, 13px)",
+            }}
+          >
+            {completionPercentage}% Complete
+          </Text>
+        </Row>
       </Card>
 
-      {/* Status Distribution - Responsive Grid */}
+      {/* Status Distribution */}
       <Row gutter={[8, 8]} style={{ marginBottom: "20px" }}>
         {Object.entries(statusCounts).map(([status, count]) => (
           <Col xs={12} sm={8} md={6} lg={4} xl={3} key={status}>
@@ -452,46 +485,37 @@ const AdminWorkOrderStatus = ({
               size="small"
               style={{
                 borderRadius: "6px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
                 textAlign: "center",
                 height: "80px",
               }}
               bodyStyle={{ padding: "8px" }}
             >
-              <div
+              <Badge
+                count={count}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
+                  backgroundColor: statusConfig[status]?.color,
+                  fontSize: "10px",
                 }}
               >
-                <Badge
-                  count={count}
-                  style={{
-                    backgroundColor: statusConfig[status]?.color,
-                    fontSize: "10px",
-                  }}
-                >
-                  <div style={{ fontSize: "16px", marginBottom: "4px" }}>
-                    {statusConfig[status]?.icon}
-                  </div>
-                </Badge>
-                <Text
-                  style={{
-                    fontSize: "clamp(9px, 1.5vw, 11px)",
-                    textAlign: "center",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {statusConfig[status]?.text || status}
-                </Text>
-              </div>
+                <div style={{ fontSize: "16px", marginBottom: "4px" }}>
+                  {statusConfig[status]?.icon}
+                </div>
+              </Badge>
+              <Text
+                style={{
+                  fontSize: "clamp(9px, 1.5vw, 11px)",
+                  textAlign: "center",
+                  lineHeight: 1.2,
+                }}
+              >
+                {statusConfig[status]?.text || status}
+              </Text>
             </Card>
           </Col>
         ))}
       </Row>
 
-      {/* Candidates Table - Responsive */}
+      {/* Candidates Table */}
       <Card
         title={
           <Text style={{ fontSize: "clamp(14px, 3vw, 16px)", fontWeight: 600 }}>
@@ -499,18 +523,15 @@ const AdminWorkOrderStatus = ({
           </Text>
         }
         size="small"
-        style={{
-          borderRadius: "8px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
+        style={{ borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
       >
         <Table
           columns={columns}
-          dataSource={data ? data.allWorkorderResponse : []}
+          dataSource={data ? data.candidates : []}
           loading={isLoading}
           rowKey="_id"
           pagination={{
-            pageSize: window.innerWidth < 768 ? 5 : 10,
+            pageSize: 10,
             showSizeChanger: false,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
             size: "small",
@@ -519,6 +540,424 @@ const AdminWorkOrderStatus = ({
           size="small"
         />
       </Card>
+
+      {/* Candidate Detail Modal */}
+      <Modal
+        title={
+          <Space>
+            <UserOutlined style={{ color: "#da2c46" }} />
+            <span>
+              {selectedCandidate?.candidate?.fullName || "Candidate"} - Journey
+              Details
+            </span>
+          </Space>
+        }
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={Math.min(900, window.innerWidth - 32)}
+        style={{ top: 20 }}
+      >
+        {selectedCandidate && (
+          <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            {/* Candidate Basic Info */}
+            <Card
+              size="small"
+              title="Candidate Information"
+              style={{ marginBottom: 16 }}
+            >
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="Name" span={2}>
+                  <Text strong>{selectedCandidate.candidate.fullName}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item
+                  label={
+                    <>
+                      <MailOutlined /> Email
+                    </>
+                  }
+                >
+                  {selectedCandidate.candidate.email}
+                </Descriptions.Item>
+                <Descriptions.Item
+                  label={
+                    <>
+                      <PhoneOutlined /> Phone
+                    </>
+                  }
+                >
+                  {selectedCandidate.candidate.phone || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item
+                  label={
+                    <>
+                      <EnvironmentOutlined /> Location
+                    </>
+                  }
+                >
+                  {selectedCandidate.candidate.location || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Applied At">
+                  {new Date(selectedCandidate.appliedAt).toLocaleDateString()}
+                </Descriptions.Item>
+                {selectedCandidate.candidate.skills?.length > 0 && (
+                  <Descriptions.Item label="Skills" span={2}>
+                    {selectedCandidate.candidate.skills.map((skill, i) => (
+                      <Tag key={i} color="blue">
+                        {skill}
+                      </Tag>
+                    ))}
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+
+            {/* Current Status & Stage */}
+            <Card
+              size="small"
+              title="Current Status"
+              style={{ marginBottom: 16 }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Text type="secondary">Status: </Text>
+                  <Tag
+                    color={statusConfig[selectedCandidate.currentStatus]?.color}
+                    icon={statusConfig[selectedCandidate.currentStatus]?.icon}
+                  >
+                    {statusConfig[selectedCandidate.currentStatus]?.text}
+                  </Tag>
+                </Col>
+                <Col span={12}>
+                  <Text type="secondary">Sourced: </Text>
+                  <Tag
+                    color={
+                      selectedCandidate.isSourced === "true"
+                        ? "#52c41a"
+                        : "#ff4d4f"
+                    }
+                  >
+                    {selectedCandidate.isSourced === "true" ? "Yes" : "No"}
+                  </Tag>
+                </Col>
+              </Row>
+              {selectedCandidate.currentStage && (
+                <>
+                  <Divider style={{ margin: "12px 0" }} />
+                  <Descriptions column={2} size="small">
+                    <Descriptions.Item label="Current Pipeline" span={2}>
+                      <Text strong>
+                        {selectedCandidate.currentStage.pipelineName}
+                      </Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Current Stage">
+                      {selectedCandidate.currentStage.stageName}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Stage Status">
+                      <Tag
+                        color={
+                          stageStatusConfig[
+                            selectedCandidate.currentStage.stageStatus
+                          ]?.color
+                        }
+                      >
+                        {selectedCandidate.currentStage.stageStatus}
+                      </Tag>
+                    </Descriptions.Item>
+                    {selectedCandidate.currentStage.recruiter && (
+                      <Descriptions.Item label="Assigned Recruiter" span={2}>
+                        <Space>
+                          <Avatar size="small" icon={<UserOutlined />} />
+                          <span>
+                            {selectedCandidate.currentStage.recruiter.name}
+                          </span>
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                  </Descriptions>
+                </>
+              )}
+            </Card>
+
+            {/* Stage Progress Summary */}
+            {selectedCandidate.stageProgressionSummary && (
+              <Card
+                size="small"
+                title="Stage Progress Summary"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={16}>
+                  <Col span={6}>
+                    <Statistic
+                      title="Total Stages"
+                      value={
+                        selectedCandidate.stageProgressionSummary.totalStages
+                      }
+                      valueStyle={{ fontSize: "20px" }}
+                    />
+                  </Col>
+                  <Col span={6}>
+                    <Statistic
+                      title="Completed"
+                      value={
+                        selectedCandidate.stageProgressionSummary
+                          .completedStages
+                      }
+                      valueStyle={{ fontSize: "20px", color: "#52c41a" }}
+                    />
+                  </Col>
+                  <Col span={6}>
+                    <Statistic
+                      title="In Progress"
+                      value={
+                        selectedCandidate.stageProgressionSummary
+                          .inProgressStages
+                      }
+                      valueStyle={{ fontSize: "20px", color: "#1890ff" }}
+                    />
+                  </Col>
+                  <Col span={6}>
+                    <Statistic
+                      title="Progress"
+                      value={
+                        selectedCandidate.stageProgressionSummary
+                          .progressPercentage
+                      }
+                      suffix="%"
+                      valueStyle={{ fontSize: "20px", color: "#fa8c16" }}
+                    />
+                  </Col>
+                </Row>
+              </Card>
+            )}
+
+            {/* Complete Pipeline Journey */}
+            {selectedCandidate.stageHistory?.length > 0 && (
+              <Card
+                size="small"
+                title="Complete Pipeline Journey"
+                style={{ marginBottom: 16 }}
+              >
+                <Timeline mode="left">
+                  {selectedCandidate.stageHistory.map((stage, index) => (
+                    <Timeline.Item
+                      key={index}
+                      color={
+                        stage.stageStatus === "approved"
+                          ? "green"
+                          : stage.stageStatus === "inProgress"
+                          ? "blue"
+                          : stage.stageStatus === "rejected"
+                          ? "red"
+                          : "gray"
+                      }
+                      dot={stageStatusConfig[stage.stageStatus]?.icon}
+                    >
+                      <Card size="small" style={{ marginBottom: 8 }}>
+                        <div style={{ marginBottom: 8 }}>
+                          <Text strong style={{ fontSize: "14px" }}>
+                            Stage {stage.stageNumber}: {stage.stageName}
+                          </Text>
+                          <div style={{ marginTop: 4 }}>
+                            <Tag color="purple">{stage.pipelineName}</Tag>
+                            <Tag
+                              color={
+                                stageStatusConfig[stage.stageStatus]?.color
+                              }
+                            >
+                              {stage.stageStatus}
+                            </Tag>
+                          </div>
+                        </div>
+
+                        {stage.recruiter && (
+                          <div style={{ marginBottom: 8 }}>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              Work order Assigned Recruiter:{" "}
+                            </Text>
+                            <Space size="small">
+                              <Avatar size="small" icon={<UserOutlined />} />
+                              <Text style={{ fontSize: "12px" }}>
+                                {stage.recruiter.name}
+                              </Text>
+                            </Space>
+                          </div>
+                        )}
+
+                        {stage.stageDefinition?.assignedRecruiters?.length >
+                          0 && (
+                          <div style={{ marginBottom: 8 }}>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                               Stage Assigned Recruiter:{" "}
+                            </Text>
+                            {stage.stageDefinition.assignedRecruiters.map(
+                              (rec, i) => (
+                                <Tag key={i} size="small">
+                                  {rec.fullName}
+                                </Tag>
+                              )
+                            )}
+                          </div>
+                        )}
+
+                        {stage.stageCompletedAt && (
+                          <div style={{ marginTop: 8 }}>
+                            <CalendarOutlined style={{ marginRight: 4 }} />
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              Completed:{" "}
+                              {new Date(
+                                stage.stageCompletedAt
+                              ).toLocaleString()}
+                            </Text>
+                          </div>
+                        )}
+
+                        {stage.reviews?.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: 8,
+                              padding: 8,
+                              background: "#f5f5f5",
+                              borderRadius: 4,
+                            }}
+                          >
+                            <Text strong style={{ fontSize: "12px" }}>
+                              Reviews:
+                            </Text>
+                            {stage.reviews.map((review, i) => (
+                              <div key={i} style={{ marginTop: 4 }}>
+                                <Text style={{ fontSize: "11px" }}>
+                                  {review.reviewer?.name}: {review.comments}
+                                  <Tag
+                                    size="small"
+                                    color={
+                                      review.status === "approved"
+                                        ? "green"
+                                        : "orange"
+                                    }
+                                    style={{ marginLeft: 8 }}
+                                  >
+                                    {review.status}
+                                  </Tag>
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Card>
+            )}
+
+            {/* Pending Stages */}
+            {selectedCandidate.pendingStages?.length > 0 && (
+              <Card
+                size="small"
+                title="Pending Stages"
+                style={{ marginBottom: 16 }}
+              >
+                {selectedCandidate.pendingStages.map((stage, index) => (
+                  <Card
+                    key={index}
+                    size="small"
+                    style={{ marginBottom: 8, background: "#f0f0f0" }}
+                  >
+                    <Text strong>{stage.stageName}</Text>
+                    <div style={{ marginTop: 4 }}>
+                      <Tag color="purple">{stage.pipelineName}</Tag>
+                      <Tag>Order: {stage.stageOrder}</Tag>
+                    </div>
+                    {stage.assignedRecruiters?.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <Text type="secondary" style={{ fontSize: "12px" }}>
+                          Assigned:{" "}
+                        </Text>
+                        {stage.assignedRecruiters.map((rec, i) => (
+                          <Tag key={i} size="small">
+                            {rec.fullName}
+                          </Tag>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </Card>
+            )}
+
+            {/* Interview History */}
+            {selectedCandidate.interviews?.length > 0 && (
+              <Card
+                size="small"
+                title="Interview History"
+                style={{ marginBottom: 16 }}
+              >
+                {selectedCandidate.interviews.map((interview, index) => (
+                  <Card key={index} size="small" style={{ marginBottom: 8 }}>
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      <Text strong>{interview.title}</Text>
+                      <div>
+                        <Tag color="blue">{interview.mode}</Tag>
+                        <Tag
+                          color={
+                            interview.status === "interview_completed"
+                              ? "green"
+                              : "orange"
+                          }
+                        >
+                          {interview.status}
+                        </Tag>
+                      </div>
+                      <Text type="secondary" style={{ fontSize: "12px" }}>
+                        <CalendarOutlined />{" "}
+                        {new Date(interview.date).toLocaleString()}
+                      </Text>
+                      {interview.interviewers?.length > 0 && (
+                        <div>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            Interviewers:{" "}
+                          </Text>
+                          {interview.interviewers.map((interviewer, i) => (
+                            <Tag key={i} size="small">
+                              {interviewer.name}
+                            </Tag>
+                          ))}
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Card>
+            )}
+
+            {/* Offer Details */}
+            {selectedCandidate.offers?.length > 0 && (
+              <Card size="small" title="Offer Details">
+                {selectedCandidate.offers.map((offer, index) => (
+                  <Card key={index} size="small" style={{ marginBottom: 8 }}>
+                    <Descriptions column={1} size="small">
+                      <Descriptions.Item label="Status">
+                        <Tag color="green">{offer.currentStatus}</Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Salary Package">
+                        {offer.salaryPackage}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Description">
+                        {offer.description}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                ))}
+              </Card>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Completion Modal */}
       <Modal
@@ -534,7 +973,6 @@ const AdminWorkOrderStatus = ({
           <Button key="close" onClick={() => setShowCompletionModal(false)}>
             Close
           </Button>,
-         
         ]}
         width={Math.min(600, window.innerWidth - 32)}
         centered
@@ -545,11 +983,7 @@ const AdminWorkOrderStatus = ({
             Congratulations!
           </Title>
           <Text
-            style={{
-              fontSize: "clamp(14px, 3vw, 16px)",
-              display: "block",
-              marginBottom: "20px",
-            }}
+            style={{ fontSize: "16px", display: "block", marginBottom: "20px" }}
           >
             You have successfully converted{" "}
             <strong>{convertedEmployees}</strong> out of{" "}

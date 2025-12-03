@@ -511,6 +511,40 @@ export const recruiterApi = createApi({
         };
       },
     }),
+    getEmployeeDetails: builder.query({
+      query: (id) => ({
+        url: `/get-employee/${id}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, id) => [{ type: "Employee", id }],
+    }),
+    addEmployee: builder.mutation({
+      query: (employeeData) => ({
+        url: "/add-employee",
+        method: "POST",
+        body: employeeData,
+      }),
+    }),
+    updateEmployee: builder.mutation({
+      query: ({ id, ...employeeData }) => ({
+        url: `/edit-employee/${id}`,
+        method: "PUT",
+        body: employeeData,
+      }),
+    }),
+    deleteEmployee: builder.mutation({
+      query: (id) => ({
+        url: `/delete-employee/${id}`,
+        method: "DELETE",
+      }),
+    }),
+    bulkImportEmployees: builder.mutation({
+      query: (employeesData) => ({
+        url: "/employees/bulk-import",
+        method: "POST",
+        body: employeesData,
+      }),
+    }),
     getRecruiterNotification: builder.query({
       query: ({ page = 1, limit = 10, search = "" }) => {
         const params = new URLSearchParams({
@@ -572,7 +606,7 @@ export const recruiterApi = createApi({
       }),
     }),
     approveRejectRequisition: builder.mutation({
-      query: ({ notificationId, requisitionId, status, remarks ,isAdmin}) => ({
+      query: ({ notificationId, requisitionId, status, remarks, isAdmin }) => ({
         url: `/req-status/${notificationId}`,
         method: "PATCH",
         body: {
@@ -732,6 +766,11 @@ export const {
   useGetRecruiterJobTimelineIdQuery,
   useConvertEmployeeMutation,
   useGetBranchEmployessQuery,
+  useAddEmployeeMutation,
+  useUpdateEmployeeMutation,
+  useDeleteEmployeeMutation,
+  useGetEmployeeDetailsQuery,
+  useBulkImportEmployeesMutation,
   useGetPipelineCompletedCandidateByIdQuery,
   useGetRecruiterNotificationQuery,
   useAddCandidateMutation,

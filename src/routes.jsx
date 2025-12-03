@@ -245,7 +245,7 @@ const AppRoutes = () => {
           path="/admin/whatsapp"
           element={<ProtectedAdmin element={<WhatsAppConfigPanel />} />}
         />
-         <Route
+        <Route
           path="/admin/dashboard/details"
           element={<ProtectedAdmin element={<AdminDashboardDetails />} />}
         />
@@ -305,6 +305,10 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/jobs"
           element={<ProtectedRecruiter element={<RecruiterJobs />} />}
+        />
+        <Route
+          path="/recruiter/jobs/create"
+          element={<ProtectedRecruiter element={<AddWorkOrder />} />}
         />
         <Route
           path="/recruiter/jobs-timeline"

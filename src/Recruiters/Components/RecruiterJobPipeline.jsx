@@ -28,6 +28,7 @@ import {
   Col,
   Grid,
   Form,
+  DatePicker,
 } from "antd";
 import {
   TeamOutlined,
@@ -45,10 +46,12 @@ import {
   ExclamationCircleOutlined,
   ArrowRightOutlined,
   CommentOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 import { NotificationModal } from "../../Components/NotificationModal";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -68,6 +71,11 @@ const RecruiterJobPipeline = () => {
   const [processedJobData, setProcessedJobData] = useState(null);
   const [reviewerComments, setReviewerComments] = useState("");
   const [isNotifyModalVisible, setIsNotifyModalVisible] = useState(false);
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState(null);
+  const [tempEndDate, setTempEndDate] = useState(null);
+  const [isDateConfirmModalVisible, setIsDateConfirmModalVisible] =
+    useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
@@ -270,6 +278,20 @@ const RecruiterJobPipeline = () => {
         (s) => s.stageId === stageId
       )?.stageName || "Unknown Stage"
     );
+  };
+
+  const getStageDates = (stageId) => {
+    if (!processedJobData) return { startDate: null, endDate: null };
+
+    const stageTimeline =
+      processedJobData.workOrder?.pipelineStageTimeline?.find(
+        (stage) => stage.stageId === stageId
+      );
+
+    return {
+      startDate: stageTimeline?.startDate || null,
+      endDate: stageTimeline?.endDate || null,
+    };
   };
 
   const getCandidatesInStage = (stageId) => {
@@ -812,11 +834,11 @@ const RecruiterJobPipeline = () => {
     return (
       <div
         style={{
-          marginTop: "20px",
+          marginBottom: "20px",
           padding: "16px",
-          backgroundColor: isCurrentStage ? "#fafafa" : "#f9f9f9",
+          // backgroundColor: isCurrentStage ? "#fafafa" : "#f9f9f9",
           borderRadius: "8px",
-          border: `1px solid ${isCurrentStage ? "#f0f0f0" : "#e0e0e0"}`,
+          // border: `1px solid ${isCurrentStage ? "#f0f0f0" : "#e0e0e0"}`,
         }}
       >
         <div
@@ -1192,6 +1214,9 @@ const RecruiterJobPipeline = () => {
               {getStageName(activeStage)} Candidates (
               {getCandidatesInStage(activeStage).length})
             </Title>
+
+            {/* <div>{getStageDates(activeStage)}</div> */}
+
             {hasPermission("notify-candidate") && (
               <Button
                 type="primary"
@@ -1213,6 +1238,8 @@ const RecruiterJobPipeline = () => {
                     borderBottom: "1px solid #f0f0f0",
                   }}
                 >
+                  <div>{renderApprovalSection(candidate, activeStage)}</div>
+                  <Divider />
                   <List.Item.Meta
                     avatar={
                       <Avatar
@@ -1270,6 +1297,154 @@ const RecruiterJobPipeline = () => {
                               Applied: {formatDate(candidate.appliedDate)}
                             </Text>
                           </Space>
+                        </div>
+
+                        <div
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            borderRadius: "8px",
+                            marginTop: "10px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <Text strong style={{ fontSize: "16px" }}>
+                              Stage Timeline
+                            </Text>
+                            {!isEditingDates ? (
+                              <Button
+                                type="link"
+                                icon={<EditOutlined />}
+                                onClick={() => {
+                                  const { startDate, endDate } =
+                                    getStageDates(activeStage);
+                                  setTempStartDate(startDate);
+                                  setTempEndDate(endDate);
+                                  setIsEditingDates(true);
+                                }}
+                                style={{ padding: 0 }}
+                              >
+                                Edit
+                              </Button>
+                            ) : (
+                              <Space>
+                                <Button
+                                  size="small"
+                                  onClick={() => {
+                                    setIsEditingDates(false);
+                                    setTempStartDate(null);
+                                    setTempEndDate(null);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  onClick={() =>
+                                    setIsDateConfirmModalVisible(true)
+                                  }
+                                  style={{
+                                    background: primaryColor,
+                                    borderColor: primaryColor,
+                                  }}
+                                >
+                                  Save
+                                </Button>
+                              </Space>
+                            )}
+                          </div>
+                          {(() => {
+                            const { startDate, endDate } =
+                              getStageDates(activeStage);
+                            return (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: "12px",
+                                  marginTop: "8px",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <CalendarOutlined />
+                                  <Text strong style={{ fontSize: "13px" }}>
+                                    Start:
+                                  </Text>
+                                  {isEditingDates ? (
+                                    <DatePicker
+                                      value={
+                                        tempStartDate
+                                          ? dayjs(tempStartDate)
+                                          : null
+                                      }
+                                      onChange={(date) =>
+                                        setTempStartDate(
+                                          date ? date.toISOString() : null
+                                        )
+                                      }
+                                      style={{ width: "150px" }}
+                                      placeholder="No date set"
+                                    />
+                                  ) : (
+                                    <Text type="secondary">
+                                      {startDate
+                                        ? new Date(
+                                            startDate
+                                          ).toLocaleDateString()
+                                        : "No date set"}
+                                    </Text>
+                                  )}
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <CalendarOutlined />
+                                  <Text strong style={{ fontSize: "13px" }}>
+                                    End:
+                                  </Text>
+                                  {isEditingDates ? (
+                                    <DatePicker
+                                      value={
+                                        tempEndDate ? dayjs(tempEndDate) : null
+                                      }
+                                      onChange={(date) =>
+                                        setTempEndDate(
+                                          date ? date.toISOString() : null
+                                        )
+                                      }
+                                      style={{ width: "150px" }}
+                                      placeholder="No date set"
+                                    />
+                                  ) : (
+                                    <Text type="secondary">
+                                      {endDate
+                                        ? new Date(endDate).toLocaleDateString()
+                                        : "No date set"}
+                                    </Text>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* RECRUITER DETAILS (BELOW) */}
@@ -1399,14 +1574,9 @@ const RecruiterJobPipeline = () => {
                     </div>
                   )}
 
-                  {/* Custom Fields */}
                   {renderCustomFields(candidate)}
 
-                  {/* Documents Section */}
                   {renderDocuments(candidate, activeStage)}
-
-                  {/* Approval Section */}
-                  {renderApprovalSection(candidate, activeStage)}
                 </List.Item>
               )}
             />
@@ -1419,7 +1589,6 @@ const RecruiterJobPipeline = () => {
           )}
         </Card>
       )}
-      {/* Move Candidate Modal */}
       <Modal
         title={
           !getNextStageId(selectedCandidate?.currentStage)
@@ -1503,6 +1672,49 @@ const RecruiterJobPipeline = () => {
         title={`Notify ${apiData?.data?.user?.fullName || "Candidate"}`}
         candidateName={apiData?.data?.user?.fullName}
       />
+
+      <Modal
+        title="Confirm Date Update"
+        visible={isDateConfirmModalVisible}
+        onOk={() => {
+          // TODO: Call API to update dates
+          console.log("Updating dates:", {
+            stageId: activeStage,
+            startDate: tempStartDate,
+            endDate: tempEndDate,
+          });
+          message.success("Stage dates updated successfully");
+          setIsDateConfirmModalVisible(false);
+          setIsEditingDates(false);
+          setTempStartDate(null);
+          setTempEndDate(null);
+          // refetch(); // Uncomment when API is ready
+        }}
+        onCancel={() => setIsDateConfirmModalVisible(false)}
+        okText="Confirm"
+        cancelText="Cancel"
+        okButtonProps={{
+          style: { backgroundColor: primaryColor, borderColor: primaryColor },
+        }}
+      >
+        <p>Are you sure you want to update the stage dates?</p>
+        <div style={{ marginTop: "16px" }}>
+          <Text strong>Start Date: </Text>
+          <Text>
+            {tempStartDate
+              ? new Date(tempStartDate).toLocaleDateString()
+              : "No date set"}
+          </Text>
+        </div>
+        <div style={{ marginTop: "8px" }}>
+          <Text strong>End Date: </Text>
+          <Text>
+            {tempEndDate
+              ? new Date(tempEndDate).toLocaleDateString()
+              : "No date set"}
+          </Text>
+        </div>
+      </Modal>
     </div>
   );
 };

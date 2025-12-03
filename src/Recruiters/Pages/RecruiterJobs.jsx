@@ -189,6 +189,10 @@ const RecruiterJobs = () => {
     }));
   };
 
+  const handleCreateJob = () => {
+    navigate(`/recruiter/jobs/create`);
+  };
+
   const handleJobClick = (job) => {
     navigate(`/recruiter-jobs/${job._id}`);
   };
@@ -351,8 +355,13 @@ const RecruiterJobs = () => {
           boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
         }}
       >
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} sm={16} md={16} lg={16} xl={16}>
+        <Row
+          gutter={[12, 12]}
+          align="middle"
+          wrap={false} // Prevent automatic stacking on small screens
+          style={{ flexWrap: "wrap" }} // Allow wrap on extra small screens
+        >
+          <Col flex="1 1 300px">
             <Input
               allowClear
               placeholder="Search jobs by title, company or location"
@@ -362,6 +371,22 @@ const RecruiterJobs = () => {
               onChange={handleSearchChange}
               style={{ width: "100%" }}
             />
+          </Col>
+
+          <Col flex="0 0 auto">
+            {hasPermission("create-job-recruiter") && (
+              <Button
+                size="large"
+                onClick={handleCreateJob}
+                style={{
+                  backgroundColor: "#da2c46",
+                  color: "#fff",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Create Work order
+              </Button>
+            )}
           </Col>
         </Row>
       </Card>

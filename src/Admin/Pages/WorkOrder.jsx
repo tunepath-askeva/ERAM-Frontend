@@ -589,6 +589,11 @@ const WorkOrder = () => {
                         flexDirection: "column",
                       }}
                     >
+                      <Text strong>
+                        Work order :<p>{workOrder.title}</p>
+                      </Text>
+
+                      <Divider style={{ margin: "12px 0" }} />
                       <div style={{ width: "100%" }}>
                         <div
                           style={{
@@ -604,14 +609,14 @@ const WorkOrder = () => {
                           <div>
                             <Text
                               strong
-                              style={{ fontSize: "13px", color: "#1f2937" }}
+                              style={{ fontSize: "14px", color: "#1f2937" }}
                             >
                               Project
                             </Text>
                             <div style={{ marginTop: 2 }}>
                               <Text
                                 type="secondary"
-                                style={{ fontSize: "12px" }}
+                                style={{ fontSize: "14px" }}
                               >
                                 {workOrder?.project?.name || "—"}
                               </Text>
@@ -622,14 +627,14 @@ const WorkOrder = () => {
                           <div>
                             <Text
                               strong
-                              style={{ fontSize: "13px", color: "#1f2937" }}
+                              style={{ fontSize: "14px", color: "#1f2937" }}
                             >
                               Client
                             </Text>
                             <div style={{ marginTop: 4 }}>
                               <Text
                                 type="secondary"
-                                style={{ fontSize: "12px" }}
+                                style={{ fontSize: "14px" }}
                               >
                                 {workOrder?.client?.fullName || "—"}
                               </Text>
@@ -639,7 +644,6 @@ const WorkOrder = () => {
 
                         <Divider style={{ margin: "12px 0" }} />
                       </div>
-
                       <div style={{ marginBottom: 16 }}>
                         <Space size={[8, 16]} wrap>
                           <Tag icon={<BookOutlined />}>
@@ -683,7 +687,6 @@ const WorkOrder = () => {
                           )}
                         </Space>
                       </div>
-
                       <div style={{ marginBottom: 16 }}>
                         <Text
                           strong
@@ -726,7 +729,6 @@ const WorkOrder = () => {
                           ))}
                         </div>
                       </div>
-
                       <div style={{ width: "100%" }}>
                         <div
                           style={{
@@ -798,7 +800,6 @@ const WorkOrder = () => {
 
                         <Divider style={{ margin: "12px 0" }} />
                       </div>
-
                       <div
                         style={{
                           display: "flex",
@@ -870,7 +871,6 @@ const WorkOrder = () => {
                           </div>
                         </Tooltip>
                       </div>
-
                       <div style={{ marginBottom: 16 }}>
                         <Text
                           strong

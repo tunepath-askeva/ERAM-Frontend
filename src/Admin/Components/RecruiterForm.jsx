@@ -102,6 +102,7 @@ const permissionGroups = [
     title: "Job Management",
     icon: <FileTextOutlined />,
     permissions: [
+      { key: "create-job-recruiter", label: "Create Job" },
       { key: "edit-job", label: "Edit Job" },
       { key: "deactivate-job", label: "Deactivate/Activate Job" },
       { key: "view-job-status", label: "View Work Order Status Tab" },
