@@ -401,7 +401,8 @@ const RecruiterCandidates = () => {
       }).unwrap();
 
       message.success(`${candidate.name} moved to offer stage successfully!`);
-      refetch();
+      await refetch();
+      await refetchCandidateDetails();
     } catch (error) {
       message.error(
         `Failed to move ${candidate.name} to offer stage. Please try again.`
@@ -427,8 +428,8 @@ const RecruiterCandidates = () => {
       message.success("Offer created successfully!");
       setOfferModalVisible(false);
       offerForm.resetFields();
-      refetch();
-      refetchCandidateDetails();
+      await refetch();
+      await refetchCandidateDetails();
     } catch (err) {
       message.error("Failed to send offer");
     }
@@ -451,8 +452,8 @@ const RecruiterCandidates = () => {
       message.success("Offer revised successfully!");
       setOfferModalVisible(false);
       offerForm.resetFields();
-      refetch();
-      refetchCandidateDetails();
+      await refetch();
+      await refetchCandidateDetails();
     } catch (err) {
       message.error("Failed to revise offer");
     }
