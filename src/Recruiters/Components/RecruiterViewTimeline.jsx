@@ -15,7 +15,7 @@ import {
   Col,
   Spin,
   Divider,
-  Breadcrumb
+  Breadcrumb,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -27,7 +27,7 @@ import {
   EnvironmentOutlined,
   FrownOutlined,
   ArrowLeftOutlined,
-  LeftOutlined
+  LeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -262,23 +262,42 @@ const RecruiterViewTimeline = () => {
 
   if (!isLoading && allTimelineData.length === 0) {
     return (
-      <Result
-        icon={<FrownOutlined />}
-        title="No Timeline Data"
-        subTitle="No records found for this Work Order."
-        extra={<Button onClick={() => refetch()}>Refresh</Button>}
-      />
+      <>
+        <div style={{ marginBottom: "16px" }}>
+          <Breadcrumb>
+            <Breadcrumb.Item>
+              <Button
+                type="link"
+                onClick={() => navigate("/recruiter/jobs-timeline")}
+                icon={<LeftOutlined />}
+                style={{
+                  paddingLeft: 0,
+                  color: "#da2c46",
+                }}
+              >
+                Back to Jobs
+              </Button>
+            </Breadcrumb.Item>
+          </Breadcrumb>
+        </div>
+        <Result
+          icon={<FrownOutlined />}
+          title="No Timeline Data"
+          subTitle="No records found for this Work Order."
+          extra={<Button onClick={() => refetch()}>Refresh</Button>}
+        />
+      </>
     );
   }
 
   return (
     <div style={{ padding: 24 }}>
-   <div style={{ marginBottom: "16px" }}>
+      <div style={{ marginBottom: "16px" }}>
         <Breadcrumb>
           <Breadcrumb.Item>
             <Button
               type="link"
-              onClick={() => navigate('/recruiter/jobs-timeline')}
+              onClick={() => navigate("/recruiter/jobs-timeline")}
               icon={<LeftOutlined />}
               style={{
                 paddingLeft: 0,
@@ -290,7 +309,7 @@ const RecruiterViewTimeline = () => {
           </Breadcrumb.Item>
         </Breadcrumb>
       </div>
-     
+
       <Timeline mode="left">{allTimelineData.map(renderTimelineItem)}</Timeline>
       {/* Pagination */}
       <div style={{ textAlign: "center", marginTop: 24 }}>

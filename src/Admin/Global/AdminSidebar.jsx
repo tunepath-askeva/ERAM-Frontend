@@ -66,7 +66,7 @@ const AdminSidebar = ({
     {
       key: "/admin/requisitions",
       icon: <DiffOutlined />,
-      label: "Recquisitions",
+      label: "Requisitions",
     },
     {
       key: "/admin/workorder",
