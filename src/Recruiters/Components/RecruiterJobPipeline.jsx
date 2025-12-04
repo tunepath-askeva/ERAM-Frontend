@@ -520,9 +520,9 @@ const RecruiterJobPipeline = () => {
       }
 
       // Check if stage requires approval
-      const hasApprovalLevels =
-        currentStageProgress.approval &&
-        currentStageProgress.approval.approvalId;
+      const hasApprovalLevels = currentStageProgress?.approval?.approvalId
+        ? true
+        : false;
 
       if (hasApprovalLevels) {
         const isStageApproved =
@@ -794,103 +794,116 @@ const RecruiterJobPipeline = () => {
   const renderDocuments = (candidate, stageId) => {
     if (!processedJobData) return null;
 
-    const isTagged = !!candidate?.tagPipelineId;
-
-    const stageTimeline = isTagged
-      ? processedJobData.pipeline.stages.find((s) => s._id === stageId)
-      : processedJobData.workOrder.pipelineStageTimeline.find(
-          (s) => s.stageId === stageId
-        );
-
     const stageProgress = candidate.stageProgress.find(
       (sp) => sp.stageId === stageId
     );
 
     const uploadedDocs = stageProgress?.uploadedDocuments || [];
 
-    const allRequiredDocs = [...(stageTimeline?.requiredDocuments || [])];
-
-    const uniqueRequiredDocuments = [
-      ...new Set(
-        allRequiredDocs.map((doc) =>
-          typeof doc === "string" ? doc : doc.title
-        )
-      ),
-    ];
-
-    if (uploadedDocs.length === 0) {
-      return (
-        <Empty
-          description="No documents uploaded"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          style={{ margin: "20px 0" }}
-        />
-      );
-    }
+    // Get required documents from fullStage in stageProgress
+    const requiredDocuments = stageProgress?.fullStage?.requiredDocuments || [];
 
     return (
       <div style={{ marginTop: "16px" }}>
+        {/* SHOW REQUIRED DOCUMENTS FIRST - PROMINENT DISPLAY */}
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "16px",
+            background: "#e6f7ff",
+            borderRadius: "8px",
+            border: "2px solid #1890ff",
+          }}
+        >
+          <Title level={5} style={{ marginBottom: "12px", color: "#1890ff" }}>
+            <FileOutlined style={{ marginRight: "8px" }} />
+            Required Documents for this Stage
+          </Title>
+          {requiredDocuments.length > 0 ? (
+            <div>
+              {requiredDocuments.map((doc, index) => (
+                <Tag
+                  key={index}
+                  color="blue"
+                  style={{
+                    margin: "4px",
+                    fontSize: "14px",
+                    padding: "4px 12px",
+                  }}
+                >
+                  {doc}
+                </Tag>
+              ))}
+              <div style={{ marginTop: "8px" }}>
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  {uploadedDocs.length > 0
+                    ? `✅ ${uploadedDocs.length} document(s) uploaded`
+                    : "⚠️ No documents uploaded yet"}
+                </Text>
+              </div>
+            </div>
+          ) : (
+            <Text type="secondary">No documents required for this stage</Text>
+          )}
+        </div>
+
+        {/* THEN SHOW UPLOADED DOCUMENTS */}
         <Title level={5} style={{ marginBottom: "12px" }}>
           <FileOutlined style={{ marginRight: "8px" }} />
           Uploaded Documents ({uploadedDocs.length})
         </Title>
 
-        <div style={{ marginBottom: "16px" }}>
-          <Text strong>Required Documents: </Text>
-          {uniqueRequiredDocuments.length > 0 ? (
-            uniqueRequiredDocuments.map((doc, index) => (
-              <Tag key={index} color="blue" style={{ margin: "2px" }}>
-                {doc}
-              </Tag>
-            ))
-          ) : (
-            <Text type="secondary">None specified</Text>
-          )}
-        </div>
-
-        <Row gutter={[16, 16]}>
-          {uploadedDocs.map((doc, index) => (
-            <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
-              <Card
-                size="small"
-                hoverable
-                style={{ borderRadius: "8px", border: "1px solid #f0f0f0" }}
-                actions={[
-                  <Button
-                    type="text"
-                    icon={<EyeOutlined />}
-                    onClick={() =>
-                      handleViewDocument(doc.fileUrl, doc.fileName)
+        {uploadedDocs.length === 0 ? (
+          <Empty
+            description="No documents uploaded yet"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ margin: "20px 0" }}
+          />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {uploadedDocs.map((doc, index) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
+                <Card
+                  size="small"
+                  hoverable
+                  style={{ borderRadius: "8px", border: "1px solid #f0f0f0" }}
+                  actions={[
+                    <Button
+                      type="text"
+                      icon={<EyeOutlined />}
+                      onClick={() =>
+                        handleViewDocument(doc.fileUrl, doc.fileName)
+                      }
+                      style={{ color: primaryColor }}
+                    >
+                      View
+                    </Button>,
+                  ]}
+                >
+                  <Card.Meta
+                    avatar={
+                      <FileOutlined
+                        style={{ fontSize: "24px", color: primaryColor }}
+                      />
                     }
-                    style={{ color: primaryColor }}
-                  >
-                    View
-                  </Button>,
-                ]}
-              >
-                <Card.Meta
-                  avatar={
-                    <FileOutlined
-                      style={{ fontSize: "24px", color: primaryColor }}
-                    />
-                  }
-                  title={
-                    <Tooltip title={doc.fileName}>
-                      <Text style={{ fontSize: "12px" }} ellipsis>
-                        {doc.fileName}
+                    title={
+                      <Tooltip title={doc.fileName}>
+                        <Text style={{ fontSize: "12px" }} ellipsis>
+                          {doc.fileName}
+                        </Text>
+                      </Tooltip>
+                    }
+                    description={
+                      <Text type="secondary" style={{ fontSize: "11px" }}>
+                        Uploaded: {formatDate(doc.uploadedAt)}
                       </Text>
-                    </Tooltip>
-                  }
-                  description={
-                    <Text type="secondary" style={{ fontSize: "11px" }}>
-                      Uploaded: {formatDate(doc.uploadedAt)}
-                    </Text>
-                  }
-                />
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </div>
     );
   };
@@ -904,9 +917,9 @@ const RecruiterJobPipeline = () => {
 
     if (!currentStageProgress) return null;
 
-    const hasApprovalLevels =
-      currentStageProgress.approval &&
-      currentStageProgress.approval.hasOwnProperty("isApproved");
+    const hasApprovalLevels = currentStageProgress?.approval?.approvalId
+      ? true
+      : false;
 
     const isStageApproved = hasApprovalLevels
       ? currentStageProgress.approval.isApproved === true
@@ -925,38 +938,26 @@ const RecruiterJobPipeline = () => {
     const isLastStage = currentIndex === stages.length - 1;
     const isCurrentStage = candidate.currentStageId === targetStageId;
 
-    const checkDocumentsUploaded = () => {
-      const isTagged = !!candidate.tagPipelineId;
+    const checkApprovalCompleted = () => {
+      // Check if stage has approval object
+      const approval = currentStageProgress?.approval;
 
-      // Get required documents based on pipeline type
-      let allRequiredDocuments = [];
-
-      if (isTagged) {
-        // For tagged/separate pipelines, check fullStage in stageProgress
-        const requiredDocs =
-          currentStageProgress?.fullStage?.requiredDocuments || [];
-        allRequiredDocuments = [...requiredDocs];
-      } else {
-        // For work order pipelines
-        const currentStage = processedJobData.pipeline?.stages?.find(
-          (stage) => stage._id === targetStageId
-        );
-
-        const stageTimeline =
-          processedJobData.workOrder?.pipelineStageTimeline?.find(
-            (timeline) => timeline.stageId === targetStageId
-          );
-
-        allRequiredDocuments = [
-          ...(currentStage?.requiredDocuments || []),
-          ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
-        ];
+      // If no approval object, no approval is needed - return true
+      if (!approval || !approval.approvalId) {
+        return true;
       }
 
-      const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+      // If approval exists, check if it's approved
+      return approval.isApproved === true;
+    };
+
+    const checkDocumentsUploaded = () => {
+      // Get required documents from fullStage in stageProgress
+      const requiredDocuments =
+        currentStageProgress?.fullStage?.requiredDocuments || [];
 
       // If no required documents, return true
-      if (uniqueRequiredDocuments.length === 0) {
+      if (requiredDocuments.length === 0) {
         return true;
       }
 
@@ -980,14 +981,14 @@ const RecruiterJobPipeline = () => {
         return false;
       }
 
-      // 3. Check based on whether stage has approval levels
-      if (hasApprovalLevels) {
-        // Stage HAS approval levels
-        return isStageApproved && areDocumentsUploaded;
-      } else {
-        // Stage has NO approval levels
-        return areDocumentsUploaded;
-      }
+      // 3. Check approval status (from approval.isApproved)
+      const approvalCompleted = checkApprovalCompleted();
+
+      // 4. Check if required documents are uploaded
+      const documentsUploaded = areDocumentsUploaded;
+
+      // Both conditions must be met
+      return approvalCompleted && documentsUploaded;
     })();
 
     const renderApprovalDetails = (approvalDetails) => {
@@ -1263,25 +1264,40 @@ const RecruiterJobPipeline = () => {
         return "✅ A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
       }
 
-      // Current stage logic
-      if (hasApprovalLevels) {
-        // Stage WITH approval levels
-        if (!isStageApproved && !areDocumentsUploaded) {
-          return "⚠️ Stage approval is required AND documents must be uploaded before moving this candidate.";
-        } else if (!isStageApproved) {
-          return "⚠️ Stage approval is required before this candidate can be moved to the next stage.";
-        } else if (!areDocumentsUploaded) {
-          return "⚠️ Required documents must be uploaded before moving this candidate to the next stage.";
+      // Get approval status
+      const approvalCompleted = checkApprovalCompleted();
+      const documentsUploaded = areDocumentsUploaded;
+      const hasRequiredDocs =
+        (currentStageProgress?.fullStage?.requiredDocuments || []).length > 0;
+      const hasApproval = currentStageProgress?.approval?.approvalId
+        ? true
+        : false;
+
+      // Build message based on conditions
+      if (hasApproval && hasRequiredDocs) {
+        if (!approvalCompleted && !documentsUploaded) {
+          return "⚠️ This stage requires approval AND document upload. Both are pending.";
+        } else if (!approvalCompleted) {
+          return "⚠️ Approval is required before moving this candidate to the next stage.";
+        } else if (!documentsUploaded) {
+          return "⚠️ Required documents must be uploaded before moving this candidate.";
         } else {
-          return "✅ Stage is approved and documents are uploaded. You can move this candidate to the next stage.";
+          return "✅ Approval completed and documents uploaded. You can move this candidate to the next stage.";
+        }
+      } else if (hasApproval) {
+        if (!approvalCompleted) {
+          return "⚠️ Approval is required before moving this candidate to the next stage.";
+        } else {
+          return "✅ Approval completed. You can move this candidate to the next stage.";
+        }
+      } else if (hasRequiredDocs) {
+        if (!documentsUploaded) {
+          return "⚠️ Required documents must be uploaded before moving this candidate.";
+        } else {
+          return "✅ Documents uploaded. You can move this candidate to the next stage.";
         }
       } else {
-        // Stage WITHOUT approval levels
-        if (!areDocumentsUploaded) {
-          return "⚠️ Required documents must be uploaded before moving this candidate to the next stage.";
-        } else {
-          return "✅ All requirements met. You can move this candidate to the next stage.";
-        }
+        return "✅ No requirements for this stage. You can move this candidate to the next stage.";
       }
     };
 

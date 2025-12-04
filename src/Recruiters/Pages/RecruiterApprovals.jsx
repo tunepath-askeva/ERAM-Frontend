@@ -72,6 +72,7 @@ const RecruiterApprovals = () => {
   } = useGetApprovalInfoQuery(undefined, {
     skip: activeTab !== "workOrder",
     refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
   });
 
   const {
@@ -81,6 +82,7 @@ const RecruiterApprovals = () => {
   } = useGetSeperateApprovalsQuery(undefined, {
     skip: activeTab !== "separate",
     refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
   });
 
   const [approveCandidateDocuments, { isLoading: isApproving }] =
@@ -901,8 +903,15 @@ const RecruiterApprovals = () => {
       );
       setApproveModalVisible(false);
       setApprovalComments("");
-      await refetchWorkOrders();
-      await refetchSeparateApprovals();
+      if (activeTab === "workOrder") {
+        setHasLoadedWorkOrders(false);
+        await refetchWorkOrders();
+        setHasLoadedWorkOrders(true);
+      } else if (activeTab === "separate") {
+        setHasLoadedSeparateApprovals(false);
+        await refetchSeparateApprovals();
+        setHasLoadedSeparateApprovals(true);
+      }
     } catch (error) {
       message.error(error.data?.message || "Failed to approve documents");
       console.error("Approval error:", error);
