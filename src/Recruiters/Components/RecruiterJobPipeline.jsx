@@ -1013,7 +1013,6 @@ const RecruiterJobPipeline = () => {
               maxHeight: "400px",
               overflowY: "auto",
               paddingRight: "8px",
-              // Custom scrollbar styling
               scrollbarWidth: "thin",
               scrollbarColor: "#d9d9d9 #f0f0f0",
             }}
@@ -1023,7 +1022,6 @@ const RecruiterJobPipeline = () => {
               defaultActiveKey={approvalDetails.levels.map(
                 (level, index) => index
               )}
-              style={{ backgroundColor: "#fafafa" }}
             >
               {approvalDetails.levels.map((level, index) => (
                 <Panel
@@ -1300,7 +1298,6 @@ const RecruiterJobPipeline = () => {
           padding: screens.xs ? "12px" : "16px",
           borderRadius: "8px",
           border: `1px solid ${isCurrentStage ? "#e6f7ff" : "#f0f0f0"}`,
-          backgroundColor: isCurrentStage ? "#f6ffed" : "#fafafa",
         }}
       >
         <div
@@ -1613,7 +1610,7 @@ const RecruiterJobPipeline = () => {
               tab={
                 <Badge
                   count={getCandidatesInStage(stageId).length}
-                  offset={[10, -5]}
+                  offset={[8, -3]}
                   style={{
                     backgroundColor: isCurrentStage ? primaryColor : "#d9d9d9",
                   }}
@@ -2223,6 +2220,7 @@ const RecruiterJobPipeline = () => {
                                     >
                                       {review.reviewComments}
                                     </Text>
+                                    <br />
                                     <Tag
                                       color={
                                         review.status === "approved"
