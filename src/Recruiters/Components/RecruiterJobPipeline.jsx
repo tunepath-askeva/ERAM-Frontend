@@ -5,7 +5,9 @@ import {
   useMoveToNextStageMutation,
   useStagedCandidateNotifyMutation,
   useUpdateStageDatesMutation,
+  useUpdateStageRecruitersMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
   Card,
   Typography,
@@ -77,6 +79,10 @@ const RecruiterJobPipeline = () => {
   const [tempEndDate, setTempEndDate] = useState(null);
   const [isDateConfirmModalVisible, setIsDateConfirmModalVisible] =
     useState(false);
+  const [isRecruiterConfirmModalVisible, setIsRecruiterConfirmModalVisible] =
+    useState(false);
+  const [tempRecruiters, setTempRecruiters] = useState([]);
+  const [isEditingRecruiters, setIsEditingRecruiters] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
@@ -101,6 +107,15 @@ const RecruiterJobPipeline = () => {
   const [remainder] = useStagedCandidateNotifyMutation();
   const [updateStageDates, { isLoading: isUpdatingDates }] =
     useUpdateStageDatesMutation();
+  const [updateStageRecruiters, { isLoading: isUpdatingRecruiters }] =
+    useUpdateStageRecruitersMutation();
+
+  const { data: recMembers } = useGetRecruitersNameQuery();
+
+  const activeRecruiters =
+    recMembers?.recruitername?.filter(
+      (recruiter) => recruiter.accountStatus === "active"
+    ) || [];
 
   useEffect(() => {
     if (apiData?.data) {
@@ -206,6 +221,22 @@ const RecruiterJobPipeline = () => {
       }
     }
   }, [processedJobData]);
+
+  const handleEditRecruitersClick = () => {
+    const currentCandidate = processedJobData?.candidates?.[0];
+    if (!currentCandidate) return;
+
+    const reviews =
+      currentCandidate.stageProgress?.find((sp) => sp.stageId === activeStage)
+        ?.recruiterReviews || [];
+
+    const currentRecruiterIds = [
+      ...new Set(reviews.map((review) => review.recruiterId)),
+    ];
+
+    setTempRecruiters(currentRecruiterIds);
+    setIsEditingRecruiters(true);
+  };
 
   const getNextStageId = (currentStageId) => {
     if (!processedJobData || !currentStageId) return null;
@@ -638,6 +669,45 @@ const RecruiterJobPipeline = () => {
     } catch (error) {
       console.error("Error updating stage dates:", error);
       message.error(error?.data?.message || "Failed to update stage dates");
+    }
+  };
+
+  const handleUpdateStageRecruiters = async () => {
+    try {
+      if (!activeStage) {
+        message.error("No active stage selected");
+        return;
+      }
+
+      if (tempRecruiters.length === 0) {
+        message.warning("Please select at least one recruiter");
+        return;
+      }
+
+      const payload = {
+        stageId: activeStage,
+        recruiterIds: tempRecruiters,
+      };
+
+      console.log("Updating stage recruiters:", {
+        id,
+        stageId: activeStage,
+        recruiterIds: tempRecruiters,
+      });
+
+      await updateStageRecruiters({
+        id, // This goes in the URL params
+        ...payload, // This goes in the request body
+      }).unwrap();
+
+      message.success("Recruiters updated successfully");
+      setIsRecruiterConfirmModalVisible(false);
+      setIsEditingRecruiters(false);
+      setTempRecruiters([]);
+      refetch();
+    } catch (error) {
+      console.error("Error updating stage recruiters:", error);
+      message.error(error?.data?.message || "Failed to update recruiters");
     }
   };
 
@@ -1838,12 +1908,73 @@ const RecruiterJobPipeline = () => {
                             </div>
                           )}
 
-                          {/* REVIEWS BELOW */}
                           <div style={{ marginTop: "10px" }}>
-                            <Text strong style={{ fontSize: "14px" }}>
-                              Reviews:
-                            </Text>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              <Text strong style={{ fontSize: "14px" }}>
+                                Reviews:
+                              </Text>
 
+                              {!isEditingRecruiters && (
+                                <Button
+                                  type="link"
+                                  icon={<EditOutlined />}
+                                  onClick={handleEditRecruitersClick}
+                                  style={{ padding: 0, fontSize: "12px" }}
+                                >
+                                  Edit Recruiters
+                                </Button>
+                              )}
+                            </div>
+
+                            {isEditingRecruiters ? (
+                              <div style={{ marginBottom: "16px" }}>
+                                <Select
+                                  mode="multiple"
+                                  style={{ width: "100%" }}
+                                  placeholder="Select recruiters to review"
+                                  value={tempRecruiters}
+                                  onChange={setTempRecruiters}
+                                  options={activeRecruiters.map((rec) => ({
+                                    value: rec._id,
+                                    label: rec.fullName,
+                                  }))}
+                                />
+                                <Space style={{ marginTop: "8px" }}>
+                                  <Button
+                                    size="small"
+                                    onClick={() => {
+                                      setIsEditingRecruiters(false);
+                                      setTempRecruiters([]);
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="primary"
+                                    size="small"
+                                    onClick={() =>
+                                      setIsRecruiterConfirmModalVisible(true)
+                                    }
+                                    disabled={tempRecruiters.length === 0}
+                                    style={{
+                                      background: primaryColor,
+                                      borderColor: primaryColor,
+                                    }}
+                                  >
+                                    Save Recruiters
+                                  </Button>
+                                </Space>
+                              </div>
+                            ) : null}
+
+                            {/* Display existing reviews */}
                             {candidate.stageProgress?.find(
                               (sp) => sp.stageId === activeStage
                             )?.recruiterReviews?.length > 0 ? (
@@ -2044,6 +2175,56 @@ const RecruiterJobPipeline = () => {
               ? dayjs(tempEndDate).format("MMM DD, YYYY")
               : "No date set"}
           </Text>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Confirm Recruiter Update"
+        visible={isRecruiterConfirmModalVisible}
+        onOk={handleUpdateStageRecruiters}
+        onCancel={() => {
+          setIsRecruiterConfirmModalVisible(false);
+          setIsEditingRecruiters(false);
+          setTempRecruiters([]);
+        }}
+        okText="Confirm"
+        cancelText="Cancel"
+        okButtonProps={{
+          style: { backgroundColor: primaryColor, borderColor: primaryColor },
+          loading: isUpdatingRecruiters,
+        }}
+      >
+        <p>Are you sure you want to update the recruiters for this stage?</p>
+
+        <div style={{ marginTop: "16px" }}>
+          <Text strong>Stage: </Text>
+          <Text>{getStageName(activeStage)}</Text>
+        </div>
+
+        <div style={{ marginTop: "12px" }}>
+          <Text strong>Selected Recruiters ({tempRecruiters.length}):</Text>
+          <div style={{ marginTop: "8px" }}>
+            {tempRecruiters.length > 0 ? (
+              tempRecruiters.map((recruiterId) => {
+                const recruiter = activeRecruiters.find(
+                  (r) => r._id === recruiterId
+                );
+                return (
+                  <Tag key={recruiterId} color="blue" style={{ margin: "4px" }}>
+                    <UserOutlined />{" "}
+                    {recruiter?.fullName || "Unknown Recruiter"}
+                  </Tag>
+                );
+              })
+            ) : (
+              <Text
+                type="secondary"
+                style={{ display: "block", marginTop: "4px" }}
+              >
+                No recruiters selected
+              </Text>
+            )}
+          </div>
         </div>
       </Modal>
     </div>

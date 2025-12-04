@@ -723,6 +723,13 @@ export const recruiterApi = createApi({
         body: { stageId, startDate, endDate },
       }),
     }),
+    updateStageRecruiters: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/update-stage-recruiters/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -801,4 +808,5 @@ export const {
   useImportRecruiterCvsMutation,
   useUpdateTaggedPipelineMutation,
   useUpdateStageDatesMutation,
+  useUpdateStageRecruitersMutation
 } = recruiterApi;
