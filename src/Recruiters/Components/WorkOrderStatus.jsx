@@ -50,6 +50,24 @@ import { useGetWorkOrderDetailsQuery } from "../../Slices/Recruiter/RecruiterApi
 const { Title, Text } = Typography;
 const { Step } = Steps;
 
+const calculateOverdueDays = (endDate) => {
+  if (!endDate) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  if (today > end) {
+    const diffTime = Math.abs(today - end);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  return null;
+};
+
 const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -676,6 +694,35 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                       >
                         {selectedCandidate.currentStage.stageStatus}
                       </Tag>
+
+                      {selectedCandidate.currentStage.stageStatus ===
+                        "pending" &&
+                        selectedCandidate.stageHistory?.length > 0 &&
+                        (() => {
+                          const currentStageInHistory =
+                            selectedCandidate.stageHistory.find(
+                              (s) =>
+                                s.stageId ===
+                                selectedCandidate.currentStage.stageId
+                            );
+                          const overdueDays = currentStageInHistory
+                            ?.stageDefinition?.endDate
+                            ? calculateOverdueDays(
+                                currentStageInHistory.stageDefinition.endDate
+                              )
+                            : null;
+
+                          return overdueDays ? (
+                            <Tag
+                              color="red"
+                              icon={<ExclamationCircleOutlined />}
+                              style={{ marginLeft: 8 }}
+                            >
+                              Overdue by {overdueDays}{" "}
+                              {overdueDays === 1 ? "day" : "days"}
+                            </Tag>
+                          ) : null;
+                        })()}
                     </Descriptions.Item>
                     {selectedCandidate.currentStage.recruiter && (
                       <Descriptions.Item label="Assigned Recruiter" span={2}>
@@ -780,8 +827,99 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                             >
                               {stage.stageStatus}
                             </Tag>
+
+                            {stage.stageStatus === "pending" &&
+                              stage.stageDefinition?.endDate &&
+                              (() => {
+                                const overdueDays = calculateOverdueDays(
+                                  stage.stageDefinition.endDate
+                                );
+                                return overdueDays ? (
+                                  <Tag
+                                    color="red"
+                                    icon={<ExclamationCircleOutlined />}
+                                  >
+                                    Overdue by {overdueDays}{" "}
+                                    {overdueDays === 1 ? "day" : "days"}
+                                  </Tag>
+                                ) : null;
+                              })()}
                           </div>
                         </div>
+
+                        {(stage.stageDefinition?.startDate ||
+                          stage.stageDefinition?.endDate) && (
+                          <div
+                            style={{
+                              marginBottom: 8,
+                              padding: 8,
+                              background:
+                                stage.stageStatus === "pending" &&
+                                stage.stageDefinition?.endDate &&
+                                calculateOverdueDays(
+                                  stage.stageDefinition.endDate
+                                )
+                                  ? "#fff2e8"
+                                  : "#f0f0f0",
+                              borderRadius: 4,
+                              border:
+                                stage.stageStatus === "pending" &&
+                                stage.stageDefinition?.endDate &&
+                                calculateOverdueDays(
+                                  stage.stageDefinition.endDate
+                                )
+                                  ? "1px solid #ff4d4f"
+                                  : "none",
+                            }}
+                          >
+                            {stage.stageDefinition.startDate && (
+                              <div>
+                                <CalendarOutlined style={{ marginRight: 4 }} />
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "11px" }}
+                                >
+                                  Start Date:{" "}
+                                  {new Date(
+                                    stage.stageDefinition.startDate
+                                  ).toLocaleDateString()}
+                                </Text>
+                              </div>
+                            )}
+                            {stage.stageDefinition.endDate && (
+                              <div style={{ marginTop: 4 }}>
+                                <CalendarOutlined
+                                  style={{
+                                    marginRight: 4,
+                                    color:
+                                      stage.stageStatus === "pending" &&
+                                      calculateOverdueDays(
+                                        stage.stageDefinition.endDate
+                                      )
+                                        ? "#ff4d4f"
+                                        : undefined,
+                                  }}
+                                />
+                                <Text
+                                  type={
+                                    stage.stageStatus === "pending" &&
+                                    calculateOverdueDays(
+                                      stage.stageDefinition.endDate
+                                    )
+                                      ? "danger"
+                                      : "secondary"
+                                  }
+                                  style={{ fontSize: "11px" }}
+                                >
+                                  End Date:{" "}
+                                  {new Date(
+                                    stage.stageDefinition.endDate
+                                  ).toLocaleDateString()}
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {stage.recruiter && (
                           <div style={{ marginBottom: 8 }}>
@@ -857,6 +995,48 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                             ))}
                           </div>
                         )}
+
+                        {stage.uploadedDocuments?.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: 8,
+                              padding: 8,
+                              background: "#e6f7ff",
+                              borderRadius: 4,
+                            }}
+                          >
+                            <Text strong style={{ fontSize: "12px" }}>
+                              <FileTextOutlined style={{ marginRight: 4 }} />
+                              Uploaded Documents (
+                              {stage.uploadedDocuments.length}):
+                            </Text>
+                            {stage.uploadedDocuments.map((doc, i) => (
+                              <div
+                                key={i}
+                                style={{ marginTop: 4, marginLeft: 16 }}
+                              >
+                                <a
+                                  href={doc.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ fontSize: "11px" }}
+                                >
+                                  • {doc.documentName}: {doc.fileName}
+                                </a>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: "10px", marginLeft: 8 }}
+                                >
+                                  (
+                                  {new Date(
+                                    doc.uploadedAt
+                                  ).toLocaleDateString()}
+                                  )
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </Card>
                     </Timeline.Item>
                   ))}
@@ -882,6 +1062,37 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                       <Tag color="purple">{stage.pipelineName}</Tag>
                       <Tag>Order: {stage.stageOrder}</Tag>
                     </div>
+
+                    {(stage.startDate || stage.endDate) && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: 6,
+                          background: "#fff",
+                          borderRadius: 4,
+                        }}
+                      >
+                        {stage.startDate && (
+                          <div>
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              <CalendarOutlined style={{ marginRight: 4 }} />
+                              Start:{" "}
+                              {new Date(stage.startDate).toLocaleDateString()}
+                            </Text>
+                          </div>
+                        )}
+                        {stage.endDate && (
+                          <div style={{ marginTop: 2 }}>
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              <CalendarOutlined style={{ marginRight: 4 }} />
+                              End:{" "}
+                              {new Date(stage.endDate).toLocaleDateString()}
+                            </Text>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {stage.assignedRecruiters?.length > 0 && (
                       <div style={{ marginTop: 8 }}>
                         <Text type="secondary" style={{ fontSize: "12px" }}>
