@@ -63,6 +63,27 @@ const { Panel } = Collapse;
 const { useBreakpoint } = Grid;
 const { TextArea } = Input;
 
+const approvalScrollbarStyles = `
+  /* For Webkit browsers (Chrome, Safari) */
+  div[style*="overflowY: auto"]::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  div[style*="overflowY: auto"]::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+  }
+  
+  div[style*="overflowY: auto"]::-webkit-scrollbar-thumb {
+    background: #d9d9d9;
+    border-radius: 4px;
+  }
+  
+  div[style*="overflowY: auto"]::-webkit-scrollbar-thumb:hover {
+    background: #bfbfbf;
+  }
+`;
+
 const RecruiterJobPipeline = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -975,6 +996,192 @@ const RecruiterJobPipeline = () => {
       }
     })();
 
+    const renderApprovalDetails = (approvalDetails) => {
+      if (!approvalDetails || !approvalDetails.levels) return null;
+
+      return (
+        <div style={{ marginTop: "16px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
+            <CheckCircleOutlined
+              style={{ marginRight: "8px", color: "#52c41a" }}
+            />
+            Approval Workflow
+          </Title>
+
+          <div
+            style={{
+              maxHeight: "400px",
+              overflowY: "auto",
+              paddingRight: "8px",
+              // Custom scrollbar styling
+              scrollbarWidth: "thin",
+              scrollbarColor: "#d9d9d9 #f0f0f0",
+            }}
+          >
+            <Collapse
+              ghost
+              defaultActiveKey={approvalDetails.levels.map(
+                (level, index) => index
+              )}
+              style={{ backgroundColor: "#fafafa" }}
+            >
+              {approvalDetails.levels.map((level, index) => (
+                <Panel
+                  header={
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: screens.xs ? "column" : "row",
+                        alignItems: screens.xs ? "flex-start" : "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <Text
+                        strong
+                        style={{ fontSize: screens.xs ? "13px" : "14px" }}
+                      >
+                        Level {level.levelOrder}: {level.levelName}
+                      </Text>
+                      <Tag
+                        color={
+                          level.assignedRecruiters.every(
+                            (r) => r.status === "approved"
+                          )
+                            ? "success"
+                            : "processing"
+                        }
+                      >
+                        {level.assignedRecruiters.every(
+                          (r) => r.status === "approved"
+                        )
+                          ? "Approved"
+                          : `${
+                              level.assignedRecruiters.filter(
+                                (r) => r.status === "approved"
+                              ).length
+                            }/${level.assignedRecruiters.length} Approved`}
+                      </Tag>
+                    </div>
+                  }
+                  key={index}
+                >
+                  <div style={{ padding: "8px 0" }}>
+                    {level.assignedRecruiters.map((recruiter, idx) => (
+                      <Card
+                        key={idx}
+                        size="small"
+                        style={{
+                          marginBottom: "8px",
+                          borderLeft: `4px solid ${
+                            recruiter.status === "approved"
+                              ? "#52c41a"
+                              : "#faad14"
+                          }`,
+                          backgroundColor:
+                            recruiter.status === "approved"
+                              ? "#f6ffed"
+                              : "#fff7e6",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: screens.xs ? "column" : "row",
+                            justifyContent: "space-between",
+                            alignItems: screens.xs
+                              ? "flex-start"
+                              : "flex-start",
+                            gap: screens.xs ? "8px" : "0",
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <Text
+                              strong
+                              style={{ fontSize: screens.xs ? "13px" : "14px" }}
+                            >
+                              <UserOutlined style={{ marginRight: "8px" }} />
+                              {recruiter.recruiterInfo?.fullName ||
+                                "Unknown Recruiter"}
+                            </Text>
+                            <br />
+                            <Text
+                              type="secondary"
+                              style={{ fontSize: screens.xs ? "13px" : "14px" }}
+                            >
+                              {recruiter.recruiterInfo?.email}
+                            </Text>
+                            {recruiter.comments && (
+                              <>
+                                <br />
+                                <Text
+                                  style={{
+                                    fontSize: screens.xs ? "11px" : "12px",
+                                    marginTop: "4px",
+                                    display: "block",
+                                  }}
+                                >
+                                  <CommentOutlined
+                                    style={{ marginRight: "4px" }}
+                                  />
+                                  {recruiter.comments}
+                                </Text>
+                              </>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              minWidth: screens.xs ? "100%" : "auto",
+                              textAlign: screens.xs ? "left" : "right",
+                            }}
+                          >
+                            <Tag
+                              color={
+                                recruiter.status === "approved"
+                                  ? "success"
+                                  : "warning"
+                              }
+                              icon={
+                                recruiter.status === "approved" ? (
+                                  <CheckCircleOutlined />
+                                ) : (
+                                  <ClockCircleOutlined />
+                                )
+                              }
+                              style={{
+                                fontSize: screens.xs ? "11px" : "12px",
+                                padding: screens.xs ? "2px 8px" : "4px 12px",
+                              }}
+                            >
+                              {recruiter.status === "approved"
+                                ? "Approved"
+                                : "Pending"}
+                            </Tag>
+                            {recruiter.reviewedAt &&
+                              recruiter.status === "approved" && (
+                                <div style={{ marginTop: "4px" }}>
+                                  <Text
+                                    type="secondary"
+                                    style={{
+                                      fontSize: screens.xs ? "10px" : "11px",
+                                    }}
+                                  >
+                                    {formatIST(recruiter.reviewedAt)}
+                                  </Text>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </Panel>
+              ))}
+            </Collapse>
+          </div>
+        </div>
+      );
+    };
+
     const getStageStatusTag = () => {
       if (!hasApprovalLevels) {
         return null; // No approval tag needed for non-approval stages
@@ -1090,7 +1297,7 @@ const RecruiterJobPipeline = () => {
       <div
         style={{
           marginBottom: "20px",
-          padding: "16px",
+          padding: screens.xs ? "12px" : "16px",
           borderRadius: "8px",
           border: `1px solid ${isCurrentStage ? "#e6f7ff" : "#f0f0f0"}`,
           backgroundColor: isCurrentStage ? "#f6ffed" : "#fafafa",
@@ -1103,10 +1310,13 @@ const RecruiterJobPipeline = () => {
             justifyContent: "space-between",
             alignItems: screens.xs ? "flex-start" : "center",
             gap: screens.xs ? "12px" : "0",
+            paddingBottom: "12px",
+            borderBottom: "1px solid #f0f0f0",
+            marginBottom: "12px",
           }}
         >
-          <div>
-            <Text strong>
+          <div style={{ flex: 1 }}>
+            <Text strong style={{ fontSize: screens.xs ? "13px" : "14px" }}>
               {hasApprovalLevels
                 ? "Approval & Document Status:"
                 : "Review Status:"}
@@ -1162,13 +1372,19 @@ const RecruiterJobPipeline = () => {
           )}
         </div>
 
-        <div style={{ marginTop: "12px" }}>
+        <div>
           <Text
             type={canMoveCandidate ? "success" : "secondary"}
-            style={{ fontSize: "13px" }}
+            style={{ fontSize: screens.xs ? "12px" : "13px" }}
           >
             {getStatusMessage()}
           </Text>
+
+          {hasApprovalLevels && currentStageProgress.approvalDetails && (
+            <div style={{ marginTop: "16px" }}>
+              {renderApprovalDetails(currentStageProgress.approvalDetails)}
+            </div>
+          )}
         </div>
       </div>
     );
