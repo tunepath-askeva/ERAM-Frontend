@@ -378,30 +378,16 @@ const RecruiterJobPipeline = () => {
     if (!processedJobData) return { startDate: null, endDate: null };
 
     const currentCandidate = processedJobData.candidates[0];
-    const isTagged = !!currentCandidate?.tagPipelineId;
 
-    if (isTagged) {
-      // For tagged pipelines, check stageProgress for dates
-      const stageProgress = currentCandidate.stageProgress?.find(
-        (progress) => progress.stageId === stageId
-      );
+    // ALWAYS use stageProgress since it's common in both API responses
+    const stageProgress = currentCandidate.stageProgress?.find(
+      (progress) => progress.stageId === stageId
+    );
 
-      return {
-        startDate: stageProgress?.startDate || null,
-        endDate: stageProgress?.endDate || null,
-      };
-    } else {
-      // For work order stages, check workOrder.pipelineStageTimeline
-      const stageTimeline =
-        processedJobData.workOrder?.pipelineStageTimeline?.find(
-          (stage) => stage.stageId === stageId
-        );
-
-      return {
-        startDate: stageTimeline?.startDate || null,
-        endDate: stageTimeline?.endDate || null,
-      };
-    }
+    return {
+      startDate: stageProgress?.startDate || null,
+      endDate: stageProgress?.endDate || null,
+    };
   };
 
   const getCandidatesInStage = (stageId) => {
@@ -855,27 +841,42 @@ const RecruiterJobPipeline = () => {
     const isCurrentStage = candidate.currentStageId === targetStageId;
 
     const checkDocumentsUploaded = () => {
-      const currentStage = processedJobData.pipeline.stages.find(
-        (stage) => stage._id === targetStageId
-      );
+      const isTagged = !!candidate.tagPipelineId;
 
-      const stageTimeline =
-        processedJobData.workOrder?.pipelineStageTimeline?.find(
-          (timeline) => timeline.stageId === targetStageId
+      // Get required documents based on pipeline type
+      let allRequiredDocuments = [];
+
+      if (isTagged) {
+        // For tagged/separate pipelines, check fullStage in stageProgress
+        const requiredDocs =
+          currentStageProgress?.fullStage?.requiredDocuments || [];
+        allRequiredDocuments = [...requiredDocs];
+      } else {
+        // For work order pipelines
+        const currentStage = processedJobData.pipeline?.stages?.find(
+          (stage) => stage._id === targetStageId
         );
 
-      const allRequiredDocuments = [
-        ...(currentStage?.requiredDocuments || []),
-        ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
-      ];
+        const stageTimeline =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (timeline) => timeline.stageId === targetStageId
+          );
+
+        allRequiredDocuments = [
+          ...(currentStage?.requiredDocuments || []),
+          ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
+        ];
+      }
 
       const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
 
+      // If no required documents, return true
       if (uniqueRequiredDocuments.length === 0) {
         return true;
       }
 
-      const uploadedDocuments = candidate.uploadedDocuments || [];
+      // Check if documents are uploaded
+      const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
       return uploadedDocuments.length > 0;
     };
 
@@ -884,20 +885,29 @@ const RecruiterJobPipeline = () => {
     const shouldHideButton = hasAnyRecruiterApproved || !isCurrentStage;
 
     const canMoveCandidate = (() => {
-      if (hasAnyRecruiterApproved || !isCurrentStage) {
+      // 1. Don't allow if already approved by a recruiter
+      if (hasAnyRecruiterApproved) {
         return false;
       }
 
+      // 2. Don't allow if this is not the current stage
+      if (!isCurrentStage) {
+        return false;
+      }
+
+      // 3. Check based on whether stage has approval levels
       if (hasApprovalLevels) {
-        return isStageApproved;
+        // Stage HAS approval levels
+        return isStageApproved && areDocumentsUploaded;
       } else {
+        // Stage has NO approval levels
         return areDocumentsUploaded;
       }
     })();
 
     const getStageStatusTag = () => {
       if (!hasApprovalLevels) {
-        return null; // No approval tag needed
+        return null; // No approval tag needed for non-approval stages
       }
 
       if (isStageApproved) {
@@ -926,20 +936,28 @@ const RecruiterJobPipeline = () => {
 
       if (isCurrentStage) {
         if (hasApprovalLevels) {
-          if (isStageApproved) {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="orange">
-                Awaiting Recruiter Action
-              </Tag>
-            );
-          } else {
+          // Stage with approval levels
+          if (!isStageApproved) {
             return (
               <Tag icon={<ClockCircleOutlined />} color="warning">
                 Awaiting Stage Approval
               </Tag>
             );
+          } else if (!areDocumentsUploaded) {
+            return (
+              <Tag icon={<ClockCircleOutlined />} color="orange">
+                Awaiting Document Upload
+              </Tag>
+            );
+          } else {
+            return (
+              <Tag icon={<ClockCircleOutlined />} color="blue">
+                Ready - Awaiting Recruiter Action
+              </Tag>
+            );
           }
         } else {
+          // Stage without approval levels
           if (!areDocumentsUploaded) {
             return (
               <Tag icon={<ClockCircleOutlined />} color="orange">
@@ -948,8 +966,8 @@ const RecruiterJobPipeline = () => {
             );
           } else {
             return (
-              <Tag icon={<ClockCircleOutlined />} color="orange">
-                Awaiting Recruiter Action
+              <Tag icon={<ClockCircleOutlined />} color="blue">
+                Ready - Awaiting Recruiter Action
               </Tag>
             );
           }
@@ -957,36 +975,43 @@ const RecruiterJobPipeline = () => {
       }
 
       return (
-        <Tag icon={<ClockCircleOutlined />} color="warning">
-          Pending
+        <Tag icon={<ClockCircleOutlined />} color="default">
+          Not Current Stage
         </Tag>
       );
     };
 
     const getStatusMessage = () => {
       if (!isCurrentStage && currentStageProgress.stageStatus === "approved") {
-        return "This stage has been completed.";
+        return "✅ This stage has been completed.";
       }
 
       if (!isCurrentStage) {
-        return "This stage is not currently active for this candidate.";
+        return "ℹ️ This stage is not currently active for this candidate.";
       }
 
       if (hasAnyRecruiterApproved) {
-        return "A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
+        return "✅ A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
       }
 
+      // Current stage logic
       if (hasApprovalLevels) {
-        if (isStageApproved) {
-          return "Stage is approved. Any assigned recruiter can review this candidate and move them to the next stage.";
+        // Stage WITH approval levels
+        if (!isStageApproved && !areDocumentsUploaded) {
+          return "⚠️ Stage approval is required AND documents must be uploaded before moving this candidate.";
+        } else if (!isStageApproved) {
+          return "⚠️ Stage approval is required before this candidate can be moved to the next stage.";
+        } else if (!areDocumentsUploaded) {
+          return "⚠️ Required documents must be uploaded before moving this candidate to the next stage.";
         } else {
-          return "Stage approval is required before any recruiter can move this candidate.";
+          return "✅ Stage is approved and documents are uploaded. You can move this candidate to the next stage.";
         }
       } else {
+        // Stage WITHOUT approval levels
         if (!areDocumentsUploaded) {
-          return "Required documents must be uploaded before this candidate can be moved to the next stage.";
+          return "⚠️ Required documents must be uploaded before moving this candidate to the next stage.";
         } else {
-          return "This stage has no approval requirements.  candidate is ready to be moved to the next stage.";
+          return "✅ All requirements met. You can move this candidate to the next stage.";
         }
       }
     };
@@ -996,9 +1021,9 @@ const RecruiterJobPipeline = () => {
         style={{
           marginBottom: "20px",
           padding: "16px",
-          // backgroundColor: isCurrentStage ? "#fafafa" : "#f9f9f9",
           borderRadius: "8px",
-          // border: `1px solid ${isCurrentStage ? "#f0f0f0" : "#e0e0e0"}`,
+          border: `1px solid ${isCurrentStage ? "#e6f7ff" : "#f0f0f0"}`,
+          backgroundColor: isCurrentStage ? "#f6ffed" : "#fafafa",
         }}
       >
         <div
@@ -1012,7 +1037,9 @@ const RecruiterJobPipeline = () => {
         >
           <div>
             <Text strong>
-              {hasApprovalLevels ? "Approval Status:" : "Review Status:"}
+              {hasApprovalLevels
+                ? "Approval & Document Status:"
+                : "Review Status:"}
             </Text>
             <div
               style={{
@@ -1032,37 +1059,44 @@ const RecruiterJobPipeline = () => {
               direction={screens.xs ? "vertical" : "horizontal"}
               style={{ width: screens.xs ? "100%" : "auto" }}
             >
-              <Button
-                type="primary"
-                icon={<ArrowRightOutlined />}
-                disabled={!canMoveCandidate}
-                onClick={(e) => handleMoveCandidate(candidate, e)}
-                loading={isMoving}
-                style={{
-                  backgroundColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                  borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
-                  width: screens.xs ? "100%" : "auto",
-                }}
-                block={screens.xs}
+              <Tooltip
+                title={
+                  !canMoveCandidate
+                    ? hasApprovalLevels && !isStageApproved
+                      ? "Stage approval required"
+                      : !areDocumentsUploaded
+                      ? "Documents must be uploaded"
+                      : "Requirements not met"
+                    : ""
+                }
               >
-                {isLastStage ? "Finish Process" : "Move to Next Stage"}
-              </Button>
+                <Button
+                  type="primary"
+                  icon={<ArrowRightOutlined />}
+                  disabled={!canMoveCandidate}
+                  onClick={(e) => handleMoveCandidate(candidate, e)}
+                  loading={isMoving}
+                  style={{
+                    backgroundColor: canMoveCandidate
+                      ? primaryColor
+                      : "#d9d9d9",
+                    borderColor: canMoveCandidate ? primaryColor : "#d9d9d9",
+                    width: screens.xs ? "100%" : "auto",
+                  }}
+                  block={screens.xs}
+                >
+                  {isLastStage ? "Finish Process" : "Move to Next Stage"}
+                </Button>
+              </Tooltip>
             </Space>
           )}
         </div>
 
         <div style={{ marginTop: "12px" }}>
           <Text
-            type={
-              hasAnyRecruiterApproved
-                ? "success"
-                : canMoveCandidate
-                ? "success"
-                : "secondary"
-            }
-            style={{ fontSize: "12px" }}
+            type={canMoveCandidate ? "success" : "secondary"}
+            style={{ fontSize: "13px" }}
           >
-            <ExclamationCircleOutlined style={{ marginRight: "4px" }} />
             {getStatusMessage()}
           </Text>
         </div>
@@ -1464,7 +1498,10 @@ const RecruiterJobPipeline = () => {
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Text strong>Pipeline:</Text>
-            <Tag color="blue">{processedJobData.pipeline.name}</Tag>
+            <Tag color="blue">
+              {" "}
+              {apiData?.data?.pipelineName || processedJobData.pipeline.name}
+            </Tag>
           </div>
         </div>
       </Card>
@@ -1633,6 +1670,7 @@ const RecruiterJobPipeline = () => {
                                   onClick={() =>
                                     setIsDateConfirmModalVisible(true)
                                   }
+                                  disabled={!tempStartDate && !tempEndDate}
                                   style={{
                                     background: primaryColor,
                                     borderColor: primaryColor,
@@ -1677,19 +1715,22 @@ const RecruiterJobPipeline = () => {
                                       onChange={(date) =>
                                         setTempStartDate(
                                           date
-                                            ? date.format("YYYY-MM-DD")
+                                            ? date.format(
+                                                "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+                                              )
                                             : null
                                         )
                                       }
+                                      format="YYYY-MM-DD"
                                       style={{ width: "150px" }}
-                                      placeholder="No date set"
+                                      placeholder="Select start date"
                                     />
                                   ) : (
                                     <Text type="secondary">
                                       {startDate
-                                        ? new Date(
-                                            startDate
-                                          ).toLocaleDateString()
+                                        ? dayjs(startDate).format(
+                                            "MMM DD, YYYY"
+                                          )
                                         : "No date set"}
                                     </Text>
                                   )}
@@ -1713,17 +1754,33 @@ const RecruiterJobPipeline = () => {
                                       onChange={(date) =>
                                         setTempEndDate(
                                           date
-                                            ? date.format("YYYY-MM-DD")
+                                            ? date.format(
+                                                "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+                                              )
                                             : null
                                         )
                                       }
+                                      format="YYYY-MM-DD"
                                       style={{ width: "150px" }}
-                                      placeholder="No date set"
+                                      placeholder="Select end date"
+                                      disabledDate={(current) => {
+                                        // Disable dates before start date if start date is selected
+                                        if (tempStartDate) {
+                                          return (
+                                            current &&
+                                            current <
+                                              dayjs(tempStartDate).startOf(
+                                                "day"
+                                              )
+                                          );
+                                        }
+                                        return false;
+                                      }}
                                     />
                                   ) : (
                                     <Text type="secondary">
                                       {endDate
-                                        ? new Date(endDate).toLocaleDateString()
+                                        ? dayjs(endDate).format("MMM DD, YYYY")
                                         : "No date set"}
                                     </Text>
                                   )}
@@ -1976,7 +2033,7 @@ const RecruiterJobPipeline = () => {
           <Text strong>Start Date: </Text>
           <Text>
             {tempStartDate
-              ? dayjs(tempStartDate).format("DD MMM YYYY")
+              ? dayjs(tempStartDate).format("MMM DD, YYYY")
               : "No date set"}
           </Text>
         </div>
@@ -1984,7 +2041,7 @@ const RecruiterJobPipeline = () => {
           <Text strong>End Date: </Text>
           <Text>
             {tempEndDate
-              ? dayjs(tempEndDate).format("DD MMM YYYY")
+              ? dayjs(tempEndDate).format("MMM DD, YYYY")
               : "No date set"}
           </Text>
         </div>

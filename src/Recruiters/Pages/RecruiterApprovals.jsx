@@ -23,7 +23,7 @@ import {
   List,
   Drawer,
   Dropdown,
-  Result
+  Result,
 } from "antd";
 import {
   EyeOutlined,
@@ -901,8 +901,8 @@ const RecruiterApprovals = () => {
       );
       setApproveModalVisible(false);
       setApprovalComments("");
-      refetchWorkOrders();
-      refetchSeparateApprovals();
+      await refetchWorkOrders();
+      await refetchSeparateApprovals();
     } catch (error) {
       message.error(error.data?.message || "Failed to approve documents");
       console.error("Approval error:", error);
