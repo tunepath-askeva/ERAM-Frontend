@@ -387,16 +387,11 @@ const RecruiterJobPipeline = () => {
       );
 
       return {
-        startDate:
-          stageProgress?.stageStartDate || stageProgress?.startDate || null,
-        endDate:
-          stageProgress?.stageEndDate ||
-          stageProgress?.endDate ||
-          stageProgress?.stageCompletedAt ||
-          null,
+        startDate: stageProgress?.startDate || null,
+        endDate: stageProgress?.endDate || null,
       };
     } else {
-      // For work order stages
+      // For work order stages, check workOrder.pipelineStageTimeline
       const stageTimeline =
         processedJobData.workOrder?.pipelineStageTimeline?.find(
           (stage) => stage.stageId === stageId
@@ -1681,7 +1676,9 @@ const RecruiterJobPipeline = () => {
                                       }
                                       onChange={(date) =>
                                         setTempStartDate(
-                                          date ? date.toISOString() : null
+                                          date
+                                            ? date.format("YYYY-MM-DD")
+                                            : null
                                         )
                                       }
                                       style={{ width: "150px" }}
@@ -1715,7 +1712,9 @@ const RecruiterJobPipeline = () => {
                                       }
                                       onChange={(date) =>
                                         setTempEndDate(
-                                          date ? date.toISOString() : null
+                                          date
+                                            ? date.format("YYYY-MM-DD")
+                                            : null
                                         )
                                       }
                                       style={{ width: "150px" }}
@@ -1977,7 +1976,7 @@ const RecruiterJobPipeline = () => {
           <Text strong>Start Date: </Text>
           <Text>
             {tempStartDate
-              ? new Date(tempStartDate).toLocaleDateString()
+              ? dayjs(tempStartDate).format("DD MMM YYYY")
               : "No date set"}
           </Text>
         </div>
@@ -1985,7 +1984,7 @@ const RecruiterJobPipeline = () => {
           <Text strong>End Date: </Text>
           <Text>
             {tempEndDate
-              ? new Date(tempEndDate).toLocaleDateString()
+              ? dayjs(tempEndDate).format("DD MMM YYYY")
               : "No date set"}
           </Text>
         </div>
