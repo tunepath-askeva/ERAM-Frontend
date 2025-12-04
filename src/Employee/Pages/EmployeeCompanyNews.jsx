@@ -12,6 +12,7 @@ import {
   Space,
   Spin,
   Button,
+  Result,
 } from "antd";
 import { useState } from "react";
 import {
@@ -26,9 +27,12 @@ import SkeletonLoader from "../../Global/SkeletonLoader";
 const { Title, Text, Paragraph } = Typography;
 
 const EmployeeCompanyNews = () => {
-  const { data: companyNews, isLoading } = useGetCompanyNewsQuery();
+  const { data: companyNews, isLoading, isError } = useGetCompanyNewsQuery();
   const [selectedNews, setSelectedNews] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const publishedNews =
+    companyNews?.news?.filter((n) => n.status === "published") || [];
 
   // Custom styles matching NewsDetailView
   const customStyles = {
@@ -54,6 +58,16 @@ const EmployeeCompanyNews = () => {
     return <SkeletonLoader />;
   }
 
+  if (isError) {
+    return (
+      <Result
+        status="500"
+        title="Something went wrong"
+        subTitle="Unable to load company news. Please try again later."
+      />
+    );
+  }
+
   return (
     <div className="news-container">
       <div className="news-header">
@@ -65,84 +79,91 @@ const EmployeeCompanyNews = () => {
         </Text>
       </div>
 
-      <div className="news-list">
-        {companyNews?.news
-          ?.filter((newsItem) => newsItem.status === "published")
-          ?.map((newsItem) => (
-            <Card key={newsItem._id} className="news-wide-card" hoverable>
-              <Row gutter={24} align="middle">
-                {/* Left side - Image */}
-                <Col xs={24} sm={8} md={6}>
-                  <div className="news-image-container">
-                    <Image
-                      src={newsItem.coverImage}
-                      alt={newsItem.title}
-                      className="news-image"
-                      preview={false}
-                    />
-                    <div className="news-badge">
-                      <Tag color="blue">{newsItem.status.toUpperCase()}</Tag>
+      {publishedNews.length === 0 ? (
+        <Result
+          status="404"
+          title="No News Available"
+          subTitle="Company news and announcements will appear here when available."
+        />
+      ) : (
+        <div className="news-list">
+          {companyNews?.news
+            ?.filter((newsItem) => newsItem.status === "published")
+            ?.map((newsItem) => (
+              <Card key={newsItem._id} className="news-wide-card" hoverable>
+                <Row gutter={24} align="middle">
+                  {/* Left side - Image */}
+                  <Col xs={24} sm={8} md={6}>
+                    <div className="news-image-container">
+                      <Image
+                        src={newsItem.coverImage}
+                        alt={newsItem.title}
+                        className="news-image"
+                        preview={false}
+                      />
+                      <div className="news-badge">
+                        <Tag color="blue">{newsItem.status.toUpperCase()}</Tag>
+                      </div>
                     </div>
-                  </div>
-                </Col>
+                  </Col>
 
-                {/* Right side - Content */}
-                <Col xs={24} sm={16} md={18}>
-                  <div className="news-content">
-                    {/* Meta Information */}
-                    <div className="news-meta">
-                      <Space size="large">
-                        <Space size="small">
-                          <Avatar icon={<UserOutlined />} size="small" />
-                          <Text type="secondary">Admin</Text>
+                  {/* Right side - Content */}
+                  <Col xs={24} sm={16} md={18}>
+                    <div className="news-content">
+                      {/* Meta Information */}
+                      <div className="news-meta">
+                        <Space size="large">
+                          <Space size="small">
+                            <Avatar icon={<UserOutlined />} size="small" />
+                            <Text type="secondary">Admin</Text>
+                          </Space>
+                          <Space size="small">
+                            <CalendarOutlined style={{ color: "#888" }} />
+                            <Text type="secondary">
+                              {new Date(newsItem.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
+                            </Text>
+                          </Space>
                         </Space>
-                        <Space size="small">
-                          <CalendarOutlined style={{ color: "#888" }} />
-                          <Text type="secondary">
-                            {new Date(newsItem.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )}
-                          </Text>
-                        </Space>
-                      </Space>
-                    </div>
+                      </div>
 
-                    {/* Title */}
-                    <Title level={3} className="news-card-title">
-                      {newsItem.title}
-                    </Title>
+                      {/* Title */}
+                      <Title level={3} className="news-card-title">
+                        {newsItem.title}
+                      </Title>
 
-                    {/* Description */}
-                    <Paragraph
-                      ellipsis={{ rows: 2 }}
-                      className="news-card-description"
-                    >
-                      {newsItem.description}
-                    </Paragraph>
-
-                    {/* Read More Button */}
-                    <div className="news-actions">
-                      <Button
-                        type="primary"
-                        icon={<ArrowRightOutlined />}
-                        onClick={(e) => handleReadMore(newsItem, e)}
-                        className="read-more-btn"
+                      {/* Description */}
+                      <Paragraph
+                        ellipsis={{ rows: 2 }}
+                        className="news-card-description"
                       >
-                        Read More
-                      </Button>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-            </Card>
-          ))}
-      </div>
+                        {newsItem.description}
+                      </Paragraph>
 
+                      {/* Read More Button */}
+                      <div className="news-actions">
+                        <Button
+                          type="primary"
+                          icon={<ArrowRightOutlined />}
+                          onClick={(e) => handleReadMore(newsItem, e)}
+                          className="read-more-btn"
+                        >
+                          Read More
+                        </Button>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            ))}
+        </div>
+      )}
       {/* Modal remains the same */}
       <Modal
         title={null}

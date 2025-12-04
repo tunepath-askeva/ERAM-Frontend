@@ -169,13 +169,13 @@ const EmployeeNotifications = () => {
         disabled: item.isRead,
         onClick: () => handleMarkAsRead(item._id),
       },
-      {
-        key: "delete",
-        label: "Delete",
-        icon: <DeleteOutlined />,
-        danger: true,
-        onClick: () => handleDeleteNotification(item._id),
-      },
+      // {
+      //   key: "delete",
+      //   label: "Delete",
+      //   icon: <DeleteOutlined />,
+      //   danger: true,
+      //   onClick: () => handleDeleteNotification(item._id),
+      // },
     ];
 
     return (
@@ -318,9 +318,9 @@ const EmployeeNotifications = () => {
                 cancelText="No"
                 placement="bottomRight"
               >
-                <Button type="link" size="small" danger loading={clearingAll}>
+                {/* <Button type="link" size="small" danger loading={clearingAll}>
                   Clear all
-                </Button>
+                </Button> */}
               </Popconfirm>
             )}
           </Space>

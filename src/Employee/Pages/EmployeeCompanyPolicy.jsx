@@ -9,7 +9,7 @@ import {
   Col,
   Divider,
   Layout,
-  Empty,
+  Result,
   Timeline,
   Affix,
   Anchor,
@@ -190,7 +190,7 @@ const EmployeeCompanyPolicy = () => {
 
   if (!policiesData || policiesData.length === 0) {
     return (
-      <Layout style={{ minHeight: "100vh" }}>
+      <Layout >
         <Content
           style={{
             padding: "50px",
@@ -200,16 +200,10 @@ const EmployeeCompanyPolicy = () => {
             background: "#fff",
           }}
         >
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <span>
-                <Title level={4}>No Policies Available</Title>
-                <Text type="secondary">
-                  Company policies will appear here when available.
-                </Text>
-              </span>
-            }
+          <Result
+            status="404"
+            title="No Policies Available"
+            subTitle="Company policies will appear here when available."
           />
         </Content>
       </Layout>
