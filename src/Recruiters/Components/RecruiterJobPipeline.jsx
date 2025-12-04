@@ -520,9 +520,8 @@ const RecruiterJobPipeline = () => {
       }
 
       // Check if stage requires approval
-      const hasApprovalLevels = currentStageProgress?.approval?.approvalId
-        ? true
-        : false;
+      const hasApprovalLevels =
+        currentStageProgress?.approvalDetails?.levels?.length > 0;
 
       if (hasApprovalLevels) {
         const isStageApproved =
@@ -597,7 +596,6 @@ const RecruiterJobPipeline = () => {
           (isLastStage ? "Process completed" : "Moved to next stage"),
         isFinished: isLastStage,
         nextStageId: isLastStage ? null : nextStageId,
-        // Add pipeline-specific fields for tagged pipelines
         ...(isTagged && {
           tagPipelineId: selectedCandidate.tagPipelineId,
           pipelineCandidateId:
@@ -607,7 +605,6 @@ const RecruiterJobPipeline = () => {
 
       console.log("Sending API payload:", payload);
 
-      // Make the API call
       const result = await moveToNextStage(payload).unwrap();
 
       console.log("API response:", result);
@@ -917,9 +914,8 @@ const RecruiterJobPipeline = () => {
 
     if (!currentStageProgress) return null;
 
-    const hasApprovalLevels = currentStageProgress?.approval?.approvalId
-      ? true
-      : false;
+    const hasApprovalLevels =
+      currentStageProgress?.approvalDetails?.levels?.length > 0;
 
     const isStageApproved = hasApprovalLevels
       ? currentStageProgress.approval.isApproved === true
@@ -941,14 +937,14 @@ const RecruiterJobPipeline = () => {
     const checkApprovalCompleted = () => {
       // Check if stage has approval object
       const approval = currentStageProgress?.approval;
-
+      const approvalLevels = currentStageProgress?.approvalDetails?.levels;
       // If no approval object, no approval is needed - return true
-      if (!approval || !approval.approvalId) {
-        return true;
-      }
+      if (!approvalLevels || approvalLevels.length === 0) return true;
 
-      // If approval exists, check if it's approved
-      return approval.isApproved === true;
+      // Approval required → must be explicitly approved
+      if (approval && approval.isApproved === true) return true;
+
+      return false;
     };
 
     const checkDocumentsUploaded = () => {
@@ -1387,7 +1383,7 @@ const RecruiterJobPipeline = () => {
             {getStatusMessage()}
           </Text>
 
-          {hasApprovalLevels && currentStageProgress.approvalDetails && (
+          {hasApprovalLevels && (
             <div style={{ marginTop: "16px" }}>
               {renderApprovalDetails(currentStageProgress.approvalDetails)}
             </div>
