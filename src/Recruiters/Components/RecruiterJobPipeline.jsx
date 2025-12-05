@@ -885,9 +885,7 @@ const RecruiterJobPipeline = () => {
           style={{
             marginBottom: "20px",
             padding: "16px",
-            background: "#e6f7ff",
             borderRadius: "8px",
-            border: "2px solid #1890ff",
           }}
         >
           <Title level={5} style={{ marginBottom: "12px", color: "#1890ff" }}>
