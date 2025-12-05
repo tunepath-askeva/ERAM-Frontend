@@ -437,7 +437,7 @@ const RecruiterJobs = () => {
                   onClick={() => {
                     if (!job.isActive) {
                       enqueueSnackbar(
-                        "Your deadline is up. Please contact your admin.",
+                        "Your job is inactive. Please contact your admin.",
                         {
                           variant: "warning",
                         }

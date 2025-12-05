@@ -50,6 +50,7 @@ import {
 } from "../../Slices/Admin/AdminApis.js";
 import CreatePipelineModal from "../Components/CreatePipelineModal.jsx";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -115,6 +116,11 @@ const AddWorkOrder = () => {
     },
     { id: "police-clearance", name: "Police Clearance", isMandatory: false },
   ]);
+
+  const adminInfo = useSelector((state) => state.userAuth.adminInfo);
+
+  const ShowButton = adminInfo?.roles;
+
   const [requisitionData, setRequisitionData] = useState({
     requisitionNo: null,
     referenceNo: null,
@@ -2937,13 +2943,15 @@ const AddWorkOrder = () => {
         </Col>
         <Col>
           <Space>
-            <Button
-              type="default"
-              loading={loading}
-              onClick={() => handleSubmit("draft")}
-            >
-              Save as Draft
-            </Button>
+            {ShowButton === "admin" && (
+              <Button
+                type="default"
+                loading={loading}
+                onClick={() => handleSubmit("draft")}
+              >
+                Save as Draft
+              </Button>
+            )}
             <Button
               type="primary"
               loading={loading}
