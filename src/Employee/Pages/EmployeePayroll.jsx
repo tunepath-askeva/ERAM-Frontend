@@ -12,6 +12,7 @@ import {
   Tag,
   Pagination,
   DatePicker,
+  Result,
 } from "antd";
 import {
   EyeOutlined,
@@ -57,12 +58,13 @@ const EmployeePayroll = () => {
     return monthName ? months.indexOf(monthName) + 1 : null;
   };
 
-  const { data, isLoading, isFetching } = useGetEmployeePayrollQuery({
+  const { data, isLoading, isFetching, error } = useGetEmployeePayrollQuery({
     page: currentPage,
     pageSize,
     month: getMonthNumber(selectedMonth),
     year: selectedYear,
   });
+
   const [generatePayslip] = useGeneratePayslipMutation();
 
   const transformPayrollData = (apiData) => {
@@ -982,31 +984,52 @@ const EmployeePayroll = () => {
         </Card>
 
         <Card>
-          <Table
-            columns={columns}
-            dataSource={payrollData}
-            rowKey="id"
-            pagination={false}
-            scroll={{ x: 1000 }}
-            size="middle"
-            loading={isLoading || isFetching}
-          />
-
-          <div style={{ marginTop: "16px", textAlign: "right" }}>
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={data?.totalRecords || 0}
-              showSizeChanger
-              showQuickJumper
-              showTotal={(total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`
+          {isFetching || isLoading ? (
+            <SkeletonLoader />
+          ) : error ? (
+            <Result
+              status="404"
+              title="No Payroll Found"
+              subTitle={
+                error?.data?.message ||
+                "No records found for the selected period."
               }
-              onChange={handlePaginationChange}
-              onShowSizeChange={handlePaginationChange}
-              pageSizeOptions={["10", "20", "50", "100"]}
             />
-          </div>
+          ) : !data?.payroll || data.payroll.length === 0 ? (
+            <Result
+              status="404"
+              title="No Payroll Records"
+              subTitle="No payroll entries for this month/year."
+            />
+          ) : (
+            <>
+              <Table
+                columns={columns}
+                dataSource={payrollData}
+                rowKey="id"
+                pagination={false}
+                scroll={{ x: 1000 }}
+                size="middle"
+                loading={isLoading || isFetching}
+              />
+
+              <div style={{ marginTop: "16px", textAlign: "right" }}>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={data?.totalRecords || 0}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total, range) =>
+                    `${range[0]}-${range[1]} of ${total} items`
+                  }
+                  onChange={handlePaginationChange}
+                  onShowSizeChange={handlePaginationChange}
+                  pageSizeOptions={["10", "20", "50", "100"]}
+                />
+              </div>
+            </>
+          )}
         </Card>
 
         <Modal
