@@ -20,7 +20,7 @@ import {
   Form,
   Select,
   Pagination,
-  Result
+  Result,
 } from "antd";
 import {
   PlusOutlined,
@@ -236,6 +236,100 @@ const permissionGroups = [
     ],
   },
 ];
+
+const getViewPermissionGroups = (recruiterType) => {
+  // EMPLOYEE ADMIN PERMISSIONS
+  if (recruiterType === "Employee Admin") {
+    return [
+      {
+        title: "Side Navigation Tabs",
+        icon: <DashboardOutlined />,
+        permissions: [
+          { key: "dashboard", label: "Dashboard" },
+          { key: "all-employee", label: "All Employee" },
+          { key: "leave-request", label: "Leave Request" },
+          { key: "other-request", label: "Other Request" },
+          { key: "payroll", label: "Payroll" },
+          { key: "employee-documents", label: "Employee Documents" },
+          { key: "expiring-documents", label: "Expiring Documents" },
+          { key: "company-policies", label: "Company Policies" },
+          { key: "news", label: "News" },
+          { key: "feedback-suggestion", label: "Feedback/Suggestion" },
+          { key: "notifications", label: "Notifications" },
+        ],
+      },
+      {
+        title: "Employee Management",
+        icon: <TeamOutlined />,
+        permissions: [
+          { key: "add-employee", label: "Add Employee" },
+          { key: "import-employee-csv", label: "Import CSV" },
+          { key: "export-employee-csv", label: "Export CSV" },
+          { key: "edit-employee", label: "Edit Employee" },
+          { key: "delete-employee", label: "Delete Employee" },
+        ],
+      },
+      {
+        title: "Leave Request Management",
+        icon: <CalendarOutlined />,
+        permissions: [
+          { key: "approve-leave-request", label: "Approve Leave Request" },
+          { key: "reject-leave-request", label: "Reject Leave Request" },
+        ],
+      },
+      {
+        title: "Other Request Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          { key: "approve-other-request", label: "Approve Other Request" },
+          { key: "reject-other-request", label: "Reject Other Request" },
+          { key: "add-travel-ticket", label: "Add Travel Ticket" },
+          { key: "approve-travel-ticket", label: "Approve Travel Ticket" },
+        ],
+      },
+      {
+        title: "Payroll Management",
+        icon: <BankOutlined />,
+        permissions: [{ key: "edit-payroll", label: "Edit Payroll" }],
+      },
+      {
+        title: "Employee Documents Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          { key: "view-employee-documents", label: "View Employee Documents" },
+          {
+            key: "download-employee-documents",
+            label: "Download Employee Documents",
+          },
+          { key: "notify-employee-documents", label: "Notify Employee" },
+        ],
+      },
+      {
+        title: "Expiring Documents Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          {
+            key: "notify-selected-expiring-docs",
+            label: "Notify Selected Employees",
+          },
+        ],
+      },
+      {
+        title: "News Management",
+        icon: <BellOutlined />,
+        permissions: [
+          { key: "create-news", label: "Create News" },
+          { key: "edit-news", label: "Edit News" },
+          { key: "publish-news", label: "Publish News" },
+          { key: "delete-news", label: "Delete News" },
+        ],
+      },
+    ];
+  }
+
+  // NORMAL RECRUITER PERMISSIONS (your existing ones)
+  return permissionGroups; // keep your original list here
+};
 
 const AdminRecruiter = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -1039,7 +1133,9 @@ const AdminRecruiter = () => {
                         </div>
                       )}
 
-                      {permissionGroups.map((group) => {
+                      {getViewPermissionGroups(
+                        selectedRecruiterData.recruiterType
+                      ).map((group) => {
                         const allowed = group.permissions.filter((p) =>
                           selectedRecruiterData.permissions.includes(p.key)
                         );

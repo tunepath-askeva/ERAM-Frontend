@@ -47,7 +47,7 @@ import { phoneUtils } from "../../utils/countryMobileLimits.js";
 const { Title } = Typography;
 const { Option } = Select;
 
-const recruiterTypes = [
+export const recruiterTypes = [
   "Recruiter",
   "Admin Recruiter",
   "Employee Admin",
@@ -62,7 +62,7 @@ const recruiterTypes = [
   "Sales",
 ];
 
-const getPermissionGroups = (recruiterType) => {
+export const getPermissionGroups = (recruiterType) => {
   if (recruiterType === "Employee Admin") {
     return [
       {
@@ -527,6 +527,8 @@ const RecruiterForm = ({
     if (value && !dynamicRecruiterTypes.includes(value)) {
       setDynamicRecruiterTypes((prev) => [...prev, value]);
     }
+
+    form.setFieldsValue({ permissions: [] });
   };
 
   // Handle group-level select all
@@ -943,14 +945,19 @@ const RecruiterForm = ({
 
                 return (
                   <>
-                    <Checkbox
-                      checked={isFullAccess}
-                      onChange={(e) => handleFullAccessChange(e.target.checked)}
-                    >
-                      <span style={{ fontWeight: 600, color: "#ad6800" }}>
-                        Enable Full Access
-                      </span>
-                    </Checkbox>
+                    {getFieldValue("recruiterType") !== "Employee Admin" && (
+                      <Checkbox
+                        checked={isFullAccess}
+                        onChange={(e) =>
+                          handleFullAccessChange(e.target.checked)
+                        }
+                      >
+                        <span style={{ fontWeight: 600, color: "#ad6800" }}>
+                          Enable Full Access
+                        </span>
+                      </Checkbox>
+                    )}
+
                     <div
                       style={{
                         fontSize: "12px",
@@ -981,7 +988,13 @@ const RecruiterForm = ({
                   getPermissionGroups(recruiterType);
 
                 return (
-                  <Checkbox.Group style={{ width: "100%" }}>
+                  <Checkbox.Group
+                    value={getFieldValue("permissions")}
+                    onChange={(vals) =>
+                      form.setFieldsValue({ permissions: vals })
+                    }
+                    style={{ width: "100%" }}
+                  >
                     <div
                       style={{
                         maxHeight: "450px",
