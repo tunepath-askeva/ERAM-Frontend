@@ -758,20 +758,21 @@ const RecruiterJobPipeline = () => {
       const selectedNextStageId = values.nextStageId;
       console.log("Step 5: Selected next stage ID:", selectedNextStageId);
 
-      if (!selectedNextStageId) {
-        console.error("Step 5: FAILED - No next stage selected");
-        message.error("Please select a next stage");
-        return;
-      }
+      // *** FIX: Allow null for last stage (finish process) ***
+      const isLastStage = !selectedNextStageId;
+      console.log("Step 5a: Is last stage (finish)?", isLastStage);
 
-      // 2. Check if stage order is changed
-      const defaultNextStageId = getNextStageId(currentStageId);
-      const isStageOrderChanged = selectedNextStageId !== defaultNextStageId;
-      console.log("Step 6: Stage order check:", {
-        defaultNextStageId,
-        selectedNextStageId,
-        isStageOrderChanged,
-      });
+      // 2. Check if stage order is changed (only if not last stage)
+      let isStageOrderChanged = false;
+      if (!isLastStage) {
+        const defaultNextStageId = getNextStageId(currentStageId);
+        isStageOrderChanged = selectedNextStageId !== defaultNextStageId;
+        console.log("Step 6: Stage order check:", {
+          defaultNextStageId,
+          selectedNextStageId,
+          isStageOrderChanged,
+        });
+      }
 
       const currentStageProgress = selectedCandidate.stageProgress.find(
         (stage) => stage.stageId === currentStageId
@@ -883,15 +884,21 @@ const RecruiterJobPipeline = () => {
         workOrderId: selectedCandidate.workOrderId,
         stageId: currentStageId,
         reviewerId: currentStageRecruiterId,
-        reviewerComments: values.reviewerComments || "Moved to next stage",
-        nextStageId: selectedNextStageId,
+        reviewerComments:
+          values.reviewerComments ||
+          (isLastStage ? "Process completed" : "Moved to next stage"),
         isStageOrderChange: isStageOrderChanged,
       };
+
+      // *** FIX: Only add nextStageId if not last stage ***
+      if (!isLastStage) {
+        payload.nextStageId = selectedNextStageId;
+      }
 
       console.log("Step 12a: Base payload created:", payload);
 
       // For work order pipeline, add stageOrder
-      if (!isTagged) {
+      if (!isTagged && !isLastStage) {
         console.log("Step 13: Work order pipeline - finding stage order...");
 
         const selectedStage =
@@ -918,7 +925,7 @@ const RecruiterJobPipeline = () => {
             }))
           );
         }
-      } else {
+      } else if (isTagged) {
         console.log("Step 13: Tagged pipeline - adding tag fields...");
         payload.tagPipelineId = selectedCandidate.tagPipelineId;
         payload.pipelineCandidateId =
@@ -939,7 +946,11 @@ const RecruiterJobPipeline = () => {
       console.log("Step 15: API call successful!");
       console.log("API Response:", result);
 
-      message.success("Candidate moved to next stage successfully");
+      message.success(
+        isLastStage
+          ? "Candidate process completed successfully"
+          : "Candidate moved to next stage successfully"
+      );
 
       // Reset and refresh
       setIsMoveModalVisible(false);
@@ -986,6 +997,7 @@ const RecruiterJobPipeline = () => {
       console.error("=== END ERROR ===");
     }
   };
+
   const handleViewDocument = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
   };
@@ -2676,7 +2688,10 @@ const RecruiterJobPipeline = () => {
                 name="nextStageId"
                 initialValue={getNextStageId(selectedCandidate.currentStage)}
                 rules={[
-                  { required: true, message: "Please select next stage" },
+                  {
+                    required: availableNextStages.length > 0, // Only required if there are next stages
+                    message: "Please select next stage",
+                  },
                 ]}
               >
                 <Select
