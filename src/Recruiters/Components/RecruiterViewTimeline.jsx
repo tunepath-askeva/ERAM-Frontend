@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { React, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetRecruiterJobTimelineIdQuery } from "../../Slices/Recruiter/RecruiterApis";
 import {
@@ -22,6 +22,7 @@ import {
   Modal,
   Tabs,
   Divider,
+  Grid,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -51,16 +52,22 @@ import {
   CheckOutlined,
   CloseOutlined,
   PaperClipOutlined,
+  AppstoreOutlined,
+  ClusterOutlined,
+  SolutionOutlined,
+  AuditOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Text, Title } = Typography;
 const { TabPane } = Tabs;
+const { useBreakpoint } = Grid;
 
 const RecruiterViewTimeline = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const screens = useBreakpoint();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(5);
@@ -109,22 +116,10 @@ const RecruiterViewTimeline = () => {
   };
 
   const getStatusTag = (status) => {
-    switch (status?.toLowerCase()) {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
       case "selected":
       case "approved":
-        return (
-          <Badge
-            status="success"
-            text={status.charAt(0).toUpperCase() + status.slice(1)}
-          />
-        );
-      case "selected":
-        return (
-          <Badge
-            status="success"
-            text={status.charAt(0).toUpperCase() + status.slice(1)}
-          />
-        );
       case "screening":
         return (
           <Badge
@@ -134,28 +129,38 @@ const RecruiterViewTimeline = () => {
         );
       case "pending":
         return <Badge status="processing" text="Pending" />;
-      case "rejected":
       case "interview":
-        return <Badge status="processing" text="In interview" />;
+        return <Badge status="processing" text="In Interview" />;
+      case "rejected":
       case "interview_rejected":
         return <Badge status="error" text="Rejected" />;
       case "pipeline":
         return <Badge status="warning" text="In Pipeline" />;
+      case "sourced":
+        return <Badge status="default" text="Sourced" />;
+      case "offer":
+        return <Badge status="success" text="Offer Stage" />;
       default:
         return <Tag>{status}</Tag>;
     }
   };
 
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
       case "approved":
       case "selected":
+      case "screening":
+      case "offer":
         return "green";
       case "pending":
+      case "interview":
         return "orange";
       case "rejected":
+      case "interview_rejected":
         return "red";
       case "pipeline":
+      case "sourced":
         return "blue";
       default:
         return "default";
@@ -167,6 +172,7 @@ const RecruiterViewTimeline = () => {
 
     const user = selectedCandidate.user;
     const workOrder = selectedCandidate.workOrder;
+    const isMobile = !screens.md;
 
     return (
       <Modal
@@ -183,20 +189,13 @@ const RecruiterViewTimeline = () => {
         }
         open={modalVisible}
         onCancel={handleModalClose}
-        width={1200}
+        width={isMobile ? "100%" : 1200}
         footer={[
           <Button key="close" onClick={handleModalClose}>
             Close
           </Button>,
-          <Button
-            key="contact"
-            type="primary"
-            onClick={() => (window.location.href = `mailto:${user.email}`)}
-          >
-            <MailOutlined /> Contact Candidate
-          </Button>,
         ]}
-        bodyStyle={{ padding: 0 }}
+        bodyStyle={{ padding: 0, maxHeight: "80vh", overflowY: "auto" }}
       >
         <Tabs defaultActiveKey="1" style={{ marginTop: 16 }}>
           {/* Tab 1: Candidate Profile */}
@@ -208,8 +207,8 @@ const RecruiterViewTimeline = () => {
             }
             key="1"
           >
-            <Row gutter={24}>
-              <Col span={12}>
+            <Row gutter={isMobile ? [0, 16] : 24}>
+              <Col xs={24} md={12}>
                 <Card title="Personal Information" size="small">
                   <Descriptions column={1} bordered size="small">
                     <Descriptions.Item label="Full Name">
@@ -239,6 +238,9 @@ const RecruiterViewTimeline = () => {
                     <Descriptions.Item label="Candidate Type">
                       <Tag color="purple">{user.candidateType}</Tag>
                     </Descriptions.Item>
+                    <Descriptions.Item label="Total Experience">
+                      <ScheduleOutlined /> {user.totalExperienceYears || "N/A"}
+                    </Descriptions.Item>
                   </Descriptions>
                 </Card>
 
@@ -248,9 +250,6 @@ const RecruiterViewTimeline = () => {
                   style={{ marginTop: 16 }}
                 >
                   <Descriptions column={1} bordered size="small">
-                    <Descriptions.Item label="Total Experience">
-                      <ScheduleOutlined /> {user.totalExperienceYears || "N/A"}
-                    </Descriptions.Item>
                     <Descriptions.Item label="Specialization">
                       {user.specialization || "N/A"}
                     </Descriptions.Item>
@@ -273,20 +272,11 @@ const RecruiterViewTimeline = () => {
                           ))
                         : "N/A"}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Languages">
-                      {user.languages?.length > 0
-                        ? user.languages.map((lang, i) => (
-                            <Tag key={i} color="geekblue">
-                              {lang}
-                            </Tag>
-                          ))
-                        : "N/A"}
-                    </Descriptions.Item>
                   </Descriptions>
                 </Card>
               </Col>
 
-              <Col span={12}>
+              <Col xs={24} md={12}>
                 <Card title="Work Order Details" size="small">
                   <Space direction="vertical" style={{ width: "100%" }}>
                     <div
@@ -297,7 +287,7 @@ const RecruiterViewTimeline = () => {
                       }}
                     >
                       <Title level={5}>{workOrder.title}</Title>
-                      <Space>
+                      <Space wrap>
                         <Tag color="blue">{workOrder.jobCode}</Tag>
                         <Tag
                           color={
@@ -335,28 +325,12 @@ const RecruiterViewTimeline = () => {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
+                            flexWrap: "wrap",
                           }}
                         >
                           <Text strong>Application Status:</Text>
                           <Tag
-                            color={
-                              selectedCandidate.status === "selected" ||
-                              selectedCandidate.status === "approved"
-                                ? "green"
-                                : selectedCandidate.status === "rejected"
-                                ? "red"
-                                : selectedCandidate.status === "pipeline"
-                                ? "blue"
-                                : selectedCandidate.status === "screening" ||
-                                  selectedCandidate.status === "sourced"
-                                ? "cyan"
-                                : selectedCandidate.status === "hired" ||
-                                  selectedCandidate.status === "completed"
-                                ? "success"
-                                : selectedCandidate.status === "applied"
-                                ? "orange"
-                                : "default"
-                            }
+                            color={getStatusColor(selectedCandidate.status)}
                             style={{ fontSize: "14px", padding: "4px 12px" }}
                           >
                             {selectedCandidate.status?.toUpperCase()}
@@ -365,37 +339,9 @@ const RecruiterViewTimeline = () => {
 
                         {/* Show if candidate is sourced */}
                         {selectedCandidate.isSourced === "true" && (
-                          <Tag color="purple">Sourced Candidate</Tag>
-                        )}
-
-                        {/* Show tag pipeline if exists */}
-                        {selectedCandidate.tagPipelineId && (
-                          <div>
-                            <Text type="secondary">Tagged to Pipeline:</Text>
-                            <Text strong>
-                              {" "}
-                              {selectedCandidate.tagPipelineId}
-                            </Text>
-                          </div>
-                        )}
-
-                        {/* Show custom field responses if any */}
-                        {selectedCandidate.responses?.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            <Text strong>Custom Responses:</Text>
-                            {selectedCandidate.responses.map(
-                              (response, idx) => (
-                                <div key={idx} style={{ marginTop: 4 }}>
-                                  <Text type="secondary">
-                                    {response.label}:
-                                  </Text>
-                                  <Text strong style={{ marginLeft: 8 }}>
-                                    {response.value}
-                                  </Text>
-                                </div>
-                              )
-                            )}
-                          </div>
+                          <Tag color="purple" style={{ marginTop: 8 }}>
+                            <SolutionOutlined /> Sourced Candidate
+                          </Tag>
                         )}
 
                         {/* Selection Comments */}
@@ -405,7 +351,7 @@ const RecruiterViewTimeline = () => {
                             <Text strong>Selection Comments:</Text>
                             <Text
                               type="secondary"
-                              style={{ fontStyle: "italic" }}
+                              style={{ fontStyle: "italic", display: "block" }}
                             >
                               "{selectedCandidate.selectedMovingComment}"
                             </Text>
@@ -414,13 +360,13 @@ const RecruiterViewTimeline = () => {
 
                         <Divider style={{ margin: "8px 0" }} />
                         <Text strong>Timeline:</Text>
-                        <Text type="secondary">
+                        <Text type="secondary" style={{ display: "block" }}>
                           Created:{" "}
                           {dayjs(selectedCandidate.createdAt).format(
                             "DD MMM YYYY, hh:mm A"
                           )}
                         </Text>
-                        <Text type="secondary">
+                        <Text type="secondary" style={{ display: "block" }}>
                           Last Updated:{" "}
                           {dayjs(selectedCandidate.updatedAt).format(
                             "DD MMM YYYY, hh:mm A"
@@ -438,7 +384,7 @@ const RecruiterViewTimeline = () => {
           <TabPane
             tab={
               <span>
-                <ScheduleOutlined /> Pipeline Stages
+                <ClusterOutlined /> Pipeline Stages
               </span>
             }
             key="2"
@@ -447,197 +393,220 @@ const RecruiterViewTimeline = () => {
               <Row gutter={24}>
                 <Col span={24}>
                   <Card title="Stage Progress" size="small">
-                    <Timeline mode="left">
-                      {selectedCandidate.stageProgress.map((stage) => (
-                        <Timeline.Item
-                          key={stage._id}
-                          color={
-                            stage.stageStatus === "approved"
-                              ? "green"
-                              : stage.stageStatus === "pending"
-                              ? "orange"
-                              : "red"
-                          }
-                          label={
-                            <Space direction="vertical" size={0}>
-                              {stage.startDate && (
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Start:{" "}
-                                  {dayjs(stage.startDate).format("DD MMM")}
-                                </Text>
-                              )}
-                              {stage.endDate && (
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  End: {dayjs(stage.endDate).format("DD MMM")}
-                                </Text>
-                              )}
-                            </Space>
-                          }
-                        >
-                          <Card
-                            size="small"
-                            title={
-                              <Space>
-                                <Text strong>{stage.stageName}</Text>
-                                <Tag
-                                  color={
-                                    stage.stageStatus === "approved"
-                                      ? "green"
-                                      : stage.stageStatus === "pending"
-                                      ? "orange"
-                                      : "red"
-                                  }
-                                >
-                                  {stage.stageStatus}
-                                </Tag>
-                              </Space>
+                    <Timeline mode={isMobile ? "left" : "alternate"}>
+                      {/* Create a copy of the array before sorting */}
+                      {[...(selectedCandidate.stageProgress || [])]
+                        .sort((a, b) => a.stageOrder - b.stageOrder)
+                        .map((stage) => (
+                          <Timeline.Item
+                            key={stage._id}
+                            color={
+                              stage.stageStatus === "approved"
+                                ? "green"
+                                : stage.stageStatus === "pending"
+                                ? "orange"
+                                : "red"
                             }
-                            style={{ marginBottom: 8 }}
+                            label={
+                              stage.startDate && (
+                                <Space direction="vertical" size={0}>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    Start:{" "}
+                                    {dayjs(stage.startDate).format(
+                                      "DD MMM YYYY"
+                                    )}
+                                  </Text>
+                                  {stage.endDate && (
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 12 }}
+                                    >
+                                      End:{" "}
+                                      {dayjs(stage.endDate).format(
+                                        "DD MMM YYYY"
+                                      )}
+                                    </Text>
+                                  )}
+                                </Space>
+                              )
+                            }
                           >
-                            {/* Stage Details */}
-                            <Descriptions column={2} size="small">
-                              <Descriptions.Item label="Pipeline">
-                                {stage.pipelineId?.name}
-                              </Descriptions.Item>
-                              <Descriptions.Item label="Stage Order">
-                                {stage.stageOrder + 1}
-                              </Descriptions.Item>
-                              {stage.stageCompletedAt && (
-                                <Descriptions.Item label="Completed At">
-                                  {dayjs(stage.stageCompletedAt).format(
-                                    "DD MMM YYYY, hh:mm A"
+                            <Card
+                              size="small"
+                              title={
+                                <Space wrap>
+                                  <Text strong>{stage.stageName}</Text>
+                                  <Tag
+                                    color={
+                                      stage.stageStatus === "approved"
+                                        ? "green"
+                                        : stage.stageStatus === "pending"
+                                        ? "orange"
+                                        : "red"
+                                    }
+                                  >
+                                    {stage.stageStatus}
+                                  </Tag>
+                                  {stage.approval && (
+                                    <Tag color="purple">
+                                      <AuditOutlined /> Requires Approval
+                                    </Tag>
                                   )}
+                                </Space>
+                              }
+                              style={{ marginBottom: 8 }}
+                            >
+                              {/* Rest of the stage details code remains the same */}
+                              <Descriptions
+                                column={isMobile ? 1 : 2}
+                                size="small"
+                              >
+                                <Descriptions.Item label="Pipeline">
+                                  {stage.pipelineId?.name}
                                 </Descriptions.Item>
-                              )}
-                            </Descriptions>
+                                <Descriptions.Item label="Stage Order">
+                                  Stage {stage.stageOrder + 1}
+                                </Descriptions.Item>
+                                {stage.stageCompletedAt && (
+                                  <Descriptions.Item label="Completed At">
+                                    {dayjs(stage.stageCompletedAt).format(
+                                      "DD MMM YYYY, hh:mm A"
+                                    )}
+                                  </Descriptions.Item>
+                                )}
+                              </Descriptions>
 
-                            {/* Recruiter Reviews */}
-                            {stage.recruiterReviews?.length > 0 && (
-                              <>
-                                <Divider
-                                  style={{ margin: "8px 0" }}
-                                  orientation="left"
-                                >
-                                  Reviews ({stage.recruiterReviews.length})
-                                </Divider>
-                                <List
-                                  size="small"
-                                  dataSource={stage.recruiterReviews}
-                                  renderItem={(review) => (
-                                    <List.Item>
-                                      <List.Item.Meta
-                                        avatar={
-                                          <Avatar
-                                            size="small"
-                                            icon={<UserOutlined />}
-                                          />
-                                        }
-                                        title={
-                                          <Space>
-                                            <Text>
-                                              {review.recruiterId?.fullName}
-                                            </Text>
-                                            <Tag
-                                              color={
-                                                review.status === "approved"
-                                                  ? "green"
-                                                  : review.status === "pending"
-                                                  ? "orange"
-                                                  : "red"
-                                              }
+                              {/* Recruiter Reviews */}
+                              {stage.recruiterReviews?.length > 0 && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Reviews ({stage.recruiterReviews.length})
+                                  </Divider>
+                                  <List
+                                    size="small"
+                                    dataSource={stage.recruiterReviews}
+                                    renderItem={(review) => (
+                                      <List.Item>
+                                        <List.Item.Meta
+                                          avatar={
+                                            <Avatar
                                               size="small"
-                                            >
-                                              {review.status}
-                                            </Tag>
-                                          </Space>
-                                        }
-                                        description={
-                                          <>
-                                            {review.reviewComments && (
-                                              <Text
-                                                style={{
-                                                  display: "block",
-                                                  marginBottom: 4,
-                                                }}
-                                              >
-                                                {review.reviewComments}
+                                              icon={<UserOutlined />}
+                                            />
+                                          }
+                                          title={
+                                            <Space wrap>
+                                              <Text>
+                                                {review.recruiterId?.fullName}
                                               </Text>
-                                            )}
-                                            <Text
-                                              type="secondary"
-                                              style={{ fontSize: 12 }}
-                                            >
-                                              {review.reviewedAt
-                                                ? dayjs(
-                                                    review.reviewedAt
-                                                  ).format(
-                                                    "DD MMM YYYY, hh:mm A"
-                                                  )
-                                                : "Not reviewed yet"}
-                                            </Text>
-                                          </>
-                                        }
-                                      />
-                                    </List.Item>
-                                  )}
-                                />
-                              </>
-                            )}
+                                              <Tag
+                                                color={
+                                                  review.status === "approved"
+                                                    ? "green"
+                                                    : review.status ===
+                                                      "pending"
+                                                    ? "orange"
+                                                    : "red"
+                                                }
+                                                size="small"
+                                              >
+                                                {review.status}
+                                              </Tag>
+                                            </Space>
+                                          }
+                                          description={
+                                            <>
+                                              {review.reviewComments && (
+                                                <Text
+                                                  style={{
+                                                    display: "block",
+                                                    marginBottom: 4,
+                                                  }}
+                                                >
+                                                  {review.reviewComments}
+                                                </Text>
+                                              )}
+                                              <Text
+                                                type="secondary"
+                                                style={{ fontSize: 12 }}
+                                              >
+                                                {review.reviewedAt
+                                                  ? dayjs(
+                                                      review.reviewedAt
+                                                    ).format(
+                                                      "DD MMM YYYY, hh:mm A"
+                                                    )
+                                                  : "Not reviewed yet"}
+                                              </Text>
+                                            </>
+                                          }
+                                        />
+                                      </List.Item>
+                                    )}
+                                  />
+                                </>
+                              )}
 
-                            {/* Uploaded Documents */}
-                            {stage.uploadedDocuments?.length > 0 && (
-                              <>
-                                <Divider
-                                  style={{ margin: "8px 0" }}
-                                  orientation="left"
-                                >
-                                  Documents ({stage.uploadedDocuments.length})
-                                </Divider>
-                                <Row gutter={[8, 8]}>
-                                  {stage.uploadedDocuments.map((doc) => (
-                                    <Col key={doc._id} span={12}>
-                                      <Card size="small" hoverable>
-                                        <Space>
-                                          <FilePdfOutlined
-                                            style={{ color: "#ff4d4f" }}
-                                          />
-                                          <div style={{ flex: 1 }}>
-                                            <Text
-                                              strong
-                                              style={{ fontSize: 12 }}
-                                            >
-                                              {doc.documentName}
-                                            </Text>
-                                            <div>
-                                              <Button
-                                                type="link"
-                                                size="small"
-                                                href={doc.fileUrl}
-                                                target="_blank"
-                                                icon={<EyeOutlined />}
+                              {/* Uploaded Documents */}
+                              {stage.uploadedDocuments?.length > 0 && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Documents ({stage.uploadedDocuments.length})
+                                  </Divider>
+                                  <Row gutter={[8, 8]}>
+                                    {stage.uploadedDocuments.map((doc) => (
+                                      <Col key={doc._id} xs={24} sm={12}>
+                                        <Card size="small" hoverable>
+                                          <Space>
+                                            <FilePdfOutlined
+                                              style={{ color: "#ff4d4f" }}
+                                            />
+                                            <div style={{ flex: 1 }}>
+                                              <Text
+                                                strong
+                                                style={{ fontSize: 12 }}
                                               >
-                                                View
-                                              </Button>
-                                              <Button
-                                                type="link"
-                                                size="small"
-                                                href={doc.fileUrl}
-                                                icon={<DownloadOutlined />}
-                                              >
-                                                Download
-                                              </Button>
+                                                {doc.documentName}
+                                              </Text>
+                                              <div style={{ marginTop: 4 }}>
+                                                <Button
+                                                  type="link"
+                                                  size="small"
+                                                  href={doc.fileUrl}
+                                                  target="_blank"
+                                                  icon={<EyeOutlined />}
+                                                >
+                                                  View
+                                                </Button>
+                                                <Button
+                                                  type="link"
+                                                  size="small"
+                                                  href={doc.fileUrl}
+                                                  icon={<DownloadOutlined />}
+                                                >
+                                                  Download
+                                                </Button>
+                                              </div>
                                             </div>
-                                          </div>
-                                        </Space>
-                                      </Card>
-                                    </Col>
-                                  ))}
-                                </Row>
-                              </>
-                            )}
-                          </Card>
-                        </Timeline.Item>
-                      ))}
+                                          </Space>
+                                        </Card>
+                                      </Col>
+                                    ))}
+                                  </Row>
+                                </>
+                              )}
+                            </Card>
+                          </Timeline.Item>
+                        ))}
                     </Timeline>
                   </Card>
                 </Col>
@@ -653,213 +622,28 @@ const RecruiterViewTimeline = () => {
             )}
           </TabPane>
 
-          {/* Tab 3: Documents */}
-          <TabPane
-            tab={
-              <span>
-                <PaperClipOutlined /> Documents
-              </span>
-            }
-            key="3"
-          >
-            <Row gutter={24}>
-              {/* Work Order Documents */}
-              <Col span={12}>
-                <Card title="Work Order Documents" size="small">
-                  {selectedCandidate.workOrderuploadedDocuments?.length > 0 ? (
-                    <List
-                      dataSource={selectedCandidate.workOrderuploadedDocuments}
-                      renderItem={(doc) => (
-                        <List.Item
-                          actions={[
-                            <Button
-                              type="link"
-                              size="small"
-                              href={doc.fileUrl}
-                              target="_blank"
-                              icon={<EyeOutlined />}
-                            >
-                              View
-                            </Button>,
-                            <Button
-                              type="link"
-                              size="small"
-                              href={doc.fileUrl}
-                              icon={<DownloadOutlined />}
-                            >
-                              Download
-                            </Button>,
-                          ]}
-                        >
-                          <List.Item.Meta
-                            avatar={
-                              <FilePdfOutlined
-                                style={{ fontSize: 24, color: "#ff4d4f" }}
-                              />
-                            }
-                            title={doc.documentName}
-                            description={
-                              <>
-                                <Text
-                                  type="secondary"
-                                  style={{ display: "block" }}
-                                >
-                                  {doc.fileName}
-                                </Text>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Uploaded:{" "}
-                                  {dayjs(doc.uploadedAt).format(
-                                    "DD MMM YYYY, hh:mm A"
-                                  )}
-                                </Text>
-                              </>
-                            }
-                          />
-                        </List.Item>
-                      )}
-                    />
-                  ) : (
-                    <Text type="secondary">
-                      No documents uploaded for this work order
-                    </Text>
-                  )}
-                </Card>
-              </Col>
-
-              {/* All Stage Documents */}
-              <Col span={12}>
-                <Card title="All Stage Documents" size="small">
-                  {selectedCandidate.stageProgress?.some(
-                    (stage) => stage.uploadedDocuments?.length > 0
-                  ) ? (
-                    <Collapse>
-                      {selectedCandidate.stageProgress
-                        .filter((stage) => stage.uploadedDocuments?.length > 0)
-                        .map((stage) => (
-                          <Collapse.Panel
-                            key={stage._id}
-                            header={
-                              <Space>
-                                <Text strong>{stage.stageName}</Text>
-                                <Tag>{stage.uploadedDocuments.length} docs</Tag>
-                              </Space>
-                            }
-                          >
-                            <List
-                              size="small"
-                              dataSource={stage.uploadedDocuments}
-                              renderItem={(doc) => (
-                                <List.Item>
-                                  <List.Item.Meta
-                                    title={
-                                      <a
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        {doc.documentName}
-                                      </a>
-                                    }
-                                    description={doc.fileName}
-                                  />
-                                  <Button
-                                    type="link"
-                                    size="small"
-                                    href={doc.fileUrl}
-                                    icon={<DownloadOutlined />}
-                                  />
-                                </List.Item>
-                              )}
-                            />
-                          </Collapse.Panel>
-                        ))}
-                    </Collapse>
-                  ) : (
-                    <Text type="secondary">No stage documents found</Text>
-                  )}
-                </Card>
-              </Col>
-            </Row>
-          </TabPane>
-
-          {/* Tab 4: History & Status */}
-          <TabPane
-            tab={
-              <span>
-                <HistoryOutlined /> History
-              </span>
-            }
-            key="4"
-          >
-            <Card title="Status History" size="small">
-              {selectedCandidate.statusHistory?.length > 0 ? (
-                <Timeline>
-                  {selectedCandidate.statusHistory.map((historyItem) => (
-                    <Timeline.Item
-                      key={historyItem._id}
-                      color={getStatusColor(historyItem.status)}
-                      dot={
-                        historyItem.status === "selected" ? (
-                          <CheckOutlined />
-                        ) : historyItem.status === "rejected" ? (
-                          <CloseOutlined />
-                        ) : (
-                          <ClockCircleOutlined />
-                        )
-                      }
-                    >
-                      <Card size="small">
-                        <Space direction="vertical">
-                          <Space>
-                            <Text strong>Status changed to:</Text>
-                            {getStatusTag(historyItem.status)}
-                          </Space>
-                          <Text>
-                            <UserOutlined /> Changed by:{" "}
-                            <Text strong>{historyItem.changedBy?.name}</Text> (
-                            {historyItem.changedBy?.email})
-                          </Text>
-                          <Text type="secondary">
-                            <CalendarOutlined />{" "}
-                            {dayjs(historyItem.changedAt).format(
-                              "DD MMM YYYY, hh:mm A"
-                            )}
-                          </Text>
-                        </Space>
-                      </Card>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              ) : (
-                <Text type="secondary">No status history available</Text>
-              )}
-            </Card>
-          </TabPane>
-
-          {/* Tab 5: Interview Details */}
+          {/* Tab 3: Interview Details */}
           <TabPane
             tab={
               <span>
                 <TeamOutlined /> Interviews
               </span>
             }
-            key="5"
+            key="3"
           >
             {selectedCandidate.interviewDetails?.length > 0 ? (
               <Card title="Interview History" size="small">
-                <Timeline mode="left">
+                <Timeline mode={isMobile ? "left" : "alternate"}>
                   {selectedCandidate.interviewDetails.map(
                     (interview, index) => (
                       <Timeline.Item
                         key={index}
                         color={
-                          interview.status === "pass"
+                          interview.status === "interview_completed"
                             ? "green"
                             : interview.status === "fail" ||
                               interview.status === "interview_rejected"
                             ? "red"
-                            : interview.status === "interview_completed"
-                            ? "blue"
                             : interview.status === "scheduled"
                             ? "orange"
                             : "gray"
@@ -880,17 +664,15 @@ const RecruiterViewTimeline = () => {
                         <Card
                           size="small"
                           title={
-                            <Space>
+                            <Space wrap>
                               <Text strong>{interview.title}</Text>
                               <Tag
                                 color={
-                                  interview.status === "pass"
+                                  interview.status === "interview_completed"
                                     ? "green"
                                     : interview.status === "fail" ||
                                       interview.status === "interview_rejected"
                                     ? "red"
-                                    : interview.status === "interview_completed"
-                                    ? "blue"
                                     : interview.status === "scheduled"
                                     ? "orange"
                                     : "gray"
@@ -933,14 +715,6 @@ const RecruiterViewTimeline = () => {
                               </Descriptions.Item>
                             )}
 
-                            {interview.remarks && (
-                              <Descriptions.Item label="Remarks">
-                                <Text type="secondary">
-                                  {interview.remarks}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-
                             {interview.interviewerIds?.length > 0 && (
                               <Descriptions.Item label="Interviewers">
                                 <Space wrap>
@@ -948,7 +722,7 @@ const RecruiterViewTimeline = () => {
                                     (interviewer, idx) => (
                                       <Tag key={idx} color="purple">
                                         {interviewer.name ||
-                                          `Interviewer ${idx + 1}`}
+                                          interviewer.fullName}
                                       </Tag>
                                     )
                                   )}
@@ -973,14 +747,14 @@ const RecruiterViewTimeline = () => {
             )}
           </TabPane>
 
-          {/* Tab 6: Offer Details */}
+          {/* Tab 4: Offer Details */}
           <TabPane
             tab={
               <span>
                 <CheckCircleOutlined /> Offers
               </span>
             }
-            key="6"
+            key="4"
           >
             {selectedCandidate.offerDetails?.length > 0 ? (
               <Card title="Offer Details" size="small">
@@ -1189,6 +963,61 @@ const RecruiterViewTimeline = () => {
               </Card>
             )}
           </TabPane>
+
+          {/* Tab 5: History & Status Tracking */}
+          <TabPane
+            tab={
+              <span>
+                <HistoryOutlined /> Status History
+              </span>
+            }
+            key="5"
+          >
+            <Card title="Status History Tracking" size="small">
+              {selectedCandidate.statusHistory?.length > 0 ? (
+                <Timeline mode={isMobile ? "left" : "alternate"}>
+                  {selectedCandidate.statusHistory.map((historyItem) => (
+                    <Timeline.Item
+                      key={historyItem._id}
+                      color={getStatusColor(historyItem.status)}
+                      dot={
+                        historyItem.status === "selected" ||
+                        historyItem.status === "approved" ? (
+                          <CheckOutlined />
+                        ) : historyItem.status === "rejected" ||
+                          historyItem.status === "interview_rejected" ? (
+                          <CloseOutlined />
+                        ) : (
+                          <ClockCircleOutlined />
+                        )
+                      }
+                    >
+                      <Card size="small">
+                        <Space direction="vertical" style={{ width: "100%" }}>
+                          <Space wrap>
+                            <Text strong>Status changed to:</Text>
+                            {getStatusTag(historyItem.status)}
+                          </Space>
+                          <Text>
+                            <UserOutlined /> Changed by:{" "}
+                            <Text strong>{historyItem.changedBy?.name}</Text>
+                          </Text>
+                          <Text type="secondary">
+                            <CalendarOutlined />{" "}
+                            {dayjs(historyItem.changedAt).format(
+                              "DD MMM YYYY, hh:mm A"
+                            )}
+                          </Text>
+                        </Space>
+                      </Card>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              ) : (
+                <Text type="secondary">No status history available</Text>
+              )}
+            </Card>
+          </TabPane>
         </Tabs>
       </Modal>
     );
@@ -1197,6 +1026,7 @@ const RecruiterViewTimeline = () => {
   const renderCandidateCard = (item) => {
     const user = item.user;
     const isExpanded = expandedCandidate === item._id;
+    const isMobile = !screens.md;
 
     // Calculate pipeline progress
     const totalStages = item.stageProgress?.length || 0;
@@ -1211,15 +1041,7 @@ const RecruiterViewTimeline = () => {
         key={item._id}
         style={{
           marginBottom: 16,
-          borderLeft: `4px solid ${
-            getStatusColor(item.status) === "green"
-              ? "#52c41a"
-              : getStatusColor(item.status) === "red"
-              ? "#ff4d4f"
-              : getStatusColor(item.status) === "orange"
-              ? "#fa8c16"
-              : "#1890ff"
-          }`,
+          borderLeft: `4px solid ${getStatusColor(item.status)}`,
         }}
       >
         {/* Candidate Header - Always Visible */}
@@ -1230,9 +1052,11 @@ const RecruiterViewTimeline = () => {
           <Row gutter={16} align="middle">
             <Col flex="none">
               <Avatar
-                size="large"
+                size={isMobile ? "default" : "large"}
                 icon={<UserOutlined />}
-                style={{ backgroundColor: getStatusColor(item.status) }}
+                style={{
+                  backgroundColor: getStatusColor(item.status),
+                }}
               />
             </Col>
             <Col flex="auto">
@@ -1241,18 +1065,24 @@ const RecruiterViewTimeline = () => {
                 size="small"
                 style={{ width: "100%" }}
               >
-                <Row justify="space-between" align="middle">
+                <Row justify="space-between" align="middle" wrap={isMobile}>
                   <Col>
-                    <Space>
-                      <Text strong style={{ fontSize: 16 }}>
+                    <Space wrap>
+                      <Text strong style={{ fontSize: isMobile ? 14 : 16 }}>
                         {user.fullName}
                       </Text>
                       {getStatusTag(item.status)}
+                      {item.isSourced === "true" && (
+                        <Tag color="purple" size="small">
+                          Sourced
+                        </Tag>
+                      )}
                     </Space>
                   </Col>
                   <Col>
                     <Button
                       type="link"
+                      size={isMobile ? "small" : "middle"}
                       icon={isExpanded ? <DownOutlined /> : <RightOutlined />}
                     >
                       {isExpanded ? "Show Less" : "Show Details"}
@@ -1260,20 +1090,20 @@ const RecruiterViewTimeline = () => {
                   </Col>
                 </Row>
 
-                <Row gutter={16}>
-                  <Col span={8}>
+                <Row gutter={16} wrap={isMobile}>
+                  <Col xs={24} sm={12} md={8}>
                     <Space>
                       <MailOutlined style={{ color: "#1890ff" }} />
-                      <Text>{user.email}</Text>
+                      <Text ellipsis>{user.email}</Text>
                     </Space>
                   </Col>
-                  <Col span={8}>
+                  <Col xs={24} sm={12} md={8}>
                     <Space>
                       <PhoneOutlined style={{ color: "#52c41a" }} />
                       <Text>{user.phone}</Text>
                     </Space>
                   </Col>
-                  <Col span={8}>
+                  <Col xs={24} sm={12} md={8}>
                     <Space>
                       <ScheduleOutlined style={{ color: "#fa8c16" }} />
                       <Text>Exp: {user.totalExperienceYears || "N/A"}</Text>
@@ -1289,6 +1119,7 @@ const RecruiterViewTimeline = () => {
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
+                          flexWrap: "wrap",
                         }}
                       >
                         <Text type="secondary">Pipeline Progress</Text>
@@ -1318,9 +1149,9 @@ const RecruiterViewTimeline = () => {
               paddingTop: 16,
             }}
           >
-            <Row gutter={16}>
+            <Row gutter={isMobile ? [0, 16] : 16}>
               {/* Basic Info */}
-              <Col span={12}>
+              <Col xs={24} md={12}>
                 <Card
                   size="small"
                   title="Basic Information"
@@ -1341,6 +1172,10 @@ const RecruiterViewTimeline = () => {
                     <Text>
                       <strong>Company:</strong> {user.companyName || "N/A"}
                     </Text>
+                    <Text>
+                      <strong>Candidate ID:</strong>{" "}
+                      <Tag color="blue">{user.uniqueCode || user._id}</Tag>
+                    </Text>
                   </Space>
                 </Card>
 
@@ -1351,73 +1186,82 @@ const RecruiterViewTimeline = () => {
                   style={{ marginBottom: 16 }}
                 >
                   <Row gutter={8}>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#1890ff" }}
                         >
                           {item.stageProgress?.length || 0}
                         </Title>
-                        <Text type="secondary">Total Stages</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Stages
+                        </Text>
                       </div>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#52c41a" }}
                         >
                           {completedStages}
                         </Title>
-                        <Text type="secondary">Completed</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Completed
+                        </Text>
                       </div>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#fa8c16" }}
                         >
                           {item.interviewDetails?.length || 0}
                         </Title>
-                        <Text type="secondary">Interviews</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Interviews
+                        </Text>
                       </div>
                     </Col>
-                  </Row>
-                  <Divider style={{ margin: "8px 0" }} />
-                  <Row gutter={8}>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#722ed1" }}
                         >
                           {item.offerDetails?.length || 0}
                         </Title>
-                        <Text type="secondary">Offers</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Offers
+                        </Text>
                       </div>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#13c2c2" }}
                         >
                           {item.workOrderuploadedDocuments?.length || 0}
                         </Title>
-                        <Text type="secondary">Documents</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Documents
+                        </Text>
                       </div>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={8} sm={6} md={4}>
                       <div style={{ textAlign: "center" }}>
                         <Title
-                          level={4}
+                          level={5}
                           style={{ margin: 0, color: "#f759ab" }}
                         >
                           {item.statusHistory?.length || 0}
                         </Title>
-                        <Text type="secondary">Status Changes</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Status Changes
+                        </Text>
                       </div>
                     </Col>
                   </Row>
@@ -1425,7 +1269,7 @@ const RecruiterViewTimeline = () => {
               </Col>
 
               {/* Right Column - Job Details */}
-              <Col span={12}>
+              <Col xs={24} md={12}>
                 <Card
                   size="small"
                   title="Job Details"
@@ -1464,33 +1308,45 @@ const RecruiterViewTimeline = () => {
                     <Text type="secondary">{item.selectedMovingComment}</Text>
                   </Card>
                 )}
+
+                {/* Status History Preview */}
+                {item.statusHistory?.length > 0 && (
+                  <Card size="small" title="Recent Status Changes">
+                    <List
+                      size="small"
+                      dataSource={item.statusHistory.slice(0, 2)}
+                      renderItem={(history) => (
+                        <List.Item>
+                          <Space direction="vertical" size={0}>
+                            <Space>
+                              <Text strong>Status:</Text>
+                              {getStatusTag(history.status)}
+                            </Space>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {dayjs(history.changedAt).format(
+                                "DD MMM YYYY, hh:mm A"
+                              )}
+                            </Text>
+                          </Space>
+                        </List.Item>
+                      )}
+                    />
+                  </Card>
+                )}
               </Col>
             </Row>
 
             {/* Quick Action Buttons */}
             <div style={{ marginTop: 16, textAlign: "center" }}>
-              <Space>
+              <Space wrap>
                 <Button
                   type="primary"
                   onClick={() => showFullDetailsModal(item)}
+                  icon={<EyeOutlined />}
+                  size={isMobile ? "small" : "middle"}
                 >
-                  <EyeOutlined /> View Full Details
+                  View Full Details
                 </Button>
-                <Button
-                  onClick={() =>
-                    (window.location.href = `mailto:${user.email}`)
-                  }
-                >
-                  <MailOutlined /> Contact Candidate
-                </Button>
-                {item.workOrderuploadedDocuments?.length > 0 && (
-                  <Button
-                    icon={<FilePdfOutlined />}
-                    onClick={() => showFullDetailsModal(item)}
-                  >
-                    View Documents
-                  </Button>
-                )}
               </Space>
             </div>
           </div>
@@ -1505,6 +1361,10 @@ const RecruiterViewTimeline = () => {
       pipeline: 0,
       pending: 0,
       rejected: 0,
+      screening: 0,
+      interview: 0,
+      offer: 0,
+      sourced: 0,
     };
 
     allTimelineData.forEach((item) => {
@@ -1514,69 +1374,100 @@ const RecruiterViewTimeline = () => {
       }
     });
 
+    const isMobile = !screens.md;
+
+    const statusConfigs = [
+      {
+        key: "selected",
+        label: "Selected",
+        color: "#52c41a",
+        icon: CheckCircleOutlined,
+      },
+      {
+        key: "pipeline",
+        label: "Pipeline",
+        color: "#1890ff",
+        icon: ClusterOutlined,
+      },
+      {
+        key: "screening",
+        label: "Screening",
+        color: "#faad14",
+        icon: ScheduleOutlined,
+      },
+      {
+        key: "interview",
+        label: "Interview",
+        color: "#722ed1",
+        icon: TeamOutlined,
+      },
+      {
+        key: "offer",
+        label: "Offer",
+        color: "#13c2c2",
+        icon: CheckCircleOutlined,
+      },
+      {
+        key: "pending",
+        label: "Pending",
+        color: "#fa8c16",
+        icon: ClockCircleOutlined,
+      },
+      {
+        key: "rejected",
+        label: "Rejected",
+        color: "#ff4d4f",
+        icon: CloseCircleOutlined,
+      },
+    ];
+
     return (
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col span={6}>
-            <div style={{ textAlign: "center" }}>
-              <Badge
-                count={statusCounts.selected}
-                style={{ backgroundColor: "#52c41a" }}
-              >
-                <Card size="small" style={{ backgroundColor: "#f6ffed" }}>
-                  <CheckCircleOutlined
-                    style={{ fontSize: 24, color: "#52c41a" }}
-                  />
-                  <div style={{ marginTop: 8 }}>Selected</div>
-                </Card>
-              </Badge>
-            </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ textAlign: "center" }}>
-              <Badge
-                count={statusCounts.pipeline}
-                style={{ backgroundColor: "#1890ff" }}
-              >
-                <Card size="small" style={{ backgroundColor: "#e6f7ff" }}>
-                  <ScheduleOutlined
-                    style={{ fontSize: 24, color: "#1890ff" }}
-                  />
-                  <div style={{ marginTop: 8 }}>In Pipeline</div>
-                </Card>
-              </Badge>
-            </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ textAlign: "center" }}>
-              <Badge
-                count={statusCounts.pending}
-                style={{ backgroundColor: "#fa8c16" }}
-              >
-                <Card size="small" style={{ backgroundColor: "#fff7e6" }}>
-                  <ClockCircleOutlined
-                    style={{ fontSize: 24, color: "#fa8c16" }}
-                  />
-                  <div style={{ marginTop: 8 }}>Pending</div>
-                </Card>
-              </Badge>
-            </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ textAlign: "center" }}>
-              <Badge
-                count={statusCounts.rejected}
-                style={{ backgroundColor: "#ff4d4f" }}
-              >
-                <Card size="small" style={{ backgroundColor: "#fff2f0" }}>
-                  <CloseCircleOutlined
-                    style={{ fontSize: 24, color: "#ff4d4f" }}
-                  />
-                  <div style={{ marginTop: 8 }}>Rejected</div>
-                </Card>
-              </Badge>
-            </div>
-          </Col>
+        <Row gutter={isMobile ? [8, 8] : 16}>
+          {statusConfigs.map((status) => {
+            const count = statusCounts[status.key] || 0;
+            const IconComponent = status.icon;
+
+            // Skip if count is 0 and not on mobile
+            if (count === 0 && screens.md) {
+              return null;
+            }
+
+            return (
+              <Col key={status.key} xs={12} sm={8} md={4} lg={3}>
+                <div style={{ textAlign: "center" }}>
+                  <Badge
+                    count={count}
+                    style={{ backgroundColor: status.color }}
+                    offset={[-10, 10]}
+                  >
+                    <Card
+                      size="small"
+                      style={{
+                        backgroundColor: `${status.color}10`,
+                        minHeight: isMobile ? 80 : 100,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <IconComponent
+                        style={{
+                          fontSize: isMobile ? 20 : 24,
+                          color: status.color,
+                          marginBottom: 8,
+                        }}
+                      />
+                      <div style={{ fontSize: isMobile ? 12 : 14 }}>
+                        {status.label}
+                      </div>
+                    </Card>
+                  </Badge>
+                </div>
+              </Col>
+            );
+          })}
         </Row>
       </Card>
     );
@@ -1586,7 +1477,7 @@ const RecruiterViewTimeline = () => {
 
   if (!isLoading && allTimelineData.length === 0) {
     return (
-      <>
+      <div style={{ padding: screens.xs ? 16 : 24 }}>
         <div style={{ marginBottom: "16px" }}>
           <Breadcrumb>
             <Breadcrumb.Item>
@@ -1610,12 +1501,12 @@ const RecruiterViewTimeline = () => {
           subTitle="No records found for this Work Order."
           extra={<Button onClick={() => refetch()}>Refresh</Button>}
         />
-      </>
+      </div>
     );
   }
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: screens.xs ? 16 : 24 }}>
       {/* Header */}
       <div style={{ marginBottom: "16px" }}>
         <Breadcrumb>
@@ -1640,13 +1531,13 @@ const RecruiterViewTimeline = () => {
 
       {/* Work Order Header */}
       <Card style={{ marginBottom: 16 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
+        <Row justify="space-between" align="middle" wrap>
+          <Col xs={24} md={16}>
             <Space direction="vertical" size="small">
               <Title level={4} style={{ margin: 0 }}>
                 {allTimelineData[0]?.workOrder?.title}
               </Title>
-              <Space>
+              <Space wrap>
                 <Tag color="blue">{allTimelineData[0]?.workOrder?.jobCode}</Tag>
                 <Tag color="purple">
                   {allTimelineData[0]?.workOrder?.workplace}
@@ -1656,10 +1547,20 @@ const RecruiterViewTimeline = () => {
               </Space>
             </Space>
           </Col>
-          <Col>
-            <Space direction="vertical" align="end">
+          <Col
+            xs={24}
+            md={8}
+            style={{
+              textAlign: screens.md ? "right" : "left",
+              marginTop: screens.md ? 0 : 16,
+            }}
+          >
+            <Space direction="vertical" align={screens.md ? "end" : "start"}>
               <Text strong>Total Candidates: {data?.totalCount || 0}</Text>
-              <Text type="secondary">Page {currentPage}</Text>
+              <Text type="secondary">
+                Page {currentPage} of{" "}
+                {Math.ceil((data?.totalCount || 0) / pageSize)}
+              </Text>
             </Space>
           </Col>
         </Row>
@@ -1669,17 +1570,28 @@ const RecruiterViewTimeline = () => {
       {renderStatusSummary()}
 
       {/* Candidate List */}
-      <Card title="Candidates" style={{ marginBottom: 16 }}>
+      <Card
+        title={`Candidates (${allTimelineData.length})`}
+        style={{ marginBottom: 16 }}
+        extra={
+          <Space>
+            <Text type="secondary">
+              Showing {allTimelineData.length} of {data?.totalCount || 0}
+            </Text>
+          </Space>
+        }
+      >
         {allTimelineData.map(renderCandidateCard)}
       </Card>
 
       {/* Pagination */}
       <div style={{ textAlign: "center", marginTop: 24 }}>
-        <Space>
+        <Space wrap>
           <Button
             onClick={handlePrev}
             disabled={currentPage === 1 || isFetching}
             icon={<LeftOutlined />}
+            size={screens.xs ? "small" : "middle"}
           >
             Previous
           </Button>
@@ -1693,11 +1605,16 @@ const RecruiterViewTimeline = () => {
             type="primary"
             onClick={handleNext}
             disabled={!hasMore || isFetching}
+            size={screens.xs ? "small" : "middle"}
           >
             Next
           </Button>
 
-          <Button onClick={() => refetch()} loading={isFetching}>
+          <Button
+            onClick={() => refetch()}
+            loading={isFetching}
+            size={screens.xs ? "small" : "middle"}
+          >
             Refresh
           </Button>
         </Space>

@@ -888,6 +888,7 @@ const RecruiterJobPipeline = () => {
           values.reviewerComments ||
           (isLastStage ? "Process completed" : "Moved to next stage"),
         isStageOrderChange: isStageOrderChanged,
+        isFinished: isLastStage,
       };
 
       // *** FIX: Only add nextStageId if not last stage ***
