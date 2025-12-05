@@ -98,6 +98,9 @@ const RecruiterJobPipeline = () => {
     useState(false);
   const [tempRecruiters, setTempRecruiters] = useState([]);
   const [isEditingRecruiters, setIsEditingRecruiters] = useState(false);
+  const [availableNextStages, setAvailableNextStages] = useState([]);
+  const [selectedNextStage, setSelectedNextStage] = useState(null);
+  const [isStageOrderChanged, setIsStageOrderChanged] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
@@ -337,6 +340,56 @@ const RecruiterJobPipeline = () => {
     return null;
   };
 
+  const getAllNextStages = (currentStageId) => {
+    if (!processedJobData || !currentStageId) return [];
+
+    const currentCandidate = processedJobData.candidates[0];
+    const isTagged = !!currentCandidate?.tagPipelineId;
+
+    let allStages = [];
+
+    if (isTagged) {
+      // For tagged pipelines
+      const allStagesMap = new Map();
+
+      // Collect stages from stageProgress[0].pipelineId.stages
+      if (currentCandidate?.stageProgress?.[0]?.pipelineId?.stages) {
+        currentCandidate.stageProgress[0].pipelineId.stages.forEach((stage) => {
+          if (stage._id) {
+            allStagesMap.set(stage._id, {
+              stageId: stage._id,
+              stageName: stage.name || "Unknown Stage",
+              source: "pipelineStages",
+            });
+          }
+        });
+      }
+
+      // Convert to array
+      allStages = Array.from(allStagesMap.values());
+    } else {
+      // For work order stages
+      allStages =
+        processedJobData.workOrder?.pipelineStageTimeline?.map((stage) => ({
+          stageId: stage.stageId,
+          stageName: stage.stageName,
+          stageOrder: stage.stageOrder,
+        })) || [];
+    }
+
+    // Find current stage index
+    const currentIndex = allStages.findIndex(
+      (stage) => stage.stageId === currentStageId
+    );
+
+    // Return all stages after current stage
+    if (currentIndex >= 0 && currentIndex < allStages.length - 1) {
+      return allStages.slice(currentIndex + 1);
+    }
+
+    return [];
+  };
+
   const getReviewerIdForStage = (stageId) => {
     if (!processedJobData) return null;
 
@@ -469,10 +522,17 @@ const RecruiterJobPipeline = () => {
     setSelectedCandidate(candidate);
     setReviewerComments("");
     form.resetFields();
+    setSelectedNextStage(null);
+    setIsStageOrderChanged(false);
 
     const currentStageId = candidate.currentStageId || candidate.currentStage;
+
     const nextStageId = getNextStageId(currentStageId);
     setTargetStage(nextStageId);
+    setSelectedNextStage(nextStageId);
+
+    const nextStages = getAllNextStages(currentStageId);
+    setAvailableNextStages(nextStages);
 
     setIsMoveModalVisible(true);
   };
@@ -495,18 +555,31 @@ const RecruiterJobPipeline = () => {
       }
 
       const isTagged = !!selectedCandidate.tagPipelineId;
+      // 1. Get the selected next stage from the form/dropdown
+      const selectedNextStageId =
+        values.nextStageId || getNextStageId(currentStageId);
 
-      // Get next stage ID
-      const nextStageId = getNextStageId(currentStageId);
-      const isLastStage = !nextStageId;
+      // 2. Check if stage order is changed (selectedNextStageId vs default next stage)
+      const defaultNextStageId = getNextStageId(currentStageId);
+      const isStageOrderChanged = selectedNextStageId !== defaultNextStageId;
+
+      // 3. Determine if this is the last stage
+      const isLastStage = !selectedNextStageId;
 
       console.log("DEBUG confirmMoveCandidate:", {
         currentStageId,
-        nextStageId,
+        selectedNextStageId,
+        defaultNextStageId,
+        isStageOrderChanged,
         isLastStage,
         isTagged,
         currentStageName: getStageName(currentStageId),
-        nextStageName: nextStageId ? getStageName(nextStageId) : "N/A",
+        selectedStageName: selectedNextStageId
+          ? getStageName(selectedNextStageId)
+          : "N/A",
+        defaultStageName: defaultNextStageId
+          ? getStageName(defaultNextStageId)
+          : "N/A",
         candidateId: selectedCandidate._id,
       });
 
@@ -585,6 +658,15 @@ const RecruiterJobPipeline = () => {
         return;
       }
 
+      let stageOrder = null;
+      if (!isTagged && selectedNextStageId) {
+        const selectedStage =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (stage) => stage.stageId === selectedNextStageId
+          );
+        stageOrder = selectedStage?.stageOrder || null;
+      }
+
       // Prepare payload for API call
       const payload = {
         userId: selectedCandidate.userId,
@@ -595,7 +677,9 @@ const RecruiterJobPipeline = () => {
           values.reviewerComments ||
           (isLastStage ? "Process completed" : "Moved to next stage"),
         isFinished: isLastStage,
-        nextStageId: isLastStage ? null : nextStageId,
+        nextStageId: selectedNextStageId,
+        isStageOrderChange: isStageOrderChanged,
+        ...(stageOrder !== null && { stageOrder }),
         ...(isTagged && {
           tagPipelineId: selectedCandidate.tagPipelineId,
           pipelineCandidateId:
@@ -609,18 +693,12 @@ const RecruiterJobPipeline = () => {
 
       console.log("API response:", result);
 
-      message.success(
-        isLastStage
-          ? `Successfully completed process for ${selectedCandidate.name}`
-          : `Successfully moved ${selectedCandidate.name} to ${getStageName(
-              nextStageId
-            )}`
-      );
-
       // Reset and refresh
       setIsMoveModalVisible(false);
       setSelectedCandidate(null);
       setReviewerComments("");
+      setSelectedNextStage(null); // Reset selected next stage
+      setAvailableNextStages([]);
       form.resetFields();
 
       // Refetch the data
@@ -2294,6 +2372,8 @@ const RecruiterJobPipeline = () => {
         onCancel={() => {
           setIsMoveModalVisible(false);
           form.resetFields();
+          setSelectedNextStage(null);
+          setAvailableNextStages([]);
         }}
         okText={
           !getNextStageId(selectedCandidate?.currentStage)
@@ -2321,6 +2401,7 @@ const RecruiterJobPipeline = () => {
                 disabled
               />
             </Form.Item>
+
             {!getNextStageId(selectedCandidate.currentStage) ? (
               <Form.Item label="Action">
                 <Input value="Finish Process" disabled />
@@ -2330,6 +2411,31 @@ const RecruiterJobPipeline = () => {
                 <Input value={getStageName(targetStage)} disabled />
               </Form.Item>
             )}
+
+            {availableNextStages.length > 0 && (
+              <Form.Item
+                label="Select Next Stage"
+                name="nextStageId"
+                initialValue={getNextStageId(selectedCandidate.currentStage)}
+                rules={[
+                  { required: true, message: "Please select next stage" },
+                ]}
+              >
+                <Select
+                  placeholder="Select stage to move to"
+                  onChange={(value) => setSelectedNextStage(value)}
+                >
+                  {availableNextStages.map((stage) => (
+                    <Option key={stage.stageId} value={stage.stageId}>
+                      {stage.stageName}
+                      {stage.stageOrder !== undefined &&
+                        ` (Order: ${stage.stageOrder})`}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            )}
+
             <Form.Item
               label={
                 !getNextStageId(selectedCandidate.currentStage)
