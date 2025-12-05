@@ -62,182 +62,276 @@ const recruiterTypes = [
   "Sales",
 ];
 
-const permissionGroups = [
-  {
-    title: "Side Navigation Tabs",
-    icon: <DashboardOutlined />,
-    permissions: [
-      { key: "dashboard", label: "Dashboard" },
-      { key: "requisition", label: "Requisition" },
-      { key: "jobs", label: "Jobs" },
-      { key: "jobs-timeline", label: "Jobs Timeline" },
-      { key: "all-candidates", label: "All Candidates" },
-      { key: "all-cvs", label: "All CVs" },
-      { key: "candidates", label: "Interview Candidates" },
-      { key: "interviews", label: "Assigned Interviews" },
-      { key: "staged-candidates", label: "Staged Candidates" },
-      { key: "completed-candidates", label: "Completed Candidates" },
-      { key: "approvals", label: "Approvals" },
-      { key: "employees", label: "Employees" },
-      { key: "notifications", label: "Notifications" },
-    ],
-  },
-  {
-    title: "Dashbaord Management",
-    icon: <DashboardOutlined />,
-    permissions: [
-      { key: "view-get-details-button", label: "View Get More Details Button" },
-    ],
-  },
-  {
-    title: "Requisition Management",
-    icon: <FileTextOutlined />,
-    permissions: [
-      { key: "edit-requisitions", label: "Edit Requisition" },
-      { key: "add-requisitions", label: "Add Requisition" },
-      { key: "delete-requisitions", label: "Delete Requisition" },
-    ],
-  },
-  {
-    title: "Job Management",
-    icon: <FileTextOutlined />,
-    permissions: [
-      { key: "create-job-recruiter", label: "Create Job" },
-      { key: "edit-job", label: "Edit Job" },
-      { key: "deactivate-job", label: "Deactivate/Activate Job" },
-      { key: "view-job-status", label: "View Work Order Status Tab" },
-      { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
-      { key: "view-job-sourced-cv", label: "View Sourced CVs Tab" },
-      { key: "view-job-selected", label: "View Selected Candidates Tab" },
-      // { key: "view-job-selected", label: "View Selected Candidates Tab" },
-      { key: "view-job-applied", label: "View Applied Candidates Tab" },
-      { key: "view-job-applied-cv", label: "View Applied CVs Tab" },
-      { key: "view-job-declined", label: "View Declined Candidates Tab" },
-      { key: "view-job-pending", label: "View Pending Candidates Tab" },
-      { key: "view-job-screening", label: "View Screening Candidates Tab" },
-    ],
-  },
-  {
-    title: "Candidate Management",
-    icon: <TeamOutlined />,
-    permissions: [
-      { key: "view-all-candidates", label: "View All Candidates" },
-      { key: "view-candidates", label: "View Candidates Icon" },
-      { key: "add-candidate", label: "Add Candidate" },
-      { key: "bulk-upload", label: "Bulk Upload Candidates" },
-      { key: "edit-candidate-details", label: "Edit Candidate" },
-      { key: "export-candidate-details", label: "Export Candidate" },
+const getPermissionGroups = (recruiterType) => {
+  if (recruiterType === "Employee Admin") {
+    return [
       {
-        key: "notify-candidates-button",
-        label: "View Notify Candidates Button",
+        title: "Side Navigation Tabs",
+        icon: <DashboardOutlined />,
+        permissions: [
+          { key: "dashboard", label: "Dashboard" },
+          { key: "all-employee", label: "All Employee" },
+          { key: "leave-request", label: "Leave Request" },
+          { key: "other-request", label: "Other Request" },
+          { key: "payroll", label: "Payroll" },
+          { key: "employee-documents", label: "Employee Documents" },
+          { key: "expiring-documents", label: "Expiring Documents" },
+          { key: "company-policies", label: "Company Policies" },
+          { key: "news", label: "News" },
+          { key: "feedback-suggestion", label: "Feedback/Suggestion" },
+          { key: "notifications", label: "Notifications" },
+        ],
       },
-    ],
-  },
-  {
-    title: "CVs Management",
-    icon: <TeamOutlined />,
-    permissions: [
-      { key: "view-cv", label: "View CV" },
-      { key: "convert-candidate", label: "Convert CV to Candidate" },
-      { key: "download-cv", label: "Download CV" },
-      { key: "add-cv-remarks", label: "Add Remarks" },
-      { key: "delete-cv", label: "Delete CV" },
-      { key: "import-cvs", label: "Import CV" },
-      { key: "export-cvs", label: "Export CV" },
-    ],
-  },
+      {
+        title: "Employee Management",
+        icon: <TeamOutlined />,
+        permissions: [
+          { key: "add-employee", label: "Add Employee" },
+          { key: "import-employee-csv", label: "Import CSV" },
+          { key: "export-employee-csv", label: "Export CSV" },
+          { key: "edit-employee", label: "Edit Employee" },
+          { key: "delete-employee", label: "Delete Employee" },
+        ],
+      },
+      {
+        title: "Leave Request Management",
+        icon: <CalendarOutlined />,
+        permissions: [
+          { key: "approve-leave-request", label: "Approve Leave Request" },
+          { key: "reject-leave-request", label: "Reject Leave Request" },
+        ],
+      },
+      {
+        title: "Other Request Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          { key: "approve-other-request", label: "Approve Other Request" },
+          { key: "reject-other-request", label: "Reject Other Request" },
+          { key: "add-travel-ticket", label: "Add Travel Ticket" },
+          { key: "approve-travel-ticket", label: "Approve Travel Ticket" },
+        ],
+      },
+      {
+        title: "Payroll Management",
+        icon: <BankOutlined />,
+        permissions: [{ key: "edit-payroll", label: "Edit Payroll" }],
+      },
+      {
+        title: "Employee Documents Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          { key: "view-employee-documents", label: "View Employee Documents" },
+          {
+            key: "download-employee-documents",
+            label: "Download Employee Documents",
+          },
+          { key: "notify-employee-documents", label: "Notify Employee" },
+        ],
+      },
+      {
+        title: "Expiring Documents Management",
+        icon: <FileTextOutlined />,
+        permissions: [
+          {
+            key: "notify-selected-expiring-docs",
+            label: "Notify Selected Employees",
+          },
+        ],
+      },
+      {
+        title: "News Management",
+        icon: <BellOutlined />,
+        permissions: [
+          { key: "create-news", label: "Create News" },
+          { key: "edit-news", label: "Edit News" },
+          { key: "publish-news", label: "Publish News" },
+          { key: "delete-news", label: "Delete News" },
+        ],
+      },
+    ];
+  }
 
-  {
-    title: "Interview Candidate Actions",
-    icon: <TeamOutlined />,
-    permissions: [
-      // { key: "download-documents", label: "Download Documents" },
-      // { key: "send-messages", label: "Send Messages" },
-      { key: "view-profile", label: "View Candidate Profile" },
-      // { key: "move-to-interview", label: "Move to Interview" },
-      { key: "make-offer", label: "Make Offer" },
-      { key: "move-to-offer", label: "Move to Offer" },
-      { key: "move-to-pipeline", label: "Move to Pipeline" },
-      { key: "reject-candidate", label: "Reject Candidate" },
-      { key: "schedule-interview", label: "Schedule Interview" },
-      { key: "reschedule-interview", label: "Reschedule Interview" },
-      {
-        key: "view-interviews",
-        label: "View Interviews tab (in candidate profile drawer)",
-      },
-      {
-        key: "view-pipeline",
-        label: "View Pipeline tab (in candidate profile drawer)",
-      },
-      {
-        key: "view-offer-details",
-        label: "View Offer details tab (in candidate profile drawer)",
-      },
-      { key: "change-interview-status", label: "Change Interview Status" },
-    ],
-  },
+  // Return default recruiter permissions
+  return [
+    {
+      title: "Side Navigation Tabs",
+      icon: <DashboardOutlined />,
+      permissions: [
+        { key: "dashboard", label: "Dashboard" },
+        { key: "requisition", label: "Requisition" },
+        { key: "jobs", label: "Jobs" },
+        { key: "jobs-timeline", label: "Jobs Timeline" },
+        { key: "all-candidates", label: "All Candidates" },
+        { key: "all-cvs", label: "All CVs" },
+        { key: "candidates", label: "Interview Candidates" },
+        { key: "interviews", label: "Assigned Interviews" },
+        { key: "staged-candidates", label: "Staged Candidates" },
+        { key: "completed-candidates", label: "Completed Candidates" },
+        { key: "approvals", label: "Approvals" },
+        { key: "employees", label: "Employees" },
+        { key: "notifications", label: "Notifications" },
+      ],
+    },
+    {
+      title: "Dashbaord Management",
+      icon: <DashboardOutlined />,
+      permissions: [
+        {
+          key: "view-get-details-button",
+          label: "View Get More Details Button",
+        },
+      ],
+    },
+    {
+      title: "Requisition Management",
+      icon: <FileTextOutlined />,
+      permissions: [
+        { key: "edit-requisitions", label: "Edit Requisition" },
+        { key: "add-requisitions", label: "Add Requisition" },
+        { key: "delete-requisitions", label: "Delete Requisition" },
+      ],
+    },
+    {
+      title: "Job Management",
+      icon: <FileTextOutlined />,
+      permissions: [
+        { key: "create-job-recruiter", label: "Create Job" },
+        { key: "edit-job", label: "Edit Job" },
+        { key: "deactivate-job", label: "Deactivate/Activate Job" },
+        { key: "view-job-status", label: "View Work Order Status Tab" },
+        { key: "view-job-sourced", label: "View Sourced Candidates Tab" },
+        { key: "view-job-sourced-cv", label: "View Sourced CVs Tab" },
+        { key: "view-job-selected", label: "View Selected Candidates Tab" },
+        // { key: "view-job-selected", label: "View Selected Candidates Tab" },
+        { key: "view-job-applied", label: "View Applied Candidates Tab" },
+        { key: "view-job-applied-cv", label: "View Applied CVs Tab" },
+        { key: "view-job-declined", label: "View Declined Candidates Tab" },
+        { key: "view-job-pending", label: "View Pending Candidates Tab" },
+        { key: "view-job-screening", label: "View Screening Candidates Tab" },
+      ],
+    },
+    {
+      title: "Candidate Management",
+      icon: <TeamOutlined />,
+      permissions: [
+        { key: "view-all-candidates", label: "View All Candidates" },
+        { key: "view-candidates", label: "View Candidates Icon" },
+        { key: "add-candidate", label: "Add Candidate" },
+        { key: "bulk-upload", label: "Bulk Upload Candidates" },
+        { key: "edit-candidate-details", label: "Edit Candidate" },
+        { key: "export-candidate-details", label: "Export Candidate" },
+        {
+          key: "notify-candidates-button",
+          label: "View Notify Candidates Button",
+        },
+      ],
+    },
+    {
+      title: "CVs Management",
+      icon: <TeamOutlined />,
+      permissions: [
+        { key: "view-cv", label: "View CV" },
+        { key: "convert-candidate", label: "Convert CV to Candidate" },
+        { key: "download-cv", label: "Download CV" },
+        { key: "add-cv-remarks", label: "Add Remarks" },
+        { key: "delete-cv", label: "Delete CV" },
+        { key: "import-cvs", label: "Import CV" },
+        { key: "export-cvs", label: "Export CV" },
+      ],
+    },
 
-  {
-    title: "Staged Candidate Actions",
-    icon: <SettingOutlined />,
-    permissions: [
-      {
-        key: "notify-candidate",
-        label: "Notify Candidate",
-      },
-      {
-        key: "export-to-excel",
-        label: "Export Button visible",
-      },
-    ],
-  },
-  {
-    title: "Completed Candidate Actions",
-    icon: <SettingOutlined />,
-    permissions: [
-      { key: "convert-to-employee", label: "Convert to Employee" },
-      {
-        key: "view-candidate-details-tab",
-        label: "View Candidate Details Tab(in profile drawer)",
-      },
-      {
-        key: "view-timeline-tab",
-        label: "View Timeline tab (in profile drawer)",
-      },
-      {
-        key: "view-documents-tab",
-        label: "View Documents Tab (in profile drawer)",
-      },
-      {
-        key: "view-download-icon",
-        label: "View Downlaod icon (in documents tab in drawer)",
-      },
-    ],
-  },
-  {
-    title: "Notifications Management",
-    icon: <BellOutlined />,
-    permissions: [
-      { key: "delete-notify", label: "Delete Notification Button" },
-      { key: "clear-all-notify", label: "Clear All notification Button" },
-    ],
-  },
-  {
-    title: "Tab Views for Interview candidates",
-    icon: <FileTextOutlined />,
-    permissions: [
-      { key: "view-interview-tab", label: "View Interview Tab" },
+    {
+      title: "Interview Candidate Actions",
+      icon: <TeamOutlined />,
+      permissions: [
+        // { key: "download-documents", label: "Download Documents" },
+        // { key: "send-messages", label: "Send Messages" },
+        { key: "view-profile", label: "View Candidate Profile" },
+        // { key: "move-to-interview", label: "Move to Interview" },
+        { key: "make-offer", label: "Make Offer" },
+        { key: "move-to-offer", label: "Move to Offer" },
+        { key: "move-to-pipeline", label: "Move to Pipeline" },
+        { key: "reject-candidate", label: "Reject Candidate" },
+        { key: "schedule-interview", label: "Schedule Interview" },
+        { key: "reschedule-interview", label: "Reschedule Interview" },
+        {
+          key: "view-interviews",
+          label: "View Interviews tab (in candidate profile drawer)",
+        },
+        {
+          key: "view-pipeline",
+          label: "View Pipeline tab (in candidate profile drawer)",
+        },
+        {
+          key: "view-offer-details",
+          label: "View Offer details tab (in candidate profile drawer)",
+        },
+        { key: "change-interview-status", label: "Change Interview Status" },
+      ],
+    },
 
-      { key: "view-offer_pending-tab", label: "View Offer Pending Tab" },
-      { key: "view-offer_revised-tab", label: "View Offer Revised Tab" },
-      { key: "view-offer-tab", label: "View Offer Tab" },
-      { key: "view-rejected-tab", label: "View Rejected Tab" },
-      // { key: "view-overview-tab", label: "View Overview Tab" },
-      // { key: "view-activity-tab", label: "View Activity Tab" },
-      // { key: "view-documents-tab", label: "View Documents Tab" },
-    ],
-  },
-];
+    {
+      title: "Staged Candidate Actions",
+      icon: <SettingOutlined />,
+      permissions: [
+        {
+          key: "notify-candidate",
+          label: "Notify Candidate",
+        },
+        {
+          key: "export-to-excel",
+          label: "Export Button visible",
+        },
+      ],
+    },
+    {
+      title: "Completed Candidate Actions",
+      icon: <SettingOutlined />,
+      permissions: [
+        { key: "convert-to-employee", label: "Convert to Employee" },
+        {
+          key: "view-candidate-details-tab",
+          label: "View Candidate Details Tab(in profile drawer)",
+        },
+        {
+          key: "view-timeline-tab",
+          label: "View Timeline tab (in profile drawer)",
+        },
+        {
+          key: "view-documents-tab",
+          label: "View Documents Tab (in profile drawer)",
+        },
+        {
+          key: "view-download-icon",
+          label: "View Downlaod icon (in documents tab in drawer)",
+        },
+      ],
+    },
+    {
+      title: "Notifications Management",
+      icon: <BellOutlined />,
+      permissions: [
+        { key: "delete-notify", label: "Delete Notification Button" },
+        { key: "clear-all-notify", label: "Clear All notification Button" },
+      ],
+    },
+    {
+      title: "Tab Views for Interview candidates",
+      icon: <FileTextOutlined />,
+      permissions: [
+        { key: "view-interview-tab", label: "View Interview Tab" },
+
+        { key: "view-offer_pending-tab", label: "View Offer Pending Tab" },
+        { key: "view-offer_revised-tab", label: "View Offer Revised Tab" },
+        { key: "view-offer-tab", label: "View Offer Tab" },
+        { key: "view-rejected-tab", label: "View Rejected Tab" },
+        // { key: "view-overview-tab", label: "View Overview Tab" },
+        // { key: "view-activity-tab", label: "View Activity Tab" },
+        // { key: "view-documents-tab", label: "View Documents Tab" },
+      ],
+    },
+  ];
+};
 
 const RecruiterForm = ({
   open,
@@ -761,31 +855,47 @@ const RecruiterForm = ({
                   Access Permissions
                 </span>
               </Space>
-              <Space size="medium">
-                <Button
-                  type="primary"
-                  ghost
-                  size="small"
-                  onClick={() => {
-                    const allPermissions = permissionGroups.flatMap((group) =>
-                      group.permissions.map((p) => p.key)
-                    );
-                    form.setFieldsValue({ permissions: allPermissions });
-                  }}
-                  style={{ borderRadius: "6px", fontSize: "12px" }}
-                >
-                  Select All
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    form.setFieldsValue({ permissions: [] });
-                  }}
-                  style={{ borderRadius: "6px", fontSize: "12px" }}
-                >
-                  Clear All
-                </Button>
-              </Space>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, cur) =>
+                  prev.recruiterType !== cur.recruiterType
+                }
+              >
+                {({ getFieldValue }) => {
+                  const recruiterType = getFieldValue("recruiterType");
+                  const dynamicPermissionGroups =
+                    getPermissionGroups(recruiterType);
+
+                  return (
+                    <Space size="medium">
+                      <Button
+                        type="primary"
+                        ghost
+                        size="small"
+                        onClick={() => {
+                          const allPermissions =
+                            dynamicPermissionGroups.flatMap((group) =>
+                              group.permissions.map((p) => p.key)
+                            );
+                          form.setFieldsValue({ permissions: allPermissions });
+                        }}
+                        style={{ borderRadius: "6px", fontSize: "12px" }}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          form.setFieldsValue({ permissions: [] });
+                        }}
+                        style={{ borderRadius: "6px", fontSize: "12px" }}
+                      >
+                        Clear All
+                      </Button>
+                    </Space>
+                  );
+                }}
+              </Form.Item>
             </div>
           }
           style={{ marginBottom: 0 }}
@@ -808,10 +918,14 @@ const RecruiterForm = ({
                 const isFullAccess = permissions.includes("full-access-given");
 
                 const handleFullAccessChange = (checked) => {
+                  const recruiterType = getFieldValue("recruiterType");
+                  const dynamicPermissionGroups =
+                    getPermissionGroups(recruiterType);
+
                   if (checked) {
                     // Add all permissions + full-access-given marker
-                    const allPermissions = permissionGroups.flatMap((group) =>
-                      group.permissions.map((p) => p.key)
+                    const allPermissions = dynamicPermissionGroups.flatMap(
+                      (group) => group.permissions.map((p) => p.key)
                     );
                     setFieldsValue({
                       permissions: Array.from(
@@ -855,199 +969,222 @@ const RecruiterForm = ({
           </div>
 
           <Form.Item name="permissions" style={{ marginBottom: 0 }}>
-            <Checkbox.Group style={{ width: "100%" }}>
-              <div
-                style={{
-                  maxHeight: "450px",
-                  overflowY: "auto",
-                  paddingRight: "8px",
-                  scrollbarWidth: "thin",
-                }}
-              >
-                <Row gutter={[16, 16]}>
-                  {permissionGroups.map((group) => (
-                    <Col span={24} key={group.title}>
-                      <div
-                        style={{
-                          borderRadius: "8px",
-                          padding: "16px",
-                          border: "1px solid #e9ecef",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        {/* Group Header */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: "12px",
-                            paddingBottom: "8px",
-                            borderBottom: "2px solid #dee2e6",
-                          }}
-                        >
-                          <Space>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, cur) =>
+                prev.recruiterType !== cur.recruiterType
+              }
+            >
+              {({ getFieldValue }) => {
+                const recruiterType = getFieldValue("recruiterType");
+                const dynamicPermissionGroups =
+                  getPermissionGroups(recruiterType);
+
+                return (
+                  <Checkbox.Group style={{ width: "100%" }}>
+                    <div
+                      style={{
+                        maxHeight: "450px",
+                        overflowY: "auto",
+                        paddingRight: "8px",
+                        scrollbarWidth: "thin",
+                      }}
+                    >
+                      <Row gutter={[16, 16]}>
+                        {dynamicPermissionGroups.map((group) => (
+                          <Col span={24} key={group.title}>
                             <div
                               style={{
-                                width: "32px",
-                                height: "32px",
                                 borderRadius: "8px",
-                                backgroundColor: "#fde8e3ff",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#da2c46",
-                                fontSize: "16px",
+                                padding: "16px",
+                                border: "1px solid #e9ecef",
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                               }}
                             >
-                              {group.icon}
-                            </div>
-                            <div>
+                              {/* Group Header */}
                               <div
                                 style={{
-                                  fontSize: "14px",
-                                  fontWeight: 600,
-                                  color: "#212529",
-                                  marginBottom: "2px",
-                                }}
-                              >
-                                {group.title}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#6c757d",
-                                }}
-                              >
-                                {group.permissions.length} permission
-                                {group.permissions.length !== 1 ? "s" : ""}
-                              </div>
-                            </div>
-                          </Space>
-                          <Form.Item
-                            noStyle
-                            shouldUpdate={(prev, cur) =>
-                              prev.permissions !== cur.permissions
-                            }
-                          >
-                            {({ getFieldValue }) => {
-                              const currentPermissions =
-                                getFieldValue("permissions") || [];
-                              const groupKeys = group.permissions.map(
-                                (p) => p.key
-                              );
-                              const isFullySelected = groupKeys.every((key) =>
-                                currentPermissions.includes(key)
-                              );
-
-                              return (
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  onClick={() =>
-                                    handleGroupSelectAll(
-                                      group.permissions,
-                                      !isFullySelected
-                                    )
-                                  }
-                                  style={{
-                                    backgroundColor: isFullySelected
-                                      ? "#fff2f0"
-                                      : "#f0f9ff",
-                                    color: isFullySelected
-                                      ? "#cf1322"
-                                      : "#0958d9",
-                                    border: `1px solid ${
-                                      isFullySelected ? "#ffccc7" : "#bae0ff"
-                                    }`,
-                                    borderRadius: "6px",
-                                    fontSize: "12px",
-                                    fontWeight: 500,
-                                    padding: "4px 12px",
-                                    height: "auto",
-                                  }}
-                                >
-                                  {isFullySelected
-                                    ? "Deselect All"
-                                    : "Select All"}
-                                </Button>
-                              );
-                            }}
-                          </Form.Item>
-                        </div>
-
-                        {/* Permissions List */}
-                        <Row gutter={[8, 8]}>
-                          {group.permissions.map((permission) => (
-                            <Col
-                              key={permission.key}
-                              span={
-                                group.permissions.length === 1
-                                  ? 24
-                                  : group.permissions.length === 2
-                                  ? 12
-                                  : group.permissions.length <= 4
-                                  ? 12
-                                  : 8
-                              }
-                            >
-                              <div
-                                className="custom-checkbox"
-                                style={{
-                                  backgroundColor: "#ffffff",
-                                  border: "1px solid #e9ecef",
-                                  borderRadius: "6px",
-                                  padding: "8px 12px",
-                                  minHeight: "36px",
                                   display: "flex",
                                   alignItems: "center",
-                                  transition: "all 0.2s ease",
-                                  cursor: "pointer",
-                                  ":hover": {
-                                    borderColor: "#da2c46",
-                                    boxShadow: "0 2px 4px rgba(24,144,255,0.1)",
-                                  },
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.borderColor = "#da2c46";
-                                  e.currentTarget.style.boxShadow =
-                                    "0 2px 4px rgba(24,144,255,0.1)";
-                                  e.currentTarget.style.transform =
-                                    "translateY(-1px)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.borderColor = "#e9ecef";
-                                  e.currentTarget.style.boxShadow = "none";
-                                  e.currentTarget.style.transform =
-                                    "translateY(0)";
+                                  justifyContent: "space-between",
+                                  marginBottom: "12px",
+                                  paddingBottom: "8px",
+                                  borderBottom: "2px solid #dee2e6",
                                 }}
                               >
-                                <Checkbox
-                                  value={permission.key}
-                                  style={{ width: "100%" }}
-                                >
-                                  <span
+                                <Space>
+                                  <div
                                     style={{
-                                      fontSize: "13px",
-                                      fontWeight: 500,
-                                      color: "#495057",
-                                      marginLeft: "8px",
-                                      lineHeight: "1.4",
+                                      width: "32px",
+                                      height: "32px",
+                                      borderRadius: "8px",
+                                      backgroundColor: "#fde8e3ff",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      color: "#da2c46",
+                                      fontSize: "16px",
                                     }}
                                   >
-                                    {permission.label}
-                                  </span>
-                                </Checkbox>
+                                    {group.icon}
+                                  </div>
+                                  <div>
+                                    <div
+                                      style={{
+                                        fontSize: "14px",
+                                        fontWeight: 600,
+                                        color: "#212529",
+                                        marginBottom: "2px",
+                                      }}
+                                    >
+                                      {group.title}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#6c757d",
+                                      }}
+                                    >
+                                      {group.permissions.length} permission
+                                      {group.permissions.length !== 1
+                                        ? "s"
+                                        : ""}
+                                    </div>
+                                  </div>
+                                </Space>
+                                <Form.Item
+                                  noStyle
+                                  shouldUpdate={(prev, cur) =>
+                                    prev.permissions !== cur.permissions
+                                  }
+                                >
+                                  {({ getFieldValue }) => {
+                                    const currentPermissions =
+                                      getFieldValue("permissions") || [];
+                                    const groupKeys = group.permissions.map(
+                                      (p) => p.key
+                                    );
+                                    const isFullySelected = groupKeys.every(
+                                      (key) => currentPermissions.includes(key)
+                                    );
+
+                                    return (
+                                      <Button
+                                        type="text"
+                                        size="small"
+                                        onClick={() =>
+                                          handleGroupSelectAll(
+                                            group.permissions,
+                                            !isFullySelected
+                                          )
+                                        }
+                                        style={{
+                                          backgroundColor: isFullySelected
+                                            ? "#fff2f0"
+                                            : "#f0f9ff",
+                                          color: isFullySelected
+                                            ? "#cf1322"
+                                            : "#0958d9",
+                                          border: `1px solid ${
+                                            isFullySelected
+                                              ? "#ffccc7"
+                                              : "#bae0ff"
+                                          }`,
+                                          borderRadius: "6px",
+                                          fontSize: "12px",
+                                          fontWeight: 500,
+                                          padding: "4px 12px",
+                                          height: "auto",
+                                        }}
+                                      >
+                                        {isFullySelected
+                                          ? "Deselect All"
+                                          : "Select All"}
+                                      </Button>
+                                    );
+                                  }}
+                                </Form.Item>
                               </div>
-                            </Col>
-                          ))}
-                        </Row>
-                      </div>
-                    </Col>
-                  ))}
-                </Row>
-              </div>
-            </Checkbox.Group>
+
+                              {/* Permissions List */}
+                              <Row gutter={[8, 8]}>
+                                {group.permissions.map((permission) => (
+                                  <Col
+                                    key={permission.key}
+                                    span={
+                                      group.permissions.length === 1
+                                        ? 24
+                                        : group.permissions.length === 2
+                                        ? 12
+                                        : group.permissions.length <= 4
+                                        ? 12
+                                        : 8
+                                    }
+                                  >
+                                    <div
+                                      className="custom-checkbox"
+                                      style={{
+                                        backgroundColor: "#ffffff",
+                                        border: "1px solid #e9ecef",
+                                        borderRadius: "6px",
+                                        padding: "8px 12px",
+                                        minHeight: "36px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        transition: "all 0.2s ease",
+                                        cursor: "pointer",
+                                        ":hover": {
+                                          borderColor: "#da2c46",
+                                          boxShadow:
+                                            "0 2px 4px rgba(24,144,255,0.1)",
+                                        },
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.borderColor =
+                                          "#da2c46";
+                                        e.currentTarget.style.boxShadow =
+                                          "0 2px 4px rgba(24,144,255,0.1)";
+                                        e.currentTarget.style.transform =
+                                          "translateY(-1px)";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor =
+                                          "#e9ecef";
+                                        e.currentTarget.style.boxShadow =
+                                          "none";
+                                        e.currentTarget.style.transform =
+                                          "translateY(0)";
+                                      }}
+                                    >
+                                      <Checkbox
+                                        value={permission.key}
+                                        style={{ width: "100%" }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: "13px",
+                                            fontWeight: 500,
+                                            color: "#495057",
+                                            marginLeft: "8px",
+                                            lineHeight: "1.4",
+                                          }}
+                                        >
+                                          {permission.label}
+                                        </span>
+                                      </Checkbox>
+                                    </div>
+                                  </Col>
+                                ))}
+                              </Row>
+                            </div>
+                          </Col>
+                        ))}
+                      </Row>
+                    </div>
+                  </Checkbox.Group>
+                );
+              }}
+            </Form.Item>
           </Form.Item>
         </Card>
       </Form>

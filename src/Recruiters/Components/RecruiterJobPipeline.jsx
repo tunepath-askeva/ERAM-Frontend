@@ -341,75 +341,250 @@ const RecruiterJobPipeline = () => {
   };
 
   const getAllNextStages = (currentStageId) => {
-    if (!processedJobData || !currentStageId) return [];
+    console.log("DEBUG getAllNextStages called with:", currentStageId);
+
+    if (!processedJobData || !currentStageId) {
+      console.log("DEBUG: No processedJobData or currentStageId");
+      return [];
+    }
 
     const currentCandidate = processedJobData.candidates[0];
     const isTagged = !!currentCandidate?.tagPipelineId;
 
+    console.log("DEBUG getAllNextStages:", {
+      isTagged,
+      hasStageProgress: !!currentCandidate?.stageProgress,
+      stageProgressLength: currentCandidate?.stageProgress?.length,
+    });
+
     let allStages = [];
 
     if (isTagged) {
-      // For tagged pipelines
+      // For tagged/separate pipelines - get ALL stages from multiple sources
       const allStagesMap = new Map();
+      let orderCounter = 0;
 
-      // Collect stages from stageProgress[0].pipelineId.stages
-      if (currentCandidate?.stageProgress?.[0]?.pipelineId?.stages) {
-        currentCandidate.stageProgress[0].pipelineId.stages.forEach((stage) => {
-          if (stage._id) {
-            allStagesMap.set(stage._id, {
-              stageId: stage._id,
-              stageName: stage.name || "Unknown Stage",
-              source: "pipelineStages",
+      // 1. FIRST: Get all stages from stageProgress (includes current/completed stages)
+      if (currentCandidate?.stageProgress) {
+        console.log("DEBUG: Adding stages from stageProgress");
+        currentCandidate.stageProgress.forEach((progress) => {
+          if (progress.stageId) {
+            allStagesMap.set(progress.stageId, {
+              stageId: progress.stageId,
+              stageName:
+                progress.stageName ||
+                progress.fullStage?.name ||
+                "Unknown Stage",
+              order: orderCounter++,
+              source: "stageProgress",
             });
           }
         });
       }
 
-      // Convert to array
+      // 2. THEN: Add stages from fullPipeline.stages (future/pending stages)
+      if (processedJobData.pipeline?.stages) {
+        console.log("DEBUG: Adding stages from fullPipeline.stages");
+        processedJobData.pipeline.stages.forEach((stage) => {
+          if (stage._id && !allStagesMap.has(stage._id)) {
+            allStagesMap.set(stage._id, {
+              stageId: stage._id,
+              stageName: stage.name || stage.stageName || "Unknown Stage",
+              order: orderCounter++,
+              source: "fullPipeline",
+            });
+          }
+        });
+      }
+
+      // 3. ALSO: Check pendingPipelineStages
+      if (currentCandidate.pendingPipelineStages) {
+        console.log("DEBUG: Adding stages from pendingPipelineStages");
+        currentCandidate.pendingPipelineStages.forEach((stage) => {
+          if (stage.stageId && !allStagesMap.has(stage.stageId)) {
+            allStagesMap.set(stage.stageId, {
+              stageId: stage.stageId,
+              stageName: stage.stageName || "Unknown Stage",
+              order: orderCounter++,
+              source: "pendingStages",
+            });
+          }
+        });
+      }
+
+      // 4. FINALLY: Check workOrder.pipelineStageTimeline for any missing stages
+      if (processedJobData.workOrder?.pipelineStageTimeline) {
+        console.log(
+          "DEBUG: Adding stages from workOrder.pipelineStageTimeline"
+        );
+        processedJobData.workOrder.pipelineStageTimeline.forEach((stage) => {
+          if (stage.stageId && !allStagesMap.has(stage.stageId)) {
+            allStagesMap.set(stage.stageId, {
+              stageId: stage.stageId,
+              stageName: stage.stageName || "Unknown Stage",
+              order: orderCounter++,
+              source: "workOrder",
+            });
+          }
+        });
+      }
+
+      // Convert to array (already in order due to orderCounter)
       allStages = Array.from(allStagesMap.values());
+
+      console.log("DEBUG: allStages for tagged pipeline:", {
+        total: allStages.length,
+        stages: allStages.map((s) => ({
+          id: s.stageId,
+          name: s.stageName,
+          source: s.source,
+        })),
+      });
     } else {
-      // For work order stages
-      allStages =
-        processedJobData.workOrder?.pipelineStageTimeline?.map((stage) => ({
+      // FOR WORK ORDER PIPELINE: Get stageIds that are present in stageProgress
+      const stageProgressIds =
+        currentCandidate.stageProgress?.map((sp) => sp.stageId) || [];
+
+      console.log("DEBUG: Stage Progress IDs:", stageProgressIds);
+
+      // Get all stages from pipelineStageTimeline
+      const allPipelineStages =
+        processedJobData.workOrder?.pipelineStageTimeline || [];
+
+      console.log(
+        "DEBUG: All Pipeline Stages:",
+        allPipelineStages.map((s) => ({
+          stageId: s.stageId,
+          stageName: s.stageName,
+          stageOrder: s.stageOrder,
+        }))
+      );
+
+      // Filter: Include stages that are NOT in stageProgress
+      // (These are the pending stages that haven't been started yet)
+      allStages = allPipelineStages
+        .filter((stage) => !stageProgressIds.includes(stage.stageId))
+        .map((stage, index) => ({
           stageId: stage.stageId,
           stageName: stage.stageName,
-          stageOrder: stage.stageOrder,
-        })) || [];
+          stageOrder: stage.stageOrder !== undefined ? stage.stageOrder : index,
+          order: index,
+        }));
+
+      console.log(
+        "DEBUG: Filtered stages for work order (excluding stages in progress):",
+        {
+          total: allStages.length,
+          stages: allStages.map((s) => ({
+            stageId: s.stageId,
+            stageName: s.stageName,
+            stageOrder: s.stageOrder,
+          })),
+        }
+      );
     }
 
-    // Find current stage index
+    // Find current stage position in the full list
     const currentIndex = allStages.findIndex(
       (stage) => stage.stageId === currentStageId
     );
 
-    // Return all stages after current stage
+    console.log("DEBUG getAllNextStages result:", {
+      currentStageId,
+      currentIndex,
+      totalStages: allStages.length,
+      allStageIds: allStages.map((s) => s.stageId),
+    });
+
+    // Return ALL stages after current stage
     if (currentIndex >= 0 && currentIndex < allStages.length - 1) {
-      return allStages.slice(currentIndex + 1);
+      const nextStages = allStages.slice(currentIndex + 1);
+      console.log("DEBUG: Returning next stages:", nextStages);
+      // Remove temporary properties
+      return nextStages.map(({ source, order, ...stage }) => stage);
     }
 
+    // For work order pipeline, if currentIndex is -1 (stage not in filtered list),
+    // it means current stage is in progress, so return all pending stages
+    if (!isTagged && currentIndex === -1) {
+      console.log(
+        "DEBUG: Current stage not in filtered list, returning all pending stages"
+      );
+      return allStages.map(({ source, order, ...stage }) => stage);
+    }
+
+    console.log(
+      "DEBUG: No next stages found (currentIndex:",
+      currentIndex,
+      ")"
+    );
     return [];
   };
 
   const getReviewerIdForStage = (stageId) => {
-    if (!processedJobData) return null;
+    if (!processedJobData) {
+      console.log("DEBUG getReviewerIdForStage: No processedJobData");
+      return null;
+    }
 
     const currentCandidate = processedJobData.candidates[0];
     const isTagged = !!currentCandidate?.tagPipelineId;
 
-    if (isTagged) {
-      return (
-        currentCandidate.stageProgress?.find(
-          (progress) => progress.stageId === stageId
-        )?.recruiterId || null
+    console.log("DEBUG getReviewerIdForStage START:", {
+      stageId,
+      isTagged,
+      candidateName: currentCandidate?.name,
+      stageProgressCount: currentCandidate?.stageProgress?.length,
+    });
+
+    // ALWAYS check stageProgress first (works for both tagged and work order)
+    const stageProgress = currentCandidate.stageProgress?.find(
+      (progress) => progress.stageId === stageId
+    );
+
+    console.log(
+      "DEBUG getReviewerIdForStage - stageProgress found:",
+      stageProgress
+    );
+
+    if (stageProgress?.recruiterId) {
+      console.log(
+        "DEBUG getReviewerIdForStage - Found recruiterId in stageProgress:",
+        stageProgress.recruiterId
       );
-    } else {
+      return stageProgress.recruiterId;
+    }
+
+    // If not in stageProgress, check pipelineStageTimeline (for work order only)
+    if (!isTagged) {
       const stageTimeline =
         processedJobData.workOrder?.pipelineStageTimeline?.find(
           (timeline) => timeline.stageId === stageId
         );
-      return stageTimeline?.recruiterIds?.[0] || null;
+
+      console.log("DEBUG getReviewerIdForStage - stageTimeline found:", {
+        found: !!stageTimeline,
+        recruiterIds: stageTimeline?.recruiterIds,
+      });
+
+      if (
+        stageTimeline?.recruiterIds &&
+        stageTimeline.recruiterIds.length > 0
+      ) {
+        console.log(
+          "DEBUG getReviewerIdForStage - Found recruiterId in stageTimeline:",
+          stageTimeline.recruiterIds[0]
+        );
+        return stageTimeline.recruiterIds[0];
+      }
     }
+
+    console.log(
+      "DEBUG getReviewerIdForStage - No recruiterId found, returning null"
+    );
+    return null;
   };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -527,60 +702,75 @@ const RecruiterJobPipeline = () => {
 
     const currentStageId = candidate.currentStageId || candidate.currentStage;
 
+    console.log("DEBUG handleMoveCandidate:", {
+      candidate,
+      currentStageId,
+      isTagged: !!candidate.tagPipelineId,
+      stageProgress: candidate.stageProgress,
+      pipelineStages: candidate.stageProgress?.[0]?.pipelineId?.stages,
+    });
+
     const nextStageId = getNextStageId(currentStageId);
     setTargetStage(nextStageId);
     setSelectedNextStage(nextStageId);
 
     const nextStages = getAllNextStages(currentStageId);
+
+    console.log("DEBUG nextStages result:", {
+      nextStages,
+      nextStagesLength: nextStages.length,
+    });
+
     setAvailableNextStages(nextStages);
 
     setIsMoveModalVisible(true);
   };
 
   const confirmMoveCandidate = async () => {
+    console.log("=== CONFIRM MOVE CANDIDATE STARTED ===");
+
     try {
+      console.log("Step 1: Validating form fields...");
       const values = await form.validateFields();
+      console.log("Step 1: Form validation successful:", values);
 
       if (!selectedCandidate) {
+        console.error("Step 2: FAILED - No candidate selected");
         message.error("No candidate selected");
         return;
       }
+      console.log("Step 2: Selected candidate:", selectedCandidate);
 
       const currentStageId =
         selectedCandidate.currentStageId || selectedCandidate.currentStage;
 
       if (!currentStageId) {
+        console.error("Step 3: FAILED - Cannot determine current stage");
         message.error("Cannot determine current stage for candidate");
         return;
       }
+      console.log("Step 3: Current stage ID:", currentStageId);
 
       const isTagged = !!selectedCandidate.tagPipelineId;
-      // 1. Get the selected next stage from the form/dropdown
-      const selectedNextStageId =
-        values.nextStageId || getNextStageId(currentStageId);
+      console.log("Step 4: Is tagged pipeline?", isTagged);
 
-      // 2. Check if stage order is changed (selectedNextStageId vs default next stage)
+      // 1. Get the selected next stage from the form/dropdown
+      const selectedNextStageId = values.nextStageId;
+      console.log("Step 5: Selected next stage ID:", selectedNextStageId);
+
+      if (!selectedNextStageId) {
+        console.error("Step 5: FAILED - No next stage selected");
+        message.error("Please select a next stage");
+        return;
+      }
+
+      // 2. Check if stage order is changed
       const defaultNextStageId = getNextStageId(currentStageId);
       const isStageOrderChanged = selectedNextStageId !== defaultNextStageId;
-
-      // 3. Determine if this is the last stage
-      const isLastStage = !selectedNextStageId;
-
-      console.log("DEBUG confirmMoveCandidate:", {
-        currentStageId,
-        selectedNextStageId,
+      console.log("Step 6: Stage order check:", {
         defaultNextStageId,
+        selectedNextStageId,
         isStageOrderChanged,
-        isLastStage,
-        isTagged,
-        currentStageName: getStageName(currentStageId),
-        selectedStageName: selectedNextStageId
-          ? getStageName(selectedNextStageId)
-          : "N/A",
-        defaultStageName: defaultNextStageId
-          ? getStageName(defaultNextStageId)
-          : "N/A",
-        candidateId: selectedCandidate._id,
       });
 
       const currentStageProgress = selectedCandidate.stageProgress.find(
@@ -588,18 +778,26 @@ const RecruiterJobPipeline = () => {
       );
 
       if (!currentStageProgress) {
+        console.error("Step 7: FAILED - Cannot find stage progress");
         message.error("Cannot find stage progress for current stage");
         return;
       }
+      console.log(
+        "Step 7: Current stage progress found:",
+        currentStageProgress
+      );
 
       // Check if stage requires approval
       const hasApprovalLevels =
         currentStageProgress?.approvalDetails?.levels?.length > 0;
+      console.log("Step 8: Has approval levels?", hasApprovalLevels);
 
       if (hasApprovalLevels) {
         const isStageApproved =
           currentStageProgress.approval?.isApproved === true;
+        console.log("Step 8a: Is stage approved?", isStageApproved);
         if (!isStageApproved) {
+          console.error("Step 8a: FAILED - Stage not approved");
           message.warning(
             "Cannot move candidate until current stage is approved"
           );
@@ -612,8 +810,13 @@ const RecruiterJobPipeline = () => {
       const hasAnyRecruiterApproved = reviewerComments.some(
         (review) => review.status === "approved"
       );
+      console.log(
+        "Step 9: Has any recruiter approved?",
+        hasAnyRecruiterApproved
+      );
 
       if (hasAnyRecruiterApproved) {
+        console.error("Step 9: FAILED - Already approved by recruiter");
         message.warning(
           "This candidate has already been approved by a recruiter"
         );
@@ -622,6 +825,8 @@ const RecruiterJobPipeline = () => {
 
       // For non-approval stages, check documents
       if (!hasApprovalLevels) {
+        console.log("Step 10: Checking documents for non-approval stage...");
+
         const currentStage = processedJobData.pipeline?.stages?.find(
           (stage) => stage._id === currentStageId
         );
@@ -637,11 +842,18 @@ const RecruiterJobPipeline = () => {
         ];
 
         const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+        console.log("Step 10a: Required documents:", uniqueRequiredDocuments);
 
         if (uniqueRequiredDocuments.length > 0) {
           const uploadedDocuments =
             currentStageProgress?.uploadedDocuments || [];
+          console.log(
+            "Step 10b: Uploaded documents count:",
+            uploadedDocuments.length
+          );
+
           if (uploadedDocuments.length === 0) {
+            console.error("Step 10b: FAILED - No documents uploaded");
             message.warning(
               "Cannot move candidate until required documents are uploaded"
             );
@@ -652,80 +864,128 @@ const RecruiterJobPipeline = () => {
 
       // Get reviewer ID
       const currentStageRecruiterId = getReviewerIdForStage(currentStageId);
+      console.log(
+        "Step 11: Current stage recruiter ID:",
+        currentStageRecruiterId
+      );
 
       if (!currentStageRecruiterId) {
+        console.error("Step 11: FAILED - No recruiter assigned");
         message.error("No recruiter assigned to the current stage");
         return;
       }
 
-      let stageOrder = null;
-      if (!isTagged && selectedNextStageId) {
-        const selectedStage =
-          processedJobData.workOrder?.pipelineStageTimeline?.find(
-            (stage) => stage.stageId === selectedNextStageId
-          );
-        stageOrder = selectedStage?.stageOrder || null;
-      }
+      console.log("Step 12: Building payload...");
 
-      // Prepare payload for API call
+      // Prepare base payload
       const payload = {
         userId: selectedCandidate.userId,
         workOrderId: selectedCandidate.workOrderId,
         stageId: currentStageId,
         reviewerId: currentStageRecruiterId,
-        reviewerComments:
-          values.reviewerComments ||
-          (isLastStage ? "Process completed" : "Moved to next stage"),
-        isFinished: isLastStage,
+        reviewerComments: values.reviewerComments || "Moved to next stage",
         nextStageId: selectedNextStageId,
         isStageOrderChange: isStageOrderChanged,
-        ...(stageOrder !== null && { stageOrder }),
-        ...(isTagged && {
-          tagPipelineId: selectedCandidate.tagPipelineId,
-          pipelineCandidateId:
-            selectedCandidate.pipelineCandidateId || selectedCandidate._id,
-        }),
       };
 
-      console.log("Sending API payload:", payload);
+      console.log("Step 12a: Base payload created:", payload);
 
+      // For work order pipeline, add stageOrder
+      if (!isTagged) {
+        console.log("Step 13: Work order pipeline - finding stage order...");
+
+        const selectedStage =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (stage) => stage.stageId === selectedNextStageId
+          );
+
+        console.log("Step 13a: Selected stage from timeline:", selectedStage);
+
+        if (selectedStage && selectedStage.stageOrder !== undefined) {
+          payload.stageOrder = selectedStage.stageOrder;
+          console.log(
+            "Step 13b: Added stageOrder to payload:",
+            selectedStage.stageOrder
+          );
+        } else {
+          console.warn("Step 13b: WARNING - Could not find stageOrder");
+          console.log(
+            "Available stages in timeline:",
+            processedJobData.workOrder?.pipelineStageTimeline?.map((s) => ({
+              stageId: s.stageId,
+              stageName: s.stageName,
+              stageOrder: s.stageOrder,
+            }))
+          );
+        }
+      } else {
+        console.log("Step 13: Tagged pipeline - adding tag fields...");
+        payload.tagPipelineId = selectedCandidate.tagPipelineId;
+        payload.pipelineCandidateId =
+          selectedCandidate.pipelineCandidateId || selectedCandidate._id;
+        console.log("Step 13a: Added tag fields:", {
+          tagPipelineId: payload.tagPipelineId,
+          pipelineCandidateId: payload.pipelineCandidateId,
+        });
+      }
+
+      console.log("=== FINAL PAYLOAD ===");
+      console.log(JSON.stringify(payload, null, 2));
+      console.log("===================");
+
+      console.log("Step 14: Calling API...");
       const result = await moveToNextStage(payload).unwrap();
 
-      console.log("API response:", result);
+      console.log("Step 15: API call successful!");
+      console.log("API Response:", result);
+
+      message.success("Candidate moved to next stage successfully");
 
       // Reset and refresh
       setIsMoveModalVisible(false);
       setSelectedCandidate(null);
       setReviewerComments("");
-      setSelectedNextStage(null); // Reset selected next stage
+      setSelectedNextStage(null);
       setAvailableNextStages([]);
       form.resetFields();
 
-      // Refetch the data
+      console.log("Step 16: Refetching data...");
       await refetch();
+      console.log("Step 16: Refetch complete");
+
+      console.log("=== CONFIRM MOVE CANDIDATE COMPLETED SUCCESSFULLY ===");
     } catch (error) {
-      console.error("Error in confirmMoveCandidate:", error);
+      console.error("=== ERROR IN CONFIRM MOVE CANDIDATE ===");
+      console.error("Error object:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error keys:", Object.keys(error));
 
       // Handle form validation errors
       if (error.errorFields) {
+        console.error("Form validation errors:", error.errorFields);
         return;
       }
 
       // Extract error message
       let errorMessage = "Failed to move candidate to next stage";
 
-      if (error?.data?.message) {
-        errorMessage = error.data.message;
+      if (error?.data) {
+        console.error("Error data:", error.data);
+        if (error.data.message) {
+          errorMessage = error.data.message;
+        }
       } else if (error?.message) {
+        console.error("Error message:", error.message);
         errorMessage = error.message;
       } else if (typeof error === "string") {
         errorMessage = error;
       }
 
+      console.error("Final error message:", errorMessage);
       message.error(errorMessage);
+      console.error("=== END ERROR ===");
     }
   };
-
   const handleViewDocument = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
   };
