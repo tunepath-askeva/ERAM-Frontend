@@ -734,24 +734,6 @@ const JobDetailsPage = () => {
 
   const ApplicationForm = () => (
     <div className="application-form-container">
-      {/* Application Progress */}
-      <Card className="progress-card">
-        <div className="progress-header">
-          <Title level={4}>Application Progress</Title>
-          <Text type="secondary">Complete all required fields</Text>
-        </div>
-        <Progress
-          percent={formProgress}
-          strokeColor={{
-            "0%": "#da2c46",
-            "100%": "#a51632",
-          }}
-          trailColor="#f0f0f0"
-          className="application-progress"
-        />
-      </Card>
-
-      {/* Application Steps */}
       <Card className="steps-card">
         <Steps
           current={currentStep}
@@ -790,17 +772,6 @@ const JobDetailsPage = () => {
             layout="vertical"
             onFinish={handleSubmitApplication}
             className="application-form"
-            onValuesChange={() => {
-              setTimeout(() => {
-                const values = form.getFieldsValue();
-                const totalFields = job?.customFields?.length || 1;
-                const filledFields = Object.values(values).filter(
-                  (value) =>
-                    value !== undefined && value !== null && value !== ""
-                ).length;
-                setFormProgress(Math.round((filledFields / totalFields) * 100));
-              }, 100);
-            }}
           >
             <Row gutter={[24, 0]}>
               {job.customFields &&
@@ -841,6 +812,7 @@ const JobDetailsPage = () => {
           reviewData={reviewData}
           fileList={fileList}
           onEdit={() => setCurrentStep(0)}
+          isSubmitting={isSubmitting}
         />
       )}
 
@@ -869,7 +841,7 @@ const JobDetailsPage = () => {
     </div>
   );
 
-  const ReviewStep = ({ job, reviewData, fileList, onEdit }) => {
+  const ReviewStep = ({ job, reviewData, fileList, onEdit, isSubmitting }) => {
     const getFieldValue = (field, fieldId) => {
       if (field.type === "file") {
         const files = fileList[field.id];
@@ -910,6 +882,7 @@ const JobDetailsPage = () => {
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
+            loading={isSubmitting}
           >
             Submit Application
           </Button>

@@ -3,6 +3,7 @@ import {
   useGetJobApplicationsQuery,
   useUpdateCandidateStatusMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import CandidateCard from "./CandidateCard";
 import {
   Card,
   Spin,
@@ -23,6 +24,7 @@ import {
   Divider,
   Skeleton,
   Pagination,
+  Checkbox,
 } from "antd";
 import {
   UserOutlined,
@@ -56,6 +58,8 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     pageSize: 10,
     total: 0,
   });
+  const [selectedCandidates, setSelectedCandidates] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   if (isLoading) {
     return (
@@ -147,6 +151,28 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     message.success(`Candidate status updated to ${newStatus}`);
   };
 
+  const handleCandidateSelect = (candidateId, checked) => {
+    setSelectedCandidates((prev) =>
+      checked ? [...prev, candidateId] : prev.filter((id) => id !== candidateId)
+    );
+  };
+
+  const handleSelectAll = (checked) => {
+    setSelectAll(checked);
+    const currentPageIds = filteredCandidates
+      .slice(
+        (pagination.current - 1) * pagination.pageSize,
+        pagination.current * pagination.pageSize
+      )
+      .map((app) => app.user._id);
+
+    setSelectedCandidates((prev) =>
+      checked
+        ? [...new Set([...prev, ...currentPageIds])]
+        : prev.filter((id) => !currentPageIds.includes(id))
+    );
+  };
+
   const handleMoveToScreening = async (candidateId) => {
     try {
       await updateCandidateStatus({
@@ -163,6 +189,33 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       message.error(
         error.data?.message || "Failed to move candidate to screening"
       );
+    }
+  };
+
+  const handleBulkMoveToScreening = async () => {
+    if (selectedCandidates.length === 0) return;
+
+    try {
+      const updatePromises = selectedCandidates.map((candidateId) => {
+        return updateCandidateStatus({
+          Id: candidateId,
+          status: "screening",
+          jobId: jobId,
+        }).unwrap();
+      });
+
+      await Promise.all(updatePromises);
+
+      message.success(
+        `Successfully moved ${selectedCandidates.length} candidates to screening`
+      );
+
+      setSelectedCandidates([]);
+      setSelectAll(false);
+      refetch();
+    } catch (error) {
+      console.error("Failed to move candidates:", error);
+      message.error("Failed to move some candidates to screening");
     }
   };
 
@@ -194,6 +247,22 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   const handleViewDetails = (application) => {
     setSelectedApplication(application);
     setDetailsModalVisible(true);
+  };
+
+  const checkDocumentsUploaded = (application) => {
+    const { workOrder, workOrderuploadedDocuments } = application;
+
+    // Get required documents from work order
+    const requiredDocuments = workOrder?.documents || [];
+
+    // If no required documents, return true
+    if (requiredDocuments.length === 0) {
+      return true;
+    }
+
+    // Check if documents are uploaded
+    const uploadedDocuments = workOrderuploadedDocuments || [];
+    return uploadedDocuments.length > 0;
   };
 
   const renderUploadedDocuments = (documents) => {
@@ -272,7 +341,53 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
           })}
         </Descriptions>
 
-        <Divider orientation="left">Work Order Documents</Divider>
+        {!checkDocumentsUploaded(selectedApplication) && (
+          <>
+            <Divider />
+            <Alert
+              message="Required Documents Missing"
+              description="This candidate must upload all required documents before they can be moved to screening."
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          </>
+        )}
+
+        <Divider orientation="left">
+          Required Documents
+          {workOrder?.documents && workOrder.documents.length > 0 && (
+            <Tag
+              color={
+                checkDocumentsUploaded(selectedApplication)
+                  ? "success"
+                  : "warning"
+              }
+              style={{ marginLeft: 8 }}
+            >
+              {workOrderuploadedDocuments?.length || 0} /{" "}
+              {workOrder.documents.length} Uploaded
+            </Tag>
+          )}
+        </Divider>
+
+        {workOrder?.documents && workOrder.documents.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <Text strong>Required:</Text>
+            <div style={{ marginTop: 8 }}>
+              {workOrder.documents.map((doc, index) => (
+                <Tag key={index} color="blue" style={{ margin: "4px" }}>
+                  {doc.name}
+                  {doc.isMandatory && (
+                    <span style={{ color: "#ff4d4f" }}> *</span>
+                  )}
+                </Tag>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Text strong>Uploaded:</Text>
         {renderUploadedDocuments(workOrderuploadedDocuments)}
 
         {resumeUrl && (
@@ -326,7 +441,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
             <Avatar
               size={48}
               icon={<UserOutlined />}
-              style={{ backgroundColor: "#1890ff" }}
+              style={{ backgroundColor: "#da2c46" }}
             >
               {user?.fullName?.charAt(0)?.toUpperCase()}
             </Avatar>
@@ -533,6 +648,44 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
         </Text>
       </div>
       {/* Candidates List */}
+
+      {candidateType === "applied" && (
+        <Row
+          justify="space-between"
+          align="middle"
+          style={{ marginBottom: "20px" }}
+        >
+          <Col>
+            <Space>
+              <Checkbox
+                checked={selectAll}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+              >
+                Select all on page
+              </Checkbox>
+              <Text type="secondary">
+                {selectedCandidates.length} selected of{" "}
+                {filteredCandidates.length} candidates
+              </Text>
+            </Space>
+          </Col>
+          <Col>
+            {selectedCandidates.length > 0 && (
+              <Button
+                type="primary"
+                size="small"
+                style={{ backgroundColor: "#da2c46" }}
+                onClick={handleBulkMoveToScreening}
+                loading={isUpdatingStatus}
+                icon={<ArrowRightOutlined />}
+              >
+                Move Selected to Screening ({selectedCandidates.length})
+              </Button>
+            )}
+          </Col>
+        </Row>
+      )}
+
       <div style={{ maxHeight: "600px", overflowY: "auto" }}>
         {filteredCandidates.length > 0 ? (
           <>
@@ -541,9 +694,51 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                 (pagination.current - 1) * pagination.pageSize,
                 pagination.current * pagination.pageSize
               )
-              .map((application, index) =>
-                renderCandidateCard(application, index)
-              )}
+              .map((application) => {
+                const candidate = {
+                  ...application.user,
+                  _id: application.user._id,
+                  applicationId: application._id,
+                  status: application.status,
+                  appliedDate: application.createdAt,
+                  isApplied: true,
+                  responses: application.responses,
+                  workOrderuploadedDocuments:
+                    application.workOrderuploadedDocuments,
+                };
+
+                return (
+                  <CandidateCard
+                    key={application._id}
+                    candidate={candidate}
+                    onViewProfile={() => handleViewDetails(application)}
+                    showExperience={false}
+                    showSkills={false}
+                    onSelectCandidate={handleCandidateSelect}
+                    isSelected={selectedCandidates.includes(
+                      application.user._id
+                    )}
+                    isSelectable={candidateType === "applied"}
+                    customActions={
+                      candidateType === "applied" && (
+                        <Space direction="vertical" size={4} align="end">
+                          <Tag color="green" style={{ fontSize: "11px" }}>
+                            Applied
+                          </Tag>
+                          <Button
+                            type="primary"
+                            size="small"
+                            style={{ fontSize: "12px", background: "#da2c46" }}
+                            onClick={() => handleViewDetails(application)}
+                          >
+                            View Details
+                          </Button>
+                        </Space>
+                      )
+                    }
+                  />
+                );
+              })}
             <div style={{ marginTop: 16, textAlign: "right" }}>
               <Pagination
                 current={pagination.current}
@@ -565,14 +760,15 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <span style={{ fontSize: "14px", color: "#999" }}>
-                {searchTerm || activeFiltersCount > 0
-                  ? "No candidates match your search criteria"
+                {candidateType === "declined"
+                  ? "No declined candidates found"
                   : "No applications found for this job"}
               </span>
             }
           />
         )}
       </div>
+
       {/* Resume Modal */}
       <Modal
         title={`Resume - ${selectedResume?.name || "Candidate"}`}
@@ -626,7 +822,15 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                 handleMoveToScreening(selectedApplication.user._id)
               }
               loading={isUpdatingStatus}
-              style={{ backgroundColor: "#da2c46" }}
+              disabled={!checkDocumentsUploaded(selectedApplication)}
+              style={{
+                backgroundColor: checkDocumentsUploaded(selectedApplication)
+                  ? "#da2c46"
+                  : "#d9d9d9",
+                borderColor: checkDocumentsUploaded(selectedApplication)
+                  ? "#da2c46"
+                  : "#d9d9d9",
+              }}
             >
               Move to Screening
             </Button>
@@ -641,12 +845,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
         }}
         responsive={true}
       >
-        <div
-          style={{
-            maxWidth: "100%",
-            overflowX: "auto",
-          }}
-        >
+        <div style={{ maxWidth: "100%", overflowX: "auto" }}>
           {renderApplicationDetails()}
         </div>
       </Modal>

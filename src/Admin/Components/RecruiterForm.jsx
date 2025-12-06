@@ -157,7 +157,6 @@ export const getPermissionGroups = (recruiterType) => {
           { key: "delete-policy", label: "Delete Policy" },
         ],
       },
-     
     ];
   }
 
@@ -291,6 +290,14 @@ export const getPermissionGroups = (recruiterType) => {
         {
           key: "export-to-excel",
           label: "Export Button visible",
+        },
+        {
+          key: "edit-stage-date",
+          label: "Edit Stage Dates",
+        },
+        {
+          key: "edit-stage-rec",
+          label: "Edit Stage Recruiters",
         },
       ],
     },

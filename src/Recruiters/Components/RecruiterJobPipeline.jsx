@@ -1597,7 +1597,16 @@ const RecruiterJobPipeline = () => {
     };
 
     const getStatusMessage = () => {
-      if (!isCurrentStage && currentStageProgress.stageStatus === "approved") {
+      const currentStageProgress = candidate.stageProgress?.find(
+        (progress) => progress.stageId === (stageId || candidate.currentStageId)
+      );
+
+      // Check if stage is already approved/completed
+      if (currentStageProgress?.stageStatus === "approved") {
+        return "✅ This stage has been completed and approved. No further action needed.";
+      }
+
+      if (!isCurrentStage && currentStageProgress?.stageStatus === "approved") {
         return "✅ This stage has been completed.";
       }
 
@@ -2275,48 +2284,57 @@ const RecruiterJobPipeline = () => {
                             <Text strong style={{ fontSize: "16px" }}>
                               Stage Timeline
                             </Text>
-                            {!isEditingDates ? (
-                              <Button
-                                type="link"
-                                icon={<EditOutlined />}
-                                onClick={() => {
-                                  const { startDate, endDate } =
-                                    getStageDates(activeStage);
-                                  setTempStartDate(startDate);
-                                  setTempEndDate(endDate);
-                                  setIsEditingDates(true);
-                                }}
-                                style={{ padding: 0 }}
-                              >
-                                Edit
-                              </Button>
-                            ) : (
-                              <Space>
-                                <Button
-                                  size="small"
-                                  onClick={() => {
-                                    setIsEditingDates(false);
-                                    setTempStartDate(null);
-                                    setTempEndDate(null);
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  type="primary"
-                                  size="small"
-                                  onClick={() =>
-                                    setIsDateConfirmModalVisible(true)
-                                  }
-                                  disabled={!tempStartDate && !tempEndDate}
-                                  style={{
-                                    background: primaryColor,
-                                    borderColor: primaryColor,
-                                  }}
-                                >
-                                  Save
-                                </Button>
-                              </Space>
+                            {hasPermission("edit-stage-date") && (
+                              <>
+                                {!isEditingDates ? (
+                                  <Button
+                                    type="link"
+                                    icon={<EditOutlined />}
+                                    onClick={() => {
+                                      const { startDate, endDate } =
+                                        getStageDates(activeStage);
+                                      setTempStartDate(startDate);
+                                      setTempEndDate(endDate);
+                                      setIsEditingDates(true);
+                                    }}
+                                    style={{ padding: 0 }}
+                                    disabled={
+                                      candidate.stageProgress?.find(
+                                        (sp) => sp.stageId === activeStage
+                                      )?.stageStatus === "approved"
+                                    }
+                                  >
+                                    Edit
+                                  </Button>
+                                ) : (
+                                  <Space>
+                                    <Button
+                                      size="small"
+                                      onClick={() => {
+                                        setIsEditingDates(false);
+                                        setTempStartDate(null);
+                                        setTempEndDate(null);
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      type="primary"
+                                      size="small"
+                                      onClick={() =>
+                                        setIsDateConfirmModalVisible(true)
+                                      }
+                                      disabled={!tempStartDate && !tempEndDate}
+                                      style={{
+                                        background: primaryColor,
+                                        borderColor: primaryColor,
+                                      }}
+                                    >
+                                      Save
+                                    </Button>
+                                  </Space>
+                                )}
+                              </>
                             )}
                           </div>
                           {(() => {
@@ -2489,15 +2507,24 @@ const RecruiterJobPipeline = () => {
                                 Reviews:
                               </Text>
 
-                              {!isEditingRecruiters && (
-                                <Button
-                                  type="link"
-                                  icon={<EditOutlined />}
-                                  onClick={handleEditRecruitersClick}
-                                  style={{ padding: 0, fontSize: "12px" }}
-                                >
-                                  Edit Recruiters
-                                </Button>
+                              {hasPermission("edit-stage-rec") && (
+                                <>
+                                  {!isEditingRecruiters && (
+                                    <Button
+                                      type="link"
+                                      icon={<EditOutlined />}
+                                      onClick={handleEditRecruitersClick}
+                                      style={{ padding: 0, fontSize: "12px" }}
+                                      disabled={
+                                        candidate.stageProgress?.find(
+                                          (sp) => sp.stageId === activeStage
+                                        )?.stageStatus === "approved"
+                                      }
+                                    >
+                                      Edit Recruiters
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
 
