@@ -45,7 +45,9 @@ import {
   useGetApprovalInfoQuery,
   useApproveCandidateDocumentsMutation,
   useGetSeperateApprovalsQuery,
+  useGetRequisitionApprovalsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
+import RequisitionApprovals from "../Components/RequisitionApprovals";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -84,6 +86,8 @@ const RecruiterApprovals = () => {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
   });
+
+  const { data: requsition } = useGetRequisitionApprovalsQuery();
 
   const [approveCandidateDocuments, { isLoading: isApproving }] =
     useApproveCandidateDocumentsMutation();
@@ -1020,11 +1024,7 @@ const RecruiterApprovals = () => {
           />
         </TabPane>
         <TabPane tab="Requisition Approvals" key="requisition">
-          <Result
-            status="404"
-            title="Coming Soon"
-            subTitle="This Page is Under Development coming soon"
-          />
+          <RequisitionApprovals isActive={activeTab === "requisition"} />
         </TabPane>
       </Tabs>
 

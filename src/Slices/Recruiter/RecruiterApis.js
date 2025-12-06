@@ -730,6 +730,23 @@ export const recruiterApi = createApi({
         body: data,
       }),
     }),
+    getRequisitionApprovals: builder.query({
+      query: ({ page = 1, limit = 10, search = "" } = {}) => {
+        const params = new URLSearchParams();
+
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+
+        if (search && search.trim() !== "") {
+          params.append("search", search.trim());
+        }
+
+        return {
+          url: `/requisitionApproval?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
@@ -808,5 +825,6 @@ export const {
   useImportRecruiterCvsMutation,
   useUpdateTaggedPipelineMutation,
   useUpdateStageDatesMutation,
-  useUpdateStageRecruitersMutation
+  useUpdateStageRecruitersMutation,
+  useGetRequisitionApprovalsQuery,
 } = recruiterApi;

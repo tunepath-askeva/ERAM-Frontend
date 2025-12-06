@@ -316,7 +316,7 @@ const RecruiterNotifications = () => {
 
     return (
       <Space style={{ marginTop: "12px" }}>
-        <Button
+        {/* <Button
           type="primary"
           icon={<CheckOutlined />}
           size="small"
@@ -335,7 +335,7 @@ const RecruiterNotifications = () => {
           onClick={() => handleApproveReject(item, "rejected")}
         >
           Reject
-        </Button>
+        </Button> */}
       </Space>
     );
   };

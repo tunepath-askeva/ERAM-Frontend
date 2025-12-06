@@ -887,7 +887,12 @@ const AddWorkOrder = () => {
         referenceNo: null,
         requisitionId: null,
       });
-      navigate("/admin/workorder");
+
+      if (ShowButton === "admin") {
+        navigate("/admin/workorder");
+      } else {
+        navigate("/recruiter/jobs");
+      }
     } catch (error) {
       console.error("Error creating work order:", error);
       enqueueSnackbar("Failed to create work order. Please try again.", {
