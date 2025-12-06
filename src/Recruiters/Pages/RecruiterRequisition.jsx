@@ -661,8 +661,7 @@ const RecruiterRequisition = () => {
                           <div className="group-subtitle">
                             <span>
                               <strong>Client:</strong>{" "}
-                              {clients.find((c) => c.id === group.client)
-                                ?.name || "N/A"}
+                              {group.client?.fullName || "N/A"}
                             </span>
                             <span>•</span>
                             <span>
