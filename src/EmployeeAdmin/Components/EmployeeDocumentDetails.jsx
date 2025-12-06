@@ -40,6 +40,7 @@ import {
   useGetEmployeeAdminDocumentByIdQuery,
   useNotifyEmployeeMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -51,6 +52,14 @@ const EmployeeDocumentDetail = () => {
   const { data, isLoading, error } = useGetEmployeeAdminDocumentByIdQuery(id);
   const [notifyEmployee, { isLoading: isNotifying }] =
     useNotifyEmployeeMutation();
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -290,30 +299,34 @@ const EmployeeDocumentDetail = () => {
       render: (_, record) => (
         <Space size="small" direction="vertical">
           <Tooltip title="View Document">
-            <Button
-              type="primary"
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => window.open(record.fileUrl, "_blank")}
-              style={{
-                backgroundColor: "#da2c46",
-                borderColor: "#da2c46",
-                fontSize: "12px",
-              }}
-            />
+            {hasPermission("view-employee-documents") && (
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                size="small"
+                onClick={() => window.open(record.fileUrl, "_blank")}
+                style={{
+                  backgroundColor: "#da2c46",
+                  borderColor: "#da2c46",
+                  fontSize: "12px",
+                }}
+              />
+            )}
           </Tooltip>
           <Tooltip title="Download">
-            <Button
-              icon={<DownloadOutlined />}
-              size="small"
-              style={{ fontSize: "12px" }}
-              onClick={() => {
-                const link = document.createElement("a");
-                link.href = record.fileUrl;
-                link.download = record.fileName;
-                link.click();
-              }}
-            />
+            {hasPermission("download-employee-documents") && (
+              <Button
+                icon={<DownloadOutlined />}
+                size="small"
+                style={{ fontSize: "12px" }}
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = record.fileUrl;
+                  link.download = record.fileName;
+                  link.click();
+                }}
+              />
+            )}
           </Tooltip>
         </Space>
       ),
@@ -362,17 +375,19 @@ const EmployeeDocumentDetail = () => {
             </Space>
           </Col>
           <Col>
-            <Button
-              type="primary"
-              icon={<NotificationOutlined />}
-              onClick={showNotificationModal}
-              style={{
-                backgroundColor: "#da2c46",
-                borderColor: "#da2c46",
-              }}
-            >
-              Notify Employee
-            </Button>
+            {hasPermission("notify-employee-documents") && (
+              <Button
+                type="primary"
+                icon={<NotificationOutlined />}
+                onClick={showNotificationModal}
+                style={{
+                  backgroundColor: "#da2c46",
+                  borderColor: "#da2c46",
+                }}
+              >
+                Notify Employee
+              </Button>
+            )}
           </Col>
         </Row>
       </Card>

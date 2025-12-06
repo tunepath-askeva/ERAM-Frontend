@@ -18,7 +18,13 @@ import {
 } from "@ant-design/icons";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
-const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
+const EmployeeDetailsDrawer = ({
+  visible,
+  employeeId,
+  onClose,
+  onEdit,
+  hasPermission,
+}) => {
   const { data, isLoading, error } = useGetEmployeeDetailsQuery(employeeId, {
     skip: !employeeId || !visible,
   });
@@ -75,14 +81,16 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
       extra={
         employee && (
           <Space>
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(employee)}
-              style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
-            >
-              Edit
-            </Button>
+            {hasPermission("edit-employee") && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => onEdit(employee)}
+                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+              >
+                Edit
+              </Button>
+            )}
           </Space>
         )
       }
@@ -154,7 +162,9 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                     {employee.uniqueCode}
                   </Tag>
                   <Tag
-                    color={employee.accountStatus === "active" ? "green" : "red"}
+                    color={
+                      employee.accountStatus === "active" ? "green" : "red"
+                    }
                     style={{
                       fontWeight: 500,
                     }}
@@ -277,10 +287,7 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                     gap: "12px",
                   }}
                 >
-                  <InfoItem
-                    label="Branch ID"
-                    value={employee.branch?._id}
-                  />
+                  <InfoItem label="Branch ID" value={employee.branch?._id} />
                   <InfoItem
                     label="Branch Order"
                     value={employee.branch?.branchOrder}
@@ -292,8 +299,8 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
           )}
 
           {/* Collections Section - Show only if any of these arrays have data */}
-          {(employee.qualifications?.length > 0 || 
-            employee.skills?.length > 0 || 
+          {(employee.qualifications?.length > 0 ||
+            employee.skills?.length > 0 ||
             employee.languages?.length > 0 ||
             employee.visaStatus?.length > 0 ||
             employee.industry?.length > 0 ||
@@ -301,7 +308,10 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
             employee.education?.length > 0 ||
             employee.workExperience?.length > 0) && (
             <>
-              <InfoSection title="Additional Information" icon={<FileTextOutlined />}>
+              <InfoSection
+                title="Additional Information"
+                icon={<FileTextOutlined />}
+              >
                 <div
                   style={{
                     display: "grid",
@@ -310,58 +320,58 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                   }}
                 >
                   {employee.qualifications?.length > 0 && (
-                    <InfoItem 
-                      label="Qualifications" 
-                      value={employee.qualifications.join(", ")} 
+                    <InfoItem
+                      label="Qualifications"
+                      value={employee.qualifications.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.skills?.length > 0 && (
-                    <InfoItem 
-                      label="Skills" 
-                      value={employee.skills.join(", ")} 
+                    <InfoItem
+                      label="Skills"
+                      value={employee.skills.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.languages?.length > 0 && (
-                    <InfoItem 
-                      label="Languages" 
-                      value={employee.languages.join(", ")} 
+                    <InfoItem
+                      label="Languages"
+                      value={employee.languages.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.visaStatus?.length > 0 && (
-                    <InfoItem 
-                      label="Visa Status" 
-                      value={employee.visaStatus.join(", ")} 
+                    <InfoItem
+                      label="Visa Status"
+                      value={employee.visaStatus.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.industry?.length > 0 && (
-                    <InfoItem 
-                      label="Industry" 
-                      value={employee.industry.join(", ")} 
+                    <InfoItem
+                      label="Industry"
+                      value={employee.industry.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.certificates?.length > 0 && (
-                    <InfoItem 
-                      label="Certificates" 
-                      value={employee.certificates.join(", ")} 
+                    <InfoItem
+                      label="Certificates"
+                      value={employee.certificates.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.education?.length > 0 && (
-                    <InfoItem 
-                      label="Education" 
-                      value={employee.education.join(", ")} 
+                    <InfoItem
+                      label="Education"
+                      value={employee.education.join(", ")}
                       span={2}
                     />
                   )}
                   {employee.workExperience?.length > 0 && (
-                    <InfoItem 
-                      label="Work Experience" 
-                      value={employee.workExperience.join(", ")} 
+                    <InfoItem
+                      label="Work Experience"
+                      value={employee.workExperience.join(", ")}
                       span={2}
                     />
                   )}
@@ -394,8 +404,8 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
           )}
 
           {/* Social Links - Only show if any social link has value */}
-          {employee.socialLinks && (
-            Object.values(employee.socialLinks).some(link => link) && (
+          {employee.socialLinks &&
+            Object.values(employee.socialLinks).some((link) => link) && (
               <>
                 <InfoSection title="Social Links" icon={<ContactsOutlined />}>
                   <div
@@ -406,29 +416,41 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                     }}
                   >
                     {employee.socialLinks?.linkedin && (
-                      <InfoItem label="LinkedIn" value={employee.socialLinks.linkedin} />
+                      <InfoItem
+                        label="LinkedIn"
+                        value={employee.socialLinks.linkedin}
+                      />
                     )}
                     {employee.socialLinks?.github && (
-                      <InfoItem label="GitHub" value={employee.socialLinks.github} />
+                      <InfoItem
+                        label="GitHub"
+                        value={employee.socialLinks.github}
+                      />
                     )}
                     {employee.socialLinks?.twitter && (
-                      <InfoItem label="Twitter" value={employee.socialLinks.twitter} />
+                      <InfoItem
+                        label="Twitter"
+                        value={employee.socialLinks.twitter}
+                      />
                     )}
                     {employee.socialLinks?.facebook && (
-                      <InfoItem label="Facebook" value={employee.socialLinks.facebook} />
+                      <InfoItem
+                        label="Facebook"
+                        value={employee.socialLinks.facebook}
+                      />
                     )}
                   </div>
                 </InfoSection>
                 <Divider />
               </>
-            )
-          )}
+            )}
 
           {/* Job Preferences - Only show if any preference has value */}
-          {employee.jobPreferences && (
-            Object.values(employee.jobPreferences).some(pref => 
-              (Array.isArray(pref) && pref.length > 0) || 
-              (typeof pref === 'string' && pref)
+          {employee.jobPreferences &&
+            Object.values(employee.jobPreferences).some(
+              (pref) =>
+                (Array.isArray(pref) && pref.length > 0) ||
+                (typeof pref === "string" && pref)
             ) && (
               <>
                 <InfoSection title="Job Preferences" icon={<ToolOutlined />}>
@@ -440,43 +462,42 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                     }}
                   >
                     {employee.jobPreferences?.roles?.length > 0 && (
-                      <InfoItem 
-                        label="Preferred Roles" 
-                        value={employee.jobPreferences.roles.join(", ")} 
+                      <InfoItem
+                        label="Preferred Roles"
+                        value={employee.jobPreferences.roles.join(", ")}
                         span={2}
                       />
                     )}
                     {employee.jobPreferences?.locations?.length > 0 && (
-                      <InfoItem 
-                        label="Preferred Locations" 
-                        value={employee.jobPreferences.locations.join(", ")} 
+                      <InfoItem
+                        label="Preferred Locations"
+                        value={employee.jobPreferences.locations.join(", ")}
                         span={2}
                       />
                     )}
                     {employee.jobPreferences?.salaryRange && (
-                      <InfoItem 
-                        label="Salary Range" 
-                        value={employee.jobPreferences.salaryRange} 
+                      <InfoItem
+                        label="Salary Range"
+                        value={employee.jobPreferences.salaryRange}
                       />
                     )}
                     {employee.jobPreferences?.workType && (
-                      <InfoItem 
-                        label="Work Type" 
-                        value={employee.jobPreferences.workType} 
+                      <InfoItem
+                        label="Work Type"
+                        value={employee.jobPreferences.workType}
                       />
                     )}
                     {employee.jobPreferences?.employmentType && (
-                      <InfoItem 
-                        label="Employment Type" 
-                        value={employee.jobPreferences.employmentType} 
+                      <InfoItem
+                        label="Employment Type"
+                        value={employee.jobPreferences.employmentType}
                       />
                     )}
                   </div>
                 </InfoSection>
                 <Divider />
               </>
-            )
-          )}
+            )}
 
           {/* System Information */}
           <InfoSection title="System Information" icon={<CalendarOutlined />}>
@@ -509,11 +530,7 @@ const EmployeeDetailsDrawer = ({ visible, employeeId, onClose, onEdit }) => {
                     : null
                 }
               />
-              <InfoItem
-                label="Employee ID"
-                value={employee._id}
-                span={2}
-              />
+              <InfoItem label="Employee ID" value={employee._id} span={2} />
             </div>
           </InfoSection>
         </div>

@@ -32,6 +32,7 @@ import {
   useEditPayrollMutation,
   useGetPayrollByIdQuery,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSelector } from "react-redux";
 import { debounce } from "lodash";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
@@ -229,6 +230,14 @@ const EmployeeAdminPayroll = () => {
     }, 2500),
     []
   );
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   // Effect to handle search debouncing
   useEffect(() => {
@@ -430,11 +439,13 @@ const EmployeeAdminPayroll = () => {
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
           />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
+          {hasPermission("edit-payroll") && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+          )}
         </>
       ),
     },

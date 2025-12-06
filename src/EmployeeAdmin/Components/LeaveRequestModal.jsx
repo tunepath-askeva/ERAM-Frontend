@@ -29,7 +29,14 @@ import {
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const LeaveRequestModal = ({ visible, onClose, leaveId, eramId, email }) => {
+const LeaveRequestModal = ({
+  visible,
+  onClose,
+  leaveId,
+  eramId,
+  email,
+  hasPermission,
+}) => {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
   const [comments, setComments] = useState("");
@@ -204,26 +211,30 @@ const LeaveRequestModal = ({ visible, onClose, leaveId, eramId, email }) => {
           leaveData.status === "pending" ? (
             <div style={{ textAlign: "center" }}>
               <Space size="middle">
-                <Button
-                  type="primary"
-                  icon={<CheckOutlined />}
-                  size="medium"
-                  onClick={() => handleActionClick("approve")}
-                  style={{
-                    backgroundColor: "#52c41a",
-                    borderColor: "#52c41a",
-                  }}
-                >
-                  Approve
-                </Button>
-                <Button
-                  danger
-                  icon={<CloseOutlined />}
-                  size="medium"
-                  onClick={() => handleActionClick("reject")}
-                >
-                  Reject
-                </Button>
+                {hasPermission("approve-leave-request") && (
+                  <Button
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    size="medium"
+                    onClick={() => handleActionClick("approve")}
+                    style={{
+                      backgroundColor: "#52c41a",
+                      borderColor: "#52c41a",
+                    }}
+                  >
+                    Approve
+                  </Button>
+                )}
+                {hasPermission("reject-leave-request") && (
+                  <Button
+                    danger
+                    icon={<CloseOutlined />}
+                    size="medium"
+                    onClick={() => handleActionClick("reject")}
+                  >
+                    Reject
+                  </Button>
+                )}
               </Space>
             </div>
           ) : null

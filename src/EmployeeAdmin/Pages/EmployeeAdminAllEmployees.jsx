@@ -20,6 +20,7 @@ import AddEmployeeModal from "../Components/AddEmployeeModal";
 import EditEmployeeModal from "../Components/EditEmployeeModal";
 import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
 import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
+import { useSelector } from "react-redux";
 
 const EmployeeAdminAllEmployees = () => {
   const [page, setPage] = useState(1);
@@ -32,6 +33,14 @@ const EmployeeAdminAllEmployees = () => {
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [searchText, setSearchText] = useState("");
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   // API Queries and Mutations
   const {
@@ -261,31 +270,35 @@ const EmployeeAdminAllEmployees = () => {
           >
             View
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            style={{ color: "#da2c46", padding: 0 }}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete employee"
-            description="Are you sure you want to delete this employee? This action cannot be undone."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
-          >
+          {hasPermission("edit-employee") && (
             <Button
               type="link"
-              danger
-              icon={<DeleteOutlined />}
-              style={{ padding: 0 }}
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+              style={{ color: "#da2c46", padding: 0 }}
             >
-              Delete
+              Edit
             </Button>
-          </Popconfirm>
+          )}
+          {hasPermission("delete-employee") && (
+            <Popconfirm
+              title="Delete employee"
+              description="Are you sure you want to delete this employee? This action cannot be undone."
+              onConfirm={() => handleDelete(record._id)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+            >
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                style={{ padding: 0 }}
+              >
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -335,27 +348,33 @@ const EmployeeAdminAllEmployees = () => {
           />
 
           <Space wrap>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsAddModalVisible(true)}
-              style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
-            >
-              Add Employee
-            </Button>
-            <Button
-              icon={<UploadOutlined />}
-              onClick={() => setIsImportModalVisible(true)}
-            >
-              Import CSV
-            </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleExport}
-              disabled={filteredEmployees.length === 0}
-            >
-              Export CSV
-            </Button>
+            {hasPermission("add-employee") && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setIsAddModalVisible(true)}
+                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+              >
+                Add Employee
+              </Button>
+            )}
+            {hasPermission("import-employee-csv") && (
+              <Button
+                icon={<UploadOutlined />}
+                onClick={() => setIsImportModalVisible(true)}
+              >
+                Import CSV
+              </Button>
+            )}
+            {hasPermission("export-employee-csv") && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+                disabled={filteredEmployees.length === 0}
+              >
+                Export CSV
+              </Button>
+            )}
           </Space>
         </Space>
       </div>
@@ -417,6 +436,7 @@ const EmployeeAdminAllEmployees = () => {
           setSelectedEmployeeId(null);
         }}
         onEdit={handleEdit}
+        hasPermission={hasPermission}
       />
     </div>
   );

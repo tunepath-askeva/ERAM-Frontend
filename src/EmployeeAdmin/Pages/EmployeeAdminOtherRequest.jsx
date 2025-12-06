@@ -41,6 +41,7 @@ import {
   useApproveSelectedTicketMutation,
   useChangeOtherRequestStatusMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { Title, Text, Paragraph } = Typography;
@@ -77,6 +78,14 @@ const EmployeeAdminOtherRequest = () => {
     page: 1,
     pageSize: 10,
   });
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const { data, isLoading, error, refetch } =
     useGetEmployeeRaisedRequestsQuery(filters);
@@ -621,7 +630,10 @@ const EmployeeAdminOtherRequest = () => {
                 </Button>,
               ]
             : []),
-          ...(isTravelRequest && !showTicketForm && !viewingTickets
+          ...(hasPermission("add-travel-ticket") &&
+          isTravelRequest &&
+          !showTicketForm &&
+          !viewingTickets
             ? [
                 <Button
                   key="addTicket"
@@ -673,38 +685,56 @@ const EmployeeAdminOtherRequest = () => {
           ...(viewingTickets &&
           requestDetails?.otherRequests?.ticketApprovalStatus === "pending"
             ? [
-                <Button key="rejectTicket" danger onClick={handleRejectTicket}>
-                  Reject Ticket
-                </Button>,
-                <Button
-                  key="approveTicket"
-                  type="outlined"
-                  onClick={handleApproveTicket}
-                  loading={isApprovingTicket}
-                  style={{ color: "#da2c46", borderColor: "#da2c46" }}
-                >
-                  Approve Ticket
-                </Button>,
-              ]
+                hasPermission("approve-travel-ticket") && (
+                  <Button
+                    key="rejectTicket"
+                    danger
+                    onClick={handleRejectTicket}
+                  >
+                    Reject Ticket
+                  </Button>
+                ),
+
+                hasPermission("approve-travel-ticket") && (
+                  <Button
+                    key="approveTicket"
+                    type="outlined"
+                    onClick={handleApproveTicket}
+                    loading={isApprovingTicket}
+                    style={{ color: "#da2c46", borderColor: "#da2c46" }}
+                  >
+                    Approve Ticket
+                  </Button>
+                ),
+              ].filter(Boolean)
             : []),
+
           ...(requestDetails?.otherRequests?.status === "pending"
             ? [
-                <Button
-                  key="rejectRequest"
-                  danger
-                  onClick={handleRejectRequest}
-                >
-                  Reject Request
-                </Button>,
-                <Button
-                  key="approveRequest"
-                  type="primary"
-                  onClick={handleApproveRequest}
-                  style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
-                >
-                  Approve Request
-                </Button>,
-              ]
+                hasPermission("reject-other-request") && (
+                  <Button
+                    key="rejectRequest"
+                    danger
+                    onClick={handleRejectRequest}
+                  >
+                    Reject Request
+                  </Button>
+                ),
+
+                hasPermission("approve-other-request") && (
+                  <Button
+                    key="approveRequest"
+                    type="primary"
+                    onClick={handleApproveRequest}
+                    style={{
+                      backgroundColor: "#52c41a",
+                      borderColor: "#52c41a",
+                    }}
+                  >
+                    Approve Request
+                  </Button>
+                ),
+              ].filter(Boolean)
             : []),
 
           <Button key="close" onClick={handleCloseModal}>

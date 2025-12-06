@@ -79,7 +79,6 @@ export const getPermissionGroups = (recruiterType) => {
           { key: "company-policies", label: "Company Policies" },
           { key: "news", label: "News" },
           { key: "feedback-suggestion", label: "Feedback/Suggestion" },
-          { key: "notifications", label: "Notifications" },
         ],
       },
       {
@@ -148,6 +147,17 @@ export const getPermissionGroups = (recruiterType) => {
           { key: "delete-news", label: "Delete News" },
         ],
       },
+      {
+        title: "Company Policy Management",
+        icon: <BellOutlined />,
+        permissions: [
+          { key: "create-policy", label: "Create Policy" },
+          { key: "edit-policy", label: "Edit Policy" },
+          { key: "archive-policy", label: "Publish Policy" },
+          { key: "delete-policy", label: "Delete Policy" },
+        ],
+      },
+     
     ];
   }
 

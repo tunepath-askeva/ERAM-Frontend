@@ -27,6 +27,7 @@ import {
   useBulkNotifyExpiredDocumentsMutation,
   useSingleNotifyExpiredDocumentMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TextArea } = Input;
@@ -48,6 +49,14 @@ const EmployeeAdminExpiredDocuments = () => {
       "Your document has expired or is about to expire. Please renew it as soon as possible to avoid any compliance issues.",
   });
   const [loading, setLoading] = useState(false);
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -332,12 +341,12 @@ const EmployeeAdminExpiredDocuments = () => {
     });
   };
 
-  if(isLoading){
-    return(
+  if (isLoading) {
+    return (
       <div>
         <SkeletonLoader />
       </div>
-    )
+    );
   }
 
   return (
@@ -469,19 +478,21 @@ const EmployeeAdminExpiredDocuments = () => {
               </div>
             )}
           </div>
-          <Button
-            type="primary"
-            icon={<BellOutlined />}
-            onClick={() => setIsModalVisible(true)}
-            disabled={selectedRowKeys.length === 0}
-            style={{
-              backgroundColor:
-                selectedRowKeys.length > 0 ? "#da2c46" : undefined,
-              borderColor: selectedRowKeys.length > 0 ? "#da2c46" : undefined,
-            }}
-          >
-            Notify Selected ({selectedRowKeys.length})
-          </Button>
+          {hasPermission("notify-selected-expiring-docs") && (
+            <Button
+              type="primary"
+              icon={<BellOutlined />}
+              onClick={() => setIsModalVisible(true)}
+              disabled={selectedRowKeys.length === 0}
+              style={{
+                backgroundColor:
+                  selectedRowKeys.length > 0 ? "#da2c46" : undefined,
+                borderColor: selectedRowKeys.length > 0 ? "#da2c46" : undefined,
+              }}
+            >
+              Notify Selected ({selectedRowKeys.length})
+            </Button>
+          )}
         </div>
       </Card>
 

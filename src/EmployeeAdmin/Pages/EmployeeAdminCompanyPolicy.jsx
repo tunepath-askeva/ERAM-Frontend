@@ -36,7 +36,7 @@ import {
   InboxOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-
+import { useSelector } from "react-redux";
 import {
   useUploadPolicyDocumentMutation,
   useCreatePolicyMutation,
@@ -78,6 +78,14 @@ const EmployeeAdminCompanyPolicy = () => {
   const [updatePolicy, { isLoading: isUpdating }] = useUpdatePolicyMutation();
   const [deletePolicy] = useDeletePolicyMutation();
   const [archivePolicy] = useArchivePolicyMutation();
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const {
     data: policiesResponse,
@@ -583,28 +591,34 @@ const EmployeeAdminCompanyPolicy = () => {
           >
             View
           </Button>
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEditPolicy(record)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="small"
-            onClick={() => showArchiveConfirm(record._id, record.status)}
-          >
-            {record.status === "active" ? "Archive" : "Unarchive"}
-          </Button>
+          {hasPermission("edit-policy") && (
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEditPolicy(record)}
+            >
+              Edit
+            </Button>
+          )}
+          {hasPermission("archive-policy") && (
+            <Button
+              size="small"
+              onClick={() => showArchiveConfirm(record._id, record.status)}
+            >
+              {record.status === "active" ? "Archive" : "Unarchive"}
+            </Button>
+          )}
 
-          <Button
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteConfirm(record._id)}
-          >
-            Delete
-          </Button>
+          {hasPermission("delete-policy") && (
+            <Button
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => showDeleteConfirm(record._id)}
+            >
+              Delete
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -639,99 +653,100 @@ const EmployeeAdminCompanyPolicy = () => {
         </Paragraph>
       </Card>
 
-      {/* Upload and Preview Section */}
-      <Row gutter={[24, 24]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} md={12}>
-          <Card title="Upload Policy Document" style={{ height: "100%" }}>
-            {uploadStatus === "idle" && !parsedData && (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <Upload.Dragger
-                  {...uploadProps}
-                  style={{ background: "#fafafa" }}
-                >
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined
-                      style={{ fontSize: "48px", color: "#da2c46" }}
-                    />
-                  </p>
-                  <p
-                    className="ant-upload-text"
-                    style={{ fontSize: "16px", fontWeight: "500" }}
+      {hasPermission("create-policy") && (
+        <Row gutter={[24, 24]} style={{ marginBottom: "24px" }}>
+          <Col xs={24} md={12}>
+            <Card title="Upload Policy Document" style={{ height: "100%" }}>
+              {uploadStatus === "idle" && !parsedData && (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <Upload.Dragger
+                    {...uploadProps}
+                    style={{ background: "#fafafa" }}
                   >
-                    Click or drag file to upload
-                  </p>
-                  <p className="ant-upload-hint" style={{ color: "#666" }}>
-                    Supports PDF, DOC, DOCX, TXT (max 10MB)
-                  </p>
-                </Upload.Dragger>
-              </div>
-            )}
+                    <p className="ant-upload-drag-icon">
+                      <InboxOutlined
+                        style={{ fontSize: "48px", color: "#da2c46" }}
+                      />
+                    </p>
+                    <p
+                      className="ant-upload-text"
+                      style={{ fontSize: "16px", fontWeight: "500" }}
+                    >
+                      Click or drag file to upload
+                    </p>
+                    <p className="ant-upload-hint" style={{ color: "#666" }}>
+                      Supports PDF, DOC, DOCX, TXT (max 10MB)
+                    </p>
+                  </Upload.Dragger>
+                </div>
+              )}
 
-            {uploadStatus === "uploading" && (
-              <div style={{ textAlign: "center", padding: "60px 0" }}>
-                <Spin size="large" />
-                <p
-                  style={{
-                    marginTop: "16px",
-                    color: "#1890ff",
-                    fontSize: "16px",
-                  }}
-                >
-                  Uploading and parsing document...
-                </p>
-              </div>
-            )}
+              {uploadStatus === "uploading" && (
+                <div style={{ textAlign: "center", padding: "60px 0" }}>
+                  <Spin size="large" />
+                  <p
+                    style={{
+                      marginTop: "16px",
+                      color: "#1890ff",
+                      fontSize: "16px",
+                    }}
+                  >
+                    Uploading and parsing document...
+                  </p>
+                </div>
+              )}
 
-            {uploadStatus === "error" && (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
+              {uploadStatus === "error" && (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <Alert
+                    message="Upload Failed"
+                    description="There was an error uploading or parsing your document."
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Button onClick={resetForm}>Try Again</Button>
+                </div>
+              )}
+
+              {uploadStatus === "success" && parsedData && (
                 <Alert
-                  message="Upload Failed"
-                  description="There was an error uploading or parsing your document."
-                  type="error"
+                  message="Upload Successful"
+                  description="Document has been uploaded and parsed successfully."
+                  type="success"
                   showIcon
                   style={{ marginBottom: 16 }}
                 />
-                <Button onClick={resetForm}>Try Again</Button>
-              </div>
-            )}
-
-            {uploadStatus === "success" && parsedData && (
-              <Alert
-                message="Upload Successful"
-                description="Document has been uploaded and parsed successfully."
-                type="success"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
-          </Card>
-        </Col>
-
-        <Col xs={24} md={12}>
-          {uploadStatus === "success" && parsedData ? (
-            renderParsedDataDisplay()
-          ) : (
-            <Card title="Document Preview" style={{ height: "100%" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%",
-                  minHeight: "300px",
-                  color: "#bfbfbf",
-                }}
-              >
-                <Text type="secondary">
-                  {uploadStatus === "idle"
-                    ? "Upload a document to see the preview"
-                    : "Processing document..."}
-                </Text>
-              </div>
+              )}
             </Card>
-          )}
-        </Col>
-      </Row>
+          </Col>
+
+          <Col xs={24} md={12}>
+            {uploadStatus === "success" && parsedData ? (
+              renderParsedDataDisplay()
+            ) : (
+              <Card title="Document Preview" style={{ height: "100%" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100%",
+                    minHeight: "300px",
+                    color: "#bfbfbf",
+                  }}
+                >
+                  <Text type="secondary">
+                    {uploadStatus === "idle"
+                      ? "Upload a document to see the preview"
+                      : "Processing document..."}
+                  </Text>
+                </div>
+              </Card>
+            )}
+          </Col>
+        </Row>
+      )}
 
       {/* Policies Table Section */}
       <Card
@@ -807,18 +822,21 @@ const EmployeeAdminCompanyPolicy = () => {
           <Button key="close" onClick={() => setViewModalVisible(false)}>
             Close
           </Button>,
-          <Button
-            key="edit"
-            type="primary"
-            style={{ backgroundColor: "#da2c46" }}
-            onClick={() => {
-              setViewModalVisible(false);
-              handleEditPolicy(selectedPolicy);
-            }}
-          >
-            Edit
-          </Button>,
-        ]}
+
+          hasPermission("edit-policy") && (
+            <Button
+              key="edit"
+              type="primary"
+              style={{ backgroundColor: "#da2c46" }}
+              onClick={() => {
+                setViewModalVisible(false);
+                handleEditPolicy(selectedPolicy);
+              }}
+            >
+              Edit
+            </Button>
+          ),
+        ].filter(Boolean)}
         width={800}
       >
         {selectedPolicy && (

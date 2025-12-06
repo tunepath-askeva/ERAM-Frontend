@@ -38,6 +38,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSelector } from "react-redux";
 
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
@@ -61,6 +62,14 @@ const EmployeeAdminNews = () => {
     pageSize: pagination.pageSize,
     search: searchText,
   });
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const [createNews, { isLoading: isCreatingNews }] = useCreateNewsMutation();
   const [deleteNews, { isLoading: isDeletingNews }] = useDeleteNewsMutation();
@@ -258,32 +267,38 @@ const EmployeeAdminNews = () => {
             type="text"
             title="View Details"
           />
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-            type="text"
-            style={{ color: "#da2c46" }}
-            title="Edit News"
-          />
-          <Button
-            icon={<GlobalOutlined />}
-            onClick={() => showPublishConfirm(record)}
-            size="small"
-            type="text"
-            style={{
-              color: record.status === "published" ? "#fa8c16" : "#52c41a",
-            }}
-            title={record.status === "published" ? "Unpublish" : "Publish"}
-          />
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => showDeleteConfirm(record)}
-            size="small"
-            type="text"
-            danger
-            title="Delete News"
-          />
+          {hasPermission("edit-news") && (
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+              size="small"
+              type="text"
+              style={{ color: "#da2c46" }}
+              title="Edit News"
+            />
+          )}
+          {hasPermission("publish-news") && (
+            <Button
+              icon={<GlobalOutlined />}
+              onClick={() => showPublishConfirm(record)}
+              size="small"
+              type="text"
+              style={{
+                color: record.status === "published" ? "#fa8c16" : "#52c41a",
+              }}
+              title={record.status === "published" ? "Unpublish" : "Publish"}
+            />
+          )}
+          {hasPermission("delete-news") && (
+            <Button
+              icon={<DeleteOutlined />}
+              onClick={() => showDeleteConfirm(record)}
+              size="small"
+              type="text"
+              danger
+              title="Delete News"
+            />
+          )}
         </Space>
       ),
     },
@@ -333,159 +348,159 @@ const EmployeeAdminNews = () => {
         </Paragraph>
       </Card>
 
-      {/* News Creation Form */}
-      <Row gutter={24} style={{ marginBottom: "32px" }}>
-        <Col span={24}>
-          <Card
-            title={
-              <span style={{ color: "#da2c46" }}>Create News Article</span>
-            }
-            style={customStyles.cardStyle}
-          >
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              requiredMark={false}
+      {hasPermission("create-news") && (
+        <Row gutter={24} style={{ marginBottom: "32px" }}>
+          <Col span={24}>
+            <Card
+              title={
+                <span style={{ color: "#da2c46" }}>Create News Article</span>
+              }
+              style={customStyles.cardStyle}
             >
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="News Title"
-                    name="title"
-                    rules={[
-                      { required: true, message: "Please enter news title" },
-                    ]}
-                  >
-                    <Input
-                      placeholder="Enter compelling news title"
-                      style={{ borderRadius: "6px" }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Cover Image" name="coverImage">
-                    <Upload {...uploadProps}>
-                      <div>
-                        <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>Upload Cover</div>
-                      </div>
-                    </Upload>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item label="News Description" name="description">
-                <TextArea
-                  rows={4}
-                  placeholder="Write a comprehensive description of the news..."
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-
-              <Divider orientation="left" style={{ color: "#da2c46" }}>
-                <Text strong>Article Subsections</Text>
-              </Divider>
-
-              <Form.List name="subsections">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Card
-                        key={key}
-                        size="small"
-                        style={{
-                          marginBottom: "16px",
-                          border: `1px solid rgba(218, 44, 70, 0.1)`,
-                        }}
-                        extra={
-                          <Button
-                            type="text"
-                            icon={<MinusCircleOutlined />}
-                            onClick={() => remove(name)}
-                            danger
-                          />
-                        }
-                      >
-                        <Form.Item
-                          {...restField}
-                          label="Subsection Title"
-                          name={[name, "title"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please enter subsection title",
-                            },
-                          ]}
-                        >
-                          <Input placeholder="Enter subsection title" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          label="Subsection Content"
-                          name={[name, "content"]}
-                          rules={[
-                            {
-                              required: true,
-                              message: "Please enter subsection content",
-                            },
-                          ]}
-                        >
-                          <TextArea
-                            rows={3}
-                            placeholder="Write subsection content..."
-                          />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          label="Subsection Image"
-                          name={[name, "image"]}
-                        >
-                          <Upload {...uploadProps}>
-                            <div>
-                              <PlusOutlined />
-                              <div style={{ marginTop: 8 }}>Upload Image</div>
-                            </div>
-                          </Upload>
-                        </Form.Item>
-                      </Card>
-                    ))}
-                    <Form.Item>
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        icon={<PlusOutlined />}
-                        style={{
-                          width: "100%",
-                          borderColor: "#da2c46",
-                          color: "#da2c46",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        Add Subsection
-                      </Button>
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleSubmit}
+                requiredMark={false}
+              >
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="News Title"
+                      name="title"
+                      rules={[
+                        { required: true, message: "Please enter news title" },
+                      ]}
+                    >
+                      <Input
+                        placeholder="Enter compelling news title"
+                        style={{ borderRadius: "6px" }}
+                      />
                     </Form.Item>
-                  </>
-                )}
-              </Form.List>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item label="Cover Image" name="coverImage">
+                      <Upload {...uploadProps}>
+                        <div>
+                          <PlusOutlined />
+                          <div style={{ marginTop: 8 }}>Upload Cover</div>
+                        </div>
+                      </Upload>
+                    </Form.Item>
+                  </Col>
+                </Row>
 
-              <Form.Item style={{ marginTop: "24px" }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={isCreatingNews}
-                  size="large"
-                  style={customStyles.buttonStyle}
-                  icon={<FileTextOutlined />}
-                >
-                  Create News
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
-      </Row>
+                <Form.Item label="News Description" name="description">
+                  <TextArea
+                    rows={4}
+                    placeholder="Write a comprehensive description of the news..."
+                    style={{ borderRadius: "6px" }}
+                  />
+                </Form.Item>
 
+                <Divider orientation="left" style={{ color: "#da2c46" }}>
+                  <Text strong>Article Subsections</Text>
+                </Divider>
+
+                <Form.List name="subsections">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Card
+                          key={key}
+                          size="small"
+                          style={{
+                            marginBottom: "16px",
+                            border: `1px solid rgba(218, 44, 70, 0.1)`,
+                          }}
+                          extra={
+                            <Button
+                              type="text"
+                              icon={<MinusCircleOutlined />}
+                              onClick={() => remove(name)}
+                              danger
+                            />
+                          }
+                        >
+                          <Form.Item
+                            {...restField}
+                            label="Subsection Title"
+                            name={[name, "title"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter subsection title",
+                              },
+                            ]}
+                          >
+                            <Input placeholder="Enter subsection title" />
+                          </Form.Item>
+                          <Form.Item
+                            {...restField}
+                            label="Subsection Content"
+                            name={[name, "content"]}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter subsection content",
+                              },
+                            ]}
+                          >
+                            <TextArea
+                              rows={3}
+                              placeholder="Write subsection content..."
+                            />
+                          </Form.Item>
+                          <Form.Item
+                            {...restField}
+                            label="Subsection Image"
+                            name={[name, "image"]}
+                          >
+                            <Upload {...uploadProps}>
+                              <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8 }}>Upload Image</div>
+                              </div>
+                            </Upload>
+                          </Form.Item>
+                        </Card>
+                      ))}
+                      <Form.Item>
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          icon={<PlusOutlined />}
+                          style={{
+                            width: "100%",
+                            borderColor: "#da2c46",
+                            color: "#da2c46",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          Add Subsection
+                        </Button>
+                      </Form.Item>
+                    </>
+                  )}
+                </Form.List>
+
+                <Form.Item style={{ marginTop: "24px" }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={isCreatingNews}
+                    size="large"
+                    style={customStyles.buttonStyle}
+                    icon={<FileTextOutlined />}
+                  >
+                    Create News
+                  </Button>
+                </Form.Item>
+              </Form>
+            </Card>
+          </Col>
+        </Row>
+      )}
       {/* News Table */}
       <Row gutter={24}>
         <Col span={24}>

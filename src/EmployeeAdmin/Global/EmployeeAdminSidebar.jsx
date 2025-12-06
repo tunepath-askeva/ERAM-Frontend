@@ -16,7 +16,7 @@ import {
   BellOutlined,
   UsergroupAddOutlined,
 } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useLogoutSuperAdminMutation } from "../../Slices/SuperAdmin/SuperAdminApis.js";
@@ -56,6 +56,10 @@ const EmployeeAdminSidebar = ({
   const [hoveredKey, setHoveredKey] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const permissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
   const location = useLocation();
   const selectedKey = location.pathname;
 
@@ -64,57 +68,68 @@ const EmployeeAdminSidebar = ({
       key: "/employee-admin/dashboard",
       icon: <DashboardOutlined />,
       label: "Dashboard",
+      permission: "dashboard",
     },
     {
       key: "/employee-admin/all-employees",
       icon: <UsergroupAddOutlined />,
       label: "All Employees",
+      permission: "all-employee",
     },
     {
       key: "/employee-admin/leave-request",
       icon: <FormOutlined />,
       label: "Leave Request",
+      permission: "leave-request",
     },
     {
       key: "/employee-admin/other-request",
       icon: <PullRequestOutlined />,
       label: "Other Requests",
+      permission: "other-request",
     },
     {
       key: "/employee-admin/payroll",
       icon: <PayCircleOutlined />,
       label: "Payroll",
+      permission: "payroll",
     },
     {
       key: "/employee-admin/documents",
       icon: <FilePdfOutlined />,
       label: "Employee Documents",
+      permission: "employee-documents",
     },
     {
       key: "/employee-admin/exp-documents",
       icon: <WarningOutlined />,
       label: "Expiring Documents",
+      permission: "expiring-documents",
     },
     {
       key: "/employee-admin/company-policy",
       icon: <SolutionOutlined />,
       label: "Company Policies",
+      permission: "company-policies",
     },
     {
       key: "/employee-admin/news",
       icon: <PaperClipOutlined />,
       label: "News",
+      permission: "news",
     },
     {
       key: "/employee-admin/feedback",
       icon: <IssuesCloseOutlined />,
       label: "Feedback/Suggestion",
+      permission: "feedback-suggestion",
     },
-    {
-      key: "/employee-admin/notifications",
-      icon: <BellOutlined />,
-      label: "Notifications",
-    },
+    // {
+    //   key: "/employee-admin/notifications",
+    //   icon: <BellOutlined />,
+    //   label: "Notifications",
+    //   permission: "notifications",
+    // },
   ];
 
   useEffect(() => {
@@ -249,6 +264,13 @@ const EmployeeAdminSidebar = ({
     return employeeInfo.name.charAt(0).toUpperCase();
   };
 
+  const filteredMenuItems =
+    permissions?.length > 0
+      ? menuItems.filter((item) => permissions.includes(item.permission))
+      : menuItems;
+
+  console.log(filteredMenuItems, "MENU ITEMS");
+
   const handleLogout = async () => {
     try {
       await logout().unwrap();
@@ -373,7 +395,7 @@ const EmployeeAdminSidebar = ({
           gap: "8px",
         }}
       >
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <button
             key={item.key}
             onClick={() => handleMenuClick({ key: item.key })}

@@ -19,6 +19,7 @@ import { EyeOutlined, AlertOutlined } from "@ant-design/icons";
 import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 import LeaveRequestModal from "../Components/LeaveRequestModal";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSelector } from "react-redux";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -35,6 +36,14 @@ const EmployeeAdminLeaveRequest = () => {
     page: 1,
     pageSize: 10,
   });
+
+  const recruiterPermissions = useSelector(
+    (state) => state.userAuth.recruiterPermissions
+  );
+
+  const hasPermission = (permissionKey) => {
+    return recruiterPermissions.includes(permissionKey);
+  };
 
   const { data, isLoading, error, refetch } =
     useGetEmployeeAdminLeaveHistoryQuery(filters);
@@ -350,6 +359,7 @@ const EmployeeAdminLeaveRequest = () => {
         leaveId={selectedLeaveId}
         eramId={selectedEramId}
         email={selelctedMail}
+        hasPermission={hasPermission}
       />
       <style jsx>{`
         .ant-table-thead > tr > th {
