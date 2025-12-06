@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Table,
   Card,
   Tag,
   Space,
@@ -14,12 +13,13 @@ import {
   Button,
   Modal,
   Badge,
-  Tooltip,
   Timeline,
   Descriptions,
-  Steps,
   Divider,
-  Empty,
+  List,
+  Spin,
+  Grid,
+  Tabs,
 } from "antd";
 import {
   UserOutlined,
@@ -44,44 +44,68 @@ import {
   CheckOutlined,
   LoadingOutlined,
   StopOutlined,
+  LeftOutlined,
+  RightOutlined,
+  DownOutlined,
+  FilePdfOutlined,
+  DownloadOutlined,
+  LinkOutlined,
+  HistoryOutlined,
+  CloseOutlined,
+  ClusterOutlined,
+  SolutionOutlined,
+  AuditOutlined,
+  GlobalOutlined,
+  BankOutlined,
+  ScheduleOutlined,
+  IdcardOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useGetWorkOrderDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
-const { Step } = Steps;
+const { TabPane } = Tabs;
+const { useBreakpoint } = Grid;
 
 const calculateOverdueDays = (endDate) => {
   if (!endDate) return null;
-
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to start of day
-
+  today.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setHours(0, 0, 0, 0);
-
   if (today > end) {
     const diffTime = Math.abs(today - end);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   }
-
   return null;
 };
 
 const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const screens = useBreakpoint();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(5);
+  const [allCandidateData, setAllCandidateData] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [expandedCandidate, setExpandedCandidate] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1); // Add state
-  const [pageSize, setPageSize] = useState(10); // Add state
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
-  const { data, isLoading, error } = useGetWorkOrderDetailsQuery({
+  const { data, isLoading, refetch, isFetching } = useGetWorkOrderDetailsQuery({
     jobId,
     page: currentPage,
     limit: pageSize,
   });
 
-  // Status configuration
+  useEffect(() => {
+    if (data?.candidates) {
+      setAllCandidateData(data.candidates);
+      setHasMore(data?.hasMore);
+    }
+  }, [data]);
+
   const statusConfig = {
     applied: { color: "#da2c46", text: "Applied", icon: <FileTextOutlined /> },
     sourced: { color: "#1890ff", text: "Sourced", icon: <UserAddOutlined /> },
@@ -134,19 +158,48 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
     rejected: { color: "error", icon: <StopOutlined /> },
   };
 
-  // Show candidate details modal
-  const showCandidateDetails = (candidate) => {
-    setSelectedCandidate(candidate);
-    setDetailModalVisible(true);
+  const getStatusTag = (status) => {
+    const config = statusConfig[status];
+    return (
+      <Badge
+        status={
+          status === "selected" || status === "approved" || status === "hired"
+            ? "success"
+            : status === "rejected"
+            ? "error"
+            : "processing"
+        }
+        text={config?.text || status}
+      />
+    );
   };
 
-  // Calculate status counts
-  const getStatusCounts = () => {
-    if (!data || !data.candidates) return {};
-    return data.candidates.reduce((acc, candidate) => {
-      acc[candidate.currentStatus] = (acc[candidate.currentStatus] || 0) + 1;
-      return acc;
-    }, {});
+  const getStatusColor = (status) => {
+    return statusConfig[status]?.color || "default";
+  };
+
+  const handleNext = () => {
+    if (hasMore) setCurrentPage((prev) => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+  };
+
+  const toggleCandidateExpansion = (candidateId) => {
+    setExpandedCandidate(
+      expandedCandidate === candidateId ? null : candidateId
+    );
+  };
+
+  const showFullDetailsModal = (candidateData) => {
+    setSelectedCandidate(candidateData);
+    setModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setSelectedCandidate(null);
   };
 
   const statusCounts = data?.summary?.statusDistribution || {};
@@ -165,146 +218,1386 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
     }
   }, [isWorkOrderComplete, convertedEmployees]);
 
-  // Enhanced table columns
-  const columns = [
-    {
-      title: "Candidate",
-      dataIndex: "candidate",
-      key: "candidate",
-      width: "25%",
-      render: (candidate) => (
-        <Space size="small">
-          <Avatar
-            icon={<UserOutlined />}
-            style={{ backgroundColor: "#da2c46" }}
-            size="small"
-          />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: "14px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {candidate?.fullName || "N/A"}
-            </div>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: "12px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {candidate?.email}
-            </Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: "Current Status",
-      dataIndex: "currentStatus",
-      key: "status",
-      width: "15%",
-      render: (status) => (
-        <Tag
-          color={statusConfig[status]?.color || "default"}
-          icon={statusConfig[status]?.icon}
-          style={{ borderRadius: "6px", fontWeight: 500 }}
-        >
-          {statusConfig[status]?.text || status}
-        </Tag>
-      ),
-    },
-    {
-      title: "Current Pipeline",
-      dataIndex: "currentStage",
-      key: "pipeline",
-      width: "15%",
-      render: (currentStage) => (
-        <Text style={{ fontSize: "12px" }}>
-          {currentStage?.pipelineName || "N/A"}
-        </Text>
-      ),
-      responsive: ["md", "lg", "xl"],
-    },
-    {
-      title: "Current Stage",
-      dataIndex: "currentStage",
-      key: "stage",
-      width: "20%",
-      render: (currentStage) => (
-        <div>
-          <div style={{ fontSize: "13px", fontWeight: 500 }}>
-            {currentStage?.stageName || "N/A"}
-          </div>
-          {currentStage && (
-            <Tag
-              color={stageStatusConfig[currentStage.stageStatus]?.color}
-              icon={stageStatusConfig[currentStage.stageStatus]?.icon}
-              style={{ fontSize: "11px", marginTop: "4px" }}
-            >
-              {currentStage.stageStatus}
-            </Tag>
-          )}
-        </div>
-      ),
-      responsive: ["lg", "xl"],
-    },
-    {
-      title: "Progress",
-      dataIndex: "stageProgressionSummary",
-      key: "progress",
-      width: "15%",
-      render: (summary) => (
-        <div>
-          <Progress
-            percent={summary?.progressPercentage || 0}
-            size="small"
-            strokeColor="#52c41a"
-            style={{ marginBottom: "4px" }}
-          />
-          <Text style={{ fontSize: "11px" }} type="secondary">
-            {summary?.completedStages || 0}/{summary?.totalStages || 0} stages
-          </Text>
-        </div>
-      ),
-      responsive: ["md", "lg", "xl"],
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: "10%",
-      render: (_, record) => (
-        <Button
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => showCandidateDetails(record)}
-          style={{ borderColor: "#da2c46", color: "#da2c46" }}
-        >
-          Details
-        </Button>
-      ),
-    },
-  ];
+  const FullDetailsModal = () => {
+    if (!selectedCandidate) return null;
 
-  if (error)
-    return <Alert message="Error loading work order status" type="error" />;
+    const candidate = selectedCandidate.candidate;
+    const workOrder = data?.workorder;
+    const isMobile = !screens.md;
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <Avatar icon={<UserOutlined />} size="large" />
+            <div>
+              <Title level={4} style={{ margin: 0 }}>
+                {candidate.fullName}
+              </Title>
+              <Text type="secondary">{candidate.email}</Text>
+            </div>
+          </Space>
+        }
+        open={modalVisible}
+        onCancel={handleModalClose}
+        width={isMobile ? "100%" : 1200}
+        footer={[
+          <Button key="close" onClick={handleModalClose}>
+            Close
+          </Button>,
+        ]}
+        bodyStyle={{ padding: 0, maxHeight: "80vh", overflowY: "auto" }}
+      >
+        <Tabs defaultActiveKey="1" style={{ marginTop: 16 }}>
+          {/* Tab 1: Candidate Profile */}
+          <TabPane
+            tab={
+              <span>
+                <UserOutlined /> Profile
+              </span>
+            }
+            key="1"
+          >
+            <Row gutter={isMobile ? [0, 16] : 24}>
+              <Col xs={24} md={12}>
+                <Card title="Personal Information" size="small">
+                  <Descriptions column={1} bordered size="small">
+                    <Descriptions.Item label="Full Name">
+                      <Text strong>{candidate.fullName}</Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Candidate ID">
+                      <Tag color="blue">{candidate.uniqueCode}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Email">
+                      <Space>
+                        <MailOutlined />
+                        <a href={`mailto:${candidate.email}`}>
+                          {candidate.email}
+                        </a>
+                      </Space>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Phone">
+                      <Space>
+                        <PhoneOutlined />
+                        <a href={`tel:${candidate.phone}`}>{candidate.phone}</a>
+                      </Space>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Nationality">
+                      <Space>
+                        <GlobalOutlined />
+                        {candidate.nationality}
+                      </Space>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Candidate Type">
+                      <Tag color="purple">{candidate.candidateType}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Total Experience">
+                      <ScheduleOutlined /> {candidate.totalExperienceYears}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+
+                <Card
+                  title="Professional Details"
+                  size="small"
+                  style={{ marginTop: 16 }}
+                >
+                  <Descriptions column={1} bordered size="small">
+                    <Descriptions.Item label="Specialization">
+                      {candidate.specialization}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Company">
+                      <BankOutlined /> {candidate.companyName}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Qualifications">
+                      {candidate.qualifications?.length > 0
+                        ? candidate.qualifications.map((q, i) => (
+                            <Tag key={i}>{q}</Tag>
+                          ))
+                        : "N/A"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Skills">
+                      {candidate.skills?.length > 0
+                        ? candidate.skills.map((skill, i) => (
+                            <Tag key={i} color="cyan">
+                              {skill}
+                            </Tag>
+                          ))
+                        : "N/A"}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Col>
+
+              <Col xs={24} md={12}>
+                <Card title="Work Order Details" size="small">
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <div
+                      style={{
+                        padding: 16,
+                        backgroundColor: "#fafafa",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Title level={5}>{workOrder?.title}</Title>
+                      <Space wrap>
+                        <Tag color="blue">{workOrder?.jobCode}</Tag>
+                        <Tag
+                          color={
+                            workOrder?.workplace === "on-site"
+                              ? "green"
+                              : "orange"
+                          }
+                        >
+                          {workOrder?.workplace}
+                        </Tag>
+                      </Space>
+                      <Divider style={{ margin: "12px 0" }} />
+                      <Descriptions column={1} size="small">
+                        <Descriptions.Item label="Location">
+                          <EnvironmentOutlined /> {workOrder?.officeLocation}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Job Function">
+                          <TeamOutlined /> {workOrder?.jobFunction}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Industry">
+                          <BankOutlined /> {workOrder?.companyIndustry}
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </div>
+
+                    <Card
+                      title="Current Status"
+                      size="small"
+                      style={{ marginTop: 16 }}
+                    >
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <Text strong>Application Status:</Text>
+                          <Tag
+                            color={getStatusColor(
+                              selectedCandidate.currentStatus
+                            )}
+                            style={{ fontSize: "14px", padding: "4px 12px" }}
+                          >
+                            {selectedCandidate.currentStatus?.toUpperCase()}
+                          </Tag>
+                        </div>
+
+                        {selectedCandidate.isSourced === "true" && (
+                          <Tag color="purple" style={{ marginTop: 8 }}>
+                            <SolutionOutlined /> Sourced Candidate
+                          </Tag>
+                        )}
+
+                        {selectedCandidate.selectedMovingComment && (
+                          <>
+                            <Divider style={{ margin: "8px 0" }} />
+                            <Text strong>Selection Comments:</Text>
+                            <Text
+                              type="secondary"
+                              style={{ fontStyle: "italic", display: "block" }}
+                            >
+                              "{selectedCandidate.selectedMovingComment}"
+                            </Text>
+                          </>
+                        )}
+
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Text strong>Timeline:</Text>
+                        <Text type="secondary" style={{ display: "block" }}>
+                          Created:{" "}
+                          {dayjs(selectedCandidate.appliedAt).format(
+                            "DD MMM YYYY, hh:mm A"
+                          )}
+                        </Text>
+                        <Text type="secondary" style={{ display: "block" }}>
+                          Last Updated:{" "}
+                          {dayjs(selectedCandidate.lastUpdatedAt).format(
+                            "DD MMM YYYY, hh:mm A"
+                          )}
+                        </Text>
+                      </Space>
+                    </Card>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+          </TabPane>
+
+          {/* Tab 2: Pipeline Stages */}
+          <TabPane
+            tab={
+              <span>
+                <ClusterOutlined /> Pipeline Stages
+              </span>
+            }
+            key="2"
+          >
+            {selectedCandidate.stageHistory?.length > 0 ? (
+              <Row gutter={24}>
+                <Col span={24}>
+                  <Card title="Stage Progress" size="small">
+                    <Timeline mode={isMobile ? "left" : "alternate"}>
+                      {[...(selectedCandidate.stageHistory || [])]
+                        .sort(
+                          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+                        )
+                        .map((stage) => (
+                          <Timeline.Item
+                            key={stage.stageId}
+                            color={
+                              stage.stageStatus === "approved"
+                                ? "green"
+                                : stage.stageStatus === "pending"
+                                ? "orange"
+                                : "red"
+                            }
+                            label={
+                              stage.stageDefinition?.startDate && (
+                                <Space direction="vertical" size={0}>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    Start:{" "}
+                                    {dayjs(
+                                      stage.stageDefinition.startDate
+                                    ).format("DD MMM YYYY")}
+                                  </Text>
+                                  {stage.stageDefinition.endDate && (
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 12 }}
+                                    >
+                                      End:{" "}
+                                      {dayjs(
+                                        stage.stageDefinition.endDate
+                                      ).format("DD MMM YYYY")}
+                                    </Text>
+                                  )}
+                                </Space>
+                              )
+                            }
+                          >
+                            <Card
+                              size="small"
+                              title={
+                                <Space wrap>
+                                  <Text strong>{stage.stageName}</Text>
+                                  <Tag
+                                    color={
+                                      stage.stageStatus === "approved"
+                                        ? "green"
+                                        : stage.stageStatus === "pending"
+                                        ? "orange"
+                                        : "red"
+                                    }
+                                  >
+                                    {stage.stageStatus}
+                                  </Tag>
+                                  {stage.approval && (
+                                    <Tag color="purple">
+                                      <AuditOutlined /> Requires Approval
+                                    </Tag>
+                                  )}
+                                </Space>
+                              }
+                              style={{ marginBottom: 8 }}
+                            >
+                              <Descriptions
+                                column={isMobile ? 1 : 2}
+                                size="small"
+                              >
+                                <Descriptions.Item label="Pipeline">
+                                  {stage.pipelineName}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Stage Order">
+                                  Stage {stage.stageNumber}
+                                </Descriptions.Item>
+                                {stage.stageCompletedAt && (
+                                  <Descriptions.Item label="Completed At">
+                                    {dayjs(stage.stageCompletedAt).format(
+                                      "DD MMM YYYY, hh:mm A"
+                                    )}
+                                  </Descriptions.Item>
+                                )}
+                              </Descriptions>
+
+                              {/* Approval Summary */}
+                              {stage.approvalSummary && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Approval Details
+                                  </Divider>
+                                  {Object.entries(stage.approvalSummary).map(
+                                    ([level, detail]) => (
+                                      <Card
+                                        key={level}
+                                        size="small"
+                                        style={{ marginBottom: 8 }}
+                                      >
+                                        <Space
+                                          direction="vertical"
+                                          style={{ width: "100%" }}
+                                        >
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                            }}
+                                          >
+                                            <Text strong>{level}</Text>
+                                            <Tag
+                                              color={
+                                                detail.status === "approved"
+                                                  ? "green"
+                                                  : detail.status === "rejected"
+                                                  ? "red"
+                                                  : "orange"
+                                              }
+                                            >
+                                              {detail.status}
+                                            </Tag>
+                                          </div>
+                                          {detail.reviewer && (
+                                            <Text
+                                              type="secondary"
+                                              style={{ fontSize: 12 }}
+                                            >
+                                              Reviewer: {detail.reviewer.name}
+                                            </Text>
+                                          )}
+                                          {detail.comment && (
+                                            <Text style={{ fontSize: 12 }}>
+                                              Comment: {detail.comment}
+                                            </Text>
+                                          )}
+                                          {detail.reviewedAt && (
+                                            <Text
+                                              type="secondary"
+                                              style={{ fontSize: 11 }}
+                                            >
+                                              {dayjs(detail.reviewedAt).format(
+                                                "DD MMM YYYY, hh:mm A"
+                                              )}
+                                            </Text>
+                                          )}
+                                        </Space>
+                                      </Card>
+                                    )
+                                  )}
+                                </>
+                              )}
+
+                              {/* Recruiter Reviews */}
+                              {stage.reviews?.length > 0 && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Reviews ({stage.reviews.length})
+                                  </Divider>
+                                  <List
+                                    size="small"
+                                    dataSource={stage.reviews}
+                                    renderItem={(review) => (
+                                      <List.Item>
+                                        <List.Item.Meta
+                                          avatar={
+                                            <Avatar
+                                              size="small"
+                                              icon={<UserOutlined />}
+                                            />
+                                          }
+                                          title={
+                                            <Space wrap>
+                                              <Text>
+                                                {review.reviewer?.name}
+                                              </Text>
+                                              <Tag
+                                                color={
+                                                  review.status === "approved"
+                                                    ? "green"
+                                                    : review.status ===
+                                                      "pending"
+                                                    ? "orange"
+                                                    : "red"
+                                                }
+                                                size="small"
+                                              >
+                                                {review.status}
+                                              </Tag>
+                                            </Space>
+                                          }
+                                          description={
+                                            <>
+                                              {review.comments && (
+                                                <Text
+                                                  style={{
+                                                    display: "block",
+                                                    marginBottom: 4,
+                                                  }}
+                                                >
+                                                  {review.comments}
+                                                </Text>
+                                              )}
+                                              <Text
+                                                type="secondary"
+                                                style={{ fontSize: 12 }}
+                                              >
+                                                {review.reviewedAt
+                                                  ? dayjs(
+                                                      review.reviewedAt
+                                                    ).format(
+                                                      "DD MMM YYYY, hh:mm A"
+                                                    )
+                                                  : "Not reviewed yet"}
+                                              </Text>
+                                            </>
+                                          }
+                                        />
+                                      </List.Item>
+                                    )}
+                                  />
+                                </>
+                              )}
+
+                              {/* Uploaded Documents */}
+                              {stage.uploadedDocuments?.length > 0 && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Documents ({stage.uploadedDocuments.length})
+                                  </Divider>
+                                  <Row gutter={[8, 8]}>
+                                    {stage.uploadedDocuments.map((doc) => (
+                                      <Col key={doc._id} xs={24} sm={12}>
+                                        <Card size="small" hoverable>
+                                          <Space>
+                                            <FilePdfOutlined
+                                              style={{ color: "#ff4d4f" }}
+                                            />
+                                            <div style={{ flex: 1 }}>
+                                              <Text
+                                                strong
+                                                style={{ fontSize: 12 }}
+                                              >
+                                                {doc.documentName}
+                                              </Text>
+                                              <div style={{ marginTop: 4 }}>
+                                                <Button
+                                                  type="link"
+                                                  size="small"
+                                                  href={doc.fileUrl}
+                                                  target="_blank"
+                                                  icon={<EyeOutlined />}
+                                                >
+                                                  View
+                                                </Button>
+                                                <Button
+                                                  type="link"
+                                                  size="small"
+                                                  href={doc.fileUrl}
+                                                  icon={<DownloadOutlined />}
+                                                >
+                                                  Download
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </Space>
+                                        </Card>
+                                      </Col>
+                                    ))}
+                                  </Row>
+                                </>
+                              )}
+                            </Card>
+                          </Timeline.Item>
+                        ))}
+                    </Timeline>
+                  </Card>
+                </Col>
+              </Row>
+            ) : (
+              <Card>
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <InfoCircleOutlined
+                    style={{ fontSize: 48, color: "#d9d9d9" }}
+                  />
+                  <Title level={4} style={{ marginTop: 16 }}>
+                    No Pipeline Stages
+                  </Title>
+                  <Text type="secondary">
+                    This candidate doesn't have any pipeline stages.
+                  </Text>
+                </div>
+              </Card>
+            )}
+          </TabPane>
+
+          {/* Tab 3: Interview Details */}
+          <TabPane
+            tab={
+              <span>
+                <TeamOutlined /> Interviews
+              </span>
+            }
+            key="3"
+          >
+            {selectedCandidate.interviews?.length > 0 ? (
+              <Card title="Interview History" size="small">
+                <Timeline mode={isMobile ? "left" : "alternate"}>
+                  {selectedCandidate.interviews.map((interview, index) => (
+                    <Timeline.Item
+                      key={index}
+                      color={
+                        interview.status === "interview_completed"
+                          ? "green"
+                          : interview.status === "fail" ||
+                            interview.status === "interview_rejected"
+                          ? "red"
+                          : interview.status === "scheduled"
+                          ? "orange"
+                          : "gray"
+                      }
+                      label={
+                        interview.date && (
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {dayjs(interview.date).format("DD MMM YYYY")}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {dayjs(interview.date).format("hh:mm A")}
+                            </Text>
+                          </Space>
+                        )
+                      }
+                    >
+                      <Card
+                        size="small"
+                        title={
+                          <Space wrap>
+                            <Text strong>{interview.title}</Text>
+                            <Tag
+                              color={
+                                interview.status === "interview_completed"
+                                  ? "green"
+                                  : interview.status === "fail" ||
+                                    interview.status === "interview_rejected"
+                                  ? "red"
+                                  : interview.status === "scheduled"
+                                  ? "orange"
+                                  : "gray"
+                              }
+                            >
+                              {interview.status?.replace("_", " ")}
+                            </Tag>
+                          </Space>
+                        }
+                        style={{ marginBottom: 8 }}
+                      >
+                        <Descriptions column={1} size="small">
+                          <Descriptions.Item label="Mode">
+                            <Tag color="cyan">{interview.mode}</Tag>
+                          </Descriptions.Item>
+
+                          {interview.mode === "in-person" &&
+                            interview.location && (
+                              <Descriptions.Item label="Location">
+                                <EnvironmentOutlined /> {interview.location}
+                              </Descriptions.Item>
+                            )}
+
+                          {interview.mode === "online" &&
+                            interview.meetingLink && (
+                              <Descriptions.Item label="Meeting Link">
+                                <a
+                                  href={interview.meetingLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <LinkOutlined /> Join Meeting
+                                </a>
+                              </Descriptions.Item>
+                            )}
+
+                          {interview.notes && (
+                            <Descriptions.Item label="Notes">
+                              <Text>{interview.notes}</Text>
+                            </Descriptions.Item>
+                          )}
+
+                          {interview.interviewers?.length > 0 && (
+                            <Descriptions.Item label="Interviewers">
+                              <Space wrap>
+                                {interview.interviewers.map(
+                                  (interviewer, idx) => (
+                                    <Tag key={idx} color="purple">
+                                      {interviewer.name}
+                                    </Tag>
+                                  )
+                                )}
+                              </Space>
+                            </Descriptions.Item>
+                          )}
+                        </Descriptions>
+                      </Card>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Card>
+            ) : (
+              <Card>
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <InfoCircleOutlined
+                    style={{ fontSize: 48, color: "#d9d9d9" }}
+                  />
+                  <Title level={4} style={{ marginTop: 16 }}>
+                    No Interviews
+                  </Title>
+                  <Text type="secondary">
+                    No interview details available for this candidate.
+                  </Text>
+                </div>
+              </Card>
+            )}
+          </TabPane>
+
+          {/* Tab 4: Offer Details */}
+          <TabPane
+            tab={
+              <span>
+                <CheckCircleOutlined /> Offers
+              </span>
+            }
+            key="4"
+          >
+            {selectedCandidate.offers?.length > 0 ? (
+              <Card title="Offer Details" size="small">
+                {selectedCandidate.offers.map((offer, index) => (
+                  <Card
+                    key={index}
+                    size="small"
+                    title={`Offer ${index + 1}`}
+                    style={{ marginBottom: 16 }}
+                    extra={
+                      <Tag
+                        color={
+                          offer.currentStatus === "offer-accepted"
+                            ? "green"
+                            : offer.currentStatus === "offer-rejected"
+                            ? "red"
+                            : offer.currentStatus === "offer-revised"
+                            ? "orange"
+                            : "blue"
+                        }
+                      >
+                        {offer.currentStatus?.replace("-", " ")}
+                      </Tag>
+                    }
+                  >
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      {offer.salaryPackage && (
+                        <div>
+                          <Text strong>Salary Package:</Text>
+                          <Title level={5} style={{ margin: "4px 0" }}>
+                            {offer.salaryPackage}
+                          </Title>
+                        </div>
+                      )}
+
+                      {offer.description && (
+                        <div>
+                          <Text strong>Description:</Text>
+                          <Text style={{ display: "block" }}>
+                            {offer.description}
+                          </Text>
+                        </div>
+                      )}
+
+                      {offer.offerDocument && (
+                        <Card size="small" title="Offer Document">
+                          <Space>
+                            <FilePdfOutlined
+                              style={{ color: "#ff4d4f", fontSize: 20 }}
+                            />
+                            <div>
+                              <Text strong>
+                                {offer.offerDocument.documentName}
+                              </Text>
+                              <div style={{ marginTop: 4 }}>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  href={offer.offerDocument.fileUrl}
+                                  target="_blank"
+                                  icon={<EyeOutlined />}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  href={offer.offerDocument.fileUrl}
+                                  icon={<DownloadOutlined />}
+                                >
+                                  Download
+                                </Button>
+                                <Text
+                                  type="secondary"
+                                  style={{ marginLeft: 8, fontSize: 12 }}
+                                >
+                                  {dayjs(offer.offerDocument.uploadedAt).format(
+                                    "DD MMM YYYY"
+                                  )}
+                                </Text>
+                              </div>
+                            </div>
+                          </Space>
+                        </Card>
+                      )}
+
+                      {offer.signedOfferDocument && (
+                        <Card
+                          size="small"
+                          title="Signed Offer Document"
+                          style={{ marginTop: 8 }}
+                        >
+                          <Space>
+                            <FilePdfOutlined
+                              style={{ color: "#52c41a", fontSize: 20 }}
+                            />
+                            <div>
+                              <Text strong>
+                                {offer.signedOfferDocument.documentName}
+                              </Text>
+                              <div style={{ marginTop: 4 }}>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  href={offer.signedOfferDocument.fileUrl}
+                                  target="_blank"
+                                  icon={<EyeOutlined />}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  href={offer.signedOfferDocument.fileUrl}
+                                  icon={<DownloadOutlined />}
+                                >
+                                  Download
+                                </Button>
+                                <Text
+                                  type="secondary"
+                                  style={{ marginLeft: 8, fontSize: 12 }}
+                                >
+                                  {dayjs(
+                                    offer.signedOfferDocument.uploadedAt
+                                  ).format("DD MMM YYYY")}
+                                </Text>
+                              </div>
+                            </div>
+                          </Space>
+                        </Card>
+                      )}
+
+                      {/* Offer Status History */}
+                      {offer.statusHistory?.length > 0 && (
+                        <Card
+                          size="small"
+                          title="Status History"
+                          style={{ marginTop: 8 }}
+                        >
+                          <Timeline>
+                            {offer.statusHistory.map((history, idx) => (
+                              <Timeline.Item
+                                key={idx}
+                                color={
+                                  history.status === "offer-accepted"
+                                    ? "green"
+                                    : history.status === "offer-rejected"
+                                    ? "red"
+                                    : history.status === "offer-revised"
+                                    ? "orange"
+                                    : "blue"
+                                }
+                              >
+                                <Space direction="vertical">
+                                  <Space>
+                                    <Text strong>Status changed to:</Text>
+                                    <Tag
+                                      color={
+                                        history.status === "offer-accepted"
+                                          ? "green"
+                                          : history.status === "offer-rejected"
+                                          ? "red"
+                                          : history.status === "offer-revised"
+                                          ? "orange"
+                                          : "blue"
+                                      }
+                                    >
+                                      {history.status?.replace("-", " ")}
+                                    </Tag>
+                                  </Space>
+                                  {history.description && (
+                                    <Text type="secondary">
+                                      {history.description}
+                                    </Text>
+                                  )}
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    <CalendarOutlined />{" "}
+                                    {dayjs(history.changedAt).format(
+                                      "DD MMM YYYY, hh:mm A"
+                                    )}
+                                  </Text>
+                                </Space>
+                              </Timeline.Item>
+                            ))}
+                          </Timeline>
+                        </Card>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Card>
+            ) : (
+              <Card>
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <InfoCircleOutlined
+                    style={{ fontSize: 48, color: "#d9d9d9" }}
+                  />
+                  <Title level={4} style={{ marginTop: 16 }}>
+                    No Offers
+                  </Title>
+                  <Text type="secondary">
+                    No offer details available for this candidate.
+                  </Text>
+                </div>
+              </Card>
+            )}
+          </TabPane>
+
+          {/* Tab 5: Status History */}
+          <TabPane
+            tab={
+              <span>
+                <HistoryOutlined /> Status History
+              </span>
+            }
+            key="5"
+          >
+            <Card title="Status History Tracking" size="small">
+              {selectedCandidate.statusHistory?.length > 0 ? (
+                <Timeline mode={isMobile ? "left" : "alternate"}>
+                  {selectedCandidate.statusHistory.map((historyItem, idx) => (
+                    <Timeline.Item
+                      key={idx}
+                      color={getStatusColor(historyItem.status)}
+                      dot={
+                        historyItem.status === "selected" ||
+                        historyItem.status === "approved" ? (
+                          <CheckOutlined />
+                        ) : historyItem.status === "rejected" ||
+                          historyItem.status === "interview_rejected" ? (
+                          <CloseOutlined />
+                        ) : (
+                          <ClockCircleOutlined />
+                        )
+                      }
+                    >
+                      <Card size="small">
+                        <Space direction="vertical" style={{ width: "100%" }}>
+                          <Space wrap>
+                            <Text strong>Status changed to:</Text>
+                            {getStatusTag(historyItem.status)}
+                          </Space>
+                          {historyItem.changedBy && (
+                            <Text>
+                              <UserOutlined /> Changed by:{" "}
+                              <Text strong>{historyItem.changedBy.name}</Text>
+                            </Text>
+                          )}
+                          <Text type="secondary">
+                            <CalendarOutlined />{" "}
+                            {dayjs(historyItem.changedAt).format(
+                              "DD MMM YYYY, hh:mm A"
+                            )}
+                          </Text>
+                        </Space>
+                      </Card>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              ) : (
+                <Text type="secondary">No status history available</Text>
+              )}
+            </Card>
+          </TabPane>
+        </Tabs>
+      </Modal>
+    );
+  };
+
+  const renderCandidateCard = (item) => {
+    const candidate = item.candidate;
+    const isExpanded = expandedCandidate === item._id;
+    const isMobile = !screens.md;
+
+    const totalStages = item.stageHistory?.length || 0;
+    const completedStages =
+      item.stageHistory?.filter((s) => s.stageStatus === "approved").length ||
+      0;
+    const progressPercent =
+      totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0;
+
+    return (
+      <Card
+        key={item._id}
+        style={{
+          marginBottom: 16,
+          borderLeft: `4px solid ${getStatusColor(item.currentStatus)}`,
+        }}
+      >
+        {/* Candidate Header - Always Visible */}
+        <div
+          onClick={() => toggleCandidateExpansion(item._id)}
+          style={{ cursor: "pointer" }}
+        >
+          <Row gutter={16} align="middle">
+            <Col flex="none">
+              <Avatar
+                size={isMobile ? "default" : "large"}
+                icon={<UserOutlined />}
+                style={{ backgroundColor: getStatusColor(item.currentStatus) }}
+              />
+            </Col>
+            <Col flex="auto">
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: "100%" }}
+              >
+                <Row justify="space-between" align="middle" wrap={isMobile}>
+                  <Col>
+                    <Space wrap>
+                      <Text strong style={{ fontSize: isMobile ? 14 : 16 }}>
+                        {candidate.fullName}
+                      </Text>
+                      {getStatusTag(item.currentStatus)}
+                      {item.isSourced === "true" && (
+                        <Tag color="purple" size="small">
+                          Sourced
+                        </Tag>
+                      )}
+                    </Space>
+                  </Col>
+                  <Col>
+                    <Button
+                      type="link"
+                      size={isMobile ? "small" : "middle"}
+                      icon={isExpanded ? <DownOutlined /> : <RightOutlined />}
+                    >
+                      {isExpanded ? "Show Less" : "Show Details"}
+                    </Button>
+                  </Col>
+                </Row>
+
+                <Row gutter={16} wrap={isMobile}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Space>
+                      <MailOutlined style={{ color: "#1890ff" }} />
+                      <Text ellipsis>{candidate.email}</Text>
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Space>
+                      <PhoneOutlined style={{ color: "#52c41a" }} />
+                      <Text>{candidate.phone}</Text>
+                    </Space>
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Space>
+                      <ScheduleOutlined style={{ color: "#fa8c16" }} />
+                      <Text>Exp: {candidate.totalExperienceYears}</Text>
+                    </Space>
+                  </Col>
+                </Row>
+
+                {/* Pipeline Progress Bar */}
+                {item.currentStatus === "pipeline" && totalStages > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Text type="secondary">Pipeline Progress</Text>
+                        <Text strong>
+                          {completedStages}/{totalStages} stages
+                        </Text>
+                      </div>
+                      <Progress
+                        percent={progressPercent}
+                        size="small"
+                        status={progressPercent === 100 ? "success" : "active"}
+                      />
+                    </Space>
+                  </div>
+                )}
+              </Space>
+            </Col>
+          </Row>
+        </div>
+
+        {/* Expanded Details - Only shown when expanded */}
+        {isExpanded && (
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: "1px solid #f0f0f0",
+              paddingTop: 16,
+            }}
+          >
+            <Row gutter={isMobile ? [0, 16] : 16}>
+              {/* Basic Info */}
+              <Col xs={24} md={12}>
+                <Card
+                  size="small"
+                  title="Basic Information"
+                  style={{ marginBottom: 16 }}
+                >
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <Text>
+                      <strong>Nationality:</strong> {candidate.nationality}
+                    </Text>
+                    <Text>
+                      <strong>Specialization:</strong>{" "}
+                      {candidate.specialization}
+                    </Text>
+                    <Text>
+                      <strong>Skills:</strong>{" "}
+                      {candidate.skills?.length > 0
+                        ? candidate.skills.join(", ")
+                        : "N/A"}
+                    </Text>
+                    <Text>
+                      <strong>Company:</strong> {candidate.companyName}
+                    </Text>
+                    <Text>
+                      <strong>Candidate ID:</strong>{" "}
+                      <Tag color="blue">{candidate.uniqueCode}</Tag>
+                    </Text>
+                  </Space>
+                </Card>
+
+                {/* Quick Stats */}
+                <Card
+                  size="small"
+                  title="Quick Stats"
+                  style={{ marginBottom: 16 }}
+                >
+                  <Row gutter={8}>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#1890ff" }}
+                        >
+                          {item.stageHistory?.length || 0}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Stages
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#52c41a" }}
+                        >
+                          {completedStages}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Completed
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#fa8c16" }}
+                        >
+                          {item.interviews?.length || 0}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Interviews
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#722ed1" }}
+                        >
+                          {item.offers?.length || 0}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Offers
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#13c2c2" }}
+                        >
+                          {item.workOrderDocuments?.length || 0}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Documents
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={8} sm={6} md={4}>
+                      <div style={{ textAlign: "center" }}>
+                        <Title
+                          level={5}
+                          style={{ margin: 0, color: "#f759ab" }}
+                        >
+                          {item.statusHistory?.length || 0}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Status Changes
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+
+              {/* Right Column - Current Stage & Comments */}
+              <Col xs={24} md={12}>
+                {item.currentStage && (
+                  <Card
+                    size="small"
+                    title="Current Stage"
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      <Text strong>{item.currentStage.stageName}</Text>
+                      <Text type="secondary">
+                        Pipeline: {item.currentStage.pipelineName}
+                      </Text>
+                      <div>
+                        <Tag
+                          color={
+                            stageStatusConfig[item.currentStage.stageStatus]
+                              ?.color
+                          }
+                        >
+                          {item.currentStage.stageStatus}
+                        </Tag>
+                      </div>
+                      {item.currentStage.recruiter && (
+                        <div>
+                          <Text type="secondary">Assigned Recruiter: </Text>
+                          <Tag>{item.currentStage.recruiter.name}</Tag>
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                )}
+
+                {/* Selection Comments */}
+                {item.selectedMovingComment && (
+                  <Card
+                    size="small"
+                    title="Selection Comments"
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Text type="secondary">{item.selectedMovingComment}</Text>
+                  </Card>
+                )}
+
+                {/* Status History Preview */}
+                {item.statusHistory?.length > 0 && (
+                  <Card size="small" title="Recent Status Changes">
+                    <List
+                      size="small"
+                      dataSource={item.statusHistory.slice(0, 2)}
+                      renderItem={(history) => (
+                        <List.Item>
+                          <Space direction="vertical" size={0}>
+                            <Space>
+                              <Text strong>Status:</Text>
+                              {getStatusTag(history.status)}
+                            </Space>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {dayjs(history.changedAt).format(
+                                "DD MMM YYYY, hh:mm A"
+                              )}
+                            </Text>
+                          </Space>
+                        </List.Item>
+                      )}
+                    />
+                  </Card>
+                )}
+              </Col>
+            </Row>
+
+            {/* Quick Action Buttons */}
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <Space wrap>
+                <Button
+                  type="primary"
+                  onClick={() => showFullDetailsModal(item)}
+                  icon={<EyeOutlined />}
+                  size={isMobile ? "small" : "middle"}
+                  style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+                >
+                  View Full Details
+                </Button>
+              </Space>
+            </div>
+          </div>
+        )}
+      </Card>
+    );
+  };
+
+  const renderStatusSummary = () => {
+    const isMobile = !screens.md;
+
+    const statusConfigs = [
+      {
+        key: "selected",
+        label: "Selected",
+        color: "#52c41a",
+        icon: CheckCircleOutlined,
+      },
+      {
+        key: "pipeline",
+        label: "Pipeline",
+        color: "#722ed1",
+        icon: ClusterOutlined,
+      },
+      {
+        key: "screening",
+        label: "Screening",
+        color: "#fa8c16",
+        icon: ScheduleOutlined,
+      },
+      {
+        key: "interview",
+        label: "Interview",
+        color: "#faad14",
+        icon: TeamOutlined,
+      },
+      {
+        key: "offer",
+        label: "Offer",
+        color: "#eb2f96",
+        icon: CheckCircleOutlined,
+      },
+      {
+        key: "applied",
+        label: "Applied",
+        color: "#da2c46",
+        icon: FileTextOutlined,
+      },
+      {
+        key: "rejected",
+        label: "Rejected",
+        color: "#ff4d4f",
+        icon: CloseCircleOutlined,
+      },
+    ];
+
+    return (
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={isMobile ? [8, 8] : 16}>
+          {statusConfigs.map((status) => {
+            const count = statusCounts[status.key] || 0;
+            const IconComponent = status.icon;
+
+            if (count === 0 && screens.md) {
+              return null;
+            }
+
+            return (
+              <Col key={status.key} xs={12} sm={8} md={4} lg={3}>
+                <div style={{ textAlign: "center" }}>
+                  <Badge
+                    count={count}
+                    style={{ backgroundColor: status.color }}
+                    offset={[-10, 10]}
+                  >
+                    <Card
+                      size="small"
+                      style={{
+                        backgroundColor: `${status.color}10`,
+                        minHeight: isMobile ? 80 : 100,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <IconComponent
+                        style={{
+                          fontSize: isMobile ? 20 : 24,
+                          color: status.color,
+                          marginBottom: 8,
+                        }}
+                      />
+                      <div style={{ fontSize: isMobile ? 12 : 14 }}>
+                        {status.label}
+                      </div>
+                    </Card>
+                  </Badge>
+                </div>
+              </Col>
+            );
+          })}
+        </Row>
+      </Card>
+    );
+  };
+
+  if (isLoading)
+    return (
+      <Spin size="large" style={{ display: "block", margin: "100px auto" }} />
+    );
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        minHeight: "100vh",
-        maxWidth: "100%",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ padding: screens.xs ? 16 : 24 }}>
       {/* Header */}
       <div style={{ marginBottom: "20px" }}>
         <Title
@@ -498,686 +1791,61 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       </Card>
 
       {/* Status Distribution */}
-      <Row gutter={[8, 8]} style={{ marginBottom: "20px" }}>
-        {Object.entries(statusCounts).map(([status, count]) => (
-          <Col xs={12} sm={8} md={6} lg={4} xl={3} key={status}>
-            <Card
-              size="small"
-              style={{
-                borderRadius: "6px",
-                textAlign: "center",
-                height: "80px",
-              }}
-              bodyStyle={{ padding: "8px" }}
-            >
-              <Badge
-                count={count}
-                style={{
-                  backgroundColor: statusConfig[status]?.color,
-                  fontSize: "10px",
-                }}
-              >
-                <div style={{ fontSize: "16px", marginBottom: "4px" }}>
-                  {statusConfig[status]?.icon}
-                </div>
-              </Badge>
-              <Text
-                style={{
-                  fontSize: "clamp(9px, 1.5vw, 11px)",
-                  textAlign: "center",
-                  lineHeight: 1.2,
-                }}
-              >
-                {statusConfig[status]?.text || status}
-              </Text>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {renderStatusSummary()}
 
-      {/* Candidates Table */}
+      {/* Candidates List */}
       <Card
-        title={
-          <Text style={{ fontSize: "clamp(14px, 3vw, 16px)", fontWeight: 600 }}>
-            Candidate Details
-          </Text>
-        }
-        size="small"
-        style={{ borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-      >
-        <Table
-          columns={columns}
-          dataSource={data ? data.candidates : []}
-          loading={isLoading}
-          rowKey="_id"
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: data?.pagination?.totalRecords || 0,
-            showSizeChanger: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total}`,
-            size: "small",
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-            pageSizeOptions: ["5", "10", "20", "50"],
-          }}
-          scroll={{ x: "100%" }}
-          size="small"
-        />
-      </Card>
-
-      {/* Candidate Detail Modal */}
-      <Modal
-        title={
+        title={`Candidates (${allCandidateData.length})`}
+        style={{ marginBottom: 16 }}
+        extra={
           <Space>
-            <UserOutlined style={{ color: "#da2c46" }} />
-            <span>
-              {selectedCandidate?.candidate?.fullName || "Candidate"} - Journey
-              Details
-            </span>
+            <Text type="secondary">
+              Showing {allCandidateData.length} of {totalCandidates}
+            </Text>
           </Space>
         }
-        open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Close
-          </Button>,
-        ]}
-        width={Math.min(900, window.innerWidth - 32)}
-        style={{ top: 20 }}
       >
-        {selectedCandidate && (
-          <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-            {/* Candidate Basic Info */}
-            <Card
-              size="small"
-              title="Candidate Information"
-              style={{ marginBottom: 16 }}
-            >
-              <Descriptions column={2} size="small">
-                <Descriptions.Item label="Name" span={2}>
-                  <Text strong>{selectedCandidate.candidate.fullName}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <>
-                      <MailOutlined /> Email
-                    </>
-                  }
-                >
-                  {selectedCandidate.candidate.email}
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <>
-                      <PhoneOutlined /> Phone
-                    </>
-                  }
-                >
-                  {selectedCandidate.candidate.phone || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item
-                  label={
-                    <>
-                      <EnvironmentOutlined /> Location
-                    </>
-                  }
-                >
-                  {selectedCandidate.candidate.location || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Applied At">
-                  {new Date(selectedCandidate.appliedAt).toLocaleDateString()}
-                </Descriptions.Item>
-                {selectedCandidate.candidate.skills?.length > 0 && (
-                  <Descriptions.Item label="Skills" span={2}>
-                    {selectedCandidate.candidate.skills.map((skill, i) => (
-                      <Tag key={i} color="blue">
-                        {skill}
-                      </Tag>
-                    ))}
-                  </Descriptions.Item>
-                )}
-              </Descriptions>
-            </Card>
+        {allCandidateData.map(renderCandidateCard)}
+      </Card>
 
-            {/* Current Status & Stage */}
-            <Card
-              size="small"
-              title="Current Status"
-              style={{ marginBottom: 16 }}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text type="secondary">Status: </Text>
-                  <Tag
-                    color={statusConfig[selectedCandidate.currentStatus]?.color}
-                    icon={statusConfig[selectedCandidate.currentStatus]?.icon}
-                  >
-                    {statusConfig[selectedCandidate.currentStatus]?.text}
-                  </Tag>
-                </Col>
-                <Col span={12}>
-                  <Text type="secondary">Sourced: </Text>
-                  <Tag
-                    color={
-                      selectedCandidate.isSourced === "true"
-                        ? "#52c41a"
-                        : "#ff4d4f"
-                    }
-                  >
-                    {selectedCandidate.isSourced === "true" ? "Yes" : "No"}
-                  </Tag>
-                </Col>
-              </Row>
-              {selectedCandidate.currentStage && (
-                <>
-                  <Divider style={{ margin: "12px 0" }} />
-                  <Descriptions column={2} size="small">
-                    <Descriptions.Item label="Current Pipeline" span={2}>
-                      <Text strong>
-                        {selectedCandidate.currentStage.pipelineName}
-                      </Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Current Stage">
-                      {selectedCandidate.currentStage.stageName}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Stage Status">
-                      <Tag
-                        color={
-                          stageStatusConfig[
-                            selectedCandidate.currentStage.stageStatus
-                          ]?.color
-                        }
-                      >
-                        {selectedCandidate.currentStage.stageStatus}
-                      </Tag>
+      {/* Pagination */}
+      <div style={{ textAlign: "center", marginTop: 24 }}>
+        <Space wrap>
+          <Button
+            onClick={handlePrev}
+            disabled={currentPage === 1 || isFetching}
+            icon={<LeftOutlined />}
+            size={screens.xs ? "small" : "middle"}
+          >
+            Previous
+          </Button>
 
-                      {selectedCandidate.currentStage.stageStatus ===
-                        "pending" &&
-                        selectedCandidate.stageHistory?.length > 0 &&
-                        (() => {
-                          const currentStageInHistory =
-                            selectedCandidate.stageHistory.find(
-                              (s) =>
-                                s.stageId ===
-                                selectedCandidate.currentStage.stageId
-                            );
-                          const overdueDays = currentStageInHistory
-                            ?.stageDefinition?.endDate
-                            ? calculateOverdueDays(
-                                currentStageInHistory.stageDefinition.endDate
-                              )
-                            : null;
+          <Text>
+            Page {currentPage} of {data?.pagination?.totalPages || 1}
+          </Text>
 
-                          return overdueDays ? (
-                            <Tag
-                              color="red"
-                              icon={<ExclamationCircleOutlined />}
-                              style={{ marginLeft: 8 }}
-                            >
-                              Overdue by {overdueDays}{" "}
-                              {overdueDays === 1 ? "day" : "days"}
-                            </Tag>
-                          ) : null;
-                        })()}
-                    </Descriptions.Item>
-                    {selectedCandidate.currentStage.recruiter && (
-                      <Descriptions.Item label="Assigned Recruiter" span={2}>
-                        <Space>
-                          <Avatar size="small" icon={<UserOutlined />} />
-                          <span>
-                            {selectedCandidate.currentStage.recruiter.name}
-                          </span>
-                        </Space>
-                      </Descriptions.Item>
-                    )}
-                  </Descriptions>
-                </>
-              )}
-            </Card>
+          <Button
+            type="primary"
+            onClick={handleNext}
+            disabled={!hasMore || isFetching}
+            size={screens.xs ? "small" : "middle"}
+            style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+          >
+            Next
+          </Button>
 
-            {/* Stage Progress Summary */}
-            {selectedCandidate.stageProgressionSummary && (
-              <Card
-                size="small"
-                title="Stage Progress Summary"
-                style={{ marginBottom: 16 }}
-              >
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <Statistic
-                      title="Total Stages"
-                      value={
-                        selectedCandidate.stageProgressionSummary.totalStages
-                      }
-                      valueStyle={{ fontSize: "20px" }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Statistic
-                      title="Completed"
-                      value={
-                        selectedCandidate.stageProgressionSummary
-                          .completedStages
-                      }
-                      valueStyle={{ fontSize: "20px", color: "#52c41a" }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Statistic
-                      title="In Progress"
-                      value={
-                        selectedCandidate.stageProgressionSummary
-                          .inProgressStages
-                      }
-                      valueStyle={{ fontSize: "20px", color: "#1890ff" }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Statistic
-                      title="Progress"
-                      value={
-                        selectedCandidate.stageProgressionSummary
-                          .progressPercentage
-                      }
-                      suffix="%"
-                      valueStyle={{ fontSize: "20px", color: "#fa8c16" }}
-                    />
-                  </Col>
-                </Row>
-              </Card>
-            )}
+          <Button
+            onClick={() => refetch()}
+            loading={isFetching}
+            size={screens.xs ? "small" : "middle"}
+          >
+            Refresh
+          </Button>
+        </Space>
+      </div>
 
-            {/* Complete Pipeline Journey */}
-            {selectedCandidate.stageHistory?.length > 0 && (
-              <Card
-                size="small"
-                title="Complete Pipeline Journey"
-                style={{ marginBottom: 16 }}
-              >
-                <Timeline mode="left">
-                  {selectedCandidate.stageHistory.map((stage, index) => (
-                    <Timeline.Item
-                      key={index}
-                      color={
-                        stage.stageStatus === "approved"
-                          ? "green"
-                          : stage.stageStatus === "inProgress"
-                          ? "blue"
-                          : stage.stageStatus === "rejected"
-                          ? "red"
-                          : "gray"
-                      }
-                      dot={stageStatusConfig[stage.stageStatus]?.icon}
-                    >
-                      <Card size="small" style={{ marginBottom: 8 }}>
-                        <div style={{ marginBottom: 8 }}>
-                          <Text strong style={{ fontSize: "14px" }}>
-                            Stage {stage.stageNumber}: {stage.stageName}
-                          </Text>
-                          <div style={{ marginTop: 4 }}>
-                            <Tag color="purple">{stage.pipelineName}</Tag>
-                            <Tag
-                              color={
-                                stageStatusConfig[stage.stageStatus]?.color
-                              }
-                            >
-                              {stage.stageStatus}
-                            </Tag>
-
-                            {stage.stageStatus === "pending" &&
-                              stage.stageDefinition?.endDate &&
-                              (() => {
-                                const overdueDays = calculateOverdueDays(
-                                  stage.stageDefinition.endDate
-                                );
-                                return overdueDays ? (
-                                  <Tag
-                                    color="red"
-                                    icon={<ExclamationCircleOutlined />}
-                                  >
-                                    Overdue by {overdueDays}{" "}
-                                    {overdueDays === 1 ? "day" : "days"}
-                                  </Tag>
-                                ) : null;
-                              })()}
-                          </div>
-                        </div>
-
-                        {(stage.stageDefinition?.startDate ||
-                          stage.stageDefinition?.endDate) && (
-                          <div
-                            style={{
-                              marginBottom: 8,
-                              padding: 8,
-                              background:
-                                stage.stageStatus === "pending" &&
-                                stage.stageDefinition?.endDate &&
-                                calculateOverdueDays(
-                                  stage.stageDefinition.endDate
-                                )
-                                  ? "#fff2e8"
-                                  : "#f0f0f0",
-                              borderRadius: 4,
-                              border:
-                                stage.stageStatus === "pending" &&
-                                stage.stageDefinition?.endDate &&
-                                calculateOverdueDays(
-                                  stage.stageDefinition.endDate
-                                )
-                                  ? "1px solid #ff4d4f"
-                                  : "none",
-                            }}
-                          >
-                            {stage.stageDefinition.startDate && (
-                              <div>
-                                <CalendarOutlined style={{ marginRight: 4 }} />
-                                <Text
-                                  type="secondary"
-                                  style={{ fontSize: "11px" }}
-                                >
-                                  Start Date:{" "}
-                                  {new Date(
-                                    stage.stageDefinition.startDate
-                                  ).toLocaleDateString()}
-                                </Text>
-                              </div>
-                            )}
-                            {stage.stageDefinition.endDate && (
-                              <div style={{ marginTop: 4 }}>
-                                <CalendarOutlined
-                                  style={{
-                                    marginRight: 4,
-                                    color:
-                                      stage.stageStatus === "pending" &&
-                                      calculateOverdueDays(
-                                        stage.stageDefinition.endDate
-                                      )
-                                        ? "#ff4d4f"
-                                        : undefined,
-                                  }}
-                                />
-                                <Text
-                                  type={
-                                    stage.stageStatus === "pending" &&
-                                    calculateOverdueDays(
-                                      stage.stageDefinition.endDate
-                                    )
-                                      ? "danger"
-                                      : "secondary"
-                                  }
-                                  style={{ fontSize: "11px" }}
-                                >
-                                  End Date:{" "}
-                                  {new Date(
-                                    stage.stageDefinition.endDate
-                                  ).toLocaleDateString()}
-                                </Text>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {stage.recruiter && (
-                          <div style={{ marginBottom: 8 }}>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              Work order Assigned Recruiter:{" "}
-                            </Text>
-                            <Space size="small">
-                              <Avatar size="small" icon={<UserOutlined />} />
-                              <Text style={{ fontSize: "12px" }}>
-                                {stage.recruiter.name}
-                              </Text>
-                            </Space>
-                          </div>
-                        )}
-
-                        {stage.stageDefinition?.assignedRecruiters?.length >
-                          0 && (
-                          <div style={{ marginBottom: 8 }}>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              Stage Assigned Recruiter:{" "}
-                            </Text>
-                            {stage.stageDefinition.assignedRecruiters.map(
-                              (rec, i) => (
-                                <Tag key={i} size="small">
-                                  {rec.fullName}
-                                </Tag>
-                              )
-                            )}
-                          </div>
-                        )}
-
-                        {stage.stageCompletedAt && (
-                          <div style={{ marginTop: 8 }}>
-                            <CalendarOutlined style={{ marginRight: 4 }} />
-                            <Text type="secondary" style={{ fontSize: "11px" }}>
-                              Completed:{" "}
-                              {new Date(
-                                stage.stageCompletedAt
-                              ).toLocaleString()}
-                            </Text>
-                          </div>
-                        )}
-
-                        {stage.reviews?.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 8,
-                              padding: 8,
-                              background: "#f5f5f5",
-                              borderRadius: 4,
-                            }}
-                          >
-                            <Text strong style={{ fontSize: "12px" }}>
-                              Reviews:
-                            </Text>
-                            {stage.reviews.map((review, i) => (
-                              <div key={i} style={{ marginTop: 4 }}>
-                                <Text style={{ fontSize: "11px" }}>
-                                  {review.reviewer?.name}: {review.comments}
-                                  <Tag
-                                    size="small"
-                                    color={
-                                      review.status === "approved"
-                                        ? "green"
-                                        : "orange"
-                                    }
-                                    style={{ marginLeft: 8 }}
-                                  >
-                                    {review.status}
-                                  </Tag>
-                                </Text>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {stage.uploadedDocuments?.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 8,
-                              padding: 8,
-                              background: "#e6f7ff",
-                              borderRadius: 4,
-                            }}
-                          >
-                            <Text strong style={{ fontSize: "12px" }}>
-                              <FileTextOutlined style={{ marginRight: 4 }} />
-                              Uploaded Documents (
-                              {stage.uploadedDocuments.length}):
-                            </Text>
-                            {stage.uploadedDocuments.map((doc, i) => (
-                              <div
-                                key={i}
-                                style={{ marginTop: 4, marginLeft: 16 }}
-                              >
-                                <a
-                                  href={doc.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{ fontSize: "11px" }}
-                                >
-                                  • {doc.documentName}: {doc.fileName}
-                                </a>
-                                <Text
-                                  type="secondary"
-                                  style={{ fontSize: "10px", marginLeft: 8 }}
-                                >
-                                  (
-                                  {new Date(
-                                    doc.uploadedAt
-                                  ).toLocaleDateString()}
-                                  )
-                                </Text>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </Card>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </Card>
-            )}
-
-            {/* Pending Stages */}
-            {selectedCandidate.pendingStages?.length > 0 && (
-              <Card
-                size="small"
-                title="Pending Stages"
-                style={{ marginBottom: 16 }}
-              >
-                {selectedCandidate.pendingStages.map((stage, index) => (
-                  <Card
-                    key={index}
-                    size="small"
-                    style={{ marginBottom: 8, background: "#f0f0f0" }}
-                  >
-                    <Text strong>{stage.stageName}</Text>
-                    <div style={{ marginTop: 4 }}>
-                      <Tag color="purple">{stage.pipelineName}</Tag>
-                      <Tag>Order: {stage.stageOrder}</Tag>
-                    </div>
-
-                    {(stage.startDate || stage.endDate) && (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          padding: 6,
-                          background: "#fff",
-                          borderRadius: 4,
-                        }}
-                      >
-                        {stage.startDate && (
-                          <div>
-                            <Text type="secondary" style={{ fontSize: "11px" }}>
-                              <CalendarOutlined style={{ marginRight: 4 }} />
-                              Start:{" "}
-                              {new Date(stage.startDate).toLocaleDateString()}
-                            </Text>
-                          </div>
-                        )}
-                        {stage.endDate && (
-                          <div style={{ marginTop: 2 }}>
-                            <Text type="secondary" style={{ fontSize: "11px" }}>
-                              <CalendarOutlined style={{ marginRight: 4 }} />
-                              End:{" "}
-                              {new Date(stage.endDate).toLocaleDateString()}
-                            </Text>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {stage.assignedRecruiters?.length > 0 && (
-                      <div style={{ marginTop: 8 }}>
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          Assigned:{" "}
-                        </Text>
-                        {stage.assignedRecruiters.map((rec, i) => (
-                          <Tag key={i} size="small">
-                            {rec.fullName}
-                          </Tag>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </Card>
-            )}
-
-            {/* Interview History */}
-            {selectedCandidate.interviews?.length > 0 && (
-              <Card
-                size="small"
-                title="Interview History"
-                style={{ marginBottom: 16 }}
-              >
-                {selectedCandidate.interviews.map((interview, index) => (
-                  <Card key={index} size="small" style={{ marginBottom: 8 }}>
-                    <Space direction="vertical" style={{ width: "100%" }}>
-                      <Text strong>{interview.title}</Text>
-                      <div>
-                        <Tag color="blue">{interview.mode}</Tag>
-                        <Tag
-                          color={
-                            interview.status === "interview_completed"
-                              ? "green"
-                              : "orange"
-                          }
-                        >
-                          {interview.status}
-                        </Tag>
-                      </div>
-                      <Text type="secondary" style={{ fontSize: "12px" }}>
-                        <CalendarOutlined />{" "}
-                        {new Date(interview.date).toLocaleString()}
-                      </Text>
-                      {interview.interviewers?.length > 0 && (
-                        <div>
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            Interviewers:{" "}
-                          </Text>
-                          {interview.interviewers.map((interviewer, i) => (
-                            <Tag key={i} size="small">
-                              {interviewer.name}
-                            </Tag>
-                          ))}
-                        </div>
-                      )}
-                    </Space>
-                  </Card>
-                ))}
-              </Card>
-            )}
-
-            {/* Offer Details */}
-            {selectedCandidate.offers?.length > 0 && (
-              <Card size="small" title="Offer Details">
-                {selectedCandidate.offers.map((offer, index) => (
-                  <Card key={index} size="small" style={{ marginBottom: 8 }}>
-                    <Descriptions column={1} size="small">
-                      <Descriptions.Item label="Status">
-                        <Tag color="green">{offer.currentStatus}</Tag>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Salary Package">
-                        {offer.salaryPackage}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Description">
-                        {offer.description}
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </Card>
-                ))}
-              </Card>
-            )}
-          </div>
-        )}
-      </Modal>
+      {/* Full Details Modal */}
+      <FullDetailsModal />
 
       {/* Completion Modal */}
       <Modal

@@ -755,9 +755,11 @@ const AdminRequisition = () => {
       {/* View Requisition Modal */}
       <Modal
         title={
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <InfoCircleOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Requisition Details
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <InfoCircleOutlined style={{ color: "#da2c46" }} />
+            <span>
+              Requisition Details - {selectedRequisition?.title || "N/A"}
+            </span>
           </div>
         }
         open={viewModalVisible}
@@ -792,64 +794,116 @@ const AdminRequisition = () => {
                 </Button>,
               ]),
         ]}
-        width="90%"
-        style={{ maxWidth: 800 }}
+        width="95%"
+        style={{ top: 20, maxWidth: 1400 }}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 150px)",
+          overflowY: "auto",
+          padding: "16px",
+        }}
         centered
         destroyOnClose
       >
         {selectedRequisition && (
-          <Descriptions bordered column={2} size="small">
-            <Descriptions.Item label="Requisition Number">
+          <Descriptions
+            bordered
+            column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
+            size="small"
+            labelStyle={{
+              fontWeight: 600,
+              backgroundColor: "#fafafa",
+              width: "35%",
+            }}
+            contentStyle={{ wordBreak: "break-word" }}
+          >
+            {/* Basic Information */}
+            <Descriptions.Item label="Requisition Number" span={1}>
               {selectedRequisition.requisitionNo || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Reference Number">
+            <Descriptions.Item label="Reference Number" span={1}>
               {selectedRequisition.referenceNo || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Client" span={2}>
-              {selectedRequisition.clientName || "N/A"}
+            <Descriptions.Item label="Status" span={1}>
+              <Tag color={getStatusColor(selectedRequisition.status)}>
+                {selectedRequisition.status?.charAt(0).toUpperCase() +
+                  selectedRequisition.status?.slice(1) || "N/A"}
+              </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Project" span={2}>
+
+            {/* Client & Project - Full Width */}
+            <Descriptions.Item label="Client" span={3}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+              >
+                <Text strong>{selectedRequisition.clientName || "N/A"}</Text>
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  {selectedRequisition.originalData?.client?.email || ""}
+                </Text>
+              </div>
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Project" span={3}>
               {selectedRequisition.projectName || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Job Title" span={2}>
-              {selectedRequisition.title || "N/A"}
+
+            {/* Job Details */}
+            <Descriptions.Item label="Job Title" span={3}>
+              <Text strong style={{ fontSize: "15px" }}>
+                {selectedRequisition.title || "N/A"}
+              </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Employment Type">
+
+            <Descriptions.Item label="Employment Type" span={1}>
               <Tag color="purple">
                 {selectedRequisition.employmentType || "N/A"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Workplace">
-              <Tag color="purple">{selectedRequisition.workMode || "N/A"}</Tag>
+            <Descriptions.Item label="Workplace" span={1}>
+              <Tag color="cyan">{selectedRequisition.workMode || "N/A"}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Office Location">
+            <Descriptions.Item label="Office Location" span={1}>
               {selectedRequisition.location || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Department">
+
+            <Descriptions.Item label="Department" span={1}>
               <Tag color="blue">{selectedRequisition.department || "N/A"}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Experience Required">
+            <Descriptions.Item label="Job Function" span={2}>
+              {selectedRequisition.originalData?.jobFunction || "N/A"}
+            </Descriptions.Item>
+
+            {/* Experience & Education */}
+            <Descriptions.Item label="Experience Required" span={1}>
               {selectedRequisition.experience || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Salary Range">
-              <Text style={{ color: "#52c41a", fontWeight: "500" }}>
+            <Descriptions.Item label="Education" span={2}>
+              <Tag color="geekblue">
+                {selectedRequisition.originalData?.Education || "N/A"}
+              </Tag>
+            </Descriptions.Item>
+
+            {/* Salary & Positions */}
+            <Descriptions.Item label="Salary Range" span={2}>
+              <Text
+                style={{
+                  color: "#52c41a",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                }}
+              >
                 {selectedRequisition.salary || "N/A"}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Positions">
+            <Descriptions.Item label="Positions" span={1}>
               <Badge
                 count={selectedRequisition.positions}
                 showZero
                 style={{ backgroundColor: "#52c41a" }}
               />
             </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={getStatusColor(selectedRequisition.status)}>
-                {selectedRequisition.status?.charAt(0).toUpperCase() +
-                  selectedRequisition.status?.slice(1) || "N/A"}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Approval Status">
+
+            {/* Status Information */}
+            <Descriptions.Item label="Approval Status" span={1}>
               <Tag
                 color={
                   selectedRequisition.overallapprovalstatus === "approved"
@@ -863,51 +917,234 @@ const AdminRequisition = () => {
                   "PENDING"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Priority">
+            <Descriptions.Item label="Priority" span={1}>
               <Tag color={getPriorityColor(selectedRequisition.priority)}>
                 {selectedRequisition.priority?.charAt(0).toUpperCase() +
                   selectedRequisition.priority?.slice(1) || "N/A"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Posted Date">
-              {selectedRequisition.postedDate || "N/A"}
+            <Descriptions.Item label="Common Requisition" span={1}>
+              {selectedRequisition.originalData?.isCommon ? (
+                <Tag color="green">Yes</Tag>
+              ) : (
+                <Tag color="default">No</Tag>
+              )}
             </Descriptions.Item>
-            <Descriptions.Item label="Deadline">
-              {selectedRequisition.deadline
-                ? new Date(selectedRequisition.deadline).toLocaleDateString()
-                : "N/A"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Nationality">
+
+            {/* Visa & Nationality */}
+            <Descriptions.Item label="Nationality" span={1}>
               {selectedRequisition.originalData?.nationality || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Visa Category">
+            <Descriptions.Item label="Visa Category" span={1}>
               {selectedRequisition.originalData?.visacategory || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Education">
-              {selectedRequisition.originalData?.Education || "N/A"}
+            <Descriptions.Item label="Visa Category Type" span={1}>
+              {selectedRequisition.originalData?.visacategorytype || "N/A"}
             </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
-              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+
+            {/* Important Dates */}
+            <Descriptions.Item label="Start Date" span={1}>
+              {selectedRequisition.originalData?.startDate
+                ? dayjs(selectedRequisition.originalData.startDate).format(
+                    "YYYY-MM-DD"
+                  )
+                : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="End Date" span={1}>
+              {selectedRequisition.originalData?.endDate
+                ? dayjs(selectedRequisition.originalData.endDate).format(
+                    "YYYY-MM-DD"
+                  )
+                : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Posted Date" span={1}>
+              {selectedRequisition.postedDate || "N/A"}
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Application Deadline" span={1}>
+              {selectedRequisition.deadline
+                ? dayjs(selectedRequisition.deadline).format("YYYY-MM-DD")
+                : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Alert Date" span={2}>
+              {selectedRequisition.originalData?.alertDate
+                ? dayjs(selectedRequisition.originalData.alertDate).format(
+                    "YYYY-MM-DD"
+                  )
+                : "N/A"}
+            </Descriptions.Item>
+
+            {/* Team Members */}
+            <Descriptions.Item label="Assigned Recruiters" span={3}>
+              {selectedRequisition.originalData?.assignedRecruiters?.length >
+              0 ? (
+                <Space wrap size={[4, 8]}>
+                  {selectedRequisition.originalData.assignedRecruiters.map(
+                    (recruiter) => (
+                      <Tag key={recruiter._id} color="blue">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    )
+                  )}
+                </Space>
+              ) : (
+                <Text type="secondary">N/A</Text>
+              )}
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Approval Recruiters" span={3}>
+              {selectedRequisition.originalData?.approvalRecruiter?.length >
+              0 ? (
+                <Space wrap size={[4, 8]}>
+                  {selectedRequisition.originalData.approvalRecruiter.map(
+                    (recruiter) => (
+                      <Tag key={recruiter._id} color="green">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    )
+                  )}
+                </Space>
+              ) : (
+                <Text type="secondary">N/A</Text>
+              )}
+            </Descriptions.Item>
+
+            <Descriptions.Item label="Notify Recruiters" span={3}>
+              {selectedRequisition.originalData?.notifyRecruiter?.length > 0 ? (
+                <Space wrap size={[4, 8]}>
+                  {selectedRequisition.originalData.notifyRecruiter.map(
+                    (recruiter) => (
+                      <Tag key={recruiter._id} color="orange">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    )
+                  )}
+                </Space>
+              ) : (
+                <Text type="secondary">N/A</Text>
+              )}
+            </Descriptions.Item>
+
+            {/* Approval History */}
+            {selectedRequisition.originalData?.approvalRemarks?.length > 0 && (
+              <Descriptions.Item label="Approval History" span={3}>
+                <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                  <Space
+                    direction="vertical"
+                    style={{ width: "100%" }}
+                    size="small"
+                  >
+                    {selectedRequisition.originalData.approvalRemarks.map(
+                      (remark) => (
+                        <div
+                          key={remark._id}
+                          style={{
+                            padding: "12px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "6px",
+                            borderLeft: `4px solid ${
+                              remark.approvalstatus === "approved"
+                                ? "#52c41a"
+                                : "#ff4d4f"
+                            }`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <Tag
+                              color={
+                                remark.approvalstatus === "approved"
+                                  ? "green"
+                                  : "red"
+                              }
+                              style={{ margin: 0 }}
+                            >
+                              {remark.approvalstatus?.toUpperCase()}
+                            </Tag>
+                            <Text type="secondary" style={{ fontSize: "11px" }}>
+                              {dayjs(remark.date).format("YYYY-MM-DD HH:mm")}
+                            </Text>
+                          </div>
+                          <Text style={{ fontSize: "13px" }}>
+                            {remark.remark}
+                          </Text>
+                        </div>
+                      )
+                    )}
+                  </Space>
+                </div>
+              </Descriptions.Item>
+            )}
+
+            {/* Descriptions */}
+            <Descriptions.Item label="Description" span={3}>
+              <div
+                style={{
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  padding: "8px",
+                  backgroundColor: "#fafafa",
+                  borderRadius: "4px",
+                }}
+              >
                 {selectedRequisition.description || "N/A"}
               </div>
             </Descriptions.Item>
-            <Descriptions.Item label="Key Responsibilities" span={2}>
-              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+
+            <Descriptions.Item label="Key Responsibilities" span={3}>
+              <div
+                style={{
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  padding: "8px",
+                  backgroundColor: "#fafafa",
+                  borderRadius: "4px",
+                }}
+              >
                 {selectedRequisition.keyResponsibilities || "N/A"}
               </div>
             </Descriptions.Item>
-            <Descriptions.Item label="Qualifications" span={2}>
-              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+
+            <Descriptions.Item label="Qualifications" span={3}>
+              <div
+                style={{
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  padding: "8px",
+                  backgroundColor: "#fafafa",
+                  borderRadius: "4px",
+                }}
+              >
                 {selectedRequisition.originalData?.qualification || "N/A"}
               </div>
             </Descriptions.Item>
-            <Descriptions.Item label="Requirements" span={2}>
-              <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+
+            <Descriptions.Item label="Job Requirements" span={3}>
+              <div
+                style={{
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  whiteSpace: "pre-wrap",
+                  padding: "8px",
+                  backgroundColor: "#fafafa",
+                  borderRadius: "4px",
+                }}
+              >
                 {selectedRequisition.originalData?.jobRequirements || "N/A"}
               </div>
             </Descriptions.Item>
-            <Descriptions.Item label="Required Skills" span={2}>
-              <Space wrap>
+
+            {/* Skills, Languages & Benefits */}
+            <Descriptions.Item label="Required Skills" span={3}>
+              <Space wrap size={[4, 8]}>
                 {selectedRequisition.skills?.length > 0 ? (
                   selectedRequisition.skills.map((skill, index) => (
                     <Tag key={index} color="geekblue">
@@ -919,8 +1156,9 @@ const AdminRequisition = () => {
                 )}
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Languages Required" span={2}>
-              <Space wrap>
+
+            <Descriptions.Item label="Languages Required" span={3}>
+              <Space wrap size={[4, 8]}>
                 {selectedRequisition.languages?.length > 0 ? (
                   selectedRequisition.languages.map((lang, index) => (
                     <Tag key={index} color="volcano">
@@ -932,19 +1170,52 @@ const AdminRequisition = () => {
                 )}
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Benefits" span={2}>
-              <div style={{ maxHeight: "80px", overflowY: "auto" }}>
-                {Array.isArray(selectedRequisition.benefits)
-                  ? selectedRequisition.benefits.join(", ")
-                  : selectedRequisition.benefits || "N/A"}
-              </div>
+
+            <Descriptions.Item label="Benefits" span={3}>
+              <Space wrap size={[4, 8]}>
+                {Array.isArray(selectedRequisition.benefits) &&
+                selectedRequisition.benefits.length > 0 ? (
+                  selectedRequisition.benefits.map((benefit, index) => (
+                    <Tag key={index} color="cyan">
+                      {benefit}
+                    </Tag>
+                  ))
+                ) : (
+                  <Text type="secondary">No benefits specified</Text>
+                )}
+              </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Converted to Work Order">
+
+            {/* Work Order Status */}
+            <Descriptions.Item label="Converted to Work Order" span={3}>
               {selectedRequisition.originalData?.convertedToWorkorder ? (
-                <Tag color="purple">Yes</Tag>
+                <Tag
+                  color="purple"
+                  style={{ fontSize: "14px", padding: "6px 16px" }}
+                >
+                  ✓ Yes - Converted to Work Order
+                </Tag>
               ) : (
-                <Tag color="default">No</Tag>
+                <Tag color="default" style={{ padding: "6px 16px" }}>
+                  Not Converted
+                </Tag>
               )}
+            </Descriptions.Item>
+
+            {/* Timestamps */}
+            <Descriptions.Item label="Created At" span={1}>
+              {selectedRequisition.originalData?.createdAt
+                ? dayjs(selectedRequisition.originalData.createdAt).format(
+                    "YYYY-MM-DD HH:mm"
+                  )
+                : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Last Updated" span={2}>
+              {selectedRequisition.originalData?.updatedAt
+                ? dayjs(selectedRequisition.originalData.updatedAt).format(
+                    "YYYY-MM-DD HH:mm"
+                  )
+                : "N/A"}
             </Descriptions.Item>
           </Descriptions>
         )}

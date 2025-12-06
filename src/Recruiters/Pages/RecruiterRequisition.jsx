@@ -737,6 +737,7 @@ const RecruiterRequisition = () => {
         </Card>
 
         {/* Detail View Modal */}
+        {/* Detail View Modal */}
         <Modal
           title={`Requisition Details - ${selectedRequisition?.title || "N/A"}`}
           visible={isDetailModalVisible}
@@ -760,24 +761,41 @@ const RecruiterRequisition = () => {
                 </Button>
               ),
           ]}
-          width={900}
-          style={{ top: 20 }}
+          width="95%"
+          style={{ top: 20, maxWidth: 1400 }}
+          bodyStyle={{
+            maxHeight: "calc(100vh - 150px)",
+            overflowY: "auto",
+            padding: "16px",
+          }}
         >
           {selectedRequisition && (
-            <Descriptions bordered column={2} size="small">
+            <Descriptions
+              bordered
+              column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
+              size="small"
+              labelStyle={{ fontWeight: 600, backgroundColor: "#fafafa" }}
+            >
+              {/* Basic Information */}
               <Descriptions.Item label="Requisition Number">
                 {selectedRequisition.requisitionNo || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Reference Number">
                 {selectedRequisition.referenceNo || "N/A"}
               </Descriptions.Item>
-              <Descriptions.Item label="Client" span={2}>
-                {clients.find((c) => c.id === selectedRequisition.client)
-                  ?.name || "N/A"}
+
+              {/* Client & Project */}
+              <Descriptions.Item label="Client">
+                {selectedRequisition.client?.fullName || "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Client Email">
+                {selectedRequisition.client?.email || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Project" span={2}>
                 {selectedRequisition.project?.name || "N/A"}
               </Descriptions.Item>
+
+              {/* Job Details */}
               <Descriptions.Item label="Job Title" span={2}>
                 {selectedRequisition.title || "N/A"}
               </Descriptions.Item>
@@ -809,30 +827,68 @@ const RecruiterRequisition = () => {
               <Descriptions.Item label="Education">
                 {selectedRequisition.Education || "N/A"}
               </Descriptions.Item>
-              <Descriptions.Item label="Experience">
+
+              {/* Experience & Salary */}
+              <Descriptions.Item label="Experience Required">
                 {selectedRequisition.experienceMin || 0} -{" "}
                 {selectedRequisition.experienceMax || 0} years
               </Descriptions.Item>
-              <Descriptions.Item label="Salary">
+              <Descriptions.Item label="Salary Range">
                 {formatSalary(selectedRequisition)}
               </Descriptions.Item>
+              <Descriptions.Item label="Salary Type">
+                {selectedRequisition.salaryType ? (
+                  <Tag color="blue">{selectedRequisition.salaryType}</Tag>
+                ) : (
+                  "N/A"
+                )}
+              </Descriptions.Item>
+
+              {/* Status & Candidates */}
               <Descriptions.Item label="Status">
                 <Tag color={getStatusColor(selectedRequisition.isActive)}>
                   {formatStatusText(selectedRequisition.isActive)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Number of Candidates">
-                {selectedRequisition.numberOfCandidate || "N/A"}
+              <Descriptions.Item label="Approval Status">
+                <Tag
+                  color={
+                    selectedRequisition.overallapprovalstatus === "approved"
+                      ? "green"
+                      : selectedRequisition.overallapprovalstatus === "rejected"
+                      ? "red"
+                      : "orange"
+                  }
+                >
+                  {selectedRequisition.overallapprovalstatus?.toUpperCase() ||
+                    "PENDING"}
+                </Tag>
               </Descriptions.Item>
+              <Descriptions.Item label="Number of Candidates">
+                <Tag color="purple">
+                  {selectedRequisition.numberOfCandidate || 0}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Common Requisition">
+                {selectedRequisition.isCommon ? (
+                  <Tag color="green">Yes</Tag>
+                ) : (
+                  <Tag color="default">No</Tag>
+                )}
+              </Descriptions.Item>
+
+              {/* Visa & Nationality */}
               <Descriptions.Item label="Nationality">
                 {selectedRequisition.nationality || "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Visa Category">
                 {selectedRequisition.visacategory || "N/A"}
               </Descriptions.Item>
-              <Descriptions.Item label="Visa Category Type">
+              <Descriptions.Item label="Visa Category Type" span={2}>
                 {selectedRequisition.visacategorytype || "N/A"}
               </Descriptions.Item>
+
+              {/* Important Dates */}
               <Descriptions.Item label="Start Date">
                 {selectedRequisition.startDate
                   ? dayjs(selectedRequisition.startDate).format("YYYY-MM-DD")
@@ -853,76 +909,221 @@ const RecruiterRequisition = () => {
                   ? dayjs(selectedRequisition.alertDate).format("YYYY-MM-DD")
                   : "N/A"}
               </Descriptions.Item>
+
+              {/* Team Members */}
+              <Descriptions.Item label="Assigned Recruiters" span={2}>
+                {selectedRequisition.assignedRecruiters?.length > 0 ? (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}
+                  >
+                    {selectedRequisition.assignedRecruiters.map((recruiter) => (
+                      <Tag key={recruiter._id} color="blue">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  "N/A"
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Approval Recruiters" span={2}>
+                {selectedRequisition.approvalRecruiter?.length > 0 ? (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}
+                  >
+                    {selectedRequisition.approvalRecruiter.map((recruiter) => (
+                      <Tag key={recruiter._id} color="green">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  "N/A"
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Notify Recruiters" span={2}>
+                {selectedRequisition.notifyRecruiter?.length > 0 ? (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}
+                  >
+                    {selectedRequisition.notifyRecruiter.map((recruiter) => (
+                      <Tag key={recruiter._id} color="orange">
+                        {recruiter.fullName} ({recruiter.email})
+                      </Tag>
+                    ))}
+                  </div>
+                ) : (
+                  "N/A"
+                )}
+              </Descriptions.Item>
+
+              {/* Approval Remarks */}
+              {selectedRequisition.approvalRemarks?.length > 0 && (
+                <Descriptions.Item label="Approval History" span={2}>
+                  <div style={{ maxHeight: "150px", overflowY: "auto" }}>
+                    {selectedRequisition.approvalRemarks.map(
+                      (remark, index) => (
+                        <div
+                          key={remark._id}
+                          style={{
+                            padding: "8px",
+                            marginBottom: "8px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "4px",
+                            borderLeft: `3px solid ${
+                              remark.approvalstatus === "approved"
+                                ? "#52c41a"
+                                : "#ff4d4f"
+                            }`,
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+                            {remark.approvalstatus === "approved" ? "✓" : "✗"}{" "}
+                            {remark.approvalstatus?.toUpperCase()}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#666" }}>
+                            {remark.remark}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "11px",
+                              color: "#999",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {dayjs(remark.date).format("YYYY-MM-DD HH:mm")}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </Descriptions.Item>
+              )}
+
+              {/* Descriptions */}
               <Descriptions.Item label="Description" span={2}>
-                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                <div
+                  style={{
+                    maxHeight: "120px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {selectedRequisition.description || "N/A"}
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Key Responsibilities" span={2}>
-                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                <div
+                  style={{
+                    maxHeight: "120px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {selectedRequisition.keyResponsibilities || "N/A"}
                 </div>
               </Descriptions.Item>
               <Descriptions.Item label="Qualifications" span={2}>
-                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                <div
+                  style={{
+                    maxHeight: "120px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {selectedRequisition.qualification || "N/A"}
                 </div>
               </Descriptions.Item>
-              <Descriptions.Item label="Requirements" span={2}>
-                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+              <Descriptions.Item label="Job Requirements" span={2}>
+                <div
+                  style={{
+                    maxHeight: "120px",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {selectedRequisition.jobRequirements || "N/A"}
                 </div>
               </Descriptions.Item>
+
+              {/* Skills, Languages & Benefits */}
               <Descriptions.Item label="Required Skills" span={2}>
-                {selectedRequisition.requiredSkills?.length > 0
-                  ? selectedRequisition.requiredSkills.map((skill) => (
-                      <Tag key={skill} color="blue" style={{ marginBottom: 4 }}>
+                {selectedRequisition.requiredSkills?.length > 0 ? (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}
+                  >
+                    {selectedRequisition.requiredSkills.map((skill, index) => (
+                      <Tag key={index} color="blue">
                         {skill}
                       </Tag>
-                    ))
-                  : "N/A"}
+                    ))}
+                  </div>
+                ) : (
+                  "N/A"
+                )}
               </Descriptions.Item>
-              <Descriptions.Item label="Languages" span={2}>
-                {selectedRequisition.languagesRequired?.length > 0
-                  ? selectedRequisition.languagesRequired.map((lang) => (
-                      <Tag key={lang} color="green" style={{ marginBottom: 4 }}>
-                        {lang}
-                      </Tag>
-                    ))
-                  : "N/A"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Benefits" span={2}>
-                <div style={{ maxHeight: "80px", overflowY: "auto" }}>
-                  {Array.isArray(selectedRequisition.benefits)
-                    ? selectedRequisition.benefits.join(", ")
-                    : selectedRequisition.benefits || "N/A"}
-                </div>
-              </Descriptions.Item>
-              <Descriptions.Item label="Pipeline Stages" span={2}>
-                {selectedRequisition.pipelineStageTimeline?.length > 0 ? (
-                  <div>
-                    {selectedRequisition.pipelineStageTimeline.map(
-                      (stage, index) => (
-                        <Tag
-                          key={stage._id}
-                          color="purple"
-                          style={{ marginBottom: 4 }}
-                        >
-                          {stage.stageName} (Order: {stage.stageOrder})
+              <Descriptions.Item label="Languages Required" span={2}>
+                {selectedRequisition.languagesRequired?.length > 0 ? (
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}
+                  >
+                    {selectedRequisition.languagesRequired.map(
+                      (lang, index) => (
+                        <Tag key={index} color="green">
+                          {lang}
                         </Tag>
                       )
                     )}
                   </div>
                 ) : (
-                  "No pipeline stages configured"
+                  "N/A"
                 )}
               </Descriptions.Item>
-              <Descriptions.Item label="Converted to Work Order">
-                {selectedRequisition?.convertedToWorkorder ? (
-                  <Tag color="purple">Yes</Tag>
+              <Descriptions.Item label="Benefits" span={2}>
+                <div style={{ maxHeight: "100px", overflowY: "auto" }}>
+                  {Array.isArray(selectedRequisition.benefits) &&
+                  selectedRequisition.benefits.length > 0
+                    ? selectedRequisition.benefits.map((benefit, index) => (
+                        <Tag
+                          key={index}
+                          color="cyan"
+                          style={{ marginBottom: 4 }}
+                        >
+                          {benefit}
+                        </Tag>
+                      ))
+                    : "N/A"}
+                </div>
+              </Descriptions.Item>
+
+              {/* Work Order Status */}
+              <Descriptions.Item label="Converted to Work Order" span={2}>
+                {selectedRequisition.convertedToWorkorder ? (
+                  <Tag
+                    color="purple"
+                    style={{ fontSize: "14px", padding: "4px 12px" }}
+                  >
+                    ✓ Yes - Converted
+                  </Tag>
                 ) : (
-                  <Tag color="default">No</Tag>
+                  <Tag color="default">Not Converted</Tag>
                 )}
+              </Descriptions.Item>
+
+              {/* Timestamps */}
+              <Descriptions.Item label="Created At">
+                {selectedRequisition.createdAt
+                  ? dayjs(selectedRequisition.createdAt).format(
+                      "YYYY-MM-DD HH:mm"
+                    )
+                  : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Last Updated">
+                {selectedRequisition.updatedAt
+                  ? dayjs(selectedRequisition.updatedAt).format(
+                      "YYYY-MM-DD HH:mm"
+                    )
+                  : "N/A"}
               </Descriptions.Item>
             </Descriptions>
           )}
