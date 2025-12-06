@@ -227,6 +227,7 @@ const CandidateEditPage = () => {
         maritalStatus: candidate.maritalStatus || "",
         gender: candidate.gender || "Others",
         age: candidate.age || "",
+        dob: candidate.dob ? dayjs(candidate.dob) : null,
         industry: candidate.industry || [],
         visaStatus: candidate.visaStatus || [],
         bloodGroup: candidate.bloodGroup || "",
@@ -314,6 +315,13 @@ const CandidateEditPage = () => {
     profileForm.setFieldsValue({ fullName });
   };
 
+  const handleDobChange = (date) => {
+    if (date) {
+      const calculatedAge = dayjs().diff(date, "year");
+      personalForm.setFieldsValue({ age: calculatedAge });
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -361,6 +369,9 @@ const CandidateEditPage = () => {
         allValues.passportExpiryDate = dayjs(
           allValues.passportExpiryDate
         ).format("YYYY-MM-DD");
+      }
+      if (allValues.dob) {
+        allValues.dob = dayjs(allValues.dob).format("YYYY-MM-DD");
       }
 
       const formData = new FormData();
@@ -1194,6 +1205,28 @@ const CandidateEditPage = () => {
                       min={18}
                       max={100}
                       placeholder="Enter age"
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Date of Birth"
+                    name="dob"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select date of birth",
+                      },
+                    ]}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      placeholder="Select date of birth"
+                      onChange={handleDobChange}
+                      disabledDate={(current) => {
+                        return current && current > dayjs().endOf("day");
+                      }}
                     />
                   </Form.Item>
                 </Col>

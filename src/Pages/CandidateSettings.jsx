@@ -237,6 +237,7 @@ const CandidateSettings = () => {
     },
     workMode: "",
     age: "",
+    dob: null,
     industry: [],
     visaStatus: [],
   });
@@ -354,6 +355,11 @@ const CandidateSettings = () => {
         maritalStatus: candidateData.maritalStatus || "",
         gender: candidateData.gender || "Others",
         age: candidateData.age || "",
+        dob: candidateData.dob
+          ? dayjs.isDayjs(candidateData.dob)
+            ? candidateData.dob
+            : dayjs(candidateData.dob)
+          : null,
         industry: Array.isArray(candidateData.industry)
           ? candidateData.industry
           : candidateData.industry
@@ -585,6 +591,14 @@ const CandidateSettings = () => {
     setIsProfileEditable(!isProfileEditable);
   };
 
+  const handleDobChange = (date) => {
+    if (date) {
+      const age = dayjs().diff(date, "year");
+      personalForm.setFieldsValue({ age });
+      setUserData((prev) => ({ ...prev, dob: date, age }));
+    }
+  };
+
   const handleProfileSave = async () => {
     try {
       const profileValues = await profileForm.validateFields();
@@ -634,6 +648,8 @@ const CandidateSettings = () => {
         ...combinePhoneNumbers(contactValues),
         jobPreferences: preferencesValues,
         socialLinks: profileValues.socialLinks || userData.socialLinks,
+        age: personalValues.age, // Add this
+        dob: personalValues.dob,
         updatedAt: new Date().toISOString(),
       };
 
@@ -1854,6 +1870,29 @@ const CandidateSettings = () => {
                       max={100}
                       placeholder="Enter your age"
                       disabled={!isProfileEditable}
+                    />
+                  </Form.Item>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    label="Date of Birth"
+                    name="dob"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select your date of birth",
+                      },
+                    ]}
+                  >
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      placeholder="Select date of birth"
+                      disabled={!isProfileEditable}
+                      onChange={handleDobChange}
+                      disabledDate={(current) => {
+                        return current && current > dayjs().endOf("day");
+                      }}
                     />
                   </Form.Item>
                 </Col>

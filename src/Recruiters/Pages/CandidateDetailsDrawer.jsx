@@ -180,7 +180,7 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
       );
     }
   };
-  
+
   const getCompletionColor = (percentage) => {
     if (percentage >= 80) return "#52c41a";
     if (percentage >= 50) return "#faad14";
@@ -485,6 +485,11 @@ const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
                         <Text strong>Age:</Text>
                         <br />
                         <Text>{candidate.age || "Not provided"}</Text>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Text strong>Date of Birth:</Text>
+                        <br />
+                        {dayjs(candidate.dob).format("MMM DD, YYYY")}
                       </Col>
                       <Col xs={24} sm={8}>
                         <Text strong>Emergency Contact:</Text>

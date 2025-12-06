@@ -391,6 +391,11 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           <Text>{candidate.age || "Not provided"} years</Text>
         </Col>
         <Col xs={24} sm={8}>
+          <Text strong>Age:</Text>
+          <br />
+          {dayjs(candidate.dob).format("MMM DD, YYYY")}
+        </Col>
+        <Col xs={24} sm={8}>
           <Text strong>Gender:</Text>
           <br />
           <Text>{candidate.gender || "Not provided"}</Text>
