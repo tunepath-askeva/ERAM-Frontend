@@ -43,7 +43,7 @@ const SeparateApprovals = ({
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [approvalComments, setApprovalComments] = useState("");
-  console.log(selectedRecord,'selectedRecord-=-=')
+  console.log(selectedRecord, "selectedRecord-=-=");
 
   const screens = useBreakpoint();
   const isMobile = screens.xs;
@@ -80,11 +80,13 @@ const SeparateApprovals = ({
             documentsCount: documents.length,
             documents: documents,
             uploadedAt: documents[0]?.uploadedAt,
-            status: levelInfo.approverStatus || levelInfo.levelStatus || "pending",
+            status:
+              levelInfo.approverStatus || levelInfo.levelStatus || "pending",
             levelStatus: levelInfo.levelStatus,
             levelName: levelInfo.levelName,
             levelId: levelInfo.levelId,
             hasDocuments: documents.length > 0,
+            levelObjectId: levelInfo._ID,
           });
         }
       });
@@ -149,9 +151,13 @@ const SeparateApprovals = ({
         stageId: selectedRecord.stageId,
         status: "approved",
         comments: approvalComments,
+        levelObjectId: selectedRecord.levelObjectId,
       });
+      
 
-      message.success(`Documents approved for ${selectedRecord.candidateName}!`);
+      message.success(
+        `Documents approved for ${selectedRecord.candidateName}!`
+      );
       setApproveModalVisible(false);
       setApprovalComments("");
       setSelectedRecord(null);
@@ -279,7 +285,10 @@ const SeparateApprovals = ({
                 display: "block",
               }}
             >
-              Stage: {isMobile && text.length > 8 ? `${text.substring(0, 8)}...` : text}
+              Stage:{" "}
+              {isMobile && text.length > 8
+                ? `${text.substring(0, 8)}...`
+                : text}
             </Text>
           </Tooltip>
           <Tooltip title={`Level: ${record.levelName || "N/A"}`}>
@@ -290,54 +299,55 @@ const SeparateApprovals = ({
                 display: "block",
               }}
             >
-              Level: {isMobile && record.levelName?.length > 8 
-                ? `${record.levelName.substring(0, 8)}...` 
+              Level:{" "}
+              {isMobile && record.levelName?.length > 8
+                ? `${record.levelName.substring(0, 8)}...`
                 : record.levelName || "N/A"}
             </Text>
           </Tooltip>
         </Space>
       ),
     },
-    {
-      title: "Recruiter",
-      dataIndex: "recruiterName",
-      key: "recruiterName",
-      width: isMobile ? 150 : isTablet ? 160 : 200,
-      ellipsis: true,
-      render: (text, record) => (
-        <div style={{ minWidth: 0 }}>
-          <Tooltip title={text}>
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {text || "N/A"}
-            </div>
-          </Tooltip>
-          {!isMobile && record.recruiterEmail && record.recruiterEmail !== "N/A" && (
-            <Tooltip title={record.recruiterEmail}>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: isTablet ? "11px" : "12px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  display: "block",
-                }}
-              >
-                {record.recruiterEmail}
-              </Text>
-            </Tooltip>
-          )}
-        </div>
-      ),
-    },
+    // {
+    //   title: "Recruiter",
+    //   dataIndex: "recruiterName",
+    //   key: "recruiterName",
+    //   width: isMobile ? 150 : isTablet ? 160 : 200,
+    //   ellipsis: true,
+    //   render: (text, record) => (
+    //     <div style={{ minWidth: 0 }}>
+    //       <Tooltip title={text}>
+    //         <div
+    //           style={{
+    //             fontWeight: 500,
+    //             fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
+    //             overflow: "hidden",
+    //             textOverflow: "ellipsis",
+    //             whiteSpace: "nowrap",
+    //           }}
+    //         >
+    //           {text || "N/A"}
+    //         </div>
+    //       </Tooltip>
+    //       {!isMobile && record.recruiterEmail && record.recruiterEmail !== "N/A" && (
+    //         <Tooltip title={record.recruiterEmail}>
+    //           <Text
+    //             type="secondary"
+    //             style={{
+    //               fontSize: isTablet ? "11px" : "12px",
+    //               overflow: "hidden",
+    //               textOverflow: "ellipsis",
+    //               whiteSpace: "nowrap",
+    //               display: "block",
+    //             }}
+    //           >
+    //             {record.recruiterEmail}
+    //           </Text>
+    //         </Tooltip>
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       title: "Docs",
       dataIndex: "documentsCount",
@@ -347,8 +357,14 @@ const SeparateApprovals = ({
       render: (count) => (
         <Tooltip title={`${count} document(s) uploaded`}>
           <Space size="small" direction={isMobile ? "vertical" : "horizontal"}>
-            <FileTextOutlined style={{ fontSize: isMobile ? "14px" : "16px", color: "#1890ff" }} />
-            <span style={{ fontSize: isMobile ? "12px" : "14px", fontWeight: 500 }}>{count}</span>
+            <FileTextOutlined
+              style={{ fontSize: isMobile ? "14px" : "16px", color: "#1890ff" }}
+            />
+            <span
+              style={{ fontSize: isMobile ? "12px" : "14px", fontWeight: 500 }}
+            >
+              {count}
+            </span>
           </Space>
         </Tooltip>
       ),
@@ -383,7 +399,11 @@ const SeparateApprovals = ({
       render: (_, record) => (
         <div style={{ display: "flex", justifyContent: "center" }}>
           {isMobile ? (
-            <Dropdown menu={getActionsMenu(record)} trigger={["click"]} placement="bottomRight">
+            <Dropdown
+              menu={getActionsMenu(record)}
+              trigger={["click"]}
+              placement="bottomRight"
+            >
               <Button
                 type="text"
                 icon={<MoreOutlined />}
@@ -432,13 +452,18 @@ const SeparateApprovals = ({
       {/* Details Modal */}
       {isMobile ? (
         <Drawer
-          title={<Title level={5} style={{ margin: 0 }}>Separate Approval Details</Title>}
+          title={
+            <Title level={5} style={{ margin: 0 }}>
+              Separate Approval Details
+            </Title>
+          }
           placement="bottom"
           visible={detailsModalVisible}
           onClose={() => setDetailsModalVisible(false)}
           height="90%"
           extra={
-            selectedRecord?.status === "pending" && selectedRecord?.hasDocuments && (
+            selectedRecord?.status === "pending" &&
+            selectedRecord?.hasDocuments && (
               <Button
                 type="primary"
                 size="small"
@@ -467,25 +492,32 @@ const SeparateApprovals = ({
         </Drawer>
       ) : (
         <Modal
-          title={<Title level={4} style={{ margin: 0 }}>Separate Approval Details</Title>}
+          title={
+            <Title level={4} style={{ margin: 0 }}>
+              Separate Approval Details
+            </Title>
+          }
           visible={detailsModalVisible}
           onCancel={() => setDetailsModalVisible(false)}
           footer={[
-            <Button key="close" onClick={() => setDetailsModalVisible(false)}>Close</Button>,
-            selectedRecord?.status === "pending" && selectedRecord?.hasDocuments && (
-              <Button
-                key="approve"
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => {
-                  setDetailsModalVisible(false);
-                  handleApprove(selectedRecord);
-                }}
-                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
-              >
-                Approve Documents
-              </Button>
-            ),
+            <Button key="close" onClick={() => setDetailsModalVisible(false)}>
+              Close
+            </Button>,
+            selectedRecord?.status === "pending" &&
+              selectedRecord?.hasDocuments && (
+                <Button
+                  key="approve"
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => {
+                    setDetailsModalVisible(false);
+                    handleApprove(selectedRecord);
+                  }}
+                  style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+                >
+                  Approve Documents
+                </Button>
+              ),
           ]}
           width={isMobile ? "95%" : isTablet ? "85%" : 1000}
           bodyStyle={{ maxHeight: "70vh", overflow: "auto" }}
@@ -505,7 +537,11 @@ const SeparateApprovals = ({
 
       {/* Approve Modal */}
       <Modal
-        title={<Title level={4} style={{ margin: 0 }}>Approve Documents</Title>}
+        title={
+          <Title level={4} style={{ margin: 0 }}>
+            Approve Documents
+          </Title>
+        }
         visible={approveModalVisible}
         onCancel={() => {
           setApproveModalVisible(false);
@@ -523,15 +559,36 @@ const SeparateApprovals = ({
         {selectedRecord && (
           <div>
             <Space direction="vertical" style={{ width: "100%" }} size="small">
-              <div><Text strong>Candidate: </Text><Text>{selectedRecord.candidateName}</Text></div>
-              <div><Text strong>Work Order: </Text><Text>{selectedRecord.workOrderTitle}</Text></div>
-              <div><Text strong>Stage: </Text><Text>{selectedRecord.stageName}</Text></div>
-              <div><Text strong>Level: </Text><Text>{selectedRecord.levelName || "N/A"}</Text></div>
-              <div><Text strong>Documents: </Text><Text>{selectedRecord.documentsCount} files uploaded</Text></div>
+              <div>
+                <Text strong>Candidate: </Text>
+                <Text>{selectedRecord.candidateName}</Text>
+              </div>
+              <div>
+                <Text strong>Work Order: </Text>
+                <Text>{selectedRecord.workOrderTitle}</Text>
+              </div>
+              <div>
+                <Text strong>Stage: </Text>
+                <Text>{selectedRecord.stageName}</Text>
+              </div>
+              <div>
+                <Text strong>Level: </Text>
+                <Text>{selectedRecord.levelName || "N/A"}</Text>
+              </div>
+              <div>
+                <Text strong>Documents: </Text>
+                <Text>{selectedRecord.documentsCount} files uploaded</Text>
+              </div>
             </Space>
             <Divider />
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontWeight: 500 }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: 500,
+                }}
+              >
                 Approval Comments
               </label>
               <TextArea
@@ -548,28 +605,62 @@ const SeparateApprovals = ({
   );
 };
 
-const DetailsContent = ({ record, isMobile, isTablet, getFileIcon, handleDownloadDocument, formatDate }) => (
+const DetailsContent = ({
+  record,
+  isMobile,
+  isTablet,
+  getFileIcon,
+  handleDownloadDocument,
+  formatDate,
+}) => (
   <div>
-    <Title level={5} style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}>
+    <Title
+      level={5}
+      style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}
+    >
       Work Order Information
     </Title>
-    <Descriptions bordered column={isMobile ? 1 : 2} size={isMobile ? "small" : "default"} style={{ marginBottom: "16px" }}>
-      <Descriptions.Item label="Work Order Title">{record.workOrderTitle}</Descriptions.Item>
+    <Descriptions
+      bordered
+      column={isMobile ? 1 : 2}
+      size={isMobile ? "small" : "default"}
+      style={{ marginBottom: "16px" }}
+    >
+      <Descriptions.Item label="Work Order Title">
+        {record.workOrderTitle}
+      </Descriptions.Item>
       <Descriptions.Item label="Job Code">{record.jobCode}</Descriptions.Item>
       <Descriptions.Item label="Stage">{record.stageName}</Descriptions.Item>
-      <Descriptions.Item label="Level">{record.levelName || "N/A"}</Descriptions.Item>
+      <Descriptions.Item label="Level">
+        {record.levelName || "N/A"}
+      </Descriptions.Item>
     </Descriptions>
 
-    <Title level={5} style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}>
+    <Title
+      level={5}
+      style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}
+    >
       Candidate Information
     </Title>
-    <Descriptions bordered column={isMobile ? 1 : 2} size={isMobile ? "small" : "default"} style={{ marginBottom: "16px" }}>
+    <Descriptions
+      bordered
+      column={isMobile ? 1 : 2}
+      size={isMobile ? "small" : "default"}
+      style={{ marginBottom: "16px" }}
+    >
       <Descriptions.Item label="Name">{record.candidateName}</Descriptions.Item>
-      <Descriptions.Item label="Email">{record.candidateEmail}</Descriptions.Item>
-      <Descriptions.Item label="Documents Count">{record.documentsCount}</Descriptions.Item>
+      <Descriptions.Item label="Email">
+        {record.candidateEmail}
+      </Descriptions.Item>
+      <Descriptions.Item label="Documents Count">
+        {record.documentsCount}
+      </Descriptions.Item>
     </Descriptions>
 
-    <Title level={5} style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}>
+    <Title
+      level={5}
+      style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "12px" }}
+    >
       Uploaded Documents
     </Title>
     {record.documents?.length > 0 ? (
@@ -601,13 +692,22 @@ const DetailsContent = ({ record, isMobile, isTablet, getFileIcon, handleDownloa
             <List.Item.Meta
               avatar={getFileIcon(document.fileName)}
               title={
-                <Text ellipsis={{ tooltip: document.fileName }} style={{ fontSize: isMobile ? "12px" : "14px", fontWeight: 500 }}>
+                <Text
+                  ellipsis={{ tooltip: document.fileName }}
+                  style={{
+                    fontSize: isMobile ? "12px" : "14px",
+                    fontWeight: 500,
+                  }}
+                >
                   {document.fileName}
                 </Text>
               }
               description={
                 <Space size="small">
-                  <Text type="secondary" style={{ fontSize: isMobile ? "10px" : "12px" }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: isMobile ? "10px" : "12px" }}
+                  >
                     {formatDate(document.uploadedAt)}
                   </Text>
                 </Space>

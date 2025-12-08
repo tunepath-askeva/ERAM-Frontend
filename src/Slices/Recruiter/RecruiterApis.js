@@ -279,6 +279,7 @@ export const recruiterApi = createApi({
         comments,
         workOrderid,
         userId,
+        levelObjectId,
       }) => ({
         url: `/approval/${approvalId}`,
         method: "POST",
@@ -289,6 +290,7 @@ export const recruiterApi = createApi({
           comments,
           workOrderid,
           userId,
+          levelObjectId,
         },
       }),
     }),

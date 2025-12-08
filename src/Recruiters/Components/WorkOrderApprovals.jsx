@@ -87,6 +87,7 @@ const WorkOrderApprovals = ({
             levelName: levelInfo.levelName,
             levelId: levelInfo.levelId,
             hasDocuments: documents.length > 0,
+            levelObjectId: stage._Id,
           });
         }
       });
@@ -151,6 +152,7 @@ const WorkOrderApprovals = ({
         stageId: selectedRecord.stageId,
         status: "approved",
         comments: approvalComments,
+          levelObjectId: selectedRecord.levelObjectId,
       });
 
       message.success(`Documents approved for ${selectedRecord.candidateName}!`);
@@ -300,46 +302,46 @@ const WorkOrderApprovals = ({
         </Space>
       ),
     },
-    {
-      title: "Recruiter",
-      dataIndex: "recruiterName",
-      key: "recruiterName",
-      width: isMobile ? 150 : isTablet ? 160 : 200,
-      ellipsis: true,
-      render: (text, record) => (
-        <div style={{ minWidth: 0 }}>
-          <Tooltip title={text}>
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {text || "N/A"}
-            </div>
-          </Tooltip>
-          {!isMobile && record.recruiterEmail && record.recruiterEmail !== "N/A" && (
-            <Tooltip title={record.recruiterEmail}>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: isTablet ? "11px" : "12px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  display: "block",
-                }}
-              >
-                {record.recruiterEmail}
-              </Text>
-            </Tooltip>
-          )}
-        </div>
-      ),
-    },
+    // {
+    //   title: "Recruiter",
+    //   dataIndex: "recruiterName",
+    //   key: "recruiterName",
+    //   width: isMobile ? 150 : isTablet ? 160 : 200,
+    //   ellipsis: true,
+    //   render: (text, record) => (
+    //     <div style={{ minWidth: 0 }}>
+    //       <Tooltip title={text}>
+    //         <div
+    //           style={{
+    //             fontWeight: 500,
+    //             fontSize: isMobile ? "11px" : isTablet ? "12px" : "14px",
+    //             overflow: "hidden",
+    //             textOverflow: "ellipsis",
+    //             whiteSpace: "nowrap",
+    //           }}
+    //         >
+    //           {text || "N/A"}
+    //         </div>
+    //       </Tooltip>
+    //       {!isMobile && record.recruiterEmail && record.recruiterEmail !== "N/A" && (
+    //         <Tooltip title={record.recruiterEmail}>
+    //           <Text
+    //             type="secondary"
+    //             style={{
+    //               fontSize: isTablet ? "11px" : "12px",
+    //               overflow: "hidden",
+    //               textOverflow: "ellipsis",
+    //               whiteSpace: "nowrap",
+    //               display: "block",
+    //             }}
+    //           >
+    //             {record.recruiterEmail}
+    //           </Text>
+    //         </Tooltip>
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       title: "Docs",
       dataIndex: "documentsCount",
