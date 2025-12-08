@@ -119,9 +119,9 @@ const SeparateApprovals = ({
 
   const getStatusText = (status) => {
     const texts = {
-      pending: "Pending",
-      approved: "Approved",
-      rejected: "Rejected",
+      pending: "pending",
+      approved: "approved",
+      rejected: "rejected",
     };
     return texts[status] || status;
   };
