@@ -43,6 +43,7 @@ const SeparateApprovals = ({
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [approvalComments, setApprovalComments] = useState("");
+  console.log(selectedRecord,'selectedRecord-=-=')
 
   const screens = useBreakpoint();
   const isMobile = screens.xs;
@@ -64,8 +65,8 @@ const SeparateApprovals = ({
           const documents = candidateDoc?.documents || [];
 
           tableData.push({
-            key: `${workOrder.workOrderid}-${stage.stageId}-${levelInfo.candidateId}`,
-            workOrderId: workOrder.workOrderid,
+            key: `${workOrder.workOrderId}-${stage.stageId}-${levelInfo.candidateId}`,
+            workOrderId: workOrder.workOrderId,
             workOrderTitle: workOrder.title,
             jobCode: workOrder.jobCode,
             candidateId: levelInfo.candidateId,
