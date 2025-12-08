@@ -95,6 +95,10 @@ const AddWorkOrder = () => {
   const [isPrefilled, setIsPrefilled] = useState(false);
   const [hasLoadedRequisition, setHasLoadedRequisition] = useState(false);
   const [defaultRecruiters, setDefaultRecruiters] = useState([]);
+  const [universalDates, setUniversalDates] = useState({
+    startDate: null,
+    endDate: null,
+  });
   const [isRequisitionBased, setIsRequisitionBased] = useState(false);
   const [standardDocuments, setStandardDocuments] = useState([
     { id: "visa", name: "Visa", isMandatory: false },
@@ -1608,6 +1612,7 @@ const AddWorkOrder = () => {
         onCancel={() => {
           setPipelineDatesModalVisible(false);
           setDefaultRecruiters([]);
+          setUniversalDates({ startDate: null, endDate: null });
         }}
         footer={[
           <Button
@@ -1615,6 +1620,7 @@ const AddWorkOrder = () => {
             onClick={() => {
               setDefaultRecruiters([]);
               setPipelineDatesModalVisible(false);
+              setUniversalDates({ startDate: null, endDate: null });
             }}
           >
             Close
@@ -1672,6 +1678,72 @@ const AddWorkOrder = () => {
               ))}
             </Select>
           </Form.Item>
+
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Universal Start Date (apply to all stages)"
+                style={{ marginBottom: 0 }}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  size="small"
+                  value={universalDates.startDate}
+                  onChange={(date) => {
+                    setUniversalDates((prev) => ({ ...prev, startDate: date }));
+                    // Apply to all stages
+                    setPipelineStageDates((prev) => {
+                      const newDates = { ...prev };
+                      const pipelineId = currentPipelineForDates._id;
+                      if (newDates[pipelineId]) {
+                        newDates[pipelineId] = newDates[pipelineId].map(
+                          (stage) => ({
+                            ...stage,
+                            startDate: date
+                              ? dayjs(date).format("YYYY-MM-DD")
+                              : null,
+                          })
+                        );
+                      }
+                      return newDates;
+                    });
+                  }}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Universal End Date (apply to all stages)"
+                style={{ marginBottom: 0 }}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  size="small"
+                  value={universalDates.endDate}
+                  onChange={(date) => {
+                    setUniversalDates((prev) => ({ ...prev, endDate: date }));
+                    // Apply to all stages
+                    setPipelineStageDates((prev) => {
+                      const newDates = { ...prev };
+                      const pipelineId = currentPipelineForDates._id;
+                      if (newDates[pipelineId]) {
+                        newDates[pipelineId] = newDates[pipelineId].map(
+                          (stage) => ({
+                            ...stage,
+                            endDate: date
+                              ? dayjs(date).format("YYYY-MM-DD")
+                              : null,
+                          })
+                        );
+                      }
+                      return newDates;
+                    });
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </div>
 
         <div style={{ padding: "16px 0" }}>

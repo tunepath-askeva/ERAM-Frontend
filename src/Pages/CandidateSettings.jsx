@@ -1901,12 +1901,12 @@ const CandidateSettings = () => {
                   <Form.Item
                     label="Industry"
                     name="industry"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add at least one industry",
-                      },
-                    ]}
+                    // rules={[
+                    //   {
+                    //     required: true,
+                    //     message: "Please add at least one industry",
+                    //   },
+                    // ]}
                   >
                     <Select
                       mode="tags"
@@ -1927,12 +1927,12 @@ const CandidateSettings = () => {
                   <Form.Item
                     label="Visa Status"
                     name="visaStatus"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please add at least one visa status",
-                      },
-                    ]}
+                    // rules={[
+                    //   {
+                    //     required: true,
+                    //     message: "Please add at least one visa status",
+                    //   },
+                    // ]}
                   >
                     <Select
                       mode="tags"

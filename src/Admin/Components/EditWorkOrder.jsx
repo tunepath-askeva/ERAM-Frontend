@@ -95,6 +95,10 @@ const EditWorkOrder = () => {
   const [stageApprovers, setStageApprovers] = useState({});
   const [documents, setDocuments] = useState([]);
   const [universalRecruiters, setUniversalRecruiters] = useState([]);
+  const [universalDates, setUniversalDates] = useState({
+    startDate: null,
+    endDate: null,
+  });
   const navigate = useNavigate();
 
   const { data: approvalData, isLoading: isLoadingApprovals } =
@@ -1451,7 +1455,11 @@ const EditWorkOrder = () => {
           currentPipelineForDates?.name || "Pipeline"
         }`}
         visible={pipelineDatesModalVisible}
-        onCancel={() => setPipelineDatesModalVisible(false)}
+        onCancel={() => {
+          setPipelineDatesModalVisible(false);
+          setUniversalRecruiters([]);
+          setUniversalDates({ startDate: null, endDate: null });
+        }}
         footer={[
           <Button
             key="back"
@@ -1462,7 +1470,11 @@ const EditWorkOrder = () => {
           <Button
             key="submit"
             type="primary"
-            onClick={() => setPipelineDatesModalVisible(false)}
+            onClick={() => {
+              setPipelineDatesModalVisible(false);
+              setUniversalRecruiters([]);
+              setUniversalDates({ startDate: null, endDate: null });
+            }}
             style={{
               background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             }}
@@ -1529,6 +1541,76 @@ const EditWorkOrder = () => {
                       </Option>
                     ))}
                   </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label="Universal Start Date (apply to all stages)"
+                  style={{ marginBottom: 0 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={universalDates.startDate}
+                    onChange={(date) => {
+                      setUniversalDates((prev) => ({
+                        ...prev,
+                        startDate: date,
+                      }));
+                      // Apply to all stages
+                      setPipelineStageDates((prev) => {
+                        const newDates = { ...prev };
+                        const pipelineId = currentPipelineForDates._id;
+                        if (newDates[pipelineId]) {
+                          newDates[pipelineId] = newDates[pipelineId].map(
+                            (stage) => ({
+                              ...stage,
+                              startDate: date
+                                ? dayjs(date).format("YYYY-MM-DD")
+                                : null,
+                            })
+                          );
+                        }
+                        return newDates;
+                      });
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label="Universal End Date (apply to all stages)"
+                  style={{ marginBottom: 0 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={universalDates.endDate}
+                    onChange={(date) => {
+                      setUniversalDates((prev) => ({
+                        ...prev,
+                        endDate: date,
+                      }));
+                      // Apply to all stages
+                      setPipelineStageDates((prev) => {
+                        const newDates = { ...prev };
+                        const pipelineId = currentPipelineForDates._id;
+                        if (newDates[pipelineId]) {
+                          newDates[pipelineId] = newDates[pipelineId].map(
+                            (stage) => ({
+                              ...stage,
+                              endDate: date
+                                ? dayjs(date).format("YYYY-MM-DD")
+                                : null,
+                            })
+                          );
+                        }
+                        return newDates;
+                      });
+                    }}
+                  />
                 </Form.Item>
               </Col>
             </Row>

@@ -289,6 +289,42 @@ export const userApi = createApi({
         };
       },
     }),
+
+    editDocument: builder.mutation({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("customFieldId", data.customFieldId);
+        formData.append("documentName", data.documentName);
+        formData.append("documentType", data.documentType); // 'workOrder' or 'stage'
+
+        if (data.stageId) {
+          formData.append("stageId", data.stageId);
+        }
+
+        if (data.file) {
+          formData.append("file", data.file);
+          formData.append(
+            "fileMetadata",
+            JSON.stringify({
+              fileName: data.file.name,
+              fileSize: data.file.size,
+              fileType: data.file.type,
+            })
+          );
+        }
+
+        if (data.existingFile) {
+          formData.append("existingFile", JSON.stringify(data.existingFile));
+        }
+
+        return {
+          url: "/documents/edit", // Update with your actual endpoint
+          method: "PUT",
+          body: formData,
+        };
+      },
+    }),
+
     getCandidateDocuments: builder.query({
       query: () => ({
         url: `/documents`,
@@ -428,4 +464,6 @@ export const {
   useSubmitCVApplicationMutation,
   useGetBranchByDomainQuery,
   useGetTrendingSkillsQuery,
+
+  useEditDocumentMutation,
 } = userApi;
