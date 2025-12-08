@@ -17,6 +17,7 @@ import {
   Upload,
   message,
   Space,
+  Select,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -44,6 +45,8 @@ const AppliedJobDetails = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [uploadedFiles, setUploadedFiles] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedExistingFiles, setSelectedExistingFiles] = useState({});
+  const [editingDocuments, setEditingDocuments] = useState({});
   const {
     data: response,
     isLoading,
@@ -146,6 +149,138 @@ const AppliedJobDetails = () => {
     });
   };
 
+  const handleSelectExistingFile = (stageId, certificate, documentType) => {
+    console.log("Selecting existing file:", {
+      stageId,
+      certificate,
+      documentType,
+    }); // Debug log
+
+    setSelectedExistingFiles((prev) => {
+      const updated = {
+        ...prev,
+        [stageId]: [
+          ...(prev[stageId] || []),
+          {
+            fileName: certificate.fileName,
+            fileUrl: certificate.fileUrl,
+            documentName: documentType,
+            _id: certificate._id,
+          },
+        ],
+      };
+      console.log("Updated selectedExistingFiles:", updated); // Debug log
+      return updated;
+    });
+
+    message.success(
+      `${certificate.fileName} selected from existing certificates`
+    );
+  };
+
+  const removeExistingFile = (stageId, fileId) => {
+    setSelectedExistingFiles((prev) => {
+      const updatedFiles = { ...prev };
+      if (updatedFiles[stageId]) {
+        updatedFiles[stageId] = updatedFiles[stageId].filter(
+          (file) => file._id !== fileId
+        );
+        if (updatedFiles[stageId].length === 0) {
+          delete updatedFiles[stageId];
+        }
+      }
+      return updatedFiles;
+    });
+  };
+
+  const handleEditDocument = (stageId, docName, currentDoc) => {
+    setEditingDocuments((prev) => ({
+      ...prev,
+      [stageId]: {
+        ...(prev[stageId] || {}),
+        [docName]: currentDoc,
+      },
+    }));
+  };
+
+  const handleReplaceDocument = (
+    stageId,
+    docName,
+    newFile,
+    isExisting = false
+  ) => {
+    if (isExisting) {
+      // Replacing with existing certificate
+      setSelectedExistingFiles((prev) => ({
+        ...prev,
+        [stageId]: [
+          ...(prev[stageId] || []).filter((f) => f.documentName !== docName),
+          {
+            fileName: newFile.fileName,
+            fileUrl: newFile.fileUrl,
+            documentName: docName,
+            _id: newFile._id,
+            isReplaced: true,
+          },
+        ],
+      }));
+    } else {
+      // Replacing with new upload
+      setUploadedFiles((prev) => ({
+        ...prev,
+        [stageId]: [
+          ...(prev[stageId] || []).filter((f) => f.documentType !== docName),
+          {
+            name: newFile.name,
+            size: newFile.size,
+            type: newFile.type,
+            documentType: docName,
+            lastModified: newFile.lastModified,
+            preview: URL.createObjectURL(newFile),
+            originFileObj: newFile,
+          },
+        ],
+      }));
+    }
+
+    // Clear editing state
+    setEditingDocuments((prev) => {
+      const updated = { ...prev };
+      if (updated[stageId]) {
+        delete updated[stageId][docName];
+      }
+      return updated;
+    });
+
+    message.success(`Document replaced successfully`);
+  };
+
+  const handleCancelEdit = (stageId, docName) => {
+    setEditingDocuments((prev) => {
+      const updated = { ...prev };
+      if (updated[stageId]) {
+        delete updated[stageId][docName];
+      }
+      return updated;
+    });
+  };
+
+  const clearAllPendingDocuments = (stageId) => {
+    setUploadedFiles((prev) => ({
+      ...prev,
+      [stageId]: [],
+    }));
+    setSelectedExistingFiles((prev) => ({
+      ...prev,
+      [stageId]: [],
+    }));
+    setEditingDocuments((prev) => ({
+      ...prev,
+      [stageId]: {},
+    }));
+    message.success("All pending documents cleared");
+  };
+
   const handleFileUpload = (stageId, docType) => {
     return (info) => {
       const { file } = info;
@@ -192,9 +327,13 @@ const AppliedJobDetails = () => {
 
   const handleSubmitDocuments = async (stageId) => {
     const stageFiles = uploadedFiles[stageId] || [];
+    const existingFiles = selectedExistingFiles[stageId] || [];
     const stage = appliedJob.stageProgress.find((s) => s._id === stageId);
 
-    if (stageFiles.length === 0) {
+    console.log("Stage Files:", stageFiles);
+    console.log("Existing Files:", existingFiles);
+
+    if (stageFiles.length === 0 && existingFiles.length === 0) {
       message.warning("Please upload at least one document before submitting");
       return;
     }
@@ -202,23 +341,51 @@ const AppliedJobDetails = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await uploadStageDocuments({
+      // Prepare the payload
+      const payload = {
         customFieldId: appliedJob._id,
         stageId: stage.stageId,
-        files: stageFiles.map((file) => file.originFileObj),
-        filesMetadata: stageFiles.map((file) => ({
+      };
+
+      // Add new files if any
+      if (stageFiles.length > 0) {
+        payload.files = stageFiles.map((file) => file.originFileObj);
+        payload.filesMetadata = stageFiles.map((file) => ({
           fileName: file.name,
           documentName: file.documentType,
           fileSize: file.size,
           fileType: file.type,
-        })),
-      }).unwrap();
+        }));
+      } else {
+        payload.files = [];
+        payload.filesMetadata = [];
+      }
+
+      // Add existing files if any - WITHOUT isReplaced inside
+      if (existingFiles.length > 0) {
+        payload.existingFiles = existingFiles.map((file) => ({
+          fileName: file.fileName,
+          fileUrl: file.fileUrl,
+          documentName: file.documentName,
+        }));
+        payload.isReplaced = true; // ADD THIS - at payload level
+      }
+
+      console.log("Submitting payload:", payload);
+
+      const response = await uploadStageDocuments(payload).unwrap();
 
       message.success(response.message || "Documents submitted successfully!");
+
       setUploadedFiles((prev) => ({
         ...prev,
         [stageId]: [],
       }));
+      setSelectedExistingFiles((prev) => ({
+        ...prev,
+        [stageId]: [],
+      }));
+
       await refetch();
     } catch (error) {
       console.error("Failed to upload documents:", error);
@@ -559,8 +726,12 @@ const AppliedJobDetails = () => {
 
     const handleSubmitWorkOrderDocuments = async () => {
       const woFiles = uploadedFiles["workOrder"] || [];
+      const existingFiles = selectedExistingFiles["workOrder"] || [];
 
-      if (woFiles.length === 0) {
+      console.log("Work Order Files:", woFiles);
+      console.log("Existing Files:", existingFiles);
+
+      if (woFiles.length === 0 && existingFiles.length === 0) {
         message.warning(
           "Please upload at least one document before submitting"
         );
@@ -570,24 +741,51 @@ const AppliedJobDetails = () => {
       setIsSubmitting(true);
 
       try {
-        const response = await submitWorkOrderDocuments({
+        // Prepare the payload
+        const payload = {
           customFieldId: appliedJob._id,
-          files: woFiles.map((file) => file.originFileObj),
-          filesMetadata: woFiles.map((file) => ({
+        };
+
+        // Add new files if any
+        if (woFiles.length > 0) {
+          payload.files = woFiles.map((file) => file.originFileObj);
+          payload.filesMetadata = woFiles.map((file) => ({
             fileName: file.name,
             documentName: file.documentType,
             fileSize: file.size,
             fileType: file.type,
-          })),
-        }).unwrap();
+          }));
+        } else {
+          payload.files = [];
+          payload.filesMetadata = [];
+        }
+
+        if (existingFiles.length > 0) {
+          payload.existingFiles = existingFiles.map((file) => ({
+            fileName: file.fileName,
+            fileUrl: file.fileUrl,
+            documentName: file.documentName,
+          }));
+          payload.isReplaced = true;
+        }
+
+        console.log("Submitting work order payload:", payload);
+
+        const response = await submitWorkOrderDocuments(payload).unwrap();
 
         message.success(
           response.message || "Documents submitted successfully!"
         );
+
         setUploadedFiles((prev) => ({
           ...prev,
           ["workOrder"]: [],
         }));
+        setSelectedExistingFiles((prev) => ({
+          ...prev,
+          ["workOrder"]: [],
+        }));
+
         await refetch();
       } catch (error) {
         console.error("Failed to upload work order documents:", error);
@@ -648,20 +846,26 @@ const AppliedJobDetails = () => {
                     appliedJob.workOrderuploadedDocuments,
                     doc.name
                   );
+                  const isEditing = editingDocuments["workOrder"]?.[doc.name]; // ADD THIS
+
                   return (
                     <div
                       key={doc._id || docIndex}
                       style={{
                         padding: "12px",
                         border: `2px solid ${
-                          isUploaded
+                          isEditing
+                            ? "#1890ff" // ADD THIS
+                            : isUploaded
                             ? "#52c41a"
                             : isPending
                             ? "#faad14"
                             : "#d9d9d9"
                         }`,
                         borderRadius: "8px",
-                        backgroundColor: isUploaded
+                        backgroundColor: isEditing
+                          ? "#e6f7ff" // ADD THIS
+                          : isUploaded
                           ? "#f6ffed"
                           : isPending
                           ? "#fffbf0"
@@ -673,42 +877,82 @@ const AppliedJobDetails = () => {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "8px",
+                          justifyContent: "space-between",
                         }}
                       >
-                        <FileTextOutlined
+                        <div
                           style={{
-                            color: isUploaded
-                              ? "#52c41a"
-                              : isPending
-                              ? "#faad14"
-                              : "#8c8c8c",
-                            fontSize: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
                           }}
-                        />
-                        <Text strong style={{ fontSize: "14px" }}>
-                          {doc.name}
-                        </Text>
-                        {isUploaded && uploadedDoc && (
-                          <Button
-                            type="primary"
-                            size="small"
-                            ghost
-                            onClick={() => {
-                              if (uploadedDoc.fileUrl) {
-                                window.open(uploadedDoc.fileUrl, "_blank");
-                              } else {
-                                message.info("File preview not available");
-                              }
-                            }}
+                        >
+                          <FileTextOutlined
                             style={{
-                              borderColor: "#52c41a",
-                              color: "#52c41a",
+                              color: isEditing
+                                ? "#1890ff" // ADD THIS
+                                : isUploaded
+                                ? "#52c41a"
+                                : isPending
+                                ? "#faad14"
+                                : "#8c8c8c",
+                              fontSize: "16px",
                             }}
-                          >
-                            View
-                          </Button>
-                        )}
+                          />
+                          <Text strong style={{ fontSize: "14px" }}>
+                            {doc.name}
+                          </Text>
+                        </div>
+
+                        {/* ADD THIS SECTION - Action Buttons */}
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          {isUploaded && uploadedDoc && !isEditing && (
+                            <>
+                              <Button
+                                type="primary"
+                                size="small"
+                                ghost
+                                onClick={() => {
+                                  if (uploadedDoc.fileUrl) {
+                                    window.open(uploadedDoc.fileUrl, "_blank");
+                                  } else {
+                                    message.info("File preview not available");
+                                  }
+                                }}
+                                style={{
+                                  borderColor: "#52c41a",
+                                  color: "#52c41a",
+                                }}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                type="default"
+                                size="small"
+                                onClick={() =>
+                                  handleEditDocument(
+                                    "workOrder",
+                                    doc.name,
+                                    uploadedDoc
+                                  )
+                                }
+                              >
+                                Edit
+                              </Button>
+                            </>
+                          )}
+                          {isEditing && (
+                            <Button
+                              type="text"
+                              size="small"
+                              onClick={() =>
+                                handleCancelEdit("workOrder", doc.name)
+                              }
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {doc.description && (
@@ -727,11 +971,11 @@ const AppliedJobDetails = () => {
                       >
                         {isUploaded ? (
                           <Tag
-                            color="success"
+                            color={isEditing ? "blue" : "success"}
                             size="small"
                             icon={<CheckCircleOutlined />}
                           >
-                            Uploaded
+                            {isEditing ? "Editing" : "Uploaded"}
                           </Tag>
                         ) : isPending ? (
                           <Tag
@@ -755,11 +999,126 @@ const AppliedJobDetails = () => {
                           ).toLocaleDateString()}
                         </Text>
                       )}
+
+                      {/* ADD THIS - Edit message */}
+                      {isEditing && (
+                        <Text
+                          type="warning"
+                          style={{
+                            fontSize: "12px",
+                            display: "block",
+                            marginTop: "4px",
+                          }}
+                        >
+                          Select replacement below
+                        </Text>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
+
+            {/* ADD THIS - Edit/Replace Section for Work Order */}
+            {Object.keys(editingDocuments["workOrder"] || {}).length > 0 && (
+              <div style={{ marginTop: "16px" }}>
+                {Object.keys(editingDocuments["workOrder"] || {}).map(
+                  (docName) => {
+                    const currentDoc = editingDocuments["workOrder"][docName];
+                    return (
+                      <div
+                        key={`edit-wo-${docName}`}
+                        style={{
+                          marginTop: "16px",
+                          padding: "16px",
+                          border: "2px solid #1890ff",
+                          borderRadius: "8px",
+                          backgroundColor: "#f0f5ff",
+                        }}
+                      >
+                        <Title
+                          level={5}
+                          style={{ color: "#1890ff", marginBottom: "16px" }}
+                        >
+                          Replace: {docName}
+                        </Title>
+
+                        {/* Upload New File */}
+                        <div style={{ marginBottom: "16px" }}>
+                          <Text
+                            strong
+                            style={{ display: "block", marginBottom: "8px" }}
+                          >
+                            Upload New File:
+                          </Text>
+                          <Upload
+                            name="file"
+                            multiple={false}
+                            showUploadList={false}
+                            beforeUpload={(file) => {
+                              const isLt5M = file.size / 1024 / 1024 < 5;
+                              if (!isLt5M) {
+                                message.error("File must be smaller than 5MB!");
+                                return Upload.LIST_IGNORE;
+                              }
+                              handleReplaceDocument(
+                                "workOrder",
+                                docName,
+                                file,
+                                false
+                              );
+                              return false;
+                            }}
+                          >
+                            <Button
+                              icon={<UploadOutlined />}
+                              type="primary"
+                              ghost
+                            >
+                              Choose New File
+                            </Button>
+                          </Upload>
+                        </div>
+
+                        {/* Or Select Existing */}
+                        {appliedJob.certificates?.length > 0 && (
+                          <div>
+                            <Text
+                              strong
+                              style={{ display: "block", marginBottom: "8px" }}
+                            >
+                              Or Select from Existing Certificates:
+                            </Text>
+                            <Select
+                              style={{ width: "100%" }}
+                              placeholder="Select existing certificate"
+                              onChange={(value) => {
+                                const certificate =
+                                  appliedJob.certificates.find(
+                                    (cert) => cert._id === value
+                                  );
+                                handleReplaceDocument(
+                                  "workOrder",
+                                  docName,
+                                  certificate,
+                                  true
+                                );
+                              }}
+                            >
+                              {appliedJob.certificates.map((cert) => (
+                                <Select.Option key={cert._id} value={cert._id}>
+                                  {cert.fileName}
+                                </Select.Option>
+                              ))}
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
 
             {/* Upload Section for Work Order Documents */}
             <Divider />
@@ -854,13 +1213,44 @@ const AppliedJobDetails = () => {
                           </div>
                         </div>
                       </Upload>
+                      {appliedJob.certificates?.length > 0 && (
+                        <div style={{ marginTop: "12px" }}>
+                          <Text
+                            type="secondary"
+                            style={{ display: "block", marginBottom: "8px" }}
+                          >
+                            Or select from existing certificates:
+                          </Text>
+                          <Select
+                            style={{ width: "100%" }}
+                            placeholder="Select existing certificate"
+                            onChange={(value) => {
+                              const certificate = appliedJob.certificates.find(
+                                (cert) => cert._id === value
+                              );
+                              handleSelectExistingFile(
+                                "workOrder",
+                                certificate,
+                                doc.name
+                              );
+                            }}
+                          >
+                            {appliedJob.certificates.map((cert) => (
+                              <Select.Option key={cert._id} value={cert._id}>
+                                {cert.fileName}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Submit Button for Work Order Documents */}
-            {uploadedFiles["workOrder"]?.length > 0 && (
+            {(uploadedFiles["workOrder"]?.length > 0 ||
+              selectedExistingFiles["workOrder"]?.length > 0) && (
               <div
                 style={{
                   marginTop: "24px",
@@ -870,20 +1260,68 @@ const AppliedJobDetails = () => {
                 }}
               >
                 <div style={{ marginBottom: "12px" }}>
-                  <Text>
-                    Ready to Submit: {uploadedFiles["workOrder"].length}{" "}
+                  <Text strong style={{ fontSize: "16px" }}>
+                    Ready to Submit:{" "}
+                    {(uploadedFiles["workOrder"]?.length || 0) +
+                      (selectedExistingFiles["workOrder"]?.length || 0)}{" "}
                     document(s)
                   </Text>
-                  <div style={{ marginTop: "8px" }}>
-                    {uploadedFiles["workOrder"].map((file, index) => (
-                      <Tag
-                        key={index}
-                        color="blue"
-                        style={{ marginBottom: "4px" }}
-                      >
-                        {file.name}
-                      </Tag>
-                    ))}
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {uploadedFiles["workOrder"]?.length > 0 && (
+                      <div>
+                        <Text
+                          type="secondary"
+                          style={{ display: "block", marginBottom: "4px" }}
+                        >
+                          New Uploads:
+                        </Text>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                          }}
+                        >
+                          {uploadedFiles["workOrder"].map((file, index) => (
+                            <Tag key={index} color="blue">
+                              {file.name}
+                            </Tag>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedExistingFiles["workOrder"]?.length > 0 && (
+                      <div>
+                        <Text
+                          type="secondary"
+                          style={{ display: "block", marginBottom: "4px" }}
+                        >
+                          Existing Files:
+                        </Text>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                          }}
+                        >
+                          {selectedExistingFiles["workOrder"].map(
+                            (file, index) => (
+                              <Tag key={`existing-${index}`} color="green">
+                                {file.fileName}
+                              </Tag>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Space>
@@ -903,14 +1341,12 @@ const AppliedJobDetails = () => {
                   </Button>
                   <Button
                     size="large"
-                    onClick={() =>
-                      setUploadedFiles((prev) => ({
-                        ...prev,
-                        ["workOrder"]: [],
-                      }))
-                    }
+                    onClick={() => clearAllPendingDocuments("workOrder")}
                   >
-                    Clear All ({uploadedFiles["workOrder"].length})
+                    Clear All (
+                    {(uploadedFiles["workOrder"]?.length || 0) +
+                      (selectedExistingFiles["workOrder"]?.length || 0)}
+                    )
                   </Button>
                 </Space>
               </div>
@@ -1071,11 +1507,21 @@ const AppliedJobDetails = () => {
               )}
 
               {/* Uploaded Documents Section */}
+              {/* Uploaded Documents Section */}
               {uploadedDocs.length > 0 && (
                 <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>
-                    Uploaded Documents ({uploadedDocs.length})
-                  </Title>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <Title level={3}>
+                      Uploaded Documents ({uploadedDocs.length})
+                    </Title>
+                  </div>
                   <div
                     style={{
                       display: "flex",
@@ -1083,110 +1529,289 @@ const AppliedJobDetails = () => {
                       gap: "8px",
                     }}
                   >
-                    {uploadedDocs.map((doc, docIndex) => (
-                      <div
-                        key={`uploaded-${docIndex}`}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px",
-                          border: "1px solid #b7eb8f",
-                          borderRadius: "6px",
-                          backgroundColor: "#f6ffed",
-                        }}
-                      >
+                    {uploadedDocs.map((doc, docIndex) => {
+                      const isEditing =
+                        editingDocuments[stage._id]?.[doc.documentName];
+
+                      return (
                         <div
+                          key={`uploaded-${docIndex}`}
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "12px",
-                            flex: 1,
+                            justifyContent: "space-between",
+                            padding: "12px",
+                            border: isEditing
+                              ? "2px solid #1890ff"
+                              : "1px solid #b7eb8f",
+                            borderRadius: "6px",
+                            backgroundColor: isEditing ? "#e6f7ff" : "#f6ffed",
                           }}
                         >
                           <div
                             style={{
-                              width: "32px",
-                              height: "32px",
-                              borderRadius: "50%",
-                              backgroundColor: "#52c41a",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
+                              gap: "12px",
+                              flex: 1,
                             }}
                           >
-                            <FileTextOutlined
-                              style={{ color: "white", fontSize: "14px" }}
-                            />
+                            <div
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                borderRadius: "50%",
+                                backgroundColor: isEditing
+                                  ? "#1890ff"
+                                  : "#52c41a",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <FileTextOutlined
+                                style={{ color: "white", fontSize: "14px" }}
+                              />
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                              <Text strong style={{ display: "block" }}>
+                                {doc.fileName ||
+                                  doc.name ||
+                                  `Document ${docIndex + 1}`}
+                              </Text>
+                              {doc.documentName && (
+                                <Tag
+                                  color={isEditing ? "blue" : "green"}
+                                  size="small"
+                                  style={{ marginTop: "4px" }}
+                                >
+                                  {doc.documentName}
+                                </Tag>
+                              )}
+                              {doc.uploadedAt && (
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: "12px",
+                                    display: "block",
+                                    marginTop: "2px",
+                                  }}
+                                >
+                                  Uploaded:{" "}
+                                  {new Date(
+                                    doc.uploadedAt
+                                  ).toLocaleDateString()}
+                                </Text>
+                              )}
+                              {isEditing && (
+                                <Text
+                                  type="warning"
+                                  style={{ fontSize: "12px", display: "block" }}
+                                >
+                                  Select replacement below
+                                </Text>
+                              )}
+                            </div>
                           </div>
 
-                          <div style={{ flex: 1 }}>
-                            <Text strong style={{ display: "block" }}>
-                              {doc.fileName ||
-                                doc.name ||
-                                `Document ${docIndex + 1}`}
-                            </Text>
-                            {doc.documentName && (
-                              <Tag
-                                color="green"
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            {!isEditing ? (
+                              <>
+                                <Tag
+                                  color="success"
+                                  icon={<CheckCircleOutlined />}
+                                >
+                                  Submitted
+                                </Tag>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  ghost
+                                  onClick={() => {
+                                    if (doc.fileUrl) {
+                                      window.open(doc.fileUrl, "_blank");
+                                    } else {
+                                      message.info(
+                                        "File preview not available"
+                                      );
+                                    }
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  type="default"
+                                  size="small"
+                                  onClick={() =>
+                                    handleEditDocument(
+                                      stage._id,
+                                      doc.documentName,
+                                      doc
+                                    )
+                                  }
+                                >
+                                  Edit
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                type="text"
                                 size="small"
-                                style={{ marginTop: "4px" }}
+                                onClick={() =>
+                                  handleCancelEdit(stage._id, doc.documentName)
+                                }
                               >
-                                {doc.documentName}
-                              </Tag>
-                            )}
-                            {doc.uploadedAt && (
-                              <Text
-                                type="secondary"
-                                style={{
-                                  fontSize: "12px",
-                                  display: "block",
-                                  marginTop: "2px",
-                                }}
-                              >
-                                Uploaded:{" "}
-                                {new Date(doc.uploadedAt).toLocaleDateString()}{" "}
-                              </Text>
+                                Cancel Edit
+                              </Button>
                             )}
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
+                  {/* Edit/Replace Section */}
+                  {Object.keys(editingDocuments[stage._id] || {}).map(
+                    (docName) => {
+                      const currentDoc = editingDocuments[stage._id][docName];
+                      return (
                         <div
+                          key={`edit-${docName}`}
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
+                            marginTop: "16px",
+                            padding: "16px",
+                            border: "2px solid #1890ff",
+                            borderRadius: "8px",
+                            backgroundColor: "#f0f5ff",
                           }}
                         >
-                          <Tag color="success" icon={<CheckCircleOutlined />}>
-                            Submitted
-                          </Tag>
-                          <Button
-                            type="primary"
-                            size="small"
-                            ghost
-                            onClick={() => {
-                              if (doc.fileUrl) {
-                                window.open(doc.fileUrl, "_blank");
-                              } else {
-                                message.info("File preview not available");
-                              }
-                            }}
+                          <Title
+                            level={5}
+                            style={{ color: "#1890ff", marginBottom: "16px" }}
                           >
-                            View
-                          </Button>
+                            Replace: {docName}
+                          </Title>
+
+                          {/* Upload New File */}
+                          <div style={{ marginBottom: "16px" }}>
+                            <Text
+                              strong
+                              style={{ display: "block", marginBottom: "8px" }}
+                            >
+                              Upload New File:
+                            </Text>
+                            <Upload
+                              name="file"
+                              multiple={false}
+                              showUploadList={false}
+                              beforeUpload={(file) => {
+                                const isLt5M = file.size / 1024 / 1024 < 5;
+                                if (!isLt5M) {
+                                  message.error(
+                                    "File must be smaller than 5MB!"
+                                  );
+                                  return Upload.LIST_IGNORE;
+                                }
+                                handleReplaceDocument(
+                                  stage._id,
+                                  docName,
+                                  file,
+                                  false
+                                );
+                                return false;
+                              }}
+                            >
+                              <Button
+                                icon={<UploadOutlined />}
+                                type="primary"
+                                ghost
+                              >
+                                Choose New File
+                              </Button>
+                            </Upload>
+                          </div>
+
+                          {/* Or Select Existing */}
+                          {appliedJob.certificates?.length > 0 && (
+                            <div>
+                              <Text
+                                strong
+                                style={{
+                                  display: "block",
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                Or Select from Existing Certificates:
+                              </Text>
+                              <Select
+                                style={{ width: "100%" }}
+                                placeholder="Select existing certificate"
+                                onChange={(value) => {
+                                  const certificate =
+                                    appliedJob.certificates.find(
+                                      (cert) => cert._id === value
+                                    );
+                                  handleReplaceDocument(
+                                    stage._id,
+                                    docName,
+                                    certificate,
+                                    true
+                                  );
+                                }}
+                              >
+                                {appliedJob.certificates.map((cert) => (
+                                  <Select.Option
+                                    key={cert._id}
+                                    value={cert._id}
+                                  >
+                                    {cert.fileName}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      );
+                    }
+                  )}
                 </div>
               )}
 
               {pendingDocs.length > 0 && (
                 <div style={{ marginBottom: "24px" }}>
-                  <Title level={3}>
-                    Pending Documents ({pendingDocs.length})
-                  </Title>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <Title level={3}>
+                      Pending Documents ({pendingDocs.length})
+                    </Title>
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      onClick={() => {
+                        setUploadedFiles((prev) => ({
+                          ...prev,
+                          [stage._id]: [],
+                        }));
+                        message.success("All pending uploads cleared");
+                      }}
+                    >
+                      Clear All Pending
+                    </Button>
+                  </div>
                   <div
                     style={{
                       display: "flex",
@@ -1269,6 +1894,124 @@ const AppliedJobDetails = () => {
                             size="small"
                             danger
                             onClick={() => removeFile(stage._id, fileIndex)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Existing Files Section */}
+              {selectedExistingFiles[stage._id]?.length > 0 && (
+                <div style={{ marginBottom: "24px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <Title level={3}>
+                      Selected Existing Files (
+                      {selectedExistingFiles[stage._id].length})
+                    </Title>
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      onClick={() => {
+                        setSelectedExistingFiles((prev) => ({
+                          ...prev,
+                          [stage._id]: [],
+                        }));
+                        message.success("All selected files cleared");
+                      }}
+                    >
+                      Clear All Selected
+                    </Button>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {selectedExistingFiles[stage._id].map((file, index) => (
+                      <div
+                        key={`existing-${index}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px",
+                          border: "1px solid #52c41a",
+                          borderRadius: "6px",
+                          backgroundColor: "#f6ffed",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            flex: 1,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "50%",
+                              backgroundColor: "#52c41a",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <FileTextOutlined
+                              style={{ color: "white", fontSize: "14px" }}
+                            />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <Text strong style={{ display: "block" }}>
+                              {file.fileName}
+                            </Text>
+                            <Tag
+                              color="green"
+                              size="small"
+                              style={{ marginTop: "4px" }}
+                            >
+                              {file.documentName} (Existing)
+                            </Tag>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Button
+                            type="primary"
+                            size="small"
+                            ghost
+                            onClick={() => window.open(file.fileUrl, "_blank")}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            type="text"
+                            size="small"
+                            danger
+                            onClick={() =>
+                              removeExistingFile(stage._id, file._id)
+                            }
                           >
                             Remove
                           </Button>
@@ -1384,6 +2127,43 @@ const AppliedJobDetails = () => {
                                   </div>
                                 </div>
                               </Upload>
+                              {appliedJob.certificates?.length > 0 && (
+                                <div style={{ marginTop: "12px" }}>
+                                  <Text
+                                    type="secondary"
+                                    style={{
+                                      display: "block",
+                                      marginBottom: "8px",
+                                    }}
+                                  >
+                                    Or select from existing certificates:
+                                  </Text>
+                                  <Select
+                                    style={{ width: "100%" }}
+                                    placeholder="Select existing certificate"
+                                    onChange={(value) => {
+                                      const certificate =
+                                        appliedJob.certificates.find(
+                                          (cert) => cert._id === value
+                                        );
+                                      handleSelectExistingFile(
+                                        stage._id,
+                                        certificate,
+                                        docName
+                                      );
+                                    }}
+                                  >
+                                    {appliedJob.certificates.map((cert) => (
+                                      <Select.Option
+                                        key={cert._id}
+                                        value={cert._id}
+                                      >
+                                        {cert.fileName}
+                                      </Select.Option>
+                                    ))}
+                                  </Select>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -1458,7 +2238,8 @@ const AppliedJobDetails = () => {
               )}
 
               {/* Submit Button Section */}
-              {pendingDocs.length > 0 && (
+              {(pendingDocs.length > 0 ||
+                selectedExistingFiles[stage._id]?.length > 0) && (
                 <div
                   style={{
                     marginTop: "24px",
@@ -1468,19 +2249,68 @@ const AppliedJobDetails = () => {
                   }}
                 >
                   <div style={{ marginBottom: "12px" }}>
-                    <Text>
-                      Ready to Submit: {pendingDocs.length} document(s)
+                    <Text strong style={{ fontSize: "16px" }}>
+                      Ready to Submit:{" "}
+                      {pendingDocs.length +
+                        (selectedExistingFiles[stage._id]?.length || 0)}{" "}
+                      document(s)
                     </Text>
-                    <div style={{ marginTop: "8px" }}>
-                      {pendingDocs.map((file, index) => (
-                        <Tag
-                          key={index}
-                          color="blue"
-                          style={{ marginBottom: "4px" }}
-                        >
-                          {file.name}
-                        </Tag>
-                      ))}
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      {pendingDocs.length > 0 && (
+                        <div>
+                          <Text
+                            type="secondary"
+                            style={{ display: "block", marginBottom: "4px" }}
+                          >
+                            New Uploads:
+                          </Text>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "4px",
+                            }}
+                          >
+                            {pendingDocs.map((file, index) => (
+                              <Tag key={index} color="blue">
+                                {file.name}
+                              </Tag>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedExistingFiles[stage._id]?.length > 0 && (
+                        <div>
+                          <Text
+                            type="secondary"
+                            style={{ display: "block", marginBottom: "4px" }}
+                          >
+                            Existing Files:
+                          </Text>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "4px",
+                            }}
+                          >
+                            {selectedExistingFiles[stage._id].map(
+                              (file, index) => (
+                                <Tag key={`existing-${index}`} color="green">
+                                  {file.fileName}
+                                </Tag>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Space>
@@ -1496,18 +2326,16 @@ const AppliedJobDetails = () => {
                       }}
                       icon={!isSubmitting ? <CheckCircleOutlined /> : null}
                     >
-                      {isSubmitting ? "Submitting..." : `Submit`}
+                      {isSubmitting ? "Submitting..." : "Submit Documents"}
                     </Button>
                     <Button
                       size="large"
-                      onClick={() =>
-                        setUploadedFiles((prev) => ({
-                          ...prev,
-                          [stage._id]: [],
-                        }))
-                      }
+                      onClick={() => clearAllPendingDocuments(stage._id)}
                     >
-                      Clear All ({pendingDocs.length})
+                      Clear All (
+                      {pendingDocs.length +
+                        (selectedExistingFiles[stage._id]?.length || 0)}
+                      )
                     </Button>
                   </Space>
                 </div>
@@ -1537,8 +2365,10 @@ const AppliedJobDetails = () => {
   };
 
   const InterviewContent = () => {
-    if (!appliedJob.interviewDetails  ||
-      appliedJob.interviewDetails.length === 0) {
+    if (
+      !appliedJob.interviewDetails ||
+      appliedJob.interviewDetails.length === 0
+    ) {
       return (
         <Card>
           <div style={{ textAlign: "center", padding: "40px" }}>

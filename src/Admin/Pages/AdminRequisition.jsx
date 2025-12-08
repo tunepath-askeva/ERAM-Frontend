@@ -169,6 +169,14 @@ const AdminRequisition = () => {
           project:
             requisition.originalData.project ||
             requisition.originalData.projectId,
+          assignedRecruiters:
+            requisition.originalData.assignedRecruiters ||
+            requisition.originalData.assignedId ||
+            [],
+          recruiters:
+            requisition.originalData.recruiters ||
+            requisition.originalData.assignedId ||
+            [],
         },
         prefilled: true,
       },

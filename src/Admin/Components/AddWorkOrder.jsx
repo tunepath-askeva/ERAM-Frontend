@@ -310,7 +310,10 @@ const AddWorkOrder = () => {
           benefits: Array.isArray(reqData.benefits)
             ? reqData.benefits.join("\n")
             : reqData.benefits,
-          client: reqData.client._id,
+          client:
+            typeof reqData.client === "object"
+              ? reqData.client._id
+              : reqData.client,
           project: reqData.project._id,
           jobFunction: reqData.jobFunction,
           salaryType: reqData.salaryType || "monthly",
@@ -319,7 +322,15 @@ const AddWorkOrder = () => {
           Education: reqData.Education,
           languagesRequired: reqData.languagesRequired || [],
           jobCode: finalJobCode, // Use generated code here
-          assignedId: reqData.assignedRecruiters || reqData.recruiters || [],
+          assignedId: Array.isArray(reqData.assignedRecruiters)
+            ? reqData.assignedRecruiters.map((r) =>
+                typeof r === "object" ? r._id : r
+              )
+            : Array.isArray(reqData.recruiters)
+            ? reqData.recruiters.map((r) => (typeof r === "object" ? r._id : r))
+            : Array.isArray(reqData.assignedId)
+            ? reqData.assignedId.map((r) => (typeof r === "object" ? r._id : r))
+            : [],
         });
 
         // Handle required documents if available

@@ -209,17 +209,35 @@ export const userApi = createApi({
     }),
 
     uploadStageDocuments: builder.mutation({
-      query: ({ customFieldId, stageId, files, filesMetadata }) => {
+      query: ({
+        customFieldId,
+        stageId,
+        files = [],
+        filesMetadata = [],
+        existingFiles = [],
+      }) => {
         const formData = new FormData();
         formData.append("customFieldId", customFieldId);
         formData.append("stageId", stageId);
-        formData.append("filesMetadata", JSON.stringify(filesMetadata));
 
-        files.forEach((file) => {
-          if (file) {
-            formData.append("files", file);
-          }
-        });
+        // Add filesMetadata for new uploads
+        if (filesMetadata && filesMetadata.length > 0) {
+          formData.append("filesMetadata", JSON.stringify(filesMetadata));
+        }
+
+        // Add existingFiles metadata
+        if (existingFiles && existingFiles.length > 0) {
+          formData.append("existingFiles", JSON.stringify(existingFiles));
+        }
+
+        // Add new files to upload
+        if (files && files.length > 0) {
+          files.forEach((file) => {
+            if (file) {
+              formData.append("files", file);
+            }
+          });
+        }
 
         return {
           url: "/upload",
@@ -228,12 +246,41 @@ export const userApi = createApi({
         };
       },
     }),
+
     submitWorkOrderDocuments: builder.mutation({
-      query: ({ customFieldId, files, filesMetadata }) => {
+      query: ({
+        customFieldId,
+        files = [],
+        filesMetadata = [],
+        existingFiles = [],
+        isReplaced,
+      }) => {
         const formData = new FormData();
-        files.forEach((file) => formData.append("files", file));
-        formData.append("filesMetadata", JSON.stringify(filesMetadata));
         formData.append("customFieldId", customFieldId);
+
+        // Add filesMetadata for new uploads
+        if (filesMetadata && filesMetadata.length > 0) {
+          formData.append("filesMetadata", JSON.stringify(filesMetadata));
+        }
+
+        // Add existingFiles metadata
+        if (existingFiles && existingFiles.length > 0) {
+          formData.append("existingFiles", JSON.stringify(existingFiles));
+        }
+
+        // Add isReplaced flag
+        if (isReplaced !== undefined) {
+          formData.append("isReplaced", isReplaced);
+        }
+
+        // Add new files to upload
+        if (files && files.length > 0) {
+          files.forEach((file) => {
+            if (file) {
+              formData.append("files", file);
+            }
+          });
+        }
 
         return {
           url: "/workOrderupload",
@@ -319,7 +366,7 @@ export const userApi = createApi({
       }),
     }),
     getBranchJobById: builder.query({
-      query: (id) => `/branch-jobs/${id}`, 
+      query: (id) => `/branch-jobs/${id}`,
     }),
     getTrendingSkills: builder.query({
       query: (domain) => ({
