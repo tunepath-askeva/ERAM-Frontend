@@ -1603,6 +1603,16 @@ const RecruiterJobPipeline = () => {
 
       // Check if stage is already approved/completed
       if (currentStageProgress?.stageStatus === "approved") {
+        // Show which stage it was moved to (if available)
+        const currentStageIndex = candidate.stageProgress.findIndex(
+          (sp) => sp.stageId === currentStageProgress.stageId
+        );
+        const nextStageInProgress =
+          candidate.stageProgress[currentStageIndex + 1];
+
+        if (nextStageInProgress) {
+          return `✅ This stage has been completed and moved to: ${nextStageInProgress.stageName}`;
+        }
         return "✅ This stage has been completed and approved. No further action needed.";
       }
 
@@ -1692,6 +1702,22 @@ const RecruiterJobPipeline = () => {
             >
               {getStageStatusTag() && getStageStatusTag()}
               {getReviewStatusTag()}
+
+              {currentStageProgress?.stageStatus === "approved" &&
+                (() => {
+                  const currentIdx = candidate.stageProgress.findIndex(
+                    (sp) => sp.stageId === targetStageId
+                  );
+                  const nextStage = candidate.stageProgress[currentIdx + 1];
+
+                  if (nextStage) {
+                    return (
+                      <Tag icon={<ArrowRightOutlined />} color="purple">
+                        Moved to: {nextStage.stageName}
+                      </Tag>
+                    );
+                  }
+                })()}
             </div>
           </div>
 
@@ -2623,6 +2649,85 @@ const RecruiterJobPipeline = () => {
                               >
                                 No reviews yet
                               </Text>
+                            )}
+
+                            {candidate.stageProgress?.find(
+                              (sp) => sp.stageId === activeStage
+                            )?.stageStatus === "approved" && (
+                              <Card
+                                size="small"
+                                style={{
+                                  marginTop: "12px",
+                                  borderRadius: "8px",
+                                  background: "#f0f5ff",
+                                  borderLeft: "4px solid #1890ff",
+                                }}
+                              >
+                                <Text strong style={{ color: "#1890ff" }}>
+                                  <ArrowRightOutlined /> Stage Movement
+                                </Text>
+                                <br />
+                                {(() => {
+                                  const currentIdx =
+                                    candidate.stageProgress.findIndex(
+                                      (sp) => sp.stageId === activeStage
+                                    );
+                                  const nextStage =
+                                    candidate.stageProgress[currentIdx + 1];
+
+                                  if (nextStage) {
+                                    return (
+                                      <>
+                                        <Text
+                                          style={{
+                                            fontSize: "13px",
+                                            marginTop: "8px",
+                                            display: "block",
+                                          }}
+                                        >
+                                          This candidate was moved from{" "}
+                                          <Tag color="blue">
+                                            {getStageName(activeStage)}
+                                          </Tag>
+                                          to{" "}
+                                          <Tag color="green">
+                                            {nextStage.stageName}
+                                          </Tag>
+                                        </Text>
+                                        {nextStage.recruiterReviews?.[0]
+                                          ?.reviewedAt && (
+                                          <Text
+                                            type="secondary"
+                                            style={{
+                                              fontSize: "12px",
+                                              display: "block",
+                                              marginTop: "4px",
+                                            }}
+                                          >
+                                            Moved on:{" "}
+                                            {formatIST(
+                                              nextStage.recruiterReviews[0]
+                                                .reviewedAt
+                                            )}
+                                          </Text>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                  return (
+                                    <Text
+                                      style={{
+                                        fontSize: "13px",
+                                        marginTop: "8px",
+                                        display: "block",
+                                      }}
+                                    >
+                                      This stage has been completed (final
+                                      stage)
+                                    </Text>
+                                  );
+                                })()}
+                              </Card>
                             )}
                           </div>
                         </div>
