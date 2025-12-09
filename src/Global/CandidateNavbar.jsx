@@ -182,25 +182,144 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       ? JSON.parse(candidateDataRaw)
       : null;
 
-    if (!candidateData?.email) return;
+    console.log("🔍 Candidate Data:", candidateData); // DEBUG
+
+    if (!candidateData?.email) {
+      console.warn("⚠️ No candidate email found!"); // DEBUG
+      return;
+    }
+
+    console.log("📧 Candidate Email:", candidateData.email.toLowerCase()); // DEBUG
 
     socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-      socket.emit("join", candidateData.email.toLowerCase());
+      console.log("✅ Socket connected:", socket.id);
+      const emailToJoin = candidateData.email.toLowerCase();
+      console.log("🚀 Emitting join with email:", emailToJoin); // DEBUG
+      socket.emit("join", emailToJoin);
     });
 
     socket.on("notification", (data) => {
-      notification.open({
-        message: data.title,
-        description: data.message,
-        placement: "topRight",
-        duration: 4,
-      });
+      console.log("🔔 Notification received:", data); // DEBUG
+
+      // Helper function to parse markdown-style bold text and newlines
+      const parseMessage = (text) => {
+        if (!text) return "";
+
+        // Replace **text** with bold spans and handle newlines
+        return text
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+          .map((line) => {
+            // Replace **text** with <strong>text</strong>
+            return line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+          })
+          .join(" ");
+      };
+
+      const formattedMessage = parseMessage(data.message);
+
+      enqueueSnackbar(
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "12px",
+            minWidth: "300px",
+          }}
+        >
+          {/* Icon */}
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              flexShrink: 0,
+            }}
+          >
+            {data.type === "success" && (
+              <CheckCircleOutlined
+                style={{ fontSize: "20px", color: "#fff" }}
+              />
+            )}
+            {data.type === "warning" && (
+              <ExclamationCircleOutlined
+                style={{ fontSize: "20px", color: "#fff" }}
+              />
+            )}
+            {data.type === "error" && (
+              <ExclamationCircleOutlined
+                style={{ fontSize: "20px", color: "#fff" }}
+              />
+            )}
+            {(!data.type || data.type === "info") && (
+              <BellOutlined style={{ fontSize: "20px", color: "#fff" }} />
+            )}
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, paddingTop: "2px" }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: "15px",
+                marginBottom: "6px",
+                color: "#fff",
+                lineHeight: "1.4",
+              }}
+            >
+              {data.title}
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                color: "rgba(255, 255, 255, 0.95)",
+                lineHeight: "1.5",
+                wordBreak: "break-word",
+              }}
+              dangerouslySetInnerHTML={{ __html: formattedMessage }}
+            />
+            {data.createdAt && (
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "rgba(255, 255, 255, 0.7)",
+                  marginTop: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <ClockCircleOutlined style={{ fontSize: "10px" }} />
+                {dayjs(data.createdAt).fromNow()}
+              </div>
+            )}
+          </div>
+        </div>,
+        {
+          variant: data.type || "info",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 6000,
+          preventDuplicate: true,
+          style: {
+            minWidth: "340px",
+            maxWidth: "450px",
+            padding: "16px",
+            borderRadius: "12px",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+          },
+        }
+      );
 
       setNotificationList((prevList) => [data, ...prevList]);
     });
 
     return () => {
+      console.log("🔌 Disconnecting socket listeners"); // DEBUG
       socket.off("connect");
       socket.off("notification");
     };

@@ -691,7 +691,7 @@ const StageModals = ({
         }}
         okText="Delete"
         cancelText="Cancel"
-        okType="danger"
+        okType="primary"
         okButtonProps={{
           loading: isDeletingDocument,
         }}
