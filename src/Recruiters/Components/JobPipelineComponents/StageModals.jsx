@@ -143,20 +143,44 @@ const StageModals = ({
             (timeline) => timeline.stageId === currentStageId
           );
 
-        const allRequiredDocuments = [
+        const baseRequiredDocuments = [
           ...(currentStage?.requiredDocuments || []),
           ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
         ];
 
+        // Get additional documents
+        const additionalDocs =
+          currentStageProgress?.additionalDocuments?.map(
+            (doc) => doc.documentName
+          ) || [];
+
+        // Combine all required documents
+        const allRequiredDocuments = [
+          ...baseRequiredDocuments,
+          ...additionalDocs,
+        ];
         const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
 
         if (uniqueRequiredDocuments.length > 0) {
           const uploadedDocuments =
             currentStageProgress?.uploadedDocuments || [];
+          const uploadedDocNames = uploadedDocuments.map(
+            (doc) => doc.documentName || doc.fileName
+          );
 
-          if (uploadedDocuments.length === 0) {
+          // Check if ALL required documents have been uploaded
+          const allDocsUploaded = uniqueRequiredDocuments.every((requiredDoc) =>
+            uploadedDocNames.includes(requiredDoc)
+          );
+
+          if (!allDocsUploaded) {
+            const missingDocs = uniqueRequiredDocuments.filter(
+              (doc) => !uploadedDocNames.includes(doc)
+            );
             message.warning(
-              "Cannot move candidate until required documents are uploaded"
+              `Cannot move candidate until all required documents are uploaded. Missing: ${missingDocs.join(
+                ", "
+              )}`
             );
             return;
           }
@@ -351,16 +375,21 @@ const StageModals = ({
       await addStageDocument(payload).unwrap();
 
       message.success("Document added successfully");
+      setNewDocumentName("");
       setIsDocumentModalVisible(false);
 
-      // REFRESH FIRST
+      // THEN REFRESH - Force immediate refetch
       await refetch();
+
+      // Small delay to ensure backend has processed
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Refetch again to ensure latest data
+      await refetch();
+
       if (refreshData) {
         await refreshData();
       }
-
-      // THEN RESET STATE
-      setNewDocumentName("");
     } catch (error) {
       console.error("Error adding document:", error);
       message.error(error?.data?.message || "Failed to add document");

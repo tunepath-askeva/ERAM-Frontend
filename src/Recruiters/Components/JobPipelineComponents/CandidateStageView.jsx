@@ -129,11 +129,38 @@ const CandidateStageView = ({
     };
 
     const checkDocumentsUploaded = () => {
-      const requiredDocuments =
+      // Get base required documents from fullStage
+      const baseRequiredDocuments =
         currentStageProgress?.fullStage?.requiredDocuments || [];
-      if (requiredDocuments.length === 0) return true;
+
+      // Get additional documents that have been added to this stage
+      const additionalDocs =
+        currentStageProgress?.additionalDocuments?.map(
+          (doc) => doc.documentName
+        ) || [];
+
+      // Combine both arrays and remove duplicates
+      const allRequiredDocuments = [
+        ...new Set([...baseRequiredDocuments, ...additionalDocs]),
+      ];
+
+      // If there are no required documents at all, return true
+      if (allRequiredDocuments.length === 0) return true;
+
+      // Get uploaded documents
       const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
-      return uploadedDocuments.length > 0;
+
+      // Get the names/titles of uploaded documents
+      const uploadedDocNames = uploadedDocuments.map(
+        (doc) => doc.documentName || doc.fileName
+      );
+
+      // Check if ALL required documents (base + additional) have been uploaded
+      const allDocumentsUploaded = allRequiredDocuments.every((requiredDoc) =>
+        uploadedDocNames.includes(requiredDoc)
+      );
+
+      return allDocumentsUploaded;
     };
 
     const areDocumentsUploaded = checkDocumentsUploaded();
@@ -432,8 +459,14 @@ const CandidateStageView = ({
 
       const approvalCompleted = checkApprovalCompleted();
       const documentsUploaded = areDocumentsUploaded;
-      const hasRequiredDocs =
+      
+      // Updated logic to check for additional documents
+      const baseRequiredDocs =
         (currentStageProgress?.fullStage?.requiredDocuments || []).length > 0;
+      const additionalDocs = 
+        (currentStageProgress?.additionalDocuments || []).length > 0;
+      const hasRequiredDocs = baseRequiredDocs || additionalDocs;
+      
       const hasApproval = currentStageProgress?.approval?.approvalId
         ? true
         : false;
@@ -444,6 +477,21 @@ const CandidateStageView = ({
         } else if (!approvalCompleted) {
           return "⚠️ Approval is required before moving this candidate to the next stage.";
         } else if (!documentsUploaded) {
+          // More specific message about which documents are missing
+          const baseRequiredDocuments =
+            currentStageProgress?.fullStage?.requiredDocuments || [];
+          const additionalDocNames = 
+            currentStageProgress?.additionalDocuments?.map(doc => doc.documentName) || [];
+          const allRequiredDocuments = [...new Set([...baseRequiredDocuments, ...additionalDocNames])];
+          
+          const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
+          const uploadedDocNames = uploadedDocuments.map(doc => doc.documentName || doc.fileName);
+          
+          const missingDocs = allRequiredDocuments.filter(doc => !uploadedDocNames.includes(doc));
+          
+          if (missingDocs.length > 0) {
+            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(', ')}`;
+          }
           return "⚠️ Required documents must be uploaded before moving this candidate.";
         } else {
           return "✅ Approval completed and documents uploaded. You can move this candidate to the next stage.";
@@ -456,6 +504,21 @@ const CandidateStageView = ({
         }
       } else if (hasRequiredDocs) {
         if (!documentsUploaded) {
+          // More specific message about which documents are missing
+          const baseRequiredDocuments =
+            currentStageProgress?.fullStage?.requiredDocuments || [];
+          const additionalDocNames = 
+            currentStageProgress?.additionalDocuments?.map(doc => doc.documentName) || [];
+          const allRequiredDocuments = [...new Set([...baseRequiredDocuments, ...additionalDocNames])];
+          
+          const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
+          const uploadedDocNames = uploadedDocuments.map(doc => doc.documentName || doc.fileName);
+          
+          const missingDocs = allRequiredDocuments.filter(doc => !uploadedDocNames.includes(doc));
+          
+          if (missingDocs.length > 0) {
+            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(', ')}`;
+          }
           return "⚠️ Required documents must be uploaded before moving this candidate.";
         } else {
           return "✅ Documents uploaded. You can move this candidate to the next stage.";
@@ -464,6 +527,7 @@ const CandidateStageView = ({
         return "✅ No requirements for this stage. You can move this candidate to the next stage.";
       }
     };
+
 
     return (
       <div
@@ -474,7 +538,6 @@ const CandidateStageView = ({
           border: `1px solid ${isCurrentStage ? "#e6f7ff" : "#f0f0f0"}`,
         }}
       >
-        
         <div
           style={{
             display: "flex",
@@ -586,7 +649,13 @@ const CandidateStageView = ({
     );
 
     const uploadedDocs = stageProgress?.uploadedDocuments || [];
-    const requiredDocuments = stageProgress?.fullStage?.requiredDocuments || [];
+    const baseRequiredDocuments =
+      stageProgress?.fullStage?.requiredDocuments || [];
+    const additionalDocs =
+      stageProgress?.additionalDocuments?.map((doc) => doc.documentName) || [];
+    const requiredDocuments = [
+      ...new Set([...baseRequiredDocuments, ...additionalDocs]),
+    ];
 
     const handleViewDocument = (fileUrl, fileName) => {
       window.open(fileUrl, "_blank");

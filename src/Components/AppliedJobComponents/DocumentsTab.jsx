@@ -84,9 +84,18 @@ const DocumentsTab = ({
     );
   };
 
-  const getPendingRequiredDocuments = (requiredDocs, uploadedDocs) => {
-    return requiredDocs.filter((doc) => {
-      const docName = getDocumentName(doc);
+  const getPendingRequiredDocuments = (
+    requiredDocs,
+    uploadedDocs,
+    additionalDocs = []
+  ) => {
+    const allRequiredDocs = [
+      ...requiredDocs,
+      ...additionalDocs.map((doc) => doc.documentName),
+    ];
+
+    return allRequiredDocs.filter((doc) => {
+      const docName = typeof doc === "string" ? doc : getDocumentName(doc);
       return !isDocumentUploaded(uploadedDocs, docName);
     });
   };
@@ -1080,14 +1089,17 @@ const DocumentsTab = ({
       {stageProgress?.map((stage, index) => {
         const fullStage = stage.fullStage || stage;
         const requiredDocs = fullStage.requiredDocuments || [];
+        const additionalDocs = stage.additionalStageDocuments || [];
         const uploadedDocs = stage.uploadedDocuments || [];
         const pendingDocs = uploadedFiles[stage._id] || [];
         const pendingRequiredDocs = getPendingRequiredDocuments(
           requiredDocs,
-          uploadedDocs
+          uploadedDocs,
+          additionalDocs
         );
         const allRequiredDocsUploaded =
-          requiredDocs.length > 0 && pendingRequiredDocs.length === 0;
+          requiredDocs.length + additionalDocs.length > 0 &&
+          pendingRequiredDocs.length === 0;
 
         return (
           <Card key={stage._id || index} style={{ marginBottom: "16px" }}>
@@ -1106,7 +1118,7 @@ const DocumentsTab = ({
                   {stage.stageStatus?.toUpperCase() || "PENDING"}
                 </Tag>
               </Text>
-              {requiredDocs.length > 0 && (
+              {(requiredDocs.length > 0 || additionalDocs.length > 0) && (
                 <div style={{ marginTop: "8px" }}>
                   <Text type="secondary">
                     Document Status:
@@ -1114,7 +1126,8 @@ const DocumentsTab = ({
                       color={allRequiredDocsUploaded ? "success" : "warning"}
                       style={{ marginLeft: "8px" }}
                     >
-                      {uploadedDocs.length}/{requiredDocs.length} Uploaded
+                      {uploadedDocs.length}/
+                      {requiredDocs.length + additionalDocs.length} Uploaded
                     </Tag>
                   </Text>
                 </div>
@@ -1122,10 +1135,11 @@ const DocumentsTab = ({
             </div>
 
             {/* Required Documents Display */}
-            {requiredDocs.length > 0 && (
+            {(requiredDocs.length > 0 || additionalDocs.length > 0) && (
               <div style={{ marginBottom: "24px" }}>
                 <Title level={3}>
-                  Required Documents ({requiredDocs.length})
+                  Required Documents ({" "}
+                  {requiredDocs.length + additionalDocs.length})
                 </Title>
                 <div
                   style={{
@@ -1186,6 +1200,94 @@ const DocumentsTab = ({
                           <Text strong style={{ fontSize: "14px" }}>
                             {docName}
                           </Text>
+                        </div>
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          {isUploaded ? (
+                            <Tag
+                              color="success"
+                              size="small"
+                              icon={<CheckCircleOutlined />}
+                            >
+                              Uploaded
+                            </Tag>
+                          ) : isPending ? (
+                            <Tag
+                              color="warning"
+                              size="small"
+                              icon={<ClockCircleOutlined />}
+                            >
+                              Pending Submit
+                            </Tag>
+                          ) : (
+                            <Tag color="default" size="small">
+                              Not Uploaded
+                            </Tag>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {additionalDocs.map((doc, docIndex) => {
+                    const docName = doc.documentName;
+                    const isUploaded = isDocumentUploaded(
+                      uploadedDocs,
+                      docName
+                    );
+                    const isPending = pendingDocs.some(
+                      (pendingDoc) => pendingDoc.documentType === docName
+                    );
+
+                    return (
+                      <div
+                        key={`additional-${doc._id || docIndex}`}
+                        style={{
+                          padding: "12px",
+                          border: `2px solid ${
+                            isUploaded
+                              ? "#52c41a"
+                              : isPending
+                              ? "#faad14"
+                              : "#d9d9d9"
+                          }`,
+                          borderRadius: "8px",
+                          backgroundColor: isUploaded
+                            ? "#f6ffed"
+                            : isPending
+                            ? "#fffbf0"
+                            : "#fafafa",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <FileTextOutlined
+                            style={{
+                              color: isUploaded
+                                ? "#52c41a"
+                                : isPending
+                                ? "#faad14"
+                                : "#8c8c8c",
+                              fontSize: "16px",
+                            }}
+                          />
+                          <Text strong style={{ fontSize: "14px" }}>
+                            {docName}
+                          </Text>
+                          <Tag color="orange" size="small">
+                            Additional
+                          </Tag>
                         </div>
                         <div
                           style={{
