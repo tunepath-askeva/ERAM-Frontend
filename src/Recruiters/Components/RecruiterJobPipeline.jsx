@@ -6,6 +6,7 @@ import {
   useStagedCandidateNotifyMutation,
   useUpdateStageDatesMutation,
   useUpdateStageRecruitersMutation,
+  useAddNewStageDocumentMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
@@ -101,6 +102,8 @@ const RecruiterJobPipeline = () => {
   const [availableNextStages, setAvailableNextStages] = useState([]);
   const [selectedNextStage, setSelectedNextStage] = useState(null);
   const [isStageOrderChanged, setIsStageOrderChanged] = useState(false);
+  const [isDocumentModalVisible, setIsDocumentModalVisible] = useState(false);
+  const [newDocumentName, setNewDocumentName] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const screens = useBreakpoint();
 
@@ -127,6 +130,8 @@ const RecruiterJobPipeline = () => {
     useUpdateStageDatesMutation();
   const [updateStageRecruiters, { isLoading: isUpdatingRecruiters }] =
     useUpdateStageRecruitersMutation();
+  const [addStageDocument, { isLoading: isAddingDocument }] =
+    useAddNewStageDocumentMutation();
 
   const { data: recMembers } = useGetRecruitersNameQuery();
 
@@ -1074,6 +1079,38 @@ const RecruiterJobPipeline = () => {
     }
   };
 
+  const handleAddDocument = async () => {
+    try {
+      if (!activeStage) {
+        message.error("No active stage selected");
+        return;
+      }
+
+      if (!newDocumentName.trim()) {
+        message.error("Please enter document name");
+        return;
+      }
+
+      const payload = {
+        id,
+        stageId: activeStage,
+        documentName: newDocumentName.trim(),
+      };
+
+      await addStageDocument(payload).unwrap();
+
+      message.success("Document added successfully");
+
+      setIsDocumentModalVisible(false);
+      setNewDocumentName("");
+
+      refetch();
+    } catch (error) {
+      console.error("Error adding document:", error);
+      message.error(error?.data?.message || "Failed to add document");
+    }
+  };
+
   const handleSendNotification = async (methods, remarks) => {
     const workOrderId = apiData?.data?.workOrder?._id;
     const userId = apiData?.data?.user?._id;
@@ -1153,7 +1190,6 @@ const RecruiterJobPipeline = () => {
 
     return (
       <div style={{ marginTop: "16px" }}>
-        {/* SHOW REQUIRED DOCUMENTS FIRST - PROMINENT DISPLAY */}
         <div
           style={{
             marginBottom: "20px",
@@ -1161,10 +1197,28 @@ const RecruiterJobPipeline = () => {
             borderRadius: "8px",
           }}
         >
-          <Title level={5} style={{ marginBottom: "12px", color: "#1890ff" }}>
-            <FileOutlined style={{ marginRight: "8px" }} />
-            Required Documents for this Stage
-          </Title>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "12px",
+            }}
+          >
+            <Title level={5} style={{ marginBottom: "12px", color: "#1890ff" }}>
+              <FileOutlined style={{ marginRight: "8px" }} />
+              Required Documents for this Stage
+            </Title>
+
+            <Button
+              type="primary"
+              icon={<FileOutlined />}
+              onClick={() => setIsDocumentModalVisible(true)}
+              style={{ background: primaryColor, borderColor: primaryColor }}
+            >
+              Add Document
+            </Button>
+          </div>
           {requiredDocuments.length > 0 ? (
             <div>
               {requiredDocuments.map((doc, index) => (
@@ -2957,6 +3011,57 @@ const RecruiterJobPipeline = () => {
               </Text>
             )}
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Add Required Document"
+        visible={isDocumentModalVisible}
+        onOk={handleAddDocument}
+        onCancel={() => {
+          setIsDocumentModalVisible(false);
+          setNewDocumentName("");
+        }}
+        okText="Add Document"
+        cancelText="Cancel"
+        okButtonProps={{
+          style: { backgroundColor: primaryColor, borderColor: primaryColor },
+          loading: isAddingDocument,
+        }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Form layout="vertical">
+            <Form.Item label="Document Name" required>
+              <Input
+                placeholder="Enter document name"
+                value={newDocumentName}
+                onChange={(e) => setNewDocumentName(e.target.value)}
+                autoFocus
+              />
+            </Form.Item>
+
+            <Form.Item label="Current Stage">
+              <Input
+                value={getStageName(activeStage)}
+                disabled
+                style={{ color: primaryColor, fontWeight: "bold" }}
+              />
+            </Form.Item>
+
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px",
+                backgroundColor: "#f6f6f6",
+                borderRadius: "6px",
+              }}
+            >
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                This will add a required document for the "
+                {getStageName(activeStage)}" stage.
+              </Text>
+            </div>
+          </Form>
         </div>
       </Modal>
     </div>

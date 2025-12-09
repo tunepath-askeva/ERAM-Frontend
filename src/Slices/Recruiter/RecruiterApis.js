@@ -732,6 +732,13 @@ export const recruiterApi = createApi({
         body: data,
       }),
     }),
+    addNewStageDocument: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/add-document/${id}`,
+        method: "PUT",
+        body,
+      }),
+    }),
     getRequisitionApprovals: builder.query({
       query: ({ page = 1, limit = 10, search = "" } = {}) => {
         const params = new URLSearchParams();
@@ -829,4 +836,5 @@ export const {
   useUpdateStageDatesMutation,
   useUpdateStageRecruitersMutation,
   useGetRequisitionApprovalsQuery,
+  useAddNewStageDocumentMutation,
 } = recruiterApi;

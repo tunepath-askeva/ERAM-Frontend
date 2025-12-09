@@ -1281,7 +1281,7 @@ const RequisitionDetailsContent = ({
                       />
                       <div>
                         <Text strong>
-                          {recruiter?.fullName || "Unknown Recruiter"}
+                          {recruiter?.fullName || "Branch Admin"}
                         </Text>
                         {recruiter?.email && (
                           <>
