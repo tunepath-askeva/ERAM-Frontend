@@ -2330,21 +2330,26 @@ const RecruiterCandidates = () => {
 
                           {/* Pipeline Details */}
                           <div style={{ marginBottom: 16 }}>
-                            <Text strong>Work Order Pipeline: </Text>
-                            <Text>
-                              {selectedCandidate.workOrder?.pipelineName ||
-                                "Not assigned"}
-                            </Text>
-                            <br />
-
                             <Card
                               size="small"
                               style={{
                                 marginTop: 8,
                                 background: "#f9f9f9",
-                                border: "1px dashed #1890ff",
+                                border: "1px dashed #52c41a",
                                 borderRadius: 8,
                               }}
+                              title={
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <SettingOutlined />
+                                  <Text strong>Tagged Pipeline (Separate)</Text>
+                                </div>
+                              }
                             >
                               {selectedCandidate?.tagPipeline ? (
                                 <Space
@@ -2359,7 +2364,7 @@ const RecruiterCandidates = () => {
                                     }}
                                   >
                                     <div>
-                                      <Text strong>Tagged Pipeline:</Text>
+                                      <Text strong>Pipeline Name:</Text>
                                       <br />
                                       <Text>
                                         {selectedCandidate.tagPipeline.name ||
@@ -2446,6 +2451,236 @@ const RecruiterCandidates = () => {
                               />
                             </div>
                           )}
+
+                          <Card
+                            size="small"
+                            style={{
+                              marginTop: 16,
+                              background: "#f0f5ff",
+                              border: "1px solid #1890ff",
+                              borderRadius: 8,
+                            }}
+                            title={
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                }}
+                              >
+                                <FileOutlined />
+                                <Text strong>Work Order Pipeline</Text>
+                              </div>
+                            }
+                          >
+                            {candidate?.workOrder?.pipelineStageTimeline
+                              ?.length > 0 ? (
+                              <>
+                                {/* Display pipeline stages with details from work order */}
+                                <List
+                                  dataSource={
+                                    candidate.workOrder.pipelineStageTimeline
+                                  }
+                                  renderItem={(stage, index) => {
+                                    // Find the matching pipeline stage from activePipelines to get full details
+                                    const workOrderPipeline =
+                                      activePipelines?.find(
+                                        (p) =>
+                                          p._id ===
+                                          candidate.workOrder?.pipelineId
+                                      );
+                                    const fullStageDetails =
+                                      workOrderPipeline?.stages?.find(
+                                        (s) => s._id === stage.stageId
+                                      );
+
+                                    return (
+                                      <List.Item key={stage._id}>
+                                        <Card
+                                          size="small"
+                                          style={{
+                                            width: "100%",
+                                            marginBottom: 8,
+                                          }}
+                                          title={
+                                            <Space>
+                                              <Text strong>{`${index + 1}. ${
+                                                stage.stageName
+                                              }`}</Text>
+                                              <Tag color="blue">
+                                                {stage.dependencyType}
+                                              </Tag>
+                                            </Space>
+                                          }
+                                        >
+                                          <Descriptions
+                                            bordered
+                                            column={1}
+                                            size="small"
+                                          >
+                                            <Descriptions.Item label="Start Date">
+                                              {stage.startDate
+                                                ? new Date(
+                                                    stage.startDate
+                                                  ).toLocaleDateString()
+                                                : "Not set"}
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="End Date">
+                                              {stage.endDate
+                                                ? new Date(
+                                                    stage.endDate
+                                                  ).toLocaleDateString()
+                                                : "Not set"}
+                                            </Descriptions.Item>
+
+                                            {stage.recruiterIds?.length > 0 && (
+                                              <Descriptions.Item label="Assigned Recruiters">
+                                                <Space wrap>
+                                                  {stage.recruiterIds.map(
+                                                    (recruiterId) => {
+                                                      const recruiter =
+                                                        allRecruiters?.otherRecruiters?.find(
+                                                          (r) =>
+                                                            r._id ===
+                                                            recruiterId
+                                                        );
+                                                      return recruiter ? (
+                                                        <Tag
+                                                          key={recruiterId}
+                                                          icon={
+                                                            <UserOutlined />
+                                                          }
+                                                        >
+                                                          {recruiter.fullName ||
+                                                            recruiter.email}
+                                                        </Tag>
+                                                      ) : null;
+                                                    }
+                                                  )}
+                                                </Space>
+                                              </Descriptions.Item>
+                                            )}
+
+                                            {stage.staffIds?.length > 0 && (
+                                              <Descriptions.Item label="Assigned Staff">
+                                                <Space wrap>
+                                                  {stage.staffIds.map(
+                                                    (staffId) => {
+                                                      const staff =
+                                                        staffs?.find(
+                                                          (s) =>
+                                                            s._id === staffId
+                                                        );
+                                                      return staff ? (
+                                                        <Tag
+                                                          key={staffId}
+                                                          icon={
+                                                            <UserOutlined />
+                                                          }
+                                                        >
+                                                          {staff.fullName ||
+                                                            staff.email}
+                                                        </Tag>
+                                                      ) : null;
+                                                    }
+                                                  )}
+                                                </Space>
+                                              </Descriptions.Item>
+                                            )}
+
+                                            {stage.approvalId && (
+                                              <Descriptions.Item label="Approval Level">
+                                                {(() => {
+                                                  const level =
+                                                    levelGroups?.find(
+                                                      (l) =>
+                                                        l._id ===
+                                                        stage.approvalId
+                                                    );
+                                                  return level ? (
+                                                    <Tag color="purple">
+                                                      {level.groupName}
+                                                    </Tag>
+                                                  ) : (
+                                                    "Unknown Level"
+                                                  );
+                                                })()}
+                                              </Descriptions.Item>
+                                            )}
+
+                                            {/* Show required documents from either stage data or full pipeline details */}
+                                            {(stage.requiredDocuments?.length >
+                                              0 ||
+                                              fullStageDetails
+                                                ?.requiredDocuments?.length >
+                                                0) && (
+                                              <Descriptions.Item label="Required Documents">
+                                                <Space wrap>
+                                                  {(
+                                                    stage.requiredDocuments ||
+                                                    fullStageDetails?.requiredDocuments ||
+                                                    []
+                                                  ).map((doc, docIndex) => (
+                                                    <Tag
+                                                      key={docIndex}
+                                                      icon={<FileOutlined />}
+                                                      color="orange"
+                                                    >
+                                                      {typeof doc === "string"
+                                                        ? doc
+                                                        : doc.title || doc}
+                                                    </Tag>
+                                                  ))}
+                                                </Space>
+                                              </Descriptions.Item>
+                                            )}
+
+                                            {stage.customFields?.length > 0 && (
+                                              <Descriptions.Item label="Custom Fields">
+                                                <Space
+                                                  direction="vertical"
+                                                  style={{ width: "100%" }}
+                                                >
+                                                  {stage.customFields.map(
+                                                    (field, fieldIndex) => (
+                                                      <div key={fieldIndex}>
+                                                        <Text strong>
+                                                          {field.label}:{" "}
+                                                        </Text>
+                                                        <Text type="secondary">
+                                                          {field.type}
+                                                          {field.required && (
+                                                            <Tag
+                                                              color="red"
+                                                              size="small"
+                                                              style={{
+                                                                marginLeft: 8,
+                                                              }}
+                                                            >
+                                                              Required
+                                                            </Tag>
+                                                          )}
+                                                        </Text>
+                                                      </div>
+                                                    )
+                                                  )}
+                                                </Space>
+                                              </Descriptions.Item>
+                                            )}
+                                          </Descriptions>
+                                        </Card>
+                                      </List.Item>
+                                    );
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <Empty
+                                description="No pipeline stages configured"
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                              />
+                            )}
+                          </Card>
 
                           <Divider />
 

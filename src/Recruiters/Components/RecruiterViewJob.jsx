@@ -1022,7 +1022,7 @@ const RecruiterViewJob = () => {
               <TabPane
                 tab={
                   <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                    Selected Candidates
+                    Selected Candidates(CV Submitted)
                   </span>
                 }
                 key="selected"
@@ -1087,7 +1087,7 @@ const RecruiterViewJob = () => {
               <TabPane
                 tab={
                   <span style={{ fontSize: "13px", color: " #da2c46" }}>
-                    Screening Candidates
+                    Screening Candidates(CV Under Review by Client)
                   </span>
                 }
                 key="screening"

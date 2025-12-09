@@ -2450,7 +2450,16 @@ const AddWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item name="officeLocation" label="Office Location">
+                  <Form.Item
+                    name="officeLocation"
+                    label="Office Location"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter office location.",
+                      },
+                    ]}
+                  >
                     <Input placeholder="Enter office location" />
                   </Form.Item>
                 </Col>

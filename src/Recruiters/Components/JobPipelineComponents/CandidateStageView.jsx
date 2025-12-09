@@ -721,6 +721,11 @@ const CandidateStageView = ({
               icon={<FileOutlined />}
               onClick={() => setIsDocumentModalVisible(true)}
               style={{ background: primaryColor, borderColor: primaryColor }}
+              disabled={
+                candidate.stageProgress?.find(
+                  (sp) => sp.stageId === activeStage
+                )?.stageStatus === "approved"
+              }
             >
               Add Document
             </Button>
@@ -779,6 +784,17 @@ const CandidateStageView = ({
                     onClose={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      const isStageCompleted =
+                        candidate.stageProgress?.find(
+                          (sp) => sp.stageId === activeStage
+                        )?.stageStatus === "approved";
+
+                      if (isStageCompleted) {
+                        message.warning(
+                          "Cannot delete documents from a completed stage"
+                        );
+                        return;
+                      }
                       handleDeleteAdditionalDoc(doc);
                     }}
                     closeIcon={
@@ -795,23 +811,10 @@ const CandidateStageView = ({
                       padding: "4px 12px 4px 8px",
                       border: "1px dashed #fa8c16",
                       backgroundColor: "#fff7e6",
-                      cursor: hasPermission("edit-stage-document")
-                        ? "pointer"
-                        : "default",
+                      cursor: "default",
                     }}
                   >
                     {doc.documentName}
-                    {hasPermission("edit-stage-document") && (
-                      <span
-                        style={{
-                          marginLeft: "8px",
-                          color: "#ff4d4f",
-                          fontSize: "12px",
-                        }}
-                      >
-                        ×
-                      </span>
-                    )}
                   </Tag>
                 ))}
               </div>
