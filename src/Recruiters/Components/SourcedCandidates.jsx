@@ -1557,7 +1557,7 @@ const SourcedCandidates = ({ jobId }) => {
                 onClick={() => handleBulkStatusUpdate("selected")}
                 loading={isUpdatingStatus}
               >
-                Move Selected to Pipeline
+                Move to Selected 
               </Button>
             )}
           </Space>

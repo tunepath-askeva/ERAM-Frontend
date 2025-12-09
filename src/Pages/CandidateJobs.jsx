@@ -300,9 +300,9 @@ const CandidateJobs = () => {
           : "Not specified",
         salary:
           job.salaryType === "annual" && job.annualSalary
-            ? `₹${(job.annualSalary / 100000).toFixed(1)} LPA`
+            ? `${(job.annualSalary / 100000).toFixed(1)} LPA`
             : job.salaryType === "monthly" && job.monthlySalary
-            ? `₹${job.monthlySalary}/month`
+            ? `${job.monthlySalary}/month`
             : "Salary not disclosed",
         postedDate: job.createdAt,
         skills: job.requiredSkills || [],

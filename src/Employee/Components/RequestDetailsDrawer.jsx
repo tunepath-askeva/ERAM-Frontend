@@ -187,7 +187,7 @@ const RequestDetailsDrawer = ({
             </Descriptions.Item>
             <Descriptions.Item label="Price">
               <Text strong style={{ color: config.color }}>
-                ₹{request.selectedTicket.ticketPrice.toLocaleString()}
+                {request.selectedTicket.ticketPrice.toLocaleString()}
               </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Description" span={2}>
@@ -296,7 +296,7 @@ const RequestDetailsDrawer = ({
                         <Space>
                           <DollarOutlined style={{ color: "#52c41a" }} />
                           <Text strong style={{ color: "#52c41a" }}>
-                            ₹{ticket.ticketPrice.toLocaleString()}
+                            {ticket.ticketPrice.toLocaleString()}
                           </Text>
                         </Space>
                       </Col>

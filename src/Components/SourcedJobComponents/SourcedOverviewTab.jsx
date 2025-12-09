@@ -94,7 +94,7 @@ const SourcedOverviewTab = ({ sourcedJob, workOrder }) => {
         </Descriptions.Item>
         <Descriptions.Item label="Salary Range">
           {workOrder.salaryMin && workOrder.salaryMax
-            ? `${formatCurrency(workOrder.salaryMin)} - ${formatCurrency(
+            ? `${(workOrder.salaryMin)} - ${(
                 workOrder.salaryMax
               )} (${workOrder.salaryType || "monthly"})`
             : "Not specified"}

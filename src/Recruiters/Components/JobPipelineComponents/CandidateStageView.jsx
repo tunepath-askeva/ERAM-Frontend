@@ -474,6 +474,7 @@ const CandidateStageView = ({
           border: `1px solid ${isCurrentStage ? "#e6f7ff" : "#f0f0f0"}`,
         }}
       >
+        
         <div
           style={{
             display: "flex",

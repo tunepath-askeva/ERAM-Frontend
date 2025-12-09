@@ -1,7 +1,6 @@
 import React from "react";
-import { Card, Typography, Tag, Space, Badge, Tabs , Grid} from "antd";
+import { Card, Typography, Tag, Space, Badge, Tabs, Grid, Button } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
-
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -216,7 +215,7 @@ const PipelineHeader = ({
               gap: screens.xs ? "8px" : "0",
             }}
           >
-            <div>
+            <div style={{ flex: 1 }}>
               <Title level={screens.xs ? 4 : 3} style={{ margin: 0 }}>
                 {processedJobData.title}
               </Title>
@@ -288,6 +287,23 @@ const PipelineHeader = ({
             <Tag color="blue">
               {apiData?.data?.pipelineName || processedJobData.pipeline.name}
             </Tag>
+          </div>
+
+          <div
+            style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}
+          >
+            {hasPermission("notify-candidate") && (
+              <Button
+                type="primary"
+                onClick={handleNotify}
+                style={{
+                  backgroundColor: primaryColor,
+                  borderColor: primaryColor,
+                }}
+              >
+                Notify Candidate
+              </Button>
+            )}
           </div>
         </div>
       </Card>
