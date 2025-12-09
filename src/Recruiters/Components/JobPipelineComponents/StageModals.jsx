@@ -66,7 +66,8 @@ const StageModals = ({
   setSelectedCandidate,
   setAvailableNextStages,
   setTempStartDate,
-  setTempEndDate
+  setTempEndDate,
+  setIsEditingDates,
 }) => {
   const [form] = Form.useForm();
 
@@ -209,24 +210,23 @@ const StageModals = ({
       );
 
       setIsMoveModalVisible(false);
+      form.resetFields();
+
+      // THEN REFRESH - Add await here
+      await refetch();
+      if (refreshData) {
+        await refreshData();
+      }
+
+      // RESET STATE AFTER REFRESH
       setSelectedCandidate(null);
       setReviewerComments("");
       setSelectedNextStage(null);
       setAvailableNextStages([]);
-      form.resetFields();
 
-      if (setActiveStage) {
-        // Find the next stage to set as active
-        const nextStageId = isLastStage ? null : selectedNextStageId;
-        if (nextStageId) {
-          setActiveStage(nextStageId);
-        }
-      }
-
-      // Force refresh
-      await refetch();
-      if (refreshData) {
-        await refreshData();
+      // Update active stage if needed
+      if (setActiveStage && !isLastStage) {
+        setActiveStage(selectedNextStageId);
       }
     } catch (error) {
       if (error.errorFields) {
@@ -267,13 +267,17 @@ const StageModals = ({
 
       message.success("Stage dates updated successfully");
       setIsDateConfirmModalVisible(false);
-      setIsEditingDates(false);
-      setTempStartDate(null);
-      setTempEndDate(null);
+
+      // REFRESH FIRST
       await refetch();
       if (refreshData) {
         await refreshData();
       }
+
+      // THEN RESET STATE
+      setIsEditingDates(false);
+      setTempStartDate(null);
+      setTempEndDate(null);
     } catch (error) {
       console.error("Error updating stage dates:", error);
       message.error(error?.data?.message || "Failed to update stage dates");
@@ -302,11 +306,21 @@ const StageModals = ({
         ...payload,
       }).unwrap();
 
-      message.success("Recruiters updated successfully");
       setIsRecruiterConfirmModalVisible(false);
-      setIsEditingRecruiters(false);
+      setIsEditingRecruiters(false); // This closes the dropdown in CandidateStageView
       setTempRecruiters([]);
+
+      message.success("Recruiters updated successfully");
+
+      // Force a complete refetch with cache invalidation
       await refetch();
+
+      // Add a small delay to ensure backend has processed
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Refetch again to ensure we get the latest data
+      await refetch();
+
       if (refreshData) {
         await refreshData();
       }
@@ -338,12 +352,15 @@ const StageModals = ({
 
       message.success("Document added successfully");
       setIsDocumentModalVisible(false);
-      setNewDocumentName("");
-      refetch();
+
+      // REFRESH FIRST
       await refetch();
       if (refreshData) {
         await refreshData();
       }
+
+      // THEN RESET STATE
+      setNewDocumentName("");
     } catch (error) {
       console.error("Error adding document:", error);
       message.error(error?.data?.message || "Failed to add document");

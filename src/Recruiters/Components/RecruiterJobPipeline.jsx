@@ -70,10 +70,12 @@ const RecruiterJobPipeline = () => {
     error,
     refetch,
   } = useGetPipelineJobsByIdQuery(id, {
-  refetchOnMountOrArgChange: true,
-  refetchOnReconnect: true,
-  refetchOnFocus: true,
-});
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+    refetchOnFocus: true,
+    pollingInterval: 0, // Add this
+    skip: false,
+  });
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
   const [remainder] = useStagedCandidateNotifyMutation();
@@ -157,6 +159,7 @@ const RecruiterJobPipeline = () => {
       };
 
       setProcessedJobData(jobData);
+      console.log("Data refreshed at:", new Date().toISOString());
     }
   }, [apiData, id]);
 
@@ -605,7 +608,6 @@ const RecruiterJobPipeline = () => {
   return (
     <div
       style={{
-       
         overflowX: "hidden",
       }}
     >
@@ -689,8 +691,8 @@ const RecruiterJobPipeline = () => {
         setIsRecruiterConfirmModalVisible={setIsRecruiterConfirmModalVisible}
         updateStageRecruiters={updateStageRecruiters}
         tempRecruiters={tempRecruiters}
-        setTempRecruiter={setTempRecruiters}
-        setIsEditingRecruiter={setIsEditingRecruiters}
+        setTempRecruiters={setTempRecruiters}
+        setIsEditingRecruiters={setIsEditingRecruiters}
         activeRecruiters={activeRecruiters}
         isUpdatingRecruiters={isUpdatingRecruiters}
         isDocumentModalVisible={isDocumentModalVisible}
@@ -712,6 +714,7 @@ const RecruiterJobPipeline = () => {
         setAvailableNextStages={setAvailableNextStages}
         setTempStartDate={setTempStartDate}
         setTempEndDate={setTempEndDate}
+        setIsEditingDates={setIsEditingDates}
       />
     </div>
   );
