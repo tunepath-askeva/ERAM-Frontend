@@ -739,6 +739,13 @@ export const recruiterApi = createApi({
         body,
       }),
     }),
+    deleteStageDocument: builder.mutation({
+      query: ({ id, stageId, documentId }) => ({
+        url: `/delete-stage-document/${id}`,
+        method: "DELETE",
+        body: { stageId, documentId },
+      }),
+    }),
     getRequisitionApprovals: builder.query({
       query: ({ page = 1, limit = 10, search = "" } = {}) => {
         const params = new URLSearchParams();
@@ -837,4 +844,5 @@ export const {
   useUpdateStageRecruitersMutation,
   useGetRequisitionApprovalsQuery,
   useAddNewStageDocumentMutation,
+  useDeleteStageDocumentMutation,
 } = recruiterApi;

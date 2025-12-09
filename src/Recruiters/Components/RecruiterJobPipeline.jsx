@@ -7,6 +7,7 @@ import {
   useUpdateStageDatesMutation,
   useUpdateStageRecruitersMutation,
   useAddNewStageDocumentMutation,
+  useDeleteStageDocumentMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
@@ -20,7 +21,7 @@ import {
   message,
 } from "antd";
 import dayjs from "dayjs";
-import { LeftOutlined } from "@ant-design/icons";
+import { LeftOutlined, CloseOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 import PipelineHeader from "./JobPipelineComponents/PipelineHeader";
@@ -54,6 +55,9 @@ const RecruiterJobPipeline = () => {
   const [isStageOrderChanged, setIsStageOrderChanged] = useState(false);
   const [isDocumentModalVisible, setIsDocumentModalVisible] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState("");
+  const [isDeleteDocumentModalVisible, setIsDeleteDocumentModalVisible] =
+    useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState(null);
 
   const primaryColor = "#da2c46";
   const recruiterPermissions = useSelector(
@@ -85,6 +89,8 @@ const RecruiterJobPipeline = () => {
     useUpdateStageRecruitersMutation();
   const [addStageDocument, { isLoading: isAddingDocument }] =
     useAddNewStageDocumentMutation();
+  const [deleteStageDocument, { isLoading: isDeletingDocument }] =
+    useDeleteStageDocumentMutation();
 
   const { data: recMembers } = useGetRecruitersNameQuery();
   const activeRecruiters =
@@ -662,6 +668,8 @@ const RecruiterJobPipeline = () => {
         setIsDocumentModalVisible={setIsDocumentModalVisible}
         refreshData={refreshData} // Add this
         setActiveStage={setActiveStage}
+        setIsDeleteDocumentModalVisible={setIsDeleteDocumentModalVisible}
+        setDocumentToDelete={setDocumentToDelete}
       />
 
       <StageModals
@@ -715,6 +723,12 @@ const RecruiterJobPipeline = () => {
         setTempStartDate={setTempStartDate}
         setTempEndDate={setTempEndDate}
         setIsEditingDates={setIsEditingDates}
+        isDeleteDocumentModalVisible={isDeleteDocumentModalVisible}
+        setIsDeleteDocumentModalVisible={setIsDeleteDocumentModalVisible}
+        documentToDelete={documentToDelete}
+        setDocumentToDelete={setDocumentToDelete}
+        deleteStageDocument={deleteStageDocument}
+        isDeletingDocument={isDeletingDocument}
       />
     </div>
   );

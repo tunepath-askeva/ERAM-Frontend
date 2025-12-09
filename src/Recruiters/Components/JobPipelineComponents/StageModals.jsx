@@ -68,6 +68,12 @@ const StageModals = ({
   setTempStartDate,
   setTempEndDate,
   setIsEditingDates,
+  isDeleteDocumentModalVisible,
+  setIsDeleteDocumentModalVisible,
+  documentToDelete,
+  setDocumentToDelete,
+  deleteStageDocument,
+  isDeletingDocument,
 }) => {
   const [form] = Form.useForm();
 
@@ -396,6 +402,36 @@ const StageModals = ({
     }
   };
 
+  const handleDeleteDocument = async () => {
+    try {
+      if (!activeStage || !documentToDelete) {
+        message.error("No document selected for deletion");
+        return;
+      }
+
+      const payload = {
+        id, // candidate/pipeline ID from params
+        stageId: activeStage,
+        documentId: documentToDelete._id,
+      };
+
+      await deleteStageDocument(payload).unwrap();
+
+      message.success("Document deleted successfully");
+      setIsDeleteDocumentModalVisible(false);
+      setDocumentToDelete(null);
+
+      // Refresh data
+      await refetch();
+      if (refreshData) {
+        await refreshData();
+      }
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      message.error(error?.data?.message || "Failed to delete document");
+    }
+  };
+
   return (
     <>
       <Modal
@@ -642,6 +678,43 @@ const StageModals = ({
               </Text>
             </div>
           </Form>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Delete Document"
+        visible={isDeleteDocumentModalVisible}
+        onOk={handleDeleteDocument}
+        onCancel={() => {
+          setIsDeleteDocumentModalVisible(false);
+          setDocumentToDelete(null);
+        }}
+        okText="Delete"
+        cancelText="Cancel"
+        okType="danger"
+        okButtonProps={{
+          loading: isDeletingDocument,
+        }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text strong>Are you sure you want to delete this document?</Text>
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff2f0",
+              borderRadius: "6px",
+            }}
+          >
+            <Text strong style={{ color: "#cf1322" }}>
+              {documentToDelete?.documentName || "Document"}
+            </Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              This action cannot be undone. This will remove the document
+              requirement from the "{getStageName(activeStage)}" stage.
+            </Text>
+          </div>
         </div>
       </Modal>
     </>

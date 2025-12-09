@@ -27,6 +27,7 @@ import {
   ArrowRightOutlined,
   CommentOutlined,
   EditOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -62,6 +63,8 @@ const CandidateStageView = ({
   setIsDocumentModalVisible,
   setActiveStage,
   refreshData,
+  setIsDeleteDocumentModalVisible,
+  setDocumentToDelete,
 }) => {
   const screens = useBreakpoint();
 
@@ -459,14 +462,14 @@ const CandidateStageView = ({
 
       const approvalCompleted = checkApprovalCompleted();
       const documentsUploaded = areDocumentsUploaded;
-      
+
       // Updated logic to check for additional documents
       const baseRequiredDocs =
         (currentStageProgress?.fullStage?.requiredDocuments || []).length > 0;
-      const additionalDocs = 
+      const additionalDocs =
         (currentStageProgress?.additionalDocuments || []).length > 0;
       const hasRequiredDocs = baseRequiredDocs || additionalDocs;
-      
+
       const hasApproval = currentStageProgress?.approval?.approvalId
         ? true
         : false;
@@ -480,17 +483,28 @@ const CandidateStageView = ({
           // More specific message about which documents are missing
           const baseRequiredDocuments =
             currentStageProgress?.fullStage?.requiredDocuments || [];
-          const additionalDocNames = 
-            currentStageProgress?.additionalDocuments?.map(doc => doc.documentName) || [];
-          const allRequiredDocuments = [...new Set([...baseRequiredDocuments, ...additionalDocNames])];
-          
-          const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
-          const uploadedDocNames = uploadedDocuments.map(doc => doc.documentName || doc.fileName);
-          
-          const missingDocs = allRequiredDocuments.filter(doc => !uploadedDocNames.includes(doc));
-          
+          const additionalDocNames =
+            currentStageProgress?.additionalDocuments?.map(
+              (doc) => doc.documentName
+            ) || [];
+          const allRequiredDocuments = [
+            ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
+          ];
+
+          const uploadedDocuments =
+            currentStageProgress?.uploadedDocuments || [];
+          const uploadedDocNames = uploadedDocuments.map(
+            (doc) => doc.documentName || doc.fileName
+          );
+
+          const missingDocs = allRequiredDocuments.filter(
+            (doc) => !uploadedDocNames.includes(doc)
+          );
+
           if (missingDocs.length > 0) {
-            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(', ')}`;
+            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(
+              ", "
+            )}`;
           }
           return "⚠️ Required documents must be uploaded before moving this candidate.";
         } else {
@@ -507,17 +521,28 @@ const CandidateStageView = ({
           // More specific message about which documents are missing
           const baseRequiredDocuments =
             currentStageProgress?.fullStage?.requiredDocuments || [];
-          const additionalDocNames = 
-            currentStageProgress?.additionalDocuments?.map(doc => doc.documentName) || [];
-          const allRequiredDocuments = [...new Set([...baseRequiredDocuments, ...additionalDocNames])];
-          
-          const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
-          const uploadedDocNames = uploadedDocuments.map(doc => doc.documentName || doc.fileName);
-          
-          const missingDocs = allRequiredDocuments.filter(doc => !uploadedDocNames.includes(doc));
-          
+          const additionalDocNames =
+            currentStageProgress?.additionalDocuments?.map(
+              (doc) => doc.documentName
+            ) || [];
+          const allRequiredDocuments = [
+            ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
+          ];
+
+          const uploadedDocuments =
+            currentStageProgress?.uploadedDocuments || [];
+          const uploadedDocNames = uploadedDocuments.map(
+            (doc) => doc.documentName || doc.fileName
+          );
+
+          const missingDocs = allRequiredDocuments.filter(
+            (doc) => !uploadedDocNames.includes(doc)
+          );
+
           if (missingDocs.length > 0) {
-            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(', ')}`;
+            return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(
+              ", "
+            )}`;
           }
           return "⚠️ Required documents must be uploaded before moving this candidate.";
         } else {
@@ -527,7 +552,6 @@ const CandidateStageView = ({
         return "✅ No requirements for this stage. You can move this candidate to the next stage.";
       }
     };
-
 
     return (
       <div
@@ -651,14 +675,23 @@ const CandidateStageView = ({
     const uploadedDocs = stageProgress?.uploadedDocuments || [];
     const baseRequiredDocuments =
       stageProgress?.fullStage?.requiredDocuments || [];
-    const additionalDocs =
-      stageProgress?.additionalDocuments?.map((doc) => doc.documentName) || [];
-    const requiredDocuments = [
-      ...new Set([...baseRequiredDocuments, ...additionalDocs]),
+    const additionalDocs = stageProgress?.additionalDocuments || [];
+    const additionalDocNames = additionalDocs.map((doc) => doc.documentName);
+    const allRequiredDocuments = [
+      ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
     ];
 
     const handleViewDocument = (fileUrl, fileName) => {
       window.open(fileUrl, "_blank");
+    };
+
+    // Get these props from the parent component (RecruiterJobPipeline)
+    // You'll need to pass them down to CandidateStageView
+    const handleDeleteAdditionalDoc = (doc) => {
+      if (setDocumentToDelete && setIsDeleteDocumentModalVisible) {
+        setDocumentToDelete(doc);
+        setIsDeleteDocumentModalVisible(true);
+      }
     };
 
     return (
@@ -692,34 +725,134 @@ const CandidateStageView = ({
               Add Document
             </Button>
           </div>
-          {requiredDocuments.length > 0 ? (
-            <div>
-              {requiredDocuments.map((doc, index) => (
-                <Tag
-                  key={index}
-                  color="blue"
-                  style={{
-                    margin: "4px",
-                    fontSize: "14px",
-                    padding: "4px 12px",
-                  }}
-                >
-                  {doc}
-                </Tag>
-              ))}
-              <div style={{ marginTop: "8px" }}>
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  {uploadedDocs.length > 0
-                    ? `✅ ${uploadedDocs.length} document(s) uploaded`
-                    : "⚠️ No documents uploaded yet"}
-                </Text>
+
+          {/* Show base required documents separately */}
+          {baseRequiredDocuments.length > 0 && (
+            <div style={{ marginBottom: "16px" }}>
+              <Text
+                strong
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                }}
+              >
+                Standard Documents:
+              </Text>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {baseRequiredDocuments.map((doc, index) => (
+                  <Tag
+                    key={`base-${index}`}
+                    color="blue"
+                    style={{
+                      fontSize: "14px",
+                      padding: "4px 12px",
+                      border: "1px solid #1890ff",
+                    }}
+                  >
+                    {doc}
+                  </Tag>
+                ))}
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Show additional documents separately with delete option */}
+          {additionalDocs.length > 0 && (
+            <div style={{ marginBottom: "16px" }}>
+              <Text
+                strong
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "14px",
+                  color: "#fa8c16",
+                }}
+              >
+                Additional Documents:
+              </Text>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {additionalDocs.map((doc, index) => (
+                  <Tag
+                    key={`additional-${doc._id || index}`}
+                    color="orange"
+                    onClose={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteAdditionalDoc(doc);
+                    }}
+                    closeIcon={
+                      <CloseOutlined
+                        style={{
+                          fontSize: "12px",
+                          marginLeft: "4px",
+                          color: "red",
+                        }}
+                      />
+                    }
+                    style={{
+                      fontSize: "14px",
+                      padding: "4px 12px 4px 8px",
+                      border: "1px dashed #fa8c16",
+                      backgroundColor: "#fff7e6",
+                      cursor: hasPermission("edit-stage-document")
+                        ? "pointer"
+                        : "default",
+                    }}
+                  >
+                    {doc.documentName}
+                    {hasPermission("edit-stage-document") && (
+                      <span
+                        style={{
+                          marginLeft: "8px",
+                          color: "#ff4d4f",
+                          fontSize: "12px",
+                        }}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </Tag>
+                ))}
+              </div>
+              <Text
+                type="secondary"
+                style={{ fontSize: "12px", marginTop: "8px" }}
+              >
+                Click the × icon to remove additional documents
+              </Text>
+            </div>
+          )}
+
+          {/* Fallback for no documents */}
+          {allRequiredDocuments.length === 0 && (
             <Text type="secondary">No documents required for this stage</Text>
           )}
+
+          {/* Upload status summary */}
+          <div
+            style={{
+              marginTop: "16px",
+              paddingTop: "12px",
+              borderTop: "1px dashed #d9d9d9",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              {uploadedDocs.length > 0
+                ? `✅ ${uploadedDocs.length} document(s) uploaded`
+                : "⚠️ No documents uploaded yet"}
+            </Text>
+            {allRequiredDocuments.length > 0 && (
+              <div style={{ marginTop: "4px" }}>
+                <Text type="secondary" style={{ fontSize: "11px" }}>
+                  Required: {allRequiredDocuments.length} document(s)
+                </Text>
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* Uploaded documents section - REMAINS UNCHANGED */}
         <Title level={5} style={{ marginBottom: "12px" }}>
           <FileOutlined style={{ marginRight: "8px" }} />
           Uploaded Documents ({uploadedDocs.length})
