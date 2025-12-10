@@ -661,6 +661,7 @@ const EmployeeAdminCompanyPolicy = () => {
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
                   <Upload.Dragger
                     {...uploadProps}
+                    accept=".pdf"
                     style={{ background: "#fafafa" }}
                   >
                     <p className="ant-upload-drag-icon">
@@ -675,7 +676,7 @@ const EmployeeAdminCompanyPolicy = () => {
                       Click or drag file to upload
                     </p>
                     <p className="ant-upload-hint" style={{ color: "#666" }}>
-                      Supports PDF, DOC, DOCX, TXT (max 10MB)
+                      Supports PDF only (max 5MB)
                     </p>
                   </Upload.Dragger>
                 </div>
