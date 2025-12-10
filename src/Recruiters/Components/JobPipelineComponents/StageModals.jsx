@@ -13,6 +13,7 @@ import {
 import { UserOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { NotificationModal } from "../../../Components/NotificationModal";
+import { useNavigate } from "react-router-dom";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -82,10 +83,11 @@ const StageModals = ({
   undoStage,
   isUndoingStage,
   handleUndoStage,
-  uploadedDocumentFile, 
-  setUploadedDocumentFile, 
+  uploadedDocumentFile,
+  setUploadedDocumentFile,
 }) => {
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   // const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
   const confirmMoveCandidate = async () => {
     try {
@@ -237,6 +239,10 @@ const StageModals = ({
           ? "Candidate process completed successfully"
           : "Candidate moved to next stage successfully"
       );
+
+      if (isLastStage) {
+        navigate("/recruiter/completed-candidates");
+      }
 
       setIsMoveModalVisible(false);
       form.resetFields();
@@ -479,17 +485,21 @@ const StageModals = ({
               />
             </Form.Item>
 
-            {!getNextStageId(selectedCandidate.currentStage) ? (
+            {!getNextStageId(selectedCandidate?.currentStage) ? (
               <Form.Item label="Action">
                 <Input value="Finish Process" disabled />
               </Form.Item>
-            ) : (
+            ) : availableNextStages.length > 0 ? ( // ADD THIS CHECK
               <Form.Item label="Next Stage">
                 <Input value={getStageName(targetStage)} disabled />
               </Form.Item>
+            ) : (
+              <Form.Item label="Action">
+                <Input value="Finish Process" disabled />
+              </Form.Item>
             )}
 
-            {availableNextStages.length > 0 && (
+            {availableNextStages.length > 0 && ( // ADD LENGTH CHECK HERE TOO
               <Form.Item
                 label="Select Next Stage"
                 name="nextStageId"
