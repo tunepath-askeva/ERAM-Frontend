@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Table, Button, Space, Input, message, Popconfirm, Spin } from "antd";
+import {
+  Table,
+  Button,
+  Space,
+  Input,
+  message,
+  Popconfirm,
+  Spin,
+  Tooltip,
+} from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
@@ -8,12 +17,15 @@ import {
   UploadOutlined,
   DownloadOutlined,
   EyeOutlined,
+  StopOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import {
   useAddEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
   useBulkImportEmployeesMutation,
+  useDisableEmployeeMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
 import AddEmployeeModal from "../Components/AddEmployeeModal";
@@ -21,8 +33,10 @@ import EditEmployeeModal from "../Components/EditEmployeeModal";
 import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
 import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
 import { useSelector } from "react-redux";
+import { useSnackbar } from "notistack";
 
 const EmployeeAdminAllEmployees = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -57,6 +71,7 @@ const EmployeeAdminAllEmployees = () => {
   const [updateEmployee, { isLoading: isUpdating }] =
     useUpdateEmployeeMutation();
   const [deleteEmployee] = useDeleteEmployeeMutation();
+  const [disableEmployee] = useDisableEmployeeMutation();
   const [bulkImportEmployees, { isLoading: isImporting }] =
     useBulkImportEmployeesMutation();
 
@@ -94,11 +109,15 @@ const EmployeeAdminAllEmployees = () => {
   const handleAdd = async (values) => {
     try {
       const result = await addEmployee(values).unwrap();
-      message.success(result.message || "Employee added successfully");
+      enqueueSnackbar(result.message || "Employee added successfully", {
+        variant: "success",
+      });
       setIsAddModalVisible(false);
-      refetch();
+      await refetch();
     } catch (error) {
-      message.error(error?.data?.message || "Failed to add employee");
+      enqueueSnackbar(error?.data?.message || "Failed to add employee", {
+        variant: "error",
+      });
     }
   };
 
@@ -118,12 +137,16 @@ const EmployeeAdminAllEmployees = () => {
   const handleUpdate = async (values) => {
     try {
       const result = await updateEmployee(values).unwrap();
-      message.success(result.message || "Employee updated successfully");
+      enqueueSnackbar(result.message || "Employee updated successfully", {
+        variant: "success",
+      });
       setIsEditModalVisible(false);
       setEditingEmployeeId(null);
-      refetch();
+      await refetch();
     } catch (error) {
-      message.error(error?.data?.message || "Failed to update employee");
+      enqueueSnackbar(error?.data?.message || "Failed to update employee", {
+        variant: "error",
+      });
     }
   };
 
@@ -131,10 +154,30 @@ const EmployeeAdminAllEmployees = () => {
   const handleDelete = async (id) => {
     try {
       const result = await deleteEmployee(id).unwrap();
-      message.success(result.message || "Employee deleted successfully");
-      refetch();
+      enqueueSnackbar(result.message || "Employee deleted successfully", {
+        variant: "success",
+      });
+      await refetch();
     } catch (error) {
-      message.error(error?.data?.message || "Failed to delete employee");
+      enqueueSnackbar(error?.data?.message || "Failed to delete employee", {
+        variant: "error",
+      });
+    }
+  };
+
+  const handleDisable = async (id) => {
+    try {
+      const result = await disableEmployee(id).unwrap();
+      enqueueSnackbar(
+        result.message || "Employee status updated successfully",
+        { variant: "success" }
+      );
+      await refetch();
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update employee status",
+        { variant: "error" }
+      );
     }
   };
 
@@ -143,30 +186,34 @@ const EmployeeAdminAllEmployees = () => {
     try {
       const result = await bulkImportEmployees(data).unwrap();
 
-      const successMessage = [];
       if (result.insertedCount > 0) {
-        successMessage.push(`Imported: ${result.insertedCount}`);
-      }
-      if (result.duplicateCount > 0) {
-        successMessage.push(`Duplicates skipped: ${result.duplicateCount}`);
-      }
-      if (result.invalidCount > 0) {
-        successMessage.push(`Invalid skipped: ${result.invalidCount}`);
-      }
-
-      if (successMessage.length > 0) {
-        message.success(successMessage.join(" | "));
+        enqueueSnackbar(
+          `Successfully imported ${
+            result.insertedCount
+          } employee(s). Duplicates skipped: ${
+            result.duplicateCount || 0
+          }, Invalid: ${result.invalidCount || 0}`,
+          { variant: "success", autoHideDuration: 5000 }
+        );
+      } else if (result.duplicateCount > 0 || result.invalidCount > 0) {
+        enqueueSnackbar(
+          `No new employees imported. Duplicates: ${
+            result.duplicateCount || 0
+          }, Invalid: ${result.invalidCount || 0}`,
+          { variant: "warning", autoHideDuration: 5000 }
+        );
       } else {
-        message.warning("No employees were imported");
+        enqueueSnackbar("No employees were imported", { variant: "info" });
       }
 
       setIsImportModalVisible(false);
-      refetch();
+      await refetch();
     } catch (error) {
-      message.error(error?.data?.message || "Failed to import employees");
+      enqueueSnackbar(error?.data?.message || "Failed to import employees", {
+        variant: "error",
+      });
     }
   };
-
   // Export to CSV
   const handleExport = () => {
     const headers = [
@@ -208,7 +255,7 @@ const EmployeeAdminAllEmployees = () => {
     a.download = `employees_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    message.success("Employees exported successfully");
+    enqueueSnackbar("Employees exported successfully", { variant: "success" });
   };
 
   const columns = [
@@ -262,42 +309,91 @@ const EmployeeAdminAllEmployees = () => {
       fixed: "right",
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-            style={{ color: "#1890ff", padding: 0 }}
-          >
-            View
-          </Button>
-          {hasPermission("edit-employee") && (
+          {/* View */}
+          <Tooltip title="View Employee">
             <Button
               type="link"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ color: "#da2c46", padding: 0 }}
-            >
-              Edit
-            </Button>
-          )}
-          {hasPermission("delete-employee") && (
-            <Popconfirm
-              title="Delete employee"
-              description="Are you sure you want to delete this employee? This action cannot be undone."
-              onConfirm={() => handleDelete(record._id)}
-              okText="Yes"
-              cancelText="No"
-              okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
-            >
+              icon={<EyeOutlined />}
+              onClick={() => handleView(record)}
+              style={{ color: "#1890ff", padding: 0 }}
+            />
+          </Tooltip>
+
+          {/* Edit */}
+          {hasPermission("edit-employee") && (
+            <Tooltip title="Edit Employee">
               <Button
                 type="link"
-                danger
-                icon={<DeleteOutlined />}
-                style={{ padding: 0 }}
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                style={{ color: "#da2c46", padding: 0 }}
+              />
+            </Tooltip>
+          )}
+
+          {/* Deactivate / Activate Button */}
+          {hasPermission("delete-employee") && (
+            <>
+              {record.accountStatus === "active" ? (
+                // 🔴 Deactivate
+                <Tooltip title="Deactivate Employee">
+                  <Popconfirm
+                    title="Deactivate employee"
+                    description="Are you sure you want to deactivate this employee?"
+                    onConfirm={() => handleDisable(record._id)}
+                    okText="Yes"
+                    cancelText="No"
+                    okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+                  >
+                    <Button
+                      type="link"
+                      danger
+                      icon={<StopOutlined />}
+                      style={{ padding: 0 }}
+                    />
+                  </Popconfirm>
+                </Tooltip>
+              ) : (
+                // 🟢 Activate
+                <Tooltip title="Activate Employee">
+                  <Popconfirm
+                    title="Activate employee"
+                    description="Are you sure you want to activate this employee?"
+                    onConfirm={() => handleDisable(record._id)}
+                    okText="Yes"
+                    cancelText="No"
+                    okButtonProps={{ style: { backgroundColor: "#52c41a" } }}
+                  >
+                    <Button
+                      type="link"
+                      style={{ padding: 0, color: "#52c41a" }}
+                      icon={<CheckCircleOutlined />}
+                    />
+                  </Popconfirm>
+                </Tooltip>
+              )}
+            </>
+          )}
+
+          {/* Delete */}
+          {hasPermission("delete-employee") && (
+            <Tooltip title="Delete Employee">
+              <Popconfirm
+                title="Delete employee"
+                description="Are you sure you want to delete this employee? This action cannot be undone."
+                onConfirm={() => handleDelete(record._id)}
+                okText="Yes"
+                cancelText="No"
+                okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
               >
-                Delete
-              </Button>
-            </Popconfirm>
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  style={{ padding: 0 }}
+                />
+              </Popconfirm>
+            </Tooltip>
           )}
         </Space>
       ),

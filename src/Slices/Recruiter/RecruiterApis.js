@@ -540,6 +540,12 @@ export const recruiterApi = createApi({
         method: "DELETE",
       }),
     }),
+    disableEmployee: builder.mutation({
+      query: (id) => ({
+        url: `/disable-employee/${id}`,
+        method: "PATCH",
+      }),
+    }),
     bulkImportEmployees: builder.mutation({
       query: (employeesData) => ({
         url: "/employees/bulk-import",
@@ -830,6 +836,7 @@ export const {
   useAddEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
+  useDisableEmployeeMutation,
   useGetEmployeeDetailsQuery,
   useBulkImportEmployeesMutation,
   useGetPipelineCompletedCandidateByIdQuery,
