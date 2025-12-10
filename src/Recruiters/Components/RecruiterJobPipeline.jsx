@@ -8,6 +8,7 @@ import {
   useUpdateStageRecruitersMutation,
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
+  useUndoStageMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
@@ -58,6 +59,8 @@ const RecruiterJobPipeline = () => {
   const [isDeleteDocumentModalVisible, setIsDeleteDocumentModalVisible] =
     useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
+  const [isUndoModalVisible, setIsUndoModalVisible] = useState(false);
+  const [stageToUndo, setStageToUndo] = useState(null);
 
   const primaryColor = "#da2c46";
   const recruiterPermissions = useSelector(
@@ -91,6 +94,7 @@ const RecruiterJobPipeline = () => {
     useAddNewStageDocumentMutation();
   const [deleteStageDocument, { isLoading: isDeletingDocument }] =
     useDeleteStageDocumentMutation();
+  const [undoStage, { isLoading: isUndoingStage }] = useUndoStageMutation();
 
   const { data: recMembers } = useGetRecruitersNameQuery();
   const activeRecruiters =
@@ -196,6 +200,11 @@ const RecruiterJobPipeline = () => {
     }
   };
 
+  const handleUndoStageClick = (candidateId, stageId) => {
+    setStageToUndo(stageId);
+    setIsUndoModalVisible(true);
+  };
+
   const handleMoveCandidate = (candidate, e) => {
     e?.stopPropagation();
     setSelectedCandidate(candidate);
@@ -227,6 +236,36 @@ const RecruiterJobPipeline = () => {
 
     setTempRecruiters(currentRecruiterIds);
     setIsEditingRecruiters(true);
+  };
+
+  const handleUndoStage = async () => {
+    try {
+      if (!stageToUndo) {
+        message.error("No stage selected for undo");
+        return;
+      }
+
+      const payload = {
+        id, 
+        stageId: stageToUndo, 
+      };
+
+      console.log("Sending payload:", payload);
+
+      await undoStage(payload).unwrap();
+
+      message.success("Stage move undone successfully");
+      setIsUndoModalVisible(false);
+      setStageToUndo(null);
+
+      await refetch();
+      if (refreshData) {
+        await refreshData();
+      }
+    } catch (error) {
+      console.error("Error undoing stage move:", error);
+      message.error(error?.data?.message || "Failed to undo stage move");
+    }
   };
 
   const getNextStageId = (currentStageId) => {
@@ -666,10 +705,12 @@ const RecruiterJobPipeline = () => {
         activeRecruiters={activeRecruiters}
         isMoving={isMoving}
         setIsDocumentModalVisible={setIsDocumentModalVisible}
-        refreshData={refreshData} // Add this
+        refreshData={refreshData}
         setActiveStage={setActiveStage}
         setIsDeleteDocumentModalVisible={setIsDeleteDocumentModalVisible}
         setDocumentToDelete={setDocumentToDelete}
+        handleUndoStageClick={handleUndoStageClick}
+        isUndoingStage={isUndoingStage}
       />
 
       <StageModals
@@ -716,7 +757,7 @@ const RecruiterJobPipeline = () => {
         selectedNextStage={selectedNextStage}
         setSelectedNextStage={setSelectedNextStage}
         targetStage={targetStage}
-        refreshData={refreshData} // Add this line
+        refreshData={refreshData}
         setActiveStage={setActiveStage}
         setSelectedCandidate={setSelectedCandidate}
         setAvailableNextStages={setAvailableNextStages}
@@ -729,6 +770,13 @@ const RecruiterJobPipeline = () => {
         setDocumentToDelete={setDocumentToDelete}
         deleteStageDocument={deleteStageDocument}
         isDeletingDocument={isDeletingDocument}
+        isUndoModalVisible={isUndoModalVisible}
+        setIsUndoModalVisible={setIsUndoModalVisible}
+        stageToUndo={stageToUndo}
+        setStageToUndo={setStageToUndo}
+        undoStage={undoStage}
+        isUndoingStage={isUndoingStage}
+        handleUndoStage={handleUndoStage}
       />
     </div>
   );

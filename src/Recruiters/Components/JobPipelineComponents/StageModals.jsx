@@ -74,6 +74,13 @@ const StageModals = ({
   setDocumentToDelete,
   deleteStageDocument,
   isDeletingDocument,
+  isUndoModalVisible,
+  setIsUndoModalVisible,
+  stageToUndo,
+  setStageToUndo,
+  undoStage,
+  isUndoingStage,
+  handleUndoStage,
 }) => {
   const [form] = Form.useForm();
 
@@ -713,6 +720,41 @@ const StageModals = ({
             <Text type="secondary" style={{ fontSize: "12px" }}>
               This action cannot be undone. This will remove the document
               requirement from the "{getStageName(activeStage)}" stage.
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Undo Stage Move"
+        visible={isUndoModalVisible}
+        onOk={() => {
+          handleUndoStage();
+        }}
+        onCancel={() => {
+          setIsUndoModalVisible(false);
+          setStageToUndo(null);
+        }}
+        okText="Confirm Undo"
+        cancelText="Cancel"
+        okType="danger"
+        okButtonProps={{
+          loading: isUndoingStage,
+        }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text strong>Are you sure you want to undo this stage move?</Text>
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff7e6",
+              borderRadius: "6px",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              This will move the candidate back to the previous stage. All
+              progress in the current stage will be reverted.
             </Text>
           </div>
         </div>

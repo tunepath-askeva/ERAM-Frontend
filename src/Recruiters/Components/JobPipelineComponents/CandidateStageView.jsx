@@ -65,6 +65,8 @@ const CandidateStageView = ({
   refreshData,
   setIsDeleteDocumentModalVisible,
   setDocumentToDelete,
+  handleUndoStageClick,
+  isUndoingStage,
 }) => {
   const screens = useBreakpoint();
 
@@ -614,6 +616,30 @@ const CandidateStageView = ({
               direction={screens.xs ? "vertical" : "horizontal"}
               style={{ width: screens.xs ? "100%" : "auto" }}
             >
+              {isCurrentStage &&
+                !hasAnyRecruiterApproved &&
+                candidate.stageProgress.findIndex(
+                  (sp) => sp.stageId === targetStageId
+                ) > 0 && (
+                  <Button
+                    danger
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log(
+                        "Undo clicked - Candidate ID:",
+                        candidate._id
+                      );
+                      console.log("Undo clicked - Stage ID:", activeStage);
+                      handleUndoStageClick(candidate._id, activeStage);
+                    }}
+                    loading={isUndoingStage}
+                    style={{ width: screens.xs ? "100%" : "auto" }}
+                    block={screens.xs}
+                  >
+                    Undo Stage Move
+                  </Button>
+                )}
+
               <Tooltip
                 title={
                   !canMoveCandidate()

@@ -746,6 +746,13 @@ export const recruiterApi = createApi({
         body: { stageId, documentId },
       }),
     }),
+    undoStage: builder.mutation({
+      query: ({ id, stageId }) => ({
+        url: `/undo-stage/${id}`,
+        method: "PUT",
+        body: { stageId },
+      }),
+    }),
     getRequisitionApprovals: builder.query({
       query: ({ page = 1, limit = 10, search = "" } = {}) => {
         const params = new URLSearchParams();
@@ -845,4 +852,5 @@ export const {
   useGetRequisitionApprovalsQuery,
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
+  useUndoStageMutation,
 } = recruiterApi;
