@@ -108,7 +108,7 @@ const CandidateStageView = ({
     const hasApprovalLevels =
       currentStageProgress?.approvalDetails?.levels?.length > 0;
     const isStageApproved = hasApprovalLevels
-      ? currentStageProgress.approval.isApproved === true
+      ? currentStageProgress?.approval?.isApproved === true
       : true;
 
     const reviewerComments = currentStageProgress?.recruiterReviews || [];
