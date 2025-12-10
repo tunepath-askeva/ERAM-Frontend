@@ -666,10 +666,10 @@ const RecruiterViewJob = () => {
     // Group stages by pipeline
     const pipelines = {};
     workOrder.pipelineStageTimeline?.forEach((stage) => {
-      const pipelineId = stage.pipelineId._id;
+      const pipelineId = stage?.pipelineId?._id;
       if (!pipelines[pipelineId]) {
         pipelines[pipelineId] = {
-          name: stage.pipelineId.name,
+          name: stage?.pipelineId?.name,
           stages: [],
         };
       }
