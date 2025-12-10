@@ -191,7 +191,7 @@ const RecruiterEditJob = () => {
 
         if (job.pipelineStageTimeline) {
           job.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = timeline.pipelineId._id;
+            const pipelineId = timeline?.pipelineId?._id;
             const stageId = timeline.stageId;
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
@@ -1870,7 +1870,7 @@ const RecruiterEditJob = () => {
           const stageDetails =
             fetchedJobData?.workOrder?.pipelineStageTimeline?.find(
               (timeline) =>
-                timeline.pipelineId._id === pipelineId &&
+                timeline?.pipelineId?._id === pipelineId &&
                 timeline.stageId === stageId
             );
 
@@ -2269,7 +2269,7 @@ const RecruiterEditJob = () => {
 
           const pipelineStages =
             fetchedJobData?.workOrder?.pipelineStageTimeline?.filter(
-              (timeline) => timeline.pipelineId._id === pipelineId
+              (timeline) => timeline?.pipelineId?._id === pipelineId
             ) || [];
 
           const hasDates = pipelineStages.some(

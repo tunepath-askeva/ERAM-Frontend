@@ -194,7 +194,7 @@ const EditWorkOrder = () => {
 
         if (workOrder.pipelineStageTimeline) {
           workOrder.pipelineStageTimeline.forEach((timeline) => {
-            const pipelineId = timeline.pipelineId._id;
+            const pipelineId = timeline?.pipelineId?._id;
 
             if (!initialStageDates[pipelineId]) {
               initialStageDates[pipelineId] = [];
@@ -395,7 +395,7 @@ const EditWorkOrder = () => {
       setUniversalRecruiters([]);
       const initialDates =
         workOrderData?.workOrder?.pipelineStageTimeline
-          ?.filter((t) => t.pipelineId._id === pipelineId)
+          ?.filter((t) => t?.pipelineId?._id === pipelineId)
           ?.map((timeline) => ({
             stageId: timeline.stageId,
             stageName: timeline.stageName,
@@ -1446,7 +1446,7 @@ const EditWorkOrder = () => {
     // Get timeline data for the current pipeline from API response
     const pipelineTimeline =
       workOrderData?.workOrder?.pipelineStageTimeline?.filter(
-        (timeline) => timeline.pipelineId._id === currentPipelineForDates._id
+        (timeline) => timeline?.pipelineId?._id === currentPipelineForDates._id
       ) || [];
 
     return (
