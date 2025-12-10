@@ -16,6 +16,7 @@ import {
   Col,
   Tabs,
   Select,
+  Alert,
 } from "antd";
 import {
   UploadOutlined,
@@ -32,6 +33,7 @@ import {
   useEditPayrollMutation,
   useGetPayrollByIdQuery,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSnackbar } from "notistack";
 import { useSelector } from "react-redux";
 import { debounce } from "lodash";
 import SkeletonLoader from "../../Global/SkeletonLoader";
@@ -210,6 +212,7 @@ const sampleRow = [
 ];
 
 const EmployeeAdminPayroll = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
@@ -222,6 +225,7 @@ const EmployeeAdminPayroll = () => {
   const [project, setProject] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
+  const [uploadAlert, setUploadAlert] = useState(null);
 
   const debouncedSearch = useCallback(
     debounce((searchValue) => {
@@ -258,16 +262,18 @@ const EmployeeAdminPayroll = () => {
     },
   ] = useUploadPayrollFileMutation();
 
-  const { data: payrollData, isLoading: isPayrollLoading } = useGetPayrollQuery(
-    {
-      page: currentPage,
-      limit: pageSize,
-      search: debouncedSearchText,
-      project,
-      month,
-      year,
-    }
-  );
+  const {
+    data: payrollData,
+    isLoading: isPayrollLoading,
+    refetch: refetchPayroll,
+  } = useGetPayrollQuery({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchText,
+    project,
+    month,
+    year,
+  });
 
   const [editPayroll, { isLoading: isEditing }] = useEditPayrollMutation();
   const { data: singlePayrollData, isLoading: isSinglePayrollLoading } =
@@ -283,27 +289,79 @@ const EmployeeAdminPayroll = () => {
 
   const handleFileUpload = async (file) => {
     setSelectedFile(file);
+    setUploadAlert(null); // Clear previous alerts
 
     try {
       const result = await uploadFile(file).unwrap();
-      message.success(`File uploaded successfully! ${result.message || ""}`);
+
+      // Check for duplicates
+      if (result.duplicateEramIds && result.duplicateEramIds.length > 0) {
+        const alertMessage = `${result.inserted} record(s) inserted, ${result.skipped} record(s) skipped due to duplicates.`;
+        const duplicateDetails = result.duplicateEramIds.map(
+          (id) => `ERAM ID: ${id}`
+        );
+
+        setUploadAlert({
+          type: "warning",
+          message: alertMessage,
+          details: duplicateDetails,
+        });
+
+        enqueueSnackbar(alertMessage, {
+          variant: "warning",
+          autoHideDuration: 3000,
+        });
+      } else if (result.inserted > 0) {
+        const alertMessage = `${result.message}. ${result.inserted} record(s) inserted successfully!`;
+
+        setUploadAlert({
+          type: "success",
+          message: alertMessage,
+          details: [],
+        });
+
+        enqueueSnackbar(alertMessage, {
+          variant: "success",
+          autoHideDuration: 3000,
+        });
+      } else {
+        enqueueSnackbar(result.message || "Upload completed", {
+          variant: "info",
+          autoHideDuration: 3000,
+        });
+      }
+
       setSelectedFile(null);
-      refetchPayroll();
+      await refetchPayroll();
     } catch (error) {
       console.error("Upload failed:", error);
 
+      let errorMessage = "Upload failed";
+      let errorDetails = [];
+
       if (error.status === 400) {
-        message.error(error.data?.message || "Invalid file format");
+        errorMessage = error.data?.message || "Invalid file format";
         if (error.data?.errors) {
-          error.data.errors.forEach((err) => message.error(err));
+          errorDetails = error.data.errors;
+          error.data.errors.forEach((err) =>
+            enqueueSnackbar(err, { variant: "error" })
+          );
         }
       } else if (error.status === 413) {
-        message.error("File too large");
+        errorMessage = "File too large";
       } else if (error.status === 500) {
-        message.error("Server error. Please try again later.");
+        errorMessage = "Server error. Please try again later.";
       } else {
-        message.error("Upload failed. Please check your connection.");
+        errorMessage = "Upload failed. Please check your connection.";
       }
+
+      setUploadAlert({
+        type: "error",
+        message: errorMessage,
+        details: errorDetails,
+      });
+
+      enqueueSnackbar(errorMessage, { variant: "error" });
     }
 
     return false;
@@ -358,12 +416,26 @@ const EmployeeAdminPayroll = () => {
         id: selectedRecord._id,
         payload: values,
       }).unwrap();
-      console.log("Updated values:", values);
-      message.success("Payroll record updated successfully");
+
+      enqueueSnackbar("Payroll record updated successfully", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
+
       setIsEditModalVisible(false);
-      refetchPayroll();
+      setSelectedRecord(null);
+
+      // Refetch the data
+      await refetchPayroll();
     } catch (error) {
       console.error("Validation failed:", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update payroll record",
+        {
+          variant: "error",
+          autoHideDuration: 3000,
+        }
+      );
     }
   };
 
@@ -455,9 +527,13 @@ const EmployeeAdminPayroll = () => {
     name: "payrollFile",
     multiple: false,
     accept: ".xlsx,.xls,.csv",
-    beforeUpload: handleFileUpload,
+    beforeUpload: (file) => {
+      setSelectedFile(file); // Just set the file, don't upload yet
+      return false; // Prevent automatic upload
+    },
     showUploadList: false,
     disabled: isUploading,
+    fileList: selectedFile ? [selectedFile] : [],
   };
 
   // Render View Modal Content
@@ -1203,7 +1279,11 @@ const EmployeeAdminPayroll = () => {
             type="primary"
             icon={<UploadOutlined />}
             loading={isUploading}
-            onClick={() => selectedFile && handleFileUpload(selectedFile)}
+            onClick={() => {
+              if (selectedFile) {
+                handleFileUpload(selectedFile);
+              }
+            }}
             disabled={!selectedFile || isUploading}
             style={{ backgroundColor: "#da2c46" }}
           >
@@ -1211,6 +1291,29 @@ const EmployeeAdminPayroll = () => {
           </Button>
         </div>
       </Card>
+
+      {uploadAlert && (
+        <Alert
+          message={uploadAlert.message}
+          description={
+            uploadAlert.details.length > 0 ? (
+              <div>
+                <p style={{ marginBottom: "8px", fontWeight: 500 }}>Details:</p>
+                <ul style={{ marginBottom: 0, paddingLeft: "20px" }}>
+                  {uploadAlert.details.map((detail, index) => (
+                    <li key={index}>{detail}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          }
+          type={uploadAlert.type}
+          closable
+          onClose={() => setUploadAlert(null)}
+          showIcon
+          style={{ marginBottom: "24px" }}
+        />
+      )}
 
       <Card
         title="Payroll Data"

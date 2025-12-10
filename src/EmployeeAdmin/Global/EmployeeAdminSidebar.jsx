@@ -269,7 +269,6 @@ const EmployeeAdminSidebar = ({
       ? menuItems.filter((item) => permissions.includes(item.permission))
       : menuItems;
 
-  console.log(filteredMenuItems, "MENU ITEMS");
 
   const handleLogout = async () => {
     try {
