@@ -15,6 +15,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   UploadOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import {
   useUploadStageDocumentsMutation,
@@ -89,13 +90,8 @@ const SourcedDocumentsTab = ({
     uploadedDocs,
     additionalDocs = []
   ) => {
-    // Combine required documents and additional documents
-    const allRequiredDocs = [
-      ...requiredDocs,
-      ...additionalDocs.map((doc) => doc.documentName),
-    ];
-
-    return allRequiredDocs.filter((doc) => {
+    // Do NOT include additional documents as they don't need to be uploaded
+    return requiredDocs.filter((doc) => {
       const docName = typeof doc === "string" ? doc : getDocumentName(doc);
       return !isDocumentUploaded(uploadedDocs, docName);
     });
@@ -1099,7 +1095,7 @@ const SourcedDocumentsTab = ({
           additionalDocs
         );
         const allRequiredDocsUploaded =
-          requiredDocs.length + additionalDocs.length > 0 && // UPDATE THIS LINE
+          requiredDocs.length > 0 && // UPDATE THIS LINE
           pendingRequiredDocs.length === 0;
 
         return (
@@ -1119,7 +1115,7 @@ const SourcedDocumentsTab = ({
                   {stage.stageStatus?.toUpperCase() || "PENDING"}
                 </Tag>
               </Text>
-              {(requiredDocs.length > 0 || additionalDocs.length > 0) && ( // UPDATE THIS CONDITION
+              {requiredDocs.length > 0 && ( // UPDATE THIS CONDITION
                 <div style={{ marginTop: "8px" }}>
                   <Text type="secondary">
                     Document Status:
@@ -1127,8 +1123,7 @@ const SourcedDocumentsTab = ({
                       color={allRequiredDocsUploaded ? "success" : "warning"}
                       style={{ marginLeft: "8px" }}
                     >
-                      {uploadedDocs.length}/
-                      {requiredDocs.length + additionalDocs.length} Uploaded
+                      {uploadedDocs.length}/{requiredDocs.length} Uploaded
                     </Tag>
                   </Text>
                 </div>
@@ -1138,10 +1133,7 @@ const SourcedDocumentsTab = ({
             {/* Required Documents Display */}
             {(requiredDocs.length > 0 || additionalDocs.length > 0) && (
               <div style={{ marginBottom: "24px" }}>
-                <Title level={3}>
-                  Required Documents (
-                  {requiredDocs.length + additionalDocs.length})
-                </Title>
+                <Title level={3}>Documents for this Stage</Title>
                 <div
                   style={{
                     display: "grid",
@@ -1150,6 +1142,7 @@ const SourcedDocumentsTab = ({
                     gap: "12px",
                   }}
                 >
+                  {/* BASE REQUIRED DOCUMENTS - MUST UPLOAD */}
                   {requiredDocs.map((doc, docIndex) => {
                     const docName = getDocumentName(doc);
                     const docId = getDocumentId(doc);
@@ -1201,6 +1194,9 @@ const SourcedDocumentsTab = ({
                           <Text strong style={{ fontSize: "14px" }}>
                             {docName}
                           </Text>
+                          <Tag color="blue" size="small">
+                            Required
+                          </Tag>
                         </div>
                         <div
                           style={{
@@ -1236,90 +1232,86 @@ const SourcedDocumentsTab = ({
                     );
                   })}
 
+                  {/* ADDITIONAL DOCUMENTS - VIEW ONLY, NO UPLOAD NEEDED */}
                   {additionalDocs.map((doc, docIndex) => {
                     const docName = doc.documentName;
-                    const isUploaded = isDocumentUploaded(
-                      uploadedDocs,
-                      docName
-                    );
-                    const isPending = pendingDocs.some(
-                      (pendingDoc) => pendingDoc.documentType === docName
-                    );
 
                     return (
                       <div
                         key={`additional-${doc._id || docIndex}`}
                         style={{
                           padding: "12px",
-                          border: `2px solid ${
-                            isUploaded
-                              ? "#52c41a"
-                              : isPending
-                              ? "#faad14"
-                              : "#d9d9d9"
-                          }`,
+                          border: "2px solid #52c41a",
                           borderRadius: "8px",
-                          backgroundColor: isUploaded
-                            ? "#f6ffed"
-                            : isPending
-                            ? "#fffbf0"
-                            : "#fafafa",
+                          backgroundColor: "#f6ffed",
                         }}
                       >
                         <div
                           style={{
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "space-between",
                             gap: "8px",
                           }}
                         >
-                          <FileTextOutlined
+                          <div
                             style={{
-                              color: isUploaded
-                                ? "#52c41a"
-                                : isPending
-                                ? "#faad14"
-                                : "#8c8c8c",
-                              fontSize: "16px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              flex: 1,
                             }}
-                          />
-                          <Text strong style={{ fontSize: "14px" }}>
-                            {docName}
-                          </Text>
-                          <Tag color="orange" size="small">
-                            Additional
-                          </Tag>
-                        </div>
-                        <div
-                          style={{
-                            marginTop: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          {isUploaded ? (
-                            <Tag
-                              color="success"
+                          >
+                            <FileTextOutlined
+                              style={{
+                                color: "#52c41a",
+                                fontSize: "16px",
+                              }}
+                            />
+                            <Text strong style={{ fontSize: "14px" }}>
+                              {docName}
+                            </Text>
+                            <Tag color="green" size="small">
+                              Reference Only
+                            </Tag>
+                          </div>
+                          {doc.fileUrl && (
+                            <Button
+                              type="primary"
                               size="small"
-                              icon={<CheckCircleOutlined />}
+                              ghost
+                              icon={<EyeOutlined />}
+                              onClick={() => window.open(doc.fileUrl, "_blank")}
+                              style={{
+                                borderColor: "#52c41a",
+                                color: "#52c41a",
+                              }}
                             >
-                              Uploaded
-                            </Tag>
-                          ) : isPending ? (
-                            <Tag
-                              color="warning"
-                              size="small"
-                              icon={<ClockCircleOutlined />}
-                            >
-                              Pending Submit
-                            </Tag>
-                          ) : (
-                            <Tag color="default" size="small">
-                              Not Uploaded
-                            </Tag>
+                              View
+                            </Button>
                           )}
                         </div>
+                        <div style={{ marginTop: "8px" }}>
+                          <Tag
+                            color="success"
+                            size="small"
+                            icon={<CheckCircleOutlined />}
+                          >
+                            Available for Reference
+                          </Tag>
+                        </div>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: "12px",
+                            display: "block",
+                            marginTop: "4px",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          ℹ️ This document is provided by the recruitment team
+                          for your reference. No upload required.
+                        </Text>
                       </div>
                     );
                   })}

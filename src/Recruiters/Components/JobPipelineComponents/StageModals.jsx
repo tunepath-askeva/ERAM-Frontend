@@ -8,8 +8,9 @@ import {
   Typography,
   Tag,
   Button,
+  Upload,
 } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { UserOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { NotificationModal } from "../../../Components/NotificationModal";
 
@@ -81,9 +82,11 @@ const StageModals = ({
   undoStage,
   isUndoingStage,
   handleUndoStage,
+  uploadedDocumentFile, 
+  setUploadedDocumentFile, 
 }) => {
   const [form] = Form.useForm();
-
+  // const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
   const confirmMoveCandidate = async () => {
     try {
       const values = await form.validateFields();
@@ -161,18 +164,7 @@ const StageModals = ({
           ...(stageTimeline?.requiredDocuments?.map((doc) => doc.title) || []),
         ];
 
-        // Get additional documents
-        const additionalDocs =
-          currentStageProgress?.additionalDocuments?.map(
-            (doc) => doc.documentName
-          ) || [];
-
-        // Combine all required documents
-        const allRequiredDocuments = [
-          ...baseRequiredDocuments,
-          ...additionalDocs,
-        ];
-        const uniqueRequiredDocuments = [...new Set(allRequiredDocuments)];
+        const uniqueRequiredDocuments = [...new Set(baseRequiredDocuments)];
 
         if (uniqueRequiredDocuments.length > 0) {
           const uploadedDocuments =
@@ -181,7 +173,7 @@ const StageModals = ({
             (doc) => doc.documentName || doc.fileName
           );
 
-          // Check if ALL required documents have been uploaded
+          // Check if ALL base required documents have been uploaded
           const allDocsUploaded = uniqueRequiredDocuments.every((requiredDoc) =>
             uploadedDocNames.includes(requiredDoc)
           );
@@ -385,10 +377,15 @@ const StageModals = ({
         documentName: newDocumentName.trim(),
       };
 
+      if (uploadedDocumentFile) {
+        payload.file = uploadedDocumentFile;
+      }
+
       await addStageDocument(payload).unwrap();
 
       message.success("Document added successfully");
       setNewDocumentName("");
+      setUploadedDocumentFile(null);
       setIsDocumentModalVisible(false);
 
       // THEN REFRESH - Force immediate refetch
@@ -638,12 +635,13 @@ const StageModals = ({
       </Modal>
 
       <Modal
-        title="Add Required Document"
+        title="Add Reference Document"
         visible={isDocumentModalVisible}
         onOk={handleAddDocument}
         onCancel={() => {
           setIsDocumentModalVisible(false);
           setNewDocumentName("");
+          setUploadedDocumentFile(null);
         }}
         okText="Add Document"
         cancelText="Cancel"
@@ -663,6 +661,52 @@ const StageModals = ({
               />
             </Form.Item>
 
+            <Form.Item label="Upload Document File (Optional)">
+              <Upload
+                beforeUpload={(file) => {
+                  const isLt5M = file.size / 1024 / 1024 < 5;
+                  if (!isLt5M) {
+                    message.error("File must be smaller than 5MB!");
+                    return Upload.LIST_IGNORE;
+                  }
+
+                  // Store the file
+                  setUploadedDocumentFile(file);
+                  message.success(`${file.name} selected`);
+
+                  // Prevent automatic upload
+                  return false;
+                }}
+                onRemove={() => {
+                  setUploadedDocumentFile(null);
+                  message.info("File removed");
+                }}
+                maxCount={1}
+                fileList={
+                  uploadedDocumentFile
+                    ? [
+                        {
+                          uid: "-1",
+                          name: uploadedDocumentFile.name,
+                          status: "done",
+                        },
+                      ]
+                    : []
+                }
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              >
+                <Button icon={<UploadOutlined />}>
+                  {uploadedDocumentFile ? "Change File" : "Select File"}
+                </Button>
+              </Upload>
+              <Text
+                type="secondary"
+                style={{ fontSize: "12px", display: "block", marginTop: "4px" }}
+              >
+                Upload a reference document for the candidate to view (Max 5MB)
+              </Text>
+            </Form.Item>
+
             <Form.Item label="Current Stage">
               <Input
                 value={getStageName(activeStage)}
@@ -675,13 +719,14 @@ const StageModals = ({
               style={{
                 marginTop: "16px",
                 padding: "12px",
-                backgroundColor: "#f6f6f6",
+                backgroundColor: "#f0f5ff",
                 borderRadius: "6px",
               }}
             >
               <Text type="secondary" style={{ fontSize: "12px" }}>
-                This will add a required document for the "
-                {getStageName(activeStage)}" stage.
+                ℹ️ This will add a reference document for the candidate to view.
+                <strong> The candidate does NOT need to upload this</strong> -
+                it's for their reference only.
               </Text>
             </div>
           </Form>

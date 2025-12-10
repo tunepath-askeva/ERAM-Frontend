@@ -733,11 +733,18 @@ export const recruiterApi = createApi({
       }),
     }),
     addNewStageDocument: builder.mutation({
-      query: ({ id, ...body }) => ({
-        url: `/add-document/${id}`,
-        method: "PUT",
-        body,
-      }),
+      query: ({ id, ...body }) => {
+        const formData = new FormData();
+        formData.append("stageId", body.stageId);
+        formData.append("documentName", body.documentName);
+        formData.append("file", body.file);
+
+        return {
+          url: `/add-document/${id}`,
+          method: "PUT",
+          body: formData,
+        };
+      },
     }),
     deleteStageDocument: builder.mutation({
       query: ({ id, stageId, documentId }) => ({

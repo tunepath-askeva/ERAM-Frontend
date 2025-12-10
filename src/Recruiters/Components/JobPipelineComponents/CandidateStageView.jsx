@@ -129,28 +129,17 @@ const CandidateStageView = ({
       const approval = currentStageProgress?.approval;
       const approvalLevels = currentStageProgress?.approvalDetails?.levels;
       if (!approvalLevels || approvalLevels.length === 0) return true;
-      if (approval && approval.isApproved === true) return true;
+      if (approval && approval?.isApproved === true) return true;
       return false;
     };
 
     const checkDocumentsUploaded = () => {
-      // Get base required documents from fullStage
+      // Get base required documents from fullStage (ONLY these need to be uploaded)
       const baseRequiredDocuments =
         currentStageProgress?.fullStage?.requiredDocuments || [];
 
-      // Get additional documents that have been added to this stage
-      const additionalDocs =
-        currentStageProgress?.additionalDocuments?.map(
-          (doc) => doc.documentName
-        ) || [];
-
-      // Combine both arrays and remove duplicates
-      const allRequiredDocuments = [
-        ...new Set([...baseRequiredDocuments, ...additionalDocs]),
-      ];
-
-      // If there are no required documents at all, return true
-      if (allRequiredDocuments.length === 0) return true;
+      // If there are no base required documents, return true
+      if (baseRequiredDocuments.length === 0) return true;
 
       // Get uploaded documents
       const uploadedDocuments = currentStageProgress?.uploadedDocuments || [];
@@ -160,8 +149,9 @@ const CandidateStageView = ({
         (doc) => doc.documentName || doc.fileName
       );
 
-      // Check if ALL required documents (base + additional) have been uploaded
-      const allDocumentsUploaded = allRequiredDocuments.every((requiredDoc) =>
+      // Check if ALL base required documents have been uploaded
+      // Additional documents are NOT checked here as they're reference-only
+      const allDocumentsUploaded = baseRequiredDocuments.every((requiredDoc) =>
         uploadedDocNames.includes(requiredDoc)
       );
 
@@ -468,9 +458,8 @@ const CandidateStageView = ({
       // Updated logic to check for additional documents
       const baseRequiredDocs =
         (currentStageProgress?.fullStage?.requiredDocuments || []).length > 0;
-      const additionalDocs =
-        (currentStageProgress?.additionalDocuments || []).length > 0;
-      const hasRequiredDocs = baseRequiredDocs || additionalDocs;
+
+      const hasRequiredDocs = baseRequiredDocs;
 
       const hasApproval = currentStageProgress?.approval?.approvalId
         ? true
@@ -482,16 +471,9 @@ const CandidateStageView = ({
         } else if (!approvalCompleted) {
           return "⚠️ Approval is required before moving this candidate to the next stage.";
         } else if (!documentsUploaded) {
-          // More specific message about which documents are missing
+          // Show only BASE required documents that are missing
           const baseRequiredDocuments =
             currentStageProgress?.fullStage?.requiredDocuments || [];
-          const additionalDocNames =
-            currentStageProgress?.additionalDocuments?.map(
-              (doc) => doc.documentName
-            ) || [];
-          const allRequiredDocuments = [
-            ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
-          ];
 
           const uploadedDocuments =
             currentStageProgress?.uploadedDocuments || [];
@@ -499,7 +481,7 @@ const CandidateStageView = ({
             (doc) => doc.documentName || doc.fileName
           );
 
-          const missingDocs = allRequiredDocuments.filter(
+          const missingDocs = baseRequiredDocuments.filter(
             (doc) => !uploadedDocNames.includes(doc)
           );
 
@@ -702,11 +684,6 @@ const CandidateStageView = ({
     const baseRequiredDocuments =
       stageProgress?.fullStage?.requiredDocuments || [];
     const additionalDocs = stageProgress?.additionalDocuments || [];
-    const additionalDocNames = additionalDocs.map((doc) => doc.documentName);
-    const allRequiredDocuments = [
-      ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
-    ];
-
     const handleViewDocument = (fileUrl, fileName) => {
       window.open(fileUrl, "_blank");
     };
@@ -768,7 +745,7 @@ const CandidateStageView = ({
                   fontSize: "14px",
                 }}
               >
-                Standard Documents:
+                Mandatory Documents (Must be uploaded by candidate):
               </Text>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {baseRequiredDocuments.map((doc, index) => (
@@ -797,16 +774,17 @@ const CandidateStageView = ({
                   display: "block",
                   marginBottom: "8px",
                   fontSize: "14px",
-                  color: "#fa8c16",
+                  color: "#52c41a",
                 }}
               >
-                Additional Documents:
+                📎 Reference Documents (For candidate viewing only - No upload
+                required):
               </Text>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {additionalDocs.map((doc, index) => (
                   <Tag
                     key={`additional-${doc._id || index}`}
-                    color="orange"
+                    color="green"
                     onClose={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -835,28 +813,44 @@ const CandidateStageView = ({
                     style={{
                       fontSize: "14px",
                       padding: "4px 12px 4px 8px",
-                      border: "1px dashed #fa8c16",
-                      backgroundColor: "#fff7e6",
+                      border: "1px dashed #52c41a",
+                      backgroundColor: "#f6ffed",
                       cursor: "default",
                     }}
                   >
                     {doc.documentName}
+                    {doc.fileUrl && (
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(doc.fileUrl, "_blank");
+                        }}
+                        style={{ padding: "0 4px", marginLeft: "4px" }}
+                      />
+                    )}
                   </Tag>
                 ))}
               </div>
               <Text
                 type="secondary"
-                style={{ fontSize: "12px", marginTop: "8px" }}
+                style={{ fontSize: "12px", marginTop: "8px", display: "block" }}
               >
-                Click the × icon to remove additional documents
+                ℹ️ These are reference documents for the candidate. Click × to
+                remove or 👁️ to view.
               </Text>
             </div>
           )}
 
           {/* Fallback for no documents */}
-          {allRequiredDocuments.length === 0 && (
-            <Text type="secondary">No documents required for this stage</Text>
-          )}
+          {baseRequiredDocuments.length === 0 &&
+            additionalDocs.length === 0 && (
+              <Text type="secondary">
+                No documents configured for this stage
+              </Text>
+            )}
 
           {/* Upload status summary */}
           <div
@@ -871,10 +865,10 @@ const CandidateStageView = ({
                 ? `✅ ${uploadedDocs.length} document(s) uploaded`
                 : "⚠️ No documents uploaded yet"}
             </Text>
-            {allRequiredDocuments.length > 0 && (
+            {baseRequiredDocuments.length > 0 && (
               <div style={{ marginTop: "4px" }}>
                 <Text type="secondary" style={{ fontSize: "11px" }}>
-                  Required: {allRequiredDocuments.length} document(s)
+                  Required uploads: {baseRequiredDocuments.length} document(s)
                 </Text>
               </div>
             )}

@@ -56,6 +56,8 @@ const RecruiterJobPipeline = () => {
   const [isStageOrderChanged, setIsStageOrderChanged] = useState(false);
   const [isDocumentModalVisible, setIsDocumentModalVisible] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState("");
+  const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
+
   const [isDeleteDocumentModalVisible, setIsDeleteDocumentModalVisible] =
     useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
@@ -246,8 +248,8 @@ const RecruiterJobPipeline = () => {
       }
 
       const payload = {
-        id, 
-        stageId: stageToUndo, 
+        id,
+        stageId: stageToUndo,
       };
 
       console.log("Sending payload:", payload);
@@ -749,6 +751,8 @@ const RecruiterJobPipeline = () => {
         addStageDocument={addStageDocument}
         newDocumentName={newDocumentName}
         setNewDocumentName={setNewDocumentName}
+        uploadedDocumentFile={uploadedDocumentFile} 
+        setUploadedDocumentFile={setUploadedDocumentFile}
         isAddingDocument={isAddingDocument}
         processedJobData={processedJobData}
         getReviewerIdForStage={getReviewerIdForStage}
