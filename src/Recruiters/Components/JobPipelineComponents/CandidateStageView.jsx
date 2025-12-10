@@ -804,7 +804,7 @@ const CandidateStageView = ({
                       <CloseOutlined
                         style={{
                           fontSize: "12px",
-                          marginLeft: "24px",
+                          marginLeft: "4px",
                           color: "red",
                         }}
                       />
@@ -816,7 +816,6 @@ const CandidateStageView = ({
                       backgroundColor: "#f6ffed",
                       cursor: "default",
                       height: 30,
-                      width: 80,
                     }}
                   >
                     {doc.documentName}
