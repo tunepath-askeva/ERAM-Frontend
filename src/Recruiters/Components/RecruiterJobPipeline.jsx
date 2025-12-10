@@ -214,7 +214,8 @@ const RecruiterJobPipeline = () => {
     setSelectedNextStage(null);
     setIsStageOrderChanged(false);
 
-    const currentStageId = candidate.currentStageId || candidate.currentStage;
+    const currentStageId =
+      activeStage || candidate.currentStageId || candidate.currentStage;
     const nextStageId = getNextStageId(currentStageId);
     setTargetStage(nextStageId);
     setSelectedNextStage(nextStageId);
@@ -274,64 +275,29 @@ const RecruiterJobPipeline = () => {
     if (!processedJobData || !currentStageId) return null;
 
     const currentCandidate = processedJobData.candidates[0];
-    const isTagged = !!currentCandidate?.tagPipelineId;
 
-    let allStages = [];
+    // Get all stages from pipelineStageTimeline (source of truth for ALL stages)
+    const allPipelineStages =
+      processedJobData.workOrder?.pipelineStageTimeline || [];
 
-    if (isTagged) {
-      const allStagesMap = new Map();
+    if (allPipelineStages.length === 0) return null;
 
-      if (currentCandidate?.stageProgress) {
-        currentCandidate.stageProgress.forEach((progress, index) => {
-          if (progress.stageId) {
-            allStagesMap.set(progress.stageId, {
-              stageId: progress.stageId,
-              order: index,
-              source: "stageProgress",
-            });
-          }
-        });
-      }
+    // Create a copy and sort by stageOrder to maintain proper sequence
+    const sortedStages = [...allPipelineStages].sort(
+      (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+    );
 
-      if (processedJobData.pipeline?.stages) {
-        processedJobData.pipeline.stages.forEach((stage, index) => {
-          if (stage._id && !allStagesMap.has(stage._id)) {
-            allStagesMap.set(stage._id, {
-              stageId: stage._id,
-              order: allStagesMap.size + index,
-              source: "pipeline",
-            });
-          }
-        });
-      }
+    // Find current stage index
+    const currentIndex = sortedStages.findIndex(
+      (stage) => stage.stageId === currentStageId
+    );
 
-      if (currentCandidate.pendingPipelineStages) {
-        currentCandidate.pendingPipelineStages.forEach((stage, index) => {
-          if (stage.stageId && !allStagesMap.has(stage.stageId)) {
-            allStagesMap.set(stage.stageId, {
-              stageId: stage.stageId,
-              order: allStagesMap.size + index,
-              source: "pending",
-            });
-          }
-        });
-      }
-
-      allStages = Array.from(allStagesMap.values())
-        .sort((a, b) => a.order - b.order)
-        .map((item) => item.stageId);
-    } else {
-      allStages =
-        processedJobData.workOrder?.pipelineStageTimeline?.map(
-          (stage) => stage.stageId
-        ) || [];
+    // If current stage found and not the last stage, return next stage
+    if (currentIndex >= 0 && currentIndex < sortedStages.length - 1) {
+      return sortedStages[currentIndex + 1].stageId;
     }
 
-    const currentIndex = allStages.indexOf(currentStageId);
-    if (currentIndex >= 0 && currentIndex < allStages.length - 1) {
-      return allStages[currentIndex + 1];
-    }
-
+    // If last stage or not found, return null
     return null;
   };
 
@@ -339,108 +305,45 @@ const RecruiterJobPipeline = () => {
     if (!processedJobData || !currentStageId) return [];
 
     const currentCandidate = processedJobData.candidates[0];
-    const isTagged = !!currentCandidate?.tagPipelineId;
-    let allStages = [];
 
-    if (isTagged) {
-      const allStagesMap = new Map();
-      let orderCounter = 0;
+    // Get all stages from pipelineStageTimeline (source of truth)
+    const allPipelineStages =
+      processedJobData.workOrder?.pipelineStageTimeline || [];
 
-      if (currentCandidate?.stageProgress) {
-        currentCandidate.stageProgress.forEach((progress) => {
-          if (progress.stageId) {
-            allStagesMap.set(progress.stageId, {
-              stageId: progress.stageId,
-              stageName:
-                progress.stageName ||
-                progress.fullStage?.name ||
-                "Unknown Stage",
-              order: orderCounter++,
-              source: "stageProgress",
-              isCompleted: progress.stageStatus === "approved", // Add this flag
-            });
-          }
-        });
-      }
+    if (allPipelineStages.length === 0) return [];
 
-      if (processedJobData.pipeline?.stages) {
-        processedJobData.pipeline.stages.forEach((stage) => {
-          if (stage._id && !allStagesMap.has(stage._id)) {
-            allStagesMap.set(stage._id, {
-              stageId: stage._id,
-              stageName: stage.name || stage.stageName || "Unknown Stage",
-              order: orderCounter++,
-              source: "fullPipeline",
-              isCompleted: false,
-            });
-          }
-        });
-      }
+    // Create a copy and sort by stageOrder
+    const sortedStages = [...allPipelineStages].sort(
+      (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+    );
 
-      if (currentCandidate.pendingPipelineStages) {
-        currentCandidate.pendingPipelineStages.forEach((stage) => {
-          if (stage.stageId && !allStagesMap.has(stage.stageId)) {
-            allStagesMap.set(stage.stageId, {
-              stageId: stage.stageId,
-              stageName: stage.stageName || "Unknown Stage",
-              order: orderCounter++,
-              source: "pendingStages",
-              isCompleted: false,
-            });
-          }
-        });
-      }
+    // Get completed stage IDs from stageProgress
+    const completedStageIds =
+      currentCandidate.stageProgress
+        ?.filter((sp) => sp.stageStatus === "approved")
+        ?.map((sp) => sp.stageId) || [];
 
-      if (processedJobData.workOrder?.pipelineStageTimeline) {
-        processedJobData.workOrder.pipelineStageTimeline.forEach((stage) => {
-          if (stage.stageId && !allStagesMap.has(stage.stageId)) {
-            allStagesMap.set(stage.stageId, {
-              stageId: stage.stageId,
-              stageName: stage.stageName || "Unknown Stage",
-              order: orderCounter++,
-              source: "workOrder",
-              isCompleted: false,
-            });
-          }
-        });
-      }
-
-      allStages = Array.from(allStagesMap.values());
-    } else {
-      const stageProgressIds =
-        currentCandidate.stageProgress?.map((sp) => sp.stageId) || [];
-
-      const allPipelineStages =
-        processedJobData.workOrder?.pipelineStageTimeline || [];
-
-      allStages = allPipelineStages
-        .filter((stage) => !stageProgressIds.includes(stage.stageId))
-        .map((stage, index) => ({
-          stageId: stage.stageId,
-          stageName: stage.stageName,
-          stageOrder: stage.stageOrder !== undefined ? stage.stageOrder : index,
-          order: index,
-          isCompleted: false,
-        }));
-    }
-
-    const currentIndex = allStages.findIndex(
+    // Find current stage index
+    const currentIndex = sortedStages.findIndex(
       (stage) => stage.stageId === currentStageId
     );
 
-    if (currentIndex >= 0 && currentIndex < allStages.length - 1) {
-      // Filter out completed stages from next stages
-      const nextStages = allStages
-        .slice(currentIndex + 1)
-        .filter((stage) => !stage.isCompleted); // Only return non-completed stages
-
-      return nextStages.map(
-        ({ source, order, isCompleted, ...stage }) => stage
-      );
+    if (currentIndex < 0 || currentIndex >= sortedStages.length - 1) {
+      // Current stage not found or is the last stage
+      return [];
     }
 
-    // If this is the last stage or no incomplete stages remain, return empty array
-    return [];
+    // Get all stages after current stage
+    const nextStages = sortedStages
+      .slice(currentIndex + 1)
+      .filter((stage) => !completedStageIds.includes(stage.stageId)) // Exclude completed stages
+      .map((stage) => ({
+        stageId: stage.stageId,
+        stageName: stage.stageName,
+        stageOrder: stage.stageOrder,
+      }));
+
+    return nextStages;
   };
 
   const getReviewerIdForStage = (stageId) => {
