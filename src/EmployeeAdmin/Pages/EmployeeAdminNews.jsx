@@ -120,6 +120,8 @@ const EmployeeAdminNews = () => {
       createdAt: item.createdAt || new Date().toISOString(),
       updatedAt: item.updatedAt || new Date().toISOString(),
       coverImage: item.coverImage || "",
+      createdByName: item.createdBy?.fullName || "",
+      createdByEmail: item.createdBy?.email || "",
     })) || [];
 
   const createFileList = (imageUrl, fileName = "image") => {
@@ -255,6 +257,18 @@ const EmployeeAdminNews = () => {
         </Tag>
       ),
     },
+    {
+      title: "Created By",
+      key: "createdBy",
+      render: (_, record) => (
+        <span>
+          <strong>{record.createdByName}</strong>
+          <br />
+          <span style={{ color: "#888" }}>{record.createdByEmail}</span>
+        </span>
+      ),
+    },
+
     {
       title: "Actions",
       key: "actions",

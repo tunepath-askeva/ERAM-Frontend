@@ -502,6 +502,15 @@ const EmployeeAdminPayroll = () => {
       },
     },
     {
+      title: "Uploaded By",
+      key: "uploadedBy",
+      render: (_, record) =>
+        record.uploadedBy
+          ? `${record.uploadedBy.fullName} (${record.uploadedBy.email})`
+          : "—",
+    },
+
+    {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
@@ -573,6 +582,7 @@ const EmployeeAdminPayroll = () => {
             <Descriptions.Item label="ERAM ID">
               {recordToDisplay.U_EramId}
             </Descriptions.Item>
+
           </Descriptions>
         </TabPane>
 
