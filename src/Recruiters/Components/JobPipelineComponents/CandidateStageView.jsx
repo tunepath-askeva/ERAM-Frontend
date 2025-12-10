@@ -777,8 +777,7 @@ const CandidateStageView = ({
                   color: "#52c41a",
                 }}
               >
-                📎 Reference Documents (For candidate viewing only - No upload
-                required):
+                Additional Documents :
               </Text>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {additionalDocs.map((doc, index) => (
@@ -805,17 +804,19 @@ const CandidateStageView = ({
                       <CloseOutlined
                         style={{
                           fontSize: "12px",
-                          marginLeft: "4px",
+                          marginLeft: "24px",
                           color: "red",
                         }}
                       />
                     }
                     style={{
                       fontSize: "14px",
-                      padding: "4px 12px 4px 8px",
+                      padding: "4px 12px",
                       border: "1px dashed #52c41a",
                       backgroundColor: "#f6ffed",
                       cursor: "default",
+                      height: 30,
+                      width: 80,
                     }}
                   >
                     {doc.documentName}
