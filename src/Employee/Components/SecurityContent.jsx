@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   Form,
@@ -13,14 +13,33 @@ import {
   Space,
   Tag,
 } from "antd";
+import { useSnackbar } from "notistack";
 import { LockOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
-
+import { useChangePasswordMutation } from "../../Slices/Users/UserApis";
 const SecurityContent = ({ employeeData }) => {
   const [form] = Form.useForm();
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
-    console.log("Received values of form: ", values);
-    // Implement password change logic here
+  const [changePassword, isLoading] = useChangePasswordMutation();
+
+  const handlePasswordChange = async (values) => {
+    setLoading(true);
+    try {
+      await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      }).unwrap();
+
+      enqueueSnackbar("Password changed successfully!", { variant: "success" });
+      passwordForm.resetFields();
+    } catch (error) {
+      enqueueSnackbar(error?.data?.message || "Failed to change password", {
+        variant: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,7 +55,7 @@ const SecurityContent = ({ employeeData }) => {
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
       >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
+        <Form form={form} layout="vertical" onFinish={handlePasswordChange}>
           <Row gutter={24}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -94,14 +113,13 @@ const SecurityContent = ({ employeeData }) => {
               type="primary"
               htmlType="submit"
               style={{ background: "#da2c46", border: "none" }}
+              loading={loading}
             >
               Update Password
             </Button>
           </div>
         </Form>
       </Card>
-
-      {/* Rest of the security content... */}
     </div>
   );
 };

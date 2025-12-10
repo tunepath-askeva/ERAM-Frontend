@@ -125,6 +125,9 @@ const RecruiterCandidates = () => {
     useState(false);
   const [universalRecruiterIds, setUniversalRecruiterIds] = useState([]);
   const [applyToAllStages, setApplyToAllStages] = useState(false);
+  const [universalStartDate, setUniversalStartDate] = useState(null);
+  const [universalEndDate, setUniversalEndDate] = useState(null);
+  const [applyDatesToAllStages, setApplyDatesToAllStages] = useState(false);
   const [pipelineAlert, setPipelineAlert] = useState(null);
   const [selectedNewPipeline, setSelectedNewPipeline] = useState(null);
   const [form] = Form.useForm();
@@ -1005,6 +1008,37 @@ const RecruiterCandidates = () => {
     message.success(
       `Applied ${universalRecruiterIds.length} recruiter(s) to all ${allStages.length} stages`
     );
+  };
+
+  const handleApplyUniversalDates = () => {
+    if (!selectedPipeline) return;
+
+    const allStages = [
+      ...(selectedPipeline.stages || []),
+      ...(customStages[selectedPipeline._id] || []),
+    ];
+
+    allStages.forEach((stage) => {
+      const stageId = stage._id || stage.id;
+      if (universalStartDate) {
+        handleStageDateChange(
+          selectedPipeline._id,
+          stageId,
+          "startDate",
+          universalStartDate
+        );
+      }
+      if (universalEndDate) {
+        handleStageDateChange(
+          selectedPipeline._id,
+          stageId,
+          "endDate",
+          universalEndDate
+        );
+      }
+    });
+
+    message.success(`Applied dates to all ${allStages.length} stages`);
   };
 
   // Add these functions to the component
@@ -3028,6 +3062,9 @@ const RecruiterCandidates = () => {
           setSelectedPipeline(null);
           setUniversalRecruiterIds([]);
           setApplyToAllStages(false);
+          setUniversalStartDate(null);
+          setUniversalEndDate(null);
+          setApplyDatesToAllStages(false);
         }}
         footer={[
           <Button
@@ -3066,64 +3103,142 @@ const RecruiterCandidates = () => {
           title={
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <SettingOutlined />
-              <Text strong>Universal Recruiter Settings</Text>
+              <Text strong>Universal Settings</Text>
             </div>
           }
         >
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} md={16}>
-              <Form.Item
-                label="Assign Recruiters to All Stages"
-                style={{ marginBottom: 0 }}
-              >
-                <Select
-                  mode="multiple"
-                  value={universalRecruiterIds}
-                  onChange={handleUniversalRecruiterChange}
-                  style={{ width: "100%" }}
-                  size="small"
-                  placeholder="Select recruiters for all stages"
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option.children
-                      .toLowerCase()
-                      .indexOf(input.toLowerCase()) >= 0
-                  }
+          {/* EXISTING RECRUITER SECTION */}
+          <div
+            style={{
+              marginBottom: 16,
+              paddingBottom: 16,
+              borderBottom: "1px solid #e8e8e8",
+            }}
+          >
+            <Text strong style={{ display: "block", marginBottom: 8 }}>
+              Recruiter Assignment
+            </Text>
+            <Row gutter={[16, 16]} align="middle">
+              <Col xs={24} md={16}>
+                <Form.Item
+                  label="Assign Recruiters to All Stages"
+                  style={{ marginBottom: 0 }}
                 >
-                  {allRecruiters?.otherRecruiters?.map((recruiter) => (
-                    <Option key={recruiter._id} value={recruiter._id}>
-                      {recruiter.fullName || recruiter.email}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Checkbox
-                checked={applyToAllStages}
-                onChange={handleApplyToAllStagesChange}
-              >
-                Apply to all stages
-              </Checkbox>
-              {universalRecruiterIds.length > 0 && (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={handleApplyUniversalRecruiters}
-                  style={{ marginLeft: 8 }}
+                  <Select
+                    mode="multiple"
+                    value={universalRecruiterIds}
+                    onChange={handleUniversalRecruiterChange}
+                    style={{ width: "100%" }}
+                    size="small"
+                    placeholder="Select recruiters for all stages"
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option.children
+                        .toLowerCase()
+                        .indexOf(input.toLowerCase()) >= 0
+                    }
+                  >
+                    {allRecruiters?.otherRecruiters?.map((recruiter) => (
+                      <Option key={recruiter._id} value={recruiter._id}>
+                        {recruiter.fullName || recruiter.email}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                {/* <Checkbox
+                  checked={applyToAllStages}
+                  onChange={handleApplyToAllStagesChange}
                 >
-                  Apply Now
-                </Button>
-              )}
-            </Col>
-          </Row>
-          {universalRecruiterIds.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Selected: {universalRecruiterIds.length} recruiter(s)
-              </Text>
-            </div>
-          )}
+                  Apply to all stages
+                </Checkbox> */}
+                {universalRecruiterIds.length > 0 && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={handleApplyUniversalRecruiters}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Apply Now
+                  </Button>
+                )}
+              </Col>
+            </Row>
+            {universalRecruiterIds.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Selected: {universalRecruiterIds.length} recruiter(s)
+                </Text>
+              </div>
+            )}
+          </div>
+
+          {/* ADD NEW DATE SECTION */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: 8 }}>
+              Date Assignment
+            </Text>
+            <Row gutter={[16, 16]} align="middle">
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item
+                  label="Universal Start Date"
+                  style={{ marginBottom: 0 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={universalStartDate}
+                    onChange={setUniversalStartDate}
+                    placeholder="Select start date"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item
+                  label="Universal End Date"
+                  style={{ marginBottom: 0 }}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    size="small"
+                    value={universalEndDate}
+                    onChange={setUniversalEndDate}
+                    placeholder="Select end date"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                {/* <Checkbox
+                  checked={applyDatesToAllStages}
+                  onChange={(e) => setApplyDatesToAllStages(e.target.checked)}
+                >
+                  Apply to all stages
+                </Checkbox> */}
+                {(universalStartDate || universalEndDate) && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={handleApplyUniversalDates}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Apply Now
+                  </Button>
+                )}
+              </Col>
+            </Row>
+            {(universalStartDate || universalEndDate) && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {universalStartDate &&
+                    `Start: ${universalStartDate.format("YYYY-MM-DD")}`}
+                  {universalStartDate && universalEndDate && " | "}
+                  {universalEndDate &&
+                    `End: ${universalEndDate.format("YYYY-MM-DD")}`}
+                </Text>
+              </div>
+            )}
+          </div>
         </Card>
 
         {selectedPipeline && (
