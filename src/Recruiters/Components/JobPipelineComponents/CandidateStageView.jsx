@@ -374,99 +374,148 @@ const CandidateStageView = ({
       }
     };
 
+    // Replace the getReviewStatusTag function in CandidateStageView.jsx
+    // This properly handles completed stages vs active stages
+
     const getReviewStatusTag = () => {
-      if (hasAnyRecruiterApproved) {
+      const targetStageId = stageId || candidate.currentStageId;
+      const currentStageProgress = candidate.stageProgress?.find(
+        (progress) => progress.stageId === targetStageId
+      );
+
+      if (!currentStageProgress) {
         return (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            {isCurrentStage ? "Ready for Next Stage" : "Completed"}
+          <Tag icon={<ClockCircleOutlined />} color="default">
+            Stage Not Found
           </Tag>
         );
       }
 
-      if (isCurrentStage) {
-        if (hasApprovalLevels) {
-          if (!isStageApproved) {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="warning">
-                Awaiting Stage Approval
-              </Tag>
-            );
-          } else if (!areDocumentsUploaded) {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="orange">
-                Awaiting Document Upload
-              </Tag>
-            );
-          } else {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="blue">
-                Ready - Awaiting Recruiter Action
-              </Tag>
-            );
-          }
+      // Check if stage is completed
+      const isStageCompleted = currentStageProgress.stageStatus === "approved";
+
+      // Get the actual current stage the candidate is in
+      // This is the LAST stage in stageProgress that exists (could be pending or approved)
+      const candidateCurrentStageId =
+        candidate.currentStageId || candidate.currentStage;
+
+      // Check if the stage we're viewing is the candidate's current active stage
+      const isThisTheCurrentStage = targetStageId === candidateCurrentStageId;
+
+      // If stage is completed
+      if (isStageCompleted) {
+        // Check if candidate has moved to a next stage
+        const currentStageIndex = candidate.stageProgress.findIndex(
+          (sp) => sp.stageId === targetStageId
+        );
+        const hasNextStage = candidate.stageProgress[currentStageIndex + 1];
+
+        if (hasNextStage) {
+          // Candidate has moved to next stage - this stage is completed
+          return (
+            <Tag icon={<CheckCircleOutlined />} color="success">
+              Completed
+            </Tag>
+          );
         } else {
-          if (!areDocumentsUploaded) {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="orange">
-                Awaiting Document Upload
-              </Tag>
-            );
-          } else {
-            return (
-              <Tag icon={<ClockCircleOutlined />} color="blue">
-                Ready - Awaiting Recruiter Action
-              </Tag>
-            );
-          }
+          // This is the last completed stage - candidate is here
+          return (
+            <Tag icon={<CheckCircleOutlined />} color="success">
+              Completed
+            </Tag>
+          );
         }
       }
 
-      return (
-        <Tag icon={<ClockCircleOutlined />} color="default">
-          Not Current Stage
-        </Tag>
-      );
+      // Stage is not completed yet
+      if (!isThisTheCurrentStage) {
+        return (
+          <Tag icon={<ClockCircleOutlined />} color="default">
+            Not Current Stage
+          </Tag>
+        );
+      }
+
+      // Current stage, not completed - check requirements
+      if (hasApprovalLevels) {
+        if (!isStageApproved) {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="warning">
+              Awaiting Stage Approval
+            </Tag>
+          );
+        } else if (!areDocumentsUploaded) {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="orange">
+              Awaiting Document Upload
+            </Tag>
+          );
+        } else {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="blue">
+              Ready - Awaiting Recruiter Action
+            </Tag>
+          );
+        }
+      } else {
+        // No approval levels - check documents only
+        if (!areDocumentsUploaded) {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="orange">
+              Awaiting Document Upload
+            </Tag>
+          );
+        } else {
+          return (
+            <Tag icon={<ClockCircleOutlined />} color="blue">
+              Ready - Awaiting Recruiter Action
+            </Tag>
+          );
+        }
+      }
     };
 
     const getStatusMessage = () => {
+      const targetStageId = stageId || candidate.currentStageId;
       const currentStageProgress = candidate.stageProgress?.find(
-        (progress) => progress.stageId === (stageId || candidate.currentStageId)
+        (progress) => progress.stageId === targetStageId
       );
 
-      if (currentStageProgress?.stageStatus === "approved") {
+      if (!currentStageProgress) {
+        return "ℹ️ Stage information not available.";
+      }
+
+      // Check if stage is completed
+      if (currentStageProgress.stageStatus === "approved") {
         const currentStageIndex = candidate.stageProgress.findIndex(
-          (sp) => sp.stageId === currentStageProgress.stageId
+          (sp) => sp.stageId === targetStageId
         );
         const nextStageInProgress =
           candidate.stageProgress[currentStageIndex + 1];
 
         if (nextStageInProgress) {
-          return `✅ This stage has been completed and moved to: ${nextStageInProgress.stageName}`;
+          return `✅ This stage has been completed and candidate moved to: ${nextStageInProgress.stageName}`;
         }
-        return "✅ This stage has been completed and approved. No further action needed.";
+
+        // This is the last stage and it's completed
+        return "✅ This stage has been completed. This is the final stage - no further stages remain for you.";
       }
 
-      if (!isCurrentStage && currentStageProgress?.stageStatus === "approved") {
-        return "✅ This stage has been completed.";
-      }
+      // Check if this is the current active stage
+      const candidateCurrentStageId =
+        candidate.currentStageId || candidate.currentStage;
+      const isCurrentActiveStage = targetStageId === candidateCurrentStageId;
 
-      if (!isCurrentStage) {
+      if (!isCurrentActiveStage) {
         return "ℹ️ This stage is not currently active for this candidate.";
       }
 
-      if (hasAnyRecruiterApproved) {
-        return "✅ A recruiter has already reviewed and approved this candidate. They are ready for the next stage.";
-      }
-
+      // Current active stage - check completion requirements
       const approvalCompleted = checkApprovalCompleted();
       const documentsUploaded = areDocumentsUploaded;
-
-      // Updated logic to check for additional documents
       const baseRequiredDocs =
         (currentStageProgress?.fullStage?.requiredDocuments || []).length > 0;
-
       const hasRequiredDocs = baseRequiredDocs;
-
       const hasApproval = currentStageProgress?.approval?.approvalId
         ? true
         : false;
@@ -477,20 +526,16 @@ const CandidateStageView = ({
         } else if (!approvalCompleted) {
           return "⚠️ Approval is required before moving this candidate to the next stage.";
         } else if (!documentsUploaded) {
-          // Show only BASE required documents that are missing
           const baseRequiredDocuments =
             currentStageProgress?.fullStage?.requiredDocuments || [];
-
           const uploadedDocuments =
             currentStageProgress?.uploadedDocuments || [];
           const uploadedDocNames = uploadedDocuments.map(
             (doc) => doc.documentName || doc.fileName
           );
-
           const missingDocs = baseRequiredDocuments.filter(
             (doc) => !uploadedDocNames.includes(doc)
           );
-
           if (missingDocs.length > 0) {
             return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(
               ", "
@@ -508,27 +553,16 @@ const CandidateStageView = ({
         }
       } else if (hasRequiredDocs) {
         if (!documentsUploaded) {
-          // More specific message about which documents are missing
           const baseRequiredDocuments =
             currentStageProgress?.fullStage?.requiredDocuments || [];
-          const additionalDocNames =
-            currentStageProgress?.additionalDocuments?.map(
-              (doc) => doc.documentName
-            ) || [];
-          const allRequiredDocuments = [
-            ...new Set([...baseRequiredDocuments, ...additionalDocNames]),
-          ];
-
           const uploadedDocuments =
             currentStageProgress?.uploadedDocuments || [];
           const uploadedDocNames = uploadedDocuments.map(
             (doc) => doc.documentName || doc.fileName
           );
-
-          const missingDocs = allRequiredDocuments.filter(
+          const missingDocs = baseRequiredDocuments.filter(
             (doc) => !uploadedDocNames.includes(doc)
           );
-
           if (missingDocs.length > 0) {
             return `⚠️ Required documents must be uploaded before moving this candidate. Missing: ${missingDocs.join(
               ", "
@@ -1453,7 +1487,7 @@ const CandidateStageView = ({
                                     display: "block",
                                   }}
                                 >
-                                  This stage has been completed (final stage)
+                                  This stage has been completed
                                 </Text>
                               );
                             })()}
