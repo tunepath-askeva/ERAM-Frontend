@@ -1836,6 +1836,7 @@ const EditWorkOrder = () => {
                     >
                       <Select
                         placeholder="Select approval level"
+                        allowClear
                         value={dateEntry?.approvalId || undefined}
                         onChange={(value) =>
                           handleStageDateChange(

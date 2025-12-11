@@ -2081,6 +2081,7 @@ const RecruiterEditJob = () => {
                     <Select
                       style={{ width: "100%" }}
                       size="small"
+                      allowClear
                       placeholder="Select approval level"
                       value={dateEntry?.approvalId || undefined}
                       onChange={(value) =>
