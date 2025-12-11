@@ -41,11 +41,55 @@ const LoginSection = ({ currentBranch }) => {
   const handleLogin = async (values) => {
     setLoading(true);
     try {
-      const response = await loginUser({
-        email: values.email,
+      if (!values.email || !values.password) {
+        enqueueSnackbar("Please enter all required fields.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      const input = values.email.trim();
+
+      // Detect Email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+
+      // Detect ERAM ID (supports formats like ERAM/03/002)
+      const isEramId = /^[A-Za-z0-9/-]+$/.test(input);
+
+      if (!isEmail && !isEramId) {
+        enqueueSnackbar("Enter a valid Email or ERAM ID", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      if (values.password.length < 6) {
+        enqueueSnackbar("Password must be at least 6 characters long.", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
+
+      // BUILD PAYLOAD
+      const loginPayload = {
         password: values.password,
         domain: window.location.hostname,
-      }).unwrap();
+      };
+
+      if (isEmail) {
+        loginPayload.email = input;
+      } else {
+        loginPayload.eramId = input; // ⬅ ERAM ID login
+      }
+
+      // API LOGIN CALL
+      const response = await loginUser(loginPayload).unwrap();
 
       if (response.requireOtp) {
         message.info(
@@ -180,19 +224,11 @@ const LoginSection = ({ currentBranch }) => {
             }
             name="email"
             rules={[
-              {
-                required: true,
-                message: "Please enter your email address!",
-              },
-              {
-                type: "email",
-                message: "Please enter a valid email address!",
-              },
             ]}
           >
             <Input
               prefix={<MailOutlined style={{ color: "#da2c46" }} />}
-              placeholder="Enter your email address"
+              placeholder="Enter your email address or Eram ID"
               style={{
                 borderRadius: "8px",
                 padding: "12px",

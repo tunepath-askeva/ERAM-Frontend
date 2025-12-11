@@ -101,17 +101,21 @@ const Login = () => {
         return;
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(values.email)) {
-        enqueueSnackbar("Please enter a valid email address.", {
+      const input = values.email.trim();
+
+      // Detect email format
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+
+      const isEramId = /^[A-Za-z0-9/-]+$/.test(input);
+
+      if (!isEmail && !isEramId) {
+        enqueueSnackbar("Enter a valid Email or ERAM ID", {
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
           autoHideDuration: 3000,
         });
         return;
       }
-
       if (values.password.length < 6) {
         enqueueSnackbar("Password must be at least 6 characters long.", {
           variant: "error",
@@ -121,11 +125,18 @@ const Login = () => {
         return;
       }
 
-      const response = await loginUser({
-        email: values.email,
+      const loginpayload = {
         password: values.password,
         branchId,
-      }).unwrap();
+      };
+
+      if (isEmail) {
+        loginpayload.email = input;
+      } else {
+        loginpayload.eramId = input;
+      }
+
+      const response = await loginUser(loginpayload).unwrap();
 
       if (response.requireOtp) {
         enqueueSnackbar(
@@ -150,7 +161,7 @@ const Login = () => {
         anchorOrigin: { vertical: "top", horizontal: "right" },
         autoHideDuration: 3000,
       });
-      window.location.reload()
+      window.location.reload();
 
       const userRole = response.user.roles;
 
