@@ -25,6 +25,7 @@ import {
   Form,
   message,
   DatePicker,
+  Checkbox,
 } from "antd";
 import {
   SearchOutlined,
@@ -757,7 +758,17 @@ const CompletedCandidates = () => {
           setCandidateToConvert(null);
         }}
         footer={null}
-        width={700}
+        width="90%"
+        style={{
+          top: 20,
+          maxWidth: 1000,
+          margin: "0 auto",
+        }}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+          padding: "24px 16px",
+        }}
       >
         <Form
           form={convertForm}
@@ -773,6 +784,16 @@ const CompletedCandidates = () => {
                 candidateId: candidateToConvert.user._id,
                 customFieldId: candidateToConvert._id,
                 workOrderId: candidateToConvert.workOrder._id,
+                // Convert date objects to ISO strings if needed
+                dateOfJoining: values.dateOfJoining?.toISOString(),
+                lastArrival: values.lastArrival?.toISOString(),
+                iqamaIssueDate: values.iqamaIssueDate?.toISOString(),
+                iqamaExpiryDate: values.iqamaExpiryDate?.toISOString(),
+                iqamaArabicDateOfIssue:
+                  values.iqamaArabicDateOfIssue?.toISOString(),
+                iqamaArabicDateOfExpiry:
+                  values.iqamaArabicDateOfExpiry?.toISOString(),
+                lastWorkingDay: values.lastWorkingDay?.toISOString(),
               };
 
               await convertEmployee(payload).unwrap();
@@ -786,111 +807,416 @@ const CompletedCandidates = () => {
             }
           }}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Full Name"
-                name="fullName"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Date of Join"
-                name="dateOfJoining"
-                rules={[{ required: true }]}
-              >
-                <DatePicker style={{ width: "100%" }} />
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* Mandatory Fields Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Mandatory Information
+            </h3>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Category"
-                name="category"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Assigned Job Title"
-                name="assignedJobTitle"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Full Name"
+                  name="fullName"
+                  rules={[
+                    { required: true, message: "Please enter full name" },
+                  ]}
+                >
+                  <Input placeholder="Enter full name" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Date of Joining"
+                  name="dateOfJoining"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select date of joining",
+                    },
+                  ]}
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select date"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="ERAMID"
-                name="eramId"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Badge No"
-                name="badgeNo"
-                rules={[{ required: true }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Category"
+                  name="category"
+                  rules={[{ required: true, message: "Please enter category" }]}
+                >
+                  <Input placeholder="Enter category" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Assigned Job Title"
+                  name="assignedJobTitle"
+                  rules={[
+                    { required: true, message: "Please enter job title" },
+                  ]}
+                >
+                  <Input placeholder="Enter job title" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Gate Pass ID" name="gatePassId">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Aramco ID" name="aramcoId">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="ERAM ID"
+                  name="eramId"
+                  rules={[{ required: true, message: "Please enter ERAM ID" }]}
+                >
+                  <Input placeholder="Enter ERAM ID" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Official Email Account"
+                  name="officialEmail"
+                  rules={[
+                    { required: true, message: "Please enter official email" },
+                    { type: "email", message: "Please enter a valid email" },
+                  ]}
+                >
+                  <Input placeholder="Enter official email" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Other ID" name="otherId">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Plant ID" name="plantId">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* Optional Basic Fields Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Optional Basic Information
+            </h3>
 
-          <Form.Item label="Official E-Mail Account" name="officialEmail">
-            <Input />
-          </Form.Item>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Badge Number" name="badgeNo">
+                  <Input placeholder="Enter badge number" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Gate Pass ID" name="gatePassId">
+                  <Input placeholder="Enter gate pass ID" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Form.Item
-            label="Basic Asset MGT: Laptop, Vehicle, etc (Reporting and Documentation)"
-            name="basicAssets"
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Aramco ID" name="aramcoId">
+                  <Input placeholder="Enter Aramco ID" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Other ID" name="otherId">
+                  <Input placeholder="Enter other ID" />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Form.Item style={{ textAlign: "right" }}>
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Plant ID" name="plantId">
+                  <Input placeholder="Enter plant ID" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="External Employee Number"
+                  name="externalEmpNo"
+                >
+                  <Input placeholder="Enter external emp no" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* Additional Employee Details Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Additional Employee Details
+            </h3>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Designation" name="designation">
+                  <Input placeholder="Enter designation" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Visa Category" name="visaCategory">
+                  <Input placeholder="Enter visa category" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Employee Group" name="employeeGroup">
+                  <Input placeholder="Enter employee group" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Employee Type" name="employeeType">
+                  <Input placeholder="Enter employee type" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Payroll Group" name="payrollGroup">
+                  <Input placeholder="Enter payroll group" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Sponsor Name" name="sponsorName">
+                  <Input placeholder="Enter sponsor name" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Work Hours" name="workHours">
+                  <Input placeholder="Enter work hours" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Work Days" name="workDays">
+                  <Input placeholder="Enter work days" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Air Ticket Frequency"
+                  name="airTicketFrequency"
+                >
+                  <Input placeholder="Enter air ticket frequency" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Probation Period" name="probationPeriod">
+                  <Input placeholder="Enter probation period" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Period of Contract" name="periodOfContract">
+                  <Input placeholder="Enter contract period" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Work Location" name="workLocation">
+                  <Input placeholder="Enter work location" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Family Status" name="familyStatus">
+                  <Input placeholder="Enter family status" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Last Arrival" name="lastArrival">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select last arrival date"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* Iqama Details Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Iqama Details
+            </h3>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Iqama Issue Date" name="iqamaIssueDate">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select issue date"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Iqama Expiry Date" name="iqamaExpiryDate">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select expiry date"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Iqama Arabic Date of Issue"
+                  name="iqamaArabicDateOfIssue"
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select Arabic issue date"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Iqama Arabic Date of Expiry"
+                  name="iqamaArabicDateOfExpiry"
+                >
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select Arabic expiry date"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* Insurance & Benefits Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Insurance & Benefits
+            </h3>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="GOSI" name="gosi">
+                  <Input placeholder="Enter GOSI number" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Driving License" name="drivingLicense">
+                  <Input placeholder="Enter driving license" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item
+                  label="Medical Policy"
+                  name="medicalPolicy"
+                  valuePropName="checked"
+                >
+                  <Checkbox>Has Medical Policy</Checkbox>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={16}>
+                <Form.Item
+                  label="Medical Policy Number"
+                  name="medicalPolicyNumber"
+                >
+                  <Input placeholder="Enter medical policy number" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Number of Dependents" name="noOfDependent">
+                  <Input
+                    type="number"
+                    placeholder="Enter number of dependents"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Insurance Category" name="insuranceCategory">
+                  <Input placeholder="Enter insurance category" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Class Code" name="classCode">
+                  <Input placeholder="Enter class code" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Asset Allocation" name="assetAllocation">
+                  <Input placeholder="Enter asset allocation" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* Other Information Section */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ color: "#da2c46", marginBottom: 16 }}>
+              Other Information
+            </h3>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Last Working Day" name="lastWorkingDay">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    placeholder="Select last working day"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Last Login Time" name="lastLoginTime">
+                  <Input placeholder="Enter last login time" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="First Time Login"
+                  name="firstTimeLogin"
+                  valuePropName="checked"
+                >
+                  <Checkbox>First Time Login</Checkbox>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              label="Basic Asset Management: Laptop, Vehicle, etc (Reporting and Documentation)"
+              name="basicAssets"
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="Enter asset management details"
+              />
+            </Form.Item>
+          </div>
+
+          {/* Form Actions */}
+          <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>
             <Button
               onClick={() => {
                 setConvertModalVisible(false);
                 convertForm.resetFields();
+                setCandidateToConvert(null);
               }}
               style={{ marginRight: 8 }}
             >
