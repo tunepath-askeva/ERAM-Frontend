@@ -798,6 +798,7 @@ const CompletedCandidates = () => {
 
               await convertEmployee(payload).unwrap();
               message.success("Candidate successfully converted to employee!");
+              refetch();
               setConvertModalVisible(false);
               convertForm.resetFields();
               setCandidateToConvert(null);

@@ -96,6 +96,58 @@ const RecruiterEmployee = () => {
         badgeNo: item.employmentDetails?.badgeNo || "N/A",
         aramcoId: item.employmentDetails?.aramcoId || "N/A",
         officialEmail: item.employmentDetails?.officialEmail || "N/A",
+        otherId: item.employmentDetails?.otherId || "N/A",
+        plantId: item.employmentDetails?.plantId || "N/A",
+        gatePassId: item.employmentDetails?.gatePassId || "N/A",
+        externalEmpNo: item.employmentDetails?.externalEmpNo || "N/A",
+        designation: item.employmentDetails?.designation || "N/A",
+        visaCategory: item.employmentDetails?.visaCategory || "N/A",
+        employeeGroup: item.employmentDetails?.employeeGroup || "N/A",
+        employeeType: item.employmentDetails?.employeeType || "N/A",
+        payrollGroup: item.employmentDetails?.payrollGroup || "N/A",
+        sponsorName: item.employmentDetails?.sponsorName || "N/A",
+        workHours: item.employmentDetails?.workHours || "N/A",
+        workDays: item.employmentDetails?.workDays || "N/A",
+        airTicketFrequency: item.employmentDetails?.airTicketFrequency || "N/A",
+        probationPeriod: item.employmentDetails?.probationPeriod || "N/A",
+        periodOfContract: item.employmentDetails?.periodOfContract || "N/A",
+        workLocation: item.employmentDetails?.workLocation || "N/A",
+        familyStatus: item.employmentDetails?.familyStatus || "N/A",
+        lastArrival: item.employmentDetails?.lastArrival
+          ? new Date(item.employmentDetails.lastArrival).toLocaleDateString()
+          : "N/A",
+        iqamaIssueDate: item.employmentDetails?.iqamaIssueDate
+          ? new Date(item.employmentDetails.iqamaIssueDate).toLocaleDateString()
+          : "N/A",
+        iqamaExpiryDate: item.employmentDetails?.iqamaExpiryDate
+          ? new Date(
+              item.employmentDetails.iqamaExpiryDate
+            ).toLocaleDateString()
+          : "N/A",
+        iqamaArabicDateOfIssue: item.employmentDetails?.iqamaArabicDateOfIssue
+          ? new Date(
+              item.employmentDetails.iqamaArabicDateOfIssue
+            ).toLocaleDateString()
+          : "N/A",
+        iqamaArabicDateOfExpiry: item.employmentDetails?.iqamaArabicDateOfExpiry
+          ? new Date(
+              item.employmentDetails.iqamaArabicDateOfExpiry
+            ).toLocaleDateString()
+          : "N/A",
+        gosi: item.employmentDetails?.gosi || "N/A",
+        drivingLicense: item.employmentDetails?.drivingLicense || "N/A",
+        medicalPolicyNumber:
+          item.employmentDetails?.medicalPolicyNumber || "N/A",
+        medicalPolicy: item.employmentDetails?.medicalPolicy || false,
+        noOfDependent: item.employmentDetails?.noOfDependent || "N/A",
+        insuranceCategory: item.employmentDetails?.insuranceCategory || "N/A",
+        classCode: item.employmentDetails?.classCode || "N/A",
+        assetAllocation: item.employmentDetails?.assetAllocation || "N/A",
+        lastWorkingDay: item.employmentDetails?.lastWorkingDay
+          ? new Date(item.employmentDetails.lastWorkingDay).toLocaleDateString()
+          : "N/A",
+        lastLoginTime: item.employmentDetails?.lastLoginTime || "N/A",
+        firstTimeLogin: item.employmentDetails?.firstTimeLogin || false,
       }));
       setEmployees(transformedEmployees);
       setPagination((prev) => ({
@@ -455,103 +507,467 @@ const RecruiterEmployee = () => {
       </Card>
 
       {/* Employee Profile Drawer */}
+      {/* Employee Profile Drawer */}
       <Drawer
         title={selectedEmployee?.name}
         placement="right"
-        width={window.innerWidth < 768 ? "100%" : 600}
+        width={window.innerWidth < 768 ? "100%" : 700}
         onClose={() => setEmployeeDrawerVisible(false)}
         open={employeeDrawerVisible}
+        extra={
+          <Button
+            type="primary"
+            onClick={() => setEmployeeDrawerVisible(false)}
+            style={{
+              backgroundColor: "#da2c46",
+              borderColor: "#da2c46",
+            }}
+          >
+            Close
+          </Button>
+        }
       >
         {selectedEmployee && (
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 24,
-              }}
-            >
-              <Avatar src={selectedEmployee.avatar} size={64}>
-                {selectedEmployee.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </Avatar>
-              <div style={{ marginLeft: 16 }}>
-                <Title level={4} style={{ marginBottom: 0 }}>
-                  {selectedEmployee.name}
-                  <Button
-                    type="text"
-                    icon={
-                      selectedEmployee.starred ? (
-                        <StarFilled style={{ color: "#faad14" }} />
-                      ) : (
-                        <StarOutlined />
-                      )
-                    }
-                    onClick={() => toggleStar(selectedEmployee.id)}
-                  />
-                </Title>
-                <Text type="secondary">{selectedEmployee.position}</Text>
-                <div style={{ marginTop: 8 }}>
-                  <Tag color={statusConfig[selectedEmployee.status].color}>
-                    {statusConfig[selectedEmployee.status].label}
-                  </Tag>
-                  <Tag
-                    color={
-                      employmentTypeConfig[selectedEmployee.employmentType]
-                        .color
-                    }
-                    style={{ marginLeft: 8 }}
+          <Spin spinning={false}>
+            <div style={{ paddingBottom: 24 }}>
+              {/* Header with Avatar and Basic Info */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 24,
+                  paddingBottom: 24,
+                  borderBottom: "1px solid #f0f0f0",
+                }}
+              >
+                <Avatar src={selectedEmployee.avatar} size={80}>
+                  {selectedEmployee.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </Avatar>
+                <div style={{ marginLeft: 20, flex: 1 }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
-                    {
-                      employmentTypeConfig[selectedEmployee.employmentType]
-                        .label
-                    }
-                  </Tag>
+                    <Title level={4} style={{ marginBottom: 4 }}>
+                      {selectedEmployee.name}
+                    </Title>
+                    <Button
+                      type="text"
+                      icon={
+                        selectedEmployee.starred ? (
+                          <StarFilled style={{ color: "#faad14" }} />
+                        ) : (
+                          <StarOutlined />
+                        )
+                      }
+                      onClick={() => toggleStar(selectedEmployee.id)}
+                    />
+                  </div>
+                  <Text type="secondary">{selectedEmployee.position}</Text>
+                  <div style={{ marginTop: 12 }}>
+                    <Tag color={statusConfig[selectedEmployee.status].color}>
+                      {statusConfig[selectedEmployee.status].label}
+                    </Tag>
+                    <Tag
+                      color={
+                        employmentTypeConfig[selectedEmployee.employmentType]
+                          .color
+                      }
+                      style={{ marginLeft: 8 }}
+                    >
+                      {
+                        employmentTypeConfig[selectedEmployee.employmentType]
+                          .label
+                      }
+                    </Tag>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ marginBottom: 24 }}>
-              <Title level={5}>Contact Information</Title>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <Text>
-                  <MailOutlined style={{ marginRight: 8, ...iconTextStyle }} />
-                  {selectedEmployee.email}
-                </Text>
-                <Text>
-                  <PhoneOutlined style={{ marginRight: 8, ...iconTextStyle }} />
-                  {selectedEmployee.phone}
-                </Text>
-              </div>
-            </div>
+              {/* Contact Information */}
+              <Card
+                size="small"
+                title="Contact Information"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <MailOutlined style={{ color: "#da2c46" }} />
+                      <div>
+                        <Text strong>Email</Text>
+                        <br />
+                        <Text>{selectedEmployee.email}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <PhoneOutlined style={{ color: "#da2c46" }} />
+                      <div>
+                        <Text strong>Phone</Text>
+                        <br />
+                        <Text>{selectedEmployee.phone}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <MailOutlined style={{ color: "#da2c46" }} />
+                      <div>
+                        <Text strong>Official Email</Text>
+                        <br />
+                        <Text>{selectedEmployee.officialEmail || "N/A"}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
 
-            <div style={{ marginBottom: 24 }}>
-              <Title level={5}>Employment Details</Title>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Text strong>Department</Text>
-                  <br />
-                  <Text>{selectedEmployee.department}</Text>
-                </Col>
-                <Col span={12}>
-                  <Text strong>ERAM ID</Text>
-                  <br />
-                  <Text>{selectedEmployee.eramId || "Not specified"}</Text>
-                </Col>
-              </Row>
-              <Row gutter={16} style={{ marginTop: 12 }}>
-                <Col span={12}>
-                  <Text strong>Hire Date</Text>
-                  <br />
-                  <Text>{selectedEmployee.hireDate}</Text>
-                </Col>
-              </Row>
+              {/* Employment Details */}
+              <Card
+                size="small"
+                title="Employment Details"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Work Order</Text>
+                      <br />
+                      <Text>{selectedEmployee.workOrderTitle}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Department / Category</Text>
+                      <br />
+                      <Text>{selectedEmployee.department}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Assigned Job Title</Text>
+                      <br />
+                      <Text>{selectedEmployee.position}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Hire Date</Text>
+                      <br />
+                      <Text>{selectedEmployee.hireDate}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Designation</Text>
+                      <br />
+                      <Text>{selectedEmployee.designation || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Employee Group</Text>
+                      <br />
+                      <Text>{selectedEmployee.employeeGroup || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Employee Type</Text>
+                      <br />
+                      <Text>{selectedEmployee.employeeType || "N/A"}</Text>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* ID Information */}
+              <Card
+                size="small"
+                title="ID Information"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>ERAM ID</Text>
+                      <br />
+                      <Text style={{ fontWeight: 500, color: "#da2c46" }}>
+                        {selectedEmployee.eramId}
+                      </Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Badge Number</Text>
+                      <br />
+                      <Text>{selectedEmployee.badgeNo}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Aramco ID</Text>
+                      <br />
+                      <Text>{selectedEmployee.aramcoId}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Other ID</Text>
+                      <br />
+                      <Text>{selectedEmployee.otherId || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Plant ID</Text>
+                      <br />
+                      <Text>{selectedEmployee.plantId || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Gate Pass ID</Text>
+                      <br />
+                      <Text>{selectedEmployee.gatePassId || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>External Employee No</Text>
+                      <br />
+                      <Text>{selectedEmployee.externalEmpNo || "N/A"}</Text>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Contract & Work Details */}
+              <Card
+                size="small"
+                title="Contract & Work Details"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Work Location</Text>
+                      <br />
+                      <Text>{selectedEmployee.workLocation || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Work Hours</Text>
+                      <br />
+                      <Text>{selectedEmployee.workHours || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Work Days</Text>
+                      <br />
+                      <Text>{selectedEmployee.workDays || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Period of Contract</Text>
+                      <br />
+                      <Text>{selectedEmployee.periodOfContract || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Probation Period</Text>
+                      <br />
+                      <Text>{selectedEmployee.probationPeriod || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Sponsor Name</Text>
+                      <br />
+                      <Text>{selectedEmployee.sponsorName || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Visa Category</Text>
+                      <br />
+                      <Text>{selectedEmployee.visaCategory || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Payroll Group</Text>
+                      <br />
+                      <Text>{selectedEmployee.payrollGroup || "N/A"}</Text>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Iqama Details */}
+              {(selectedEmployee.iqamaIssueDate ||
+                selectedEmployee.iqamaExpiryDate) && (
+                <Card
+                  size="small"
+                  title="Iqama Details"
+                  style={{ marginBottom: 16 }}
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text strong>Iqama Issue Date</Text>
+                        <br />
+                        <Text>{selectedEmployee.iqamaIssueDate || "N/A"}</Text>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text strong>Iqama Expiry Date</Text>
+                        <br />
+                        <Text>{selectedEmployee.iqamaExpiryDate || "N/A"}</Text>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text strong>Iqama Arabic Issue Date</Text>
+                        <br />
+                        <Text>
+                          {selectedEmployee.iqamaArabicDateOfIssue || "N/A"}
+                        </Text>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text strong>Iqama Arabic Expiry Date</Text>
+                        <br />
+                        <Text>
+                          {selectedEmployee.iqamaArabicDateOfExpiry || "N/A"}
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card>
+              )}
+
+              {/* Insurance & Benefits */}
+              <Card
+                size="small"
+                title="Insurance & Benefits"
+                style={{ marginBottom: 16 }}
+              >
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>GOSI</Text>
+                      <br />
+                      <Text>{selectedEmployee.gosi || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Insurance Category</Text>
+                      <br />
+                      <Text>{selectedEmployee.insuranceCategory || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Medical Policy Number</Text>
+                      <br />
+                      <Text>
+                        {selectedEmployee.medicalPolicyNumber || "N/A"}
+                      </Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Number of Dependents</Text>
+                      <br />
+                      <Text>{selectedEmployee.noOfDependent || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Air Ticket Frequency</Text>
+                      <br />
+                      <Text>
+                        {selectedEmployee.airTicketFrequency || "N/A"}
+                      </Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Family Status</Text>
+                      <br />
+                      <Text>{selectedEmployee.familyStatus || "N/A"}</Text>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+
+              {/* Other Information */}
+              <Card size="small" title="Other Information">
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Last Arrival</Text>
+                      <br />
+                      <Text>{selectedEmployee.lastArrival || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Last Working Day</Text>
+                      <br />
+                      <Text>{selectedEmployee.lastWorkingDay || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>First Time Login</Text>
+                      <br />
+                      <Text>
+                        {selectedEmployee.firstTimeLogin ? "Yes" : "No"}
+                      </Text>
+                    </div>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <div>
+                      <Text strong>Last Login Time</Text>
+                      <br />
+                      <Text>{selectedEmployee.lastLoginTime || "N/A"}</Text>
+                    </div>
+                  </Col>
+                  <Col xs={24}>
+                    <div>
+                      <Text strong>Basic Assets Management</Text>
+                      <br />
+                      <Text style={{ whiteSpace: "pre-line" }}>
+                        {selectedEmployee.summary || "No information provided"}
+                      </Text>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
             </div>
-          </div>
+          </Spin>
         )}
       </Drawer>
+
       <style jsx>{`
         .ant-table-thead > tr > th {
           background-color: #fafafa !important;

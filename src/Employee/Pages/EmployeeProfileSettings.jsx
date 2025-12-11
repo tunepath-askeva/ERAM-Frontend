@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tabs, message } from "antd";
-import { UserOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { 
+  UserOutlined, 
+  SafetyCertificateOutlined,
+  IdcardOutlined,
+  FileTextOutlined,
+  TagOutlined
+} from "@ant-design/icons";
 import { useGetEmployeeProfileQuery } from "../../Slices/Employee/EmployeeApis";
 import EmployeeProfileHeader from "../Components/EmployeeProfileHeader";
 import PersonalInformationCard from "../Components/PersonalInformationCard";
 import ProfileCompletionCard from "../Components/ProfileCompletetionCard";
 import EmploymentDetailsCard from "../Components/EmploymentDetailsCard";
 import SecurityContent from "../Components/SecurityContent";
+import SkillsLanguagesCard from "../Components/SkillsLanguagesCard";
+import DocumentsCertificatesCard from "../Components/DocumentsCertificatesCard";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
 const { TabPane } = Tabs;
@@ -28,27 +36,40 @@ const EmployeeProfileSettings = () => {
     if (!employeeData) return 0;
 
     const requiredFields = [
+      // Personal Info
       employeeData.firstName,
       employeeData.lastName,
       employeeData.email,
       employeeData.phone,
-      employeeData.employmentDetails?.assignedJobTitle || employeeData.title,
-      employeeData.employmentDetails?.eramId || employeeData.eramId,
-      employeeData.nationality,
-      employeeData.image,
-      employeeData.fullName,
-      employeeData.middleName,
-      employeeData.location,
-      employeeData.city,
-      employeeData.country,
-      employeeData.maritalStatus,
-      employeeData.bloodGroup,
-      employeeData.gender,
+      employeeData.dob,
       employeeData.age,
+      employeeData.gender,
+      employeeData.nationality,
+      employeeData.countryOfBirth,
+      
+      // Employment Details
+      employeeData.employmentDetails?.assignedJobTitle,
+      employeeData.employmentDetails?.eramId,
+      employeeData.employmentDetails?.officialEmail,
+      employeeData.employmentDetails?.dateOfJoining,
+      employeeData.employmentDetails?.category,
+      employeeData.employmentDetails?.designation,
+      employeeData.employmentDetails?.visaCategory,
+      
+      // Documents
       employeeData.passportNo,
+      employeeData.iqamaNo,
+      
+      // Arrays/Objects
       employeeData.skills?.length > 0 ? "skills" : null,
+      employeeData.languages?.length > 0 ? "languages" : null,
       employeeData.education?.length > 0 ? "education" : null,
       employeeData.workExperience?.length > 0 ? "workExperience" : null,
+      employeeData.certificates?.length > 0 ? "certificates" : null,
+      
+      // Profile
+      employeeData.image,
+      employeeData.profileSummary,
     ];
 
     const filledFields = requiredFields.filter(
@@ -62,6 +83,8 @@ const EmployeeProfileSettings = () => {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
+      // Here you would make your API call to update the profile
+      // For now, simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setEmployeeData((prevData) => ({
@@ -69,22 +92,8 @@ const EmployeeProfileSettings = () => {
         ...values,
         employmentDetails: {
           ...prevData.employmentDetails,
-          ...Object.keys(values).reduce((acc, key) => {
-            if (
-              [
-                "officialEmail",
-                "badgeNo",
-                "gatePassId",
-                "aramcoId",
-                "otherId",
-                "plantId",
-              ].includes(key)
-            ) {
-              acc[key] = values[key];
-            }
-            return acc;
-          }, {}),
-        },
+          ...(values.employmentDetails || {})
+        }
       }));
 
       message.success("Profile updated successfully!");
@@ -100,6 +109,7 @@ const EmployeeProfileSettings = () => {
   };
 
   const handleSaveAll = () => {
+    // This would collect data from all forms and submit at once
     message.success("All changes saved successfully!");
   };
 
@@ -148,6 +158,14 @@ const EmployeeProfileSettings = () => {
                 employeeData={employeeData}
                 loading={loading}
                 onUpdate={handleProfileUpdate}
+              />
+              <SkillsLanguagesCard
+                employeeData={employeeData}
+                loading={loading}
+                onUpdate={handleProfileUpdate}
+              />
+              <DocumentsCertificatesCard
+                employeeData={employeeData}
               />
             </TabPane>
             <TabPane

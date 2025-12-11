@@ -13,21 +13,25 @@ import {
   Modal,
   Upload,
   message,
-  Card 
+  Card,
+  DatePicker
 } from "antd";
 import {
   UserOutlined,
   EditOutlined,
   CameraOutlined,
   UploadOutlined,
-  ProjectOutlined,
+  PhoneOutlined,
+  CalendarOutlined,
+  EnvironmentOutlined,
   IdcardOutlined,
-  NumberOutlined,
   FlagOutlined,
   MailOutlined
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 const { Text } = Typography;
+const { TextArea } = Input;
 
 const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
   const [form] = Form.useForm();
@@ -53,16 +57,36 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     }
   };
 
-  // Map API response to form fields
+  // Format date for DatePicker
+  const formatDate = (dateString) => {
+    return dateString ? dayjs(dateString) : null;
+  };
+
   const formInitialValues = {
     firstName: employeeData?.firstName || '',
     middleName: employeeData?.middleName || '',
     lastName: employeeData?.lastName || '',
     fullName: employeeData?.fullName || '',
-    eramId: employeeData?.employmentDetails?.eramId || employeeData?.eramId || '',
+    eramId: employeeData?.employmentDetails?.eramId || '',
     nationality: employeeData?.nationality || '',
-    assignedJobTitle: employeeData?.employmentDetails?.assignedJobTitle || employeeData?.title || '',
+    assignedJobTitle: employeeData?.employmentDetails?.assignedJobTitle || '',
     email: employeeData?.email || '',
+    phone: employeeData?.phone || '',
+    dob: formatDate(employeeData?.dob),
+    age: employeeData?.age || '',
+    gender: employeeData?.gender || '',
+    bloodGroup: employeeData?.bloodGroup || '',
+    maritalStatus: employeeData?.maritalStatus || '',
+    religion: employeeData?.religion || '',
+    countryOfBirth: employeeData?.countryOfBirth || '',
+    passportNo: employeeData?.passportNo || '',
+    passportPlaceOfIssue: employeeData?.passportPlaceOfIssue || '',
+    iqamaNo: employeeData?.iqamaNo || '',
+    visaStatus: Array.isArray(employeeData?.visaStatus) 
+      ? employeeData.visaStatus[0] || ''
+      : employeeData?.visaStatus || '',
+    totalExperienceYears: employeeData?.totalExperienceYears || '',
+    profileSummary: employeeData?.profileSummary || '',
   };
 
   return (
@@ -132,28 +156,29 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
                   {employeeData?.fullName || `${employeeData?.firstName || ''} ${employeeData?.lastName || ''}`.trim()}
                 </Text>
                 <Text type="secondary">
-                  {employeeData?.employmentDetails?.assignedJobTitle || employeeData?.title}
+                  {employeeData?.employmentDetails?.assignedJobTitle}
                 </Text>
                 <br />
                 <Tag color="blue" style={{ marginTop: 4 }}>
-                  ID: {employeeData?.employmentDetails?.eramId || employeeData?.eramId}
+                  ID: {employeeData?.employmentDetails?.eramId}
                 </Tag>
               </div>
             </Col>
 
-            <Col xs={24} sm={12}>
+            {/* Basic Information */}
+            <Col xs={24} sm={8}>
               <Form.Item label="First Name" name="firstName">
                 <Input prefix={<UserOutlined />} disabled={!editMode} />
               </Form.Item>
             </Col>
 
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Middle Name" name="middleName">
                 <Input prefix={<UserOutlined />} disabled={!editMode} />
               </Form.Item>
             </Col>
 
-            <Col xs={24} sm={12}>
+            <Col xs={24} sm={8}>
               <Form.Item label="Last Name" name="lastName">
                 <Input prefix={<UserOutlined />} disabled={!editMode} />
               </Form.Item>
@@ -171,6 +196,79 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
               </Form.Item>
             </Col>
 
+            {/* Contact Information */}
+            <Col xs={24} sm={12}>
+              <Form.Item label="Email" name="email">
+                <Input prefix={<MailOutlined />} disabled />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item label="Phone" name="phone">
+                <Input prefix={<PhoneOutlined />} disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            {/* Personal Details */}
+            <Col xs={24} sm={8}>
+              <Form.Item label="Date of Birth" name="dob">
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  disabled={!editMode}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Age" name="age">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Gender" name="gender">
+                <Select disabled={!editMode}>
+                  <Select.Option value="Male">Male</Select.Option>
+                  <Select.Option value="Female">Female</Select.Option>
+                  <Select.Option value="Others">Others</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Blood Group" name="bloodGroup">
+                <Select disabled={!editMode}>
+                  <Select.Option value="A+">A+</Select.Option>
+                  <Select.Option value="A-">A-</Select.Option>
+                  <Select.Option value="B+">B+</Select.Option>
+                  <Select.Option value="B-">B-</Select.Option>
+                  <Select.Option value="O+">O+</Select.Option>
+                  <Select.Option value="O-">O-</Select.Option>
+                  <Select.Option value="AB+">AB+</Select.Option>
+                  <Select.Option value="AB-">AB-</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Marital Status" name="maritalStatus">
+                <Select disabled={!editMode}>
+                  <Select.Option value="Single">Single</Select.Option>
+                  <Select.Option value="Married">Married</Select.Option>
+                  <Select.Option value="Divorced">Divorced</Select.Option>
+                  <Select.Option value="Widowed">Widowed</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Form.Item label="Religion" name="religion">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            {/* Nationality & Documents */}
             <Col xs={24} sm={12}>
               <Form.Item label="Nationality" name="nationality">
                 <Input prefix={<FlagOutlined />} disabled={!editMode} />
@@ -178,14 +276,50 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
             </Col>
 
             <Col xs={24} sm={12}>
-              <Form.Item label="Job Title" name="assignedJobTitle">
-                <Input disabled />
+              <Form.Item label="Country of Birth" name="countryOfBirth">
+                <Input prefix={<EnvironmentOutlined />} disabled={!editMode} />
               </Form.Item>
             </Col>
 
             <Col xs={24} sm={12}>
-              <Form.Item label="Email" name="email">
-                <Input prefix={<MailOutlined />} disabled />
+              <Form.Item label="Passport Number" name="passportNo">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item label="Passport Place of Issue" name="passportPlaceOfIssue">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item label="Iqama Number" name="iqamaNo">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item label="Visa Status" name="visaStatus">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            {/* Experience */}
+            <Col xs={24} sm={12}>
+              <Form.Item label="Total Experience" name="totalExperienceYears">
+                <Input disabled={!editMode} />
+              </Form.Item>
+            </Col>
+
+            {/* Profile Summary */}
+            <Col span={24}>
+              <Form.Item label="Profile Summary" name="profileSummary">
+                <TextArea
+                  rows={4}
+                  disabled={!editMode}
+                  placeholder="Brief summary about yourself"
+                />
               </Form.Item>
             </Col>
           </Row>
