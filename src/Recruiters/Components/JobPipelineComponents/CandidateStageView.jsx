@@ -119,10 +119,16 @@ const CandidateStageView = ({
     );
 
     const stages = processedJobData.workOrder.pipelineStageTimeline;
-    const currentIndex = stages.findIndex(
-      (stage) => stage.stageId === targetStageId
-    );
-    const isLastStage = currentIndex === stages.length - 1;
+    const stageProgressIds =
+      candidate.stageProgress?.map((sp) => sp.stageId) || [];
+    const remainingStages = stages.filter((stage) => {
+      const notInProgress = !stageProgressIds.includes(stage.stageId);
+      const notCurrentStage = stage.stageId !== targetStageId;
+      return notInProgress && notCurrentStage;
+    });
+
+    const isLastStage = remainingStages.length === 0; // TRUE only if NO remaining stages
+
     const isCurrentStage = candidate.currentStageId === targetStageId;
 
     const checkApprovalCompleted = () => {

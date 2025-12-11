@@ -216,12 +216,39 @@ const RecruiterJobPipeline = () => {
 
     const currentStageId =
       activeStage || candidate.currentStageId || candidate.currentStage;
-    const nextStageId = getNextStageId(currentStageId);
-    setTargetStage(nextStageId);
-    setSelectedNextStage(nextStageId);
 
     const nextStages = getAllNextStages(currentStageId);
     setAvailableNextStages(nextStages);
+
+    // Get the first available next stage based on stage order (the sequential next stage)
+    let defaultNextStage = null;
+
+    if (nextStages.length > 0) {
+      // For work order pipeline, find the stage with the lowest stageOrder
+      const isTagged = !!candidate.tagPipelineId;
+
+      if (!isTagged) {
+        // Get current stage's order
+        const currentStageData =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (s) => s.stageId === currentStageId
+          );
+        const currentStageOrder = currentStageData?.stageOrder ?? -1;
+
+        // Find the next stage in sequential order (lowest stageOrder greater than current)
+        const sortedNextStages = [...nextStages].sort(
+          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+        );
+
+        defaultNextStage = sortedNextStages[0]?.stageId || null;
+      } else {
+        // For tagged pipeline, use the first stage in the list
+        defaultNextStage = nextStages[0]?.stageId || null;
+      }
+    }
+
+    setTargetStage(defaultNextStage);
+    setSelectedNextStage(defaultNextStage);
     setIsMoveModalVisible(true);
   };
 
@@ -376,45 +403,50 @@ const RecruiterJobPipeline = () => {
       allStages = Array.from(stagesMap.values()).sort(
         (a, b) => a.order - b.order
       );
+
+      // Find current stage index
+      const currentIndex = allStages.findIndex(
+        (s) => s.stageId === currentStageId
+      );
+
+      if (currentIndex < 0 || currentIndex >= allStages.length - 1) {
+        return [];
+      }
+
+      // Get all stages after current, excluding completed ones
+      const nextStages = allStages
+        .slice(currentIndex + 1)
+        .filter((stage) => !stage.isCompleted)
+        .map(({ order, isCompleted, ...stage }) => stage);
+
+      return nextStages;
     } else {
-      // For normal pipeline: use pipelineStageTimeline
+      // For work order pipeline - show ALL stages not yet in stageProgress
       const allPipelineStages =
         processedJobData.workOrder?.pipelineStageTimeline || [];
 
       if (allPipelineStages.length === 0) return [];
 
-      const completedStageIds =
-        currentCandidate.stageProgress
-          ?.filter((sp) => sp.stageStatus === "approved")
-          ?.map((sp) => sp.stageId) || [];
+      // Get all stage IDs that exist in stageProgress
+      const stageProgressIds =
+        currentCandidate.stageProgress?.map((sp) => sp.stageId) || [];
 
-      allStages = [...allPipelineStages]
+      // Return ALL stages that are NOT in stageProgress (excluding current)
+      const nextStages = allPipelineStages
+        .filter((stage) => {
+          const notInProgress = !stageProgressIds.includes(stage.stageId);
+          const notCurrentStage = stage.stageId !== currentStageId;
+          return notInProgress && notCurrentStage;
+        })
         .sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0))
-        .map((stage, index) => ({
+        .map((stage) => ({
           stageId: stage.stageId,
           stageName: stage.stageName,
-          stageOrder: stage.stageOrder !== undefined ? stage.stageOrder : index,
-          order: index,
-          isCompleted: completedStageIds.includes(stage.stageId),
+          stageOrder: stage.stageOrder,
         }));
+
+      return nextStages;
     }
-
-    // Find current stage index
-    const currentIndex = allStages.findIndex(
-      (s) => s.stageId === currentStageId
-    );
-
-    if (currentIndex < 0 || currentIndex >= allStages.length - 1) {
-      return [];
-    }
-
-    // Get all stages after current, excluding completed ones
-    const nextStages = allStages
-      .slice(currentIndex + 1)
-      .filter((stage) => !stage.isCompleted)
-      .map(({ order, isCompleted, ...stage }) => stage);
-
-    return nextStages;
   };
 
   const getReviewerIdForStage = (stageId) => {

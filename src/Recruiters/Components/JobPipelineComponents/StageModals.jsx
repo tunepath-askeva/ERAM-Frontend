@@ -89,6 +89,32 @@ const StageModals = ({
   const [form] = Form.useForm();
   const navigate = useNavigate();
   // const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
+
+  const isActualLastStage = (stageId) => {
+    if (!processedJobData || !stageId || !selectedCandidate) return false;
+
+    const allPipelineStages =
+      processedJobData.workOrder?.pipelineStageTimeline || [];
+    if (allPipelineStages.length === 0) return false;
+
+    // Get all stage IDs that exist in stageProgress
+    const stageProgressIds =
+      selectedCandidate.stageProgress?.map((sp) => sp.stageId) || [];
+
+    // Get all stages that are NOT in stageProgress (excluding the selected next stage itself)
+    const remainingStages = allPipelineStages.filter((stage) => {
+      const notInProgress = !stageProgressIds.includes(stage.stageId);
+      const notSelectedStage = stage.stageId !== stageId;
+      const notCurrentStage =
+        stage.stageId !==
+        (selectedCandidate.currentStageId || selectedCandidate.currentStage);
+      return notInProgress && notSelectedStage && notCurrentStage;
+    });
+
+    // It's the last stage ONLY if there are no remaining stages after moving to this stage
+    return remainingStages.length === 0;
+  };
+
   const confirmMoveCandidate = async () => {
     try {
       const values = await form.validateFields();
@@ -108,12 +134,28 @@ const StageModals = ({
 
       const isTagged = !!selectedCandidate.tagPipelineId;
       const selectedNextStageId = values.nextStageId;
-      const isLastStage = !selectedNextStageId;
+
+      // Check if this is the last stage based on available next stages
+      const isLastStage =
+        availableNextStages.length === 0 ||
+        (selectedNextStageId && isActualLastStage(selectedNextStageId));
 
       let isStageOrderChanged = false;
-      if (!isLastStage) {
-        const defaultNextStageId = getNextStageId(currentStageId);
-        isStageOrderChanged = selectedNextStageId !== defaultNextStageId;
+      if (!isLastStage && selectedNextStageId) {
+        const currentStageData =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (s) => s.stageId === currentStageId
+          );
+        const currentStageOrder = currentStageData?.stageOrder ?? -1;
+
+        const selectedStageData =
+          processedJobData.workOrder?.pipelineStageTimeline?.find(
+            (s) => s.stageId === selectedNextStageId
+          );
+        const selectedStageOrder = selectedStageData?.stageOrder ?? -1;
+
+        const immediateNextStageOrder = currentStageOrder + 1;
+        isStageOrderChanged = selectedStageOrder !== immediateNextStageOrder;
       }
 
       const currentStageProgress = selectedCandidate.stageProgress.find(
@@ -175,7 +217,6 @@ const StageModals = ({
             (doc) => doc.documentName || doc.fileName
           );
 
-          // Check if ALL base required documents have been uploaded
           const allDocsUploaded = uniqueRequiredDocuments.every((requiredDoc) =>
             uploadedDocNames.includes(requiredDoc)
           );
@@ -213,11 +254,11 @@ const StageModals = ({
         isFinished: isLastStage,
       };
 
-      if (!isLastStage) {
+      if (!isLastStage && selectedNextStageId) {
         payload.nextStageId = selectedNextStageId;
       }
 
-      if (!isTagged && !isLastStage) {
+      if (!isTagged && !isLastStage && selectedNextStageId) {
         const selectedStage =
           processedJobData.workOrder?.pipelineStageTimeline?.find(
             (stage) => stage.stageId === selectedNextStageId
@@ -232,7 +273,7 @@ const StageModals = ({
           selectedCandidate.pipelineCandidateId || selectedCandidate._id;
       }
 
-      const result = await moveToNextStage(payload).unwrap();
+      await moveToNextStage(payload).unwrap();
 
       message.success(
         isLastStage
@@ -240,29 +281,32 @@ const StageModals = ({
           : "Candidate moved to next stage successfully"
       );
 
-      if (isLastStage) {
-        navigate("/recruiter/completed-candidates");
-      }
-
+      // Close modal immediately
       setIsMoveModalVisible(false);
       form.resetFields();
 
-      // THEN REFRESH - Add await here
-      await refetch();
-      if (refreshData) {
-        await refreshData();
+      if (isLastStage) {
+        navigate("/recruiter/completed-candidates");
+        return;
       }
 
-      // RESET STATE AFTER REFRESH
+      // Update active stage immediately before refresh
+      if (setActiveStage && selectedNextStageId) {
+        setActiveStage(selectedNextStageId);
+      }
+
+      // Aggressive refetch strategy
+      await Promise.all([refetch(), refreshData?.()]);
+
+      // Small delay and refetch again to ensure backend sync
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await Promise.all([refetch(), refreshData?.()]);
+
+      // Reset state after successful refresh
       setSelectedCandidate(null);
       setReviewerComments("");
       setSelectedNextStage(null);
       setAvailableNextStages([]);
-
-      // Update active stage if needed
-      if (setActiveStage && !isLastStage) {
-        setActiveStage(selectedNextStageId);
-      }
     } catch (error) {
       if (error.errorFields) {
         return;
@@ -446,7 +490,8 @@ const StageModals = ({
     <>
       <Modal
         title={
-          !getNextStageId(selectedCandidate?.currentStage)
+          availableNextStages.length === 0 ||
+          (selectedNextStage && isActualLastStage(selectedNextStage))
             ? "Finish Candidate Process"
             : "Move Candidate to Next Stage"
         }
@@ -459,7 +504,8 @@ const StageModals = ({
           setAvailableNextStages([]);
         }}
         okText={
-          !getNextStageId(selectedCandidate?.currentStage)
+          availableNextStages.length === 0 ||
+          (selectedNextStage && isActualLastStage(selectedNextStage))
             ? "Confirm Finish"
             : "Confirm Move"
         }
@@ -473,62 +519,68 @@ const StageModals = ({
           <Form
             form={form}
             layout="vertical"
-            initialValues={{ reviewerComments }}
+            initialValues={{
+              reviewerComments,
+              nextStageId: selectedNextStage,
+            }}
           >
             <Form.Item label="Candidate">
               <Input value={selectedCandidate.name} disabled />
             </Form.Item>
             <Form.Item label="Current Stage">
               <Input
-                value={getStageName(selectedCandidate.currentStage)}
+                value={getStageName(
+                  selectedCandidate.currentStageId ||
+                    selectedCandidate.currentStage
+                )}
                 disabled
               />
             </Form.Item>
 
-            {!getNextStageId(selectedCandidate?.currentStage) ? (
+            {availableNextStages.length === 0 ? (
               <Form.Item label="Action">
                 <Input value="Finish Process" disabled />
-              </Form.Item>
-            ) : availableNextStages.length > 0 ? ( // ADD THIS CHECK
-              <Form.Item label="Next Stage">
-                <Input value={getStageName(targetStage)} disabled />
               </Form.Item>
             ) : (
-              <Form.Item label="Action">
-                <Input value="Finish Process" disabled />
-              </Form.Item>
-            )}
+              <>
+                {selectedNextStage && isActualLastStage(selectedNextStage) && (
+                  <Form.Item label="Next Stage (Final Stage)">
+                    <Input value={getStageName(selectedNextStage)} disabled />
+                  </Form.Item>
+                )}
 
-            {availableNextStages.length > 0 && ( // ADD LENGTH CHECK HERE TOO
-              <Form.Item
-                label="Select Next Stage"
-                name="nextStageId"
-                initialValue={getNextStageId(selectedCandidate.currentStage)}
-                rules={[
-                  {
-                    required: availableNextStages.length > 0,
-                    message: "Please select next stage",
-                  },
-                ]}
-              >
-                <Select
-                  placeholder="Select stage to move to"
-                  onChange={(value) => setSelectedNextStage(value)}
+                <Form.Item
+                  label="Select Next Stage"
+                  name="nextStageId"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select next stage",
+                    },
+                  ]}
                 >
-                  {availableNextStages.map((stage) => (
-                    <Option key={stage.stageId} value={stage.stageId}>
-                      {stage.stageName}
-                      {stage.stageOrder !== undefined &&
-                        ` (Order: ${stage.stageOrder})`}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+                  <Select
+                    placeholder="Select stage to move to"
+                    value={selectedNextStage}
+                    onChange={(value) => setSelectedNextStage(value)}
+                  >
+                    {availableNextStages.map((stage) => (
+                      <Option key={stage.stageId} value={stage.stageId}>
+                        {stage.stageName}
+                        {stage.stageOrder !== undefined &&
+                          ` (Order: ${stage.stageOrder})`}
+                        {isActualLastStage(stage.stageId) && " - Final Stage"}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </>
             )}
 
             <Form.Item
               label={
-                !getNextStageId(selectedCandidate.currentStage)
+                availableNextStages.length === 0 ||
+                (selectedNextStage && isActualLastStage(selectedNextStage))
                   ? "Completion Comments"
                   : "Move Comments"
               }
@@ -536,16 +588,19 @@ const StageModals = ({
               rules={[
                 {
                   required: true,
-                  message: !getNextStageId(selectedCandidate.currentStage)
-                    ? "Please enter completion comments"
-                    : "Please enter comments for the move",
+                  message:
+                    availableNextStages.length === 0 ||
+                    (selectedNextStage && isActualLastStage(selectedNextStage))
+                      ? "Please enter completion comments"
+                      : "Please enter comments for the move",
                 },
               ]}
             >
               <TextArea
                 rows={4}
                 placeholder={
-                  !getNextStageId(selectedCandidate.currentStage)
+                  availableNextStages.length === 0 ||
+                  (selectedNextStage && isActualLastStage(selectedNextStage))
                     ? "Enter any final comments about this candidate"
                     : "Enter any comments for the next stage reviewer"
                 }
