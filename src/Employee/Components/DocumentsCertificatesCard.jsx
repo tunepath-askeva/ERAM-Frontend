@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   List,
@@ -7,25 +7,65 @@ import {
   Space,
   Tag,
   Upload,
-  message
+  message,
+  Modal,
 } from "antd";
 import {
   FileTextOutlined,
   DownloadOutlined,
   EyeOutlined,
-  UploadOutlined
+  UploadOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 
 const { Text, Title } = Typography;
 
-const DocumentsCertificatesCard = ({ employeeData }) => {
+const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
+  const [fileList, setFileList] = useState([]);
+
   const handleDownload = (fileUrl, fileName) => {
-    window.open(fileUrl, '_blank');
+    window.open(fileUrl, "_blank");
   };
 
-  const handleUpload = ({ file, fileList }) => {
+  const handleUpload = ({ file, fileList: newFileList }) => {
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error("File must be smaller than 5MB!");
+      return;
+    }
+
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+      return;
+    }
+
+    setFileList(newFileList);
+
+    // Pass the files to parent component
+    if (onCertificatesChange) {
+      onCertificatesChange(newFileList);
+    }
+
     if (file.status === "done") {
       message.success(`${file.name} uploaded successfully`);
+    }
+  };
+
+  const handleRemove = (file) => {
+    const newFileList = fileList.filter((item) => item.uid !== file.uid);
+    setFileList(newFileList);
+
+    if (onCertificatesChange) {
+      onCertificatesChange(newFileList);
     }
   };
 
@@ -44,13 +84,11 @@ const DocumentsCertificatesCard = ({ employeeData }) => {
       <div style={{ marginBottom: 16 }}>
         <Upload
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-          customRequest={({ file, onSuccess }) => {
-            setTimeout(() => {
-              onSuccess("ok");
-            }, 0);
-          }}
+          fileList={fileList}
+          beforeUpload={() => false} // Prevent auto upload
           onChange={handleUpload}
-          showUploadList={false}
+          onRemove={handleRemove}
+          multiple
         >
           <Button
             type="primary"
@@ -75,26 +113,36 @@ const DocumentsCertificatesCard = ({ employeeData }) => {
                 <Button
                   type="link"
                   icon={<EyeOutlined />}
-                  onClick={() => handleDownload(certificate.fileUrl, certificate.fileName)}
+                  onClick={() =>
+                    handleDownload(certificate.fileUrl, certificate.fileName)
+                  }
                 >
                   View
                 </Button>,
                 <Button
                   type="link"
                   icon={<DownloadOutlined />}
-                  onClick={() => handleDownload(certificate.fileUrl, certificate.fileName)}
+                  onClick={() =>
+                    handleDownload(certificate.fileUrl, certificate.fileName)
+                  }
                 >
                   Download
-                </Button>
+                </Button>,
+              
               ]}
             >
               <List.Item.Meta
-                avatar={<FileTextOutlined style={{ fontSize: "24px", color: "#da2c46" }} />}
+                avatar={
+                  <FileTextOutlined
+                    style={{ fontSize: "24px", color: "#da2c46" }}
+                  />
+                }
                 title={<Text strong>{certificate.fileName}</Text>}
                 description={
                   <Space direction="vertical" size={2}>
                     <Text type="secondary">
-                      Uploaded: {new Date(certificate.uploadedAt).toLocaleDateString()}
+                      Uploaded:{" "}
+                      {new Date(certificate.uploadedAt).toLocaleDateString()}
                     </Text>
                     <Tag color="blue">Certificate</Tag>
                   </Space>
@@ -105,7 +153,9 @@ const DocumentsCertificatesCard = ({ employeeData }) => {
         />
       ) : (
         <div style={{ textAlign: "center", padding: "40px 0" }}>
-          <FileTextOutlined style={{ fontSize: "48px", color: "#d9d9d9", marginBottom: 16 }} />
+          <FileTextOutlined
+            style={{ fontSize: "48px", color: "#d9d9d9", marginBottom: 16 }}
+          />
           <Title level={5} type="secondary">
             No documents uploaded yet
           </Title>

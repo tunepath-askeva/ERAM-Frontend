@@ -554,6 +554,13 @@ export const employeeApi = createApi({
         body: payload,
       }),
     }),
+    updateEmployeeProfile: builder.mutation({
+      query: (formData) => ({
+        url: "/emp-profile",
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -610,4 +617,5 @@ export const {
   useGetEmployeeAdminDashboardQuery,
   useBulkNotifyExpiredDocumentsMutation,
   useSingleNotifyExpiredDocumentMutation,
+  useUpdateEmployeeProfileMutation,
 } = employeeApi;

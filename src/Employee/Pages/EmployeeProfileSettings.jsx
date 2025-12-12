@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tabs, message } from "antd";
-import { 
-  UserOutlined, 
+import { Card, Tabs, message, Upload } from "antd";
+import {
+  UserOutlined,
   SafetyCertificateOutlined,
-  IdcardOutlined,
-  FileTextOutlined,
-  TagOutlined
+  CameraOutlined,
 } from "@ant-design/icons";
-import { useGetEmployeeProfileQuery } from "../../Slices/Employee/EmployeeApis";
+import {
+  useGetEmployeeProfileQuery,
+  useUpdateEmployeeProfileMutation,
+} from "../../Slices/Employee/EmployeeApis";
 import EmployeeProfileHeader from "../Components/EmployeeProfileHeader";
 import PersonalInformationCard from "../Components/PersonalInformationCard";
 import ProfileCompletionCard from "../Components/ProfileCompletetionCard";
@@ -16,15 +17,19 @@ import SecurityContent from "../Components/SecurityContent";
 import SkillsLanguagesCard from "../Components/SkillsLanguagesCard";
 import DocumentsCertificatesCard from "../Components/DocumentsCertificatesCard";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import EducationCard from "../Components/EducationCard";
+import WorkExperienceCard from "../Components/WorkExperienceCard";
 
 const { TabPane } = Tabs;
 
 const EmployeeProfileSettings = () => {
   const [activeTab, setActiveTab] = useState("profile");
-  const [loading, setLoading] = useState(false);
   const [employeeData, setEmployeeData] = useState(null);
+  const [certificateFiles, setCertificateFiles] = useState([]);
 
   const { data, error, isLoading, refetch } = useGetEmployeeProfileQuery();
+  const [updateProfile, { isLoading: isUpdating }] =
+    useUpdateEmployeeProfileMutation();
 
   useEffect(() => {
     if (data && data.employee) {
@@ -46,7 +51,7 @@ const EmployeeProfileSettings = () => {
       employeeData.gender,
       employeeData.nationality,
       employeeData.countryOfBirth,
-      
+
       // Employment Details
       employeeData.employmentDetails?.assignedJobTitle,
       employeeData.employmentDetails?.eramId,
@@ -55,18 +60,18 @@ const EmployeeProfileSettings = () => {
       employeeData.employmentDetails?.category,
       employeeData.employmentDetails?.designation,
       employeeData.employmentDetails?.visaCategory,
-      
+
       // Documents
       employeeData.passportNo,
       employeeData.iqamaNo,
-      
+
       // Arrays/Objects
       employeeData.skills?.length > 0 ? "skills" : null,
       employeeData.languages?.length > 0 ? "languages" : null,
       employeeData.education?.length > 0 ? "education" : null,
       employeeData.workExperience?.length > 0 ? "workExperience" : null,
       employeeData.certificates?.length > 0 ? "certificates" : null,
-      
+
       // Profile
       employeeData.image,
       employeeData.profileSummary,
@@ -81,26 +86,153 @@ const EmployeeProfileSettings = () => {
   };
 
   const handleProfileUpdate = async (values) => {
-    setLoading(true);
     try {
-      // Here you would make your API call to update the profile
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const formData = new FormData();
 
-      setEmployeeData((prevData) => ({
-        ...prevData,
-        ...values,
-        employmentDetails: {
-          ...prevData.employmentDetails,
-          ...(values.employmentDetails || {})
+      // Add basic fields
+      const fields = [
+        "firstName",
+        "middleName",
+        "lastName",
+        "fullName",
+        "phone",
+        "dob",
+        "age",
+        "gender",
+        "bloodGroup",
+        "maritalStatus",
+        "religion",
+        "nationality",
+        "countryOfBirth",
+        "passportNo",
+        "passportPlaceOfIssue",
+        "iqamaNo",
+        "totalExperienceYears",
+        "profileSummary",
+      ];
+
+      fields.forEach((field) => {
+        const value = values[field];
+        if (value !== undefined && value !== null && value !== "") {
+          // Handle dates
+          if (field === "dob" && value) {
+            formData.append(
+              field,
+              value.format ? value.format("YYYY-MM-DD") : value
+            );
+          } else {
+            formData.append(field, value);
+          }
         }
-      }));
+      });
+
+      // ✅ CHANGE: Update skills from state
+      if (values.skills !== undefined) {
+        formData.append("skills", JSON.stringify(values.skills));
+      }
+
+      // ✅ CHANGE: Update languages from state
+      if (values.languages !== undefined) {
+        formData.append("languages", JSON.stringify(values.languages));
+      }
+
+      // Add visaStatus as JSON array
+      if (values.visaStatus) {
+        formData.append(
+          "visaStatus",
+          JSON.stringify(
+            Array.isArray(values.visaStatus)
+              ? values.visaStatus
+              : [values.visaStatus]
+          )
+        );
+      }
+
+      // Add employment details
+      if (values.employmentDetails) {
+        const employmentFields = [
+          "badgeNo",
+          "gatePassId",
+          "aramcoId",
+          "otherId",
+          "plantId",
+          "basicAssets",
+          "visaCategory",
+          "periodOfContract",
+          "probationPeriod",
+          "insuranceCategory",
+          "medicalPolicyNumber",
+          "noOfDependent",
+          "workDays",
+          "workHours",
+          "airTicketFrequency",
+          "lastArrival",
+          "lastWorkingDay",
+          "iqamaIssueDate",
+          "iqamaExpiryDate",
+          "iqamaArabicDateOfIssue",
+          "iqamaArabicDateOfExpiry",
+        ];
+
+        employmentFields.forEach((field) => {
+          const value = values.employmentDetails[field];
+          if (value !== undefined && value !== null && value !== "") {
+            // Handle dates
+            if (
+              field.includes("Date") ||
+              field.includes("Arrival") ||
+              field.includes("Day")
+            ) {
+              formData.append(
+                field,
+                value.format ? value.format("YYYY-MM-DD") : value
+              );
+            } else {
+              formData.append(field, value);
+            }
+          }
+        });
+      }
+
+      // Add image file if selected
+      if (values.imageFile) {
+        formData.append("image", values.imageFile);
+      }
+
+      // Add certificate files
+      if (certificateFiles.length > 0) {
+        certificateFiles.forEach((file) => {
+          formData.append("certificates", file.originFileObj || file);
+        });
+      }
+
+      if (values.education !== undefined) {
+        formData.append("education", JSON.stringify(values.education));
+      }
+
+      // Add work experience
+      if (values.workExperience !== undefined) {
+        formData.append(
+          "workExperience",
+          JSON.stringify(values.workExperience)
+        );
+      }
+
+      // Call the mutation
+      await updateProfile(formData).unwrap();
 
       message.success("Profile updated successfully!");
+
+      // Clear temporary files
+      setImageFile(null);
+      setCertificateFiles([]);
+
+      // Refetch data
+      refetch();
     } catch (error) {
-      message.error("Failed to update profile");
+      console.error("Failed to update profile", error);
+      message.error(error?.data?.message || "Failed to update profile");
     }
-    setLoading(false);
   };
 
   const handleRefresh = () => {
@@ -108,9 +240,18 @@ const EmployeeProfileSettings = () => {
     message.success("Profile data refreshed!");
   };
 
-  const handleSaveAll = () => {
-    // This would collect data from all forms and submit at once
-    message.success("All changes saved successfully!");
+  const handleSaveAll = async () => {
+    try {
+      // Collect all form data from all sections
+      const allValues = {
+        ...employeeData,
+        employmentDetails: employeeData.employmentDetails,
+      };
+
+      await handleProfileUpdate(allValues);
+    } catch (error) {
+      console.error("Save all error:", error);
+    }
   };
 
   if (isLoading) return <SkeletonLoader />;
@@ -149,23 +290,37 @@ const EmployeeProfileSettings = () => {
               <ProfileCompletionCard
                 completionPercentage={calculateProfileCompletion()}
               />
+
               <PersonalInformationCard
                 employeeData={employeeData}
-                loading={loading}
+                loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
               <EmploymentDetailsCard
                 employeeData={employeeData}
-                loading={loading}
+                loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
               <SkillsLanguagesCard
                 employeeData={employeeData}
-                loading={loading}
+                loading={isUpdating}
+                onUpdate={handleProfileUpdate}
+              />
+              <EducationCard
+                employeeData={employeeData}
+                loading={isUpdating}
+                onUpdate={handleProfileUpdate}
+              />
+
+              {/* Work Experience Card */}
+              <WorkExperienceCard
+                employeeData={employeeData}
+                loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
               <DocumentsCertificatesCard
                 employeeData={employeeData}
+                onCertificatesChange={setCertificateFiles}
               />
             </TabPane>
             <TabPane

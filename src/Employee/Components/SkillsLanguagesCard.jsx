@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Form,
@@ -9,14 +9,14 @@ import {
   Space,
   Typography,
   Tag,
-  Select
+  Select,
 } from "antd";
 import {
   EditOutlined,
   TagOutlined,
   GlobalOutlined,
   PlusOutlined,
-  DeleteOutlined
+  DeleteOutlined,
 } from "@ant-design/icons";
 
 const { Text } = Typography;
@@ -26,13 +26,21 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
   const [form] = Form.useForm();
   const [editMode, setEditMode] = useState(false);
   const [skills, setSkills] = useState(employeeData?.skills || []);
-  const [languages, setLanguages] = useState(employeeData?.languages || ['']);
+  const [languages, setLanguages] = useState(employeeData?.languages || []);
+
+  // ✅ ADD: Update state when employeeData changes
+  useEffect(() => {
+    if (employeeData) {
+      setSkills(employeeData.skills || []);
+      setLanguages(employeeData.languages || []);
+    }
+  }, [employeeData]);
 
   const handleSubmit = async () => {
     try {
       await onUpdate({
-        skills: skills.filter(skill => skill.trim() !== ''),
-        languages: languages.filter(lang => lang.trim() !== '')
+        skills: skills.filter((skill) => skill && skill.trim() !== ""),
+        languages: languages.filter((lang) => lang && lang.trim() !== ""),
       });
       setEditMode(false);
     } catch (error) {
@@ -40,8 +48,15 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
     }
   };
 
+  // ✅ ADD: Cancel handler to reset changes
+  const handleCancel = () => {
+    setSkills(employeeData?.skills || []);
+    setLanguages(employeeData?.languages || []);
+    setEditMode(false);
+  };
+
   const addSkill = () => {
-    setSkills([...skills, '']);
+    setSkills([...skills, ""]);
   };
 
   const removeSkill = (index) => {
@@ -57,7 +72,7 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
   };
 
   const addLanguage = () => {
-    setLanguages([...languages, '']);
+    setLanguages([...languages, ""]);
   };
 
   const removeLanguage = (index) => {
@@ -73,14 +88,28 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
   };
 
   const commonLanguages = [
-    'English', 'Arabic', 'Hindi', 'Urdu', 'Malayalam', 
-    'Tamil', 'Bengali', 'French', 'Spanish', 'German'
+    "English",
+    "Arabic",
+    "Hindi",
+    "Urdu",
+    "Malayalam",
+    "Tamil",
+    "Bengali",
+    "French",
+    "Spanish",
+    "German",
   ];
 
   return (
     <Card
       title={
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <span>
             <TagOutlined style={{ marginRight: 8, color: "#da2c46" }} />
             Skills & Languages
@@ -104,22 +133,23 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
               <TagOutlined style={{ marginRight: 8 }} />
               Skills
             </Text>
-            
+
             {!editMode ? (
               <div>
                 {skills.length > 0 ? (
                   <div>
-                    {skills.map((skill, index) => (
-                      skill && (
-                        <Tag
-                          key={index}
-                          color="blue"
-                          style={{ margin: "4px" }}
-                        >
-                          {skill}
-                        </Tag>
-                      )
-                    ))}
+                    {skills.map(
+                      (skill, index) =>
+                        skill && (
+                          <Tag
+                            key={index}
+                            color="blue"
+                            style={{ margin: "4px" }}
+                          >
+                            {skill}
+                          </Tag>
+                        )
+                    )}
                   </div>
                 ) : (
                   <Text type="secondary">No skills added</Text>
@@ -128,7 +158,10 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
             ) : (
               <div>
                 {skills.map((skill, index) => (
-                  <div key={index} style={{ marginBottom: 8, display: "flex", gap: 8 }}>
+                  <div
+                    key={index}
+                    style={{ marginBottom: 8, display: "flex", gap: 8 }}
+                  >
                     <Input
                       value={skill}
                       onChange={(e) => updateSkill(index, e.target.value)}
@@ -164,22 +197,23 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
               <GlobalOutlined style={{ marginRight: 8 }} />
               Languages
             </Text>
-            
+
             {!editMode ? (
               <div>
-                {languages.filter(lang => lang).length > 0 ? (
+                {languages.filter((lang) => lang).length > 0 ? (
                   <div>
-                    {languages.map((language, index) => (
-                      language && (
-                        <Tag
-                          key={index}
-                          color="green"
-                          style={{ margin: "4px" }}
-                        >
-                          {language}
-                        </Tag>
-                      )
-                    ))}
+                    {languages.map(
+                      (language, index) =>
+                        language && (
+                          <Tag
+                            key={index}
+                            color="green"
+                            style={{ margin: "4px" }}
+                          >
+                            {language}
+                          </Tag>
+                        )
+                    )}
                   </div>
                 ) : (
                   <Text type="secondary">No languages added</Text>
@@ -188,15 +222,20 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
             ) : (
               <div>
                 {languages.map((language, index) => (
-                  <div key={index} style={{ marginBottom: 8, display: "flex", gap: 8 }}>
+                  <div
+                    key={index}
+                    style={{ marginBottom: 8, display: "flex", gap: 8 }}
+                  >
                     <Select
                       value={language}
                       onChange={(value) => updateLanguage(index, value)}
                       style={{ flex: 1 }}
                       placeholder="Select language"
                     >
-                      {commonLanguages.map(lang => (
-                        <Option key={lang} value={lang}>{lang}</Option>
+                      {commonLanguages.map((lang) => (
+                        <Option key={lang} value={lang}>
+                          {lang}
+                        </Option>
                       ))}
                     </Select>
                     <Button
@@ -225,7 +264,7 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
       {editMode && (
         <div style={{ textAlign: "right", marginTop: 16 }}>
           <Space>
-            <Button onClick={() => setEditMode(false)}>Cancel</Button>
+            <Button onClick={handleCancel}>Cancel</Button>
             <Button
               type="primary"
               onClick={handleSubmit}
