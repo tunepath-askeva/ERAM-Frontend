@@ -172,7 +172,6 @@ const EditWorkOrder = () => {
     console.log("Edit WorkOrder - Active Clients:", activeClients);
     console.log("Edit WorkOrder - Staffs Data:", staffsData);
     console.log("Edit WorkOrder - Active Staffs:", activeStaffs);
-    console.log("demo")
   }, [clientsData, staffsData]);
 
   useEffect(() => {
