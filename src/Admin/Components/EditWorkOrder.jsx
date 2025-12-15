@@ -172,6 +172,7 @@ const EditWorkOrder = () => {
     console.log("Edit WorkOrder - Active Clients:", activeClients);
     console.log("Edit WorkOrder - Staffs Data:", staffsData);
     console.log("Edit WorkOrder - Active Staffs:", activeStaffs);
+    console.log("demo")
   }, [clientsData, staffsData]);
 
   useEffect(() => {
@@ -255,8 +256,8 @@ const EditWorkOrder = () => {
           languagesRequired: Array.isArray(workOrder.languagesRequired)
             ? workOrder.languagesRequired
             : (workOrder.languagesRequired || "")
-                .split(",")
-                .filter((lang) => lang.trim()),
+              .split(",")
+              .filter((lang) => lang.trim()),
           project: workOrder.project._id,
           requiredSkills: workOrder.requiredSkills || [],
           qualification: workOrder.qualification || "Qualification",
@@ -753,7 +754,7 @@ const EditWorkOrder = () => {
 
       enqueueSnackbar(
         error?.data?.message ||
-          "Failed to update work order. Please try again.",
+        "Failed to update work order. Please try again.",
         {
           variant: "error",
         }
@@ -1451,9 +1452,8 @@ const EditWorkOrder = () => {
 
     return (
       <Modal
-        title={`Set Stage Dates & Approvals for ${
-          currentPipelineForDates?.name || "Pipeline"
-        }`}
+        title={`Set Stage Dates & Approvals for ${currentPipelineForDates?.name || "Pipeline"
+          }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => {
           setPipelineDatesModalVisible(false);
@@ -1634,13 +1634,13 @@ const EditWorkOrder = () => {
               ) ||
               (timelineData
                 ? {
-                    stageId: timelineData.stageId,
-                    startDate: timelineData.startDate,
-                    endDate: timelineData.endDate,
-                    dependencyType: timelineData.dependencyType,
-                    approvalId: timelineData.approvalId?._id,
-                    recruiterId: timelineData.recruiterId?._id,
-                  }
+                  stageId: timelineData.stageId,
+                  startDate: timelineData.startDate,
+                  endDate: timelineData.endDate,
+                  dependencyType: timelineData.dependencyType,
+                  approvalId: timelineData.approvalId?._id,
+                  recruiterId: timelineData.recruiterId?._id,
+                }
                 : null);
 
             const availableApprovalLevels = approvalLevels;
