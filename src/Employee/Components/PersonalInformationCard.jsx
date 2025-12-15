@@ -89,7 +89,7 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
         ...values,
         imageFile: userData.imageFile, // Pass the file to parent
       };
-      await onUpdate(values);
+     await onUpdate(submitData);
       setUserData({
         image: "",
         imageFile: null,

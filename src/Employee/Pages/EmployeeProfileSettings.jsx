@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tabs, message, Upload } from "antd";
+import { Card, Tabs, message, Upload, Result ,Button } from "antd";
 import {
   UserOutlined,
   SafetyCertificateOutlined,
   CameraOutlined,
+  FrownOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import {
   useGetEmployeeProfileQuery,
@@ -224,7 +226,7 @@ const EmployeeProfileSettings = () => {
       message.success("Profile updated successfully!");
 
       // Clear temporary files
-      setImageFile(null);
+      // setImageFile(null);
       setCertificateFiles([]);
 
       // Refetch data
@@ -255,8 +257,65 @@ const EmployeeProfileSettings = () => {
   };
 
   if (isLoading) return <SkeletonLoader />;
-  if (error) return <div>Error loading profile data</div>;
-  if (!employeeData) return <div>No profile data available</div>;
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: "24px",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Result
+          status="500"
+          title="Error Loading Profile"
+          subTitle="Sorry, something went wrong while loading your profile data."
+          extra={
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={refetch}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (!employeeData) {
+    return (
+      <div
+        style={{
+          padding: "24px",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Result
+          status="404"
+          title="No Profile Data"
+          subTitle="Sorry, we couldn't find your profile information."
+          extra={
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={refetch}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Refresh
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "24px", minHeight: "100vh" }}>

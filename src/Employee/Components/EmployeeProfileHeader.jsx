@@ -27,14 +27,14 @@ const EmployeeProfileHeader = ({ onRefresh, onSaveAll }) => (
           <Button icon={<ReloadOutlined />} onClick={onRefresh}>
             Refresh
           </Button>
-          <Button
+          {/* <Button
             type="primary"
             icon={<SaveOutlined />}
             style={{ background: "#da2c46", border: "none" }}
             onClick={onSaveAll}
           >
             Save All Changes
-          </Button>
+          </Button> */}
         </Space>
       </Col>
     </Row>
