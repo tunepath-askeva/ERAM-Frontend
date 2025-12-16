@@ -24,6 +24,9 @@ import {
   Skeleton,
   Progress,
   Steps,
+  Radio,
+  Select,
+  Checkbox,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -46,6 +49,8 @@ import {
   SafetyCertificateOutlined,
   PhoneOutlined,
   LinkOutlined,
+  DownOutlined,
+  CheckSquareOutlined
 } from "@ant-design/icons";
 import {
   useGetJobsbyIdQuery,
@@ -287,12 +292,23 @@ const JobDetailsPage = () => {
         return <LinkOutlined />;
       case "textarea":
         return <FileTextOutlined />;
+      case "radio":
+        return <CheckCircleOutlined />;
+      case "select":
+        return <DownOutlined />;
+      case "checkbox":
+        return <CheckSquareOutlined />;
       default:
         return <UserOutlined />;
     }
   };
 
   const renderCustomField = (field) => {
+
+    if (!field.label || field.label.trim() === "") {
+      return null;
+    }
+
     const commonProps = {
       key: field.id,
       name: field.id.toString(),
@@ -453,6 +469,53 @@ const JobDetailsPage = () => {
           </Form.Item>
         );
 
+      case "radio":
+        return (
+          <Form.Item {...commonProps}>
+            <Radio.Group size="large">
+              <Space direction="vertical">
+                {field.options && field.options.map((option, index) => (
+                  <Radio key={index} value={option}>
+                    {option}
+                  </Radio>
+                ))}
+              </Space>
+            </Radio.Group>
+          </Form.Item>
+        );
+
+      case "select":
+        return (
+          <Form.Item {...commonProps}>
+            <Select
+              size="large"
+              placeholder={`Select ${field.label.toLowerCase()}`}
+              className="modern-input"
+            >
+              {field.options && field.options.map((option, index) => (
+                <Select.Option key={index} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        );
+
+      case "checkbox":
+        return (
+          <Form.Item {...commonProps} valuePropName="checked">
+            <Checkbox.Group>
+              <Space direction="vertical">
+                {field.options && field.options.map((option, index) => (
+                  <Checkbox key={index} value={option}>
+                    {option}
+                  </Checkbox>
+                ))}
+              </Space>
+            </Checkbox.Group>
+          </Form.Item>
+        );
+
       default:
         return (
           <Form.Item {...commonProps}>
@@ -531,9 +594,8 @@ const JobDetailsPage = () => {
                   savedJobs.has(job._id) ? <HeartFilled /> : <HeartOutlined />
                 }
                 onClick={handleSaveJob}
-                className={`action-btn ${
-                  savedJobs.has(job._id) ? "saved" : ""
-                }`}
+                className={`action-btn ${savedJobs.has(job._id) ? "saved" : ""
+                  }`}
                 size="large"
               />
               <Button
