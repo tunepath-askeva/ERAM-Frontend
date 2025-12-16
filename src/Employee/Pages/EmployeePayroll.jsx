@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Table,
   Card,
@@ -37,6 +37,7 @@ const EmployeePayroll = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+  const [branchLogo, setBranchLogo] = useState(null);
 
   const printRef = useRef();
 
@@ -66,6 +67,12 @@ const EmployeePayroll = () => {
   });
 
   const [generatePayslip] = useGeneratePayslipMutation();
+
+  React.useEffect(() => {
+    if (data?.branchLogo) {
+      setBranchLogo(data.branchLogo);
+    }
+  }, [data]);
 
   const transformPayrollData = (apiData) => {
     if (!apiData?.payroll || !Array.isArray(apiData.payroll)) return [];
@@ -328,7 +335,7 @@ const EmployeePayroll = () => {
     return result.trim();
   };
 
-  const PayslipContent = ({ payroll }) => {
+  const PayslipContent = ({ payroll, branchLogo }) => {
     const renderSalaryItem = (label, value) => {
       if (value > 0) {
         return (
@@ -410,21 +417,24 @@ const EmployeePayroll = () => {
           }}
         ></div>
 
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            fontWeight: "bold",
-            fontSize: "16px",
-            border: "2px solid #000",
-            padding: "5px 10px",
-            backgroundColor: "white",
-          }}
-        >
-          <div style={{ color: "#000" }}>ERAM</div>
-          <div style={{ fontSize: "10px", letterSpacing: "2px" }}>TALENT</div>
-        </div>
+        {branchLogo ? (
+          <img
+            src={branchLogo}
+            alt="Branch Logo"
+            onError={(e) => (e.target.style.display = "none")}
+            style={{
+              position: "absolute",
+              top: "5px",
+              right: "12px",
+              height: "55px",
+              maxWidth: "160px",
+              objectFit: "contain",
+              backgroundColor: "#fff",
+              padding: "6px",
+              zIndex: 10,
+            }}
+          />
+        ) : null}
 
         <div
           style={{
@@ -1054,7 +1064,9 @@ const EmployeePayroll = () => {
           ]}
           width={1000}
         >
-          {selectedPayroll && <PayslipContent payroll={selectedPayroll} />}
+          {selectedPayroll && (
+            <PayslipContent payroll={selectedPayroll} branchLogo={branchLogo} />
+          )}
         </Modal>
 
         <style jsx global>{`

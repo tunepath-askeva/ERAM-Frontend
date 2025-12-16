@@ -567,8 +567,6 @@ const StageModals = ({
                     {availableNextStages.map((stage) => (
                       <Option key={stage.stageId} value={stage.stageId}>
                         {stage.stageName}
-                        {stage.stageOrder !== undefined &&
-                          ` (Order: ${stage.stageOrder})`}
                         {isActualLastStage(stage.stageId) && " - Final Stage"}
                       </Option>
                     ))}
