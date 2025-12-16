@@ -71,6 +71,7 @@ const EmployeeAdminOtherRequest = () => {
   const [comment, setComment] = useState("");
   const [actionType, setActionType] = useState(null); // 'approve' | 'reject'
   const [actionTarget, setActionTarget] = useState(null); // 'ticket' | 'request'
+  const [approvalDocuments, setApprovalDocuments] = useState([]);
   const [filters, setFilters] = useState({
     requestType: "",
     eramId: "",
@@ -197,12 +198,24 @@ const EmployeeAdminOtherRequest = () => {
           email: employeeEmail,
         }).unwrap();
       } else {
-        // Use overall request approval API
+        const formData = new FormData();
+        formData.append(
+          "status",
+          actionType === "approve" ? "approved" : "rejected"
+        );
+        formData.append("approvalNote", comment);
+        formData.append("email", employeeEmail);
+
+        // Append files if approving
+        if (actionType === "approve" && approvalDocuments.length > 0) {
+          approvalDocuments.forEach((file) => {
+            formData.append("files", file);
+          });
+        }
+
         await changeRequestStatus({
           id: selectedRequestId,
-          status: actionType === "approve" ? "approved" : "rejected",
-          comment,
-          email: employeeEmail,
+          formData,
         }).unwrap();
       }
 
@@ -214,6 +227,7 @@ const EmployeeAdminOtherRequest = () => {
 
       setCommentModalVisible(false);
       setComment("");
+      setApprovalDocuments([]);
       refetch();
       handleCloseModal();
     } catch (error) {
@@ -846,6 +860,37 @@ const EmployeeAdminOtherRequest = () => {
                       </Paragraph>
                     </Col>
                   </Row>
+
+                  {requestDetails.otherRequests.approvalNote && (
+                    <Row gutter={16} style={{ marginTop: "16px" }}>
+                      <Col span={24}>
+                        <Text strong>
+                          {requestDetails.otherRequests.status === "approved"
+                            ? "Approval Note:"
+                            : "Rejection Note:"}
+                        </Text>
+                        <Paragraph
+                          style={{
+                            marginTop: "8px",
+                            padding: "12px",
+                            backgroundColor:
+                              requestDetails.otherRequests.status === "approved"
+                                ? "#f6ffed"
+                                : "#fff1f0",
+                            borderRadius: "4px",
+                            minHeight: "60px",
+                            border: `1px solid ${
+                              requestDetails.otherRequests.status === "approved"
+                                ? "#b7eb8f"
+                                : "#ffa39e"
+                            }`,
+                          }}
+                        >
+                          {requestDetails.otherRequests.approvalNote}
+                        </Paragraph>
+                      </Col>
+                    </Row>
+                  )}
                 </Card>
               </Col>
 
@@ -1112,6 +1157,87 @@ const EmployeeAdminOtherRequest = () => {
                 </Col>
               )}
 
+              {requestDetails.otherRequests.approvalDocuments &&
+                requestDetails.otherRequests.approvalDocuments.length > 0 && (
+                  <Col span={24}>
+                    <Card
+                      size="small"
+                      title={`Approval Documents (${requestDetails.otherRequests.approvalDocuments.length})`}
+                      style={{ backgroundColor: "#f0f9ff" }} // Light blue background to distinguish
+                    >
+                      <div>
+                        {requestDetails.otherRequests.approvalDocuments.map(
+                          (doc, index) => (
+                            <div
+                              key={doc._id || index}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "12px",
+                                backgroundColor: "#ffffff",
+                                borderRadius: "6px",
+                                marginBottom: "12px",
+                                border: "1px solid #91d5ff",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  flex: 1,
+                                }}
+                              >
+                                <FileTextOutlined
+                                  style={{
+                                    marginRight: "12px",
+                                    color: "#52c41a",
+                                    fontSize: "16px",
+                                  }}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  <Text
+                                    strong
+                                    style={{
+                                      display: "block",
+                                      marginBottom: "4px",
+                                    }}
+                                  >
+                                    {doc.documentName}
+                                  </Text>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: "12px" }}
+                                  >
+                                    Uploaded: {formatDate(doc.uploadedAt)}
+                                  </Text>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                onClick={() =>
+                                  handleDownloadDocument(
+                                    doc.fileUrl,
+                                    doc.documentName
+                                  )
+                                }
+                                style={{
+                                  backgroundColor: "#52c41a",
+                                  borderColor: "#52c41a",
+                                }}
+                              >
+                                Download
+                              </Button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </Card>
+                  </Col>
+                )}
+
               {viewingTickets && isTravelRequest && (
                 <Col span={24}>
                   <Card size="small" title="Ticket Details">
@@ -1233,6 +1359,29 @@ const EmployeeAdminOtherRequest = () => {
               }`}
             />
           </Form.Item>
+
+          {actionType === "approve" && actionTarget === "request" && (
+            <Form.Item label="Upload Approval Documents (Optional)">
+              <Upload
+                multiple
+                beforeUpload={(file) => {
+                  setApprovalDocuments((prev) => [...prev, file]);
+                  return false; // Prevent auto-upload
+                }}
+                onRemove={(file) => {
+                  setApprovalDocuments((prev) =>
+                    prev.filter((f) => f.uid !== file.uid)
+                  );
+                }}
+                fileList={approvalDocuments}
+              >
+                <Button icon={<PlusOutlined />}>Select Files</Button>
+              </Upload>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Supported formats: PDF, JPG, PNG, DOC, DOCX (Max 5MB each)
+              </Text>
+            </Form.Item>
+          )}
         </Form>
       </Modal>
 

@@ -482,32 +482,90 @@ const RequestDetailsDrawer = ({
         renderTicketApprovalStatus()}
 
       {(request.status === "approved" || request.status === "rejected") && (
-        <Card title="Admin Response" style={{ marginBottom: 16 }}>
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Action By">
-              <Avatar
-                icon={<UserOutlined />}
-                size="small"
-                style={{ marginRight: 8 }}
-              />
-              {request.approvedBy || request.rejectedBy || "Employee Admin"}
-            </Descriptions.Item>
-            {request.adminComments && (
-              <Descriptions.Item label="Comments">
-                <Paragraph style={{ margin: 0 }}>
-                  {request.adminComments}
-                </Paragraph>
+        <>
+          <Card title="Admin Response" style={{ marginBottom: 16 }}>
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="Action By">
+                <Avatar
+                  icon={<UserOutlined />}
+                  size="small"
+                  style={{ marginRight: 8 }}
+                />
+                {request.approvedBy || request.rejectedBy || "Employee Admin"}
               </Descriptions.Item>
+              {request.adminComments && (
+                <Descriptions.Item label="Comments">
+                  <Paragraph style={{ margin: 0 }}>
+                    {request.adminComments}
+                  </Paragraph>
+                </Descriptions.Item>
+              )}
+              {request.approvalNote && (
+                <Descriptions.Item label="Approval Note">
+                  <Paragraph style={{ margin: 0 }}>
+                    {request.approvalNote}
+                  </Paragraph>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </Card>
+
+          {request.approvalDocuments &&
+            request.approvalDocuments.length > 0 && (
+              <Card
+                title="Approval Documents"
+                style={{
+                  marginBottom: 16,
+                  backgroundColor: "#f6ffed",
+                  borderColor: "#b7eb8f",
+                }}
+              >
+                <List
+                  size="small"
+                  dataSource={request.approvalDocuments}
+                  renderItem={(doc) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handleDocumentDownload(doc)}
+                          style={{
+                            backgroundColor: "#52c41a",
+                            borderColor: "#52c41a",
+                          }}
+                        >
+                          Download
+                        </Button>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <FileTextOutlined
+                            style={{
+                              color: "#52c41a",
+                              fontSize: 18,
+                            }}
+                          />
+                        }
+                        title={
+                          <Text strong>{doc.documentName || "Document"}</Text>
+                        }
+                        description={
+                          doc.uploadedAt
+                            ? `Uploaded: ${dayjs(doc.uploadedAt).format(
+                                "DD MMM YYYY, HH:mm"
+                              )}`
+                            : "Upload date not available"
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </Card>
             )}
-            {request.approvalNote && (
-              <Descriptions.Item label="Approval Note">
-                <Paragraph style={{ margin: 0 }}>
-                  {request.approvalNote}
-                </Paragraph>
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-        </Card>
+        </>
       )}
 
       <Card title="Request Status Timeline" style={{ marginBottom: 16 }}>

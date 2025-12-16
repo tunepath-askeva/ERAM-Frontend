@@ -166,15 +166,12 @@ const RecruiterStagedCandidates = () => {
     });
 
     const jobs = Array.from(jobsMap.values());
-
     return {
       candidates,
       jobs,
-      totalCount: apiData.totalCount || candidates.length,
-      currentPage: apiData.currentPage || currentPage,
-      totalPages:
-        apiData.totalPages ||
-        Math.ceil((apiData.totalCount || candidates.length) / pageSize),
+      totalCount: apiData.totalCount || 0, // Use totalCount from API
+      currentPage: apiData.page || currentPage,
+      totalPages: Math.ceil((apiData.totalCount || 0) / pageSize), // Calculate based on totalCount
     };
   }, [apiData, currentPage, pageSize]);
 

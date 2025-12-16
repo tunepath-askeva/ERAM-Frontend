@@ -402,14 +402,10 @@ export const employeeApi = createApi({
       }),
     }),
     changeOtherRequestStatus: builder.mutation({
-      query: ({ id, status, comment, email }) => ({
+      query: ({ id, formData }) => ({
         url: `/request-status/${id}`,
         method: "PATCH",
-        body: {
-          status,
-          approvalNote: comment,
-          email,
-        },
+        body: formData,
       }),
     }),
     createNews: builder.mutation({

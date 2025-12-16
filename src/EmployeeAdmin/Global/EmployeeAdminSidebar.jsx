@@ -124,12 +124,12 @@ const EmployeeAdminSidebar = ({
       label: "Feedback/Suggestion",
       permission: "feedback-suggestion",
     },
-    // {
-    //   key: "/employee-admin/notifications",
-    //   icon: <BellOutlined />,
-    //   label: "Notifications",
-    //   permission: "notifications",
-    // },
+    {
+      key: "/employee-admin/notifications",
+      icon: <BellOutlined />,
+      label: "Notifications",
+      permission: "notifications",
+    },
   ];
 
   useEffect(() => {
