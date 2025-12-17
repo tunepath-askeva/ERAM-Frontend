@@ -983,6 +983,10 @@ const RecruiterRequisition = () => {
                           <div style={{ fontSize: "12px", color: "#666" }}>
                             {remark.remark}
                           </div>
+                          <div>
+                            {remark?.recruiterId?.fullName} || {" "}
+                            {remark?.recruiterId?.email}
+                          </div>
                           <div
                             style={{
                               fontSize: "11px",

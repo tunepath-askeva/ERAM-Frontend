@@ -1081,6 +1081,10 @@ const AdminRequisition = () => {
                           <Text style={{ fontSize: "13px" }}>
                             {remark.remark}
                           </Text>
+                          <div>
+                            {remark?.recruiterId?.fullName} ||{" "}
+                            {remark?.recruiterId?.email}
+                          </div>
                         </div>
                       )
                     )}
