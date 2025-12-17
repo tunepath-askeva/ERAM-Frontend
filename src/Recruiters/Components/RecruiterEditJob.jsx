@@ -52,6 +52,7 @@ import {
   useGetStaffsQuery,
   useGetApprovalQuery,
   useGetRecruitersNameQuery,
+  useGetClientsQuery,
 } from "../../Slices/Admin/AdminApis";
 
 const { TextArea } = Input;
@@ -134,11 +135,18 @@ const RecruiterEditJob = () => {
     page: 1,
     pageSize: 100000,
   });
-  // const { data: clientsData } = useGetClientsQuery();
+  const { data: clientsData } = useGetClientsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
   const [updateJob] = useUpdateRecruiterJobMutation();
 
   const activePipelines = pipelineData?.pipelines || [];
-  // const clients = clientsData?.clients || [];
+  const clients =
+    clientsData?.clients?.filter(
+      (client) =>
+        client.clientType === "Customer" && client.accountStatus === "active"
+    ) || [];
   const recruiters = recruiterData?.recruitername || [];
   const staffs = staffData?.staffs || [];
   const levelGroups = levelData?.approvals || [];
@@ -319,6 +327,7 @@ const RecruiterEditJob = () => {
           benefits: job.benefits || [],
           languagesRequired: job.languagesRequired || [],
           client: job.client?._id,
+          assignedRecruiters: job.assignedRecruiters?.map((r) => r._id) || [],
           pipeline: selectedPipeIds,
           isActive: job.isActive === "active",
           nationality: job.nationality,
@@ -888,8 +897,8 @@ const RecruiterEditJob = () => {
               endDate: dateEntry.endDate,
               dependencyType: dateEntry.dependencyType || "independent",
               isCustomStage: isCustom,
-              recruiterIds: recruiterIds.map((id) => ({ _id: id })),
-              staffIds: staffIds.map((id) => ({ _id: id })),
+              recruiterIds: recruiterIds,
+              staffIds: staffIds,
               approvalId: dateEntry.approvalId || null,
               customFields: customFields.map((field) => ({
                 _id: field._id,
@@ -929,13 +938,46 @@ const RecruiterEditJob = () => {
       });
 
       const updatePayload = {
-        ...jobData,
-        ...values,
+        title: values.title || jobData.title,
+        jobCode: values.jobCode || jobData.jobCode,
+        workplace: values.workplace || jobData.workplace,
+        officeLocation: values.officeLocation || jobData.officeLocation,
+        description: values.description || jobData.description,
+        jobFunction: values.jobFunction || jobData.jobFunction,
+        companyIndustry: values.companyIndustry || jobData.companyIndustry,
+        EmploymentType: values.EmploymentType || jobData.EmploymentType,
+        Education: values.Education || jobData.Education,
+        salaryType: values.salaryType || jobData.salaryType,
+        salaryMin: values.salaryMin || jobData.salaryMin,
+        salaryMax: values.salaryMax || jobData.salaryMax,
+        experienceMin: values.experienceMin || jobData.experienceMin,
+        experienceMax: values.experienceMax || jobData.experienceMax,
+        requiredSkills: values.requiredSkills || jobData.requiredSkills || [],
+        jobRequirements: values.jobRequirements || jobData.jobRequirements,
+        keyResponsibilities:
+          values.keyResponsibilities || jobData.keyResponsibilities,
+        qualification: values.qualification || jobData.qualification,
+        numberOfCandidate:
+          values.numberOfCandidate || jobData.numberOfCandidate,
+        benefits: values.benefits || jobData.benefits || [],
+        languagesRequired:
+          values.languagesRequired || jobData.languagesRequired || [],
+        nationality: values.nationality || jobData.nationality,
+        visacategory: values.visacategory || jobData.visacategory,
+        visacategorytype: values.visacategorytype || jobData.visacategorytype,
         isCommon: Boolean(values.isCommon),
         isSalaryVisible: Boolean(values.isSalaryVisible),
+
+        // CRITICAL FIELDS - Properly formatted
+        client: values.client || jobData.client,
+        assignedRecruiters:
+          values.assignedRecruiters || jobData.assignedRecruiters || [],
+        pipeline: selectedPipelines,
         customFields: applicationFields,
         documents: allDocuments,
         pipelineStageTimeline,
+
+        // Date formatting
         startDate: values.startDate
           ? dayjs.isDayjs(values.startDate)
             ? values.startDate.format("YYYY-MM-DD")
@@ -956,6 +998,7 @@ const RecruiterEditJob = () => {
             ? values.alertDate.format("YYYY-MM-DD")
             : values.alertDate
           : jobData.alertDate,
+
         isActive: "active",
       };
 
@@ -1761,18 +1804,8 @@ const RecruiterEditJob = () => {
       return (aIndex || 0) - (bIndex || 0);
     });
 
-    // Get assigned recruiters from work order
     const assignedRecruiters =
       fetchedJobData?.workOrder?.assignedRecruiters || [];
-    // Get staff members (you may need to fetch this from your API)
-    const staffMembers = [
-      {
-        _id: "68763ddd529fd3206aead692",
-        fullName: "dhoni parvez",
-        email: "rohithdhoniparvez@gmail.com",
-      },
-      // Add more staff members as needed
-    ];
 
     return (
       <Modal
@@ -1859,6 +1892,78 @@ const RecruiterEditJob = () => {
               </Form.Item>
             </Col>
           </Row>
+        </Card>
+
+        <Card
+          style={{
+            marginBottom: 16,
+            background: "#f0f5ff",
+            borderColor: "#1890ff",
+          }}
+        >
+          <Row gutter={16} align="middle">
+            <Col span={24}>
+              <h4 style={{ marginBottom: 12, fontWeight: 500 }}>
+                Universal Date Settings
+              </h4>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Set Start Date for All Stages"
+                style={{ marginBottom: 8 }}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  onChange={(date) => {
+                    // Apply to all stages
+                    setPipelineStageDates((prev) => {
+                      const newDates = { ...prev };
+                      if (newDates[pipelineId]) {
+                        newDates[pipelineId] = newDates[pipelineId].map(
+                          (stage) => ({
+                            ...stage,
+                            startDate: date ? date.format("YYYY-MM-DD") : null,
+                          })
+                        );
+                      }
+                      return newDates;
+                    });
+                  }}
+                  placeholder="Set universal start date"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Set End Date for All Stages"
+                style={{ marginBottom: 8 }}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  onChange={(date) => {
+                    // Apply to all stages
+                    setPipelineStageDates((prev) => {
+                      const newDates = { ...prev };
+                      if (newDates[pipelineId]) {
+                        newDates[pipelineId] = newDates[pipelineId].map(
+                          (stage) => ({
+                            ...stage,
+                            endDate: date ? date.format("YYYY-MM-DD") : null,
+                          })
+                        );
+                      }
+                      return newDates;
+                    });
+                  }}
+                  placeholder="Set universal end date"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <div style={{ fontSize: "12px", color: "#666", marginTop: 8 }}>
+            ℹ️ Dates set here will be applied to all stages below. You can still
+            customize individual stages afterwards.
+          </div>
         </Card>
         <Divider />
 
@@ -2700,22 +2805,30 @@ const RecruiterEditJob = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item name="client" label="Client">
+                <Form.Item
+                  name="client"
+                  label="Assign Client"
+                  rules={[
+                    { required: false, message: "Please select a client" },
+                  ]}
+                >
                   <Select
                     placeholder="Select client"
+                    allowClear
                     showSearch
-                    disabled
-                    value={fetchedJobData?.workOrder?.client?._id}
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (
+                        option?.children?.toString()?.toLowerCase() ?? ""
+                      ).includes(input.toLowerCase())
+                    }
                   >
-                    {fetchedJobData?.workOrder?.client && (
-                      <Option
-                        key={fetchedJobData.workOrder.client._id}
-                        value={fetchedJobData.workOrder.client._id}
-                      >
-                        {fetchedJobData.workOrder.client.fullName ||
-                          fetchedJobData.workOrder.client.email}
+                    {/* You'll need to fetch clients data - add this query at the top */}
+                    {clients?.map((client) => (
+                      <Option key={client._id} value={client._id}>
+                        {client.fullName || client.email}
                       </Option>
-                    )}
+                    ))}
                   </Select>
                 </Form.Item>
               </Col>
@@ -2938,7 +3051,7 @@ const RecruiterEditJob = () => {
                     { required: true, message: "Please select deadline date" },
                   ]}
                 >
-                  <DatePicker style={{ width: "100%" }} disabled />
+                  <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
               </Col>
             </Row>
@@ -2981,50 +3094,84 @@ const RecruiterEditJob = () => {
               title="Hiring Pipeline"
               style={{ marginBottom: "16px" }}
             >
-              <Form.Item
-                name="pipeline"
-                label="Pipeline"
-                rules={[
-                  { required: true, message: "Please select a pipeline" },
-                ]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Select hiring pipelines"
-                  onChange={handlePipelineChange}
-                  value={selectedPipelines}
-                  optionFilterProp="label"
-                  showSearch
-                >
-                  {activePipelines.map((pipeline) => (
-                    <Option
-                      key={pipeline._id}
-                      value={pipeline._id}
-                      label={pipeline.name}
+              <Row gutter={[24, 16]}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="pipeline"
+                    label="Pipeline"
+                    rules={[
+                      { required: true, message: "Please select a pipeline" },
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Select hiring pipelines"
+                      onChange={handlePipelineChange}
+                      value={selectedPipelines}
+                      optionFilterProp="label"
+                      showSearch
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <span>{pipeline.name}</span>
-                        <Button
-                          type="link"
-                          size="small"
-                          icon={<FormOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showPipelineDatesModal(pipeline._id);
-                          }}
-                        />
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+                      {activePipelines.map((pipeline) => (
+                        <Option
+                          key={pipeline._id}
+                          value={pipeline._id}
+                          label={pipeline.name}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <span>{pipeline.name}</span>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<FormOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showPipelineDatesModal(pipeline._id);
+                              }}
+                            />
+                          </div>
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
 
-              {selectedPipelines.length > 0 && renderSelectedPipelines()}
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="assignedRecruiters"
+                    label="Assigned Members"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please assign at least one member",
+                      },
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Select members"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        (
+                          option?.children?.toString()?.toLowerCase() ?? ""
+                        ).includes(input.toLowerCase())
+                      }
+                    >
+                      {recruiters.map((recruiter) => (
+                        <Option key={recruiter._id} value={recruiter._id}>
+                          {recruiter.fullName} - ({recruiter.email})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                {selectedPipelines.length > 0 && renderSelectedPipelines()}
+              </Row>
             </Card>
 
             <Card
