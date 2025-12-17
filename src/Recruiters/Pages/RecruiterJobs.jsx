@@ -447,48 +447,46 @@ const RecruiterJobs = () => {
                     handleJobClick(job);
                   }}
                   actions={[
-                    ...(isRecruiterAssigned(job.assignedRecruiters)
-                      ? [
-                          hasPermission("edit-job") && (
-                            <Tooltip title="Edit Job" key="edit">
-                              <EditOutlined
-                                onClick={(e) => handleEditJob(job, e)}
-                                style={{ fontSize: "16px" }}
-                              />
-                            </Tooltip>
-                          ),
-                          hasPermission("deactivate-job") &&
-                            (job.isActive ? (
-                              <Tooltip title="Deactivate Job" key="deactivate">
-                                <PoweroffOutlined
-                                  onClick={(e) => handleDeactivateJob(job, e)}
-                                  style={{ fontSize: "16px", color: "#ff4d4f" }}
-                                />
-                              </Tooltip>
-                            ) : (
-                              <Tooltip title="Activate Job" key="activate">
-                                <CheckCircleOutlined
-                                  onClick={(e) => handleActivateJob(job, e)}
-                                  style={{ fontSize: "16px", color: "#52c41a" }}
-                                />
-                              </Tooltip>
-                            )),
-                        ].filter(Boolean)
-                      : []),
+                    hasPermission("edit-job") && (
+                      <Tooltip title="Edit Job" key="edit">
+                        <EditOutlined
+                          onClick={(e) => handleEditJob(job, e)}
+                          style={{ fontSize: "16px" }}
+                        />
+                      </Tooltip>
+                    ),
+
+                    hasPermission("deactivate-job") &&
+                      (job.isActive ? (
+                        <Tooltip title="Deactivate Job" key="deactivate">
+                          <PoweroffOutlined
+                            onClick={(e) => handleDeactivateJob(job, e)}
+                            style={{ fontSize: "16px", color: "#ff4d4f" }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Activate Job" key="activate">
+                          <CheckCircleOutlined
+                            onClick={(e) => handleActivateJob(job, e)}
+                            style={{ fontSize: "16px", color: "#52c41a" }}
+                          />
+                        </Tooltip>
+                      )),
+
                     <Tooltip title="View Details" key="view">
                       <EyeOutlined
                         onClick={(e) => {
                           console.log("Card clicked:", job.isActive);
                           e.stopPropagation();
+
                           if (!job.isActive) {
                             enqueueSnackbar(
                               "Your deadline is up. Please contact your admin.",
-                              {
-                                variant: "warning",
-                              }
+                              { variant: "warning" }
                             );
                             return;
                           }
+
                           handleJobClick(job);
                         }}
                         style={{ fontSize: "16px", color: primaryColor }}

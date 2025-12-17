@@ -110,7 +110,7 @@ const RecruiterJobPipeline = () => {
       const workOrder = pipelineData.workOrder;
       const user = pipelineData.user;
       const stageProgress = pipelineData.stageProgress || [];
-
+ const completedStages = pipelineData.completedStages || [];
       const fullPipeline = pipelineData.tagPipelineId
         ? pipelineData.fullPipeline ||
           stageProgress[0]?.pipelineId || { stages: [] }
@@ -135,6 +135,7 @@ const RecruiterJobPipeline = () => {
         stageStatus: currentStageProgress?.stageStatus || "pending",
         appliedDate: pipelineData.createdAt,
         stageProgress: stageProgress,
+         completedStages: completedStages, 
         isSourced: pipelineData.isSourced === "true",
         responses: pipelineData.responses || [],
         uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
@@ -214,33 +215,21 @@ const RecruiterJobPipeline = () => {
     setSelectedNextStage(null);
     setIsStageOrderChanged(false);
 
-    const currentStageId =
-      activeStage || candidate.currentStageId || candidate.currentStage;
+    // **FIX: Use the ACTUAL current active stage, not the activeStage from UI**
+    const currentStageId = candidate.currentStageId || candidate.currentStage;
 
     const nextStages = getAllNextStages(currentStageId);
     setAvailableNextStages(nextStages);
 
-    // Get the first available next stage based on stage order (the sequential next stage)
+    // Get the first available next stage based on stage order
     let defaultNextStage = null;
 
     if (nextStages.length > 0) {
-      // For work order pipeline, find the stage with the lowest stageOrder
       const isTagged = !!candidate.tagPipelineId;
 
       if (!isTagged) {
-        // Get current stage's order
-        const currentStageData =
-          processedJobData.workOrder?.pipelineStageTimeline?.find(
-            (s) => s.stageId === currentStageId
-          );
-        const currentStageOrder = currentStageData?.stageOrder ?? -1;
-
-        // Find the next stage in sequential order (lowest stageOrder greater than current)
-        const sortedNextStages = [...nextStages].sort(
-          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
-        );
-
-        defaultNextStage = sortedNextStages[0]?.stageId || null;
+        // For work order, use the first stage in the sorted list (lowest stageOrder)
+        defaultNextStage = nextStages[0]?.stageId || null;
       } else {
         // For tagged pipeline, use the first stage in the list
         defaultNextStage = nextStages[0]?.stageId || null;
@@ -359,123 +348,87 @@ const RecruiterJobPipeline = () => {
 
     return null;
   };
-
-const getAllNextStages = (currentStageId) => {
-  if (!processedJobData || !currentStageId) return [];
-
-  const currentCandidate = processedJobData.candidates[0];
-  const isTagged = !!currentCandidate?.tagPipelineId;
-
-  // Get all completed stage IDs from stageProgress
-  const completedStageIds = currentCandidate.stageProgress
-    ?.filter(sp => sp.stageStatus === "approved")
-    .map(sp => sp.stageId) || [];
   
-  // Get current stage ID (the one we're on now)
-  const currentActiveStageId = currentCandidate.currentStageId || currentCandidate.currentStage;
+  const getAllNextStages = (currentStageId) => {
+    if (!processedJobData || !currentStageId) return [];
 
-  if (isTagged) {
-    // For tagged pipeline: combine stageProgress + fullPipeline stages
-    const stageProgressStages = currentCandidate.stageProgress || [];
-    const fullPipelineStages = processedJobData.pipeline?.stages || [];
+    const currentCandidate = processedJobData.candidates[0];
+    const isTagged = !!currentCandidate?.tagPipelineId;
 
-    const stagesMap = new Map();
+    console.log("=== getAllNextStages DEBUG ===");
+    console.log("Current Stage ID:", currentStageId);
+    console.log("Is Tagged Pipeline:", isTagged);
 
-    // Add stages from stageProgress
-    stageProgressStages.forEach((progress, index) => {
-      if (progress.stageId) {
-        stagesMap.set(progress.stageId, {
-          stageId: progress.stageId,
-          stageName: progress.stageName || progress.fullStage?.name || "Unknown",
-          order: index,
-          isCompleted: progress.stageStatus === "approved",
-        });
-      }
-    });
+    if (isTagged) {
+      // **TAGGED PIPELINE LOGIC**
+      const completedStageIds = new Set(
+        (currentCandidate.completedStages || []).map((cs) => cs.stageId)
+      );
 
-    // Add remaining stages from fullPipeline
-    fullPipelineStages.forEach((stage, index) => {
-      if (stage._id && !stagesMap.has(stage._id)) {
-        stagesMap.set(stage._id, {
+      const stageProgressIds = new Set(
+        (currentCandidate.stageProgress || []).map((sp) => sp.stageId)
+      );
+
+      // Get all stages from fullPipeline
+      const allPipelineStages = processedJobData.pipeline?.stages || [];
+
+      // Filter out completed stages and stages already in progress
+      const pendingStages = allPipelineStages
+        .filter((stage) => {
+          const isCompleted = completedStageIds.has(stage._id);
+          const isInProgress = stageProgressIds.has(stage._id);
+          const isCurrent = stage._id === currentStageId;
+
+          return !isCompleted && !isCurrent && !isInProgress;
+        })
+        .map((stage) => ({
           stageId: stage._id,
-          stageName: stage.name || "Unknown",
-          order: stageProgressStages.length + index,
-          isCompleted: false,
-        });
-      }
-    });
+          stageName: stage.name || "Unknown Stage",
+        }));
 
-    const allStages = Array.from(stagesMap.values()).sort((a, b) => a.order - b.order);
+      console.log("Tagged Pending Stages:", pendingStages);
+      return pendingStages;
+    } else {
+      // **WORK ORDER PIPELINE LOGIC**
+      const allPipelineStages =
+        processedJobData.workOrder?.pipelineStageTimeline || [];
 
-    // Find current stage index
-    const currentIndex = allStages.findIndex(s => s.stageId === currentStageId);
+      if (allPipelineStages.length === 0) return [];
 
-    if (currentIndex < 0 || currentIndex >= allStages.length - 1) {
-      return [];
+      // Get completed stages from API data
+      const completedStageIds = new Set(
+        (apiData?.data?.completedStages || []).map((cs) => cs.stageId)
+      );
+
+      // Get stages in progress
+      const stageProgressIds = new Set(
+        (currentCandidate.stageProgress || []).map((sp) => sp.stageId)
+      );
+
+      // Filter stages: exclude completed, current, and already in progress
+      const pendingStages = allPipelineStages
+        .filter((stage) => {
+          const isCompleted = completedStageIds.has(stage.stageId);
+          const isInProgress = stageProgressIds.has(stage.stageId);
+          const isCurrent = stage.stageId === currentStageId;
+
+          return !isCompleted && !isCurrent && !isInProgress;
+        })
+        .sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0))
+        .map((stage) => ({
+          stageId: stage.stageId,
+          stageName: stage.stageName,
+          stageOrder: stage.stageOrder,
+        }));
+
+      console.log(
+        "Work Order Completed Stages:",
+        Array.from(completedStageIds)
+      );
+      console.log("Work Order Pending Stages:", pendingStages);
+      return pendingStages;
     }
-
-    // Get all stages after current, excluding completed ones
-    const nextStages = allStages
-      .slice(currentIndex + 1)
-      .filter(stage => !stage.isCompleted)
-      .map(({ order, isCompleted, ...stage }) => stage);
-
-    return nextStages;
-  } else {
-    // For work order pipeline with multiple pipelines
-    const allPipelineStages = processedJobData.workOrder?.pipelineStageTimeline || [];
-
-    if (allPipelineStages.length === 0) return [];
-
-    // Group stages by pipelineId
-    const pipelineGroups = new Map();
-    allPipelineStages.forEach(stage => {
-      if (!pipelineGroups.has(stage.pipelineId)) {
-        pipelineGroups.set(stage.pipelineId, []);
-      }
-      pipelineGroups.get(stage.pipelineId).push(stage);
-    });
-
-    // Sort stages within each pipeline by stageOrder
-    pipelineGroups.forEach((stages, pipelineId) => {
-      stages.sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0));
-    });
-
-    // Create array with pipeline numbering
-    const allStagesWithNumbers = [];
-    let pipelineIndex = 1;
-    
-    pipelineGroups.forEach((stages, pipelineId) => {
-      stages.forEach((stage, stageIndexInPipeline) => {
-        allStagesWithNumbers.push({
-          ...stage,
-          displayName: `${pipelineIndex}.${stageIndexInPipeline + 1} ${stage.stageName}`,
-          pipelineNumber: pipelineIndex,
-          stageNumberInPipeline: stageIndexInPipeline + 1
-        });
-      });
-      pipelineIndex++;
-    });
-
-    // Filter out:
-    // 1. Stages already completed (in stageProgress with approved status)
-    // 2. Current active stage
-    const nextStages = allStagesWithNumbers
-      .filter(stage => {
-        const isCompleted = completedStageIds.includes(stage.stageId);
-        const isCurrent = stage.stageId === currentActiveStageId;
-        return !isCompleted && !isCurrent;
-      })
-      .map(stage => ({
-        stageId: stage.stageId,
-        stageName: stage.displayName, // Use the numbered display name
-        stageOrder: stage.stageOrder,
-        pipelineId: stage.pipelineId
-      }));
-
-    return nextStages;
-  }
-};
+  };
 
   const getReviewerIdForStage = (stageId) => {
     if (!processedJobData) return null;

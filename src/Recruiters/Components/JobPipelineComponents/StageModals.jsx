@@ -93,26 +93,55 @@ const StageModals = ({
   const isActualLastStage = (stageId) => {
     if (!processedJobData || !stageId || !selectedCandidate) return false;
 
-    const allPipelineStages =
-      processedJobData.workOrder?.pipelineStageTimeline || [];
-    if (allPipelineStages.length === 0) return false;
+    const isTagged = !!selectedCandidate.tagPipelineId;
 
-    // Get all stage IDs that exist in stageProgress
-    const stageProgressIds =
-      selectedCandidate.stageProgress?.map((sp) => sp.stageId) || [];
+    if (isTagged) {
+      // **TAGGED PIPELINE - Check remaining stages in fullPipeline**
+      const allPipelineStages = processedJobData.pipeline?.stages || [];
 
-    // Get all stages that are NOT in stageProgress (excluding the selected next stage itself)
-    const remainingStages = allPipelineStages.filter((stage) => {
-      const notInProgress = !stageProgressIds.includes(stage.stageId);
-      const notSelectedStage = stage.stageId !== stageId;
-      const notCurrentStage =
-        stage.stageId !==
-        (selectedCandidate.currentStageId || selectedCandidate.currentStage);
-      return notInProgress && notSelectedStage && notCurrentStage;
-    });
+      const completedStageIds = new Set(
+        (selectedCandidate.completedStages || []).map((cs) => cs.stageId)
+      );
 
-    // It's the last stage ONLY if there are no remaining stages after moving to this stage
-    return remainingStages.length === 0;
+      const stageProgressIds = new Set(
+        (selectedCandidate.stageProgress || []).map((sp) => sp.stageId)
+      );
+
+      // Find uncompleted stages (excluding selected stage)
+      const remainingStages = allPipelineStages.filter((stage) => {
+        const isCompleted = completedStageIds.has(stage._id);
+        const isInProgress = stageProgressIds.has(stage._id);
+        const isCurrent = stage._id === stageId;
+
+        return !isCompleted && !isCurrent && !isInProgress;
+      });
+
+      return remainingStages.length === 0;
+    } else {
+      // **WORK ORDER PIPELINE - Check remaining stages in pipelineStageTimeline**
+      const allPipelineStages =
+        processedJobData.workOrder?.pipelineStageTimeline || [];
+
+      if (allPipelineStages.length === 0) return false;
+
+      const completedStageIds = new Set(
+        (apiData?.data?.completedStages || []).map((cs) => cs.stageId)
+      );
+
+      const stageProgressIds = new Set(
+        (selectedCandidate.stageProgress || []).map((sp) => sp.stageId)
+      );
+
+      const remainingStages = allPipelineStages.filter((stage) => {
+        const isCompleted = completedStageIds.has(stage.stageId);
+        const isInProgress = stageProgressIds.has(stage.stageId);
+        const isCurrent = stage.stageId === stageId;
+
+        return !isCompleted && !isCurrent && !isInProgress;
+      });
+
+      return remainingStages.length === 0;
+    }
   };
 
   const confirmMoveCandidate = async () => {
@@ -135,13 +164,15 @@ const StageModals = ({
       const isTagged = !!selectedCandidate.tagPipelineId;
       const selectedNextStageId = values.nextStageId;
 
-      // Check if this is the last stage based on available next stages
-      const isLastStage =
-        availableNextStages.length === 0 ||
-        (selectedNextStageId && isActualLastStage(selectedNextStageId));
+      // **FIX: Check if we're actually finishing (no next stages available) vs moving to last stage**
+      const isFinishing = availableNextStages.length === 0;
+
+      // Check if the selected next stage is the last stage in the pipeline
+      const isMovingToLastStage =
+        selectedNextStageId && isActualLastStage(selectedNextStageId);
 
       let isStageOrderChanged = false;
-      if (!isLastStage && selectedNextStageId) {
+      if (!isFinishing && selectedNextStageId) {
         const currentStageData =
           processedJobData.workOrder?.pipelineStageTimeline?.find(
             (s) => s.stageId === currentStageId
@@ -242,6 +273,7 @@ const StageModals = ({
         return;
       }
 
+      // **FIX: Build the payload with correct isFinished flag**
       const payload = {
         userId: selectedCandidate.userId,
         workOrderId: selectedCandidate.workOrderId,
@@ -249,16 +281,17 @@ const StageModals = ({
         reviewerId: currentStageRecruiterId,
         reviewerComments:
           values.reviewerComments ||
-          (isLastStage ? "Process completed" : "Moved to next stage"),
+          (isFinishing ? "Process completed" : "Moved to next stage"),
         isStageOrderChange: isStageOrderChanged,
-        isFinished: isLastStage,
+        isFinished: isFinishing, // **ONLY true when no next stages available**
       };
 
-      if (!isLastStage && selectedNextStageId) {
+      // **FIX: Always add nextStageId when not finishing**
+      if (!isFinishing && selectedNextStageId) {
         payload.nextStageId = selectedNextStageId;
       }
 
-      if (!isTagged && !isLastStage && selectedNextStageId) {
+      if (!isTagged && !isFinishing && selectedNextStageId) {
         const selectedStage =
           processedJobData.workOrder?.pipelineStageTimeline?.find(
             (stage) => stage.stageId === selectedNextStageId
@@ -276,8 +309,10 @@ const StageModals = ({
       await moveToNextStage(payload).unwrap();
 
       message.success(
-        isLastStage
+        isFinishing
           ? "Candidate process completed successfully"
+          : isMovingToLastStage
+          ? "Candidate moved to final stage successfully"
           : "Candidate moved to next stage successfully"
       );
 
@@ -285,7 +320,8 @@ const StageModals = ({
       setIsMoveModalVisible(false);
       form.resetFields();
 
-      if (isLastStage) {
+      // **FIX: Only navigate away if actually finishing**
+      if (isFinishing) {
         navigate("/recruiter/completed-candidates");
         return;
       }
@@ -295,11 +331,11 @@ const StageModals = ({
         setActiveStage(selectedNextStageId);
       }
 
-      // Aggressive refetch strategy
+      await new Promise((resolve) => setTimeout(resolve, 300));
       await Promise.all([refetch(), refreshData?.()]);
 
-      // Small delay and refetch again to ensure backend sync
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Additional refetch after state settles
+      await new Promise((resolve) => setTimeout(resolve, 300));
       await Promise.all([refetch(), refreshData?.()]);
 
       // Reset state after successful refresh
@@ -490,9 +526,10 @@ const StageModals = ({
     <>
       <Modal
         title={
-          availableNextStages.length === 0 ||
-          (selectedNextStage && isActualLastStage(selectedNextStage))
+          availableNextStages.length === 0
             ? "Finish Candidate Process"
+            : selectedNextStage && isActualLastStage(selectedNextStage)
+            ? "Move to Final Stage"
             : "Move Candidate to Next Stage"
         }
         visible={isMoveModalVisible}
@@ -504,9 +541,10 @@ const StageModals = ({
           setAvailableNextStages([]);
         }}
         okText={
-          availableNextStages.length === 0 ||
-          (selectedNextStage && isActualLastStage(selectedNextStage))
+          availableNextStages.length === 0
             ? "Confirm Finish"
+            : selectedNextStage && isActualLastStage(selectedNextStage)
+            ? "Move to Final Stage"
             : "Confirm Move"
         }
         cancelText="Cancel"
@@ -543,12 +581,6 @@ const StageModals = ({
               </Form.Item>
             ) : (
               <>
-                {selectedNextStage && isActualLastStage(selectedNextStage) && (
-                  <Form.Item label="Next Stage (Final Stage)">
-                    <Input value={getStageName(selectedNextStage)} disabled />
-                  </Form.Item>
-                )}
-
                 <Form.Item
                   label="Select Next Stage"
                   name="nextStageId"
@@ -567,7 +599,7 @@ const StageModals = ({
                     {availableNextStages.map((stage) => (
                       <Option key={stage.stageId} value={stage.stageId}>
                         {stage.stageName}
-                        {isActualLastStage(stage.stageId) && " - Final Stage"}
+                        {isActualLastStage(stage.stageId) && " (Final Stage)"}
                       </Option>
                     ))}
                   </Select>
@@ -577,9 +609,10 @@ const StageModals = ({
 
             <Form.Item
               label={
-                availableNextStages.length === 0 ||
-                (selectedNextStage && isActualLastStage(selectedNextStage))
+                availableNextStages.length === 0
                   ? "Completion Comments"
+                  : selectedNextStage && isActualLastStage(selectedNextStage)
+                  ? "Move Comments (Moving to Final Stage)"
                   : "Move Comments"
               }
               name="reviewerComments"
@@ -587,8 +620,7 @@ const StageModals = ({
                 {
                   required: true,
                   message:
-                    availableNextStages.length === 0 ||
-                    (selectedNextStage && isActualLastStage(selectedNextStage))
+                    availableNextStages.length === 0
                       ? "Please enter completion comments"
                       : "Please enter comments for the move",
                 },
@@ -597,9 +629,10 @@ const StageModals = ({
               <TextArea
                 rows={4}
                 placeholder={
-                  availableNextStages.length === 0 ||
-                  (selectedNextStage && isActualLastStage(selectedNextStage))
+                  availableNextStages.length === 0
                     ? "Enter any final comments about this candidate"
+                    : selectedNextStage && isActualLastStage(selectedNextStage)
+                    ? "Enter comments for moving to the final stage"
                     : "Enter any comments for the next stage reviewer"
                 }
               />
