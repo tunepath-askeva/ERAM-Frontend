@@ -596,12 +596,83 @@ const StageModals = ({
                     value={selectedNextStage}
                     onChange={(value) => setSelectedNextStage(value)}
                   >
-                    {availableNextStages.map((stage) => (
-                      <Option key={stage.stageId} value={stage.stageId}>
-                        {stage.stageName}
-                        {isActualLastStage(stage.stageId) && " (Final Stage)"}
-                      </Option>
-                    ))}
+                    {(() => {
+                      if (!availableNextStages?.length) return null;
+
+                      // 1️⃣ Get pipeline order from workOrder (source of truth)
+                      const pipelineOrder = [
+                        ...new Set(
+                          processedJobData?.workOrder?.pipelineStageTimeline?.map(
+                            (s) => s.pipelineId
+                          )
+                        ),
+                      ];
+
+                      // 2️⃣ Group stages by pipelineId
+                      const pipelineGroups = {};
+
+                      availableNextStages.forEach((stage) => {
+                        const pipelineStage =
+                          processedJobData?.workOrder?.pipelineStageTimeline?.find(
+                            (s) => s.stageId === stage.stageId
+                          );
+
+                        const pipelineId = pipelineStage?.pipelineId;
+                        if (!pipelineId) return;
+
+                        if (!pipelineGroups[pipelineId]) {
+                          pipelineGroups[pipelineId] = [];
+                        }
+
+                        pipelineGroups[pipelineId].push({
+                          ...stage,
+                          stageOrder: pipelineStage.stageOrder,
+                        });
+                      });
+
+                      // 3️⃣ Render pipelines in correct order
+                      return pipelineOrder.map((pipelineId, pipelineIndex) => {
+                        const stages = pipelineGroups[pipelineId];
+                        if (!stages?.length) return null;
+
+                        // Sort stages inside pipeline
+                        stages.sort((a, b) => a.stageOrder - b.stageOrder);
+
+                        return (
+                          <React.Fragment key={pipelineId}>
+                            {/* Pipeline Header */}
+                            <Option
+                              disabled
+                              value={`pipeline-header-${pipelineId}`}
+                            >
+                              <div
+                                style={{
+                                  fontWeight: "bold",
+                                  color: primaryColor,
+                                  padding: "4px 0",
+                                  borderBottom: `2px solid ${primaryColor}`,
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                Pipeline {pipelineIndex + 1}
+                              </div>
+                            </Option>
+
+                            {/* Pipeline Stages */}
+                            {stages.map((stage, stageIndex) => (
+                              <Option key={stage.stageId} value={stage.stageId}>
+                                <Text style={{ marginRight: 8 }}>
+                                  {pipelineIndex + 1}.{stageIndex + 1}
+                                </Text>
+                                {stage.stageName}
+                                {isActualLastStage(stage.stageId) &&
+                                  " (Final Stage)"}
+                              </Option>
+                            ))}
+                          </React.Fragment>
+                        );
+                      });
+                    })()}
                   </Select>
                 </Form.Item>
               </>
