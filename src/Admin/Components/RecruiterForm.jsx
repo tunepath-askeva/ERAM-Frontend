@@ -198,6 +198,7 @@ export const getPermissionGroups = (recruiterType) => {
         { key: "edit-requisitions", label: "Edit Requisition" },
         { key: "add-requisitions", label: "Add Requisition" },
         { key: "delete-requisitions", label: "Delete Requisition" },
+        { key: "convert-wo", label: "Convert to Work order" },
       ],
     },
     {

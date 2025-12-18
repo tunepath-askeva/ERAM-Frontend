@@ -375,9 +375,7 @@ const RecruiterRequisition = () => {
             onClick={() => handleViewDetails(record)}
             icon={<EyeOutlined />}
             size="small"
-          >
-            
-          </Button>
+          ></Button>
 
           {hasPermission("edit-requisitions") && (
             <Button
@@ -386,9 +384,7 @@ const RecruiterRequisition = () => {
               icon={<EditOutlined />}
               size="small"
               disabled={record.convertedToWorkorder} // 🔹 disable edit
-            >
-              
-            </Button>
+            ></Button>
           )}
 
           {hasPermission("delete-requisitions") && (
@@ -401,11 +397,11 @@ const RecruiterRequisition = () => {
               }}
               icon={<DeleteOutlined />}
               size="small"
-              disabled={record.convertedToWorkorder} // 🔹 disable delete
+              disabled={record.convertedToWorkorder}
             />
           )}
 
-          {!record.convertedToWorkorder && (
+          {hasPermission("convert-wo") && !record.convertedToWorkorder && (
             <Button
               type="primary"
               size="small"
@@ -789,9 +785,9 @@ const RecruiterRequisition = () => {
               Close
             </Button>,
 
-            ...(selectedRequisition?.convertedToWorkorder
-              ? []
-              : [
+            ...(hasPermission("convert-wo") && // ADD THIS CONDITION
+            !selectedRequisition?.convertedToWorkorder
+              ? [
                   <Button
                     key="create-work-order"
                     type="primary"
@@ -813,7 +809,8 @@ const RecruiterRequisition = () => {
                   >
                     Create Work Order
                   </Button>,
-                ]),
+                ]
+              : []),
 
             hasPermission("edit-requisitions") &&
               !selectedRequisition?.convertedToWorkorder && (
