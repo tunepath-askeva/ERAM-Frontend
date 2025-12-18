@@ -376,7 +376,7 @@ const RecruiterRequisition = () => {
             icon={<EyeOutlined />}
             size="small"
           >
-            View
+            
           </Button>
 
           {hasPermission("edit-requisitions") && (
@@ -387,7 +387,7 @@ const RecruiterRequisition = () => {
               size="small"
               disabled={record.convertedToWorkorder} // 🔹 disable edit
             >
-              Edit
+              
             </Button>
           )}
 
