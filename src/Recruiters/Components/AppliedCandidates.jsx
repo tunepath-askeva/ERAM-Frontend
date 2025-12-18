@@ -41,10 +41,12 @@ import {
   InfoCircleOutlined,
   ArrowRightOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 
 const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const { data, error, isLoading, refetch } = useGetJobApplicationsQuery(jobId);
   console.log(data, "jobs");
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
@@ -124,7 +126,10 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
   const handleViewResume = (resumeUrl, fileName) => {
     if (!resumeUrl) {
-      message.warning("No file available");
+      enqueueSnackbar("No file available", {
+        variant: "warning",
+        autoHideDuration: 2000,
+      });
       return;
     }
     setSelectedResume({ url: resumeUrl, name: fileName });
@@ -133,7 +138,10 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
   const handleDownloadResume = (resumeUrl, fileName) => {
     if (!resumeUrl) {
-      message.warning("No file available");
+      enqueueSnackbar("No file available", {
+        variant: "warning",
+        autoHideDuration: 2000,
+      });
       return;
     }
 
@@ -143,7 +151,10 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    message.success("Download started");
+    enqueueSnackbar("Download started", {
+      variant: "success",
+      autoHideDuration: 2000,
+    });
   };
 
   const handleStatusChange = (applicationId, newStatus) => {
@@ -181,13 +192,17 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
         jobId: jobId,
       }).unwrap();
 
-      message.success("Candidate moved to screening successfully!");
+      enqueueSnackbar("Candidate moved to screening successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       setDetailsModalVisible(false);
       refetch(); // Refresh the data
     } catch (error) {
       console.error("Failed to move candidate to screening:", error);
-      message.error(
-        error.data?.message || "Failed to move candidate to screening"
+      enqueueSnackbar(
+        error.data?.message || "Failed to move candidate to screening",
+        { variant: "error", autoHideDuration: 3000 }
       );
     }
   };
@@ -206,8 +221,9 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
       await Promise.all(updatePromises);
 
-      message.success(
-        `Successfully moved ${selectedCandidates.length} candidates to screening`
+      enqueueSnackbar(
+        `Successfully moved ${selectedCandidates.length} candidates to screening`,
+        { variant: "success", autoHideDuration: 3000 }
       );
 
       setSelectedCandidates([]);
@@ -215,7 +231,10 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       refetch();
     } catch (error) {
       console.error("Failed to move candidates:", error);
-      message.error("Failed to move some candidates to screening");
+      enqueueSnackbar("Failed to move some candidates to screening", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
 

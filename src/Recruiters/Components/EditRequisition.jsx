@@ -37,8 +37,14 @@ const EditRequisition = () => {
   const [form] = Form.useForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: clientData } = useGetClientsQuery({ page: 1, pageSize: 100000 });
-  const { data: projectData } = useGetProjectsQuery({ page: 1, pageSize: 100000 });
+  const { data: clientData } = useGetClientsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
+  const { data: projectData } = useGetProjectsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
   const { data: recruiterData } = useGetRecruitersNameQuery();
   const {
     data: requisitionData,
@@ -56,11 +62,13 @@ const EditRequisition = () => {
     })) || [];
 
   const clients =
-    clientData?.clients?.map((client) => ({
-      id: client._id,
-      name: client.fullName,
-      email: client.email,
-    })) || [];
+    clientData?.clients
+      ?.filter((client) => client.clientType === "Customer")
+      .map((client) => ({
+        id: client._id,
+        name: client.fullName,
+        email: client.email,
+      })) || [];
 
   const recruiters = recruiterData?.recruitername || [];
 

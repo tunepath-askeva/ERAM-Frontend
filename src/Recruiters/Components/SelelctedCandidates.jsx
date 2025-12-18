@@ -33,12 +33,14 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const SelectedCandidates = ({ jobId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
@@ -160,8 +162,9 @@ const SelectedCandidates = ({ jobId }) => {
 
       await Promise.all(updatePromises);
 
-      message.success(
-        `Successfully moved ${selectedCandidates.length} candidates to ${newStatus}`
+      enqueueSnackbar(
+        `Successfully moved ${selectedCandidates.length} candidates to ${newStatus}`,
+        { variant: "success", autoHideDuration: 3000 }
       );
 
       setSelectedCandidates([]);
@@ -169,7 +172,10 @@ const SelectedCandidates = ({ jobId }) => {
       refetch();
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      message.error("Failed to update some candidate statuses");
+      enqueueSnackbar("Failed to update some candidate statuses", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -220,13 +226,19 @@ const SelectedCandidates = ({ jobId }) => {
         pipelineId: pipelineToSend,
       }).unwrap();
 
-      message.success(`Candidate moved to ${newStatus} successfully`);
+      enqueueSnackbar(`Candidate moved to ${newStatus} successfully`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       refetch();
       setIsModalVisible(false);
       setSelectedCandidate(null);
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      message.error(error.data?.message || "Failed to update candidate status");
+      enqueueSnackbar(
+        error.data?.message || "Failed to update candidate status",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     }
   };
 

@@ -650,10 +650,16 @@ const SourcedCandidates = ({ jobId }) => {
         pageSize: prev.pageSize,
       }));
 
-      message.success(`Found ${total} candidates matching your criteria`);
+      enqueueSnackbar(`Found ${total} candidates matching your criteria`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
     } catch (error) {
       console.error("Filter error:", error);
-      message.error("Failed to apply filters. Please try again.");
+      enqueueSnackbar("Failed to apply filters. Please try again.", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -680,11 +686,17 @@ const SourcedCandidates = ({ jobId }) => {
       // Clear other search states
       setShouldFetch(false);
       setIsExactMatch(false);
-      message.success("Work order details submitted successfully!");
+      enqueueSnackbar("Work order details submitted successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       setIsWorkOrderModalVisible(false);
     } catch (error) {
       console.error(error);
-      message.error("Please fix the errors in the form");
+      enqueueSnackbar("Please fix the errors in the form", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
   const sourcedCandidates = useMemo(() => {
@@ -763,10 +775,16 @@ const SourcedCandidates = ({ jobId }) => {
       setTempFilters(initialFilters);
       setPagination((prev) => ({ ...prev, current: 1 }));
 
-      message.info("Fetching suggestion match candidates...");
+      enqueueSnackbar("Fetching suggestion match candidates...", {
+        variant: "info",
+        autoHideDuration: 2000,
+      });
     } catch (error) {
       console.error("Failed to fetch suggestion match candidates:", error);
-      message.error("Failed to fetch suggestion match candidates");
+      enqueueSnackbar("Failed to fetch suggestion match candidates", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -898,7 +916,10 @@ const SourcedCandidates = ({ jobId }) => {
 
     setSelectedCandidates([]);
     setSelectAll(false);
-    message.success("All filters cleared successfully");
+    enqueueSnackbar("All filters cleared successfully", {
+      variant: "success",
+      autoHideDuration: 2000,
+    });
   };
 
   const handleClearSpecificFilter = (filterType) => {
@@ -1005,8 +1026,9 @@ const SourcedCandidates = ({ jobId }) => {
 
       await Promise.all(updatePromises);
 
-      message.success(
-        `Successfully moved ${selectedCandidates.length} candidates to ${newStatus}`
+      enqueueSnackbar(
+        `Successfully moved ${selectedCandidates.length} candidates to ${newStatus}`,
+        { variant: "success", autoHideDuration: 3000 }
       );
 
       setSelectedCandidates([]);
@@ -1023,7 +1045,10 @@ const SourcedCandidates = ({ jobId }) => {
       jobRefetch();
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      message.error("Failed to update some candidate statuses");
+      enqueueSnackbar("Failed to update some candidate statuses", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   };
 
@@ -1052,8 +1077,10 @@ const SourcedCandidates = ({ jobId }) => {
         candidateType: candidate.candidateType,
       }).unwrap();
 
-      message.success(`Candidate moved to ${newStatus} successfully`);
-
+      enqueueSnackbar(`Candidate moved to ${newStatus} successfully`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       if (candidate.isSourced) {
         refetchWorkOrderBased();
       }
@@ -1071,7 +1098,10 @@ const SourcedCandidates = ({ jobId }) => {
       }
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      message.error(error.data?.message || "Failed to update candidate status");
+      enqueueSnackbar(
+        error.data?.message || "Failed to update candidate status",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     }
   };
 
@@ -1111,7 +1141,10 @@ const SourcedCandidates = ({ jobId }) => {
 
         console.log("Pagination updated:", { currentPage, total, pageSize });
       } catch (error) {
-        message.error("Failed to load more candidates");
+        enqueueSnackbar("Failed to load more candidates", {
+          variant: "error",
+          autoHideDuration: 3000,
+        });
         console.error("Pagination error:", error);
       }
     } else {
@@ -1557,7 +1590,7 @@ const SourcedCandidates = ({ jobId }) => {
                 onClick={() => handleBulkStatusUpdate("selected")}
                 loading={isUpdatingStatus}
               >
-                Move to Selected 
+                Move to Selected
               </Button>
             )}
           </Space>

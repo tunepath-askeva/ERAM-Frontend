@@ -58,6 +58,7 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -92,6 +93,7 @@ const fieldTypes = [
 const typesWithOptions = ["select", "multi_select", "checkbox", "radio"];
 
 const ScreeningCandidates = ({ jobId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -379,12 +381,18 @@ const ScreeningCandidates = ({ jobId }) => {
         pipelineId: pipelineId === null ? "" : pipelineId,
       }).unwrap();
 
-      message.success(`Candidate status changed to ${newStatus}`);
+      enqueueSnackbar(`Candidate status changed to ${newStatus}`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
       refetch();
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to change status:", error);
-      message.error(error.data?.message || "Failed to change candidate status");
+      enqueueSnackbar(
+        error.data?.message || "Failed to change candidate status",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     }
   };
 
@@ -478,7 +486,18 @@ const ScreeningCandidates = ({ jobId }) => {
 
   const handleBulkChangeStatus = async (newStatus) => {
     if (selectedCandidates.length === 0) {
-      message.warning("Please select at least one candidate");
+      enqueueSnackbar("Please select at least one candidate", {
+        variant: "warning",
+        autoHideDuration: 2000,
+      });
+      return;
+    }
+
+    // Show pipeline selection modal for interview status
+    if (newStatus === "interview") {
+      setPendingStatusUpdate(newStatus);
+      setSelectedPipelineForUpdate(null); // Start with no pipeline selected
+      setIsPipelineModalVisible(true);
       return;
     }
 
@@ -486,22 +505,78 @@ const ScreeningCandidates = ({ jobId }) => {
     try {
       const promises = selectedCandidates.map((candidateId) => {
         const candidate = allCandidates.find((c) => c._id === candidateId);
+        if (!candidate) {
+          console.error(`Candidate not found for ID: ${candidateId}`);
+          return Promise.resolve(); // Skip if candidate not found
+        }
+
         return statusChange({
-          id: candidate.applicationId,
+          id: candidate.applicationId, // ✓ This is correct
           status: newStatus,
+          pipelineId: "", // Add this if not selecting pipeline
         }).unwrap();
       });
 
       await Promise.all(promises);
 
-      message.success(
-        `Updated status to "${newStatus}" for ${selectedCandidates.length} candidate(s)`
+      enqueueSnackbar(
+        `Updated status to "${newStatus}" for ${selectedCandidates.length} candidate(s)`,
+        { variant: "success", autoHideDuration: 3000 }
       );
+
       setSelectedCandidates([]);
       refetch();
     } catch (error) {
       console.error("Failed to change status for candidates:", error);
-      message.error(error?.data?.message || "Bulk status update failed");
+
+      enqueueSnackbar(error?.data?.message || "Bulk status update failed", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
+    } finally {
+      setIsBulkMoving(false);
+    }
+  };
+
+  const handleBulkPipelineUpdateConfirm = async () => {
+    if (!pendingStatusUpdate || selectedCandidates.length === 0) return;
+
+    setIsPipelineModalVisible(false);
+    setIsBulkMoving(true);
+
+    try {
+      const promises = selectedCandidates.map((candidateId) => {
+        const candidate = allCandidates.find((c) => c._id === candidateId);
+        if (!candidate) {
+          console.error(`Candidate not found for ID: ${candidateId}`);
+          return Promise.resolve();
+        }
+
+        return statusChange({
+          id: candidate.applicationId,
+          status: pendingStatusUpdate,
+          pipelineId:
+            selectedPipelineForUpdate === null ? "" : selectedPipelineForUpdate,
+        }).unwrap();
+      });
+
+      await Promise.all(promises);
+
+      enqueueSnackbar(
+        `Successfully moved ${selectedCandidates.length} candidates to ${pendingStatusUpdate}`,
+        { variant: "success", autoHideDuration: 3000 }
+      );
+
+      setSelectedCandidates([]);
+      refetch();
+      setPendingStatusUpdate(null);
+      setSelectedPipelineForUpdate(null);
+    } catch (error) {
+      console.error("Failed to move candidates:", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to move some candidates",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     } finally {
       setIsBulkMoving(false);
     }
@@ -1579,8 +1654,13 @@ const ScreeningCandidates = ({ jobId }) => {
           setIsPipelineModalVisible(false);
           setPendingStatusUpdate(null);
           setSelectedPipelineForUpdate(null);
+          setSelectedCandidates([]);
         }}
-        onOk={handlePipelineUpdateConfirm}
+        onOk={
+          selectedCandidates.length > 0
+            ? handleBulkPipelineUpdateConfirm
+            : handlePipelineUpdateConfirm
+        }
         okText="Confirm"
         cancelText="Cancel"
         okButtonProps={{ style: { backgroundColor: "#da2c46" } }}

@@ -25,9 +25,7 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import {
-  useSubmitRequisitionMutation,
-} from "../../Slices/Recruiter/RecruiterApis";
+import { useSubmitRequisitionMutation } from "../../Slices/Recruiter/RecruiterApis";
 
 import {
   useGetClientsQuery,
@@ -60,8 +58,14 @@ const AddRequisition = ({ onNavigateBack }) => {
     approvalRecruiter: [],
   });
 
-  const { data: clientData } = useGetClientsQuery({ page: 1, pageSize: 100000 });
-  const { data: projectData } = useGetProjectsQuery({ page: 1, pageSize: 100000 });
+  const { data: clientData } = useGetClientsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
+  const { data: projectData } = useGetProjectsQuery({
+    page: 1,
+    pageSize: 100000,
+  });
   const { data: recruiterData } = useGetRecruitersNameQuery();
 
   const [createRequisition] = useSubmitRequisitionMutation();
@@ -73,11 +77,13 @@ const AddRequisition = ({ onNavigateBack }) => {
     })) || [];
 
   const clients =
-    clientData?.clients?.map((client) => ({
-      id: client._id,
-      name: client.fullName,
-      email: client.email,
-    })) || [];
+    clientData?.clients
+      ?.filter((client) => client.clientType === "Customer")
+      .map((client) => ({
+        id: client._id,
+        name: client.fullName,
+        email: client.email,
+      })) || [];
 
   const recruiters = recruiterData?.recruitername || [];
 

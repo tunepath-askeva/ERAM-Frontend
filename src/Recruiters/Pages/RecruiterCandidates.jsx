@@ -76,6 +76,7 @@ import {
   useGetPipelinesQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
+import { useSnackbar } from "notistack";
 import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
@@ -99,6 +100,7 @@ const fieldTypes = [
 ];
 
 const RecruiterCandidates = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("interview");
@@ -333,14 +335,15 @@ const RecruiterCandidates = () => {
         status: "interview",
       }).unwrap();
 
-      message.success(
-        `${candidate.name} moved to interview stage successfully!`
+      enqueueSnackbar(
+        `${candidate.name} moved to interview stage successfully!`,
+        { variant: "success" }
       );
       refetch();
     } catch (error) {
-      message.error(
-        `Failed to move ${candidate.name} to interview stage. Please try again.`
-      );
+      enqueueSnackbar(`Failed to move ${candidate.name} to interview stage.`, {
+        variant: "error",
+      });
       console.error("Move to interview error:", error);
     }
   };
@@ -368,7 +371,7 @@ const RecruiterCandidates = () => {
 
   const handleUpdatePipeline = async () => {
     if (!selectedNewPipeline) {
-      message.error("Please select a pipeline");
+      enqueueSnackbar("Please Select a pipeline!", { variant: "error" });
       return;
     }
 
@@ -378,7 +381,7 @@ const RecruiterCandidates = () => {
         pipelineId: selectedNewPipeline,
       }).unwrap();
 
-      message.success("Pipeline updated successfully!");
+      enqueueSnackbar("Pipeline updated successfully!", { variant: "success" });
       setChangePipelineModalVisible(false);
 
       const newPipeline = activePipelines.find(
@@ -394,7 +397,7 @@ const RecruiterCandidates = () => {
       await refetch();
       await refetchCandidateDetails();
     } catch (error) {
-      message.error("Failed to update pipeline");
+      enqueueSnackbar("Failed to update pipeline", { variant: "error" });
       console.error("Update pipeline error:", error);
     }
   };
@@ -406,13 +409,15 @@ const RecruiterCandidates = () => {
         status: "offer",
       }).unwrap();
 
-      message.success(`${candidate.name} moved to offer stage successfully!`);
+      enqueueSnackbar(`${candidate.name} moved to offer stage successfully!`, {
+        variant: "success",
+      });
       await refetch();
       await refetchCandidateDetails();
     } catch (error) {
-      message.error(
-        `Failed to move ${candidate.name} to offer stage. Please try again.`
-      );
+      enqueueSnackbar(`Failed to move ${candidate.name} to offer stage.`, {
+        variant: "error",
+      });
       console.error("Move to offer error:", error);
     }
   };
@@ -431,13 +436,16 @@ const RecruiterCandidates = () => {
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
 
-      message.success("Offer created successfully!");
+      enqueueSnackbar("Offer sent successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
       await refetch();
       await refetchCandidateDetails();
     } catch (err) {
-      message.error("Failed to send offer");
+      console.error("Offer submission error:", err);
+      enqueueSnackbar(err?.data?.message || "Failed to send offer", {
+        variant: "error",
+      });
     }
   };
 
@@ -455,13 +463,15 @@ const RecruiterCandidates = () => {
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
 
-      message.success("Offer revised successfully!");
+      enqueueSnackbar("Offer revised successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
       await refetch();
       await refetchCandidateDetails();
     } catch (err) {
-      message.error("Failed to revise offer");
+      enqueueSnackbar(err?.data?.message || "Failed to revise offer", {
+        variant: "error",
+      });
     }
   };
 
@@ -472,11 +482,11 @@ const RecruiterCandidates = () => {
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
 
-      message.success("Offer finalized!");
+      enqueueSnackbar("Offer finalized!", { variant: "success" });
       refetch();
       refetchCandidateDetails();
     } catch (err) {
-      message.error("Failed to finalize offer");
+      enqueueSnackbar("Failed to finalize offer", { variant: "error" });
     }
   };
 
@@ -487,10 +497,14 @@ const RecruiterCandidates = () => {
         status: "rejected",
       }).unwrap();
 
-      message.success(`${candidate.name} has been rejected.`);
+      enqueueSnackbar(`${candidate.name} has been rejected.`, {
+        variant: "success",
+      });
       refetch();
     } catch (error) {
-      message.error(`Failed to reject ${candidate.name}. Please try again.`);
+      enqueueSnackbar(`Failed to reject ${candidate.name}.`, {
+        variant: "error",
+      });
       console.error("Reject candidate error:", error);
     }
   };
@@ -536,8 +550,9 @@ const RecruiterCandidates = () => {
         status,
       }).unwrap();
 
-      message.success(`Interview ${status.replace("_", " ")} successfully!`);
-
+      enqueueSnackbar(`Interview ${status.replace("_", " ")} successfully!`, {
+        variant: "success",
+      });
       await refetch();
       await refetchCandidateDetails();
 
@@ -547,7 +562,9 @@ const RecruiterCandidates = () => {
 
       setScheduleInterviewModalVisible(false);
     } catch (error) {
-      message.error(`Failed to update interview status: ${error.message}`);
+      enqueueSnackbar(`Failed to update interview status: ${error.message}`, {
+        variant: "error",
+      });
       console.error("Interview status change error:", error);
     }
   };
@@ -599,10 +616,11 @@ const RecruiterCandidates = () => {
         payload,
       }).unwrap();
 
-      message.success(
+      enqueueSnackbar(
         interviewToReschedule
           ? "Interview rescheduled successfully!"
-          : "Interview scheduled successfully!"
+          : "Interview scheduled successfully!",
+        { variant: "success" }
       );
 
       setScheduleInterviewModalVisible(false);
@@ -611,7 +629,7 @@ const RecruiterCandidates = () => {
       await refetch();
       await refetchCandidateDetails();
     } catch (error) {
-      message.error("Failed to schedule interview");
+      enqueueSnackbar("Failed to schedule interview", { variant: "error" });
       console.error("Error:", error);
     }
   };
@@ -797,14 +815,18 @@ const RecruiterCandidates = () => {
       };
 
       await moveToPipeline(payload).unwrap();
-      message.success(
-        `${candidate.name} moved to Work Order pipeline successfully!`
+      enqueueSnackbar(
+        `${candidate.name} moved to Work Order pipeline successfully!`,
+        { variant: "success" }
       );
       setCandidateDrawerVisible(false);
       refetch();
     } catch (error) {
       console.error("Failed to move to work order pipeline:", error);
-      message.error(`Failed to move ${candidate.name} to work order pipeline.`);
+      enqueueSnackbar(
+        `Failed to move ${candidate.name} to work order pipeline.`,
+        { variant: "error" }
+      );
     }
   };
 
@@ -882,16 +904,18 @@ const RecruiterCandidates = () => {
         isPipeline: true,
       }).unwrap();
 
-      message.success(
-        `${selectedCandidate.name} moved to ${selectedCandidate.tagPipeline.name} successfully`
+      enqueueSnackbar(
+        `${selectedCandidate.name} moved to ${selectedCandidate.tagPipeline.name} successfully`,
+        { variant: "success" }
       );
       refetch();
       setCandidateDrawerVisible(false);
       setPipelineModalVisible(false);
     } catch (error) {
       console.error("Failed to move candidate to tagged pipeline:", error);
-      message.error(
-        error.data?.message || "Failed to move candidate to tagged pipeline"
+      enqueueSnackbar(
+        error.data?.message || "Failed to move candidate to tagged pipeline",
+        { variant: "error" }
       );
     }
   };
@@ -917,6 +941,7 @@ const RecruiterCandidates = () => {
   const handleSendMessage = (candidate) => {
     setSelectedCandidate(candidate);
     setMessageModalVisible(true);
+    enqueueSnackbar("Message sent successfully!", { variant: "success" });
   };
 
   const handleDownloadResume = (candidate) => {
@@ -925,11 +950,15 @@ const RecruiterCandidates = () => {
       if (firstStage.uploadedDocuments?.length > 0) {
         const document = firstStage.uploadedDocuments[0];
         window.open(document?.fileUrl, "_blank");
-        message.success(`Downloading ${document.fileName}...`);
+        enqueueSnackbar(`Downloading ${document.fileName}...`, {
+          variant: "info",
+        });
         return;
       }
     }
-    message.warning("No documents available for download");
+    enqueueSnackbar("No documents available for download", {
+      variant: "warning",
+    });
   };
 
   const renderStageActions = (candidate) => {
@@ -1005,8 +1034,9 @@ const RecruiterCandidates = () => {
       );
     });
 
-    message.success(
-      `Applied ${universalRecruiterIds.length} recruiter(s) to all ${allStages.length} stages`
+    enqueueSnackbar(
+      `Applied ${universalRecruiterIds.length} recruiter(s) to all ${allStages.length} stages`,
+      { variant: "success" }
     );
   };
 
@@ -1038,7 +1068,9 @@ const RecruiterCandidates = () => {
       }
     });
 
-    message.success(`Applied dates to all ${allStages.length} stages`);
+    enqueueSnackbar(`Applied dates to all ${allStages.length} stages`, {
+      variant: "success",
+    });
   };
 
   // Add these functions to the component
@@ -3081,7 +3113,9 @@ const RecruiterCandidates = () => {
             type="primary"
             style={{ background: "#da2c46" }}
             onClick={() => {
-              message.success("Pipeline details saved successfully");
+              enqueueSnackbar("Pipeline details saved successfully", {
+                variant: "success",
+              });
               setPipelineModalVisible(false);
               setSelectedPipeline(null);
             }}
