@@ -24,6 +24,7 @@ import {
   EditOutlined,
   SearchOutlined,
   FilterOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -199,6 +200,25 @@ const RecruiterRequisition = () => {
 
   const handleSearchChange = (e) => {
     setSearchText(e.target.value);
+  };
+
+  const handleCreateWorkOrder = (requisition) => {
+    console.log("Creating work order for requisition:", requisition);
+
+    navigate(`/recruiter/jobs/create`, {
+      // Or your recruiter route
+      state: {
+        requisitionData: {
+          ...requisition,
+          _id: requisition._id,
+          client: requisition.client,
+          project: requisition.project,
+          assignedRecruiters: requisition.assignedRecruiters || [],
+          recruiters: requisition.assignedRecruiters || [],
+        },
+        prefilled: true,
+      },
+    });
   };
 
   const handleSearchClear = () => {
@@ -383,6 +403,29 @@ const RecruiterRequisition = () => {
               size="small"
               disabled={record.convertedToWorkorder} // 🔹 disable delete
             />
+          )}
+
+          {!record.convertedToWorkorder && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<FileTextOutlined />}
+              onClick={() => handleCreateWorkOrder(record)}
+              disabled={
+                record.isActive === "inactive" ||
+                record.overallapprovalstatus === "pending"
+              }
+              style={{
+                background:
+                  record.isActive === "inactive"
+                    ? "#ccc"
+                    : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                borderColor:
+                  record.isActive === "inactive" ? "#ccc" : "#da2c46",
+              }}
+            >
+              Create Work Order
+            </Button>
           )}
 
           {record.convertedToWorkorder && (
@@ -746,6 +789,32 @@ const RecruiterRequisition = () => {
               Close
             </Button>,
 
+            ...(selectedRequisition?.convertedToWorkorder
+              ? []
+              : [
+                  <Button
+                    key="create-work-order"
+                    type="primary"
+                    icon={<FileTextOutlined />}
+                    onClick={() => {
+                      handleCreateWorkOrder(selectedRequisition);
+                      setIsDetailModalVisible(false);
+                    }}
+                    disabled={
+                      selectedRequisition?.isActive === "inactive" ||
+                      selectedRequisition?.overallapprovalstatus === "pending"
+                    }
+                    style={{
+                      background:
+                        selectedRequisition?.isActive === "inactive"
+                          ? "#ccc"
+                          : "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
+                    }}
+                  >
+                    Create Work Order
+                  </Button>,
+                ]),
+
             hasPermission("edit-requisitions") &&
               !selectedRequisition?.convertedToWorkorder && (
                 <Button
@@ -984,7 +1053,7 @@ const RecruiterRequisition = () => {
                             {remark.remark}
                           </div>
                           <div>
-                            {remark?.recruiterId?.fullName} || {" "}
+                            {remark?.recruiterId?.fullName} ||{" "}
                             {remark?.recruiterId?.email}
                           </div>
                           <div
