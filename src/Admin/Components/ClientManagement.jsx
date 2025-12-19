@@ -492,6 +492,23 @@ const ClientsManagement = () => {
                         {client.clientType}
                       </Tag>
                     </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <Text
+                        strong
+                        style={{ color: "#2c3e50", fontSize: "12px" }}
+                      >
+                        <TagOutlined style={{ marginRight: 4 }} />
+                        Created By:
+                      </Text>
+                      <div style={{ marginTop: 6 }}>
+                        <Tag color="blue">
+                          {client?.createdBy?.fullName
+                            ? `${client.createdBy.fullName} (${client.createdBy.email})`
+                            : client?.createdBy?.email}
+                        </Tag>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               </Col>

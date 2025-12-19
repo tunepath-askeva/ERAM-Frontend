@@ -213,7 +213,7 @@ const EmployeeAdminDocuments = () => {
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} employees`,
           }}
-          size="small"
+          scroll={{x: 'max-content'}}
         />
 
         {employees.length === 0 && !isLoading && (

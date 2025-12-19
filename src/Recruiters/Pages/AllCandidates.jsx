@@ -489,6 +489,34 @@ function AllCandidates() {
       ),
     },
     {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      width: 200,
+      render: (createdBy) => {
+        if (!createdBy) {
+          return <Text type="secondary">N/A</Text>;
+        }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 13 }}>
+              {createdBy.fullName}
+            </Text>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 12,
+                wordBreak: "break-all",
+              }}
+            >
+              {createdBy.email}
+            </Text>
+          </Space>
+        );
+      },
+    },
+    {
       title: "Candidate Code",
       dataIndex: "uniqueCode",
       render: (_, record) => (
@@ -568,6 +596,7 @@ function AllCandidates() {
     {
       title: "Actions",
       key: "actions",
+      fixed: "right",
       width: 120,
       render: (_, record) => (
         <Space>
@@ -794,7 +823,7 @@ function AllCandidates() {
             dataSource={sortedCandidates}
             rowKey="_id"
             pagination={false}
-            scroll={{ x: true }}
+            scroll={{ x: "max-content" }}
             bordered
             loading={isLoadingData}
           />

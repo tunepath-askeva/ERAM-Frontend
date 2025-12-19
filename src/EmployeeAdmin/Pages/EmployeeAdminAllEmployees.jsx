@@ -9,6 +9,7 @@ import {
   Spin,
   Tooltip,
   Tag,
+  Typography,
 } from "antd";
 import {
   SearchOutlined,
@@ -35,6 +36,8 @@ import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
 import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+
+const { Text } = Typography;
 
 const EmployeeAdminAllEmployees = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -248,6 +251,34 @@ const EmployeeAdminAllEmployees = () => {
       key: "eramId",
       width: 120,
       render: (text) => text || "-",
+    },
+    {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      width: 200,
+      render: (createdBy) => {
+        if (!createdBy) {
+          return <Text type="secondary">N/A</Text>;
+        }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 13 }}>
+              {createdBy.fullName}
+            </Text>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 12,
+                wordBreak: "break-all",
+              }}
+            >
+              {createdBy.email}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: "Name",

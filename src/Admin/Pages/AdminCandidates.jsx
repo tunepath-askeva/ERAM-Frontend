@@ -26,7 +26,7 @@ import {
   Dropdown,
   Menu,
   Alert,
-  Result
+  Result,
 } from "antd";
 import {
   PlusOutlined,
@@ -637,6 +637,34 @@ const AdminCandidates = () => {
       ),
     },
     {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      width: 200,
+      render: (createdBy) => {
+        if (!createdBy) {
+          return <Text type="secondary">N/A</Text>;
+        }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 13 }}>
+              {createdBy.fullName}
+            </Text>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 12,
+                wordBreak: "break-all",
+              }}
+            >
+              {createdBy.email}
+            </Text>
+          </Space>
+        );
+      },
+    },
+    {
       title: "Candidate Code",
       dataIndex: "uniqueCode",
       key: "uniqueCode",
@@ -676,6 +704,7 @@ const AdminCandidates = () => {
         </div>
       ),
     },
+
     {
       title: "Company",
       dataIndex: "companyName",
@@ -687,6 +716,7 @@ const AdminCandidates = () => {
         </div>
       ),
     },
+
     {
       title: "Status",
       dataIndex: "accountStatus",
@@ -699,6 +729,7 @@ const AdminCandidates = () => {
     },
     {
       title: "Actions",
+      fixed: "right",
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
@@ -965,7 +996,7 @@ const AdminCandidates = () => {
                 onChange: handlePageChange,
                 onShowSizeChange: handlePageChange,
               }}
-              scroll={{ x: true }}
+              scroll={{ x: "max-content" }}
               style={{ marginTop: "16px" }}
             />
           </>
@@ -991,7 +1022,7 @@ const AdminCandidates = () => {
               />
             ) : (
               <Result
-               status="404"
+                status="404"
                 title="No Candidates Yet"
                 subTitle="You haven't added any candidates so far."
               />

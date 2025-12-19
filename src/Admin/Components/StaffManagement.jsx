@@ -32,6 +32,7 @@ import {
   WarningOutlined,
   CheckOutlined,
   StopOutlined,
+  TagOutlined
 } from "@ant-design/icons";
 import {
   useAddStaffMutation,
@@ -124,7 +125,7 @@ const StaffManagement = () => {
           name: values.name,
           staffType: values.staffType,
           email: values.email,
-          contactNo: fullPhoneNumber ,
+          contactNo: fullPhoneNumber,
           role: "staff",
         };
         await addStaff(payload).unwrap();
@@ -488,6 +489,20 @@ const StaffManagement = () => {
                     <Text style={{ fontSize: "14px" }}>
                       {staffMember.phone}
                     </Text>
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ color: "#2c3e50", fontSize: "12px" }}>
+                      <TagOutlined style={{ marginRight: 4 }} />
+                      Created By:
+                    </Text>
+                    <div style={{ marginTop: 6 }}>
+                      <Tag color="blue">
+                        {staffMember?.createdBy?.fullName
+                          ? `${staffMember.createdBy.fullName} (${staffMember.createdBy.email})`
+                          : staffMember?.createdBy?.email}
+                      </Tag>
+                    </div>
                   </div>
                 </div>
               </Card>

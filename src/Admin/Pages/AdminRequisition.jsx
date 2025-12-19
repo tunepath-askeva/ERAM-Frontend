@@ -87,6 +87,7 @@ const AdminRequisition = () => {
       requisitionNo: req.requisitionNo || "N/A",
       projectName: req.project?.name || "PROJECT",
       clientName: req.client?.fullName || "Client Name",
+      createdBy: req.createdBy,
       referenceNo: req.referenceNo || "N/A",
       department: req.companyIndustry,
       location: req.officeLocation,
@@ -256,11 +257,23 @@ const AdminRequisition = () => {
       ),
     },
     {
-      title: "Department",
-      dataIndex: "department",
-      key: "department",
-      width: 120,
-      render: (text) => <Tag color="blue">{text}</Tag>,
+      title: "Created By",
+      key: "createdBy",
+      width: 220,
+      render: (_, record) => {
+        const createdBy = record?.createdBy;
+
+        if (!createdBy) return "-";
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{createdBy?.fullName}</Text>
+            <Text type="secondary" style={{ fontSize: 14 }}>
+              {createdBy?.email}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: "Location",
@@ -1213,7 +1226,10 @@ const AdminRequisition = () => {
                 </Tag>
               )}
             </Descriptions.Item>
-
+            <Descriptions.Item label="Created By" span={3}>
+              {selectedRequisition.originalData?.createdBy?.fullName || "N/A"} -{" "}
+              {selectedRequisition.originalData?.createdBy?.email || "N/A"}
+            </Descriptions.Item>
             {/* Timestamps */}
             <Descriptions.Item label="Created At" span={1}>
               {selectedRequisition.originalData?.createdAt
@@ -1222,6 +1238,7 @@ const AdminRequisition = () => {
                   )
                 : "N/A"}
             </Descriptions.Item>
+
             <Descriptions.Item label="Last Updated" span={2}>
               {selectedRequisition.originalData?.updatedAt
                 ? dayjs(selectedRequisition.originalData.updatedAt).format(

@@ -533,6 +533,23 @@ const ProjectManagement = () => {
                         </Tag>
                       </div>
                     </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <Text
+                        strong
+                        style={{ color: "#2c3e50", fontSize: "12px" }}
+                      >
+                        <TagOutlined style={{ marginRight: 4 }} />
+                        Created By:
+                      </Text>
+                      <div style={{ marginTop: 6 }}>
+                        <Tag color="blue">
+                          {project?.createdBy?.fullName
+                            ? `${project.createdBy.fullName} (${project.createdBy.email})`
+                            : project?.createdBy?.email}
+                        </Tag>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               </Col>

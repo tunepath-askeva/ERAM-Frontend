@@ -243,6 +243,34 @@ const AdminEmployees = () => {
       render: (text) => text || "-",
     },
     {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      width: 200,
+      render: (createdBy) => {
+        if (!createdBy) {
+          return <Text type="secondary">N/A</Text>;
+        }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong style={{ fontSize: 13 }}>
+              {createdBy.fullName}
+            </Text>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 12,
+                wordBreak: "break-all",
+              }}
+            >
+              {createdBy.email}
+            </Text>
+          </Space>
+        );
+      },
+    },
+    {
       title: "Name",
       dataIndex: "fullName",
       key: "fullName",
@@ -510,10 +538,10 @@ const AdminEmployees = () => {
             showSizeChanger: true,
             showTotal: (total) =>
               `Total ${total} employee${total !== 1 ? "s" : ""}`,
-            pageSizeOptions: ["5","10", "20", "50", "100"],
+            pageSizeOptions: ["5", "10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1400 }}
+          scroll={{ x: 'max-content' }}
           size="middle"
         />
       </Spin>

@@ -45,6 +45,7 @@ import {
   FileTextOutlined,
   SettingOutlined,
   BellOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import RecruiterForm from "../Components/RecruiterForm";
 import { useSnackbar } from "notistack";
@@ -839,6 +840,41 @@ const AdminRecruiter = () => {
                           />
                           <Text>{recruiter?.recruiterType}</Text>
                         </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                            gap: 8,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <SafetyCertificateOutlined
+                            style={{ color: "#666" }}
+                          />
+
+                          <Text strong>Created By</Text>
+                          <Text type="secondary">-</Text>
+
+                          <Space
+                            direction="vertical"
+                            size={0}
+                            style={{
+                              minWidth: 0, // important for mobile text wrapping
+                            }}
+                          >
+                            <Text strong ellipsis>
+                              {recruiter?.createdBy?.fullName || "N/A"}
+                            </Text>
+                            <Text
+                              type="secondary"
+                              style={{ fontSize: 12, wordBreak: "break-all" }}
+                            >
+                              {recruiter?.createdBy?.email || ""}
+                            </Text>
+                          </Space>
+                        </div>
+
                         {recruiter.experienceYears && (
                           <div
                             style={{ display: "flex", alignItems: "center" }}
@@ -1204,6 +1240,20 @@ const AdminRecruiter = () => {
                     </div>
                   ) : (
                     <Text type="secondary">No permissions assigned</Text>
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Created By">
+                  {selectedRecruiterData?.createdBy ? (
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <Text strong>
+                        {selectedRecruiterData.createdBy.fullName}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {selectedRecruiterData.createdBy.email}
+                      </Text>
+                    </div>
+                  ) : (
+                    <Text type="secondary">Not specified</Text>
                   )}
                 </Descriptions.Item>
               </Descriptions>

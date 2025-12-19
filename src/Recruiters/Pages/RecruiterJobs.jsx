@@ -186,6 +186,7 @@ const RecruiterJobs = () => {
       numberOfEmployees: job.numberOfEmployees || 0,
       requisitionNo: job.requisitionNo || null,
       referenceNo: job.referenceNo || null,
+      createdBy: job.createdBy || "",
     }));
   };
 
@@ -735,6 +736,23 @@ const RecruiterJobs = () => {
                     >
                       <CalendarOutlined />
                       Posted {formatDate(job.postedDate)}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "10px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "100%",
+                      }}
+                      title={`${job?.createdBy?.fullName} - ${job?.createdBy?.email}`}
+                    >
+                      Created By :&nbsp;
+                      <strong>{job?.createdBy?.fullName}</strong>
+                      &nbsp;({job?.createdBy?.email})
                     </Text>
                   </div>
                 </Card>

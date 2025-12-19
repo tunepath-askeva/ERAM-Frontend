@@ -16,6 +16,7 @@ import {
   Pagination,
   Divider,
   Collapse,
+  Typography,
 } from "antd";
 import {
   PlusOutlined,
@@ -35,7 +36,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
-
+const { Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -297,6 +298,25 @@ const RecruiterRequisition = () => {
       key: "title",
       width: 200,
       render: (text) => text || "N/A",
+    },
+    {
+      title: "Created By",
+      key: "createdBy",
+      width: 220,
+      render: (_, record) => {
+        const createdBy = record?.createdBy;
+
+        if (!createdBy) return "-";
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{createdBy?.fullName}</Text>
+            <Text type="secondary" style={{ fontSize: 14 }}>
+              {createdBy?.email}
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: "Employment Type",

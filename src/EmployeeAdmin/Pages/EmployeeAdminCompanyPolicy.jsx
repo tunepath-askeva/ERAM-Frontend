@@ -580,7 +580,24 @@ const EmployeeAdminCompanyPolicy = () => {
       render: (date) => new Date(date).toLocaleDateString(),
     },
     {
+      title: "Created By",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      render: (createdBy) =>
+        createdBy ? (
+          <div>
+            <div style={{ fontWeight: 500 }}>{createdBy.fullName || "N/A"}</div>
+            <div style={{ color: "#666", fontSize: "12px" }}>
+              {createdBy.email || ""}
+            </div>
+          </div>
+        ) : (
+          "N/A"
+        ),
+    },
+    {
       title: "Actions",
+      fixed: "right",
       key: "actions",
       render: (_, record) => (
         <Space size="small">
@@ -811,6 +828,7 @@ const EmployeeAdminCompanyPolicy = () => {
               }
             },
           }}
+          scroll={{ x: "max-content" }}
         />
       </Card>
 

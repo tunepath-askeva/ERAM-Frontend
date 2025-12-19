@@ -643,7 +643,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                           }
                                           description={
                                             <>
-                                             {review?.reviewer?.email}
+                                              {review?.reviewer?.email}
                                               {review.comments && (
                                                 <Text
                                                   style={{
@@ -675,6 +675,60 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                 </>
                               )}
 
+                              {stage?.additionalStageDocuments?.length > 0 && (
+                                <>
+                                  <Divider
+                                    style={{ margin: "8px 0" }}
+                                    orientation="left"
+                                  >
+                                    Additional Documents (
+                                    {stage?.additionalStageDocuments?.length})
+                                  </Divider>
+                                  <Row gutter={[8, 8]}>
+                                    {stage?.additionalStageDocuments.map(
+                                      (doc) => (
+                                        <Col key={doc._id} xs={24} sm={12}>
+                                          <Card size="small" hoverable>
+                                            <Space>
+                                              <FilePdfOutlined
+                                                style={{ color: "#ff4d4f" }}
+                                              />
+                                              <div style={{ flex: 1 }}>
+                                                <Text
+                                                  strong
+                                                  style={{ fontSize: 12 }}
+                                                >
+                                                  {doc?.documentName}
+                                                </Text>
+                                                <div style={{ marginTop: 4 }}>
+                                                  <Button
+                                                    type="link"
+                                                    size="small"
+                                                    href={doc?.fileUrl}
+                                                    target="_blank"
+                                                    icon={<EyeOutlined />}
+                                                  >
+                                                    View
+                                                  </Button>
+                                                  <Button
+                                                    type="link"
+                                                    size="small"
+                                                    href={doc?.fileUrl}
+                                                    icon={<DownloadOutlined />}
+                                                  >
+                                                    Download
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </Space>
+                                          </Card>
+                                        </Col>
+                                      )
+                                    )}
+                                  </Row>
+                                </>
+                              )}
+
                               {/* Uploaded Documents */}
                               {stage.uploadedDocuments?.length > 0 && (
                                 <>
@@ -682,7 +736,8 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                     style={{ margin: "8px 0" }}
                                     orientation="left"
                                   >
-                                    Documents ({stage.uploadedDocuments.length})
+                                    Uploaded Documents (
+                                    {stage.uploadedDocuments.length})
                                   </Divider>
                                   <Row gutter={[8, 8]}>
                                     {stage.uploadedDocuments.map((doc) => (

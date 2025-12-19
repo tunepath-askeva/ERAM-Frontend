@@ -91,7 +91,11 @@ const RecruiterViewJob = () => {
             lineHeight: "1.3",
           }}
         >
-          {workOrder.title}
+          {`${workOrder.title} – Created by ${
+            workOrder?.createdBy?.fullName || ""
+          }${
+            workOrder?.createdBy?.email ? ` (${workOrder.createdBy.email})` : ""
+          }`}
         </h3>
 
         <div

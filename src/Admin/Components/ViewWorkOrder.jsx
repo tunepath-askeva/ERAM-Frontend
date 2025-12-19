@@ -78,7 +78,11 @@ const ViewWorkOrder = () => {
             lineHeight: "1.3",
           }}
         >
-          {workOrder.title}
+          {`${workOrder.title} – Created by ${
+            workOrder?.createdBy?.fullName || ""
+          }${
+            workOrder?.createdBy?.email ? ` (${workOrder.createdBy.email})` : ""
+          }`}
         </h3>
 
         <div
@@ -128,7 +132,7 @@ const ViewWorkOrder = () => {
               </Text>
             </div>
           </Col>
-           <Col xs={12} sm={8}>
+          <Col xs={12} sm={8}>
             <div>
               <Text strong style={{ fontSize: "13px", display: "block" }}>
                 Client

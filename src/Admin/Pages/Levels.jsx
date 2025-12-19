@@ -104,30 +104,29 @@ const Levels = () => {
     setLevelToDelete(null);
   };
 
-const handleDeleteConfirm = async () => {
-  if (!levelToDelete) return;
+  const handleDeleteConfirm = async () => {
+    if (!levelToDelete) return;
 
-  try {
-    const res = await deleteLevelApi(levelToDelete._id).unwrap(); 
+    try {
+      const res = await deleteLevelApi(levelToDelete._id).unwrap();
 
+      await refetch();
 
-    await refetch();
+      enqueueSnackbar(
+        res.message ||
+          `Level "${levelToDelete.groupName}" deleted successfully`,
+        { variant: "success" }
+      );
 
-    enqueueSnackbar(
-      res.message || `Level "${levelToDelete.groupName}" deleted successfully`,
-      { variant: "success" }
-    );
-
-    setDeleteModalVisible(false);
-    setLevelToDelete(null);
-  } catch (error) {
-    enqueueSnackbar(error?.data?.message || "Failed to delete level", {
-      variant: "error",
-    });
-    console.error("Delete error:", error);
-  }
-};
-
+      setDeleteModalVisible(false);
+      setLevelToDelete(null);
+    } catch (error) {
+      enqueueSnackbar(error?.data?.message || "Failed to delete level", {
+        variant: "error",
+      });
+      console.error("Delete error:", error);
+    }
+  };
 
   const showCreateModal = () => {
     setEditingLevel(null);
@@ -415,6 +414,31 @@ const handleDeleteConfirm = async () => {
                             ))}
                         </div>
                       </div>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Created By
+                      </Text>
+
+                      {level?.createdBy ? (
+                        <Space direction="vertical" size={0}>
+                          {level?.createdBy?.fullName && (
+                            <Text strong style={{ fontSize: 13 }}>
+                              {level.createdBy.fullName}
+                            </Text>
+                          )}
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#595959",
+                              wordBreak: "break-all",
+                            }}
+                          >
+                            {level.createdBy.email}
+                          </Text>
+                        </Space>
+                      ) : (
+                        <Text type="secondary">Not specified</Text>
+                      )}
+                      <Divider />
 
                       <div style={{ marginTop: "auto" }}>
                         <Space

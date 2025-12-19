@@ -888,6 +888,38 @@ const WorkOrder = () => {
                           </Text>
                         </div>
                       </div>
+
+                      <div>
+                        <Text
+                          strong
+                          style={{ fontSize: "12px", color: "#2c3e50" }}
+                        >
+                          <FileTextOutlined style={{ marginRight: 4 }} />
+                          Created By
+                        </Text>
+
+                        <div style={{ marginTop: 4 }}>
+                          {workOrder?.createdBy ? (
+                            <Text
+                              style={{
+                                fontSize: "12px",
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 4,
+                              }}
+                            >
+                              <span>{workOrder.createdBy.fullName || "—"}</span>
+                              <span style={{ color: "#8c8c8c" }}>
+                                ({workOrder.createdBy.email})
+                              </span>
+                            </Text>
+                          ) : (
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              —
+                            </Text>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </Card>
                 </div>
@@ -936,7 +968,6 @@ const WorkOrder = () => {
                 status="500"
                 title="Failed to Load Work Orders"
                 subTitle="Please try refreshing the page."
-                
               />
             ) : searchTerm ? (
               <Result
