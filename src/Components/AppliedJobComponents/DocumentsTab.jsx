@@ -624,19 +624,31 @@ const DocumentsTab = ({
                             >
                               View
                             </Button>
-                            <Button
-                              type="default"
-                              size="small"
-                              onClick={() =>
-                                handleEditDocument(
-                                  "workOrder",
-                                  doc.name,
-                                  uploadedDoc
-                                )
-                              }
-                            >
-                              Edit
-                            </Button>
+                            {stage.stageStatus !== "approved" ? (
+                              <Button
+                                type="default"
+                                size="small"
+                                onClick={() =>
+                                  handleEditDocument(
+                                    stage._id,
+                                    doc.documentName,
+                                    doc
+                                  )
+                                }
+                              >
+                                Edit
+                              </Button>
+                            ) : (
+                              <Text
+                                type="secondary"
+                                style={{
+                                  fontSize: "12px",
+                                  fontStyle: "italic",
+                                }}
+                              >
+                                Cannot edit - Approved
+                              </Text>
+                            )}
                           </>
                         )}
                         {isEditing && (
