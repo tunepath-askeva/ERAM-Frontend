@@ -647,6 +647,7 @@ const AdminWorkOrderStatus = ({
                                           }
                                           description={
                                             <>
+                                              {review?.reviewer?.email}
                                               {review.comments && (
                                                 <Text
                                                   style={{

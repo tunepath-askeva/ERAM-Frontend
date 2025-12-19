@@ -437,7 +437,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="Project" name="project">
+                  <Form.Item
+                    label="Project"
+                    name="project"
+                    rules={[
+                      { required: true, message: "Please select a Project" },
+                    ]}
+                  >
                     <Select
                       placeholder="Select Project"
                       onChange={(value) =>
@@ -690,6 +696,12 @@ const AddRequisition = ({ onNavigateBack }) => {
                   <Form.Item
                     label="Min Experience (Years)"
                     name="experienceMin"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter minimum experience",
+                      },
+                    ]}
                   >
                     <InputNumber
                       min={0}
@@ -702,6 +714,12 @@ const AddRequisition = ({ onNavigateBack }) => {
                   <Form.Item
                     label="Max Experience (Years)"
                     name="experienceMax"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter maximum experience",
+                      },
+                    ]}
                   >
                     <InputNumber
                       min={0}
@@ -744,7 +762,16 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item label="Min Salary" name="salaryMin">
+                  <Form.Item
+                    label="Min Salary"
+                    name="salaryMin"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter minimum salary",
+                      },
+                    ]}
+                  >
                     <InputNumber
                       min={0}
                       placeholder="0"
@@ -753,7 +780,16 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item label="Max Salary" name="salaryMax">
+                  <Form.Item
+                    label="Max Salary"
+                    name="salaryMax"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter maximum salary",
+                      },
+                    ]}
+                  >
                     <InputNumber
                       min={0}
                       placeholder="0"
@@ -768,6 +804,12 @@ const AddRequisition = ({ onNavigateBack }) => {
                   <Form.Item
                     label="Number of Candidates"
                     name="numberOfCandidate"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter number of candidates needed",
+                      },
+                    ]}
                   >
                     <InputNumber
                       min={1}
@@ -777,7 +819,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="Start Date" name="startDate">
+                  <Form.Item
+                    label="Start Date"
+                    name="startDate"
+                    rules={[
+                      { required: true, message: "Please select a start date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -785,7 +833,13 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="End Date" name="endDate">
+                  <Form.Item
+                    label="End Date"
+                    name="endDate"
+                    rules={[
+                      { required: true, message: "Please select a end date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -793,7 +847,16 @@ const AddRequisition = ({ onNavigateBack }) => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Form.Item label="Application Deadline" name="deadlineDate">
+                  <Form.Item
+                    label="Application Deadline"
+                    name="deadlineDate"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please select a deadline date",
+                      },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -804,7 +867,13 @@ const AddRequisition = ({ onNavigateBack }) => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item label="Alert Date" name="alertDate">
+                  <Form.Item
+                    label="Alert Date"
+                    name="alertDate"
+                    rules={[
+                      { required: true, message: "Please select a alert date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}

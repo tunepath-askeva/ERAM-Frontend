@@ -503,7 +503,7 @@ const RecruiterViewTimeline = () => {
                                           title={
                                             <Space wrap>
                                               <Text>
-                                                {review.recruiterId?.fullName}
+                                                {review?.recruiterId?.fullName}
                                               </Text>
                                               <Tag
                                                 color={
@@ -522,6 +522,7 @@ const RecruiterViewTimeline = () => {
                                           }
                                           description={
                                             <>
+                                            {review?.recruiterId?.email}
                                               {review.reviewComments && (
                                                 <Text
                                                   style={{
@@ -552,6 +553,129 @@ const RecruiterViewTimeline = () => {
                                   />
                                 </>
                               )}
+
+                              {stage.approvalSummary &&
+                                Object.keys(stage.approvalSummary).length >
+                                  0 && (
+                                  <>
+                                    <Divider
+                                      style={{ margin: "8px 0" }}
+                                      orientation="left"
+                                    >
+                                      Approval Levels
+                                    </Divider>
+                                    <List
+                                      size="small"
+                                      dataSource={Object.entries(
+                                        stage.approvalSummary
+                                      )}
+                                      renderItem={([levelName, levelData]) => (
+                                        <List.Item>
+                                          <List.Item.Meta
+                                            avatar={
+                                              <Avatar
+                                                size="small"
+                                                icon={<AuditOutlined />}
+                                                style={{
+                                                  backgroundColor:
+                                                    levelData.status ===
+                                                    "approved"
+                                                      ? "#52c41a"
+                                                      : levelData.status ===
+                                                        "rejected"
+                                                      ? "#ff4d4f"
+                                                      : "#faad14",
+                                                }}
+                                              />
+                                            }
+                                            title={
+                                              <Space wrap>
+                                                <Text strong>{levelName}</Text>
+                                                <Tag
+                                                  color={
+                                                    levelData.status ===
+                                                    "approved"
+                                                      ? "green"
+                                                      : levelData.status ===
+                                                        "rejected"
+                                                      ? "red"
+                                                      : "orange"
+                                                  }
+                                                  size="small"
+                                                >
+                                                  {levelData.status}
+                                                </Tag>
+                                              </Space>
+                                            }
+                                            description={
+                                              <>
+                                                {levelData.reviewer && (
+                                                  <Space
+                                                    direction="vertical"
+                                                    size={0}
+                                                  >
+                                                    <Text>
+                                                      <UserOutlined />{" "}
+                                                      {levelData.reviewer.name}
+                                                    </Text>
+                                                    <Text
+                                                      type="secondary"
+                                                      style={{ fontSize: 12 }}
+                                                    >
+                                                      <MailOutlined />{" "}
+                                                      {levelData.reviewer.email}
+                                                    </Text>
+                                                    {levelData.reviewer
+                                                      .phone && (
+                                                      <Text
+                                                        type="secondary"
+                                                        style={{ fontSize: 12 }}
+                                                      >
+                                                        <PhoneOutlined />{" "}
+                                                        {
+                                                          levelData.reviewer
+                                                            .phone
+                                                        }
+                                                      </Text>
+                                                    )}
+                                                  </Space>
+                                                )}
+                                                {levelData.comment && (
+                                                  <Text
+                                                    style={{
+                                                      display: "block",
+                                                      marginTop: 4,
+                                                      fontStyle: "italic",
+                                                    }}
+                                                  >
+                                                    Comment: {levelData.comment}
+                                                  </Text>
+                                                )}
+                                                {levelData.reviewedAt && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{
+                                                      display: "block",
+                                                      fontSize: 12,
+                                                      marginTop: 4,
+                                                    }}
+                                                  >
+                                                    <CalendarOutlined />{" "}
+                                                    {dayjs(
+                                                      levelData.reviewedAt
+                                                    ).format(
+                                                      "DD MMM YYYY, hh:mm A"
+                                                    )}
+                                                  </Text>
+                                                )}
+                                              </>
+                                            }
+                                          />
+                                        </List.Item>
+                                      )}
+                                    />
+                                  </>
+                                )}
 
                               {/* Uploaded Documents */}
                               {stage.uploadedDocuments?.length > 0 && (

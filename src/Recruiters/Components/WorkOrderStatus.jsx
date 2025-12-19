@@ -624,7 +624,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                           title={
                                             <Space wrap>
                                               <Text>
-                                                {review.reviewer?.name}
+                                                {review?.reviewer?.name}
                                               </Text>
                                               <Tag
                                                 color={
@@ -643,6 +643,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                           }
                                           description={
                                             <>
+                                             {review?.reviewer?.email}
                                               {review.comments && (
                                                 <Text
                                                   style={{
