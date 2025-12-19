@@ -47,7 +47,7 @@ import {
   useFilterAllCandidatesMutation,
   useExportCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
@@ -79,7 +79,7 @@ const useDebounce = (value, delay) => {
 
 function AllCandidates() {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
@@ -267,6 +267,13 @@ function AllCandidates() {
     isAdvancedFilterApplied,
   ]);
 
+  useEffect(() => {
+    if (location.state?.shouldRefresh) {
+      refetch(); // Refetch the candidates list
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, refetch, navigate, location.pathname]);
+
   const clearFilters = useCallback(() => {
     // Clear basic filters
     setSearchTerm("");
@@ -310,12 +317,16 @@ function AllCandidates() {
         id: candidateToEdit._id,
         ...updatedData,
       }).unwrap();
-      message.success("Candidate updated successfully");
+      enqueueSnackbar("Candidate updated successfully", {
+        variant: "success",
+      });
       setEditModalVisible(false);
       setCandidateToEdit(null);
       refetch();
     } catch (error) {
-      message.error("Failed to update candidate");
+      enqueueSnackbar("Failed to update candidate", {
+        variant: "error",
+      });
       console.error("Update error:", error);
     }
   };
@@ -809,6 +820,7 @@ function AllCandidates() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
         candidateId={selectedCandidateId}
+        onUpdate={refetch}
       />
 
       <AddCandidateModal

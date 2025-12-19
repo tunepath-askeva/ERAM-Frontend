@@ -49,12 +49,14 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis"; // Update this path
 import { debounce } from "lodash";
 import { useSelector } from "react-redux";
+import { useSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 const { TabPane } = Tabs;
 
 const CompletedCandidates = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
@@ -797,14 +799,21 @@ const CompletedCandidates = () => {
               };
 
               await convertEmployee(payload).unwrap();
-              message.success("Candidate successfully converted to employee!");
+              enqueueSnackbar("Candidate successfully converted to employee!", {
+                variant: "success",
+              });
               refetch();
               setConvertModalVisible(false);
               convertForm.resetFields();
               setCandidateToConvert(null);
             } catch (error) {
               console.error("Conversion failed:", error);
-              message.error(error.message || "Failed to convert candidate.");
+              enqueueSnackbar(
+                error?.data?.message || "Failed to convert candidate.",
+                {
+                  variant: "error",
+                }
+              );
             }
           }}
         >

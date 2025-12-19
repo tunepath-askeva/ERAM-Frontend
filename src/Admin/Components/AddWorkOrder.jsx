@@ -736,7 +736,38 @@ const AddWorkOrder = () => {
       })
       .catch((errorInfo) => {
         console.log("Validation failed:", errorInfo);
-        message.error("Please fill all required fields");
+        const missingFields = errorInfo.errorFields.map(
+          (field) => field.name[0]
+        );
+        const fieldLabels = {
+          title: "Job Title",
+          project: "Project",
+          jobCode: "Job Code",
+          pipeline: "Pipeline",
+          assignedId: "Assigned Members",
+          client: "Client",
+          workplace: "Workplace",
+          EmploymentType: "Employment Type",
+          jobFunction: "Job Function",
+          description: "Job Description",
+          jobRequirements: "Job Requirements",
+          visacategorytype: "Visa Category Type",
+          salaryType: "Salary Type",
+          languagesRequired: "Languages Required",
+          officeLocation: "Office Location",
+        };
+
+        const missingFieldNames = missingFields
+          .map((field) => fieldLabels[field] || field)
+          .join(", ");
+
+        enqueueSnackbar(
+          `Please fill the following required fields: ${missingFieldNames}`,
+          {
+            variant: "error",
+            autoHideDuration: 5000,
+          }
+        );
       });
   };
 

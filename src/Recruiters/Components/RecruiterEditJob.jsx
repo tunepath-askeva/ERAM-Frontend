@@ -23,6 +23,7 @@ import {
   Switch,
   Breadcrumb,
 } from "antd";
+import { useSnackbar } from "notistack";
 import {
   PlusOutlined,
   MinusCircleOutlined,
@@ -73,6 +74,7 @@ const fieldTypes = [
 ];
 
 const RecruiterEditJob = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -362,7 +364,42 @@ const RecruiterEditJob = () => {
       })
       .catch((errorInfo) => {
         console.log("Validation failed:", errorInfo);
-        message.error("Please fill all required fields");
+        const missingFields = errorInfo.errorFields.map(
+          (field) => field.name[0]
+        );
+        const fieldLabels = {
+          title: "Job Title",
+          jobCode: "Job Code",
+          EmploymentType: "Employment Type",
+          workplace: "Workplace Type",
+          jobFunction: "Job Function",
+          companyIndustry: "Company Industry",
+          visacategory: "Visa Category",
+          description: "Job Description",
+          keyResponsibilities: "Key Responsibilities",
+          qualification: "Qualifications",
+          requiredSkills: "Required Skills",
+          jobRequirements: "Additional Requirements",
+          benefits: "Benefits",
+          startDate: "Start Date",
+          endDate: "End Date",
+          deadlineDate: "Application Deadline",
+          pipeline: "Pipeline",
+          assignedRecruiters: "Assigned Members",
+          salaryType: "Salary Type",
+        };
+
+        const missingFieldNames = missingFields
+          .map((field) => fieldLabels[field] || field)
+          .join(", ");
+
+        enqueueSnackbar(
+          `Please fill the following required fields: ${missingFieldNames}`,
+          {
+            variant: "error",
+            autoHideDuration: 5000,
+          }
+        );
       });
   };
 

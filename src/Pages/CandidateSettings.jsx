@@ -246,6 +246,7 @@ const CandidateSettings = () => {
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [innerActiveTab, setInnerActiveTab] = useState("summary");
   const [isProfileEditable, setIsProfileEditable] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
@@ -443,7 +444,7 @@ const CandidateSettings = () => {
         employmentType: mappedData.jobPreferences?.employmentType || "",
       });
 
-      calculateProfileCompletion(mappedData);
+      // calculateProfileCompletion(mappedData);
     }
   }, [getCandidate]);
 
@@ -523,9 +524,13 @@ const CandidateSettings = () => {
       });
     } catch (error) {
       console.error("Update error:", error);
-      enqueueSnackbar(error?.data?.message || "Failed to update preferences", {
-        variant: "error",
-      });
+      const missingFields = error.errorFields?.map((f) => f.name[0]).join(", ");
+      enqueueSnackbar(
+        missingFields
+          ? `Please fill required fields: ${missingFields}`
+          : "Please fill all required preference fields",
+        { variant: "error" }
+      );
     } finally {
       setLoading(false);
     }
@@ -601,6 +606,75 @@ const CandidateSettings = () => {
 
   const handleProfileSave = async () => {
     try {
+      let missingFields = [];
+
+      try {
+        await profileForm.validateFields();
+      } catch (error) {
+        const fields = error.errorFields.map((f) => f.name[0]);
+        missingFields.push(...fields);
+      }
+
+      try {
+        await personalForm.validateFields();
+      } catch (error) {
+        const fields = error.errorFields.map((f) => f.name[0]);
+        missingFields.push(...fields);
+      }
+
+      try {
+        await addressForm.validateFields();
+      } catch (error) {
+        const fields = error.errorFields.map((f) => f.name[0]);
+        missingFields.push(...fields);
+      }
+
+      try {
+        await contactForm.validateFields();
+      } catch (error) {
+        const fields = error.errorFields.map((f) => f.name[0]);
+        missingFields.push(...fields);
+      }
+
+      try {
+        await preferencesForm.validateFields();
+      } catch (error) {
+        const fields = error.errorFields.map((f) => f.name[0]);
+        missingFields.push(...fields);
+      }
+
+      // If there are missing fields, show snackbar with details
+      if (missingFields.length > 0) {
+        const fieldLabels = {
+          firstName: "First Name",
+          lastName: "Last Name",
+          email: "Email",
+          phone: "Phone",
+          title: "Professional Title",
+          totalExperienceYears: "Total Experience",
+          location: "Current Location",
+          age: "Age",
+          dob: "Date of Birth",
+          nationality: "Nationality",
+          countryOfBirth: "Country of Birth",
+          country: "Country",
+          state: "State",
+          city: "City",
+          contactPersonName: "Emergency Contact Person Name",
+          roles: "Job Roles",
+        };
+
+        const missingFieldNames = missingFields
+          .map((field) => fieldLabels[field] || field)
+          .join(", ");
+
+        enqueueSnackbar(
+          `Please fill the following required fields: ${missingFieldNames}`,
+          { variant: "error", autoHideDuration: 5000 }
+        );
+        return;
+      }
+
       const profileValues = await profileForm.validateFields();
       const personalValues = await personalForm.validateFields();
       const addressValues = await addressForm.validateFields();
@@ -806,6 +880,9 @@ const CandidateSettings = () => {
       setEditingEducationId(null);
     } catch (err) {
       console.log("Validation error:", err);
+      enqueueSnackbar("Please fill all required education fields", {
+        variant: "error",
+      });
     }
   };
 
@@ -870,6 +947,9 @@ const CandidateSettings = () => {
       setEditingCertData({}); // Clear temporary data
     } catch (err) {
       console.log("Validation error:", err);
+      enqueueSnackbar("Please enter certificate title", {
+        variant: "error",
+      });
     }
   };
 
@@ -954,6 +1034,9 @@ const CandidateSettings = () => {
       setIsCurrentJob(false);
     } catch (error) {
       console.log("Validation failed:", error);
+      enqueueSnackbar("Please fill all required work experience fields", {
+        variant: "error",
+      });
     }
   };
 
@@ -1120,7 +1203,8 @@ const CandidateSettings = () => {
         </div>
       </div>
 
-      <Tabs defaultActiveKey="basic" type="card">
+      <Tabs defaultActiveKey="basic"  activeKey={innerActiveTab} 
+  onChange={setInnerActiveTab}  type="card">
         <TabPane
           tab={
             <span>

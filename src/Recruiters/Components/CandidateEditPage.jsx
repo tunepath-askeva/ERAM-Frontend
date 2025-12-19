@@ -410,7 +410,10 @@ const CandidateEditPage = () => {
       enqueueSnackbar("Candidate updated successfully!", {
         variant: "success",
       });
-      navigate(-1);
+      refetch();
+      navigate("/recruiter/allcandidates", {
+        state: { shouldRefresh: true },
+      });
     } catch (error) {
       console.error("Update error:", error);
       enqueueSnackbar(error?.data?.message || "Failed to update candidate", {

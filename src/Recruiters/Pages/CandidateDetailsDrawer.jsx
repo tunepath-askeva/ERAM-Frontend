@@ -50,12 +50,17 @@ import { useNotifyEmployeeMutation } from "../../Slices/Employee/EmployeeApis";
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
-const CandidateDetailsDrawer = ({ candidateId, visible, onClose }) => {
+const CandidateDetailsDrawer = ({
+  candidateId,
+  visible,
+  onClose,
+  onUpdate,
+}) => {
   const [notifyModalVisible, setNotifyModalVisible] = useState(false);
   const [remarks, setRemarks] = useState("");
   const [notificationMethod, setNotificationMethod] = useState([]);
 
-  const { data, isLoading, error } = useGetAllcandidatebyIdQuery(candidateId, {
+  const { data, isLoading, error,refetch  } = useGetAllcandidatebyIdQuery(candidateId, {
     skip: !candidateId,
   });
 

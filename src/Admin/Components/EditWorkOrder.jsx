@@ -255,8 +255,8 @@ const EditWorkOrder = () => {
           languagesRequired: Array.isArray(workOrder.languagesRequired)
             ? workOrder.languagesRequired
             : (workOrder.languagesRequired || "")
-              .split(",")
-              .filter((lang) => lang.trim()),
+                .split(",")
+                .filter((lang) => lang.trim()),
           project: workOrder.project._id,
           requiredSkills: workOrder.requiredSkills || [],
           qualification: workOrder.qualification || "Qualification",
@@ -353,7 +353,36 @@ const EditWorkOrder = () => {
       })
       .catch((errorInfo) => {
         console.log("Validation failed:", errorInfo);
-        message.error("Please fill all required fields");
+        const missingFields = errorInfo.errorFields.map(
+          (field) => field.name[0]
+        );
+        const fieldLabels = {
+          title: "Job Title",
+          project: "Project",
+          jobCode: "Job Code",
+          pipeline: "Pipeline",
+          assignedRecruiters: "Assigned Members",
+          workplace: "Workplace",
+          EmploymentType: "Employment Type",
+          jobFunction: "Job Function",
+          description: "Job Description",
+          jobRequirements: "Job Requirements",
+          visacategorytype: "Visa Category Type",
+          salaryType: "Salary Type",
+          languagesRequired: "Languages Required",
+        };
+
+        const missingFieldNames = missingFields
+          .map((field) => fieldLabels[field] || field)
+          .join(", ");
+
+        enqueueSnackbar(
+          `Please fill the following required fields: ${missingFieldNames}`,
+          {
+            variant: "error",
+            autoHideDuration: 5000,
+          }
+        );
       });
   };
 
@@ -753,7 +782,7 @@ const EditWorkOrder = () => {
 
       enqueueSnackbar(
         error?.data?.message ||
-        "Failed to update work order. Please try again.",
+          "Failed to update work order. Please try again.",
         {
           variant: "error",
         }
@@ -1451,8 +1480,9 @@ const EditWorkOrder = () => {
 
     return (
       <Modal
-        title={`Set Stage Dates & Approvals for ${currentPipelineForDates?.name || "Pipeline"
-          }`}
+        title={`Set Stage Dates & Approvals for ${
+          currentPipelineForDates?.name || "Pipeline"
+        }`}
         visible={pipelineDatesModalVisible}
         onCancel={() => {
           setPipelineDatesModalVisible(false);
@@ -1633,13 +1663,13 @@ const EditWorkOrder = () => {
               ) ||
               (timelineData
                 ? {
-                  stageId: timelineData.stageId,
-                  startDate: timelineData.startDate,
-                  endDate: timelineData.endDate,
-                  dependencyType: timelineData.dependencyType,
-                  approvalId: timelineData.approvalId?._id,
-                  recruiterId: timelineData.recruiterId?._id,
-                }
+                    stageId: timelineData.stageId,
+                    startDate: timelineData.startDate,
+                    endDate: timelineData.endDate,
+                    dependencyType: timelineData.dependencyType,
+                    approvalId: timelineData.approvalId?._id,
+                    recruiterId: timelineData.recruiterId?._id,
+                  }
                 : null);
 
             const availableApprovalLevels = approvalLevels;
