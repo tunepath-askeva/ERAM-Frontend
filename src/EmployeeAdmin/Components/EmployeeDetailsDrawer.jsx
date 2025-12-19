@@ -1,20 +1,23 @@
 import React from "react";
-import { Drawer, Descriptions, Tag, Spin, Button, Space, Divider } from "antd";
+import { Drawer, Tag, Spin, Button, Space, Divider, Image } from "antd";
 import {
   UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
   CalendarOutlined,
   IdcardOutlined,
   BankOutlined,
-  HomeOutlined,
   ContactsOutlined,
   EditOutlined,
   SafetyOutlined,
-  IdcardFilled,
-  MailFilled,
   ToolOutlined,
   FileTextOutlined,
+  GlobalOutlined,
+  TrophyOutlined,
+  BookOutlined,
+  EnvironmentOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  HeartOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
@@ -66,6 +69,32 @@ const EmployeeDetailsDrawer = ({
     </div>
   );
 
+  // Entry Type Logic (same as main employee page)
+  const getEntryTypeTag = () => {
+    if (!employee) return null;
+    
+    const code = employee.uniqueCode || "";
+    const entry = employee.enteringCandidate;
+
+    // Converted from Candidate
+    if (code.includes("CAND")) {
+      return <Tag color="green">Converted to Employee</Tag>;
+    }
+
+    // Direct Employee (EMP)
+    if (code.includes("EMP")) {
+      if (entry === "bulk") {
+        return <Tag color="cyan">Bulk Imported</Tag>;
+      }
+
+      if (entry === "addedemployee" || !entry) {
+        return <Tag color="purple">Added Employee</Tag>;
+      }
+    }
+
+    return null;
+  };
+
   return (
     <Drawer
       title={
@@ -112,7 +141,7 @@ const EmployeeDetailsDrawer = ({
 
       {employee && (
         <div>
-          {/* Header Card */}
+          {/* Header Card with Profile Image */}
           <div
             style={{
               background: "linear-gradient(135deg, #da2c46 0%, #ff4d6d 100%)",
@@ -123,21 +152,36 @@ const EmployeeDetailsDrawer = ({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <div
-                style={{
-                  width: "80px",
-                  height: "80px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                }}
-              >
-                {employee.fullName?.charAt(0)?.toUpperCase()}
-              </div>
+              {employee.image ? (
+                <Image
+                  src={employee.image}
+                  alt={employee.fullName}
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "3px solid rgba(255, 255, 255, 0.3)",
+                  }}
+                  preview={true}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "32px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {employee.fullName?.charAt(0)?.toUpperCase()}
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <h2 style={{ margin: 0, color: "white", fontSize: "24px" }}>
                   {employee.fullName}
@@ -149,9 +193,9 @@ const EmployeeDetailsDrawer = ({
                     fontSize: "14px",
                   }}
                 >
-                  {employee.employmentDetails?.assignedJobTitle || "Employee"}
+                  {employee.employmentDetails?.assignedJobTitle || employee.title || "Employee"}
                 </p>
-                <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+                <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <Tag
                     color="white"
                     style={{
@@ -179,10 +223,23 @@ const EmployeeDetailsDrawer = ({
                   >
                     {employee.candidateType}
                   </Tag>
+                  {getEntryTypeTag()}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Profile Summary */}
+          {employee.profileSummary && (
+            <>
+              <InfoSection title="Profile Summary" icon={<FileTextOutlined />}>
+                <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#333" }}>
+                  {employee.profileSummary}
+                </p>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
 
           {/* Personal Information */}
           <InfoSection title="Personal Information" icon={<UserOutlined />}>
@@ -199,14 +256,42 @@ const EmployeeDetailsDrawer = ({
               <InfoItem label="Full Name" value={employee.fullName} />
               <InfoItem label="Email" value={employee.email} span={2} />
               <InfoItem label="Phone" value={employee.phone} />
-              <InfoItem label="Role" value={employee.role} />
+              <InfoItem label="Gender" value={employee.gender} />
+              <InfoItem 
+                label="Date of Birth" 
+                value={employee.dob ? new Date(employee.dob).toLocaleDateString() : null}
+              />
+              <InfoItem label="Age" value={employee.age} />
+              <InfoItem label="Blood Group" value={employee.bloodGroup} />
+              <InfoItem label="Marital Status" value={employee.maritalStatus} />
+              <InfoItem label="Religion" value={employee.religion} />
+              <InfoItem label="Nationality" value={employee.nationality} />
+              <InfoItem label="Country of Birth" value={employee.countryOfBirth} />
+              <InfoItem label="Location" value={employee.location} />
+            </div>
+          </InfoSection>
+
+          <Divider />
+
+          {/* Identity Documents */}
+          <InfoSection title="Identity Documents" icon={<IdcardOutlined />}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              <InfoItem label="Passport No" value={employee.passportNo} />
+              <InfoItem label="Passport Place of Issue" value={employee.passportPlaceOfIssue} />
+              <InfoItem label="Iqama No" value={employee.iqamaNo} span={2} />
             </div>
           </InfoSection>
 
           <Divider />
 
           {/* Employment Details */}
-          <InfoSection title="Employment Details" icon={<IdcardOutlined />}>
+          <InfoSection title="Employment Details" icon={<EnvironmentOutlined />}>
             <div
               style={{
                 display: "grid",
@@ -216,7 +301,7 @@ const EmployeeDetailsDrawer = ({
             >
               <InfoItem
                 label="Job Title"
-                value={employee.employmentDetails?.assignedJobTitle}
+                value={employee.employmentDetails?.assignedJobTitle || employee.title}
               />
               <InfoItem
                 label="Category"
@@ -257,6 +342,10 @@ const EmployeeDetailsDrawer = ({
                 value={employee.employmentDetails?.plantId}
               />
               <InfoItem
+                label="Work Order ID"
+                value={employee.employmentDetails?.workorderId}
+              />
+              <InfoItem
                 label="Official Email"
                 value={employee.employmentDetails?.officialEmail}
                 span={2}
@@ -275,6 +364,47 @@ const EmployeeDetailsDrawer = ({
           </InfoSection>
 
           <Divider />
+
+          {/* Professional Information */}
+          {(employee.companyName || employee.agency || employee.clientCode || employee.workorderhint || employee.totalExperienceYears || employee.currentSalary || employee.expectedSalary || employee.noticePeriod) && (
+            <>
+              <InfoSection title="Professional Information" icon={<EnvironmentOutlined />}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
+                  {employee.companyName && (
+                    <InfoItem label="Company Name" value={employee.companyName} />
+                  )}
+                  {employee.agency && (
+                    <InfoItem label="Agency" value={employee.agency} />
+                  )}
+                  {employee.clientCode && (
+                    <InfoItem label="Client Code" value={employee.clientCode} />
+                  )}
+                  {employee.totalExperienceYears && (
+                    <InfoItem label="Total Experience (Years)" value={employee.totalExperienceYears} />
+                  )}
+                  {employee.currentSalary && (
+                    <InfoItem label="Current Salary" value={employee.currentSalary} />
+                  )}
+                  {employee.expectedSalary && (
+                    <InfoItem label="Expected Salary" value={employee.expectedSalary} />
+                  )}
+                  {employee.noticePeriod && (
+                    <InfoItem label="Notice Period" value={employee.noticePeriod} />
+                  )}
+                  {employee.workorderhint && (
+                    <InfoItem label="Work Order Note" value={employee.workorderhint} span={2} />
+                  )}
+                </div>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
 
           {/* Branch Information */}
           {employee.branch && (
@@ -298,83 +428,203 @@ const EmployeeDetailsDrawer = ({
             </>
           )}
 
-          {/* Collections Section - Show only if any of these arrays have data */}
-          {(employee.qualifications?.length > 0 ||
-            employee.skills?.length > 0 ||
-            employee.languages?.length > 0 ||
-            employee.visaStatus?.length > 0 ||
-            employee.industry?.length > 0 ||
-            employee.certificates?.length > 0 ||
-            employee.education?.length > 0 ||
-            employee.workExperience?.length > 0) && (
+          {/* Qualifications & Skills */}
+          {(employee.qualifications?.length > 0 || employee.skills?.length > 0 || employee.languages?.length > 0) && (
             <>
-              <InfoSection
-                title="Additional Information"
-                icon={<FileTextOutlined />}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                  }}
-                >
+              <InfoSection title="Qualifications & Skills" icon={<TrophyOutlined />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   {employee.qualifications?.length > 0 && (
-                    <InfoItem
-                      label="Qualifications"
-                      value={employee.qualifications.join(", ")}
-                      span={2}
-                    />
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+                        Qualifications
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {employee.qualifications.map((qual, index) => (
+                          <Tag key={index} color="blue">{qual}</Tag>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {employee.skills?.length > 0 && (
-                    <InfoItem
-                      label="Skills"
-                      value={employee.skills.join(", ")}
-                      span={2}
-                    />
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+                        Skills
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {employee.skills.map((skill, index) => (
+                          <Tag key={index} color="green">{skill}</Tag>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {employee.languages?.length > 0 && (
-                    <InfoItem
-                      label="Languages"
-                      value={employee.languages.join(", ")}
-                      span={2}
-                    />
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+                        Languages
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {employee.languages.map((lang, index) => (
+                          <Tag key={index} color="purple">{lang}</Tag>
+                        ))}
+                      </div>
+                    </div>
                   )}
+                </div>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
+
+          {/* Additional Information */}
+          {(employee.visaStatus?.length > 0 || employee.industry?.length > 0) && (
+            <>
+              <InfoSection title="Additional Information" icon={<GlobalOutlined />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   {employee.visaStatus?.length > 0 && (
-                    <InfoItem
-                      label="Visa Status"
-                      value={employee.visaStatus.join(", ")}
-                      span={2}
-                    />
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+                        Visa Status
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {employee.visaStatus.map((visa, index) => (
+                          <Tag key={index} color="orange">{visa}</Tag>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {employee.industry?.length > 0 && (
-                    <InfoItem
-                      label="Industry"
-                      value={employee.industry.join(", ")}
-                      span={2}
-                    />
+                    <div>
+                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+                        Industry
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        {employee.industry.map((ind, index) => (
+                          <Tag key={index} color="cyan">{ind}</Tag>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  {employee.certificates?.length > 0 && (
-                    <InfoItem
-                      label="Certificates"
-                      value={employee.certificates.join(", ")}
-                      span={2}
-                    />
-                  )}
-                  {employee.education?.length > 0 && (
-                    <InfoItem
-                      label="Education"
-                      value={employee.education.join(", ")}
-                      span={2}
-                    />
-                  )}
-                  {employee.workExperience?.length > 0 && (
-                    <InfoItem
-                      label="Work Experience"
-                      value={employee.workExperience.join(", ")}
-                      span={2}
-                    />
-                  )}
+                </div>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
+
+          {/* Certificates */}
+          {employee.certificates?.length > 0 && (
+            <>
+              <InfoSection title="Certificates" icon={<TrophyOutlined />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {employee.certificates.map((cert, index) => (
+                    <div 
+                      key={cert._id || index}
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #e8e8e8",
+                        borderRadius: "6px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 500, marginBottom: "4px" }}>
+                          {cert.fileName}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#888" }}>
+                          Uploaded: {cert.uploadedAt ? new Date(cert.uploadedAt).toLocaleDateString() : "N/A"}
+                        </div>
+                      </div>
+                      <Button 
+                        type="link" 
+                        href={cert.fileUrl} 
+                        target="_blank"
+                        style={{ color: "#da2c46" }}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
+
+          {/* Education */}
+          {employee.education?.length > 0 && (
+            <>
+              <InfoSection title="Education" icon={<BookOutlined />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {employee.education.map((edu, index) => (
+                    <div 
+                      key={edu._id || index}
+                      style={{
+                        padding: "16px",
+                        border: "1px solid #e8e8e8",
+                        borderRadius: "6px",
+                        backgroundColor: "#fafafa",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "8px", color: "#da2c46" }}>
+                        {edu.degree}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <div>
+                          <span style={{ fontSize: "12px", color: "#888" }}>Field: </span>
+                          <span style={{ fontSize: "14px" }}>{edu.field}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "12px", color: "#888" }}>Year: </span>
+                          <span style={{ fontSize: "14px" }}>{edu.year}</span>
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                          <span style={{ fontSize: "12px", color: "#888" }}>Institution: </span>
+                          <span style={{ fontSize: "14px" }}>{edu.institution}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </InfoSection>
+              <Divider />
+            </>
+          )}
+
+          {/* Work Experience */}
+          {employee.workExperience?.length > 0 && (
+            <>
+              <InfoSection title="Work Experience" icon={<EnvironmentOutlined />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {employee.workExperience.map((work, index) => (
+                    <div 
+                      key={work._id || index}
+                      style={{
+                        padding: "16px",
+                        border: "1px solid #e8e8e8",
+                        borderRadius: "6px",
+                        backgroundColor: "#fafafa",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px", color: "#da2c46" }}>
+                        {work.title}
+                      </div>
+                      <div style={{ fontSize: "14px", marginBottom: "8px", color: "#666" }}>
+                        {work.company}
+                      </div>
+                      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                        <div>
+                          <span style={{ fontSize: "12px", color: "#888" }}>Period: </span>
+                          <span style={{ fontSize: "13px" }}>
+                            {work.startDate} - {work.endDate}
+                          </span>
+                        </div>
+                        {work.workMode && (
+                          <Tag color="blue">{work.workMode}</Tag>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </InfoSection>
               <Divider />
@@ -403,7 +653,7 @@ const EmployeeDetailsDrawer = ({
             </>
           )}
 
-          {/* Social Links - Only show if any social link has value */}
+          {/* Social Links */}
           {employee.socialLinks &&
             Object.values(employee.socialLinks).some((link) => link) && (
               <>
@@ -418,25 +668,41 @@ const EmployeeDetailsDrawer = ({
                     {employee.socialLinks?.linkedin && (
                       <InfoItem
                         label="LinkedIn"
-                        value={employee.socialLinks.linkedin}
+                        value={
+                          <a href={employee.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
+                            {employee.socialLinks.linkedin}
+                          </a>
+                        }
                       />
                     )}
                     {employee.socialLinks?.github && (
                       <InfoItem
                         label="GitHub"
-                        value={employee.socialLinks.github}
+                        value={
+                          <a href={employee.socialLinks.github} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
+                            {employee.socialLinks.github}
+                          </a>
+                        }
                       />
                     )}
                     {employee.socialLinks?.twitter && (
                       <InfoItem
                         label="Twitter"
-                        value={employee.socialLinks.twitter}
+                        value={
+                          <a href={employee.socialLinks.twitter} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
+                            {employee.socialLinks.twitter}
+                          </a>
+                        }
                       />
                     )}
                     {employee.socialLinks?.facebook && (
                       <InfoItem
                         label="Facebook"
-                        value={employee.socialLinks.facebook}
+                        value={
+                          <a href={employee.socialLinks.facebook} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
+                            {employee.socialLinks.facebook}
+                          </a>
+                        }
                       />
                     )}
                   </div>
@@ -445,7 +711,7 @@ const EmployeeDetailsDrawer = ({
               </>
             )}
 
-          {/* Job Preferences - Only show if any preference has value */}
+          {/* Job Preferences */}
           {employee.jobPreferences &&
             Object.values(employee.jobPreferences).some(
               (pref) =>
