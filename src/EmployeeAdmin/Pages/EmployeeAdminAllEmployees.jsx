@@ -10,6 +10,7 @@ import {
   Tooltip,
   Tag,
   Typography,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -51,6 +52,7 @@ const EmployeeAdminAllEmployees = () => {
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [searchText, setSearchText] = useState("");
+  const [importResults, setImportResults] = useState(null);
 
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -172,6 +174,9 @@ const EmployeeAdminAllEmployees = () => {
     try {
       const result = await bulkImportEmployees(data).unwrap();
 
+      // Store results for alert display
+      setImportResults(result);
+
       if (result.insertedCount > 0) {
         enqueueSnackbar(
           `Successfully imported ${
@@ -200,7 +205,7 @@ const EmployeeAdminAllEmployees = () => {
       });
     }
   };
-  // Export to CSV
+
   const handleExport = () => {
     const headers = [
       "ERAM ID",
@@ -522,6 +527,96 @@ const EmployeeAdminAllEmployees = () => {
         </Space>
       </div>
 
+      {importResults && (
+        <Alert
+          message={<span style={{ fontWeight: 600 }}>Bulk Import Results</span>}
+          description={
+            <div>
+              <div style={{ marginBottom: "12px" }}>
+                <Text strong style={{ color: "#52c41a" }}>
+                  ✓ Successfully Imported:
+                </Text>{" "}
+                {importResults.insertedCount} employee(s)
+              </div>
+
+              {importResults.duplicateCount > 0 && (
+                <div style={{ marginBottom: "12px" }}>
+                  <Text strong style={{ color: "#faad14" }}>
+                    ⚠ Duplicates Skipped:
+                  </Text>{" "}
+                  {importResults.duplicateCount} employee(s)
+                  {importResults.duplicates &&
+                    importResults.duplicates.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          padding: "8px",
+                          backgroundColor: "#fffbe6",
+                          borderRadius: "4px",
+                          maxHeight: "120px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {importResults.duplicates.map((dup, idx) => (
+                          <div
+                            key={idx}
+                            style={{ fontSize: "12px", marginBottom: "4px" }}
+                          >
+                            • <Text code>{dup.email}</Text> - {dup.reason}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {importResults.invalidCount > 0 && (
+                <div>
+                  <Text strong style={{ color: "#ff4d4f" }}>
+                    ✕ Invalid Entries:
+                  </Text>{" "}
+                  {importResults.invalidCount} employee(s)
+                  {importResults.invalid &&
+                    importResults.invalid.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          padding: "8px",
+                          backgroundColor: "#fff1f0",
+                          borderRadius: "4px",
+                          maxHeight: "120px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        {importResults.invalid.map((inv, idx) => (
+                          <div
+                            key={idx}
+                            style={{ fontSize: "12px", marginBottom: "4px" }}
+                          >
+                            • <Text code>{inv.email}</Text> - {inv.reason}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
+          }
+          type={
+            importResults.insertedCount > 0
+              ? "success"
+              : importResults.duplicateCount > 0 ||
+                importResults.invalidCount > 0
+              ? "warning"
+              : "info"
+          }
+          showIcon
+          closable
+          onClose={() => setImportResults(null)}
+          style={{ marginBottom: "16px" }}
+        />
+      )}
+
       <Spin spinning={isLoading}>
         <Table
           columns={columns}
@@ -537,7 +632,7 @@ const EmployeeAdminAllEmployees = () => {
             pageSizeOptions: ["10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1400 }}
+          scroll={{ x: "max-content" }}
           size="middle"
         />
       </Spin>

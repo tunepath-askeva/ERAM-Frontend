@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Input, message, Checkbox, Form } from "antd";
+import { Modal, Input, Checkbox, Form, DatePicker } from "antd";
+import dayjs from "dayjs";
 import PhoneInput from "../../Global/PhoneInput";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useSnackbar } from "notistack";
 
 const EditEmployeeModal = ({
   visible,
@@ -10,13 +12,13 @@ const EditEmployeeModal = ({
   onSubmit,
   isLoading,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const { data: employeeDetails, isLoading: isEmployeeLoading } =
     useGetEmployeeDetailsQuery(employeeId, {
-      skip: !employeeId || !visible, // Skip query when no ID or modal not visible
+      skip: !employeeId || !visible,
     });
 
   const employee = employeeDetails?.employee;
-
   const [form] = Form.useForm();
 
   const [formData, setFormData] = useState({
@@ -29,13 +31,46 @@ const EditEmployeeModal = ({
     assignedJobTitle: "",
     category: "",
     eramId: "",
-    badgeNo: "",
     dateOfJoining: "",
+    officialEmail: "",
+    badgeNo: "",
     gatePassId: "",
     aramcoId: "",
     otherId: "",
     plantId: "",
-    officialEmail: "",
+    externalEmpNo: "",
+    designation: "",
+    visaCategory: "",
+    employeeGroup: "",
+    employmentType: "",
+    payrollGroup: "",
+    sponsorName: "",
+    workHours: "",
+    workDays: "",
+    airTicketFrequency: "",
+    probationPeriod: "",
+    periodOfContract: "",
+    workLocation: "",
+    familyStatus: "",
+    lastArrival: "",
+    eligibleVacationDays: "",
+    eligibleVacationMonth: "",
+    iqamaId: "",
+    iqamaIssueDate: "",
+    iqamaExpiryDate: "",
+    iqamaArabicDateOfIssue: "",
+    iqamaArabicDateOfExpiry: "",
+    gosi: "",
+    drivingLicense: "",
+    medicalPolicy: false,
+    medicalPolicyNumber: "",
+    noOfDependent: "",
+    insuranceCategory: "",
+    classCode: "",
+    assetAllocation: "",
+    lastWorkingDay: "",
+    lastLoginTime: "",
+    firstTimeLogin: false,
     basicAssets: "",
     reportingAndDocumentation: "",
   });
@@ -54,17 +89,85 @@ const EditEmployeeModal = ({
         assignedJobTitle: employee.employmentDetails?.assignedJobTitle || "",
         category: employee.employmentDetails?.category || "",
         eramId: employee.employmentDetails?.eramId || "",
-        badgeNo: employee.employmentDetails?.badgeNo || "",
         dateOfJoining: employee.employmentDetails?.dateOfJoining
           ? new Date(employee.employmentDetails.dateOfJoining)
               .toISOString()
               .split("T")[0]
           : "",
+        officialEmail: employee.employmentDetails?.officialEmail || "",
+        badgeNo: employee.employmentDetails?.badgeNo || "",
         gatePassId: employee.employmentDetails?.gatePassId || "",
         aramcoId: employee.employmentDetails?.aramcoId || "",
         otherId: employee.employmentDetails?.otherId || "",
         plantId: employee.employmentDetails?.plantId || "",
-        officialEmail: employee.employmentDetails?.officialEmail || "",
+        externalEmpNo: employee.employmentDetails?.externalEmpNo || "",
+        designation: employee.employmentDetails?.designation || "",
+        visaCategory: employee.employmentDetails?.visaCategory || "",
+        employeeGroup: employee.employmentDetails?.employeeGroup || "",
+        employmentType: employee.employmentDetails?.employmentType || "",
+        payrollGroup: employee.employmentDetails?.payrollGroup || "",
+        sponsorName: employee.employmentDetails?.sponsorName || "",
+        workHours: employee.employmentDetails?.workHours || "",
+        workDays: employee.employmentDetails?.workDays || "",
+        airTicketFrequency:
+          employee.employmentDetails?.airTicketFrequency || "",
+        probationPeriod: employee.employmentDetails?.probationPeriod || "",
+        periodOfContract: employee.employmentDetails?.periodOfContract || "",
+        workLocation: employee.employmentDetails?.workLocation || "",
+        familyStatus: employee.employmentDetails?.familyStatus || "",
+        lastArrival: employee.employmentDetails?.lastArrival
+          ? new Date(employee.employmentDetails.lastArrival)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        eligibleVacationDays:
+          employee.employmentDetails?.eligibleVacationDays || "",
+        eligibleVacationMonth:
+          employee.employmentDetails?.eligibleVacationMonth || "",
+        iqamaId: employee.employmentDetails?.iqamaId || "",
+        iqamaIssueDate: employee.employmentDetails?.iqamaIssueDate
+          ? new Date(employee.employmentDetails.iqamaIssueDate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        iqamaExpiryDate: employee.employmentDetails?.iqamaExpiryDate
+          ? new Date(employee.employmentDetails.iqamaExpiryDate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        iqamaArabicDateOfIssue: employee.employmentDetails
+          ?.iqamaArabicDateOfIssue
+          ? new Date(employee.employmentDetails.iqamaArabicDateOfIssue)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        iqamaArabicDateOfExpiry: employee.employmentDetails
+          ?.iqamaArabicDateOfExpiry
+          ? new Date(employee.employmentDetails.iqamaArabicDateOfExpiry)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        gosi: employee.employmentDetails?.gosi || "",
+        drivingLicense: employee.employmentDetails?.drivingLicense || "",
+        medicalPolicy: employee.employmentDetails?.medicalPolicy || false,
+        medicalPolicyNumber:
+          employee.employmentDetails?.medicalPolicyNumber || "",
+        noOfDependent: employee.employmentDetails?.noOfDependent || "",
+        insuranceCategory: employee.employmentDetails?.insuranceCategory || "",
+        classCode: employee.employmentDetails?.classCode || "",
+        assetAllocation:
+          employee.employmentDetails?.assetAllocation?.join(", ") || "",
+        lastWorkingDay: employee.employmentDetails?.lastWorkingDay
+          ? new Date(employee.employmentDetails.lastWorkingDay)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        lastLoginTime: employee.employmentDetails?.lastLoginTime
+          ? new Date(employee.employmentDetails.lastLoginTime)
+              .toISOString()
+              .slice(0, 16)
+          : "",
+        firstTimeLogin: employee.employmentDetails?.firstTimeLogin || false,
         basicAssets: employee.employmentDetails?.basicAssets || "",
         reportingAndDocumentation:
           employee.employmentDetails?.reportingAndDocumentation || "",
@@ -84,8 +187,11 @@ const EditEmployeeModal = ({
 
   const validateForm = () => {
     if (!formData.firstName || !formData.lastName || !formData.email) {
-      message.error(
-        "Please fill all required fields (First Name, Last Name, Email, Phone)"
+      enqueueSnackbar(
+        "Please fill all required fields (First Name, Last Name, Email, Phone)",
+        {
+          variant: "error",
+        }
       );
       return false;
     }
@@ -94,31 +200,44 @@ const EditEmployeeModal = ({
     const phoneCountryCode = form.getFieldValue("phoneCountryCode");
 
     if (!phone || !phoneCountryCode) {
-      message.error(
-        "Please fill all required fields (First Name, Last Name, Email, Phone)"
-      );
+      enqueueSnackbar("Phone number with country code is required", {
+        variant: "error",
+      });
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      message.error("Please enter a valid email address");
+      enqueueSnackbar("Please enter a valid email address", {
+        variant: "error",
+      });
+      return false;
+    }
+
+    if (formData.officialEmail && !emailRegex.test(formData.officialEmail)) {
+      enqueueSnackbar("Please enter a valid official email address", {
+        variant: "error",
+      });
       return false;
     }
 
     if (changePassword) {
       if (!formData.password) {
-        message.error("Password is required when changing password");
+        enqueueSnackbar("Password is required when changing password", {
+          variant: "error",
+        });
         return false;
       }
 
       if (formData.password.length < 6) {
-        message.error("Password must be at least 6 characters");
+        enqueueSnackbar("Password must be at least 6 characters", {
+          variant: "error",
+        });
         return false;
       }
 
       if (formData.password !== formData.confirmPassword) {
-        message.error("Passwords do not match");
+        enqueueSnackbar("Passwords do not match", { variant: "error" });
         return false;
       }
     }
@@ -142,6 +261,14 @@ const EditEmployeeModal = ({
         phone: fullPhone,
       };
 
+      // Convert assetAllocation string to array
+      if (dataToSubmit.assetAllocation) {
+        dataToSubmit.assetAllocation = dataToSubmit.assetAllocation
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
       if (!changePassword) {
         delete dataToSubmit.password;
         delete dataToSubmit.confirmPassword;
@@ -152,6 +279,7 @@ const EditEmployeeModal = ({
       onSubmit(dataToSubmit);
     } catch (error) {
       console.error("Validation failed:", error);
+      enqueueSnackbar("Please check all required fields", { variant: "error" });
     }
   };
 
@@ -405,12 +533,21 @@ const EditEmployeeModal = ({
                 >
                   Date of Joining
                 </label>
-                <Input
-                  type="date"
-                  value={formData.dateOfJoining}
-                  onChange={(e) =>
-                    handleInputChange("dateOfJoining", e.target.value)
+                <DatePicker
+                  style={{ width: "100%" }}
+                  value={
+                    formData.dateOfJoining
+                      ? dayjs(formData.dateOfJoining)
+                      : null
                   }
+                  onChange={(date) =>
+                    handleInputChange(
+                      "dateOfJoining",
+                      date ? date.format("YYYY-MM-DD") : ""
+                    )
+                  }
+                  format="DD/MM/YYYY"
+                  placeholder="Select date"
                 />
               </div>
 
@@ -558,28 +695,663 @@ const EditEmployeeModal = ({
                   }
                 />
               </div>
+            </div>
 
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label
+            <div style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  fontWeight: 500,
+                }}
+              >
+                Reporting And Documentation
+              </label>
+              <Input.TextArea
+                placeholder="Enter reporting and documentation details"
+                value={formData.reportingAndDocumentation}
+                onChange={(e) =>
+                  handleInputChange("reportingAndDocumentation", e.target.value)
+                }
+                rows={3}
+              />
+            </div>
+
+            {/* Additional Employee Details Section */}
+            <div
+              style={{
+                marginTop: 16,
+                borderBottom: "1px solid #f0f0f0",
+                paddingBottom: "16px",
+              }}
+            >
+              <h3 style={{ color: "#da2c46", marginBottom: "12px" }}>
+                Additional Employee Details
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    External Employee Number
+                  </label>
+                  <Input
+                    placeholder="Enter external emp no"
+                    maxLength={20}
+                    value={formData.externalEmpNo}
+                    onChange={(e) =>
+                      handleInputChange("externalEmpNo", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Designation
+                  </label>
+                  <Input
+                    placeholder="Enter designation"
+                    maxLength={100}
+                    value={formData.designation}
+                    onChange={(e) =>
+                      handleInputChange("designation", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Visa Category
+                  </label>
+                  <Input
+                    placeholder="Enter visa category"
+                    maxLength={50}
+                    value={formData.visaCategory}
+                    onChange={(e) =>
+                      handleInputChange("visaCategory", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Employee Group
+                  </label>
+                  <Input
+                    placeholder="Enter employee group"
+                    maxLength={50}
+                    value={formData.employeeGroup}
+                    onChange={(e) =>
+                      handleInputChange("employeeGroup", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Employee Type
+                  </label>
+                  <Input
+                    placeholder="SUPPLIER, INTERNAL, or DIRECT"
+                    maxLength={50}
+                    value={formData.employmentType}
+                    onChange={(e) =>
+                      handleInputChange("employmentType", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Payroll Group
+                  </label>
+                  <Input
+                    placeholder="Enter payroll group"
+                    maxLength={50}
+                    value={formData.payrollGroup}
+                    onChange={(e) =>
+                      handleInputChange("payrollGroup", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Sponsor Name
+                  </label>
+                  <Input
+                    placeholder="Enter sponsor name"
+                    maxLength={100}
+                    value={formData.sponsorName}
+                    onChange={(e) =>
+                      handleInputChange("sponsorName", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Work Hours
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Enter work hours (e.g., 8)"
+                    maxLength={2}
+                    value={formData.workHours}
+                    onChange={(e) =>
+                      handleInputChange("workHours", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Eligible Vacation Month
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="Enter vacation month (e.g., 11.9)"
+                    value={formData.eligibleVacationMonth}
+                    onChange={(e) =>
+                      handleInputChange("eligibleVacationMonth", e.target.value)
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Eligible Vacation Days
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Enter vacation days (e.g., 22)"
+                    maxLength={2}
+                    value={formData.eligibleVacationDays}
+                    onChange={(e) =>
+                      handleInputChange("eligibleVacationDays", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Iqama Details Section */}
+            <div
+              style={{
+                borderBottom: "1px solid #f0f0f0",
+                paddingBottom: "16px",
+              }}
+            >
+              <h3 style={{ color: "#da2c46", marginBottom: "12px" }}>
+                Iqama Details
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iqama ID
+                  </label>
+                  <Input
+                    placeholder="Enter Iqama ID"
+                    value={formData.iqamaId}
+                    onChange={(e) =>
+                      handleInputChange("iqamaId", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iqama Issue Date
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    value={
+                      formData.iqamaIssueDate
+                        ? dayjs(formData.iqamaIssueDate)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "iqamaIssueDate",
+                        date ? date.format("YYYY-MM-DD") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY"
+                    placeholder="Select date"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iqama Expiry Date
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    value={
+                      formData.iqamaExpiryDate
+                        ? dayjs(formData.iqamaExpiryDate)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "iqamaExpiryDate",
+                        date ? date.format("YYYY-MM-DD") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY"
+                    placeholder="Select date"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iqama Arabic Date of Issue
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    value={
+                      formData.iqamaArabicDateOfIssue
+                        ? dayjs(formData.iqamaArabicDateOfIssue)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "iqamaArabicDateOfIssue",
+                        date ? date.format("YYYY-MM-DD") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY"
+                    placeholder="Select date"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iqama Arabic Date of Expiry
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    value={
+                      formData.iqamaArabicDateOfExpiry
+                        ? dayjs(formData.iqamaArabicDateOfExpiry)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "iqamaArabicDateOfExpiry",
+                        date ? date.format("YYYY-MM-DD") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY"
+                    placeholder="Select date"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Insurance & Benefits Section */}
+            <div
+              style={{
+                borderBottom: "1px solid #f0f0f0",
+                paddingBottom: "16px",
+              }}
+            >
+              <h3 style={{ color: "#da2c46", marginBottom: "12px" }}>
+                Insurance & Benefits
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    GOSI
+                  </label>
+                  <Input
+                    placeholder="Enter GOSI number"
+                    maxLength={50}
+                    value={formData.gosi}
+                    onChange={(e) => handleInputChange("gosi", e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Driving License
+                  </label>
+                  <Input
+                    placeholder="Enter driving license"
+                    maxLength={50}
+                    value={formData.drivingLicense}
+                    onChange={(e) =>
+                      handleInputChange("drivingLicense", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div
                   style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
                   }}
                 >
-                  Reporting And Documentation
-                </label>
-                <Input.TextArea
-                  placeholder="Enter reporting and documentation details"
-                  value={formData.reportingAndDocumentation}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "reportingAndDocumentation",
-                      e.target.value
-                    )
-                  }
-                  rows={3}
-                />
+                  <Checkbox
+                    checked={formData.medicalPolicy}
+                    onChange={(e) =>
+                      handleInputChange("medicalPolicy", e.target.checked)
+                    }
+                  >
+                    Medical Policy
+                  </Checkbox>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Medical Policy Number
+                  </label>
+                  <Input
+                    placeholder="Enter medical policy number"
+                    maxLength={50}
+                    value={formData.medicalPolicyNumber}
+                    onChange={(e) =>
+                      handleInputChange("medicalPolicyNumber", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Number of Dependents
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Enter number of dependents"
+                    maxLength={2}
+                    value={formData.noOfDependent}
+                    onChange={(e) =>
+                      handleInputChange("noOfDependent", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Insurance Category
+                  </label>
+                  <Input
+                    placeholder="Enter insurance category"
+                    maxLength={50}
+                    value={formData.insuranceCategory}
+                    onChange={(e) =>
+                      handleInputChange("insuranceCategory", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Class Code
+                  </label>
+                  <Input
+                    placeholder="Enter class code"
+                    maxLength={20}
+                    value={formData.classCode}
+                    onChange={(e) =>
+                      handleInputChange("classCode", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Asset Allocation (comma-separated)
+                  </label>
+                  <Input
+                    placeholder="e.g., Laptop, Vehicle, Phone"
+                    value={formData.assetAllocation}
+                    onChange={(e) =>
+                      handleInputChange("assetAllocation", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Other Information Section */}
+            <div>
+              <h3 style={{ color: "#da2c46", marginBottom: "12px" }}>
+                Other Information
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Last Working Day
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    value={
+                      formData.lastWorkingDay
+                        ? dayjs(formData.lastWorkingDay)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "lastWorkingDay",
+                        date ? date.format("YYYY-MM-DD") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY"
+                    placeholder="Select date"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Last Login Time
+                  </label>
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    showTime
+                    value={
+                      formData.lastLoginTime
+                        ? dayjs(formData.lastLoginTime)
+                        : null
+                    }
+                    onChange={(date) =>
+                      handleInputChange(
+                        "lastLoginTime",
+                        date ? date.format("YYYY-MM-DD HH:mm:ss") : ""
+                      )
+                    }
+                    format="DD/MM/YYYY HH:mm:ss"
+                    placeholder="Select date and time"
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <Checkbox
+                    checked={formData.firstTimeLogin}
+                    onChange={(e) =>
+                      handleInputChange("firstTimeLogin", e.target.checked)
+                    }
+                  >
+                    First Time Login
+                  </Checkbox>
+                </div>
               </div>
             </div>
           </div>

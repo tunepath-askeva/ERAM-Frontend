@@ -587,6 +587,10 @@ const CompletedCandidates = () => {
                   plantId: "",
                   officialEmail: "",
                   basicAssets: "",
+                  iqamaId: "",
+                  employeeGroup: "",
+                  reportingAndDocumentation: "",
+                  employmentType: "",
                 });
                 setConvertModalVisible(true);
               }}
@@ -786,7 +790,7 @@ const CompletedCandidates = () => {
                 candidateId: candidateToConvert.user._id,
                 customFieldId: candidateToConvert._id,
                 workOrderId: candidateToConvert.workOrder._id,
-                // Convert date objects to ISO strings if needed
+                // Convert date objects to ISO strings
                 dateOfJoining: values.dateOfJoining?.toISOString(),
                 lastArrival: values.lastArrival?.toISOString(),
                 iqamaIssueDate: values.iqamaIssueDate?.toISOString(),
@@ -796,6 +800,16 @@ const CompletedCandidates = () => {
                 iqamaArabicDateOfExpiry:
                   values.iqamaArabicDateOfExpiry?.toISOString(),
                 lastWorkingDay: values.lastWorkingDay?.toISOString(),
+                employmentType: values.employeeType,
+                iqamaId: values.iqamaId,
+                employeeGroup: values.employeeGroup,
+                reportingAndDocumentation: values.reportingAndDocumentation,
+                sponsorName: values.sponsorName, // Already exists, just verify
+                eligibleVacationDays: values.eligibleVacationDays,
+                eligibleVacationMonth: values.eligibleVacationMonth,
+                assetAllocation: values.assetAllocation
+                  ? values.assetAllocation.split(",").map((item) => item.trim())
+                  : [],
               };
 
               await convertEmployee(payload).unwrap();
@@ -810,9 +824,7 @@ const CompletedCandidates = () => {
               console.error("Conversion failed:", error);
               enqueueSnackbar(
                 error?.data?.message || "Failed to convert candidate.",
-                {
-                  variant: "error",
-                }
+                { variant: "error" }
               );
             }
           }}
@@ -945,7 +957,12 @@ const CompletedCandidates = () => {
                   label="External Employee Number"
                   name="externalEmpNo"
                 >
-                  <Input placeholder="Enter external emp no" />
+                  <Input placeholder="Enter external emp no" maxLength={20} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item label="Iqama ID" name="iqamaId">
+                  <Input placeholder="Enter Iqama ID" maxLength={50} />
                 </Form.Item>
               </Col>
             </Row>
@@ -960,12 +977,12 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Designation" name="designation">
-                  <Input placeholder="Enter designation" />
+                  <Input placeholder="Enter designation" maxLength={100} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Visa Category" name="visaCategory">
-                  <Input placeholder="Enter visa category" />
+                  <Input placeholder="Enter visa category" maxLength={50} />
                 </Form.Item>
               </Col>
             </Row>
@@ -973,12 +990,15 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Employee Group" name="employeeGroup">
-                  <Input placeholder="Enter employee group" />
+                  <Input placeholder="Enter employee group" maxLength={50} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
-                <Form.Item label="Employee Type" name="employeeType">
-                  <Input placeholder="Enter employee type" />
+                <Form.Item label="Employee Type" name="employmentType">
+                  <Input
+                    placeholder="SUPPLIER, INTERNAL, or DIRECT"
+                    maxLength={50}
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -986,12 +1006,12 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Payroll Group" name="payrollGroup">
-                  <Input placeholder="Enter payroll group" />
+                  <Input placeholder="Enter payroll group" maxLength={50} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Sponsor Name" name="sponsorName">
-                  <Input placeholder="Enter sponsor name" />
+                  <Input placeholder="Enter sponsor name" maxLength={100} />
                 </Form.Item>
               </Col>
             </Row>
@@ -999,12 +1019,20 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Work Hours" name="workHours">
-                  <Input placeholder="Enter work hours" />
+                  <Input
+                    type="number"
+                    placeholder="Enter work hours (e.g., 8)"
+                    maxLength={2}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Work Days" name="workDays">
-                  <Input placeholder="Enter work days" />
+                  <Input
+                    type="number"
+                    placeholder="Enter work days (e.g., 5)"
+                    maxLength={2}
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -1015,12 +1043,15 @@ const CompletedCandidates = () => {
                   label="Air Ticket Frequency"
                   name="airTicketFrequency"
                 >
-                  <Input placeholder="Enter air ticket frequency" />
+                  <Input
+                    placeholder="Enter air ticket frequency"
+                    maxLength={50}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Probation Period" name="probationPeriod">
-                  <Input placeholder="Enter probation period" />
+                  <Input placeholder="Enter probation period" maxLength={50} />
                 </Form.Item>
               </Col>
             </Row>
@@ -1028,12 +1059,12 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Period of Contract" name="periodOfContract">
-                  <Input placeholder="Enter contract period" />
+                  <Input placeholder="Enter contract period" maxLength={20} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Work Location" name="workLocation">
-                  <Input placeholder="Enter work location" />
+                  <Input placeholder="Enter work location" maxLength={50} />
                 </Form.Item>
               </Col>
             </Row>
@@ -1041,7 +1072,7 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Family Status" name="familyStatus">
-                  <Input placeholder="Enter family status" />
+                  <Input placeholder="Family or Single" maxLength={20} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
@@ -1049,6 +1080,34 @@ const CompletedCandidates = () => {
                   <DatePicker
                     style={{ width: "100%" }}
                     placeholder="Select last arrival date"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Eligible Vacation Days"
+                  name="eligibleVacationDays"
+                >
+                  <Input
+                    type="number"
+                    placeholder="Enter vacation days (e.g., 22)"
+                    maxLength={2}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item
+                  label="Eligible Vacation Month"
+                  name="eligibleVacationMonth"
+                >
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="Enter vacation month (e.g., 11.9)"
+                    maxLength={2}
                   />
                 </Form.Item>
               </Col>
@@ -1115,12 +1174,12 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="GOSI" name="gosi">
-                  <Input placeholder="Enter GOSI number" />
+                  <Input placeholder="Enter GOSI number" maxLength={50} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Driving License" name="drivingLicense">
-                  <Input placeholder="Enter driving license" />
+                  <Input placeholder="Enter driving license" maxLength={50} />
                 </Form.Item>
               </Col>
             </Row>
@@ -1140,7 +1199,10 @@ const CompletedCandidates = () => {
                   label="Medical Policy Number"
                   name="medicalPolicyNumber"
                 >
-                  <Input placeholder="Enter medical policy number" />
+                  <Input
+                    placeholder="Enter medical policy number"
+                    maxLength={50}
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -1151,12 +1213,16 @@ const CompletedCandidates = () => {
                   <Input
                     type="number"
                     placeholder="Enter number of dependents"
+                    maxLength={2}
                   />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Insurance Category" name="insuranceCategory">
-                  <Input placeholder="Enter insurance category" />
+                  <Input
+                    placeholder="Enter insurance category"
+                    maxLength={50}
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -1164,12 +1230,15 @@ const CompletedCandidates = () => {
             <Row gutter={[16, 8]}>
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Class Code" name="classCode">
-                  <Input placeholder="Enter class code" />
+                  <Input placeholder="Enter class code" maxLength={20} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={24} md={12}>
-                <Form.Item label="Asset Allocation" name="assetAllocation">
-                  <Input placeholder="Enter asset allocation" />
+                <Form.Item
+                  label="Asset Allocation (comma-separated)"
+                  name="assetAllocation"
+                >
+                  <Input placeholder="e.g., Laptop, Vehicle, Phone" />
                 </Form.Item>
               </Col>
             </Row>
@@ -1195,6 +1264,18 @@ const CompletedCandidates = () => {
                   <Input placeholder="Enter last login time" />
                 </Form.Item>
               </Col>
+
+              <Col xs={24} sm={24} md={12} lg={6}>
+                <Form.Item
+                  label="Reporting And Documentation"
+                  name="reportingAndDocumentation"
+                >
+                  <Input.TextArea
+                    rows={3}
+                    placeholder="Enter reporting and documentation details"
+                  />
+                </Form.Item>
+              </Col>
             </Row>
 
             <Row gutter={[16, 8]}>
@@ -1210,7 +1291,7 @@ const CompletedCandidates = () => {
             </Row>
 
             <Form.Item
-              label="Basic Asset Management: Laptop, Vehicle, etc (Reporting and Documentation)"
+              label="Basic Asset Management: Laptop, Vehicle, etc"
               name="basicAssets"
             >
               <Input.TextArea

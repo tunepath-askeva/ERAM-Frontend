@@ -82,17 +82,63 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               email: employee.email,
               phone: employee.phone,
               password: employee.password,
-              assignedJobTitle:
-                employee.assignedjobtitle || employee.jobtitle || "",
+
+              // Mandatory fields
+              assignedJobTitle: employee.assignedjobtitle || "",
               category: employee.category || "",
               eramId: employee.eramid || "",
-              badgeNo: employee.badgeno || "",
               dateOfJoining: employee.dateofjoining || "",
+              officialEmail: employee.officialemail || "",
+
+              // Optional basic fields
+              badgeNo: employee.badgeno || "",
               gatePassId: employee.gatepassid || "",
               aramcoId: employee.aramcoid || "",
               otherId: employee.otherid || "",
               plantId: employee.plantid || "",
-              officialEmail: employee.officialemail || "",
+
+              // NEW FIELDS - Add these:
+              externalEmpNo: employee.externalempno || "",
+              designation: employee.designation || "",
+              visaCategory: employee.visacategory || "",
+              employeeGroup: employee.employeegroup || "",
+              employmentType: employee.employmenttype || "",
+              payrollGroup: employee.payrollgroup || "",
+              sponsorName: employee.sponsorname || "",
+              workHours: employee.workhours || "",
+              workDays: employee.workdays || "",
+              airTicketFrequency: employee.airticketfrequency || "",
+              probationPeriod: employee.probationperiod || "",
+              periodOfContract: employee.periodofcontract || "",
+              workLocation: employee.worklocation || "",
+              familyStatus: employee.familystatus || "",
+              lastArrival: employee.lastarrival || "",
+              eligibleVacationDays: employee.eligiblevacationdays || "",
+              eligibleVacationMonth: employee.eligiblevacationmonth || "",
+
+              // IQAMA Details
+              iqamaId: employee.iqamaid || "",
+              iqamaIssueDate: employee.iqamaissuedate || "",
+              iqamaExpiryDate: employee.iqamaexpirydate || "",
+              iqamaArabicDateOfIssue: employee.iqamaarabicdateofissue || "",
+              iqamaArabicDateOfExpiry: employee.iqamaarabicdateofexpiry || "",
+
+              // Insurance & Benefits
+              gosi: employee.gosi || "",
+              drivingLicense: employee.drivinglicense || "",
+              medicalPolicy: employee.medicalpolicy || "",
+              medicalPolicyNumber: employee.medicalpolicynumber || "",
+              noOfDependent: employee.noofdependent || "",
+              insuranceCategory: employee.insurancecategory || "",
+              classCode: employee.classcode || "",
+              assetAllocation: employee.assetallocation
+                ? employee.assetallocation.split(";").map((s) => s.trim())
+                : [],
+
+              // Other fields
+              lastWorkingDay: employee.lastworkingday || "",
+              firstTimeLogin: employee.firsttimelogin || "",
+
               basicAssets: employee.basicassets || "",
               reportingAndDocumentation:
                 employee.reportinganddocumentation || "",
@@ -106,7 +152,9 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         }
 
         setPreviewData(employees);
-         message.info(`Found ${employees.length} valid employees to import. Click Import to proceed.`);
+        message.info(
+          `Found ${employees.length} valid employees to import. Click Import to proceed.`
+        );
         onImport({ employees });
         setFileList([]);
         setPreviewData([]);
@@ -125,31 +173,65 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
 
   const downloadTemplate = () => {
     const headers = [
-      "firstName",
-      "middleName",
-      "lastName",
+      "firstname", // Changed from "firstName"
+      "middlename", // Changed from "middleName"
+      "lastname", // Changed from "lastName"
       "email",
       "phone",
       "password",
-      "assignedJobTitle",
+      "assignedjobtitle", // Changed from "assignedJobTitle"
       "category",
-      "eramId",
-      "badgeNo",
-      "dateOfJoining",
-      "gatePassId",
-      "aramcoId",
-      "otherId",
-      "plantId",
-      "officialEmail",
-      "basicAssets",
-      "reportingAndDocumentation",
+      "eramid", // Changed from "eramId"
+      "badgeno", // Changed from "badgeNo"
+      "dateofjoining", // Changed from "dateOfJoining"
+      "gatepassid", // Changed from "gatePassId"
+      "aramcoid", // Changed from "aramcoId"
+      "otherid", // Changed from "otherId"
+      "plantid", // Changed from "plantId"
+      "officialemail", // Changed from "officialEmail"
+      "basicassets", // Changed from "basicAssets"
+      "reportinganddocumentation", // Changed
+
+      // ADD NEW FIELDS HERE:
+      "externalempno",
+      "designation",
+      "visacategory",
+      "employeegroup",
+      "employmenttype",
+      "payrollgroup",
+      "sponsorname",
+      "workhours",
+      "workdays",
+      "airticketfrequency",
+      "probationperiod",
+      "periodofcontract",
+      "worklocation",
+      "familystatus",
+      "lastarrival",
+      "eligiblevacationdays",
+      "eligiblevacationmonth",
+      "iqamaid",
+      "iqamaissuedate",
+      "iqamaexpirydate",
+      "iqamaarabicdateofissue",
+      "iqamaarabicdateofexpiry",
+      "gosi",
+      "drivinglicense",
+      "medicalpolicy",
+      "medicalpolicynumber",
+      "noofdependent",
+      "insurancecategory",
+      "classcode",
+      "assetallocation",
+      "lastworkingday",
+      "firsttimelogin",
     ];
 
     const sampleData = [
       "John",
       "M",
       "Doe",
-      "john.doe1@example.com",
+      "john.doe@example.com",
       "966501234567",
       "password123",
       "Software Engineer",
@@ -163,7 +245,41 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "PLANT001",
       "john.doe@company.com",
       "Laptop, Phone",
-      "Weekly reports required",
+      "Weekly reports",
+
+      // NEW FIELDS (30+ values):
+      "EXT001",
+      "Senior Dev",
+      "Work Visa",
+      "Technical",
+      "SUPPLIER",
+      "Monthly",
+      "Saudi Aramco",
+      "8",
+      "5",
+      "Annual",
+      "3 months",
+      "2 years",
+      "Riyadh Office",
+      "Family",
+      "2024-01-01",
+      "22",
+      "11",
+      "IQA123456",
+      "2023-01-01",
+      "2025-01-01",
+      "1444-06-10",
+      "1446-06-10",
+      "YES",
+      "YES",
+      "Y",
+      "POL12345",
+      "3",
+      "Premium",
+      "A1",
+      "Laptop;Phone;Access Card",
+      "",
+      "Y",
     ];
 
     const csvContent = [headers.join(","), sampleData.join(",")].join("\n");
@@ -231,13 +347,23 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                 with *.
               </p>
               <p style={{ marginBottom: "8px", fontWeight: 500 }}>
-                Required columns: firstName*, lastName*, email*, phone* (with
-                country code, e.g., 966501234567), password*
+                Required columns: firstName*, lastName*, email*, phone*,
+                password*, assignedJobTitle*, category*, eramId*,
+                dateOfJoining*, officialEmail*
               </p>
               <p style={{ marginBottom: 0 }}>
-                Optional columns: middleName, assignedJobTitle, category,
-                eramId, badgeNo, dateOfJoining, gatePassId, aramcoId, otherId,
-                plantId, officialEmail, basicAssets, reportingAndDocumentation
+                Optional columns: middleName, badgeNo, gatePassId, aramcoId,
+                otherId, plantId, externalEmpNo, designation, visaCategory,
+                employeeGroup, employmentType, payrollGroup, sponsorName,
+                workHours, workDays, airTicketFrequency, probationPeriod,
+                periodOfContract, workLocation, familyStatus, lastArrival,
+                eligibleVacationDays, eligibleVacationMonth, iqamaId,
+                iqamaIssueDate, iqamaExpiryDate, iqamaArabicDateOfIssue,
+                iqamaArabicDateOfExpiry, gosi, drivingLicense, medicalPolicy,
+                medicalPolicyNumber, noOfDependent, insuranceCategory,
+                classCode, assetAllocation (semicolon-separated),
+                lastWorkingDay, firstTimeLogin, basicAssets,
+                reportingAndDocumentation
               </p>
             </div>
           }
