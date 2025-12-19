@@ -84,6 +84,11 @@ const AdminSidebar = ({
       label: "Candidates",
     },
     {
+      key: "/admin/employees",
+      icon: <UsergroupAddOutlined />,
+      label: "Employees",
+    },
+    {
       key: "/admin/pipeline",
       icon: <ApartmentOutlined />,
       label: "Pipeline",

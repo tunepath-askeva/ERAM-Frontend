@@ -22,21 +22,22 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import {
-  useAddEmployeeMutation,
-  useUpdateEmployeeMutation,
-  useDeleteEmployeeMutation,
-  useBulkImportEmployeesMutation,
+  //   useAddEmployeeMutation,
+  //   useUpdateEmployeeMutation,
+  //   useDeleteEmployeeMutation,
+  //   useBulkImportEmployeesMutation,
   useDisableEmployeeMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
-import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
-import AddEmployeeModal from "../Components/AddEmployeeModal";
-import EditEmployeeModal from "../Components/EditEmployeeModal";
-import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
-import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
+import { useGetBranchEmployessforAdminQuery } from "../../Slices/Admin/AdminApis";
+// import AddEmployeeModal from "../Components/AddEmployeeModal";
+// import EditEmployeeModal from "../Components/EditEmployeeModal";
+// import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+import AdminEmployeeDetails from "../Components/AdminEmployeeDetails";
+import { AlignCenter } from "lucide-react";
 
-const EmployeeAdminAllEmployees = () => {
+const AdminEmployees = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -49,33 +50,25 @@ const EmployeeAdminAllEmployees = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [searchText, setSearchText] = useState("");
 
-  const recruiterPermissions = useSelector(
-    (state) => state.userAuth.recruiterPermissions
-  );
-
-  const hasPermission = (permissionKey) => {
-    return recruiterPermissions.includes(permissionKey);
-  };
-
   // API Queries and Mutations
   const {
     data: branchEmployeesResponse,
     isLoading,
     error,
     refetch,
-  } = useGetBranchEmployessQuery({
+  } = useGetBranchEmployessforAdminQuery({
     page,
     pageSize,
     search: debouncedSearch,
   });
 
-  const [addEmployee, { isLoading: isAdding }] = useAddEmployeeMutation();
-  const [updateEmployee, { isLoading: isUpdating }] =
-    useUpdateEmployeeMutation();
-  const [deleteEmployee] = useDeleteEmployeeMutation();
+  //   const [addEmployee, { isLoading: isAdding }] = useAddEmployeeMutation();
+  //   const [updateEmployee, { isLoading: isUpdating }] =
+  //     useUpdateEmployeeMutation();
+  //   const [deleteEmployee] = useDeleteEmployeeMutation();
   const [disableEmployee] = useDisableEmployeeMutation();
-  const [bulkImportEmployees, { isLoading: isImporting }] =
-    useBulkImportEmployeesMutation();
+  //   const [bulkImportEmployees, { isLoading: isImporting }] =
+  //     useBulkImportEmployeesMutation();
 
   const employees = branchEmployeesResponse?.data || [];
   const total = branchEmployeesResponse?.total || 0;
@@ -83,12 +76,11 @@ const EmployeeAdminAllEmployees = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchText);
-    }, 500);
+    }, 500); // 500ms debounce
 
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  // Add new employee
   const handleAdd = async (values) => {
     try {
       const result = await addEmployee(values).unwrap();
@@ -104,13 +96,11 @@ const EmployeeAdminAllEmployees = () => {
     }
   };
 
-  // View employee details
   const handleView = (record) => {
     setSelectedEmployeeId(record._id);
     setIsDetailsDrawerVisible(true);
   };
 
-  // Edit employee
   const handleEdit = (record) => {
     setEditingEmployeeId(record._id);
     setIsEditModalVisible(true);
@@ -133,7 +123,6 @@ const EmployeeAdminAllEmployees = () => {
     }
   };
 
-  // Delete employee
   const handleDelete = async (id) => {
     try {
       const result = await deleteEmployee(id).unwrap();
@@ -321,96 +310,84 @@ const EmployeeAdminAllEmployees = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 250,
+      align: "center",
       fixed: "right",
       render: (_, record) => (
-        <Space size="small">
+        <Space>
           {/* View */}
           <Tooltip title="View Employee">
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
-              style={{ color: "#1890ff", padding: 0 }}
-            />
+            <Button icon={<EyeOutlined />} onClick={() => handleView(record)}>
+              View
+            </Button>
           </Tooltip>
 
-          {/* Edit */}
-          {hasPermission("edit-employee") && (
-            <Tooltip title="Edit Employee">
-              <Button
-                type="link"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(record)}
-                style={{ color: "#da2c46", padding: 0 }}
-              />
-            </Tooltip>
-          )}
+          {/* <Tooltip title="Edit Employee">
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+              style={{ color: "#da2c46", padding: 0 }}
+            />
+          </Tooltip> */}
 
           {/* Deactivate / Activate Button */}
-          {hasPermission("delete-employee") && (
-            <>
-              {record.accountStatus === "active" ? (
-                // 🔴 Deactivate
-                <Tooltip title="Deactivate Employee">
-                  <Popconfirm
-                    title="Deactivate employee"
-                    description="Are you sure you want to deactivate this employee?"
-                    onConfirm={() => handleDisable(record._id)}
-                    okText="Yes"
-                    cancelText="No"
-                    okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+          <>
+            {record.accountStatus === "active" ? (
+              // 🔴 Deactivate
+              <Tooltip title="Deactivate Employee">
+                <Popconfirm
+                  title="Deactivate employee"
+                  description="Are you sure you want to deactivate this employee?"
+                  onConfirm={() => handleDisable(record._id)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+                >
+                  <Button danger icon={<StopOutlined />}>
+                    Deactivate
+                  </Button>
+                </Popconfirm>
+              </Tooltip>
+            ) : (
+              // 🟢 Activate
+              <Tooltip title="Activate Employee">
+                <Popconfirm
+                  title="Activate employee"
+                  description="Are you sure you want to activate this employee?"
+                  onConfirm={() => handleDisable(record._id)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ style: { backgroundColor: "#52c41a" } }}
+                >
+                  <Button
+                    icon={<CheckCircleOutlined />}
+                    style={{ backgroundColor: "#52c41a", color: "#fff" }}
                   >
-                    <Button
-                      type="link"
-                      danger
-                      icon={<StopOutlined />}
-                      style={{ padding: 0 }}
-                    />
-                  </Popconfirm>
-                </Tooltip>
-              ) : (
-                // 🟢 Activate
-                <Tooltip title="Activate Employee">
-                  <Popconfirm
-                    title="Activate employee"
-                    description="Are you sure you want to activate this employee?"
-                    onConfirm={() => handleDisable(record._id)}
-                    okText="Yes"
-                    cancelText="No"
-                    okButtonProps={{ style: { backgroundColor: "#52c41a" } }}
-                  >
-                    <Button
-                      type="link"
-                      style={{ padding: 0, color: "#52c41a" }}
-                      icon={<CheckCircleOutlined />}
-                    />
-                  </Popconfirm>
-                </Tooltip>
-              )}
-            </>
-          )}
-
-          {/* Delete */}
-          {hasPermission("delete-employee") && (
-            <Tooltip title="Delete Employee">
-              <Popconfirm
-                title="Delete employee"
-                description="Are you sure you want to delete this employee? This action cannot be undone."
-                onConfirm={() => handleDelete(record._id)}
-                okText="Yes"
-                cancelText="No"
-                okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
-              >
-                <Button
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  style={{ padding: 0 }}
-                />
-              </Popconfirm>
-            </Tooltip>
-          )}
+                    Activate
+                  </Button>
+                </Popconfirm>
+              </Tooltip>
+            )}
+          </>
+          {/* 
+          <Tooltip title="Delete Employee">
+            <Popconfirm
+              title="Delete employee"
+              description="Are you sure you want to delete this employee? This action cannot be undone."
+              onConfirm={() => handleDelete(record._id)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+            >
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                style={{ padding: 0 }}
+              />
+            </Popconfirm>
+          </Tooltip> */}
         </Space>
       ),
     },
@@ -460,33 +437,27 @@ const EmployeeAdminAllEmployees = () => {
           />
 
           <Space wrap>
-            {hasPermission("add-employee") && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setIsAddModalVisible(true)}
-                style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
-              >
-                Add Employee
-              </Button>
-            )}
-            {hasPermission("import-employee-csv") && (
-              <Button
-                icon={<UploadOutlined />}
-                onClick={() => setIsImportModalVisible(true)}
-              >
-                Import CSV
-              </Button>
-            )}
-            {hasPermission("export-employee-csv") && (
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={handleExport}
-                disabled={employees.length === 0}
-              >
-                Export CSV
-              </Button>
-            )}
+            {/* <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsAddModalVisible(true)}
+              style={{ backgroundColor: "#da2c46", borderColor: "#da2c46" }}
+            >
+              Add Employee
+            </Button>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setIsImportModalVisible(true)}
+            >
+              Import CSV
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+              disabled={filteredEmployees.length === 0}
+            >
+              Export CSV
+            </Button> */}
           </Space>
         </Space>
       </div>
@@ -510,8 +481,7 @@ const EmployeeAdminAllEmployees = () => {
           size="middle"
         />
       </Spin>
-
-      {/* Add Employee Modal */}
+      {/* 
       <AddEmployeeModal
         visible={isAddModalVisible}
         onCancel={() => setIsAddModalVisible(false)}
@@ -519,7 +489,6 @@ const EmployeeAdminAllEmployees = () => {
         isLoading={isAdding}
       />
 
-      {/* Edit Employee Modal */}
       <EditEmployeeModal
         visible={isEditModalVisible}
         employeeId={editingEmployeeId}
@@ -531,16 +500,14 @@ const EmployeeAdminAllEmployees = () => {
         isLoading={isUpdating}
       />
 
-      {/* Import CSV Modal */}
       <ImportEmployeeCSVModal
         visible={isImportModalVisible}
         onCancel={() => setIsImportModalVisible(false)}
         onImport={handleBulkImport}
         isLoading={isImporting}
-      />
+      /> */}
 
-      {/* Employee Details Drawer */}
-      <EmployeeDetailsDrawer
+      <AdminEmployeeDetails
         visible={isDetailsDrawerVisible}
         employeeId={selectedEmployeeId}
         onClose={() => {
@@ -548,10 +515,9 @@ const EmployeeAdminAllEmployees = () => {
           setSelectedEmployeeId(null);
         }}
         onEdit={handleEdit}
-        hasPermission={hasPermission}
       />
     </div>
   );
 };
 
-export default EmployeeAdminAllEmployees;
+export default AdminEmployees;

@@ -588,6 +588,21 @@ export const adminApi = createApi({
         params: { prefix },
       }),
     }),
+    getBranchEmployessforAdmin: builder.query({
+      query: ({ page = 1, pageSize = 10, search = "" }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pageSize.toString(),
+        });
+
+        if (search) params.append("search", search);
+
+        return {
+          url: `/branch-employees?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
@@ -680,4 +695,7 @@ export const {
   useGetMemberTypesQuery,
 
   useLazyGetJobCodesByProjectQuery,
+
+  //Employees
+  useGetBranchEmployessforAdminQuery
 } = adminApi;

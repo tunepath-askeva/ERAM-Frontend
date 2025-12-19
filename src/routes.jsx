@@ -106,6 +106,7 @@ import RecruiterPipelines from "./Recruiters/Pages/RecruiterPipelines";
 import RecruiterLevels from "./Recruiters/Pages/RecruiterLevels";
 import RecruiterMasters from "./Recruiters/Pages/RecruiterMasters";
 import AdminDashboardDetails from "./Admin/Pages/AdminDashboardDetail";
+import AdminEmployees from "./Admin/Pages/AdminEmployees";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -212,6 +213,10 @@ const AppRoutes = () => {
         <Route
           path="/admin/candidates"
           element={<ProtectedAdmin element={<AdminCandidates />} />}
+        />
+        <Route
+          path="/admin/employees"
+          element={<ProtectedAdmin element={<AdminEmployees />} />}
         />
         <Route
           path="/admin/workorder"
