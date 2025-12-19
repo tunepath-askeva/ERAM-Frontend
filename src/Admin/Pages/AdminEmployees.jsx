@@ -9,6 +9,7 @@ import {
   Spin,
   Tooltip,
   Tag,
+  Typography,
 } from "antd";
 import {
   SearchOutlined,
@@ -20,6 +21,7 @@ import {
   EyeOutlined,
   StopOutlined,
   CheckCircleOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import {
   //   useAddEmployeeMutation,
@@ -36,6 +38,8 @@ import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 import AdminEmployeeDetails from "../Components/AdminEmployeeDetails";
 import { AlignCenter } from "lucide-react";
+
+const { Title, Text, Paragraph } = Typography;
 
 const AdminEmployees = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -409,35 +413,66 @@ const AdminEmployees = () => {
   }
 
   return (
-    <div style={{ padding: "24px" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ color: "#da2c46", marginBottom: "8px", fontSize: "28px" }}>
-          Employee Management
-        </h1>
-        <p style={{ color: "#666", marginBottom: "24px" }}>
-          Manage your organization's employees, track details, and handle bulk
-          operations
-        </p>
-
-        <Space
+    <>
+      <div className="candidate-header">
+        <div
           style={{
-            marginBottom: "16px",
-            width: "100%",
+            display: "flex",
+            alignItems: "center",
             justifyContent: "space-between",
+            width: "100%",
             flexWrap: "wrap",
+            gap: "16px",
           }}
         >
-          <Input
-            placeholder="Search by name, email, job title, or ERAM ID..."
-            allowClear
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 400 }}
-          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              minWidth: "200px",
+            }}
+          >
+            <TeamOutlined
+              size={24}
+              style={{ marginRight: "8px", color: "#2c3e50" }}
+            />
+            <Title
+              level={2}
+              className="candidate-title"
+              style={{ margin: 0, color: "#2c3e50", fontSize: "22px" }}
+            >
+              Employees Management
+            </Title>
+          </div>
 
-          <Space wrap>
-            {/* <Button
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              flex: 1,
+              justifyContent: "flex-end",
+              minWidth: "300px",
+            }}
+          >
+            <Input
+              placeholder="Search by name, email, job title, or ERAM ID..."
+              allowClear
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                maxWidth: "500px",
+                width: "100%",
+                borderRadius: "8px",
+                height: "35px",
+              }}
+              size="large"
+              className="custom-search-input"
+            />
+
+            <Space wrap>
+              {/* <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setIsAddModalVisible(true)}
@@ -458,8 +493,9 @@ const AdminEmployees = () => {
             >
               Export CSV
             </Button> */}
-          </Space>
-        </Space>
+            </Space>
+          </div>
+        </div>
       </div>
 
       <Spin spinning={isLoading}>
@@ -474,7 +510,7 @@ const AdminEmployees = () => {
             showSizeChanger: true,
             showTotal: (total) =>
               `Total ${total} employee${total !== 1 ? "s" : ""}`,
-            pageSizeOptions: ["10", "20", "50", "100"],
+            pageSizeOptions: ["5","10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
           scroll={{ x: 1400 }}
@@ -516,7 +552,7 @@ const AdminEmployees = () => {
         }}
         onEdit={handleEdit}
       />
-    </div>
+    </>
   );
 };
 
