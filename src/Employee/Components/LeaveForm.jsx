@@ -31,6 +31,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useSubmitLeaveRequestMutation } from "../../Slices/Employee/EmployeeApis";
+import { useSnackbar } from "notistack";
 
 const { RangePicker } = DatePicker;
 const { TextArea } = Input;
@@ -89,6 +90,7 @@ const leaveTypes = [
 ];
 
 const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const [submitLeaveRequest, { isLoading }] = useSubmitLeaveRequestMutation();
   const [fileList, setFileList] = useState([]);
@@ -120,24 +122,39 @@ const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
 
       const response = await submitLeaveRequest(formData).unwrap();
 
-      message.success(
-        response.message || "Leave request submitted successfully"
+      enqueueSnackbar(
+        response.message || "Leave request submitted successfully",
+        {
+          variant: "success",
+        }
       );
+
       form.resetFields();
       setFileList([]);
 
       if (onLeaveSubmit) {
-        onLeaveSubmit(newLeave);
+        onLeaveSubmit(response.data || response); // CHANGED: Pass response data instead of undefined newLeave
       }
     } catch (error) {
-      message.error(error.data?.message || "Failed to submit leave request");
+      console.error("Leave submission error:", error); // ADD: Log error for debugging
+
+      enqueueSnackbar(
+        error.data?.message ||
+          error.message ||
+          "Failed to submit leave request",
+        {
+          variant: "error",
+        }
+      );
     }
   };
 
   const beforeUpload = (file) => {
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
-      message.error("File must be smaller than 5MB!");
+      enqueueSnackbar("File must be smaller than 5MB!", {
+        variant: "warning",
+      });
       return Upload.LIST_IGNORE;
     }
     return false;
@@ -196,10 +213,9 @@ const LeaveForm = ({ onLeaveSubmit, leaveBalances, mobileView }) => {
               label="Urgency Level"
               name="urgency"
               initialValue="Normal"
-              
             >
-              <Radio.Group size="large" buttonStyle="solid" >
-                <Radio.Button  value="Low">Low</Radio.Button>
+              <Radio.Group size="large" buttonStyle="solid">
+                <Radio.Button value="Low">Low</Radio.Button>
                 <Radio.Button value="Normal">Normal</Radio.Button>
                 <Radio.Button value="High">High</Radio.Button>
                 <Radio.Button value="Critical">Critical</Radio.Button>

@@ -23,6 +23,7 @@ import {
   HistoryOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useSnackbar } from "notistack";
 import LeaveDetailsDrawer from "./LeaveDetailsDrawer";
 import { useGetEmployeeLeaveHistoryQuery } from "../../Slices/Employee/EmployeeApis";
 
@@ -31,6 +32,7 @@ const { Text } = Typography;
 const { Option } = Select;
 
 const LeaveHistory = ({ mobileView, setLeaveRequests }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [dateRange, setDateRange] = useState([]);
@@ -141,11 +143,15 @@ const LeaveHistory = ({ mobileView, setLeaveRequests }) => {
           )
         );
       }
-      message.success("Leave request cancelled successfully");
+      enqueueSnackbar("Leave request cancelled successfully", {
+        variant: "success",
+      });
       setViewLeaveDrawer(false);
       refetch(); // Refetch data after cancellation
     } catch (error) {
-      message.error("Failed to cancel leave request");
+      enqueueSnackbar("Failed to cancel leave request", {
+        variant: "error",
+      });
     }
   };
 

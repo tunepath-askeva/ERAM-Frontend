@@ -33,10 +33,12 @@ import {
   useSubmitSelectedTicketsMutation,
 } from "../../Slices/Employee/EmployeeApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 
 const EmployeeRaiseRequest = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [activeTab, setActiveTab] = useState("submit");
   const [mobileView, setMobileView] = useState(false);
   const [requestFilters, setRequestFilters] = useState({
@@ -138,7 +140,9 @@ const EmployeeRaiseRequest = () => {
         ticketId,
       }).unwrap();
 
-      message.success(result.message || "Ticket submitted successfully!");
+      enqueueSnackbar(result.message || "Ticket submitted successfully!", {
+        variant: "success",
+      });
       await refetchRequestHistory();
       return result;
     } catch (error) {
@@ -146,7 +150,9 @@ const EmployeeRaiseRequest = () => {
         error?.data?.message ||
         error?.message ||
         "Failed to submit ticket. Please try again.";
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, {
+        variant: "error",
+      });
       throw error;
     }
   };

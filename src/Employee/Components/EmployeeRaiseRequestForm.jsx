@@ -20,15 +20,15 @@ import {
   PaperClipOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
-import {
-  useRaiseRequestMutation,
-} from "../../Slices/Employee/EmployeeApis";
+import { useRaiseRequestMutation } from "../../Slices/Employee/EmployeeApis";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [showCustomTitle, setShowCustomTitle] = useState(false);
@@ -58,7 +58,9 @@ const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
   const beforeUpload = (file) => {
     const isLt10M = file.size / 1024 / 1024 < 10;
     if (!isLt10M) {
-      message.error("File must be smaller than 10MB!");
+      enqueueSnackbar("File must be smaller than 10MB!", {
+        variant: "error",
+      });
       return false;
     }
 
@@ -73,8 +75,11 @@ const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      message.error(
-        "Please upload PDF, DOC, DOCX, images, or text files only!"
+      enqueueSnackbar(
+        "Please upload PDF, DOC, DOCX, images, or text files only!",
+        {
+          variant: "error",
+        }
       );
       return false;
     }
@@ -109,21 +114,24 @@ const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
       });
 
       const response = await raiseRequest(formData).unwrap();
-      
-      message.success("Request submitted successfully!");
-      
+
+      enqueueSnackbar("Request submitted successfully!", {
+        variant: "success",
+      });
       // Clear form state
       form.resetFields();
       setFileList([]);
       setShowCustomTitle(false);
-      
+
       // Call the callback to trigger refetch and navigation
       if (onRequestSubmit) {
         await onRequestSubmit(response);
       }
     } catch (err) {
       console.error("Error submitting request:", err);
-      message.error(err.data?.message || "Failed to submit request");
+      enqueueSnackbar(err.data?.message || "Failed to submit request", {
+        variant: "error",
+      });
     }
   };
 
@@ -204,10 +212,16 @@ const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
           label="Description"
           rules={[
             { required: true, message: "Please enter a description!" },
-            { max: 500, message: "Description must be less than 500 characters" },
+            {
+              max: 500,
+              message: "Description must be less than 500 characters",
+            },
           ]}
         >
-          <TextArea rows={4} placeholder="Enter detailed description of your request" />
+          <TextArea
+            rows={4}
+            placeholder="Enter detailed description of your request"
+          />
         </Form.Item>
 
         <Form.Item name="attachments" label="Attachments">
@@ -233,7 +247,7 @@ const EmployeeRaiseRequestForm = ({ onRequestSubmit, mobileView }) => {
               htmlType="submit"
               icon={<SendOutlined />}
               loading={isLoading}
-              style={{backgroundColor: "#da2c46"}}
+              style={{ backgroundColor: "#da2c46" }}
               size="large"
             >
               {isLoading ? "Submitting..." : "Submit Request"}
