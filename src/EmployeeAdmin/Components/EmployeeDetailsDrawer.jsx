@@ -1,5 +1,5 @@
 import React from "react";
-import { Drawer, Tag, Spin, Button, Space, Divider, Image } from "antd";
+import { Drawer, Tag, Spin, Button, Space, Divider, Image, Tabs } from "antd";
 import {
   UserOutlined,
   CalendarOutlined,
@@ -14,10 +14,6 @@ import {
   TrophyOutlined,
   BookOutlined,
   EnvironmentOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  HeartOutlined,
-  TeamOutlined,
 } from "@ant-design/icons";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
 
@@ -72,7 +68,7 @@ const EmployeeDetailsDrawer = ({
   // Entry Type Logic (same as main employee page)
   const getEntryTypeTag = () => {
     if (!employee) return null;
-    
+
     const code = employee.uniqueCode || "";
     const entry = employee.enteringCandidate;
 
@@ -193,9 +189,18 @@ const EmployeeDetailsDrawer = ({
                     fontSize: "14px",
                   }}
                 >
-                  {employee.employmentDetails?.assignedJobTitle || employee.title || "Employee"}
+                  {employee.employmentDetails?.assignedJobTitle ||
+                    employee.title ||
+                    "Employee"}
                 </p>
-                <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    marginTop: "8px",
+                    display: "flex",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Tag
                     color="white"
                     style={{
@@ -229,576 +234,1208 @@ const EmployeeDetailsDrawer = ({
             </div>
           </div>
 
-          {/* Profile Summary */}
-          {employee.profileSummary && (
-            <>
-              <InfoSection title="Profile Summary" icon={<FileTextOutlined />}>
-                <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#333" }}>
-                  {employee.profileSummary}
-                </p>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
+          {/* Tabs for organized information */}
+          <Tabs
+            defaultActiveKey="1"
+            items={[
+              {
+                key: "1",
+                label: (
+                  <span>
+                    <UserOutlined /> Personal
+                  </span>
+                ),
+                children: (
+                  <>
+                    {/* Profile Summary */}
+                    {employee.profileSummary ? (
+                      <>
+                        <InfoSection
+                          title="Profile Summary"
+                          icon={<FileTextOutlined />}
+                        >
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              lineHeight: "1.6",
+                              color: "#333",
+                            }}
+                          >
+                            {employee.profileSummary}
+                          </p>
+                        </InfoSection>
+                        <Divider />
+                      </>
+                    ) : null}
 
-          {/* Personal Information */}
-          <InfoSection title="Personal Information" icon={<UserOutlined />}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <InfoItem label="First Name" value={employee.firstName} />
-              <InfoItem label="Middle Name" value={employee.middleName} />
-              <InfoItem label="Last Name" value={employee.lastName} />
-              <InfoItem label="Full Name" value={employee.fullName} />
-              <InfoItem label="Email" value={employee.email} span={2} />
-              <InfoItem label="Phone" value={employee.phone} />
-              <InfoItem label="Gender" value={employee.gender} />
-              <InfoItem 
-                label="Date of Birth" 
-                value={employee.dob ? new Date(employee.dob).toLocaleDateString() : null}
-              />
-              <InfoItem label="Age" value={employee.age} />
-              <InfoItem label="Blood Group" value={employee.bloodGroup} />
-              <InfoItem label="Marital Status" value={employee.maritalStatus} />
-              <InfoItem label="Religion" value={employee.religion} />
-              <InfoItem label="Nationality" value={employee.nationality} />
-              <InfoItem label="Country of Birth" value={employee.countryOfBirth} />
-              <InfoItem label="Location" value={employee.location} />
-            </div>
-          </InfoSection>
-
-          <Divider />
-
-          {/* Identity Documents */}
-          <InfoSection title="Identity Documents" icon={<IdcardOutlined />}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <InfoItem label="Passport No" value={employee.passportNo} />
-              <InfoItem label="Passport Place of Issue" value={employee.passportPlaceOfIssue} />
-              <InfoItem label="Iqama No" value={employee.iqamaNo} span={2} />
-            </div>
-          </InfoSection>
-
-          <Divider />
-
-          {/* Employment Details */}
-          <InfoSection title="Employment Details" icon={<EnvironmentOutlined />}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <InfoItem
-                label="Job Title"
-                value={employee.employmentDetails?.assignedJobTitle || employee.title}
-              />
-              <InfoItem
-                label="Category"
-                value={employee.employmentDetails?.category}
-              />
-              <InfoItem
-                label="Date of Joining"
-                value={
-                  employee.employmentDetails?.dateOfJoining
-                    ? new Date(
-                        employee.employmentDetails.dateOfJoining
-                      ).toLocaleDateString()
-                    : null
-                }
-              />
-              <InfoItem
-                label="ERAM ID"
-                value={employee.employmentDetails?.eramId}
-              />
-              <InfoItem
-                label="Badge Number"
-                value={employee.employmentDetails?.badgeNo}
-              />
-              <InfoItem
-                label="Gate Pass ID"
-                value={employee.employmentDetails?.gatePassId}
-              />
-              <InfoItem
-                label="Aramco ID"
-                value={employee.employmentDetails?.aramcoId}
-              />
-              <InfoItem
-                label="Other ID"
-                value={employee.employmentDetails?.otherId}
-              />
-              <InfoItem
-                label="Plant ID"
-                value={employee.employmentDetails?.plantId}
-              />
-              <InfoItem
-                label="Work Order ID"
-                value={employee.employmentDetails?.workorderId}
-              />
-              <InfoItem
-                label="Official Email"
-                value={employee.employmentDetails?.officialEmail}
-                span={2}
-              />
-              <InfoItem
-                label="Basic Assets"
-                value={employee.employmentDetails?.basicAssets}
-                span={2}
-              />
-              <InfoItem
-                label="Reporting & Documentation"
-                value={employee.employmentDetails?.reportingAndDocumentation}
-                span={2}
-              />
-            </div>
-          </InfoSection>
-
-          <Divider />
-
-          {/* Professional Information */}
-          {(employee.companyName || employee.agency || employee.clientCode || employee.workorderhint || employee.totalExperienceYears || employee.currentSalary || employee.expectedSalary || employee.noticePeriod) && (
-            <>
-              <InfoSection title="Professional Information" icon={<EnvironmentOutlined />}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                  }}
-                >
-                  {employee.companyName && (
-                    <InfoItem label="Company Name" value={employee.companyName} />
-                  )}
-                  {employee.agency && (
-                    <InfoItem label="Agency" value={employee.agency} />
-                  )}
-                  {employee.clientCode && (
-                    <InfoItem label="Client Code" value={employee.clientCode} />
-                  )}
-                  {employee.totalExperienceYears && (
-                    <InfoItem label="Total Experience (Years)" value={employee.totalExperienceYears} />
-                  )}
-                  {employee.currentSalary && (
-                    <InfoItem label="Current Salary" value={employee.currentSalary} />
-                  )}
-                  {employee.expectedSalary && (
-                    <InfoItem label="Expected Salary" value={employee.expectedSalary} />
-                  )}
-                  {employee.noticePeriod && (
-                    <InfoItem label="Notice Period" value={employee.noticePeriod} />
-                  )}
-                  {employee.workorderhint && (
-                    <InfoItem label="Work Order Note" value={employee.workorderhint} span={2} />
-                  )}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
-
-          {/* Branch Information */}
-          {employee.branch && (
-            <>
-              <InfoSection title="Branch Information" icon={<BankOutlined />}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                  }}
-                >
-                  <InfoItem label="Branch ID" value={employee.branch?._id} />
-                  <InfoItem
-                    label="Branch Order"
-                    value={employee.branch?.branchOrder}
-                  />
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
-
-          {/* Qualifications & Skills */}
-          {(employee.qualifications?.length > 0 || employee.skills?.length > 0 || employee.languages?.length > 0) && (
-            <>
-              <InfoSection title="Qualifications & Skills" icon={<TrophyOutlined />}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {employee.qualifications?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-                        Qualifications
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {employee.qualifications.map((qual, index) => (
-                          <Tag key={index} color="blue">{qual}</Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {employee.skills?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-                        Skills
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {employee.skills.map((skill, index) => (
-                          <Tag key={index} color="green">{skill}</Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {employee.languages?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-                        Languages
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {employee.languages.map((lang, index) => (
-                          <Tag key={index} color="purple">{lang}</Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
-
-          {/* Additional Information */}
-          {(employee.visaStatus?.length > 0 || employee.industry?.length > 0) && (
-            <>
-              <InfoSection title="Additional Information" icon={<GlobalOutlined />}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {employee.visaStatus?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-                        Visa Status
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {employee.visaStatus.map((visa, index) => (
-                          <Tag key={index} color="orange">{visa}</Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {employee.industry?.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-                        Industry
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {employee.industry.map((ind, index) => (
-                          <Tag key={index} color="cyan">{ind}</Tag>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
-
-          {/* Certificates */}
-          {employee.certificates?.length > 0 && (
-            <>
-              <InfoSection title="Certificates" icon={<TrophyOutlined />}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {employee.certificates.map((cert, index) => (
-                    <div 
-                      key={cert._id || index}
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #e8e8e8",
-                        borderRadius: "6px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
+                    {/* Personal Information */}
+                    <InfoSection
+                      title="Personal Information"
+                      icon={<UserOutlined />}
                     >
-                      <div>
-                        <div style={{ fontWeight: 500, marginBottom: "4px" }}>
-                          {cert.fileName}
-                        </div>
-                        <div style={{ fontSize: "12px", color: "#888" }}>
-                          Uploaded: {cert.uploadedAt ? new Date(cert.uploadedAt).toLocaleDateString() : "N/A"}
-                        </div>
-                      </div>
-                      <Button 
-                        type="link" 
-                        href={cert.fileUrl} 
-                        target="_blank"
-                        style={{ color: "#da2c46" }}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                        }}
                       >
-                        View
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
+                        <InfoItem
+                          label="First Name"
+                          value={employee.firstName}
+                        />
+                        <InfoItem
+                          label="Middle Name"
+                          value={employee.middleName}
+                        />
+                        <InfoItem label="Last Name" value={employee.lastName} />
+                        <InfoItem label="Full Name" value={employee.fullName} />
+                        <InfoItem
+                          label="Email"
+                          value={employee.email}
+                          span={2}
+                        />
+                        <InfoItem label="Phone" value={employee.phone} />
+                        <InfoItem label="Gender" value={employee.gender} />
+                        <InfoItem
+                          label="Date of Birth"
+                          value={
+                            employee.dob
+                              ? new Date(employee.dob).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem label="Age" value={employee.age} />
+                        <InfoItem
+                          label="Blood Group"
+                          value={employee.bloodGroup}
+                        />
+                        <InfoItem
+                          label="Marital Status"
+                          value={employee.maritalStatus}
+                        />
+                        <InfoItem label="Religion" value={employee.religion} />
+                        <InfoItem
+                          label="Nationality"
+                          value={employee.nationality}
+                        />
+                        <InfoItem
+                          label="Country of Birth"
+                          value={employee.countryOfBirth}
+                        />
+                        <InfoItem label="Location" value={employee.location} />
+                      </div>
+                    </InfoSection>
 
-          {/* Education */}
-          {employee.education?.length > 0 && (
-            <>
-              <InfoSection title="Education" icon={<BookOutlined />}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {employee.education.map((edu, index) => (
-                    <div 
-                      key={edu._id || index}
-                      style={{
-                        padding: "16px",
-                        border: "1px solid #e8e8e8",
-                        borderRadius: "6px",
-                        backgroundColor: "#fafafa",
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "8px", color: "#da2c46" }}>
-                        {edu.degree}
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                        <div>
-                          <span style={{ fontSize: "12px", color: "#888" }}>Field: </span>
-                          <span style={{ fontSize: "14px" }}>{edu.field}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: "12px", color: "#888" }}>Year: </span>
-                          <span style={{ fontSize: "14px" }}>{edu.year}</span>
-                        </div>
-                        <div style={{ gridColumn: "span 2" }}>
-                          <span style={{ fontSize: "12px", color: "#888" }}>Institution: </span>
-                          <span style={{ fontSize: "14px" }}>{edu.institution}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
+                    <Divider />
 
-          {/* Work Experience */}
-          {employee.workExperience?.length > 0 && (
-            <>
-              <InfoSection title="Work Experience" icon={<EnvironmentOutlined />}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {employee.workExperience.map((work, index) => (
-                    <div 
-                      key={work._id || index}
-                      style={{
-                        padding: "16px",
-                        border: "1px solid #e8e8e8",
-                        borderRadius: "6px",
-                        backgroundColor: "#fafafa",
-                      }}
+                    {/* Identity Documents */}
+                    <InfoSection
+                      title="Identity Documents"
+                      icon={<IdcardOutlined />}
                     >
-                      <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px", color: "#da2c46" }}>
-                        {work.title}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                        }}
+                      >
+                        <InfoItem
+                          label="Passport No"
+                          value={employee.passportNo}
+                        />
+                        <InfoItem
+                          label="Passport Place of Issue"
+                          value={employee.passportPlaceOfIssue}
+                        />
+                        <InfoItem
+                          label="Iqama No"
+                          value={employee.iqamaNo}
+                          span={2}
+                        />
                       </div>
-                      <div style={{ fontSize: "14px", marginBottom: "8px", color: "#666" }}>
-                        {work.company}
-                      </div>
-                      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                        <div>
-                          <span style={{ fontSize: "12px", color: "#888" }}>Period: </span>
-                          <span style={{ fontSize: "13px" }}>
-                            {work.startDate} - {work.endDate}
-                          </span>
-                        </div>
-                        {work.workMode && (
-                          <Tag color="blue">{work.workMode}</Tag>
+                    </InfoSection>
+                  </>
+                ),
+              },
+              {
+                key: "2",
+                label: (
+                  <span>
+                    <BankOutlined /> Employment
+                  </span>
+                ),
+                children: (
+                  <>
+                    {/* Employment Details */}
+                    <InfoSection
+                      title="Employment Details"
+                      icon={<EnvironmentOutlined />}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                        }}
+                      >
+                        <InfoItem
+                          label="Job Title"
+                          value={
+                            employee.employmentDetails?.assignedJobTitle ||
+                            employee.title
+                          }
+                        />
+                        <InfoItem
+                          label="Category"
+                          value={employee.employmentDetails?.category}
+                        />
+                        <InfoItem
+                          label="Date of Joining"
+                          value={
+                            employee.employmentDetails?.dateOfJoining
+                              ? new Date(
+                                  employee.employmentDetails.dateOfJoining
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="ERAM ID"
+                          value={employee.employmentDetails?.eramId}
+                        />
+                        <InfoItem
+                          label="Badge Number"
+                          value={employee.employmentDetails?.badgeNo}
+                        />
+                        <InfoItem
+                          label="Gate Pass ID"
+                          value={employee.employmentDetails?.gatePassId}
+                        />
+                        <InfoItem
+                          label="Aramco ID"
+                          value={employee.employmentDetails?.aramcoId}
+                        />
+                        <InfoItem
+                          label="Other ID"
+                          value={employee.employmentDetails?.otherId}
+                        />
+                        <InfoItem
+                          label="Plant ID"
+                          value={employee.employmentDetails?.plantId}
+                        />
+                        <InfoItem
+                          label="Work Order ID"
+                          value={employee.employmentDetails?.workorderId}
+                        />
+                        <InfoItem
+                          label="External Employee No"
+                          value={employee.employmentDetails?.externalEmpNo}
+                        />
+                        <InfoItem
+                          label="Designation"
+                          value={employee.employmentDetails?.designation}
+                        />
+                        <InfoItem
+                          label="Visa Category"
+                          value={employee.employmentDetails?.visaCategory}
+                        />
+                        <InfoItem
+                          label="Employee Group"
+                          value={employee.employmentDetails?.employeeGroup}
+                        />
+                        <InfoItem
+                          label="Employment Type"
+                          value={employee.employmentDetails?.employmentType}
+                        />
+                        <InfoItem
+                          label="Payroll Group"
+                          value={employee.employmentDetails?.payrollGroup}
+                        />
+                        <InfoItem
+                          label="Sponsor Name"
+                          value={employee.employmentDetails?.sponsorName}
+                        />
+                        <InfoItem
+                          label="Work Hours"
+                          value={employee.employmentDetails?.workHours}
+                        />
+                        <InfoItem
+                          label="Work Days"
+                          value={employee.employmentDetails?.workDays}
+                        />
+                        <InfoItem
+                          label="Air Ticket Frequency"
+                          value={employee.employmentDetails?.airTicketFrequency}
+                        />
+                        <InfoItem
+                          label="Probation Period"
+                          value={employee.employmentDetails?.probationPeriod}
+                        />
+                        <InfoItem
+                          label="Period of Contract"
+                          value={employee.employmentDetails?.periodOfContract}
+                        />
+                        <InfoItem
+                          label="Work Location"
+                          value={employee.employmentDetails?.workLocation}
+                        />
+                        <InfoItem
+                          label="Family Status"
+                          value={employee.employmentDetails?.familyStatus}
+                        />
+                        <InfoItem
+                          label="Last Arrival"
+                          value={
+                            employee.employmentDetails?.lastArrival
+                              ? new Date(
+                                  employee.employmentDetails.lastArrival
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Last Working Day"
+                          value={
+                            employee.employmentDetails?.lastWorkingDay
+                              ? new Date(
+                                  employee.employmentDetails.lastWorkingDay
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Eligible Vacation Days"
+                          value={
+                            employee.employmentDetails?.eligibleVacationDays
+                          }
+                        />
+                        <InfoItem
+                          label="Eligible Vacation Month"
+                          value={
+                            employee.employmentDetails?.eligibleVacationMonth
+                          }
+                        />
+                        <InfoItem
+                          label="Iqama ID"
+                          value={employee.employmentDetails?.iqamaId}
+                        />
+                        <InfoItem
+                          label="Iqama Issue Date"
+                          value={
+                            employee.employmentDetails?.iqamaIssueDate
+                              ? new Date(
+                                  employee.employmentDetails.iqamaIssueDate
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Iqama Expiry Date"
+                          value={
+                            employee.employmentDetails?.iqamaExpiryDate
+                              ? new Date(
+                                  employee.employmentDetails.iqamaExpiryDate
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Iqama Arabic Issue Date"
+                          value={
+                            employee.employmentDetails?.iqamaArabicDateOfIssue
+                              ? new Date(
+                                  employee.employmentDetails.iqamaArabicDateOfIssue
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Iqama Arabic Expiry Date"
+                          value={
+                            employee.employmentDetails?.iqamaArabicDateOfExpiry
+                              ? new Date(
+                                  employee.employmentDetails.iqamaArabicDateOfExpiry
+                                ).toLocaleDateString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="GOSI"
+                          value={employee.employmentDetails?.gosi}
+                        />
+                        <InfoItem
+                          label="Driving License"
+                          value={employee.employmentDetails?.drivingLicense}
+                        />
+                        <InfoItem
+                          label="Medical Policy"
+                          value={
+                            employee.employmentDetails?.medicalPolicy
+                              ? "Yes"
+                              : "No"
+                          }
+                        />
+                        <InfoItem
+                          label="Medical Policy Number"
+                          value={
+                            employee.employmentDetails?.medicalPolicyNumber
+                          }
+                        />
+                        <InfoItem
+                          label="No of Dependents"
+                          value={employee.employmentDetails?.noOfDependent}
+                        />
+                        <InfoItem
+                          label="Insurance Category"
+                          value={employee.employmentDetails?.insuranceCategory}
+                        />
+                        <InfoItem
+                          label="Class Code"
+                          value={employee.employmentDetails?.classCode}
+                        />
+                        <InfoItem
+                          label="First Time Login"
+                          value={
+                            employee.employmentDetails?.firstTimeLogin
+                              ? "Yes"
+                              : "No"
+                          }
+                        />
+                        <InfoItem
+                          label="Last Login Time"
+                          value={
+                            employee.employmentDetails?.lastLoginTime
+                              ? new Date(
+                                  employee.employmentDetails.lastLoginTime
+                                ).toLocaleString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Official Email"
+                          value={employee.employmentDetails?.officialEmail}
+                          span={2}
+                        />
+                        {employee.employmentDetails?.assetAllocation?.length >
+                          0 && (
+                          <div
+                            style={{
+                              gridColumn: "span 2",
+                              marginBottom: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#888",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              Asset Allocation
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "8px",
+                              }}
+                            >
+                              {employee.employmentDetails.assetAllocation.map(
+                                (asset, index) => (
+                                  <Tag key={index} color="blue">
+                                    {asset}
+                                  </Tag>
+                                )
+                              )}
+                            </div>
+                          </div>
                         )}
+                        <InfoItem
+                          label="Basic Assets"
+                          value={employee.employmentDetails?.basicAssets}
+                          span={2}
+                        />
+                        <InfoItem
+                          label="Reporting & Documentation"
+                          value={
+                            employee.employmentDetails
+                              ?.reportingAndDocumentation
+                          }
+                          span={2}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
+                    </InfoSection>
 
-          {/* Permissions */}
-          {employee.permissions?.length > 0 && (
-            <>
-              <InfoSection title="Permissions" icon={<SafetyOutlined />}>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                  }}
-                >
-                  {employee.permissions.map((permission, index) => (
-                    <Tag key={index} color="blue">
-                      {permission}
-                    </Tag>
-                  ))}
-                </div>
-              </InfoSection>
-              <Divider />
-            </>
-          )}
+                    <Divider />
 
-          {/* Social Links */}
-          {employee.socialLinks &&
-            Object.values(employee.socialLinks).some((link) => link) && (
-              <>
-                <InfoSection title="Social Links" icon={<ContactsOutlined />}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "12px",
-                    }}
-                  >
-                    {employee.socialLinks?.linkedin && (
-                      <InfoItem
-                        label="LinkedIn"
-                        value={
-                          <a href={employee.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
-                            {employee.socialLinks.linkedin}
-                          </a>
-                        }
-                      />
+                    {/* Professional Information */}
+                    {(employee.companyName ||
+                      employee.agency ||
+                      employee.clientCode ||
+                      employee.workorderhint ||
+                      employee.totalExperienceYears ||
+                      employee.currentSalary ||
+                      employee.expectedSalary ||
+                      employee.noticePeriod) && (
+                      <>
+                        <InfoSection
+                          title="Professional Information"
+                          icon={<EnvironmentOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: "12px",
+                            }}
+                          >
+                            {employee.companyName && (
+                              <InfoItem
+                                label="Company Name"
+                                value={employee.companyName}
+                              />
+                            )}
+                            {employee.agency && (
+                              <InfoItem
+                                label="Agency"
+                                value={employee.agency}
+                              />
+                            )}
+                            {employee.clientCode && (
+                              <InfoItem
+                                label="Client Code"
+                                value={employee.clientCode}
+                              />
+                            )}
+                            {employee.totalExperienceYears && (
+                              <InfoItem
+                                label="Total Experience (Years)"
+                                value={employee.totalExperienceYears}
+                              />
+                            )}
+                            {employee.currentSalary && (
+                              <InfoItem
+                                label="Current Salary"
+                                value={employee.currentSalary}
+                              />
+                            )}
+                            {employee.expectedSalary && (
+                              <InfoItem
+                                label="Expected Salary"
+                                value={employee.expectedSalary}
+                              />
+                            )}
+                            {employee.noticePeriod && (
+                              <InfoItem
+                                label="Notice Period"
+                                value={employee.noticePeriod}
+                              />
+                            )}
+                            {employee.workorderhint && (
+                              <InfoItem
+                                label="Work Order Note"
+                                value={employee.workorderhint}
+                                span={2}
+                              />
+                            )}
+                          </div>
+                        </InfoSection>
+                        <Divider />
+                      </>
                     )}
-                    {employee.socialLinks?.github && (
-                      <InfoItem
-                        label="GitHub"
-                        value={
-                          <a href={employee.socialLinks.github} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
-                            {employee.socialLinks.github}
-                          </a>
-                        }
-                      />
-                    )}
-                    {employee.socialLinks?.twitter && (
-                      <InfoItem
-                        label="Twitter"
-                        value={
-                          <a href={employee.socialLinks.twitter} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
-                            {employee.socialLinks.twitter}
-                          </a>
-                        }
-                      />
-                    )}
-                    {employee.socialLinks?.facebook && (
-                      <InfoItem
-                        label="Facebook"
-                        value={
-                          <a href={employee.socialLinks.facebook} target="_blank" rel="noopener noreferrer" style={{ color: "#da2c46" }}>
-                            {employee.socialLinks.facebook}
-                          </a>
-                        }
-                      />
-                    )}
-                  </div>
-                </InfoSection>
-                <Divider />
-              </>
-            )}
 
-          {/* Job Preferences */}
-          {employee.jobPreferences &&
-            Object.values(employee.jobPreferences).some(
-              (pref) =>
-                (Array.isArray(pref) && pref.length > 0) ||
-                (typeof pref === "string" && pref)
-            ) && (
-              <>
-                <InfoSection title="Job Preferences" icon={<ToolOutlined />}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "12px",
-                    }}
-                  >
-                    {employee.jobPreferences?.roles?.length > 0 && (
-                      <InfoItem
-                        label="Preferred Roles"
-                        value={employee.jobPreferences.roles.join(", ")}
-                        span={2}
-                      />
+                    {/* Branch Information */}
+                    {employee.branch && (
+                      <>
+                        <InfoSection
+                          title="Branch Information"
+                          icon={<BankOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: "12px",
+                            }}
+                          >
+                            <InfoItem
+                              label="Branch ID"
+                              value={employee.branch?._id}
+                            />
+                            <InfoItem
+                              label="Branch Order"
+                              value={employee.branch?.branchOrder}
+                            />
+                          </div>
+                        </InfoSection>
+                      </>
                     )}
-                    {employee.jobPreferences?.locations?.length > 0 && (
-                      <InfoItem
-                        label="Preferred Locations"
-                        value={employee.jobPreferences.locations.join(", ")}
-                        span={2}
-                      />
+                  </>
+                ),
+              },
+              {
+                key: "3",
+                label: (
+                  <span>
+                    <TrophyOutlined /> Qualifications
+                  </span>
+                ),
+                children: (
+                  <>
+                    {/* Qualifications & Skills */}
+                    {(employee.qualifications?.length > 0 ||
+                      employee.skills?.length > 0 ||
+                      employee.languages?.length > 0) && (
+                      <>
+                        <InfoSection
+                          title="Qualifications & Skills"
+                          icon={<TrophyOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "16px",
+                            }}
+                          >
+                            {employee.qualifications?.length > 0 && (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#888",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  Qualifications
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  {employee.qualifications.map(
+                                    (qual, index) => (
+                                      <Tag key={index} color="blue">
+                                        {qual}
+                                      </Tag>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {employee.skills?.length > 0 && (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#888",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  Skills
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  {employee.skills.map((skill, index) => (
+                                    <Tag key={index} color="green">
+                                      {skill}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {employee.languages?.length > 0 && (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#888",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  Languages
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  {employee.languages.map((lang, index) => (
+                                    <Tag key={index} color="purple">
+                                      {lang}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </InfoSection>
+                        <Divider />
+                      </>
                     )}
-                    {employee.jobPreferences?.salaryRange && (
-                      <InfoItem
-                        label="Salary Range"
-                        value={employee.jobPreferences.salaryRange}
-                      />
-                    )}
-                    {employee.jobPreferences?.workType && (
-                      <InfoItem
-                        label="Work Type"
-                        value={employee.jobPreferences.workType}
-                      />
-                    )}
-                    {employee.jobPreferences?.employmentType && (
-                      <InfoItem
-                        label="Employment Type"
-                        value={employee.jobPreferences.employmentType}
-                      />
-                    )}
-                  </div>
-                </InfoSection>
-                <Divider />
-              </>
-            )}
 
-          {/* System Information */}
-          <InfoSection title="System Information" icon={<CalendarOutlined />}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <InfoItem
-                label="Created By"
-                value={
-                  employee.createdBy?.fullName || employee.createdBy?.email
-                }
-              />
-              <InfoItem
-                label="Created At"
-                value={
-                  employee.createdAt
-                    ? new Date(employee.createdAt).toLocaleString()
-                    : null
-                }
-              />
-              <InfoItem
-                label="Last Updated"
-                value={
-                  employee.updatedAt
-                    ? new Date(employee.updatedAt).toLocaleString()
-                    : null
-                }
-              />
-              <InfoItem label="Employee ID" value={employee._id} span={2} />
-            </div>
-          </InfoSection>
+                    {/* Additional Information */}
+                    {(employee.visaStatus?.length > 0 ||
+                      employee.industry?.length > 0) && (
+                      <>
+                        <InfoSection
+                          title="Additional Information"
+                          icon={<GlobalOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "16px",
+                            }}
+                          >
+                            {employee.visaStatus?.length > 0 && (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#888",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  Visa Status
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  {employee.visaStatus.map((visa, index) => (
+                                    <Tag key={index} color="orange">
+                                      {visa}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {employee.industry?.length > 0 && (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#888",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  Industry
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  {employee.industry.map((ind, index) => (
+                                    <Tag key={index} color="cyan">
+                                      {ind}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </InfoSection>
+                        <Divider />
+                      </>
+                    )}
+
+                    {/* Certificates */}
+                    {employee.certificates?.length > 0 && (
+                      <>
+                        <InfoSection
+                          title="Certificates"
+                          icon={<TrophyOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "12px",
+                            }}
+                          >
+                            {employee.certificates.map((cert, index) => (
+                              <div
+                                key={cert._id || index}
+                                style={{
+                                  padding: "12px",
+                                  border: "1px solid #e8e8e8",
+                                  borderRadius: "6px",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div>
+                                  <div
+                                    style={{
+                                      fontWeight: 500,
+                                      marginBottom: "4px",
+                                    }}
+                                  >
+                                    {cert.fileName}
+                                  </div>
+                                  <div
+                                    style={{ fontSize: "12px", color: "#888" }}
+                                  >
+                                    Uploaded:{" "}
+                                    {cert.uploadedAt
+                                      ? new Date(
+                                          cert.uploadedAt
+                                        ).toLocaleDateString()
+                                      : "N/A"}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="link"
+                                  href={cert.fileUrl}
+                                  target="_blank"
+                                  style={{ color: "#da2c46" }}
+                                >
+                                  View
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </InfoSection>
+                        <Divider />
+                      </>
+                    )}
+
+                    {/* Education */}
+                    {employee.education?.length > 0 && (
+                      <>
+                        <InfoSection title="Education" icon={<BookOutlined />}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "16px",
+                            }}
+                          >
+                            {employee.education.map((edu, index) => (
+                              <div
+                                key={edu._id || index}
+                                style={{
+                                  padding: "16px",
+                                  border: "1px solid #e8e8e8",
+                                  borderRadius: "6px",
+                                  backgroundColor: "#fafafa",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    fontSize: "15px",
+                                    marginBottom: "8px",
+                                    color: "#da2c46",
+                                  }}
+                                >
+                                  {edu.degree}
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <div>
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#888",
+                                      }}
+                                    >
+                                      Field:{" "}
+                                    </span>
+                                    <span style={{ fontSize: "14px" }}>
+                                      {edu.field}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#888",
+                                      }}
+                                    >
+                                      Year:{" "}
+                                    </span>
+                                    <span style={{ fontSize: "14px" }}>
+                                      {edu.year}
+                                    </span>
+                                  </div>
+                                  <div style={{ gridColumn: "span 2" }}>
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#888",
+                                      }}
+                                    >
+                                      Institution:{" "}
+                                    </span>
+                                    <span style={{ fontSize: "14px" }}>
+                                      {edu.institution}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </InfoSection>
+                      </>
+                    )}
+                  </>
+                ),
+              },
+              {
+                key: "4",
+                label: (
+                  <span>
+                    <EnvironmentOutlined /> Experience
+                  </span>
+                ),
+                children: (
+                  <>
+                    {/* Work Experience */}
+                    {employee.workExperience?.length > 0 ? (
+                      <>
+                        <InfoSection
+                          title="Work Experience"
+                          icon={<EnvironmentOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "16px",
+                            }}
+                          >
+                            {employee.workExperience.map((work, index) => (
+                              <div
+                                key={work._id || index}
+                                style={{
+                                  padding: "16px",
+                                  border: "1px solid #e8e8e8",
+                                  borderRadius: "6px",
+                                  backgroundColor: "#fafafa",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    fontSize: "15px",
+                                    marginBottom: "4px",
+                                    color: "#da2c46",
+                                  }}
+                                >
+                                  {work.title}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "14px",
+                                    marginBottom: "8px",
+                                    color: "#666",
+                                  }}
+                                >
+                                  {work.company}
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "16px",
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  <div>
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#888",
+                                      }}
+                                    >
+                                      Period:{" "}
+                                    </span>
+                                    <span style={{ fontSize: "13px" }}>
+                                      {work.startDate} - {work.endDate}
+                                    </span>
+                                  </div>
+                                  {work.workMode && (
+                                    <Tag color="blue">{work.workMode}</Tag>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </InfoSection>
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "40px",
+                          color: "#888",
+                        }}
+                      >
+                        <EnvironmentOutlined
+                          style={{
+                            fontSize: "48px",
+                            marginBottom: "16px",
+                            opacity: 0.3,
+                          }}
+                        />
+                        <p>No work experience added yet</p>
+                      </div>
+                    )}
+                  </>
+                ),
+              },
+              {
+                key: "5",
+                label: (
+                  <span>
+                    <ContactsOutlined /> Other
+                  </span>
+                ),
+                children: (
+                  <>
+                    {/* Permissions */}
+                    {employee.permissions?.length > 0 && (
+                      <>
+                        <InfoSection
+                          title="Permissions"
+                          icon={<SafetyOutlined />}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "8px",
+                            }}
+                          >
+                            {employee.permissions.map((permission, index) => (
+                              <Tag key={index} color="blue">
+                                {permission}
+                              </Tag>
+                            ))}
+                          </div>
+                        </InfoSection>
+                        <Divider />
+                      </>
+                    )}
+
+                    {/* Social Links */}
+                    {employee.socialLinks &&
+                      Object.values(employee.socialLinks).some(
+                        (link) => link
+                      ) && (
+                        <>
+                          <InfoSection
+                            title="Social Links"
+                            icon={<ContactsOutlined />}
+                          >
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: "12px",
+                              }}
+                            >
+                              {employee.socialLinks?.linkedin && (
+                                <InfoItem
+                                  label="LinkedIn"
+                                  value={
+                                    <a
+                                      href={employee.socialLinks.linkedin}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ color: "#da2c46" }}
+                                    >
+                                      {employee.socialLinks.linkedin}
+                                    </a>
+                                  }
+                                />
+                              )}
+                              {employee.socialLinks?.github && (
+                                <InfoItem
+                                  label="GitHub"
+                                  value={
+                                    <a
+                                      href={employee.socialLinks.github}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ color: "#da2c46" }}
+                                    >
+                                      {employee.socialLinks.github}
+                                    </a>
+                                  }
+                                />
+                              )}
+                              {employee.socialLinks?.twitter && (
+                                <InfoItem
+                                  label="Twitter"
+                                  value={
+                                    <a
+                                      href={employee.socialLinks.twitter}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ color: "#da2c46" }}
+                                    >
+                                      {employee.socialLinks.twitter}
+                                    </a>
+                                  }
+                                />
+                              )}
+                              {employee.socialLinks?.facebook && (
+                                <InfoItem
+                                  label="Facebook"
+                                  value={
+                                    <a
+                                      href={employee.socialLinks.facebook}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ color: "#da2c46" }}
+                                    >
+                                      {employee.socialLinks.facebook}
+                                    </a>
+                                  }
+                                />
+                              )}
+                            </div>
+                          </InfoSection>
+                          <Divider />
+                        </>
+                      )}
+
+                    {/* Job Preferences */}
+                    {employee.jobPreferences &&
+                      Object.values(employee.jobPreferences).some(
+                        (pref) =>
+                          (Array.isArray(pref) && pref.length > 0) ||
+                          (typeof pref === "string" && pref)
+                      ) && (
+                        <>
+                          <InfoSection
+                            title="Job Preferences"
+                            icon={<ToolOutlined />}
+                          >
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr 1fr",
+                                gap: "12px",
+                              }}
+                            >
+                              {employee.jobPreferences?.roles?.length > 0 && (
+                                <InfoItem
+                                  label="Preferred Roles"
+                                  value={employee.jobPreferences.roles.join(
+                                    ", "
+                                  )}
+                                  span={2}
+                                />
+                              )}
+                              {employee.jobPreferences?.locations?.length >
+                                0 && (
+                                <InfoItem
+                                  label="Preferred Locations"
+                                  value={employee.jobPreferences.locations.join(
+                                    ", "
+                                  )}
+                                  span={2}
+                                />
+                              )}
+                              {employee.jobPreferences?.salaryRange && (
+                                <InfoItem
+                                  label="Salary Range"
+                                  value={employee.jobPreferences.salaryRange}
+                                />
+                              )}
+                              {employee.jobPreferences?.workType && (
+                                <InfoItem
+                                  label="Work Type"
+                                  value={employee.jobPreferences.workType}
+                                />
+                              )}
+                              {employee.jobPreferences?.employmentType && (
+                                <InfoItem
+                                  label="Employment Type"
+                                  value={employee.jobPreferences.employmentType}
+                                />
+                              )}
+                            </div>
+                          </InfoSection>
+                          <Divider />
+                        </>
+                      )}
+
+                    {/* System Information */}
+                    <InfoSection
+                      title="System Information"
+                      icon={<CalendarOutlined />}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "12px",
+                        }}
+                      >
+                        <InfoItem
+                          label="Created By"
+                          value={
+                            employee.createdBy?.fullName ||
+                            employee.createdBy?.email
+                          }
+                        />
+                        <InfoItem
+                          label="Created At"
+                          value={
+                            employee.createdAt
+                              ? new Date(employee.createdAt).toLocaleString()
+                              : null
+                          }
+                        />
+                        <InfoItem
+                          label="Last Updated"
+                          value={
+                            employee.updatedAt
+                              ? new Date(employee.updatedAt).toLocaleString()
+                              : null
+                          }
+                        />
+                        {/* <InfoItem
+                          label="Employee ID"
+                          value={employee._id}
+                          span={2}
+                        /> */}
+                      </div>
+                    </InfoSection>
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
     </Drawer>

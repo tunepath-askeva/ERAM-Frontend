@@ -17,10 +17,12 @@ import {
   UploadOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const { Text, Title } = Typography;
 
 const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [fileList, setFileList] = useState([]);
 
   const handleDownload = (fileUrl, fileName) => {
@@ -30,7 +32,7 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
   const handleUpload = ({ file, fileList: newFileList }) => {
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
-      message.error("File must be smaller than 5MB!");
+      enqueueSnackbar("File must be smaller than 5MB!", { variant: "warning" });
       return;
     }
 
@@ -44,7 +46,12 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+      enqueueSnackbar(
+        "Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!",
+        {
+          variant: "warning",
+        }
+      );
       return;
     }
 
@@ -56,7 +63,9 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
     }
 
     if (file.status === "done") {
-      message.success(`${file.name} uploaded successfully`);
+      enqueueSnackbar(`${file.name} uploaded successfully`, {
+        variant: "success",
+      });
     }
   };
 
@@ -128,7 +137,6 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
                 >
                   Download
                 </Button>,
-              
               ]}
             >
               <List.Item.Meta

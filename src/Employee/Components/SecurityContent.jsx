@@ -21,18 +21,19 @@ const SecurityContent = ({ employeeData }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
 
-  const [changePassword, isLoading] = useChangePasswordMutation();
+  const [changePassword, { isLoading: isChangingPassword }] =
+    useChangePasswordMutation();
 
   const handlePasswordChange = async (values) => {
     setLoading(true);
     try {
-      await changePassword({
+      const response = await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       }).unwrap();
 
       enqueueSnackbar("Password changed successfully!", { variant: "success" });
-      passwordForm.resetFields();
+      form.resetFields();
     } catch (error) {
       enqueueSnackbar(error?.data?.message || "Failed to change password", {
         variant: "error",
@@ -113,7 +114,7 @@ const SecurityContent = ({ employeeData }) => {
               type="primary"
               htmlType="submit"
               style={{ background: "#da2c46", border: "none" }}
-              loading={loading}
+              loading={loading || isChangingPassword}
             >
               Update Password
             </Button>

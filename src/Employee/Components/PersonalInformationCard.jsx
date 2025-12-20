@@ -27,14 +27,16 @@ import {
   IdcardOutlined,
   FlagOutlined,
   MailOutlined,
-  DeleteOutlined 
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useSnackbar } from "notistack";
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
 const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const [editMode, setEditMode] = useState(false);
   const [uploadModal, setUploadModal] = useState(false);
@@ -89,14 +91,20 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
         ...values,
         imageFile: userData.imageFile, // Pass the file to parent
       };
-     await onUpdate(submitData);
+      await onUpdate(submitData);
+      enqueueSnackbar("Personal information updated successfully!", {
+        variant: "success",
+      });
       setUserData({
         image: "",
         imageFile: null,
       });
+
       setEditMode(false);
     } catch (error) {
-      message.error("Failed to update profile");
+      enqueueSnackbar(error?.data?.message || "Failed to update profile", {
+        variant: "error",
+      });
     }
   };
 
@@ -169,8 +177,12 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
               <div style={{ position: "relative", display: "inline-block" }}>
                 <Avatar
                   size={100}
-                  src={userData.image || employeeData?.image}
-                  icon={<UserOutlined />}
+                  src={userData.image || employeeData?.image || undefined}
+                  icon={
+                    !userData.image && !employeeData?.image ? (
+                      <UserOutlined />
+                    ) : null
+                  }
                   style={{ border: "4px solid #da2c46" }}
                 />
                 {editMode && (

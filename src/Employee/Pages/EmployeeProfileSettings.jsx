@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Tabs, message, Upload, Result ,Button } from "antd";
+import { Card, Tabs, message, Upload, Result, Button } from "antd";
 import {
   UserOutlined,
   SafetyCertificateOutlined,
@@ -21,10 +21,12 @@ import DocumentsCertificatesCard from "../Components/DocumentsCertificatesCard";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import EducationCard from "../Components/EducationCard";
 import WorkExperienceCard from "../Components/WorkExperienceCard";
+import { useSnackbar } from "notistack";
 
 const { TabPane } = Tabs;
 
 const EmployeeProfileSettings = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [activeTab, setActiveTab] = useState("profile");
   const [employeeData, setEmployeeData] = useState(null);
   const [certificateFiles, setCertificateFiles] = useState([]);
@@ -54,7 +56,7 @@ const EmployeeProfileSettings = () => {
       employeeData.nationality,
       employeeData.countryOfBirth,
 
-      // Employment Details
+      // Employment Details - FIX: Access nested properties correctly
       employeeData.employmentDetails?.assignedJobTitle,
       employeeData.employmentDetails?.eramId,
       employeeData.employmentDetails?.officialEmail,
@@ -67,12 +69,20 @@ const EmployeeProfileSettings = () => {
       employeeData.passportNo,
       employeeData.iqamaNo,
 
-      // Arrays/Objects
-      employeeData.skills?.length > 0 ? "skills" : null,
-      employeeData.languages?.length > 0 ? "languages" : null,
-      employeeData.education?.length > 0 ? "education" : null,
-      employeeData.workExperience?.length > 0 ? "workExperience" : null,
-      employeeData.certificates?.length > 0 ? "certificates" : null,
+      // Arrays/Objects - FIX: Check if arrays exist and have length
+      employeeData.skills && employeeData.skills.length > 0 ? "skills" : null,
+      employeeData.languages && employeeData.languages.length > 0
+        ? "languages"
+        : null,
+      employeeData.education && employeeData.education.length > 0
+        ? "education"
+        : null,
+      employeeData.workExperience && employeeData.workExperience.length > 0
+        ? "workExperience"
+        : null,
+      employeeData.certificates && employeeData.certificates.length > 0
+        ? "certificates"
+        : null,
 
       // Profile
       employeeData.image,
@@ -81,7 +91,9 @@ const EmployeeProfileSettings = () => {
 
     const filledFields = requiredFields.filter(
       (field) =>
-        field && (typeof field === "string" ? field.trim() !== "" : true)
+        field !== null &&
+        field !== undefined &&
+        (typeof field === "string" ? field.trim() !== "" : true)
     ).length;
 
     return Math.round((filledFields / requiredFields.length) * 100);
@@ -223,9 +235,8 @@ const EmployeeProfileSettings = () => {
       // Call the mutation
       await updateProfile(formData).unwrap();
 
-      message.success("Profile updated successfully!");
+      enqueueSnackbar("Profile updated successfully!", { variant: "success" });
 
-      // Clear temporary files
       // setImageFile(null);
       setCertificateFiles([]);
 
@@ -233,13 +244,15 @@ const EmployeeProfileSettings = () => {
       refetch();
     } catch (error) {
       console.error("Failed to update profile", error);
-      message.error(error?.data?.message || "Failed to update profile");
+      enqueueSnackbar(error?.data?.message || "Failed to update profile", {
+        variant: "error",
+      });
     }
   };
 
   const handleRefresh = () => {
     refetch();
-    message.success("Profile data refreshed!");
+    enqueueSnackbar("Profile data refreshed!", { variant: "success" });
   };
 
   const handleSaveAll = async () => {

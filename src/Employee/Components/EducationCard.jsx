@@ -16,6 +16,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -32,6 +33,7 @@ const degreeOptions = [
 ];
 
 const EducationCard = ({ employeeData, loading, onUpdate }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [editMode, setEditMode] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -83,9 +85,15 @@ const EducationCard = ({ employeeData, loading, onUpdate }) => {
   const handleSave = async () => {
     try {
       await onUpdate({ education });
+      enqueueSnackbar("Education details updated successfully!", {
+        variant: "success",
+      });
       setEditMode(false);
     } catch (error) {
       console.error("Failed to update education", error);
+      enqueueSnackbar(error?.data?.message || "Failed to update education", {
+        variant: "error",
+      });
     }
   };
 

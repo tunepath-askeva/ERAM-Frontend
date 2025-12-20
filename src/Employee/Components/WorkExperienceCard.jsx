@@ -19,11 +19,13 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useSnackbar } from "notistack";
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const WorkExperienceCard = ({ employeeData, loading, onUpdate }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [editMode, setEditMode] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -44,10 +46,10 @@ const WorkExperienceCard = ({ employeeData, loading, onUpdate }) => {
     const isCurrent =
       item.endDate === "Present" ||
       (item.duration && item.duration.includes("present"));
-    
+
     setEditingId(item.id || item._id);
     setIsCurrentJob(isCurrent);
-    
+
     form.setFieldsValue({
       title: item.title || item.jobTitle,
       company: item.company,
@@ -56,24 +58,32 @@ const WorkExperienceCard = ({ employeeData, loading, onUpdate }) => {
       description: item.description,
       workMode: item.workMode,
     });
-    
+
     setIsModalVisible(true);
   };
 
   const handleDelete = (id) => {
-    const newWork = workExperience.filter((work) => (work.id || work._id) !== id);
+    const newWork = workExperience.filter(
+      (work) => (work.id || work._id) !== id
+    );
     setWorkExperience(newWork);
   };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       const newItem = {
         ...values,
         title: values.title || values.jobTitle,
-        startDate: values.startDate ? values.startDate.format("YYYY-MM-DD") : null,
-        endDate: isCurrentJob ? "Present" : values.endDate ? values.endDate.format("YYYY-MM-DD") : null,
+        startDate: values.startDate
+          ? values.startDate.format("YYYY-MM-DD")
+          : null,
+        endDate: isCurrentJob
+          ? "Present"
+          : values.endDate
+          ? values.endDate.format("YYYY-MM-DD")
+          : null,
         id: editingId || Math.random().toString(36).substr(2, 9),
       };
 
@@ -98,9 +108,18 @@ const WorkExperienceCard = ({ employeeData, loading, onUpdate }) => {
   const handleSave = async () => {
     try {
       await onUpdate({ workExperience });
+      enqueueSnackbar("Work experience updated successfully!", {
+        variant: "success",
+      });
       setEditMode(false);
     } catch (error) {
       console.error("Failed to update work experience", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update work experience",
+        {
+          variant: "error",
+        }
+      );
     }
   };
 
@@ -177,9 +196,15 @@ const WorkExperienceCard = ({ employeeData, loading, onUpdate }) => {
                       <Text>{item.company}</Text>
                       <br />
                       <Text type="secondary">
-                        {item.startDate ? dayjs(item.startDate).format("MMM YYYY") : ""} 
+                        {item.startDate
+                          ? dayjs(item.startDate).format("MMM YYYY")
+                          : ""}
                         {" - "}
-                        {item.endDate === "Present" ? "Present" : item.endDate ? dayjs(item.endDate).format("MMM YYYY") : ""}
+                        {item.endDate === "Present"
+                          ? "Present"
+                          : item.endDate
+                          ? dayjs(item.endDate).format("MMM YYYY")
+                          : ""}
                       </Text>
                       {item.workMode && (
                         <>

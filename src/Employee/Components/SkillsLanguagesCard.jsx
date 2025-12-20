@@ -18,11 +18,13 @@ import {
   PlusOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const { Text } = Typography;
 const { Option } = Select;
 
 const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const [editMode, setEditMode] = useState(false);
   const [skills, setSkills] = useState(employeeData?.skills || []);
@@ -42,9 +44,18 @@ const SkillsLanguagesCard = ({ employeeData, loading, onUpdate }) => {
         skills: skills.filter((skill) => skill && skill.trim() !== ""),
         languages: languages.filter((lang) => lang && lang.trim() !== ""),
       });
+      enqueueSnackbar("Skills and languages updated successfully!", {
+        variant: "success",
+      });
       setEditMode(false);
     } catch (error) {
       console.error("Failed to update skills/languages", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update skills and languages",
+        {
+          variant: "error",
+        }
+      );
     }
   };
 
