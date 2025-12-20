@@ -113,7 +113,15 @@ const EmployeeAdminDocuments = () => {
       dataIndex: ["workOrder", "title"],
       key: "workOrder",
       responsive: ["lg"],
-      render: (title) => <Tag color="green">{title || "Added Employee"}</Tag>,
+      render: (title, record) => {
+        const isWorkOrderEmployee = !!record?.workOrder?.title;
+
+        return (
+          <Tag color={isWorkOrderEmployee ? "green" : "blue"}>
+            {isWorkOrderEmployee ? title : "Added Employee"}
+          </Tag>
+        );
+      },
     },
     {
       title: "Actions",
@@ -213,7 +221,7 @@ const EmployeeAdminDocuments = () => {
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} employees`,
           }}
-          scroll={{x: 'max-content'}}
+          scroll={{ x: "max-content" }}
         />
 
         {employees.length === 0 && !isLoading && (
