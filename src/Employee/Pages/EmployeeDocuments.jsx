@@ -181,9 +181,9 @@ const EmployeeDocuments = () => {
         return;
       }
 
-      const documentRecordId = apiResponse?.documents?.[0]?._id;
+      const userId = apiResponse?.userId;
 
-      if (!documentRecordId) {
+      if (!userId) {
         message.error(
           "Document record ID not found. Please refresh and try again."
         );
@@ -196,7 +196,7 @@ const EmployeeDocuments = () => {
           : "";
 
       await setEmployeeDocumentAlertDate({
-        id: documentRecordId,
+        id: userId,
         docId: documentForExpiry._id,
         date: dateToSet,
       }).unwrap();
@@ -291,12 +291,13 @@ const EmployeeDocuments = () => {
 
   const confirmUpload = async () => {
     try {
-      const documentRecordId = apiResponse?.documents?.[0]?._id;
+      console.log("API Response:", apiResponse);
+      console.log("User ID:", apiResponse?.userId);
 
-      if (!documentRecordId) {
-        message.error(
-          "Document record ID not found. Please refresh and try again."
-        );
+      const userId = apiResponse?.userId;
+
+      if (!userId) {
+        message.error("User ID not found. Please refresh and try again.");
         return;
       }
 
@@ -319,7 +320,7 @@ const EmployeeDocuments = () => {
       if (isReplaceMode && documentToReplace) {
         // Use replace mutation
         await replaceEmployeeDocument({
-          id: documentRecordId,
+          id: userId,
           formData,
         }).unwrap();
 
@@ -327,7 +328,7 @@ const EmployeeDocuments = () => {
       } else {
         // Use upload mutation for new documents
         await uploadEmployeeDocument({
-          id: documentRecordId,
+          id: userId,
           formData,
         }).unwrap();
 

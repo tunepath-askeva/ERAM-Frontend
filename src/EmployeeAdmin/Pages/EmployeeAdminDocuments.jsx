@@ -113,7 +113,7 @@ const EmployeeAdminDocuments = () => {
       dataIndex: ["workOrder", "title"],
       key: "workOrder",
       responsive: ["lg"],
-      render: (title) => <Tag color="green">{title}</Tag>,
+      render: (title) => <Tag color="green">{title || "Added Employee"}</Tag>,
     },
     {
       title: "Actions",

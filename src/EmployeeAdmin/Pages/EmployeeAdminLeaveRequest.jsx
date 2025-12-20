@@ -120,7 +120,7 @@ const EmployeeAdminLeaveRequest = () => {
         return "red";
       case "Medium":
         return "orange";
-      case "Low":
+      case "Normal":
         return "green";
       default:
         return "default";
@@ -313,7 +313,7 @@ const EmployeeAdminLeaveRequest = () => {
             <Option value="">All</Option>
             <Option value="High">High</Option>
             <Option value="Medium">Medium</Option>
-            <Option value="Low">Low</Option>
+            <Option value="Normal">Normal</Option>
             <Option value="Critical">Critical</Option>
           </Select>
         </Col>
