@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   List,
@@ -30,6 +30,7 @@ import {
   MoreOutlined,
   CloseOutlined,
   CheckOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -48,6 +49,7 @@ import { useApproveRejectRequisitionMutation } from "../../Slices/Recruiter/Recr
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea, Search } = Input;
 
 const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -60,6 +62,20 @@ const AdminNotifications = () => {
   const [actionType, setActionType] = useState(null);
   const [form] = Form.useForm();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (searchTerm !== debouncedSearchTerm) {
+        setPage(1);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
+
   const [approveRejectRequisition, { isLoading: submittingAction }] =
     useApproveRejectRequisitionMutation();
 
@@ -68,7 +84,11 @@ const AdminNotifications = () => {
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetAdminNotificationsQuery({ page, limit: pageSize });
+  } = useGetAdminNotificationsQuery({
+    page,
+    limit: pageSize,
+    search: debouncedSearchTerm,
+  });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -95,6 +115,19 @@ const AdminNotifications = () => {
     setActionType(action);
     setModalVisible(true);
   };
+
+  const handleSearch = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  }, []);
 
   const handleModalSubmit = async () => {
     try {
@@ -318,6 +351,48 @@ const AdminNotifications = () => {
             : "All caught up!"}
         </Text>
       </div>
+
+      <Card
+        style={{
+          marginBottom: "16px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+        }}
+      >
+        <div style={{ marginBottom: "8px" }}>
+          <Text
+            strong
+            style={{ fontSize: "16px", marginBottom: "8px", display: "block" }}
+          >
+            Search Notifications
+          </Text>
+          <Search
+            placeholder="Search notifications by title, message, or type..."
+            allowClear
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            style={{ width: "100%" }}
+            size="large"
+            prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+          />
+          {debouncedSearchTerm && (
+            <div style={{ marginTop: "8px" }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Searching for: "{debouncedSearchTerm}"
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={clearSearch}
+                  style={{ padding: "0 4px", fontSize: "12px" }}
+                >
+                  Clear
+                </Button>
+              </Text>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card
         style={{

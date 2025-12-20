@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useCallback } from "react";
 import {
   Card,
   List,
@@ -16,6 +16,9 @@ import {
   Popconfirm,
   message,
   Pagination,
+  Modal,
+  Form,
+  Input,
 } from "antd";
 import {
   BellOutlined,
@@ -25,6 +28,9 @@ import {
   ClockCircleOutlined,
   DeleteOutlined,
   MoreOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {
   useClearAllNotificationMutation,
@@ -41,6 +47,7 @@ import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
+const { TextArea, Search } = Input;
 
 const EmployeeAdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -48,13 +55,30 @@ const EmployeeAdminNotifications = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (searchTerm !== debouncedSearchTerm) {
+        setPage(1);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
 
   const {
     data: apiData,
     isLoading: apiLoading,
     error: apiError,
     refetch,
-  } = useGetRecruiterNotificationQuery({ page, limit: pageSize });
+  } = useGetRecruiterNotificationQuery({
+    page,
+    limit: pageSize,
+    search: debouncedSearchTerm,
+  });
 
   const [clearAllNotifications, { isLoading: clearingAll }] =
     useClearAllNotificationMutation();
@@ -75,6 +99,19 @@ const EmployeeAdminNotifications = () => {
       setLoading(false);
     }
   }, [apiData, apiError]);
+
+  const handleSearch = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm("");
+    setDebouncedSearchTerm("");
+  }, []);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -199,7 +236,7 @@ const EmployeeAdminNotifications = () => {
   if (loading || apiLoading) {
     return (
       <div>
-       <SkeletonLoader />
+        <SkeletonLoader />
       </div>
     );
   }
@@ -256,6 +293,48 @@ const EmployeeAdminNotifications = () => {
             : "All caught up!"}
         </Text>
       </div>
+
+      <Card
+        style={{
+          marginBottom: "16px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
+        }}
+      >
+        <div style={{ marginBottom: "8px" }}>
+          <Text
+            strong
+            style={{ fontSize: "16px", marginBottom: "8px", display: "block" }}
+          >
+            Search Notifications
+          </Text>
+          <Search
+            placeholder="Search notifications by title, message, or type..."
+            allowClear
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onSearch={handleSearch}
+            style={{ width: "100%" }}
+            size="large"
+            prefix={<SearchOutlined style={{ color: "#da2c46" }} />}
+          />
+          {debouncedSearchTerm && (
+            <div style={{ marginTop: "8px" }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Searching for: "{debouncedSearchTerm}"
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={clearSearch}
+                  style={{ padding: "0 4px", fontSize: "12px" }}
+                >
+                  Clear
+                </Button>
+              </Text>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card
         style={{
