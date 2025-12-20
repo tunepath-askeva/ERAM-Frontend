@@ -393,6 +393,11 @@ const EmployeeProfileSettings = () => {
               <DocumentsCertificatesCard
                 employeeData={employeeData}
                 onCertificatesChange={setCertificateFiles}
+                onSave={async () => {
+                  await handleProfileUpdate({ certificates: certificateFiles });
+                  setCertificateFiles([]); // Clear after save
+                  refetch(); // Refetch to get updated certificates
+                }}
               />
             </TabPane>
             <TabPane

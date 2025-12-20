@@ -21,14 +21,33 @@ import { useSnackbar } from "notistack";
 
 const { Text, Title } = Typography;
 
-const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
+const DocumentsCertificatesCard = ({
+  employeeData,
+  onCertificatesChange,
+  onSave,
+}) => {
   const { enqueueSnackbar } = useSnackbar();
   const [fileList, setFileList] = useState([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleDownload = (fileUrl, fileName) => {
+  const handleView = (fileUrl, fileName) => {
     window.open(fileUrl, "_blank");
   };
 
+  const handleDownload = (fileUrl, fileName) => {
+    const downloadUrl = fileUrl.replace(
+      "/raw/upload/",
+      "/raw/upload/fl_attachment/"
+    );
+
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const handleUpload = ({ file, fileList: newFileList }) => {
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
@@ -56,7 +75,7 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
     }
 
     setFileList(newFileList);
-
+    setHasUnsavedChanges(true);
     // Pass the files to parent component
     if (onCertificatesChange) {
       onCertificatesChange(newFileList);
@@ -72,9 +91,35 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
   const handleRemove = (file) => {
     const newFileList = fileList.filter((item) => item.uid !== file.uid);
     setFileList(newFileList);
-
+    setHasUnsavedChanges(true);
     if (onCertificatesChange) {
       onCertificatesChange(newFileList);
+    }
+  };
+
+  const handleSave = async () => {
+    if (onSave) {
+      setLoading(true);
+      try {
+        await onSave();
+        setFileList([]); // Clear the upload list after successful save
+        setHasUnsavedChanges(false);
+        enqueueSnackbar("Documents saved successfully!", {
+          variant: "success",
+        });
+      } catch (error) {
+        enqueueSnackbar("Failed to save documents", { variant: "error" });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setFileList([]);
+    setHasUnsavedChanges(false);
+    if (onCertificatesChange) {
+      onCertificatesChange([]);
     }
   };
 
@@ -112,6 +157,22 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
         </Text>
       </div>
 
+      {hasUnsavedChanges && (
+        <div style={{ textAlign: "right", marginTop: 16, marginBottom: 16 }}>
+          <Space>
+            <Button onClick={handleCancel}>Cancel</Button>
+            <Button
+              type="primary"
+              onClick={handleSave}
+              loading={loading}
+              style={{ background: "#da2c46", border: "none" }}
+            >
+              Save Documents
+            </Button>
+          </Space>
+        </div>
+      )}
+
       {certificateList.length > 0 ? (
         <List
           dataSource={certificateList}
@@ -123,7 +184,7 @@ const DocumentsCertificatesCard = ({ employeeData, onCertificatesChange }) => {
                   type="link"
                   icon={<EyeOutlined />}
                   onClick={() =>
-                    handleDownload(certificate.fileUrl, certificate.fileName)
+                    handleView(certificate.fileUrl, certificate.fileName)
                   }
                 >
                   View
