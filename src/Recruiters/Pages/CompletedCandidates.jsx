@@ -1319,7 +1319,7 @@ const CompletedCandidates = () => {
               htmlType="submit"
               loading={isConverting}
             >
-              Convert to Employee
+              Pipeline Completion
             </Button>
           </Form.Item>
         </Form>

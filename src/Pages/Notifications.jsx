@@ -55,6 +55,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../Global/SkeletonLoader";
 import ReactMarkdown from "react-markdown";
+import { useSnackbar } from "notistack";
 
 dayjs.extend(relativeTime);
 
@@ -62,6 +63,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const Notifications = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,9 +146,17 @@ const Notifications = () => {
             : notification
         )
       );
-      message.success("Notification marked as read");
+      enqueueSnackbar("Notification marked as read", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 2000,
+      });
     } catch (error) {
-      message.error("Failed to mark notification as read");
+      enqueueSnackbar("Failed to mark notification as read", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       console.error("Mark as read error:", error);
     }
   };
@@ -157,9 +167,17 @@ const Notifications = () => {
       setNotifications((prev) =>
         prev.map((notification) => ({ ...notification, isRead: true }))
       );
-      message.success("All notifications marked as read");
+      enqueueSnackbar("All notifications marked as read", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
     } catch (error) {
-      message.error("Failed to mark all notifications as read");
+      enqueueSnackbar("Failed to mark all notifications as read", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       console.error("Mark all as read error:", error);
     }
   };
@@ -227,12 +245,22 @@ const Notifications = () => {
 
       await updateOfferStatus(formData).unwrap();
 
-      message.success("Offer accepted successfully!");
+      enqueueSnackbar("Offer accepted successfully!", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       setAcceptModalVisible(false);
       acceptForm.resetFields();
       handleMarkAsRead(selectedNotification._id);
+
+      await refetch();
     } catch (error) {
-      message.error("Failed to accept offer");
+      enqueueSnackbar(error?.data?.message || "Failed to accept offer", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       console.error("Accept offer error:", error);
     } finally {
       setCurrentAction(null);
@@ -251,12 +279,21 @@ const Notifications = () => {
 
       await updateOfferStatus(payload).unwrap();
 
-      message.success("Offer rejected");
+      enqueueSnackbar("Offer rejected successfully", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       setRejectModalVisible(false);
       rejectForm.resetFields();
       handleMarkAsRead(selectedNotification._id);
+      await refetch();
     } catch (error) {
-      message.error("Failed to reject offer");
+      enqueueSnackbar(error?.data?.message || "Failed to reject offer", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
       console.error("Reject offer error:", error);
     } finally {
       setCurrentAction(null);
@@ -706,7 +743,7 @@ const Notifications = () => {
                                   >
                                     Reject
                                   </Button>
-                                  <Button
+                                  {/* <Button
                                     size="small"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -716,7 +753,7 @@ const Notifications = () => {
                                     style={{ borderRadius: "6px" }}
                                   >
                                     Request Revision
-                                  </Button>
+                                  </Button> */}
                                 </>
                               )}
                             </Space>

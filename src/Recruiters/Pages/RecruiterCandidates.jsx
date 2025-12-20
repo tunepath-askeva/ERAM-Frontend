@@ -439,8 +439,9 @@ const RecruiterCandidates = () => {
       enqueueSnackbar("Offer sent successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
-      await refetch();
-      await refetchCandidateDetails();
+      Promise.all([refetch(), refetchCandidateDetails()]).catch((err) =>
+        console.error("Refetch error:", err)
+      );
     } catch (err) {
       console.error("Offer submission error:", err);
       enqueueSnackbar(err?.data?.message || "Failed to send offer", {
@@ -466,8 +467,9 @@ const RecruiterCandidates = () => {
       enqueueSnackbar("Offer revised successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
-      await refetch();
-      await refetchCandidateDetails();
+      Promise.all([refetch(), refetchCandidateDetails()]).catch((err) =>
+        console.error("Refetch error:", err)
+      );
     } catch (err) {
       enqueueSnackbar(err?.data?.message || "Failed to revise offer", {
         variant: "error",
