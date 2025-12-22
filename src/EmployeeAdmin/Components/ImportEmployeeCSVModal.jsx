@@ -5,14 +5,10 @@ import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
 const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
   const [fileList, setFileList] = useState([]);
   const [previewData, setPreviewData] = useState([]);
+  const [parsedEmployees, setParsedEmployees] = useState([]); // Store parsed data
 
-  const handleUpload = () => {
-    if (fileList.length === 0) {
-      message.error("Please select a CSV file");
-      return;
-    }
-
-    const file = fileList[0];
+  // Parse CSV when file is uploaded
+  const handleFileUpload = (file) => {
     const reader = new FileReader();
 
     reader.onload = (e) => {
@@ -24,10 +20,64 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           message.error(
             "CSV file must contain headers and at least one employee"
           );
+          setFileList([]);
           return;
         }
 
-        const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        // Parse CSV properly handling quoted fields and empty values
+        // Parse CSV properly handling quoted fields and empty values
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              result.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+
+        // ADD THIS NEW HELPER FUNCTION
+        const parsePhoneNumber = (phoneStr) => {
+          if (!phoneStr || phoneStr.trim() === "") return "";
+
+          let phone = phoneStr.trim();
+
+          // Handle scientific notation (e.g., 9.66501E+11)
+          if (phone.includes("E") || phone.includes("e")) {
+            try {
+              // Convert scientific notation to regular number
+              const num = parseFloat(phone);
+              if (!isNaN(num)) {
+                phone = num.toFixed(0); // Convert to string without decimals
+              }
+            } catch (e) {
+              console.warn("Failed to parse phone number:", phoneStr);
+            }
+          }
+
+          // Remove any non-digit characters except leading +
+          phone = phone.replace(/[^\d+]/g, "");
+
+          // Remove + if present (as backend expects numbers without +)
+          phone = phone.replace(/^\+/, "");
+
+          return phone;
+        };
+
+        const headers = parseCSVLine(lines[0]).map((h) =>
+          h.toLowerCase().trim()
+        );
 
         // Validate required headers
         const requiredHeaders = [
@@ -45,21 +95,35 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           message.error(
             `Missing required headers: ${missingHeaders.join(", ")}`
           );
+          setFileList([]);
           return;
         }
+
+        // Helper function to safely get date or empty string
+        const getDateOrEmpty = (dateStr) => {
+          if (!dateStr || dateStr.trim() === "") return "";
+          // Validate date format YYYY-MM-DD
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) return "";
+          return dateStr.trim();
+        };
+
+        // Helper function to safely get number or empty string
+        const getNumberOrEmpty = (numStr) => {
+          if (!numStr || numStr.trim() === "") return "";
+          const num = Number(numStr.trim());
+          return isNaN(num) ? "" : numStr.trim();
+        };
 
         const employees = lines
           .slice(1)
           .map((line, index) => {
-            // Handle commas within quoted fields
-            const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-            const cleanedValues = values.map((v) =>
-              v.replace(/^"|"$/g, "").trim()
-            );
+            const values = parseCSVLine(line);
 
+            // Create object with proper mapping
             const employee = {};
             headers.forEach((header, idx) => {
-              employee[header] = cleanedValues[idx] || "";
+              const value = values[idx] || "";
+              employee[header] = value.trim();
             });
 
             // Validate essential fields
@@ -70,34 +134,37 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               !employee.phone ||
               !employee.password
             ) {
-              console.warn(`Row ${index + 2}: Missing required fields`);
+              console.warn(
+                `Row ${index + 2}: Missing required fields`,
+                employee
+              );
               return null;
             }
 
-            // Map to expected format
+            // Map to expected format with proper validation
             return {
-              firstName: employee.firstname,
+              firstName: employee.firstname || "",
               middleName: employee.middlename || "",
-              lastName: employee.lastname,
-              email: employee.email,
-              phone: employee.phone,
-              password: employee.password,
+              lastName: employee.lastname || "",
+              email: employee.email || "",
+              phone: parsePhoneNumber(employee.phone),
+              password: employee.password || "",
 
-              // Mandatory fields
+              // Mandatory fields - but allow empty for backend validation
               assignedJobTitle: employee.assignedjobtitle || "",
               category: employee.category || "",
               eramId: employee.eramid || "",
-              dateOfJoining: employee.dateofjoining || "",
+              dateOfJoining: getDateOrEmpty(employee.dateofjoining),
               officialEmail: employee.officialemail || "",
 
-              // Optional basic fields
+              // Optional fields
               badgeNo: employee.badgeno || "",
               gatePassId: employee.gatepassid || "",
               aramcoId: employee.aramcoid || "",
               otherId: employee.otherid || "",
               plantId: employee.plantid || "",
 
-              // NEW FIELDS - Add these:
+              // New fields with proper handling
               externalEmpNo: employee.externalempno || "",
               designation: employee.designation || "",
               visaCategory: employee.visacategory || "",
@@ -105,40 +172,50 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               employmentType: employee.employmenttype || "",
               payrollGroup: employee.payrollgroup || "",
               sponsorName: employee.sponsorname || "",
-              workHours: employee.workhours || "",
-              workDays: employee.workdays || "",
+              workHours: getNumberOrEmpty(employee.workhours),
+              workDays: getNumberOrEmpty(employee.workdays),
               airTicketFrequency: employee.airticketfrequency || "",
               probationPeriod: employee.probationperiod || "",
               periodOfContract: employee.periodofcontract || "",
               workLocation: employee.worklocation || "",
               familyStatus: employee.familystatus || "",
-              lastArrival: employee.lastarrival || "",
-              eligibleVacationDays: employee.eligiblevacationdays || "",
-              eligibleVacationMonth: employee.eligiblevacationmonth || "",
+              lastArrival: getDateOrEmpty(employee.lastarrival),
+              eligibleVacationDays: getNumberOrEmpty(
+                employee.eligiblevacationdays
+              ),
+              eligibleVacationMonth: getNumberOrEmpty(
+                employee.eligiblevacationmonth
+              ),
 
               // IQAMA Details
               iqamaId: employee.iqamaid || "",
-              iqamaIssueDate: employee.iqamaissuedate || "",
-              iqamaExpiryDate: employee.iqamaexpirydate || "",
-              iqamaArabicDateOfIssue: employee.iqamaarabicdateofissue || "",
-              iqamaArabicDateOfExpiry: employee.iqamaarabicdateofexpiry || "",
+              iqamaIssueDate: getDateOrEmpty(employee.iqamaissuedate),
+              iqamaExpiryDate: getDateOrEmpty(employee.iqamaexpirydate),
+              iqamaArabicDateOfIssue: getDateOrEmpty(
+                employee.iqamaarabicdateofissue
+              ),
+              iqamaArabicDateOfExpiry: getDateOrEmpty(
+                employee.iqamaarabicdateofexpiry
+              ),
 
               // Insurance & Benefits
               gosi: employee.gosi || "",
               drivingLicense: employee.drivinglicense || "",
               medicalPolicy: employee.medicalpolicy || "",
               medicalPolicyNumber: employee.medicalpolicynumber || "",
-              noOfDependent: employee.noofdependent || "",
+              noOfDependent: getNumberOrEmpty(employee.noofdependent),
               insuranceCategory: employee.insurancecategory || "",
               classCode: employee.classcode || "",
               assetAllocation: employee.assetallocation
-                ? employee.assetallocation.split(";").map((s) => s.trim())
+                ? employee.assetallocation
+                    .split(";")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
                 : [],
 
               // Other fields
-              lastWorkingDay: employee.lastworkingday || "",
+              lastWorkingDay: getDateOrEmpty(employee.lastworkingday),
               firstTimeLogin: employee.firsttimelogin || "",
-
               basicAssets: employee.basicassets || "",
               reportingAndDocumentation:
                 employee.reportinganddocumentation || "",
@@ -148,51 +225,60 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
 
         if (employees.length === 0) {
           message.error("No valid employee data found in CSV");
+          setFileList([]);
           return;
         }
 
+        setParsedEmployees(employees); // Store parsed data
         setPreviewData(employees);
-        message.info(
-          `Found ${employees.length} valid employees to import. Click Import to proceed.`
+        message.success(
+          `✓ Parsed ${employees.length} valid employee(s). Review and click Import.`
         );
-        onImport({ employees });
-        setFileList([]);
-        setPreviewData([]);
       } catch (error) {
         console.error("CSV parsing error:", error);
         message.error("Error parsing CSV file. Please check the format.");
+        setFileList([]);
       }
     };
 
     reader.onerror = () => {
       message.error("Error reading file");
+      setFileList([]);
     };
 
     reader.readAsText(file);
   };
 
+  // Import button handler
+  const handleImport = () => {
+    if (parsedEmployees.length === 0) {
+      message.error("No employees to import. Please upload a valid CSV file.");
+      return;
+    }
+
+    onImport({ employees: parsedEmployees });
+  };
+
   const downloadTemplate = () => {
     const headers = [
-      "firstname", // Changed from "firstName"
-      "middlename", // Changed from "middleName"
-      "lastname", // Changed from "lastName"
+      "firstname",
+      "middlename",
+      "lastname",
       "email",
       "phone",
       "password",
-      "assignedjobtitle", // Changed from "assignedJobTitle"
+      "assignedjobtitle",
       "category",
-      "eramid", // Changed from "eramId"
-      "badgeno", // Changed from "badgeNo"
-      "dateofjoining", // Changed from "dateOfJoining"
-      "gatepassid", // Changed from "gatePassId"
-      "aramcoid", // Changed from "aramcoId"
-      "otherid", // Changed from "otherId"
-      "plantid", // Changed from "plantId"
-      "officialemail", // Changed from "officialEmail"
-      "basicassets", // Changed from "basicAssets"
-      "reportinganddocumentation", // Changed
-
-      // ADD NEW FIELDS HERE:
+      "eramid",
+      "badgeno",
+      "dateofjoining",
+      "gatepassid",
+      "aramcoid",
+      "otherid",
+      "plantid",
+      "officialemail",
+      "basicassets",
+      "reportinganddocumentation",
       "externalempno",
       "designation",
       "visacategory",
@@ -232,7 +318,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "M",
       "Doe",
       "john.doe@example.com",
-      "966501234567",
+      "='966501234567'",
       "password123",
       "Software Engineer",
       "IT",
@@ -246,8 +332,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "john.doe@company.com",
       "Laptop, Phone",
       "Weekly reports",
-
-      // NEW FIELDS (30+ values):
       "EXT001",
       "Senior Dev",
       "Work Visa",
@@ -302,19 +386,22 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         return false;
       }
       setFileList([file]);
+      handleFileUpload(file); // Parse immediately when file is selected
       return false;
     },
     fileList,
     onRemove: () => {
       setFileList([]);
       setPreviewData([]);
+      setParsedEmployees([]);
     },
     maxCount: 1,
   };
 
-  const handleCancel = () => {
+  const handleModalCancel = () => {
     setFileList([]);
     setPreviewData([]);
+    setParsedEmployees([]);
     onCancel();
   };
 
@@ -326,13 +413,13 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         </span>
       }
       open={visible}
-      onCancel={handleCancel}
-      onOk={handleUpload}
+      onCancel={handleModalCancel}
+      onOk={handleImport}
       okText="Import"
       confirmLoading={isLoading}
       okButtonProps={{
         style: { backgroundColor: "#da2c46", borderColor: "#da2c46" },
-        disabled: fileList.length === 0,
+        disabled: parsedEmployees.length === 0,
       }}
       width={800}
     >
@@ -347,23 +434,16 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                 with *.
               </p>
               <p style={{ marginBottom: "8px", fontWeight: 500 }}>
-                Required columns: firstName*, lastName*, email*, phone*,
-                password*, assignedJobTitle*, category*, eramId*,
-                dateOfJoining*, officialEmail*
+                <strong>Required columns:</strong> firstName*, lastName*,
+                email*, phone*, password*
               </p>
-              <p style={{ marginBottom: 0 }}>
-                Optional columns: middleName, badgeNo, gatePassId, aramcoId,
-                otherId, plantId, externalEmpNo, designation, visaCategory,
-                employeeGroup, employmentType, payrollGroup, sponsorName,
-                workHours, workDays, airTicketFrequency, probationPeriod,
-                periodOfContract, workLocation, familyStatus, lastArrival,
-                eligibleVacationDays, eligibleVacationMonth, iqamaId,
-                iqamaIssueDate, iqamaExpiryDate, iqamaArabicDateOfIssue,
-                iqamaArabicDateOfExpiry, gosi, drivingLicense, medicalPolicy,
-                medicalPolicyNumber, noOfDependent, insuranceCategory,
-                classCode, assetAllocation (semicolon-separated),
-                lastWorkingDay, firstTimeLogin, basicAssets,
-                reportingAndDocumentation
+              <p style={{ marginBottom: "8px", fontWeight: 500 }}>
+                <strong>Recommended columns:</strong> assignedJobTitle,
+                category, eramId, dateOfJoining (YYYY-MM-DD), officialEmail
+              </p>
+              <p style={{ marginBottom: 0, fontSize: "12px", color: "#666" }}>
+                All other fields are optional. Download the template below to
+                see all available columns.
               </p>
             </div>
           }
@@ -407,24 +487,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           </div>
         </div>
 
-        {/* CSV Format Example */}
-        <div>
-          <p style={{ fontWeight: 500, marginBottom: "8px" }}>CSV Format:</p>
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "12px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontFamily: "monospace",
-              overflowX: "auto",
-            }}
-          >
-            <div>firstName,middleName,lastName,email,phone,password,...</div>
-            <div>John,M,Doe,john1@example.com,966501234567,pass123,...</div>
-          </div>
-        </div>
-
         {/* File Upload */}
         <div>
           <p style={{ fontWeight: 500, marginBottom: "8px" }}>
@@ -444,8 +506,10 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         {/* Preview */}
         {previewData.length > 0 && (
           <div>
-            <p style={{ fontWeight: 500, marginBottom: "8px" }}>
-              Preview ({previewData.length} employees):
+            <p
+              style={{ fontWeight: 500, marginBottom: "8px", color: "#52c41a" }}
+            >
+              ✓ Preview ({previewData.length} employees ready to import):
             </p>
             <div
               style={{
@@ -454,6 +518,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                 border: "1px solid #d9d9d9",
                 borderRadius: "4px",
                 padding: "8px",
+                backgroundColor: "#fafafa",
               }}
             >
               {previewData.slice(0, 5).map((emp, idx) => (
@@ -490,18 +555,22 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           description={
             <ul style={{ margin: 0, paddingLeft: "20px" }}>
               <li>
-                Phone numbers must include country code (e.g., 966501234567 for
-                Saudi Arabia)
+                Date format must be <strong>YYYY-MM-DD</strong> (e.g.,
+                2024-01-15)
               </li>
-              <li>Do NOT use + or any symbols before phone numbers</li>
               <li>
-                Full name will be auto-generated from firstName, middleName, and
-                lastName
+                <strong>Phone numbers:</strong> Include country code without +
+                symbol (e.g., 966501234567)
+                <br />
+                <span style={{ fontSize: "12px", color: "#ff4d4f" }}>
+                  ⚠ In Excel: Format phone column as TEXT or prefix with
+                  apostrophe (='966501234567') to prevent scientific notation
+                </span>
               </li>
-              <li>Passwords will be encrypted before storing</li>
+              <li>Boolean fields accept: Y/N, Yes/No, True/False, 1/0</li>
+              <li>Empty optional fields are allowed</li>
               <li>Duplicate emails will be skipped</li>
-              <li>Date format should be YYYY-MM-DD</li>
-              <li>All employees will be created with 'employee' role</li>
+              <li>Invalid entries will be reported after import</li>
             </ul>
           }
           type="warning"

@@ -180,32 +180,124 @@ const EmployeeAdminAllEmployees = () => {
       // Store results for alert display
       setImportResults(result);
 
+      // Build detailed message
+      let successMsg = "";
+      let warningMsg = "";
+      let errorMsg = "";
+
       if (result.insertedCount > 0) {
+        successMsg = `✓ Successfully imported ${result.insertedCount} employee(s)`;
+      }
+
+      if (result.duplicateCount > 0) {
+        warningMsg = `⚠ ${result.duplicateCount} duplicate(s) skipped`;
+      }
+
+      if (result.invalidCount > 0) {
+        errorMsg = `✕ ${result.invalidCount} invalid entrie(s)`;
+      }
+
+      // Show appropriate snackbar based on results
+      if (
+        result.insertedCount > 0 &&
+        result.duplicateCount === 0 &&
+        result.invalidCount === 0
+      ) {
+        // Perfect import - all success
+        enqueueSnackbar(successMsg, {
+          variant: "success",
+          autoHideDuration: 4000,
+        });
+      } else if (result.insertedCount > 0) {
+        // Partial success with some issues
+        const messages = [successMsg, warningMsg, errorMsg].filter(Boolean);
         enqueueSnackbar(
-          `Successfully imported ${
-            result.insertedCount
-          } employee(s). Duplicates skipped: ${
-            result.duplicateCount || 0
-          }, Invalid: ${result.invalidCount || 0}`,
-          { variant: "success", autoHideDuration: 5000 }
+          <div>
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                style={{
+                  marginBottom: idx < messages.length - 1 ? "4px" : "0",
+                }}
+              >
+                {msg}
+              </div>
+            ))}
+            <div style={{ marginTop: "8px", fontSize: "12px", opacity: 0.9 }}>
+              Check the alert below for details
+            </div>
+          </div>,
+          {
+            variant: "warning",
+            autoHideDuration: 6000,
+          }
         );
       } else if (result.duplicateCount > 0 || result.invalidCount > 0) {
+        // No success - only errors/duplicates
+        const messages = [warningMsg, errorMsg].filter(Boolean);
         enqueueSnackbar(
-          `No new employees imported. Duplicates: ${
-            result.duplicateCount || 0
-          }, Invalid: ${result.invalidCount || 0}`,
-          { variant: "warning", autoHideDuration: 5000 }
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+              Import Failed
+            </div>
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                style={{
+                  marginBottom: idx < messages.length - 1 ? "4px" : "0",
+                }}
+              >
+                {msg}
+              </div>
+            ))}
+            <div style={{ marginTop: "8px", fontSize: "12px", opacity: 0.9 }}>
+              Check the alert below for details
+            </div>
+          </div>,
+          {
+            variant: "error",
+            autoHideDuration: 7000,
+          }
         );
       } else {
-        enqueueSnackbar("No employees were imported", { variant: "info" });
+        // Edge case - no data processed
+        enqueueSnackbar("No employees were imported", {
+          variant: "info",
+          autoHideDuration: 4000,
+        });
       }
 
       setIsImportModalVisible(false);
+
+      // MOVE REFETCH HERE - ALWAYS REFETCH AFTER IMPORT COMPLETES
       await refetch();
     } catch (error) {
-      enqueueSnackbar(error?.data?.message || "Failed to import employees", {
-        variant: "error",
-      });
+      console.error("Import error:", error);
+
+      // Enhanced error message
+      const errorMessage = error?.data?.message || "Failed to import employees";
+      const errorDetails = error?.data?.error || "";
+
+      enqueueSnackbar(
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+            Import Error
+          </div>
+          <div>{errorMessage}</div>
+          {errorDetails && (
+            <div style={{ marginTop: "4px", fontSize: "12px", opacity: 0.9 }}>
+              {errorDetails}
+            </div>
+          )}
+        </div>,
+        {
+          variant: "error",
+          autoHideDuration: 8000,
+        }
+      );
+
+      // ALSO REFETCH ON ERROR (in case partial import happened)
+      await refetch();
     }
   };
 
