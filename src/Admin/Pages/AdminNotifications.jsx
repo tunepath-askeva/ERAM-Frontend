@@ -39,7 +39,7 @@ import {
   useDeleteNotificationMutation,
 } from "../../Slices/Users/UserApis.js";
 import { useGetAdminNotificationsQuery } from "../../Slices/Admin/AdminApis.js";
-
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
@@ -52,6 +52,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea, Search } = Input;
 
 const AdminNotifications = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -533,56 +534,75 @@ const AdminNotifications = () => {
                       >
                         {item.message}
                       </ReactMarkdown>
-                      {isRequisitionApprovalNotification(item) &&
-                        !item.Status && (
-                          <Space style={{ marginTop: "12px" }}>
-                            <Button
-                              type="primary"
-                              icon={<CheckOutlined />}
-                              size="small"
-                              style={{
-                                backgroundColor: "#52c41a",
-                                borderColor: "#52c41a",
-                              }}
-                              onClick={() =>
-                                handleApproveReject(item, "approved")
-                              }
-                            >
-                              Approve
-                            </Button>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ marginTop: "8px" }}
+                      >
+                        {isRequisitionApprovalNotification(item) &&
+                          !item.Status && (
+                            <Space style={{ marginTop: "12px" }}>
+                              <Button
+                                type="primary"
+                                icon={<CheckOutlined />}
+                                size="small"
+                                style={{
+                                  backgroundColor: "#52c41a",
+                                  borderColor: "#52c41a",
+                                }}
+                                onClick={() =>
+                                  handleApproveReject(item, "approved")
+                                }
+                              >
+                                Approve
+                              </Button>
 
-                            <Button
-                              danger
-                              icon={<CloseOutlined />}
-                              size="small"
-                              onClick={() =>
-                                handleApproveReject(item, "rejected")
-                              }
-                            >
-                              Reject
-                            </Button>
-                          </Space>
+                              <Button
+                                danger
+                                icon={<CloseOutlined />}
+                                size="small"
+                                onClick={() =>
+                                  handleApproveReject(item, "rejected")
+                                }
+                              >
+                                Reject
+                              </Button>
+                            </Space>
+                          )}
+
+                        {item.Status && (
+                          <Tag
+                            color={item.Status === "approved" ? "green" : "red"}
+                            style={{ marginTop: "12px", fontWeight: "bold" }}
+                          >
+                            {item.Status.toUpperCase()}
+                          </Tag>
                         )}
 
-                      {item.Status && (
-                        <Tag
-                          color={item.Status === "approved" ? "green" : "red"}
-                          style={{ marginTop: "12px", fontWeight: "bold" }}
-                        >
-                          {item.Status.toUpperCase()}
-                        </Tag>
-                      )}
+                        {!item.isRead && (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => handleMarkAsRead(item._id)}
+                            style={{ padding: 0 }}
+                          >
+                            Mark as read
+                          </Button>
+                        )}
 
-                      {!item.isRead && (
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => handleMarkAsRead(item._id)}
-                          style={{ padding: 0 }}
-                        >
-                          Mark as read
-                        </Button>
-                      )}
+                        {item.redirectPath && (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => {
+                              navigate(item.redirectPath);
+                            }}
+                            style={{ padding: 0, color: "#da2c46" }}
+                          >
+                            Click here to visit →
+                          </Button>
+                        )}
+                      </Space>
                     </div>
                   }
                 />

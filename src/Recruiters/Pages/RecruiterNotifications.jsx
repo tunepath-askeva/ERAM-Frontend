@@ -47,6 +47,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 import { useSelector } from "react-redux";
 import ReactMarkdown from "react-markdown";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
@@ -54,6 +55,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea, Search } = Input;
 
 const RecruiterNotifications = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -582,16 +584,35 @@ const RecruiterNotifications = () => {
                       {/* Approval/Rejection buttons for requisition assignment notifications */}
                       {renderApprovalButtons(item)}
 
-                      {!item.isRead && (
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => handleMarkAsRead(item._id)}
-                          style={{ padding: 0, marginTop: "8px" }}
-                        >
-                          Mark as read
-                        </Button>
-                      )}
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ marginTop: "8px" }}
+                      >
+                        {!item.isRead && (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => handleMarkAsRead(item._id)}
+                            style={{ padding: 0 }}
+                          >
+                            Mark as read
+                          </Button>
+                        )}
+
+                        {item.redirectPath && (
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => {
+                              navigate(item.redirectPath);
+                            }}
+                            style={{ padding: 0 , color: '#da2c46'}}
+                          >
+                            Click here to visit →
+                          </Button>
+                        )}
+                      </Space>
                     </div>
                   }
                 />

@@ -1,85 +1,119 @@
 import React, { useState } from "react";
 import { Modal, Button, Upload, message, Alert } from "antd";
 import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 
 const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [fileList, setFileList] = useState([]);
   const [previewData, setPreviewData] = useState([]);
   const [parsedEmployees, setParsedEmployees] = useState([]); // Store parsed data
 
-  // Parse CSV when file is uploaded
-  const handleFileUpload = (file) => {
+  const handleFileUpload = async (file) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const text = e.target.result;
-        const lines = text.split("\n").filter((line) => line.trim());
+        let rows = [];
 
-        if (lines.length < 2) {
-          message.error(
-            "CSV file must contain headers and at least one employee"
+        // Check file type and parse accordingly
+        if (file.name.endsWith(".csv")) {
+          // Parse CSV
+          const text = e.target.result;
+          const lines = text.split("\n").filter((line) => line.trim());
+
+          if (lines.length < 2) {
+            message.error(
+              "CSV file must contain headers and at least one employee"
+            );
+            setFileList([]);
+            return;
+          }
+
+          const parseCSVLine = (line) => {
+            const result = [];
+            let current = "";
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i];
+
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === "," && !inQuotes) {
+                result.push(current.trim());
+                current = "";
+              } else {
+                current += char;
+              }
+            }
+            result.push(current.trim());
+            return result;
+          };
+
+          const headers = parseCSVLine(lines[0]).map((h) =>
+            h.toLowerCase().trim()
           );
-          setFileList([]);
-          return;
+          rows = lines.slice(1).map((line) => {
+            const values = parseCSVLine(line);
+            const row = {};
+            headers.forEach((header, idx) => {
+              row[header] = values[idx] || "";
+            });
+            return row;
+          });
+        } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+          // Parse Excel using SheetJS
+          const XLSX = await import("xlsx");
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+
+          // Convert to JSON with header row
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            raw: false, // Keep as strings
+            defval: "", // Default value for empty cells
+          });
+
+          if (jsonData.length === 0) {
+            message.error("Excel file must contain at least one employee row");
+            setFileList([]);
+            return;
+          }
+
+          // Normalize headers to lowercase
+          rows = jsonData.map((row) => {
+            const normalizedRow = {};
+            Object.keys(row).forEach((key) => {
+              normalizedRow[key.toLowerCase().trim()] = row[key];
+            });
+            return normalizedRow;
+          });
         }
 
-        // Parse CSV properly handling quoted fields and empty values
-        // Parse CSV properly handling quoted fields and empty values
-        const parseCSVLine = (line) => {
-          const result = [];
-          let current = "";
-          let inQuotes = false;
-
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === "," && !inQuotes) {
-              result.push(current.trim());
-              current = "";
-            } else {
-              current += char;
-            }
-          }
-          result.push(current.trim());
-          return result;
-        };
-
-        // ADD THIS NEW HELPER FUNCTION
+        // Rest of your existing validation code stays the same...
         const parsePhoneNumber = (phoneStr) => {
           if (!phoneStr || phoneStr.trim() === "") return "";
-
           let phone = phoneStr.trim();
-
-          // Handle scientific notation (e.g., 9.66501E+11)
           if (phone.includes("E") || phone.includes("e")) {
             try {
-              // Convert scientific notation to regular number
               const num = parseFloat(phone);
               if (!isNaN(num)) {
-                phone = num.toFixed(0); // Convert to string without decimals
+                phone = num.toFixed(0);
               }
             } catch (e) {
               console.warn("Failed to parse phone number:", phoneStr);
             }
           }
-
-          // Remove any non-digit characters except leading +
           phone = phone.replace(/[^\d+]/g, "");
-
-          // Remove + if present (as backend expects numbers without +)
           phone = phone.replace(/^\+/, "");
-
           return phone;
         };
 
-        const headers = parseCSVLine(lines[0]).map((h) =>
-          h.toLowerCase().trim()
-        );
-
         // Validate required headers
+        const firstRow = rows[0];
+        const headers = Object.keys(firstRow);
         const requiredHeaders = [
           "firstname",
           "lastname",
@@ -99,34 +133,22 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           return;
         }
 
-        // Helper function to safely get date or empty string
+        // Helper functions (keep existing ones)
         const getDateOrEmpty = (dateStr) => {
           if (!dateStr || dateStr.trim() === "") return "";
-          // Validate date format YYYY-MM-DD
           if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) return "";
           return dateStr.trim();
         };
 
-        // Helper function to safely get number or empty string
         const getNumberOrEmpty = (numStr) => {
           if (!numStr || numStr.trim() === "") return "";
           const num = Number(numStr.trim());
           return isNaN(num) ? "" : numStr.trim();
         };
 
-        const employees = lines
-          .slice(1)
-          .map((line, index) => {
-            const values = parseCSVLine(line);
-
-            // Create object with proper mapping
-            const employee = {};
-            headers.forEach((header, idx) => {
-              const value = values[idx] || "";
-              employee[header] = value.trim();
-            });
-
-            // Validate essential fields
+        // Map rows to employee objects (keep your existing mapping logic)
+        const employees = rows
+          .map((employee, index) => {
             if (
               !employee.firstname ||
               !employee.lastname ||
@@ -141,7 +163,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               return null;
             }
 
-            // Map to expected format with proper validation
             return {
               firstName: employee.firstname || "",
               middleName: employee.middlename || "",
@@ -149,22 +170,17 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               email: employee.email || "",
               phone: parsePhoneNumber(employee.phone),
               password: employee.password || "",
-
-              // Mandatory fields - but allow empty for backend validation
+              // ... rest of your existing field mapping
               assignedJobTitle: employee.assignedjobtitle || "",
               category: employee.category || "",
               eramId: employee.eramid || "",
               dateOfJoining: getDateOrEmpty(employee.dateofjoining),
               officialEmail: employee.officialemail || "",
-
-              // Optional fields
               badgeNo: employee.badgeno || "",
               gatePassId: employee.gatepassid || "",
               aramcoId: employee.aramcoid || "",
               otherId: employee.otherid || "",
               plantId: employee.plantid || "",
-
-              // New fields with proper handling
               externalEmpNo: employee.externalempno || "",
               designation: employee.designation || "",
               visaCategory: employee.visacategory || "",
@@ -186,8 +202,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               eligibleVacationMonth: getNumberOrEmpty(
                 employee.eligiblevacationmonth
               ),
-
-              // IQAMA Details
               iqamaId: employee.iqamaid || "",
               iqamaIssueDate: getDateOrEmpty(employee.iqamaissuedate),
               iqamaExpiryDate: getDateOrEmpty(employee.iqamaexpirydate),
@@ -197,8 +211,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               iqamaArabicDateOfExpiry: getDateOrEmpty(
                 employee.iqamaarabicdateofexpiry
               ),
-
-              // Insurance & Benefits
               gosi: employee.gosi || "",
               drivingLicense: employee.drivinglicense || "",
               medicalPolicy: employee.medicalpolicy || "",
@@ -212,8 +224,6 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                     .map((s) => s.trim())
                     .filter(Boolean)
                 : [],
-
-              // Other fields
               lastWorkingDay: getDateOrEmpty(employee.lastworkingday),
               firstTimeLogin: employee.firsttimelogin || "",
               basicAssets: employee.basicassets || "",
@@ -224,19 +234,19 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           .filter(Boolean);
 
         if (employees.length === 0) {
-          message.error("No valid employee data found in CSV");
+          message.error("No valid employee data found in file");
           setFileList([]);
           return;
         }
 
-        setParsedEmployees(employees); // Store parsed data
+        setParsedEmployees(employees);
         setPreviewData(employees);
         message.success(
           `✓ Parsed ${employees.length} valid employee(s). Review and click Import.`
         );
       } catch (error) {
-        console.error("CSV parsing error:", error);
-        message.error("Error parsing CSV file. Please check the format.");
+        console.error("File parsing error:", error);
+        message.error("Error parsing file. Please check the format.");
         setFileList([]);
       }
     };
@@ -246,7 +256,12 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       setFileList([]);
     };
 
-    reader.readAsText(file);
+    // Read as ArrayBuffer for Excel, Text for CSV
+    if (file.name.endsWith(".csv")) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   // Import button handler
@@ -380,9 +395,17 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
 
   const uploadProps = {
     beforeUpload: (file) => {
-      const isCsv = file.name.endsWith(".csv");
-      if (!isCsv) {
-        message.error("Please upload a CSV file");
+      const isValidFormat =
+        file.name.endsWith(".csv") ||
+        file.name.endsWith(".xlsx") ||
+        file.name.endsWith(".xls");
+      if (!isValidFormat) {
+        enqueueSnackbar(
+          "Please upload a CSV or Excel file (.csv, .xlsx, .xls)",
+          {
+            variant: "warning",
+          }
+        );
         return false;
       }
       setFileList([file]);
@@ -430,8 +453,8 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           description={
             <div>
               <p style={{ marginBottom: "8px" }}>
-                Upload a CSV file with employee data. Required fields are marked
-                with *.
+                Upload a CSV or Excel file (.csv, .xlsx, .xls) with employee
+                data. Required fields are marked with *.
               </p>
               <p style={{ marginBottom: "8px", fontWeight: 500 }}>
                 <strong>Required columns:</strong> firstName*, lastName*,
@@ -498,7 +521,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               style={{ width: "100%" }}
               size="large"
             >
-              Select CSV File
+              Select CSV or Excel File
             </Button>
           </Upload>
         </div>
