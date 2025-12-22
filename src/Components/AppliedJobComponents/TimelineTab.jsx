@@ -63,7 +63,7 @@ const TimelineTab = ({ appliedJob }) => {
           // Determine stage status - use stageStatus or check if approved
           const stageStatus = stage.stageStatus || "pending";
           const statusInfo = getStatusInfo(stageStatus);
-          
+
           return (
             <Timeline.Item
               key={stage._id || index}
@@ -73,7 +73,9 @@ const TimelineTab = ({ appliedJob }) => {
               color={statusInfo.color}
             >
               <div>
-                <Text strong>{stage.stageName || stage.name || `Stage ${index + 1}`}</Text>
+                <Text strong>
+                  {stage.stageName || stage.name || `Stage ${index + 1}`}
+                </Text>
                 <br />
                 <Badge
                   color={statusInfo.color}
@@ -106,12 +108,15 @@ const TimelineTab = ({ appliedJob }) => {
                           - {review.recruiterId?.fullName || "Recruiter"}
                         </Text>
                         {review.reviewComments && (
-                          <Text type="secondary">: {review.reviewComments}</Text>
+                          <Text type="secondary">
+                            : {review.reviewComments}
+                          </Text>
                         )}
                         {review.reviewedAt && (
                           <div style={{ marginTop: "4px" }}>
                             <Text type="secondary" style={{ fontSize: "12px" }}>
-                              Reviewed: {new Date(review.reviewedAt).toLocaleString()}
+                              Reviewed:{" "}
+                              {new Date(review.reviewedAt).toLocaleString()}
                             </Text>
                           </div>
                         )}
@@ -123,7 +128,9 @@ const TimelineTab = ({ appliedJob }) => {
                 {/* Documents Information */}
                 <div style={{ marginTop: "8px" }}>
                   <Text type="secondary">
-                    Documents uploaded: {(stage.uploadedDocuments?.length || 0) + (stage.additionalStageDocuments?.length || 0)}
+                    Documents uploaded:{" "}
+                    {(stage.uploadedDocuments?.length || 0) +
+                      (stage.additionalStageDocuments?.length || 0)}
                   </Text>
                   {stage.requiredDocuments?.length > 0 && (
                     <div>
@@ -138,7 +145,8 @@ const TimelineTab = ({ appliedJob }) => {
                 {stage.stageCompletedAt ? (
                   <div style={{ marginTop: "4px" }}>
                     <Text type="secondary">
-                      Completed: {new Date(stage.stageCompletedAt).toLocaleString()}
+                      Completed:{" "}
+                      {new Date(stage.stageCompletedAt).toLocaleString()}
                     </Text>
                   </div>
                 ) : stage.startDate ? (
@@ -152,7 +160,10 @@ const TimelineTab = ({ appliedJob }) => {
                 {/* Stage Description */}
                 {stage.description && (
                   <div style={{ marginTop: "8px" }}>
-                    <Text type="secondary" style={{ fontSize: "12px", fontStyle: "italic" }}>
+                    <Text
+                      type="secondary"
+                      style={{ fontSize: "12px", fontStyle: "italic" }}
+                    >
                       {stage.description}
                     </Text>
                   </div>
@@ -161,6 +172,65 @@ const TimelineTab = ({ appliedJob }) => {
             </Timeline.Item>
           );
         })}
+
+        {appliedJob?.offerDetails?.length > 0 &&
+          appliedJob.offerDetails.map((offer, offerIndex) => (
+            <Timeline.Item
+              key={`offer-${offerIndex}`}
+              dot={
+                offer.currentStatus === "offer-accepted" ? (
+                  <CheckCircleOutlined style={{ color: "green" }} />
+                ) : (
+                  <ClockCircleOutlined style={{ color: "orange" }} />
+                )
+              }
+              color={
+                offer.currentStatus === "offer-accepted" ? "green" : "orange"
+              }
+            >
+              <div>
+                <Text strong>Offer Letter</Text>
+                <br />
+                <Badge
+                  color={
+                    offer.currentStatus === "offer-accepted"
+                      ? "green"
+                      : "orange"
+                  }
+                  text={
+                    offer.currentStatus?.toUpperCase().replace("-", " ") ||
+                    "PENDING"
+                  }
+                />
+                <br />
+                {offer.description && (
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {offer.description}
+                  </Text>
+                )}
+                {offer.offerDocument?.uploadedAt && (
+                  <div style={{ marginTop: "4px" }}>
+                    <Text type="secondary" style={{ fontSize: "12px" }}>
+                      Sent:{" "}
+                      {new Date(
+                        offer.offerDocument.uploadedAt
+                      ).toLocaleString()}
+                    </Text>
+                  </div>
+                )}
+                {offer.signedOfferDocument?.uploadedAt && (
+                  <div style={{ marginTop: "4px" }}>
+                    <Text type="secondary" style={{ fontSize: "12px" }}>
+                      Signed:{" "}
+                      {new Date(
+                        offer.signedOfferDocument.uploadedAt
+                      ).toLocaleString()}
+                    </Text>
+                  </div>
+                )}
+              </div>
+            </Timeline.Item>
+          ))}
 
         {/* Current Status */}
         {appliedJob?.status && (
@@ -175,12 +245,16 @@ const TimelineTab = ({ appliedJob }) => {
               <br />
               <Badge
                 color={getStatusInfo(appliedJob.status).color}
-                text={appliedJob.status?.replace("_", " ").toUpperCase() || "PENDING"}
+                text={
+                  appliedJob.status?.replace("_", " ").toUpperCase() ||
+                  "PENDING"
+                }
               />
               {appliedJob.updatedAt && (
                 <div style={{ marginTop: "4px" }}>
                   <Text type="secondary" style={{ fontSize: "12px" }}>
-                    Last Updated: {new Date(appliedJob.updatedAt).toLocaleString()}
+                    Last Updated:{" "}
+                    {new Date(appliedJob.updatedAt).toLocaleString()}
                   </Text>
                 </div>
               )}

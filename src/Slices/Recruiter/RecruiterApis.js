@@ -783,6 +783,13 @@ export const recruiterApi = createApi({
         };
       },
     }),
+    exportEmployeesCSV: builder.query({
+      query: () => ({
+        url: "/export-csv",
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
@@ -867,4 +874,5 @@ export const {
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
   useUndoStageMutation,
+  useLazyExportEmployeesCSVQuery
 } = recruiterApi;

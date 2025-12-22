@@ -29,6 +29,7 @@ import {
   useDeleteEmployeeMutation,
   useBulkImportEmployeesMutation,
   useDisableEmployeeMutation,
+  useLazyExportEmployeesCSVQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
 import AddEmployeeModal from "../Components/AddEmployeeModal";
@@ -81,6 +82,8 @@ const EmployeeAdminAllEmployees = () => {
   const [disableEmployee] = useDisableEmployeeMutation();
   const [bulkImportEmployees, { isLoading: isImporting }] =
     useBulkImportEmployeesMutation();
+  const [triggerExport, { isLoading: isExporting }] =
+    useLazyExportEmployeesCSVQuery();
 
   const employees = branchEmployeesResponse?.data || [];
   const total = branchEmployeesResponse?.total || 0;
@@ -206,47 +209,25 @@ const EmployeeAdminAllEmployees = () => {
     }
   };
 
-  const handleExport = () => {
-    const headers = [
-      "ERAM ID",
-      "Full Name",
-      "Email",
-      "Phone",
-      "Job Title",
-      "Category",
-      "Badge No",
-      "Date of Joining",
-      "Salary",
-    ];
+  const handleExport = async () => {
+    try {
+      const blob = await triggerExport().unwrap();
 
-    const csvContent = [
-      headers.join(","),
-      ...employees.map((emp) =>
-        [
-          emp.employmentDetails?.eramId || "",
-          emp.fullName,
-          emp.email,
-          emp.phone,
-          emp.employmentDetails?.assignedJobTitle || "",
-          emp.employmentDetails?.category || "",
-          emp.employmentDetails?.department || "",
-          emp.employmentDetails?.badgeNo || "",
-          emp.employmentDetails?.dateOfJoining
-            ? new Date(emp.employmentDetails.dateOfJoining).toLocaleDateString()
-            : "",
-          emp.employmentDetails?.salary || "",
-        ].join(",")
-      ),
-    ].join("\n");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `employees_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `employees_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    enqueueSnackbar("Employees exported successfully", { variant: "success" });
+      enqueueSnackbar("Employees exported successfully", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Failed to export employees", { variant: "error" });
+    }
   };
 
   const columns = [

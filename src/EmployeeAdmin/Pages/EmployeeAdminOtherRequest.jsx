@@ -43,6 +43,7 @@ import {
 } from "../../Slices/Employee/EmployeeApis";
 import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import { useSnackbar, closeSnackbar } from "notistack";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -58,6 +59,7 @@ const requestTypes = [
 ];
 
 const EmployeeAdminOtherRequest = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestData, setRequestData] = useState([]);
@@ -183,11 +185,31 @@ const EmployeeAdminOtherRequest = () => {
   const handleConfirmAction = async () => {
     try {
       if (!comment.trim()) {
-        message.error("Please enter a comment before proceeding.");
+        enqueueSnackbar("Please enter a comment before proceeding", {
+          variant: "warning",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
         return;
       }
 
       const employeeEmail = requestDetails?.otherRequests?.employee?.email;
+
+      const loadingKey = enqueueSnackbar(
+        `${actionType === "approve" ? "Approving" : "Rejecting"} ${
+          actionTarget === "ticket" ? "ticket" : "request"
+        }...`,
+        {
+          variant: "info",
+          persist: true,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
+      );
 
       if (actionTarget === "ticket") {
         // Use ticket approval API
@@ -219,20 +241,41 @@ const EmployeeAdminOtherRequest = () => {
         }).unwrap();
       }
 
-      message.success(
+      closeSnackbar(loadingKey);
+
+      // Show success snackbar
+      enqueueSnackbar(
         `${actionTarget === "ticket" ? "Ticket" : "Request"} ${
           actionType === "approve" ? "approved" : "rejected"
-        } successfully!`
+        } successfully!`,
+        {
+          variant: "success",
+          autoHideDuration: 3000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
       );
-
       setCommentModalVisible(false);
       setComment("");
       setApprovalDocuments([]);
-      refetch();
-      handleCloseModal();
+      await refetch();
+      setTimeout(() => {
+        handleCloseModal();
+      }, 500);
     } catch (error) {
-      message.error(
-        `Failed to ${actionType} ${actionTarget}. Please try again.`
+      enqueueSnackbar(
+        error?.data?.message ||
+          `Failed to ${actionType} ${actionTarget}. Please try again.`,
+        {
+          variant: "error",
+          autoHideDuration: 4000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
       );
       console.error(`Error ${actionType}ing ${actionTarget}:`, error);
     }
@@ -273,10 +316,24 @@ const EmployeeAdminOtherRequest = () => {
       );
 
       if (!isValid) {
-        console.log("Validation failed");
-        message.error("Please fill all ticket detail fields");
+        enqueueSnackbar("Please fill all ticket detail fields", {
+          variant: "warning",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
         return;
       }
+
+      const loadingKey = enqueueSnackbar("Sending ticket information...", {
+        variant: "info",
+        persist: true,
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
 
       const formData = new FormData();
       ticketDetails.forEach((detail, index) => {
@@ -298,7 +355,19 @@ const EmployeeAdminOtherRequest = () => {
 
       await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
 
-      message.success("Ticket information sent successfully!");
+      // Close loading snackbar
+      closeSnackbar(loadingKey);
+
+      // Show success snackbar
+      enqueueSnackbar("Ticket information sent successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+
       setShowTicketForm(false);
       setTicketDetails([
         {
@@ -310,9 +379,21 @@ const EmployeeAdminOtherRequest = () => {
         },
       ]);
       ticketDetailsForm.resetFields();
+      await refetch();
     } catch (error) {
       console.error("Error sending ticket info:", error);
-      message.error("Failed to send ticket information. Please try again.");
+      enqueueSnackbar(
+        error?.data?.message ||
+          "Failed to send ticket information. Please try again.",
+        {
+          variant: "error",
+          autoHideDuration: 4000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
+      );
     }
   };
 

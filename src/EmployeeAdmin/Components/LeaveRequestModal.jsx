@@ -25,6 +25,7 @@ import {
   useGetLeaveRequestByIdQuery,
   useUpdateLeaveStatusMutation,
 } from "../../Slices/Employee/EmployeeApis";
+import { useSnackbar , closeSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -37,6 +38,7 @@ const LeaveRequestModal = ({
   email,
   hasPermission,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
   const [comments, setComments] = useState("");
@@ -92,9 +94,22 @@ const LeaveRequestModal = ({
   const handleDocumentDownload = (doc) => {
     if (doc.fileUrl) {
       window.open(doc.fileUrl, "_blank");
-      message.success(`Opening ${doc.documentName}`);
+      enqueueSnackbar(`Opening ${doc.documentName}`, {
+        variant: "success",
+        autoHideDuration: 2000,
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
     } else {
-      message.error("Document URL not available");
+      enqueueSnackbar("Document URL not available", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
     }
   };
 
@@ -106,11 +121,32 @@ const LeaveRequestModal = ({
 
   const handleConfirmAction = async () => {
     if (!comments.trim()) {
-      message.error("Please provide comments for your decision");
+      enqueueSnackbar("Please provide comments for your decision", {
+        variant: "warning",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
       return;
     }
 
     setIsSubmitting(true);
+
+    const loadingKey = enqueueSnackbar(
+      `${
+        actionType === "approve" ? "Approving" : "Rejecting"
+      } leave request...`,
+      {
+        variant: "info",
+        persist: true, // Won't auto-hide
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      }
+    );
+
     try {
       await updateLeaveStatus({
         leaveId,
@@ -119,18 +155,41 @@ const LeaveRequestModal = ({
         email,
       }).unwrap();
 
-      message.success(
+      closeSnackbar(loadingKey);
+
+      enqueueSnackbar(
         `Leave request ${
           actionType === "approve" ? "approved" : "rejected"
-        } successfully`
+        } successfully!`,
+        {
+          variant: "success",
+          autoHideDuration: 3000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
       );
 
       setConfirmModalVisible(false);
       setComments("");
       setActionType(null);
-      onClose(); // Close the main modal and refresh data
+      setTimeout(() => {
+        onClose(); // This will trigger refetch in parent component
+      }, 500);
     } catch (error) {
-      message.error(`Failed to ${actionType} leave request. Please try again.`);
+      enqueueSnackbar(
+        error?.data?.message ||
+          `Failed to ${actionType} leave request. Please try again.`,
+        {
+          variant: "error",
+          autoHideDuration: 4000,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        }
+      );
       console.error("Error updating leave status:", error);
     } finally {
       setIsSubmitting(false);

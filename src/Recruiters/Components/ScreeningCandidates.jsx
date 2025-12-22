@@ -1521,6 +1521,146 @@ const ScreeningCandidates = ({ jobId }) => {
                 )}
               </Descriptions.Item>
             </Descriptions>
+
+            {selectedCandidate.workOrder?.documents?.length > 0 && (
+              <>
+                <Divider orientation="left" style={{ margin: "16px 0" }}>
+                  Work Order Documents
+                </Divider>
+                <Row gutter={[16, 16]}>
+                  <Col span={24}>
+                    <Card
+                      size="small"
+                      title={
+                        <Space>
+                          <SafetyCertificateOutlined
+                            style={{ color: "#da2c46" }}
+                          />
+                          <Text strong>Required Documents</Text>
+                        </Space>
+                      }
+                    >
+                      {selectedCandidate?.workOrder?.documents.map(
+                        (doc, index) => {
+                          // Find if this document was uploaded by the candidate
+                          const uploadedDoc =
+                            screeningData?.customFieldResponses
+                              ?.find(
+                                (resp) =>
+                                  resp._id === selectedCandidate.applicationId
+                              )
+                              ?.workOrderuploadedDocuments?.find(
+                                (uploaded) =>
+                                  uploaded.documentName === doc.name ||
+                                  uploaded.documentName?.toLowerCase() ===
+                                    doc.name?.toLowerCase()
+                              );
+
+                          return (
+                            <div
+                              key={doc._id || index}
+                              style={{
+                                padding: "12px",
+                                border: `2px solid ${
+                                  uploadedDoc ? "#52c41a" : "#d9d9d9"
+                                }`,
+                                borderRadius: "8px",
+                                backgroundColor: uploadedDoc
+                                  ? "#f6ffed"
+                                  : "#fafafa",
+                                marginBottom: "12px",
+                              }}
+                            >
+                              <Row justify="space-between" align="middle">
+                                <Col>
+                                  <Space direction="vertical" size={4}>
+                                    <Space>
+                                      <SafetyCertificateOutlined
+                                        style={{
+                                          color: uploadedDoc
+                                            ? "#52c41a"
+                                            : "#8c8c8c",
+                                          fontSize: "16px",
+                                        }}
+                                      />
+                                      <Text strong>{doc.name}</Text>
+                                      {doc.isMandatory && (
+                                        <Tag color="red" size="small">
+                                          Mandatory
+                                        </Tag>
+                                      )}
+                                    </Space>
+                                    {doc.description && (
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: "12px" }}
+                                      >
+                                        {doc.description}
+                                      </Text>
+                                    )}
+                                    {uploadedDoc && (
+                                      <>
+                                        <Text
+                                          type="secondary"
+                                          style={{ fontSize: "12px" }}
+                                        >
+                                          File: {uploadedDoc.fileName}
+                                        </Text>
+                                        <Text
+                                          type="secondary"
+                                          style={{ fontSize: "12px" }}
+                                        >
+                                          Uploaded:{" "}
+                                          {new Date(
+                                            uploadedDoc.uploadedAt
+                                          ).toLocaleString()}
+                                        </Text>
+                                      </>
+                                    )}
+                                  </Space>
+                                </Col>
+                                <Col>
+                                  {uploadedDoc ? (
+                                    <Space>
+                                      <Tag
+                                        color="success"
+                                        icon={<CheckOutlined />}
+                                      >
+                                        Uploaded
+                                      </Tag>
+                                      <Button
+                                        type="primary"
+                                        size="small"
+                                        icon={<EyeOutlined />}
+                                        onClick={() =>
+                                          window.open(
+                                            uploadedDoc.fileUrl,
+                                            "_blank"
+                                          )
+                                        }
+                                        style={{
+                                          backgroundColor: "#52c41a",
+                                          borderColor: "#52c41a",
+                                        }}
+                                      >
+                                        View
+                                      </Button>
+                                    </Space>
+                                  ) : (
+                                    <Tag color="warning">Not Uploaded</Tag>
+                                  )}
+                                </Col>
+                              </Row>
+                            </div>
+                          );
+                        }
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+              </>
+            )}
+
             <Divider orientation="left" style={{ margin: "16px 0" }}>
               Pipeline Configuration
             </Divider>

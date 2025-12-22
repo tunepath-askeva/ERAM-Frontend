@@ -22,6 +22,7 @@ import {
   useSubmitWorkOrderDocumentsMutation,
   useEditDocumentMutation,
 } from "../../Slices/Users/UserApis";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 
@@ -37,6 +38,7 @@ const SourcedDocumentsTab = ({
   setEditReplacements,
   refetch,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadStageDocuments] = useUploadStageDocumentsMutation();
   const [submitWorkOrderDocuments] = useSubmitWorkOrderDocumentsMutation();
@@ -116,7 +118,7 @@ const SourcedDocumentsTab = ({
   const handleSelectExistingFile = (stageId, certificate, documentType) => {
     // Add this check at the beginning
     if (!certificate) {
-      message.error("Certificate not found");
+      enqueueSnackbar("Certificate not found", { variant: "error" });
       return;
     }
 
@@ -132,8 +134,11 @@ const SourcedDocumentsTab = ({
         },
       ],
     }));
-    message.success(
-      `${certificate.fileName} selected from existing certificates`
+    enqueueSnackbar(
+      `${certificate.fileName} selected from existing certificates`,
+      {
+        variant: "success",
+      }
     );
   };
 
@@ -247,7 +252,7 @@ const SourcedDocumentsTab = ({
         }));
       }
     }
-    message.success(`Document replaced successfully`);
+    enqueueSnackbar("Document replaced successfully", { variant: "success" });
   };
 
   const handleCancelEdit = (stageId, docName) => {
@@ -274,7 +279,7 @@ const SourcedDocumentsTab = ({
     setUploadedFiles((prev) => ({ ...prev, [stageId]: [] }));
     setSelectedExistingFiles((prev) => ({ ...prev, [stageId]: [] }));
     setEditingDocuments((prev) => ({ ...prev, [stageId]: {} }));
-    message.success("All pending documents cleared");
+    enqueueSnackbar("All pending documents cleared", { variant: "success" });
   };
 
   const handleFileUpload = (stageId, docType) => {
@@ -296,7 +301,9 @@ const SourcedDocumentsTab = ({
             },
           ],
         }));
-        message.success(`${file.name} file uploaded successfully.`);
+        enqueueSnackbar(`${file.name} file uploaded successfully`, {
+          variant: "success",
+        });
       }
     };
   };
@@ -308,7 +315,7 @@ const SourcedDocumentsTab = ({
     beforeUpload: (file) => {
       const isLt5M = file.size / 1024 / 1024 < 5;
       if (!isLt5M) {
-        message.error("File must be smaller than 5MB!");
+        enqueueSnackbar("File must be smaller than 5MB!", { variant: "error" });
         return Upload.LIST_IGNORE;
       }
       return true;
@@ -327,7 +334,9 @@ const SourcedDocumentsTab = ({
     const stage = sourcedJob.stageProgress.find((s) => s._id === stageId);
 
     if (stageFiles.length === 0 && existingFiles.length === 0) {
-      message.warning("Please upload at least one document before submitting");
+      enqueueSnackbar("Please upload at least one document before submitting", {
+        variant: "error",
+      });
       return;
     }
 
@@ -362,15 +371,18 @@ const SourcedDocumentsTab = ({
       }
 
       const response = await uploadStageDocuments(payload).unwrap();
-      message.success(response.message || "Documents submitted successfully!");
-
+      enqueueSnackbar(response.message || "Documents submitted successfully!", {
+        variant: "success",
+      });
       setUploadedFiles((prev) => ({ ...prev, [stageId]: [] }));
       setSelectedExistingFiles((prev) => ({ ...prev, [stageId]: [] }));
 
       await refetch();
     } catch (error) {
       console.error("Failed to upload documents:", error);
-      message.error(error?.data?.message || "Failed to submit documents");
+      enqueueSnackbar(error?.data?.message || "Failed to submit documents", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -381,7 +393,9 @@ const SourcedDocumentsTab = ({
     const existingFiles = selectedExistingFiles["workOrder"] || [];
 
     if (woFiles.length === 0 && existingFiles.length === 0) {
-      message.warning("Please upload at least one document before submitting");
+      enqueueSnackbar("Please upload at least one document before submitting", {
+        variant: "error",
+      });
       return;
     }
 
@@ -413,15 +427,18 @@ const SourcedDocumentsTab = ({
       }
 
       const response = await submitWorkOrderDocuments(payload).unwrap();
-      message.success(response.message || "Documents submitted successfully!");
-
+      enqueueSnackbar(response.message || "Documents submitted successfully!", {
+        variant: "success",
+      });
       setUploadedFiles((prev) => ({ ...prev, workOrder: [] }));
       setSelectedExistingFiles((prev) => ({ ...prev, workOrder: [] }));
 
       await refetch();
     } catch (error) {
       console.error("Failed to upload work order documents:", error);
-      message.error(error?.data?.message || "Failed to submit documents");
+      enqueueSnackbar(error?.data?.message || "Failed to submit documents", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -435,7 +452,7 @@ const SourcedDocumentsTab = ({
     const replacement = editReplacements[stageId]?.[docName];
 
     if (!replacement) {
-      message.warning("No replacement document selected");
+      enqueueSnackbar("No replacement document selected", { variant: "error" });
       return;
     }
 
@@ -465,7 +482,9 @@ const SourcedDocumentsTab = ({
       }
 
       const response = await editDocument(payload).unwrap();
-      message.success(response.message || "Document updated successfully!");
+      enqueueSnackbar(response.message || "Document updated successfully!", {
+        variant: "success",
+      });
 
       setEditingDocuments((prev) => {
         const updated = { ...prev };
@@ -489,7 +508,9 @@ const SourcedDocumentsTab = ({
       await refetch();
     } catch (error) {
       console.error("Failed to update document:", error);
-      message.error(error?.data?.message || "Failed to update document");
+      enqueueSnackbar(error?.data?.message || "Failed to update document", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -615,7 +636,10 @@ const SourcedDocumentsTab = ({
                                 if (uploadedDoc.fileUrl) {
                                   window.open(uploadedDoc.fileUrl, "_blank");
                                 } else {
-                                  message.info("File preview not available");
+                                  enqueueSnackbar(
+                                    "File preview not available",
+                                    { variant: "info" }
+                                  );
                                 }
                               }}
                               style={{
@@ -785,7 +809,9 @@ const SourcedDocumentsTab = ({
                       beforeUpload={(file) => {
                         const isLt5M = file.size / 1024 / 1024 < 5;
                         if (!isLt5M) {
-                          message.error("File must be smaller than 5MB!");
+                          enqueueSnackbar("File must be smaller than 5MB!", {
+                            variant: "error",
+                          });
                           return Upload.LIST_IGNORE;
                         }
                         handleReplaceDocument(
@@ -1079,6 +1105,261 @@ const SourcedDocumentsTab = ({
               </Space>
             </div>
           )}
+        </Card>
+      )}
+
+      {sourcedJob.offerDetails?.length > 0 && (
+        <Card style={{ marginBottom: "16px" }}>
+          <Title level={5} style={{ marginBottom: "16px" }}>
+            <FileTextOutlined style={{ marginRight: "8px" }} />
+            Offer Documents
+          </Title>
+
+          {sourcedJob.offerDetails.map((offer, index) => (
+            <div key={offer._id || index} style={{ marginBottom: "24px" }}>
+              {/* Offer Description */}
+              {offer.description && (
+                <div style={{ marginBottom: "16px" }}>
+                  <Text strong>Description: </Text>
+                  <Text>{offer.description}</Text>
+                </div>
+              )}
+
+              {/* Current Status */}
+              <div style={{ marginBottom: "16px" }}>
+                <Text strong>Status: </Text>
+                <Tag
+                  color={
+                    offer.currentStatus === "offer-accepted"
+                      ? "green"
+                      : offer.currentStatus === "offer-rejected"
+                      ? "red"
+                      : "orange"
+                  }
+                >
+                  {offer.currentStatus?.toUpperCase().replace("-", " ") ||
+                    "PENDING"}
+                </Tag>
+              </div>
+
+              {/* Documents Grid */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                {/* Original Offer Document */}
+                {offer.offerDocument && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      border: "2px solid #1890ff",
+                      borderRadius: "8px",
+                      backgroundColor: "#e6f7ff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <FileTextOutlined
+                          style={{ color: "#1890ff", fontSize: "20px" }}
+                        />
+                        <div>
+                          <Text strong style={{ display: "block" }}>
+                            {offer.offerDocument.documentName || "Offer Letter"}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {offer.offerDocument.fileName}
+                          </Text>
+                        </div>
+                      </div>
+                      <Tag color="blue">Original</Tag>
+                    </div>
+
+                    {offer.offerDocument.uploadedAt && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "12px",
+                          display: "block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Uploaded:{" "}
+                        {new Date(
+                          offer.offerDocument.uploadedAt
+                        ).toLocaleString()}
+                      </Text>
+                    )}
+
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() =>
+                        window.open(offer.offerDocument.fileUrl, "_blank")
+                      }
+                      style={{ width: "100%" }}
+                    >
+                      View Offer Letter
+                    </Button>
+                  </div>
+                )}
+
+                {/* Signed Offer Document */}
+                {offer.signedOfferDocument && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      border: "2px solid #52c41a",
+                      borderRadius: "8px",
+                      backgroundColor: "#f6ffed",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <CheckCircleOutlined
+                          style={{ color: "#52c41a", fontSize: "20px" }}
+                        />
+                        <div>
+                          <Text strong style={{ display: "block" }}>
+                            {offer.signedOfferDocument.documentName ||
+                              "Signed Offer"}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {offer.signedOfferDocument.fileName}
+                          </Text>
+                        </div>
+                      </div>
+                      <Tag color="green" icon={<CheckCircleOutlined />}>
+                        Signed
+                      </Tag>
+                    </div>
+
+                    {offer.signedOfferDocument.uploadedAt && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "12px",
+                          display: "block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Signed:{" "}
+                        {new Date(
+                          offer.signedOfferDocument.uploadedAt
+                        ).toLocaleString()}
+                      </Text>
+                    )}
+
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() =>
+                        window.open(offer.signedOfferDocument.fileUrl, "_blank")
+                      }
+                      style={{
+                        width: "100%",
+                        backgroundColor: "#52c41a",
+                        borderColor: "#52c41a",
+                      }}
+                    >
+                      View Signed Offer
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Status History */}
+              {offer.statusHistory?.length > 0 && (
+                <div style={{ marginTop: "16px" }}>
+                  <Title level={5}>Status History</Title>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {offer.statusHistory.map((history, historyIndex) => (
+                      <div
+                        key={history._id || historyIndex}
+                        style={{
+                          padding: "12px",
+                          border: "1px solid #d9d9d9",
+                          borderRadius: "6px",
+                          backgroundColor: "#fafafa",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <Tag
+                            color={
+                              history.status === "offer-accepted"
+                                ? "green"
+                                : history.status === "offer-rejected"
+                                ? "red"
+                                : "orange"
+                            }
+                          >
+                            {history.status?.toUpperCase().replace("-", " ")}
+                          </Tag>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {new Date(history.changedAt).toLocaleString()}
+                          </Text>
+                        </div>
+                        {history.description && (
+                          <Text style={{ fontSize: "13px" }}>
+                            {history.description}
+                          </Text>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {offer.createdAt && (
+                <div style={{ marginTop: "12px" }}>
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    Offer Created: {new Date(offer.createdAt).toLocaleString()}
+                  </Text>
+                </div>
+              )}
+            </div>
+          ))}
         </Card>
       )}
 
@@ -1569,8 +1850,9 @@ const SourcedDocumentsTab = ({
                               beforeUpload={(file) => {
                                 const isLt5M = file.size / 1024 / 1024 < 5;
                                 if (!isLt5M) {
-                                  message.error(
-                                    "File must be smaller than 5MB!"
+                                  enqueueSnackbar(
+                                    "File must be smaller than 5MB!",
+                                    { variant: "error" }
                                   );
                                   return Upload.LIST_IGNORE;
                                 }
@@ -1753,7 +2035,9 @@ const SourcedDocumentsTab = ({
                         ...prev,
                         [stage._id]: [],
                       }));
-                      message.success("All pending uploads cleared");
+                      enqueueSnackbar("All pending uploads cleared", {
+                        variant: "success",
+                      });
                     }}
                   >
                     Clear All Pending
@@ -1873,7 +2157,9 @@ const SourcedDocumentsTab = ({
                         ...prev,
                         [stage._id]: [],
                       }));
-                      message.success("All selected files cleared");
+                      enqueueSnackbar("All selected files cleared", {
+                        variant: "success",
+                      });
                     }}
                   >
                     Clear All Selected

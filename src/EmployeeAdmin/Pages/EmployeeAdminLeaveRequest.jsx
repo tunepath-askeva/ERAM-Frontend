@@ -20,10 +20,12 @@ import { useGetEmployeeAdminLeaveHistoryQuery } from "../../Slices/Employee/Empl
 import LeaveRequestModal from "../Components/LeaveRequestModal";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import { useSelector } from "react-redux";
+import { useSnackbar } from "notistack";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const EmployeeAdminLeaveRequest = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [selectedLeaveId, setSelectedLeaveId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeaveData] = useState([]);
@@ -248,6 +250,14 @@ const EmployeeAdminLeaveRequest = () => {
   }
 
   if (error) {
+    enqueueSnackbar("Error loading leave requests. Please try again.", {
+      variant: "error",
+      anchorOrigin: {
+        vertical: "top",
+        horizontal: "right",
+      },
+    });
+
     return (
       <div style={{ padding: "24px", textAlign: "center" }}>
         <Text type="danger">

@@ -1093,6 +1093,262 @@ const DocumentsTab = ({
         </Card>
       )}
 
+      {/* Offer Documents Section */}
+      {appliedJob?.offerDetails?.length > 0 && (
+        <Card style={{ marginBottom: "16px" }}>
+          <Title level={5} style={{ marginBottom: "16px" }}>
+            <FileTextOutlined style={{ marginRight: "8px" }} />
+            Offer Documents
+          </Title>
+
+          {appliedJob.offerDetails.map((offer, index) => (
+            <div key={offer._id || index} style={{ marginBottom: "24px" }}>
+              {/* Offer Description */}
+              {offer.description && (
+                <div style={{ marginBottom: "16px" }}>
+                  <Text strong>Description: </Text>
+                  <Text>{offer.description}</Text>
+                </div>
+              )}
+
+              {/* Current Status */}
+              <div style={{ marginBottom: "16px" }}>
+                <Text strong>Status: </Text>
+                <Tag
+                  color={
+                    offer.currentStatus === "offer-accepted"
+                      ? "green"
+                      : offer.currentStatus === "offer-rejected"
+                      ? "red"
+                      : "orange"
+                  }
+                >
+                  {offer.currentStatus?.toUpperCase().replace("-", " ") ||
+                    "PENDING"}
+                </Tag>
+              </div>
+
+              {/* Documents Grid */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                {/* Original Offer Document */}
+                {offer.offerDocument && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      border: "2px solid #1890ff",
+                      borderRadius: "8px",
+                      backgroundColor: "#e6f7ff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <FileTextOutlined
+                          style={{ color: "#1890ff", fontSize: "20px" }}
+                        />
+                        <div>
+                          <Text strong style={{ display: "block" }}>
+                            {offer.offerDocument.documentName || "Offer Letter"}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {offer.offerDocument.fileName}
+                          </Text>
+                        </div>
+                      </div>
+                      <Tag color="blue">Original</Tag>
+                    </div>
+
+                    {offer.offerDocument.uploadedAt && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "12px",
+                          display: "block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Uploaded:{" "}
+                        {new Date(
+                          offer.offerDocument.uploadedAt
+                        ).toLocaleString()}
+                      </Text>
+                    )}
+
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() =>
+                        window.open(offer.offerDocument.fileUrl, "_blank")
+                      }
+                      style={{ width: "100%" }}
+                    >
+                      View Offer Letter
+                    </Button>
+                  </div>
+                )}
+
+                {/* Signed Offer Document */}
+                {offer.signedOfferDocument && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      border: "2px solid #52c41a",
+                      borderRadius: "8px",
+                      backgroundColor: "#f6ffed",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <CheckCircleOutlined
+                          style={{ color: "#52c41a", fontSize: "20px" }}
+                        />
+                        <div>
+                          <Text strong style={{ display: "block" }}>
+                            {offer.signedOfferDocument.documentName ||
+                              "Signed Offer"}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {offer.signedOfferDocument.fileName}
+                          </Text>
+                        </div>
+                      </div>
+                      <Tag color="green" icon={<CheckCircleOutlined />}>
+                        Signed
+                      </Tag>
+                    </div>
+
+                    {offer.signedOfferDocument.uploadedAt && (
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: "12px",
+                          display: "block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Signed:{" "}
+                        {new Date(
+                          offer.signedOfferDocument.uploadedAt
+                        ).toLocaleString()}
+                      </Text>
+                    )}
+
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() =>
+                        window.open(offer.signedOfferDocument.fileUrl, "_blank")
+                      }
+                      style={{
+                        width: "100%",
+                        backgroundColor: "#52c41a",
+                        borderColor: "#52c41a",
+                      }}
+                    >
+                      View Signed Offer
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Status History */}
+              {offer.statusHistory?.length > 0 && (
+                <div style={{ marginTop: "16px" }}>
+                  <Title level={5}>Status History</Title>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {offer.statusHistory.map((history, historyIndex) => (
+                      <div
+                        key={history._id || historyIndex}
+                        style={{
+                          padding: "12px",
+                          border: "1px solid #d9d9d9",
+                          borderRadius: "6px",
+                          backgroundColor: "#fafafa",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <Tag
+                            color={
+                              history.status === "offer-accepted"
+                                ? "green"
+                                : history.status === "offer-rejected"
+                                ? "red"
+                                : "orange"
+                            }
+                          >
+                            {history.status?.toUpperCase().replace("-", " ")}
+                          </Tag>
+                          <Text type="secondary" style={{ fontSize: "12px" }}>
+                            {new Date(history.changedAt).toLocaleString()}
+                          </Text>
+                        </div>
+                        {history.description && (
+                          <Text style={{ fontSize: "13px" }}>
+                            {history.description}
+                          </Text>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {offer?.createdAt && (
+                <div style={{ marginTop: "12px" }}>
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    Offer Created: {new Date(offer?.createdAt).toLocaleString()}
+                  </Text>
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
+
       {/* Stage Documents Section */}
       {stageProgress?.map((stage, index) => {
         const fullStage = stage.fullStage || stage;

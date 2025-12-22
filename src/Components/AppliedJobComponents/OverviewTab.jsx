@@ -94,9 +94,9 @@ const OverviewTab = ({ appliedJob, workOrder }) => {
         </Descriptions.Item>
         <Descriptions.Item label="Salary Range">
           {workOrder.salaryMin && workOrder.salaryMax
-            ? `${(workOrder.salaryMin)} - ${(
-                workOrder.salaryMax
-              )} (${workOrder.salaryType || "monthly"})`
+            ? `${workOrder.salaryMin} - ${workOrder.salaryMax} (${
+                workOrder.salaryType || "monthly"
+              })`
             : "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Experience Required">
@@ -138,6 +138,32 @@ const OverviewTab = ({ appliedJob, workOrder }) => {
             {appliedJob.status?.replace("_", " ").toUpperCase() || "PENDING"}
           </Tag>
         </Descriptions.Item>
+        {appliedJob.offerDetails?.length > 0 && (
+          <Descriptions.Item label="Offer Status">
+            <Tag
+              color={
+                appliedJob.offerDetails[0].currentStatus === "offer-accepted"
+                  ? "green"
+                  : appliedJob.offerDetails[0].currentStatus ===
+                    "offer-rejected"
+                  ? "red"
+                  : "orange"
+              }
+              icon={
+                appliedJob.offerDetails[0].currentStatus ===
+                "offer-accepted" ? (
+                  <CheckCircleOutlined />
+                ) : (
+                  <ClockCircleOutlined />
+                )
+              }
+            >
+              {appliedJob.offerDetails[0].currentStatus
+                ?.toUpperCase()
+                .replace("-", " ") || "PENDING"}
+            </Tag>
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="Applied Status">
           <Tag color={appliedJob.isSourced === "true" ? "green" : "red"}>
             {appliedJob.isSourced === "true" ? "SOURCED" : "APPLIED"}
