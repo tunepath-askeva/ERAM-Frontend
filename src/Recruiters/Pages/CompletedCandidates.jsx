@@ -182,7 +182,7 @@ const CompletedCandidates = () => {
       await rejectCandidateFromStage({
         id: candidateToReject._id,
         rejectionReason: rejectionReason.trim(),
-        stageId: undefined
+        stageId: undefined,
       }).unwrap();
 
       enqueueSnackbar("Completed candidate rejected successfully", {
@@ -466,6 +466,15 @@ const CompletedCandidates = () => {
           stageId: stage._id,
         });
       });
+
+      stage.additionalStageDocuments?.forEach((doc) => {
+        allDocuments.push({
+          ...doc,
+          stageName: stage.stageName,
+          stageId: stage._id,
+          isAdditional: true,
+        });
+      });
     });
 
     if (candidate.workOrderuploadedDocuments?.length > 0) {
@@ -511,6 +520,11 @@ const CompletedCandidates = () => {
                     <Tag size="small" color="blue">
                       {document.stageName}
                     </Tag>
+                    {document.isAdditional && (
+                      <Tag color="orange" size="small">
+                        Additional Document
+                      </Tag>
+                    )}
                   </Space>
                 }
                 description={
