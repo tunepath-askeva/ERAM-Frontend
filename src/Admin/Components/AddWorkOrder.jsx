@@ -2092,6 +2092,44 @@ const AddWorkOrder = () => {
                       </Form.Item>
                     </Col>
                   </Row>
+                  {/* Required Documents Display */}
+                  <Col xs={24} style={{ marginTop: "8px" }}>
+                    <Form.Item
+                      label="Stage Required Documents"
+                      style={{ marginBottom: 0 }}
+                      labelCol={{ span: 24 }}
+                      wrapperCol={{ span: 24 }}
+                    >
+                      <div
+                        style={{
+                          padding: "8px",
+                          backgroundColor: "#f8f9fa",
+                          borderRadius: "4px",
+                          border: "1px solid #e8e8e8",
+                        }}
+                      >
+                        {stage.requiredDocuments?.length > 0 ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "4px",
+                            }}
+                          >
+                            {stage.requiredDocuments.map((doc, index) => (
+                              <Tag key={index} color="blue" size="small">
+                                {doc}
+                              </Tag>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: "11px", color: "#999" }}>
+                            No documents required for this stage
+                          </span>
+                        )}
+                      </div>
+                    </Form.Item>
+                  </Col>
                 </Card>
               </>
             );

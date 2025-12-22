@@ -56,6 +56,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../Global/SkeletonLoader";
 import ReactMarkdown from "react-markdown";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
@@ -63,6 +64,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
@@ -760,19 +762,38 @@ const Notifications = () => {
                           </div>
                         )}
 
-                        {!item.isRead && !isOfferLetterNotification(item) && (
-                          <Button
-                            type="link"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsRead(item._id);
-                            }}
-                            style={{ padding: 0, fontSize: "12px" }}
-                          >
-                            Mark as read
-                          </Button>
-                        )}
+                        <Space
+                          direction="vertical"
+                          size={4}
+                          style={{ marginTop: "8px" }}
+                        >
+                          {!item.isRead && !isOfferLetterNotification(item) && (
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsRead(item._id);
+                              }}
+                              style={{ padding: 0, fontSize: "12px" }}
+                            >
+                              Mark as read
+                            </Button>
+                          )}
+
+                          {item.redirectPath && (
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => {
+                                navigate(item.redirectPath);
+                              }}
+                              style={{ padding: 0, color: "#da2c46" }}
+                            >
+                              Click here to visit →
+                            </Button>
+                          )}
+                        </Space>
                       </div>
                     </div>
                   }

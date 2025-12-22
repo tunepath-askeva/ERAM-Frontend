@@ -1969,6 +1969,48 @@ const EditWorkOrder = () => {
                     </Form.Item>
                   </Col>
                 </Row>
+                <Row style={{ marginTop: "8px" }}>
+                  <Col span={24}>
+                    <div
+                      style={{
+                        padding: "8px",
+                        backgroundColor: "#f8f8f8",
+                        borderRadius: "4px",
+                        border: "1px dashed #d9d9d9",
+                      }}
+                    >
+                      <strong style={{ fontSize: "12px" }}>
+                        Required Documents:{" "}
+                      </strong>
+                      {stage.requiredDocuments?.length > 0 ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {stage.requiredDocuments.map((doc, index) => (
+                            <Tag key={index} color="geekblue" size="small">
+                              {doc}
+                            </Tag>
+                          ))}
+                        </div>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: "#999",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          None
+                        </span>
+                      )}
+                    </div>
+                  </Col>
+                </Row>
               </Card>
             );
           })}
