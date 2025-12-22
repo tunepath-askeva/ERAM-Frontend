@@ -565,16 +565,39 @@ const EmployeeAdminAllEmployees = () => {
                           padding: "8px",
                           backgroundColor: "#fff1f0",
                           borderRadius: "4px",
-                          maxHeight: "120px",
+                          maxHeight: "200px", // INCREASE THIS
                           overflowY: "auto",
                         }}
                       >
                         {importResults.invalid.map((inv, idx) => (
                           <div
                             key={idx}
-                            style={{ fontSize: "12px", marginBottom: "4px" }}
+                            style={{
+                              fontSize: "12px",
+                              marginBottom: "8px", // INCREASE spacing
+                              paddingBottom: "8px",
+                              borderBottom:
+                                idx < importResults.invalid.length - 1
+                                  ? "1px solid #ffccc7"
+                                  : "none", // ADD border
+                            }}
                           >
-                            • <Text code>{inv.email}</Text> - {inv.reason}
+                            • <Text code>{inv.email}</Text>
+                            {inv.fullName && (
+                              <Text> ({inv.fullName})</Text>
+                            )}{" "}
+                            {/* ADD name if available */}
+                            <div
+                              style={{
+                                marginLeft: "16px",
+                                marginTop: "4px",
+                                color: "#8c8c8c",
+                                whiteSpace: "pre-wrap", // ALLOW wrapping for long reasons
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              Reason: {inv.reason}
+                            </div>
                           </div>
                         ))}
                       </div>
