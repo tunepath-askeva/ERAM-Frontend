@@ -176,6 +176,7 @@ export const getPermissionGroups = (recruiterType) => {
         { key: "interviews", label: "Assigned Interviews" },
         { key: "staged-candidates", label: "Staged Candidates" },
         { key: "completed-candidates", label: "Completed Candidates" },
+        { key: "rejected-candidates", label: "Rejected Candidates" },
         { key: "approvals", label: "Approvals" },
         { key: "employees", label: "Employees" },
         { key: "notifications", label: "Notifications" },
@@ -307,6 +308,7 @@ export const getPermissionGroups = (recruiterType) => {
       icon: <SettingOutlined />,
       permissions: [
         { key: "convert-to-employee", label: "Convert to Employee" },
+        { key: "rej-candidate", label: "Reject Candidate" },
         {
           key: "view-candidate-details-tab",
           label: "View Candidate Details Tab(in profile drawer)",

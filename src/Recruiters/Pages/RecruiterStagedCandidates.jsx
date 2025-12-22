@@ -48,12 +48,14 @@ import {
   useLazyGetPipelineJobsExportQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const RecruiterStagedCandidates = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [activeStage, setActiveStage] = useState(null);
@@ -79,6 +81,20 @@ const RecruiterStagedCandidates = () => {
     return recruiterPermissions.includes(permissionKey);
   };
 
+  const {
+    data: apiData,
+    isLoading,
+    error,
+    isFetching,
+    refetch,
+  } = useGetPipelineJobsQuery({
+    page: currentPage,
+    limit: pageSize,
+    search: debouncedSearchText,
+    status: filterStatus,
+    jobId: filterJob,
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchText(searchText);
@@ -89,21 +105,16 @@ const RecruiterStagedCandidates = () => {
   }, [searchText]);
 
   useEffect(() => {
+    if (location.state?.refresh) {
+      refetch(); // This triggers RTK Query refetch
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, refetch]);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [filterStatus, filterJob]);
-
-  const {
-    data: apiData,
-    isLoading,
-    error,
-    isFetching,
-  } = useGetPipelineJobsQuery({
-    page: currentPage,
-    limit: pageSize,
-    search: debouncedSearchText,
-    status: filterStatus,
-    jobId: filterJob,
-  });
 
   const [triggerExport, { isFetching: isExporting }] =
     useLazyGetPipelineJobsExportQuery();

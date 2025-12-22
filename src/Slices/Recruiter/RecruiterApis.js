@@ -302,6 +302,34 @@ export const recruiterApi = createApi({
         body: payload,
       }),
     }),
+    rejectCandidateFromStage: builder.mutation({
+      query: ({ id, rejectionReason, stageId }) => {
+        const body = { rejectionReason };
+        // Only include stageId if it's defined
+        if (stageId !== undefined) {
+          body.stageId = stageId;
+        }
+        return {
+          url: `/reject-candidate/${id}`,
+          method: "PATCH",
+          body,
+        };
+      },
+    }),
+    getRejectedCandidates: builder.query({
+      query: ({ page = 1, limit = 10, search = "" }) => ({
+        url: `/rejected-candidates`,
+        method: "GET",
+        params: { page, limit, search },
+      }),
+    }),
+
+    getRejectedCandidateById: builder.query({
+      query: (id) => ({
+        url: `/rejected-candidates/${id}`,
+        method: "GET",
+      }),
+    }),
 
     getPipelineCompletedCandidates: builder.query({
       query: (params = {}) => {
@@ -874,5 +902,8 @@ export const {
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
   useUndoStageMutation,
-  useLazyExportEmployeesCSVQuery
+  useLazyExportEmployeesCSVQuery,
+  useRejectCandidateFromStageMutation,
+  useGetRejectedCandidateByIdQuery,
+  useGetRejectedCandidatesQuery,
 } = recruiterApi;

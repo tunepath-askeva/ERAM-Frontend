@@ -9,6 +9,7 @@ import {
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
   useUndoStageMutation,
+  useRejectCandidateFromStageMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
@@ -63,6 +64,9 @@ const RecruiterJobPipeline = () => {
   const [documentToDelete, setDocumentToDelete] = useState(null);
   const [isUndoModalVisible, setIsUndoModalVisible] = useState(false);
   const [stageToUndo, setStageToUndo] = useState(null);
+  const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [candidateToReject, setCandidateToReject] = useState(null);
 
   const primaryColor = "#da2c46";
   const recruiterPermissions = useSelector(
@@ -97,6 +101,8 @@ const RecruiterJobPipeline = () => {
   const [deleteStageDocument, { isLoading: isDeletingDocument }] =
     useDeleteStageDocumentMutation();
   const [undoStage, { isLoading: isUndoingStage }] = useUndoStageMutation();
+  const [rejectCandidateFromStage, { isLoading: isRejecting }] =
+    useRejectCandidateFromStageMutation();
 
   const { data: recMembers } = useGetRecruitersNameQuery();
   const activeRecruiters =
@@ -110,7 +116,7 @@ const RecruiterJobPipeline = () => {
       const workOrder = pipelineData.workOrder;
       const user = pipelineData.user;
       const stageProgress = pipelineData.stageProgress || [];
- const completedStages = pipelineData.completedStages || [];
+      const completedStages = pipelineData.completedStages || [];
       const fullPipeline = pipelineData.tagPipelineId
         ? pipelineData.fullPipeline ||
           stageProgress[0]?.pipelineId || { stages: [] }
@@ -135,7 +141,7 @@ const RecruiterJobPipeline = () => {
         stageStatus: currentStageProgress?.stageStatus || "pending",
         appliedDate: pipelineData.createdAt,
         stageProgress: stageProgress,
-         completedStages: completedStages, 
+        completedStages: completedStages,
         isSourced: pipelineData.isSourced === "true",
         responses: pipelineData.responses || [],
         uploadedDocuments: currentStageProgress?.uploadedDocuments || [],
@@ -287,6 +293,48 @@ const RecruiterJobPipeline = () => {
     }
   };
 
+  const handleRejectClick = (candidateId) => {
+    setCandidateToReject(candidateId);
+    setIsRejectModalVisible(true);
+  };
+
+  const handleRejectCandidate = async () => {
+    try {
+      if (!rejectionReason.trim()) {
+        message.error("Please provide a rejection reason");
+        return;
+      }
+
+      if (!activeStage) {
+        message.error("No active stage selected");
+        return;
+      }
+
+      await rejectCandidateFromStage({
+        id: candidateToReject,
+        rejectionReason: rejectionReason.trim(),
+        stageId: activeStage,
+      }).unwrap();
+
+      message.success("Candidate rejected successfully");
+
+      // Reset state
+      setIsRejectModalVisible(false);
+      setRejectionReason("");
+      setCandidateToReject(null);
+
+      await refetch();
+      if (refreshData) {
+        await refreshData();
+      }
+
+      navigate("/recruiter/staged-candidates", { state: { refresh: true } });
+    } catch (error) {
+      console.error("Error rejecting candidate:", error);
+      message.error(error?.data?.message || "Failed to reject candidate");
+    }
+  };
+
   const getNextStageId = (currentStageId) => {
     if (!processedJobData || !currentStageId) return null;
 
@@ -348,7 +396,7 @@ const RecruiterJobPipeline = () => {
 
     return null;
   };
-  
+
   const getAllNextStages = (currentStageId) => {
     if (!processedJobData || !currentStageId) return [];
 
@@ -708,6 +756,8 @@ const RecruiterJobPipeline = () => {
         setDocumentToDelete={setDocumentToDelete}
         handleUndoStageClick={handleUndoStageClick}
         isUndoingStage={isUndoingStage}
+        handleRejectClick={handleRejectClick}
+        isRejecting={isRejecting}
       />
 
       <StageModals
@@ -776,6 +826,12 @@ const RecruiterJobPipeline = () => {
         undoStage={undoStage}
         isUndoingStage={isUndoingStage}
         handleUndoStage={handleUndoStage}
+        isRejectModalVisible={isRejectModalVisible}
+        setIsRejectModalVisible={setIsRejectModalVisible}
+        rejectionReason={rejectionReason}
+        setRejectionReason={setRejectionReason}
+        handleRejectCandidate={handleRejectCandidate}
+        isRejecting={isRejecting}
       />
     </div>
   );

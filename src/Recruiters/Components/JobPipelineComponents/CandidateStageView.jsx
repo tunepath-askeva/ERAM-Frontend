@@ -67,6 +67,8 @@ const CandidateStageView = ({
   setDocumentToDelete,
   handleUndoStageClick,
   isUndoingStage,
+   handleRejectClick,
+  isRejecting,
 }) => {
   const screens = useBreakpoint();
 
@@ -659,6 +661,23 @@ const CandidateStageView = ({
                     block={screens.xs}
                   >
                     Undo Stage Move
+                  </Button>
+                )}
+
+              {isCurrentStage &&
+                !hasAnyRecruiterApproved &&
+                hasPermission("reject-candidate") && (
+                  <Button
+                    danger
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRejectClick(candidate._id);
+                    }}
+                    loading={isRejecting}
+                    style={{ width: screens.xs ? "100%" : "auto" }}
+                    block={screens.xs}
+                  >
+                    Reject Candidate
                   </Button>
                 )}
 

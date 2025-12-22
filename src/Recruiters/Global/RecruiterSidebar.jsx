@@ -126,6 +126,12 @@ const RecruiterSidebar = ({
       permission: "completed-candidates",
     },
     {
+      key: "/recruiter/rejected-candidates",
+      icon: <UsergroupAddOutlined />,
+      label: "Rejected Candidates",
+      permission: "rejected-candidates",
+    },
+    {
       key: "/recruiter/approvals",
       icon: <CheckOutlined />,
       label: "Approvals",

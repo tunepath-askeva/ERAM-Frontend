@@ -46,6 +46,7 @@ import {
   useGetPipelineCompletedCandidatesQuery,
   useConvertEmployeeMutation,
   useGetPipelineCompletedCandidateByIdQuery,
+  useRejectCandidateFromStageMutation,
 } from "../../Slices/Recruiter/RecruiterApis"; // Update this path
 import { debounce } from "lodash";
 import { useSelector } from "react-redux";
@@ -73,6 +74,9 @@ const CompletedCandidates = () => {
   const [convertModalVisible, setConvertModalVisible] = useState(false);
   const [convertForm] = Form.useForm();
   const [candidateToConvert, setCandidateToConvert] = useState(null);
+  const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [candidateToReject, setCandidateToReject] = useState(null);
 
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -121,6 +125,9 @@ const CompletedCandidates = () => {
   const [convertEmployee, { isLoading: isConverting }] =
     useConvertEmployeeMutation();
 
+  const [rejectCandidateFromStage, { isLoading: isRejecting }] =
+    useRejectCandidateFromStageMutation();
+
   React.useEffect(() => {
     if (apiData?.total) {
       setPagination((prev) => ({
@@ -152,6 +159,49 @@ const CompletedCandidates = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleRejectCompleted = (candidate) => {
+    setCandidateToReject(candidate);
+    setIsRejectModalVisible(true);
+  };
+
+  const handleConfirmReject = async () => {
+    try {
+      if (!rejectionReason.trim()) {
+        message.error("Please provide a rejection reason");
+        return;
+      }
+
+      if (!candidateToReject?._id) {
+        message.error("No candidate selected");
+        return;
+      }
+
+      // Call API WITHOUT stageId for completed candidates
+      await rejectCandidateFromStage({
+        id: candidateToReject._id,
+        rejectionReason: rejectionReason.trim(),
+        stageId: undefined
+      }).unwrap();
+
+      enqueueSnackbar("Completed candidate rejected successfully", {
+        variant: "success",
+      });
+
+      // Reset state
+      setIsRejectModalVisible(false);
+      setRejectionReason("");
+      setCandidateToReject(null);
+
+      // Refresh data
+      refetch();
+    } catch (error) {
+      console.error("Error rejecting candidate:", error);
+      enqueueSnackbar(error?.data?.message || "Failed to reject candidate", {
+        variant: "error",
+      });
+    }
   };
 
   const getFileIcon = (fileName) => {
@@ -600,6 +650,16 @@ const CompletedCandidates = () => {
               }}
             >
               Convert
+            </Button>
+          )}
+
+          {hasPermission("rej-candidate") && (
+            <Button
+              danger
+              icon={<CloseOutlined />}
+              onClick={() => handleRejectCompleted(record)}
+            >
+              Reject
             </Button>
           )}
         </Space>
@@ -1323,6 +1383,89 @@ const CompletedCandidates = () => {
             </Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Reject Completed Candidate"
+        open={isRejectModalVisible}
+        onOk={handleConfirmReject}
+        onCancel={() => {
+          setIsRejectModalVisible(false);
+          setRejectionReason("");
+          setCandidateToReject(null);
+        }}
+        okText="Confirm Rejection"
+        cancelText="Cancel"
+        okType="danger"
+        okButtonProps={{
+          loading: isRejecting,
+          disabled: !rejectionReason.trim(),
+        }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text strong style={{ fontSize: "16px" }}>
+            Are you sure you want to reject this completed candidate?
+          </Text>
+
+          {candidateToReject && (
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "12px",
+                backgroundColor: "#f5f5f5",
+                borderRadius: "6px",
+              }}
+            >
+              <Text strong>Candidate: </Text>
+              <Text>{candidateToReject.user?.fullName}</Text>
+              <br />
+              <Text strong>Work Order: </Text>
+              <Text>{candidateToReject.workOrder?.title}</Text>
+              <br />
+              <Text strong>Status: </Text>
+              <Tag color="success">COMPLETED</Tag>
+            </div>
+          )}
+
+          <Form.Item
+            label="Rejection Reason"
+            required
+            style={{ marginTop: "16px", marginBottom: "8px" }}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Provide detailed reason for rejection (minimum 10 characters)"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff2f0",
+              borderRadius: "6px",
+              border: "1px solid #ffccc7",
+            }}
+          >
+            <Text strong style={{ color: "#cf1322" }}>
+              ⚠️ Warning
+            </Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              This candidate has already completed the pipeline. Rejecting will:
+              <ul style={{ margin: "8px 0", paddingLeft: "20px" }}>
+                <li>Change status from "completed" to "rejected"</li>
+                <li>Record this rejection in the system</li>
+                <li>Notify the candidate and relevant recruiters</li>
+                <li>This action cannot be undone</li>
+              </ul>
+            </Text>
+          </div>
+        </div>
       </Modal>
 
       <style jsx>{`

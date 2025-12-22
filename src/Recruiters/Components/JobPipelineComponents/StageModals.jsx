@@ -85,6 +85,12 @@ const StageModals = ({
   handleUndoStage,
   uploadedDocumentFile,
   setUploadedDocumentFile,
+  isRejectModalVisible,
+  setIsRejectModalVisible,
+  rejectionReason,
+  setRejectionReason,
+  handleRejectCandidate,
+  isRejecting,
 }) => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -967,6 +973,85 @@ const StageModals = ({
             <Text type="secondary" style={{ fontSize: "12px" }}>
               This will move the candidate back to the previous stage. All
               progress in the current stage will be reverted.
+            </Text>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Reject Candidate"
+        visible={isRejectModalVisible}
+        onOk={handleRejectCandidate}
+        onCancel={() => {
+          setIsRejectModalVisible(false);
+          setRejectionReason("");
+        }}
+        okText="Confirm Rejection"
+        cancelText="Cancel"
+        okType="danger"
+        okButtonProps={{
+          loading: isRejecting,
+          disabled: !rejectionReason.trim(),
+        }}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <Text strong style={{ fontSize: "16px" }}>
+            Are you sure you want to reject this candidate?
+          </Text>
+
+          {selectedCandidate && (
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "12px",
+                backgroundColor: "#f5f5f5",
+                borderRadius: "6px",
+              }}
+            >
+              <Text strong>Candidate: </Text>
+              <Text>{selectedCandidate.name}</Text>
+              <br />
+              <Text strong>Current Stage: </Text>
+              <Text>{getStageName(activeStage)}</Text>
+            </div>
+          )}
+
+          <Form.Item
+            label="Rejection Reason"
+            required
+            style={{ marginTop: "16px", marginBottom: "8px" }}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Please provide a detailed reason for rejection (minimum 10 characters)"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff2f0",
+              borderRadius: "6px",
+              border: "1px solid #ffccc7",
+            }}
+          >
+            <Text strong style={{ color: "#cf1322" }}>
+              ⚠️ Warning
+            </Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              This action will:
+              <ul style={{ margin: "8px 0", paddingLeft: "20px" }}>
+                <li>Move the candidate to "rejected" status</li>
+                <li>Record rejection details in the system</li>
+                <li>Notify the candidate and relevant recruiters</li>
+                <li>This action cannot be undone</li>
+              </ul>
             </Text>
           </div>
         </div>

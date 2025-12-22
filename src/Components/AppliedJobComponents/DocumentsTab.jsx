@@ -22,6 +22,7 @@ import {
   useSubmitWorkOrderDocumentsMutation,
   useEditDocumentMutation,
 } from "../../Slices/Users/UserApis";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 
@@ -37,6 +38,7 @@ const DocumentsTab = ({
   setEditReplacements,
   refetch,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadStageDocuments] = useUploadStageDocumentsMutation();
   const [submitWorkOrderDocuments] = useSubmitWorkOrderDocumentsMutation();
@@ -115,7 +117,7 @@ const DocumentsTab = ({
   const handleSelectExistingFile = (stageId, certificate, documentType) => {
     // Add this check at the beginning
     if (!certificate) {
-      message.error("Certificate not found");
+      enqueueSnackbar("Certificate not found", { variant: "error" });
       return;
     }
 
@@ -131,8 +133,11 @@ const DocumentsTab = ({
         },
       ],
     }));
-    message.success(
-      `${certificate.fileName} selected from existing certificates`
+    enqueueSnackbar(
+      `${certificate.fileName} selected from existing certificates`,
+      {
+        variant: "success",
+      }
     );
   };
 
@@ -246,7 +251,7 @@ const DocumentsTab = ({
         }));
       }
     }
-    message.success(`Document replaced successfully`);
+    enqueueSnackbar("Document replaced successfully", { variant: "success" });
   };
 
   const handleCancelEdit = (stageId, docName) => {
@@ -273,7 +278,7 @@ const DocumentsTab = ({
     setUploadedFiles((prev) => ({ ...prev, [stageId]: [] }));
     setSelectedExistingFiles((prev) => ({ ...prev, [stageId]: [] }));
     setEditingDocuments((prev) => ({ ...prev, [stageId]: {} }));
-    message.success("All pending documents cleared");
+    enqueueSnackbar("All pending documents cleared", { variant: "success" });
   };
 
   const handleFileUpload = (stageId, docType) => {
@@ -295,7 +300,9 @@ const DocumentsTab = ({
             },
           ],
         }));
-        message.success(`${file.name} file uploaded successfully.`);
+        enqueueSnackbar(`${file.name} file uploaded successfully`, {
+          variant: "success",
+        });
       }
     };
   };
@@ -307,7 +314,7 @@ const DocumentsTab = ({
     beforeUpload: (file) => {
       const isLt5M = file.size / 1024 / 1024 < 5;
       if (!isLt5M) {
-        message.error("File must be smaller than 5MB!");
+        enqueueSnackbar("File must be smaller than 5MB!", { variant: "error" });
         return Upload.LIST_IGNORE;
       }
       return true;
@@ -326,10 +333,11 @@ const DocumentsTab = ({
     const stage = appliedJob.stageProgress.find((s) => s._id === stageId);
 
     if (stageFiles.length === 0 && existingFiles.length === 0) {
-      message.warning("Please upload at least one document before submitting");
+      enqueueSnackbar("Please upload at least one document before submitting", {
+        variant: "error",
+      });
       return;
     }
-
     setIsSubmitting(true);
 
     try {
@@ -361,15 +369,18 @@ const DocumentsTab = ({
       }
 
       const response = await uploadStageDocuments(payload).unwrap();
-      message.success(response.message || "Documents submitted successfully!");
-
+      enqueueSnackbar(response.message || "Documents submitted successfully!", {
+        variant: "success",
+      });
       setUploadedFiles((prev) => ({ ...prev, [stageId]: [] }));
       setSelectedExistingFiles((prev) => ({ ...prev, [stageId]: [] }));
 
       await refetch();
     } catch (error) {
       console.error("Failed to upload documents:", error);
-      message.error(error?.data?.message || "Failed to submit documents");
+      enqueueSnackbar(error?.data?.message || "Failed to submit documents", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -380,7 +391,9 @@ const DocumentsTab = ({
     const existingFiles = selectedExistingFiles["workOrder"] || [];
 
     if (woFiles.length === 0 && existingFiles.length === 0) {
-      message.warning("Please upload at least one document before submitting");
+      enqueueSnackbar("Please upload at least one document before submitting", {
+        variant: "error",
+      });
       return;
     }
 
@@ -412,15 +425,18 @@ const DocumentsTab = ({
       }
 
       const response = await submitWorkOrderDocuments(payload).unwrap();
-      message.success(response.message || "Documents submitted successfully!");
-
+      enqueueSnackbar(response.message || "Documents submitted successfully!", {
+        variant: "success",
+      });
       setUploadedFiles((prev) => ({ ...prev, workOrder: [] }));
       setSelectedExistingFiles((prev) => ({ ...prev, workOrder: [] }));
 
       await refetch();
     } catch (error) {
       console.error("Failed to upload work order documents:", error);
-      message.error(error?.data?.message || "Failed to submit documents");
+      enqueueSnackbar(error?.data?.message || "Failed to submit documents", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -434,7 +450,7 @@ const DocumentsTab = ({
     const replacement = editReplacements[stageId]?.[docName];
 
     if (!replacement) {
-      message.warning("No replacement document selected");
+      enqueueSnackbar("No replacement document selected", { variant: "error" });
       return;
     }
 
@@ -464,7 +480,9 @@ const DocumentsTab = ({
       }
 
       const response = await editDocument(payload).unwrap();
-      message.success(response.message || "Document updated successfully!");
+      enqueueSnackbar(response.message || "Document updated successfully!", {
+        variant: "success",
+      });
 
       setEditingDocuments((prev) => {
         const updated = { ...prev };
@@ -488,7 +506,9 @@ const DocumentsTab = ({
       await refetch();
     } catch (error) {
       console.error("Failed to update document:", error);
-      message.error(error?.data?.message || "Failed to update document");
+      enqueueSnackbar(error?.data?.message || "Failed to update document", {
+        variant: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -614,7 +634,10 @@ const DocumentsTab = ({
                                 if (uploadedDoc.fileUrl) {
                                   window.open(uploadedDoc.fileUrl, "_blank");
                                 } else {
-                                  message.info("File preview not available");
+                                  enqueueSnackbar(
+                                    "File preview not available",
+                                    { variant: "info" }
+                                  );
                                 }
                               }}
                               style={{
@@ -624,31 +647,19 @@ const DocumentsTab = ({
                             >
                               View
                             </Button>
-                            {stage.stageStatus !== "approved" ? (
-                              <Button
-                                type="default"
-                                size="small"
-                                onClick={() =>
-                                  handleEditDocument(
-                                    stage._id,
-                                    doc.documentName,
-                                    doc
-                                  )
-                                }
-                              >
-                                Edit
-                              </Button>
-                            ) : (
-                              <Text
-                                type="secondary"
-                                style={{
-                                  fontSize: "12px",
-                                  fontStyle: "italic",
-                                }}
-                              >
-                                Cannot edit - Approved
-                              </Text>
-                            )}
+                            <Button
+                              type="default"
+                              size="small"
+                              onClick={() =>
+                                handleEditDocument(
+                                  "workOrder",
+                                  doc.name,
+                                  uploadedDoc
+                                )
+                              }
+                            >
+                              Edit
+                            </Button>
                           </>
                         )}
                         {isEditing && (
@@ -796,7 +807,9 @@ const DocumentsTab = ({
                       beforeUpload={(file) => {
                         const isLt5M = file.size / 1024 / 1024 < 5;
                         if (!isLt5M) {
-                          message.error("File must be smaller than 5MB!");
+                          enqueueSnackbar("File must be smaller than 5MB!", {
+                            variant: "error",
+                          });
                           return Upload.LIST_IGNORE;
                         }
                         handleReplaceDocument(
@@ -1716,19 +1729,31 @@ const DocumentsTab = ({
                               >
                                 View
                               </Button>
-                              <Button
-                                type="default"
-                                size="small"
-                                onClick={() =>
-                                  handleEditDocument(
-                                    stage._id,
-                                    doc.documentName,
-                                    doc
-                                  )
-                                }
-                              >
-                                Edit
-                              </Button>
+                              {stage.stageStatus !== "approved" ? (
+                                <Button
+                                  type="default"
+                                  size="small"
+                                  onClick={() =>
+                                    handleEditDocument(
+                                      stage._id,
+                                      doc.documentName,
+                                      doc
+                                    )
+                                  }
+                                >
+                                  Edit
+                                </Button>
+                              ) : (
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: "12px",
+                                    fontStyle: "italic",
+                                  }}
+                                >
+                                  Cannot edit - Approved
+                                </Text>
+                              )}
                             </>
                           ) : (
                             <>
@@ -1821,8 +1846,9 @@ const DocumentsTab = ({
                               beforeUpload={(file) => {
                                 const isLt5M = file.size / 1024 / 1024 < 5;
                                 if (!isLt5M) {
-                                  message.error(
-                                    "File must be smaller than 5MB!"
+                                  enqueueSnackbar(
+                                    "File must be smaller than 5MB!",
+                                    { variant: "error" }
                                   );
                                   return Upload.LIST_IGNORE;
                                 }
@@ -2005,7 +2031,9 @@ const DocumentsTab = ({
                         ...prev,
                         [stage._id]: [],
                       }));
-                      message.success("All pending uploads cleared");
+                      enqueueSnackbar("All pending uploads cleared", {
+                        variant: "success",
+                      });
                     }}
                   >
                     Clear All Pending
@@ -2125,7 +2153,9 @@ const DocumentsTab = ({
                         ...prev,
                         [stage._id]: [],
                       }));
-                      message.success("All selected files cleared");
+                      enqueueSnackbar("All selected files cleared", {
+                        variant: "success",
+                      });
                     }}
                   >
                     Clear All Selected
