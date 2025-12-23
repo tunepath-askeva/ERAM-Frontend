@@ -220,7 +220,7 @@ const RequisitionApprovals = ({ isActive }) => {
         : []),
     ],
   });
-  
+
   const formatId = (id, length = 8) => {
     if (!id) return "N/A";
     return isMobile ? `...${id.slice(-length)}` : id;
@@ -979,7 +979,7 @@ const RequisitionDetailsContent = ({
             </Descriptions.Item>
             {req.approvalLevel1Timeout && (
               <Descriptions.Item label="Level 1 Timeout">
-                <Text strong>{req.approvalLevel1Timeout} minutes</Text>
+                <Text strong>{req.approvalLevel1Timeout} hours</Text>
                 <br />
                 <Text type="secondary" style={{ fontSize: "12px" }}>
                   (Approval Members → Admin)
@@ -988,7 +988,7 @@ const RequisitionDetailsContent = ({
             )}
             {req.approvalLevel2Timeout && (
               <Descriptions.Item label="Level 2 Timeout">
-                <Text strong>{req.approvalLevel2Timeout} minutes</Text>
+                <Text strong>{req.approvalLevel2Timeout} hours</Text>
                 <br />
                 <Text type="secondary" style={{ fontSize: "12px" }}>
                   (Admin → Assigned Members)
@@ -997,7 +997,7 @@ const RequisitionDetailsContent = ({
             )}
             {req.approvalLevel3Timeout && (
               <Descriptions.Item label="Level 3 Timeout">
-                <Text strong>{req.approvalLevel3Timeout} minutes</Text>
+                <Text strong>{req.approvalLevel3Timeout} hours</Text>
                 <br />
                 <Text type="secondary" style={{ fontSize: "12px" }}>
                   (Auto-approve after this)

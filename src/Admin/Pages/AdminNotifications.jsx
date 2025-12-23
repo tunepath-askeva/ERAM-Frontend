@@ -640,7 +640,7 @@ const AdminNotifications = () => {
                                       style={{ fontSize: "12px" }}
                                     >
                                       ⚠️ Action required within {timeoutInfo}{" "}
-                                      minutes
+                                      hours
                                     </Text>
                                   )}
                                   <Space>
