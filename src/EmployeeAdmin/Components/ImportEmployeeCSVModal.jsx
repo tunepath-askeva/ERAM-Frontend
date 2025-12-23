@@ -147,88 +147,136 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         };
 
         // Map rows to employee objects (keep your existing mapping logic)
+        // Map rows to employee objects
         const employees = rows
           .map((employee, index) => {
-            if (
-              !employee.firstname ||
-              !employee.lastname ||
-              !employee.email ||
-              !employee.phone ||
-              !employee.password
-            ) {
-              console.warn(
-                `Row ${index + 2}: Missing required fields`,
-                employee
-              );
+            // Use lowercase keys since CSV headers are normalized to lowercase
+            const firstName = employee.firstname || employee.firstName || "";
+            const middleName = employee.middlename || employee.middleName || "";
+            const lastName = employee.lastname || employee.lastName || "";
+            const email = employee.email || "";
+            const phone = parsePhoneNumber(employee.phone || "");
+            const password = employee.password || "";
+
+            // Validate required fields
+            if (!firstName || !lastName || !email || !phone || !password) {
+              console.warn(`Row ${index + 2}: Missing required fields`, {
+                firstName,
+                lastName,
+                email,
+                phone,
+                password,
+              });
               return null;
             }
 
             return {
-              firstName: employee.firstname || "",
-              middleName: employee.middlename || "",
-              lastName: employee.lastname || "",
-              email: employee.email || "",
-              phone: parsePhoneNumber(employee.phone),
-              password: employee.password || "",
-              // ... rest of your existing field mapping
-              assignedJobTitle: employee.assignedjobtitle || "",
+              firstName: firstName,
+              middleName: middleName,
+              lastName: lastName,
+              email: email,
+              phone: phone,
+              password: password,
+              assignedJobTitle:
+                employee.assignedjobtitle || employee.assignedJobTitle || "",
               category: employee.category || "",
-              eramId: employee.eramid || "",
-              dateOfJoining: getDateOrEmpty(employee.dateofjoining),
-              officialEmail: employee.officialemail || "",
-              badgeNo: employee.badgeno || "",
-              gatePassId: employee.gatepassid || "",
-              aramcoId: employee.aramcoid || "",
-              otherId: employee.otherid || "",
-              plantId: employee.plantid || "",
-              externalEmpNo: employee.externalempno || "",
+              eramId: employee.eramid || employee.eramId || "",
+              dateOfJoining: getDateOrEmpty(
+                employee.dateofjoining || employee.dateOfJoining
+              ),
+              officialEmail:
+                employee.officialemail || employee.officialEmail || "",
+              badgeNo: employee.badgeno || employee.badgeNo || "",
+              gatePassId: employee.gatepassid || employee.gatePassId || "",
+              aramcoId: employee.aramcoid || employee.aramcoId || "",
+              otherId: employee.otherid || employee.otherId || "",
+              plantId: employee.plantid || employee.plantId || "",
+              externalEmpNo:
+                employee.externalempno || employee.externalEmpNo || "",
               designation: employee.designation || "",
-              visaCategory: employee.visacategory || "",
-              employeeGroup: employee.employeegroup || "",
-              employmentType: employee.employmenttype || "",
-              payrollGroup: employee.payrollgroup || "",
-              sponsorName: employee.sponsorname || "",
-              workHours: getNumberOrEmpty(employee.workhours),
-              workDays: getNumberOrEmpty(employee.workdays),
-              airTicketFrequency: employee.airticketfrequency || "",
-              probationPeriod: employee.probationperiod || "",
-              periodOfContract: employee.periodofcontract || "",
-              workLocation: employee.worklocation || "",
-              familyStatus: employee.familystatus || "",
-              lastArrival: getDateOrEmpty(employee.lastarrival),
+              visaCategory:
+                employee.visacategory || employee.visaCategory || "",
+              employeeGroup:
+                employee.employeegroup || employee.employeeGroup || "",
+              employmentType:
+                employee.employmenttype || employee.employmentType || "",
+              payrollGroup:
+                employee.payrollgroup || employee.payrollGroup || "",
+              sponsorName: employee.sponsorname || employee.sponsorName || "",
+              workHours: getNumberOrEmpty(
+                employee.workhours || employee.workHours
+              ),
+              workDays: getNumberOrEmpty(
+                employee.workdays || employee.workDays
+              ),
+              airTicketFrequency:
+                employee.airticketfrequency ||
+                employee.airTicketFrequency ||
+                "",
+              probationPeriod:
+                employee.probationperiod || employee.probationPeriod || "",
+              periodOfContract:
+                employee.periodofcontract || employee.periodOfContract || "",
+              workLocation:
+                employee.worklocation || employee.workLocation || "",
+              familyStatus:
+                employee.familystatus || employee.familyStatus || "",
+              lastArrival: getDateOrEmpty(
+                employee.lastarrival || employee.lastArrival
+              ),
               eligibleVacationDays: getNumberOrEmpty(
-                employee.eligiblevacationdays
+                employee.eligiblevacationdays || employee.eligibleVacationDays
               ),
               eligibleVacationMonth: getNumberOrEmpty(
-                employee.eligiblevacationmonth
+                employee.eligiblevacationmonth || employee.eligibleVacationMonth
               ),
-              iqamaId: employee.iqamaid || "",
-              iqamaIssueDate: getDateOrEmpty(employee.iqamaissuedate),
-              iqamaExpiryDate: getDateOrEmpty(employee.iqamaexpirydate),
+              iqamaId: employee.iqamaid || employee.iqamaId || "",
+              iqamaIssueDate: getDateOrEmpty(
+                employee.iqamaissuedate || employee.iqamaIssueDate
+              ),
+              iqamaExpiryDate: getDateOrEmpty(
+                employee.iqamaexpirydate || employee.iqamaExpiryDate
+              ),
               iqamaArabicDateOfIssue: getDateOrEmpty(
-                employee.iqamaarabicdateofissue
+                employee.iqamaarabicdateofissue ||
+                  employee.iqamaArabicDateOfIssue
               ),
               iqamaArabicDateOfExpiry: getDateOrEmpty(
-                employee.iqamaarabicdateofexpiry
+                employee.iqamaarabicdateofexpiry ||
+                  employee.iqamaArabicDateOfExpiry
               ),
               gosi: employee.gosi || "",
-              drivingLicense: employee.drivinglicense || "",
-              medicalPolicy: employee.medicalpolicy || "",
-              medicalPolicyNumber: employee.medicalpolicynumber || "",
-              noOfDependent: getNumberOrEmpty(employee.noofdependent),
-              insuranceCategory: employee.insurancecategory || "",
-              classCode: employee.classcode || "",
-              assetAllocation: employee.assetallocation
-                ? employee.assetallocation
-                    .split(";")
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                : [],
-              lastWorkingDay: getDateOrEmpty(employee.lastworkingday),
-              firstTimeLogin: employee.firsttimelogin || "",
-              basicAssets: employee.basicassets || "",
+              drivingLicense:
+                employee.drivinglicense || employee.drivingLicense || "",
+              medicalPolicy:
+                employee.medicalpolicy || employee.medicalPolicy || "",
+              medicalPolicyNumber:
+                employee.medicalpolicynumber ||
+                employee.medicalPolicyNumber ||
+                "",
+              noOfDependent: getNumberOrEmpty(
+                employee.noofdependent || employee.noOfDependent
+              ),
+              insuranceCategory:
+                employee.insurancecategory || employee.insuranceCategory || "",
+              classCode: employee.classcode || employee.classCode || "",
+              assetAllocation:
+                employee.assetallocation || employee.assetAllocation
+                  ? (employee.assetallocation || employee.assetAllocation)
+                      .split(";")
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  : [],
+              lastWorkingDay: getDateOrEmpty(
+                employee.lastworkingday || employee.lastWorkingDay
+              ),
+              firstTimeLogin:
+                employee.firsttimelogin || employee.firstTimeLogin || "",
+              basicAssets: employee.basicassets || employee.basicAssets || "",
               reportingAndDocumentation:
-                employee.reportinganddocumentation || "",
+                employee.reportinganddocumentation ||
+                employee.reportingAndDocumentation ||
+                "",
             };
           })
           .filter(Boolean);
