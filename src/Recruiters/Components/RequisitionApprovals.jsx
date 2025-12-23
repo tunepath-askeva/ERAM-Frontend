@@ -58,7 +58,7 @@ const RequisitionApprovals = ({ isActive }) => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
+  const [currentUser, setCurrentUser] = useState(null);
   const screens = useBreakpoint();
   const isMobile = screens.xs;
   const isTablet = screens.sm || screens.md;
@@ -75,6 +75,16 @@ const RequisitionApprovals = ({ isActive }) => {
 
     return () => clearTimeout(timer);
   }, [searchTerm, debouncedSearchTerm]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("recruiterInfo") || "{}");
+    if (user) {
+      setCurrentUser({
+        email: user.email, // 🔥 USE EMAIL
+        role: user.role || user.roles,
+      });
+    }
+  }, []);
 
   const {
     data: response,
@@ -137,6 +147,34 @@ const RequisitionApprovals = ({ isActive }) => {
     return colors[status?.toLowerCase()] || "default";
   };
 
+  const canUserApprove = (requisition, userEmail, userRole) => {
+    if (!requisition || !userEmail) return false;
+
+    const currentLevel = requisition.currentApprovalLevel || 1;
+    const normalizedUserEmail = userEmail.toLowerCase();
+
+    // Level 1: Only approval recruiters
+    if (currentLevel === 1) {
+      return requisition.approvalRecruiter?.some(
+        (r) => r.email?.toLowerCase() === normalizedUserEmail
+      );
+    }
+
+    // Level 2: Only admins (recruiters shouldn't see this)
+    if (currentLevel === 2) {
+      return userRole === "admin";
+    }
+
+    // Level 3: Only assigned recruiters
+    if (currentLevel === 3) {
+      return requisition.assignedRecruiters?.some(
+        (r) => r.email?.toLowerCase() === normalizedUserEmail
+      );
+    }
+
+    return false;
+  };
+
   const getStatusText = (status) => {
     const texts = {
       pending: "Pending Review",
@@ -156,7 +194,7 @@ const RequisitionApprovals = ({ isActive }) => {
     return icons[status?.toLowerCase()] || <ClockCircleOutlined />;
   };
 
-  const getActionsMenu = (record) => ({
+  const getActionsMenu = (record, canApprove) => ({
     items: [
       {
         key: "view",
@@ -164,7 +202,7 @@ const RequisitionApprovals = ({ isActive }) => {
         label: "View Details",
         onClick: () => handleViewDetails(record),
       },
-      ...(record.action === "pending"
+      ...(record.action === "pending" && canApprove
         ? [
             {
               key: "approve",
@@ -182,7 +220,7 @@ const RequisitionApprovals = ({ isActive }) => {
         : []),
     ],
   });
-
+  
   const formatId = (id, length = 8) => {
     if (!id) return "N/A";
     return isMobile ? `...${id.slice(-length)}` : id;
@@ -281,68 +319,81 @@ const RequisitionApprovals = ({ isActive }) => {
         key: "actions",
         width: isMobile ? 80 : isTablet ? 180 : 220,
         fixed: "right",
-        render: (_, record) => (
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            {isMobile ? (
-              <Dropdown
-                menu={getActionsMenu(record)}
-                trigger={["click"]}
-                placement="bottomRight"
-              >
-                <Button
-                  type="text"
-                  icon={<MoreOutlined />}
-                  style={{
-                    color: "#da2c46",
-                    border: "1px solid #da2c46",
-                  }}
-                />
-              </Dropdown>
-            ) : (
-              <Space size="small" wrap>
-                <Button
-                  type="default"
-                  icon={<EyeOutlined />}
-                  onClick={() => handleViewDetails(record)}
-                  size={isTablet ? "small" : "default"}
-                  style={{
-                    fontSize: isTablet ? "11px" : "12px",
-                  }}
+        render: (_, record) => {
+          const userEmail = currentUser?.email; // 🔥 USE EMAIL
+          const userRole = currentUser?.role;
+          const canApprove = canUserApprove(
+            record.requisition,
+            userEmail,
+            userRole
+          );
+
+          return (
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {isMobile ? (
+                <Dropdown
+                  menu={getActionsMenu(record, canApprove)}
+                  trigger={["click"]}
+                  placement="bottomRight"
                 >
-                  View
-                </Button>
-                {record.action === "pending" && (
-                  <>
-                    <Button
-                      type="primary"
-                      icon={<CheckCircleOutlined />}
-                      onClick={() => handleOpenActionModal(record, "approved")}
-                      size={isTablet ? "small" : "default"}
-                      style={{
-                        backgroundColor: "#52c41a",
-                        borderColor: "#52c41a",
-                        fontSize: isTablet ? "11px" : "12px",
-                      }}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      danger
-                      icon={<CloseCircleOutlined />}
-                      onClick={() => handleOpenActionModal(record, "rejected")}
-                      size={isTablet ? "small" : "default"}
-                      style={{
-                        fontSize: isTablet ? "11px" : "12px",
-                      }}
-                    >
-                      Reject
-                    </Button>
-                  </>
-                )}
-              </Space>
-            )}
-          </div>
-        ),
+                  <Button
+                    type="text"
+                    icon={<MoreOutlined />}
+                    style={{
+                      color: "#da2c46",
+                      border: "1px solid #da2c46",
+                    }}
+                  />
+                </Dropdown>
+              ) : (
+                <Space size="small" wrap>
+                  <Button
+                    type="default"
+                    icon={<EyeOutlined />}
+                    onClick={() => handleViewDetails(record)}
+                    size={isTablet ? "small" : "default"}
+                  >
+                    View
+                  </Button>
+                  {record.action === "pending" && canApprove && (
+                    <>
+                      <Button
+                        type="primary"
+                        icon={<CheckCircleOutlined />}
+                        onClick={() =>
+                          handleOpenActionModal(record, "approved")
+                        }
+                        size={isTablet ? "small" : "default"}
+                        style={{
+                          backgroundColor: "#52c41a",
+                          borderColor: "#52c41a",
+                        }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        danger
+                        icon={<CloseCircleOutlined />}
+                        onClick={() =>
+                          handleOpenActionModal(record, "rejected")
+                        }
+                        size={isTablet ? "small" : "default"}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  {record.action === "pending" && !canApprove && (
+                    <Tag color="orange" icon={<ClockCircleOutlined />}>
+                      Waiting for Level{" "}
+                      {record.requisition?.currentApprovalLevel || 1}
+                    </Tag>
+                  )}
+                </Space>
+              )}
+            </div>
+          );
+        },
       },
     ];
   };
@@ -866,6 +917,96 @@ const RequisitionDetailsContent = ({
           )}
         </Descriptions>
       </Card>
+
+      {(req.approvalLevel1Timeout ||
+        req.approvalLevel2Timeout ||
+        req.approvalLevel3Timeout) && (
+        <Card
+          title={
+            <Title
+              level={5}
+              style={{ fontSize: isMobile ? "14px" : "16px", margin: 0 }}
+            >
+              <ClockCircleOutlined style={{ marginRight: 8 }} />
+              Approval Escalation Timeline
+            </Title>
+          }
+          style={{ marginBottom: "16px" }}
+          size={isMobile ? "small" : "default"}
+        >
+          <Descriptions
+            bordered
+            column={isMobile ? 1 : 3}
+            size={isMobile ? "small" : "default"}
+          >
+            <Descriptions.Item label="Current Level">
+              <Tag
+                color={
+                  req.currentApprovalLevel === 1
+                    ? "blue"
+                    : req.currentApprovalLevel === 2
+                    ? "orange"
+                    : req.currentApprovalLevel === 3
+                    ? "red"
+                    : "default"
+                }
+              >
+                {req.currentApprovalLevel === 1
+                  ? "Level 1: Approval Members"
+                  : req.currentApprovalLevel === 2
+                  ? "Level 2: Admin"
+                  : req.currentApprovalLevel === 3
+                  ? "Level 3: Assigned Members"
+                  : "Not Set"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Started At">
+              {req.approvalStartTime
+                ? formatDate(req.approvalStartTime)
+                : "Not started"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Badge
+                status={
+                  req.overallapprovalstatus === "approved"
+                    ? "success"
+                    : req.overallapprovalstatus === "rejected"
+                    ? "error"
+                    : "processing"
+                }
+                text={req.overallapprovalstatus?.toUpperCase()}
+              />
+            </Descriptions.Item>
+            {req.approvalLevel1Timeout && (
+              <Descriptions.Item label="Level 1 Timeout">
+                <Text strong>{req.approvalLevel1Timeout} minutes</Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  (Approval Members → Admin)
+                </Text>
+              </Descriptions.Item>
+            )}
+            {req.approvalLevel2Timeout && (
+              <Descriptions.Item label="Level 2 Timeout">
+                <Text strong>{req.approvalLevel2Timeout} minutes</Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  (Admin → Assigned Members)
+                </Text>
+              </Descriptions.Item>
+            )}
+            {req.approvalLevel3Timeout && (
+              <Descriptions.Item label="Level 3 Timeout">
+                <Text strong>{req.approvalLevel3Timeout} minutes</Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: "12px" }}>
+                  (Auto-approve after this)
+                </Text>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      )}
 
       {/* Requisition Information */}
       <Card

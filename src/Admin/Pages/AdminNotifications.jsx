@@ -62,7 +62,7 @@ const AdminNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [actionType, setActionType] = useState(null);
   const [form] = Form.useForm();
-
+  const [currentUser, setCurrentUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
@@ -76,6 +76,16 @@ const AdminNotifications = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm, debouncedSearchTerm]);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("adminInfo"));
+    if (user) {
+      setCurrentUser({
+        email: user.email, 
+        role: user.roles || user.role, 
+      });
+    }
+  }, []);
 
   const [approveRejectRequisition, { isLoading: submittingAction }] =
     useApproveRejectRequisitionMutation();
@@ -540,35 +550,143 @@ const AdminNotifications = () => {
                         style={{ marginTop: "8px" }}
                       >
                         {isRequisitionApprovalNotification(item) &&
-                          !item.Status && (
-                            <Space style={{ marginTop: "12px" }}>
-                              <Button
-                                type="primary"
-                                icon={<CheckOutlined />}
-                                size="small"
-                                style={{
-                                  backgroundColor: "#52c41a",
-                                  borderColor: "#52c41a",
-                                }}
-                                onClick={() =>
-                                  handleApproveReject(item, "approved")
-                                }
-                              >
-                                Approve
-                              </Button>
+                          !item.Status &&
+                          (() => {
+                            // Get requisition data from notification
+                            const requisition =
+                              item.requisition || item.requisitionData;
 
-                              <Button
-                                danger
-                                icon={<CloseOutlined />}
-                                size="small"
-                                onClick={() =>
-                                  handleApproveReject(item, "rejected")
-                                }
+                            if (!requisition) {
+                              // If requisition data not available, show default buttons
+                              return (
+                                <Space style={{ marginTop: "12px" }}>
+                                  <Button
+                                    type="primary"
+                                    icon={<CheckOutlined />}
+                                    size="small"
+                                    style={{
+                                      backgroundColor: "#52c41a",
+                                      borderColor: "#52c41a",
+                                    }}
+                                    onClick={() =>
+                                      handleApproveReject(item, "approved")
+                                    }
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    danger
+                                    icon={<CloseOutlined />}
+                                    size="small"
+                                    onClick={() =>
+                                      handleApproveReject(item, "rejected")
+                                    }
+                                  >
+                                    Reject
+                                  </Button>
+                                </Space>
+                              );
+                            }
+
+                            const currentLevel =
+                              requisition.currentApprovalLevel || 1;
+                            const userRole =
+                              currentUser?.role || currentUser?.roles;
+                            const userEmail = currentUser?.email?.toLowerCase(); // 🔥 USE EMAIL
+
+                            let canApprove = false;
+                            let waitingMessage = "";
+                            let levelInfo = "";
+
+                            // 🔥 ADMIN AUTHORIZATION (Level 2 only) - USING EMAIL
+                            if (userRole === "admin") {
+                              if (currentLevel === 2) {
+                                canApprove = true;
+                                levelInfo =
+                                  "📍 Level 2: Admin Approval Required";
+                              } else if (currentLevel === 1) {
+                                waitingMessage =
+                                  "⏰ Waiting for Level 1 (Approval Members)";
+                              } else if (currentLevel === 3) {
+                                waitingMessage =
+                                  "⏰ Escalated to Level 3 (Assigned Members)";
+                              }
+                            }
+
+                            // Show buttons if user can approve
+                            if (canApprove) {
+                              const timeoutInfo =
+                                requisition.approvalLevel2Timeout;
+
+                              return (
+                                <Space
+                                  direction="vertical"
+                                  style={{ marginTop: "12px", width: "100%" }}
+                                >
+                                  {levelInfo && (
+                                    <Text
+                                      type="warning"
+                                      style={{
+                                        fontSize: "12px",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {levelInfo}
+                                    </Text>
+                                  )}
+                                  {timeoutInfo && (
+                                    <Text
+                                      type="warning"
+                                      style={{ fontSize: "12px" }}
+                                    >
+                                      ⚠️ Action required within {timeoutInfo}{" "}
+                                      minutes
+                                    </Text>
+                                  )}
+                                  <Space>
+                                    <Button
+                                      type="primary"
+                                      icon={<CheckOutlined />}
+                                      size="small"
+                                      style={{
+                                        backgroundColor: "#52c41a",
+                                        borderColor: "#52c41a",
+                                      }}
+                                      onClick={() =>
+                                        handleApproveReject(item, "approved")
+                                      }
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      danger
+                                      icon={<CloseOutlined />}
+                                      size="small"
+                                      onClick={() =>
+                                        handleApproveReject(item, "rejected")
+                                      }
+                                    >
+                                      Reject
+                                    </Button>
+                                  </Space>
+                                </Space>
+                              );
+                            }
+
+                            // User cannot approve at this level - show waiting message
+                            return (
+                              <Tag
+                                color="orange"
+                                icon={<ClockCircleOutlined />}
+                                style={{
+                                  marginTop: "12px",
+                                  padding: "4px 12px",
+                                }}
                               >
-                                Reject
-                              </Button>
-                            </Space>
-                          )}
+                                {waitingMessage}
+                              </Tag>
+                            );
+                          })()}
 
                         {item.Status && (
                           <Tag

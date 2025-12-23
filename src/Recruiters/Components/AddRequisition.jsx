@@ -16,6 +16,7 @@ import {
   InputNumber,
   Modal,
   Spin,
+  Alert,
 } from "antd";
 import {
   SaveOutlined,
@@ -607,6 +608,63 @@ const AddRequisition = ({ onNavigateBack }) => {
                         </Option>
                       ))}
                     </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider orientation="left">
+                Approval Escalation Settings (Optional)
+              </Divider>
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Alert
+                    message="Time-based Approval Escalation"
+                    description="Set timeouts for each approval level. If approval members don't respond within the specified time, the requisition will automatically escalate to the next level. Leave empty to use the standard approval process."
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="approvalLevel1Timeout"
+                    label="Level 1 Timeout (minutes)"
+                    tooltip="Time for approval members to respond. If they don't respond, it escalates to admin."
+                  >
+                    <InputNumber
+                      min={1}
+                      placeholder="e.g., 60"
+                      style={{ width: "100%" }}
+                      addonAfter="min"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="approvalLevel2Timeout"
+                    label="Level 2 Timeout (minutes)"
+                    tooltip="Time for admin to respond. If they don't respond, it escalates to assigned members."
+                  >
+                    <InputNumber
+                      min={1}
+                      placeholder="e.g., 30"
+                      style={{ width: "100%" }}
+                      addonAfter="min"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="approvalLevel3Timeout"
+                    label="Level 3 Timeout (minutes)"
+                    tooltip="Time for assigned members to respond. After this, the requisition is auto-approved."
+                  >
+                    <InputNumber
+                      min={1}
+                      placeholder="e.g., 30"
+                      style={{ width: "100%" }}
+                      addonAfter="min"
+                    />
                   </Form.Item>
                 </Col>
               </Row>
