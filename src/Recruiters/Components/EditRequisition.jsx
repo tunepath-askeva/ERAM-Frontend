@@ -12,7 +12,7 @@ import {
   InputNumber,
   Space,
   Divider,
-  Alert
+  Alert,
 } from "antd";
 import { SaveOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -425,42 +425,42 @@ const EditRequisition = () => {
                 <Col span={8}>
                   <Form.Item
                     name="approvalLevel1Timeout"
-                    label="Level 1 Timeout (minutes)"
+                    label="Level 1 Timeout (hours)"
                     tooltip="Time for approval members to respond. If they don't respond, it escalates to admin."
                   >
                     <InputNumber
                       min={1}
-                      placeholder="e.g., 60"
+                      placeholder="e.g., 24"
                       style={{ width: "100%" }}
-                      addonAfter="min"
+                      addonAfter="hrs"
                     />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item
                     name="approvalLevel2Timeout"
-                    label="Level 2 Timeout (minutes)"
+                    label="Level 2 Timeout (hours)"
                     tooltip="Time for admin to respond. If they don't respond, it escalates to assigned members."
                   >
                     <InputNumber
                       min={1}
-                      placeholder="e.g., 30"
+                      placeholder="e.g., 12"
                       style={{ width: "100%" }}
-                      addonAfter="min"
+                      addonAfter="hrs"
                     />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item
                     name="approvalLevel3Timeout"
-                    label="Level 3 Timeout (minutes)"
+                    label="Level 3 Timeout (hours)"
                     tooltip="Time for assigned members to respond. After this, the requisition is auto-approved."
                   >
                     <InputNumber
                       min={1}
-                      placeholder="e.g., 30"
+                      placeholder="e.g., 6"
                       style={{ width: "100%" }}
-                      addonAfter="min"
+                      addonAfter="hrs"
                     />
                   </Form.Item>
                 </Col>
