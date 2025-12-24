@@ -110,6 +110,7 @@ import AdminEmployees from "./Admin/Pages/AdminEmployees";
 import RejectedCandidates from "./Recruiters/Pages/RejectedCandidates";
 import ExitInitiatedEmployees from "./EmployeeAdmin/Pages/ExitInitiatedEmployees";
 import PendingAttritionApprovals from "./EmployeeAdmin/Pages/PendingAttritionApprovals";
+import AttritionHistory from "./EmployeeAdmin/Pages/AttritionHistory";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -473,6 +474,12 @@ const AppRoutes = () => {
           path="/employee-admin/exit-employees"
           element={
             <ProtectedEmployeeAdmin element={<ExitInitiatedEmployees />} />
+          }
+        />
+        <Route
+          path="/employee-admin/attrition-history"
+          element={
+            <ProtectedEmployeeAdmin element={<AttritionHistory />} />
           }
         />
         <Route

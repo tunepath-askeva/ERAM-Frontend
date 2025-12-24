@@ -16,6 +16,7 @@ import {
   BellOutlined,
   UsergroupAddOutlined,
   UsergroupDeleteOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -76,6 +77,12 @@ const EmployeeAdminSidebar = ({
       icon: <UsergroupAddOutlined />,
       label: "All Employees",
       permission: "all-employee",
+    },
+    {
+      key: "/employee-admin/attrition-history",
+      icon: <ClockCircleOutlined />,
+      label: "Attrition History",
+      permission: "pending-attrition-emp",
     },
     {
       key: "/employee-admin/exit-employees",

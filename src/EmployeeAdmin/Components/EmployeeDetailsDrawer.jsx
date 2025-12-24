@@ -32,7 +32,12 @@ const EmployeeDetailsDrawer = ({
 }) => {
   const [isAttritionModalVisible, setIsAttritionModalVisible] = useState(false);
 
-  const { data, isLoading, error } = useGetEmployeeDetailsQuery(employeeId, {
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchEmployeeDetails,
+  } = useGetEmployeeDetailsQuery(employeeId, {
     skip: !employeeId || !visible,
   });
 
@@ -1481,20 +1486,23 @@ const EmployeeDetailsDrawer = ({
                   { variant: "success" }
                 );
 
-                setIsAttritionModalVisible(false); // Close modal
+                setIsAttritionModalVisible(false);
 
-                // Call the callback to refetch and close drawer
+                await refetchEmployeeDetails();
+
                 if (onAttritionInitiated) {
-                  onAttritionInitiated();
+                  await onAttritionInitiated();
                 }
 
-                onClose(); // Close the drawer
+                setTimeout(() => {
+                  onClose();
+                }, 1500);
               } catch (error) {
                 enqueueSnackbar(
                   error?.data?.message || "Failed to initiate attrition",
                   { variant: "error" }
                 );
-                setIsAttritionModalVisible(false); // Close modal even on error
+                setIsAttritionModalVisible(false);
               }
             }}
             isLoading={isInitiatingAttrition}

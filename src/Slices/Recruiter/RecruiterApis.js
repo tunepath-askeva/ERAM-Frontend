@@ -882,6 +882,15 @@ export const recruiterApi = createApi({
         params: { page, pageSize },
       }),
     }),
+
+    getAttritionHistory: builder.query({
+      query: ({ page, pageSize, search, status }) => ({
+        url: `/attrition/attrition-history?page=${page}&pageSize=${pageSize}&search=${
+          search || ""
+        }&status=${status || ""}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -977,5 +986,6 @@ export const {
   useRejectAttritionMutation,
   useConvertEmployeeToCandidateMutation,
   useGetPendingAttritionApprovalsQuery,
-  useCancelAttritionMutation
+  useCancelAttritionMutation,
+  useGetAttritionHistoryQuery
 } = recruiterApi;

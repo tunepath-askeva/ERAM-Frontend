@@ -43,7 +43,12 @@ const AttritionDetailsModal = ({
   const [form] = Form.useForm();
   const currentUser = useSelector((state) => state.userAuth.recruiterInfo);
 
-  const { data, isLoading, error } = useGetAttritionDetailsQuery(employeeId, {
+  const {
+    data,
+    isLoading,
+    error,
+    refetch: refetchAttritionDetails,
+  } = useGetAttritionDetailsQuery(employeeId, {
     skip: !employeeId || !visible,
   });
 
@@ -69,7 +74,8 @@ const AttritionDetailsModal = ({
       });
 
       form.resetFields();
-      onRefresh();
+      await refetchAttritionDetails();
+      await onRefresh();
       onClose();
     } catch (error) {
       enqueueSnackbar(error?.data?.message || "Failed to approve attrition", {
@@ -91,7 +97,9 @@ const AttritionDetailsModal = ({
       });
 
       form.resetFields();
-      onRefresh();
+      await refetchAttritionDetails();
+
+      await onRefresh();
       onClose();
     } catch (error) {
       enqueueSnackbar(error?.data?.message || "Failed to reject attrition", {

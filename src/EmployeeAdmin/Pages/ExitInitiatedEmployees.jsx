@@ -101,10 +101,11 @@ const ExitInitiatedEmployees = () => {
         { variant: "success" }
       );
 
+      await refetch();
+
       setIsConvertModalVisible(false);
       setIsDetailsModalVisible(false);
       setSelectedEmployeeId(null);
-      refetch();
     } catch (error) {
       console.error("❌ Conversion failed:", error);
       enqueueSnackbar(error?.data?.message || "Failed to convert employee", {
@@ -151,11 +152,12 @@ const ExitInitiatedEmployees = () => {
         variant: "success",
       });
 
+      await refetch();
+
       setIsCancelModalVisible(false);
       setIsDetailsModalVisible(false);
       setSelectedEmployeeId(null);
       setCancellationReason("");
-      refetch();
     } catch (error) {
       console.error("❌ Cancellation failed:", error);
       enqueueSnackbar(error?.data?.message || "Failed to cancel attrition", {
