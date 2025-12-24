@@ -20,7 +20,6 @@ import {
   useGetEmployeeDetailsQuery,
   useInitiateAttritionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
-import MoveToAttritionModal from "./MoveToAttritionModal";
 
 const EmployeeDetailsDrawer = ({
   visible,
@@ -29,9 +28,8 @@ const EmployeeDetailsDrawer = ({
   onEdit,
   hasPermission,
   onAttritionInitiated,
+  onInitiateAttrition,
 }) => {
-  const [isAttritionModalVisible, setIsAttritionModalVisible] = useState(false);
-
   const {
     data,
     isLoading,
@@ -40,9 +38,6 @@ const EmployeeDetailsDrawer = ({
   } = useGetEmployeeDetailsQuery(employeeId, {
     skip: !employeeId || !visible,
   });
-
-  const [initiateAttrition, { isLoading: isInitiatingAttrition }] =
-    useInitiateAttritionMutation();
 
   const employee = data?.employee;
 
@@ -131,7 +126,7 @@ const EmployeeDetailsDrawer = ({
           <Space>
             <Button
               icon={<ExportOutlined />}
-              onClick={() => setIsAttritionModalVisible(true)}
+              onClick={() => onInitiateAttrition(employee)}
               style={{
                 borderColor: "#ff7a45",
                 color: "#ff7a45",
@@ -1469,44 +1464,7 @@ const EmployeeDetailsDrawer = ({
               },
             ]}
           />
-
-          <MoveToAttritionModal
-            visible={isAttritionModalVisible}
-            onCancel={() => setIsAttritionModalVisible(false)}
-            employee={employee}
-            onSubmit={async (values) => {
-              try {
-                const result = await initiateAttrition({
-                  employeeId: employee._id,
-                  ...values,
-                }).unwrap();
-
-                enqueueSnackbar(
-                  result.message || "Attrition process initiated successfully",
-                  { variant: "success" }
-                );
-
-                setIsAttritionModalVisible(false);
-
-                await refetchEmployeeDetails();
-
-                if (onAttritionInitiated) {
-                  await onAttritionInitiated();
-                }
-
-                setTimeout(() => {
-                  onClose();
-                }, 1500);
-              } catch (error) {
-                enqueueSnackbar(
-                  error?.data?.message || "Failed to initiate attrition",
-                  { variant: "error" }
-                );
-                setIsAttritionModalVisible(false);
-              }
-            }}
-            isLoading={isInitiatingAttrition}
-          />
+          
         </div>
       )}
     </Drawer>

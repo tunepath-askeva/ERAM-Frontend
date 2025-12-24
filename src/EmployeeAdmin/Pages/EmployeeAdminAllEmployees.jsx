@@ -31,13 +31,17 @@ import {
   useDisableEmployeeMutation,
   useLazyExportEmployeesCSVQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
-import { useGetBranchEmployessQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetBranchEmployessQuery,
+  useInitiateAttritionMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
 import AddEmployeeModal from "../Components/AddEmployeeModal";
 import EditEmployeeModal from "../Components/EditEmployeeModal";
 import ImportEmployeeCSVModal from "../Components/ImportEmployeeCSVModal";
 import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+import MoveToAttritionModal from "../Components/MoveToAttritionModal";
 
 const { Text } = Typography;
 
@@ -54,6 +58,9 @@ const EmployeeAdminAllEmployees = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [importResults, setImportResults] = useState(null);
+  const [isAttritionModalVisible, setIsAttritionModalVisible] = useState(false);
+  const [selectedEmployeeForAttrition, setSelectedEmployeeForAttrition] =
+    useState(null);
 
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -74,6 +81,9 @@ const EmployeeAdminAllEmployees = () => {
     pageSize,
     search: debouncedSearch,
   });
+
+  const [initiateAttrition, { isLoading: isInitiatingAttrition }] =
+    useInitiateAttritionMutation();
 
   const [addEmployee, { isLoading: isAdding }] = useAddEmployeeMutation();
   const [updateEmployee, { isLoading: isUpdating }] =
@@ -125,6 +135,12 @@ const EmployeeAdminAllEmployees = () => {
     setIsDetailsDrawerVisible(false);
   };
 
+  const handleOpenAttritionModal = (employee) => {
+    setSelectedEmployeeForAttrition(employee);
+    setIsAttritionModalVisible(true);
+    setIsDetailsDrawerVisible(false); // Close drawer when opening modal
+  };
+
   const handleUpdate = async (values) => {
     try {
       const result = await updateEmployee(values).unwrap();
@@ -169,6 +185,28 @@ const EmployeeAdminAllEmployees = () => {
         error?.data?.message || "Failed to update employee status",
         { variant: "error" }
       );
+    }
+  };
+
+  const handleInitiateAttrition = async (values) => {
+    try {
+      const result = await initiateAttrition({
+        employeeId: selectedEmployeeForAttrition._id,
+        ...values,
+      }).unwrap();
+
+      enqueueSnackbar(
+        result.message || "Attrition process initiated successfully",
+        { variant: "success" }
+      );
+
+      setIsAttritionModalVisible(false);
+      setSelectedEmployeeForAttrition(null);
+      await refetch(); // This will now work properly
+    } catch (error) {
+      enqueueSnackbar(error?.data?.message || "Failed to initiate attrition", {
+        variant: "error",
+      });
     }
   };
 
@@ -771,11 +809,19 @@ const EmployeeAdminAllEmployees = () => {
         }}
         onEdit={handleEdit}
         hasPermission={hasPermission}
-        onAttritionInitiated={() => {
-          refetch(); // Refetch the employee list
-          setIsDetailsDrawerVisible(false); // Close drawer
-          setSelectedEmployeeId(null); // Clear selection
+        onAttritionInitiated={refetch}
+        onInitiateAttrition={handleOpenAttritionModal}
+      />
+
+      <MoveToAttritionModal
+        visible={isAttritionModalVisible}
+        onCancel={() => {
+          setIsAttritionModalVisible(false);
+          setSelectedEmployeeForAttrition(null);
         }}
+        employee={selectedEmployeeForAttrition}
+        onSubmit={handleInitiateAttrition}
+        isLoading={isInitiatingAttrition}
       />
     </div>
   );
