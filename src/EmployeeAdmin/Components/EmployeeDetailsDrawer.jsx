@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Drawer, Tag, Spin, Button, Space, Divider, Image, Tabs } from "antd";
 import {
   UserOutlined,
@@ -14,8 +14,13 @@ import {
   TrophyOutlined,
   BookOutlined,
   EnvironmentOutlined,
+  ExportOutlined,
 } from "@ant-design/icons";
-import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import {
+  useGetEmployeeDetailsQuery,
+  useInitiateAttritionMutation,
+} from "../../Slices/Recruiter/RecruiterApis";
+import MoveToAttritionModal from "./MoveToAttritionModal";
 
 const EmployeeDetailsDrawer = ({
   visible,
@@ -23,10 +28,16 @@ const EmployeeDetailsDrawer = ({
   onClose,
   onEdit,
   hasPermission,
+  onAttritionInitiated,
 }) => {
+  const [isAttritionModalVisible, setIsAttritionModalVisible] = useState(false);
+
   const { data, isLoading, error } = useGetEmployeeDetailsQuery(employeeId, {
     skip: !employeeId || !visible,
   });
+
+  const [initiateAttrition, { isLoading: isInitiatingAttrition }] =
+    useInitiateAttritionMutation();
 
   const employee = data?.employee;
 
@@ -91,6 +102,13 @@ const EmployeeDetailsDrawer = ({
     return null;
   };
 
+  const canMoveToAttrition = () => {
+    return (
+      employee && employee.accountStatus === "active"
+      // hasPermission("initiate-attrition")
+    );
+  };
+
   return (
     <Drawer
       title={
@@ -106,6 +124,16 @@ const EmployeeDetailsDrawer = ({
       extra={
         employee && (
           <Space>
+            <Button
+              icon={<ExportOutlined />}
+              onClick={() => setIsAttritionModalVisible(true)}
+              style={{
+                borderColor: "#ff7a45",
+                color: "#ff7a45",
+              }}
+            >
+              Move to Attrition
+            </Button>
             {hasPermission("edit-employee") && (
               <Button
                 type="primary"
@@ -1435,6 +1463,41 @@ const EmployeeDetailsDrawer = ({
                 ),
               },
             ]}
+          />
+
+          <MoveToAttritionModal
+            visible={isAttritionModalVisible}
+            onCancel={() => setIsAttritionModalVisible(false)}
+            employee={employee}
+            onSubmit={async (values) => {
+              try {
+                const result = await initiateAttrition({
+                  employeeId: employee._id,
+                  ...values,
+                }).unwrap();
+
+                enqueueSnackbar(
+                  result.message || "Attrition process initiated successfully",
+                  { variant: "success" }
+                );
+
+                setIsAttritionModalVisible(false); // Close modal
+
+                // Call the callback to refetch and close drawer
+                if (onAttritionInitiated) {
+                  onAttritionInitiated();
+                }
+
+                onClose(); // Close the drawer
+              } catch (error) {
+                enqueueSnackbar(
+                  error?.data?.message || "Failed to initiate attrition",
+                  { variant: "error" }
+                );
+                setIsAttritionModalVisible(false); // Close modal even on error
+              }
+            }}
+            isLoading={isInitiatingAttrition}
           />
         </div>
       )}

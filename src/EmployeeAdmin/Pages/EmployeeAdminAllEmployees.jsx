@@ -771,6 +771,11 @@ const EmployeeAdminAllEmployees = () => {
         }}
         onEdit={handleEdit}
         hasPermission={hasPermission}
+        onAttritionInitiated={() => {
+          refetch(); // Refetch the employee list
+          setIsDetailsDrawerVisible(false); // Close drawer
+          setSelectedEmployeeId(null); // Clear selection
+        }}
       />
     </div>
   );

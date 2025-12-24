@@ -818,6 +818,70 @@ export const recruiterApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+
+    //Attrition APIS
+    initiateAttrition: builder.mutation({
+      query: ({ employeeId, ...body }) => ({
+        url: `/attrition/initiate/${employeeId}`,
+        method: "POST",
+        body,
+      }),
+    }),
+
+    // Get exit initiated employees
+    getExitInitiatedEmployees: builder.query({
+      query: ({ page = 1, pageSize = 10, search = "" }) => ({
+        url: `/attrition/exit-initiated`,
+        params: { page, pageSize, search },
+      }),
+    }),
+
+    // Get attrition details for an employee
+    getAttritionDetails: builder.query({
+      query: (employeeId) => `/attrition/details/${employeeId}`,
+    }),
+
+    // Approve attrition
+    approveAttrition: builder.mutation({
+      query: ({ attritionId, remarks }) => ({
+        url: `/attrition/approve/${attritionId}`,
+        method: "POST",
+        body: { remarks },
+      }),
+    }),
+
+    // Reject attrition
+    rejectAttrition: builder.mutation({
+      query: ({ attritionId, remarks }) => ({
+        url: `/attrition/reject/${attritionId}`,
+        method: "POST",
+        body: { remarks },
+      }),
+    }),
+
+    // Convert to candidate
+    convertEmployeeToCandidate: builder.mutation({
+      query: (employeeId) => ({
+        url: `/attrition/convert-to-candidate/${employeeId}`,
+        method: "POST",
+      }),
+    }),
+
+    cancelAttrition: builder.mutation({
+      query: ({ attritionId, cancellationReason }) => ({
+        url: `/attrition/cancel/${attritionId}`,
+        method: "POST",
+        body: { cancellationReason },
+      }),
+    }),
+
+    // Get pending approvals for current user
+    getPendingAttritionApprovals: builder.query({
+      query: ({ page = 1, pageSize = 10 }) => ({
+        url: `/attrition/pending-approvals`,
+        params: { page, pageSize },
+      }),
+    }),
   }),
 });
 
@@ -906,4 +970,12 @@ export const {
   useRejectCandidateFromStageMutation,
   useGetRejectedCandidateByIdQuery,
   useGetRejectedCandidatesQuery,
+  useInitiateAttritionMutation,
+  useGetExitInitiatedEmployeesQuery,
+  useGetAttritionDetailsQuery,
+  useApproveAttritionMutation,
+  useRejectAttritionMutation,
+  useConvertEmployeeToCandidateMutation,
+  useGetPendingAttritionApprovalsQuery,
+  useCancelAttritionMutation
 } = recruiterApi;

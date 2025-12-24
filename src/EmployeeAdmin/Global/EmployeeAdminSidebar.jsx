@@ -15,6 +15,7 @@ import {
   WarningOutlined,
   BellOutlined,
   UsergroupAddOutlined,
+  UsergroupDeleteOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -75,6 +76,18 @@ const EmployeeAdminSidebar = ({
       icon: <UsergroupAddOutlined />,
       label: "All Employees",
       permission: "all-employee",
+    },
+    {
+      key: "/employee-admin/exit-employees",
+      icon: <UsergroupDeleteOutlined />,
+      label: "Exit Initiated Employees",
+      permission: "exit-initiated-employee",
+    },
+    {
+      key: "/employee-admin/attrition-approvals",
+      icon: <UsergroupDeleteOutlined />,
+      label: "Pending Attrition Approvals",
+      permission: "pending-attrition-emp",
     },
     {
       key: "/employee-admin/leave-request",
@@ -268,7 +281,6 @@ const EmployeeAdminSidebar = ({
     permissions?.length > 0
       ? menuItems.filter((item) => permissions.includes(item.permission))
       : menuItems;
-
 
   const handleLogout = async () => {
     try {

@@ -107,7 +107,9 @@ import RecruiterLevels from "./Recruiters/Pages/RecruiterLevels";
 import RecruiterMasters from "./Recruiters/Pages/RecruiterMasters";
 import AdminDashboardDetails from "./Admin/Pages/AdminDashboardDetail";
 import AdminEmployees from "./Admin/Pages/AdminEmployees";
-import RejectedCandidates  from "./Recruiters/Pages/RejectedCandidates";
+import RejectedCandidates from "./Recruiters/Pages/RejectedCandidates";
+import ExitInitiatedEmployees from "./EmployeeAdmin/Pages/ExitInitiatedEmployees";
+import PendingAttritionApprovals from "./EmployeeAdmin/Pages/PendingAttritionApprovals";
 
 const AppRoutes = () => {
   const host = window.location.hostname;
@@ -363,7 +365,7 @@ const AppRoutes = () => {
           path="/recruiter/completed-candidates"
           element={<ProtectedRecruiter element={<CompletedCandidates />} />}
         />
-          <Route
+        <Route
           path="/recruiter/rejected-candidates"
           element={<ProtectedRecruiter element={<RejectedCandidates />} />}
         />
@@ -465,6 +467,18 @@ const AppRoutes = () => {
           path="/employee-admin/all-employees"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminAllEmployees />} />
+          }
+        />
+        <Route
+          path="/employee-admin/exit-employees"
+          element={
+            <ProtectedEmployeeAdmin element={<ExitInitiatedEmployees />} />
+          }
+        />
+        <Route
+          path="/employee-admin/attrition-approvals"
+          element={
+            <ProtectedEmployeeAdmin element={<PendingAttritionApprovals />} />
           }
         />
         <Route

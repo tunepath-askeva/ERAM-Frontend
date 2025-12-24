@@ -71,6 +71,11 @@ export const getPermissionGroups = (recruiterType) => {
         permissions: [
           { key: "dashboard", label: "Dashboard" },
           { key: "all-employee", label: "All Employee" },
+          { key: "exit-initiated-employee", label: "Exit Inititated Employee" },
+          {
+            key: "pending-attrition-emp",
+            label: "Pending Attrition Approvals",
+          },
           { key: "leave-request", label: "Leave Request" },
           { key: "other-request", label: "Other Request" },
           { key: "payroll", label: "Payroll" },
@@ -79,6 +84,7 @@ export const getPermissionGroups = (recruiterType) => {
           { key: "company-policies", label: "Company Policies" },
           { key: "news", label: "News" },
           { key: "feedback-suggestion", label: "Feedback/Suggestion" },
+          { key: "notifications", label: "Notifications" },
         ],
       },
       {
