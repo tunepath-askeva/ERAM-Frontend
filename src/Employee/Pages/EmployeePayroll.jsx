@@ -187,14 +187,14 @@ const EmployeePayroll = () => {
       width: 150,
       render: (_, record) => (
         <Space>
-          <Button
+          {/* <Button
             type="link"
             icon={<EyeOutlined />}
             onClick={() => handleView(record)}
             size="small"
           >
             View
-          </Button>
+          </Button> */}
           <Button
             type="link"
             icon={<DownloadOutlined />}

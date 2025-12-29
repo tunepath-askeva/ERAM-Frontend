@@ -818,6 +818,7 @@ const EmployeeAdminAllEmployees = () => {
         onCancel={() => {
           setIsAttritionModalVisible(false);
           setSelectedEmployeeForAttrition(null);
+          refetch();
         }}
         employee={selectedEmployeeForAttrition}
         onSubmit={handleInitiateAttrition}

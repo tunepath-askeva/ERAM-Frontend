@@ -891,6 +891,14 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+
+    updateEmployeeEmail: builder.mutation({
+      query: ({ employeeId, newEmail }) => ({
+        url: `/attrition/update-email/${employeeId}`,
+        method: "PUT",
+        body: { newEmail }, // ✅ send in request body
+      }),
+    }),
   }),
 });
 
@@ -987,5 +995,6 @@ export const {
   useConvertEmployeeToCandidateMutation,
   useGetPendingAttritionApprovalsQuery,
   useCancelAttritionMutation,
-  useGetAttritionHistoryQuery
+  useGetAttritionHistoryQuery,
+  useUpdateEmployeeEmailMutation,
 } = recruiterApi;
