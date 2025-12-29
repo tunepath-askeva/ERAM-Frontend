@@ -18,6 +18,7 @@ import {
   Empty,
   Divider,
   Result,
+  Space 
 } from "antd";
 import {
   InfoCircleOutlined,
@@ -768,6 +769,688 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
     </div>
   );
 
+  const renderEmploymentDetails = () => {
+    const employment = candidate?.employmentDetails;
+
+    if (!employment || Object.keys(employment).length === 0) {
+      return <Empty description="No employment details available" />;
+    }
+
+    return (
+      <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12}>
+            <Text strong>Category:</Text>
+            <br />
+            <Text>{employment.category || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Assigned Job Title:</Text>
+            <br />
+            <Text>{employment.assignedJobTitle || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Date of Joining:</Text>
+            <br />
+            <Text>{formatDate(employment.dateOfJoining)}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Previous ERAM ID:</Text>
+            <br />
+            <Tag color="purple">
+              {employment.previousEramId || "Not provided"}
+            </Tag>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Official Email:</Text>
+            <br />
+            <Text>
+              <MailOutlined /> {employment.officialEmail || "Not provided"}
+            </Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Badge No:</Text>
+            <br />
+            <Text>{employment.badgeNo || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Gate Pass ID:</Text>
+            <br />
+            <Text>{employment.gatePassId || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Aramco ID:</Text>
+            <br />
+            <Text>{employment.aramcoId || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Other ID:</Text>
+            <br />
+            <Text>{employment.otherId || "Not provided"}</Text>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text strong>Plant ID:</Text>
+            <br />
+            <Text>{employment.plantId || "Not provided"}</Text>
+          </Col>
+
+          {employment.designation && (
+            <Col xs={24} sm={12}>
+              <Text strong>Designation:</Text>
+              <br />
+              <Text>{employment.designation}</Text>
+            </Col>
+          )}
+
+          {employment.familyStatus && (
+            <Col xs={24} sm={12}>
+              <Text strong>Family Status:</Text>
+              <br />
+              <Text>{employment.familyStatus}</Text>
+            </Col>
+          )}
+
+          {employment.externalEmpNo && (
+            <Col xs={24} sm={12}>
+              <Text strong>External Employee No:</Text>
+              <br />
+              <Text>{employment.externalEmpNo}</Text>
+            </Col>
+          )}
+
+          {employment.employeeGroup && (
+            <Col xs={24} sm={12}>
+              <Text strong>Employee Group:</Text>
+              <br />
+              <Text>{employment.employeeGroup}</Text>
+            </Col>
+          )}
+
+          {employment.employmentType && (
+            <Col xs={24} sm={12}>
+              <Text strong>Employment Type:</Text>
+              <br />
+              <Text>{employment.employmentType}</Text>
+            </Col>
+          )}
+
+          {employment.workLocation && (
+            <Col xs={24} sm={12}>
+              <Text strong>Work Location:</Text>
+              <br />
+              <Text>{employment.workLocation}</Text>
+            </Col>
+          )}
+        </Row>
+
+        {/* Iqama Details */}
+        {(employment.iqamaId ||
+          employment.iqamaIssueDate ||
+          employment.iqamaExpiryDate) && (
+          <>
+            <Divider />
+            <Text strong style={{ fontSize: "16px" }}>
+              <IdcardOutlined /> Iqama Details:
+            </Text>
+            <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+              {employment.iqamaId && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Iqama ID:</Text>
+                  <br />
+                  <Text>{employment.iqamaId}</Text>
+                </Col>
+              )}
+              {employment.iqamaIssueDate && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Iqama Issue Date:</Text>
+                  <br />
+                  <Text>{formatDate(employment.iqamaIssueDate)}</Text>
+                </Col>
+              )}
+              {employment.iqamaExpiryDate && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Iqama Expiry Date:</Text>
+                  <br />
+                  <Text>{formatDate(employment.iqamaExpiryDate)}</Text>
+                </Col>
+              )}
+              {employment.iqamaArabicDateOfIssue && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Iqama Arabic Issue Date:</Text>
+                  <br />
+                  <Text>{formatDate(employment.iqamaArabicDateOfIssue)}</Text>
+                </Col>
+              )}
+              {employment.iqamaArabicDateOfExpiry && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Iqama Arabic Expiry Date:</Text>
+                  <br />
+                  <Text>{formatDate(employment.iqamaArabicDateOfExpiry)}</Text>
+                </Col>
+              )}
+            </Row>
+          </>
+        )}
+
+        {/* Work Details */}
+        {(employment.workDays ||
+          employment.workHours ||
+          employment.airTicketFrequency) && (
+          <>
+            <Divider />
+            <Text strong style={{ fontSize: "16px" }}>
+              <ClockCircleOutlined /> Work Details:
+            </Text>
+            <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+              {employment.workDays && (
+                <Col xs={24} sm={8}>
+                  <Text strong>Work Days:</Text>
+                  <br />
+                  <Tag color="blue">{employment.workDays}</Tag>
+                </Col>
+              )}
+              {employment.workHours && (
+                <Col xs={24} sm={8}>
+                  <Text strong>Work Hours:</Text>
+                  <br />
+                  <Tag color="blue">{employment.workHours}</Tag>
+                </Col>
+              )}
+              {employment.airTicketFrequency && (
+                <Col xs={24} sm={8}>
+                  <Text strong>Air Ticket Frequency:</Text>
+                  <br />
+                  <Text>{employment.airTicketFrequency}</Text>
+                </Col>
+              )}
+              {employment.lastArrival && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Last Arrival:</Text>
+                  <br />
+                  <Text>{formatDate(employment.lastArrival)}</Text>
+                </Col>
+              )}
+              {employment.lastWorkingDay && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Last Working Day:</Text>
+                  <br />
+                  <Text>{formatDate(employment.lastWorkingDay)}</Text>
+                </Col>
+              )}
+              {employment.eligibleVacationDays && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Eligible Vacation Days:</Text>
+                  <br />
+                  <Tag color="green">
+                    {employment.eligibleVacationDays} days
+                  </Tag>
+                </Col>
+              )}
+              {employment.eligibleVacationMonth && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Eligible Vacation Month:</Text>
+                  <br />
+                  <Text>{employment.eligibleVacationMonth}</Text>
+                </Col>
+              )}
+            </Row>
+          </>
+        )}
+
+        {/* Contract & Insurance Details */}
+        {(employment.visaCategory ||
+          employment.periodOfContract ||
+          employment.probationPeriod) && (
+          <>
+            <Divider />
+            <Text strong style={{ fontSize: "16px" }}>
+              <SafetyOutlined /> Contract & Insurance:
+            </Text>
+            <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+              {employment.visaCategory && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Visa Category:</Text>
+                  <br />
+                  <Text>{employment.visaCategory}</Text>
+                </Col>
+              )}
+              {employment.periodOfContract && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Period of Contract:</Text>
+                  <br />
+                  <Text>{employment.periodOfContract}</Text>
+                </Col>
+              )}
+              {employment.probationPeriod && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Probation Period:</Text>
+                  <br />
+                  <Text>{employment.probationPeriod}</Text>
+                </Col>
+              )}
+              {employment.insuranceCategory && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Insurance Category:</Text>
+                  <br />
+                  <Text>{employment.insuranceCategory}</Text>
+                </Col>
+              )}
+              {employment.gosi && (
+                <Col xs={24} sm={12}>
+                  <Text strong>GOSI:</Text>
+                  <br />
+                  <Text>{employment.gosi}</Text>
+                </Col>
+              )}
+              {employment.payrollGroup && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Payroll Group:</Text>
+                  <br />
+                  <Text>{employment.payrollGroup}</Text>
+                </Col>
+              )}
+              {employment.sponsorName && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Sponsor Name:</Text>
+                  <br />
+                  <Text>{employment.sponsorName}</Text>
+                </Col>
+              )}
+              {employment.noOfDependent !== undefined && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Number of Dependents:</Text>
+                  <br />
+                  <Tag color="orange">{employment.noOfDependent}</Tag>
+                </Col>
+              )}
+              {employment.drivingLicense && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Driving License:</Text>
+                  <br />
+                  <Text>{employment.drivingLicense}</Text>
+                </Col>
+              )}
+              {employment.classCode && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Class Code:</Text>
+                  <br />
+                  <Text>{employment.classCode}</Text>
+                </Col>
+              )}
+              {employment.medicalPolicy && (
+                <Col xs={24} sm={12}>
+                  <Text strong>Medical Policy:</Text>
+                  <br />
+                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                    Active
+                  </Tag>
+                  {employment.medicalPolicyNumber && (
+                    <Text style={{ marginLeft: 8 }}>
+                      ({employment.medicalPolicyNumber})
+                    </Text>
+                  )}
+                </Col>
+              )}
+            </Row>
+          </>
+        )}
+
+        {/* Additional Information */}
+        {(employment.basicAssets || employment.reportingAndDocumentation) && (
+          <>
+            <Divider />
+            <Text strong style={{ fontSize: "16px" }}>
+              Additional Information:
+            </Text>
+            <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+              {employment.basicAssets && (
+                <Col span={24}>
+                  <Text strong>Basic Assets:</Text>
+                  <br />
+                  <Text>{employment.basicAssets}</Text>
+                </Col>
+              )}
+              {employment.reportingAndDocumentation && (
+                <Col span={24}>
+                  <Text strong>Reporting & Documentation:</Text>
+                  <br />
+                  <Text>{employment.reportingAndDocumentation}</Text>
+                </Col>
+              )}
+            </Row>
+          </>
+        )}
+
+        {/* Asset Allocation */}
+        {employment.assetAllocation &&
+          employment.assetAllocation.length > 0 && (
+            <>
+              <Divider />
+              <Text strong style={{ fontSize: "16px" }}>
+                <BankOutlined /> Asset Allocation:
+              </Text>
+              <div style={{ marginTop: 12 }}>
+                {employment.assetAllocation.map((asset, index) => (
+                  <Tag key={index} color="cyan" style={{ marginBottom: 8 }}>
+                    {asset}
+                  </Tag>
+                ))}
+              </div>
+            </>
+          )}
+      </Card>
+    );
+  };
+
+  const renderAttritionHistory = () => {
+    const attritionRecords = data?.attritionRecords;
+
+    if (!attritionRecords || attritionRecords.length === 0) {
+      return <Empty description="No previous employment records" />;
+    }
+
+    return (
+      <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+        <List
+          dataSource={attritionRecords}
+          renderItem={(record) => (
+            <List.Item
+              style={{
+                borderLeft: `4px solid ${
+                  record.status === "exit_approved"
+                    ? "#52c41a"
+                    : record.status === "rejected"
+                    ? "#ff4d4f"
+                    : record.status === "converted_to_candidate"
+                    ? "#1890ff"
+                    : record.status === "cancelled"
+                    ? "#faad14"
+                    : "#d9d9d9"
+                }`,
+                paddingLeft: 16,
+                marginBottom: 16,
+              }}
+            >
+              <List.Item.Meta
+                avatar={
+                  record.status === "exit_approved" ? (
+                    <CheckCircleOutlined
+                      style={{ fontSize: 28, color: "#52c41a" }}
+                    />
+                  ) : record.status === "rejected" ? (
+                    <CloseCircleOutlined
+                      style={{ fontSize: 28, color: "#ff4d4f" }}
+                    />
+                  ) : record.status === "converted_to_candidate" ? (
+                    <CheckCircleOutlined
+                      style={{ fontSize: 28, color: "#1890ff" }}
+                    />
+                  ) : (
+                    <StopOutlined style={{ fontSize: 28, color: "#faad14" }} />
+                  )
+                }
+                title={
+                  <Space direction="vertical" size={0}>
+                    <Space>
+                      <Text strong style={{ fontSize: 18 }}>
+                        {record.attritionType}
+                      </Text>
+                      <Tag
+                        color={
+                          record.status === "exit_approved"
+                            ? "green"
+                            : record.status === "rejected"
+                            ? "red"
+                            : record.status === "converted_to_candidate"
+                            ? "blue"
+                            : record.status === "cancelled"
+                            ? "orange"
+                            : "default"
+                        }
+                        style={{ fontSize: 12 }}
+                      >
+                        {record.status.replace(/_/g, " ").toUpperCase()}
+                      </Tag>
+                    </Space>
+                  </Space>
+                }
+                description={
+                  <div style={{ marginTop: 12 }}>
+                    <Row gutter={[16, 12]}>
+                      {record.previousEramId && (
+                        <Col xs={24} sm={12}>
+                          <Text strong>Previous ERAM ID: </Text>
+                          <Tag color="purple">{record.previousEramId}</Tag>
+                        </Col>
+                      )}
+
+                      {record.lastWorkingDate && (
+                        <Col xs={24} sm={12}>
+                          <Text strong>Last Working Date: </Text>
+                          <Text type="secondary">
+                            {formatDate(record.lastWorkingDate)}
+                          </Text>
+                        </Col>
+                      )}
+
+                      <Col span={24}>
+                        <Text strong>Reason: </Text>
+                        <Paragraph
+                          style={{
+                            marginTop: 4,
+                            marginBottom: 8,
+                            padding: 12,
+                            background: "#f5f5f5",
+                            borderRadius: 8,
+                          }}
+                        >
+                          {record.reason}
+                        </Paragraph>
+                      </Col>
+
+                      {record.projectName && (
+                        <Col xs={24} sm={12}>
+                          <Text strong>Project: </Text>
+                          <Text>{record.projectName}</Text>
+                        </Col>
+                      )}
+
+                      {record.noticePeriodServed && (
+                        <Col xs={24} sm={12}>
+                          <Text strong>Notice Period Served: </Text>
+                          <Tag
+                            color={
+                              record.noticePeriodServed === "Yes"
+                                ? "green"
+                                : record.noticePeriodServed === "No"
+                                ? "red"
+                                : "default"
+                            }
+                          >
+                            {record.noticePeriodServed}
+                          </Tag>
+                        </Col>
+                      )}
+
+                      {record.hrRemarks && (
+                        <Col span={24}>
+                          <Text strong>HR Remarks: </Text>
+                          <Paragraph
+                            type="secondary"
+                            style={{
+                              marginTop: 4,
+                              padding: 12,
+                              background: "#fafafa",
+                              borderRadius: 8,
+                            }}
+                          >
+                            {record.hrRemarks}
+                          </Paragraph>
+                        </Col>
+                      )}
+
+                      <Col xs={24} sm={12}>
+                        <Text strong>Initiated By: </Text>
+                        <Text type="secondary">
+                          <MailOutlined /> {record.initiatedBy?.email || "N/A"}
+                        </Text>
+                      </Col>
+
+                      {record.convertedBy && (
+                        <Col xs={24} sm={12}>
+                          <Text strong>Converted By: </Text>
+                          <Text type="secondary">
+                            <MailOutlined />{" "}
+                            {record.convertedBy?.email || "N/A"}
+                          </Text>
+                        </Col>
+                      )}
+
+                      {record.cancelledBy && (
+                        <>
+                          <Col xs={24} sm={12}>
+                            <Text strong>Cancelled By: </Text>
+                            <Text type="secondary">
+                              <MailOutlined />{" "}
+                              {record.cancelledBy?.email || "N/A"}
+                            </Text>
+                          </Col>
+                          {record.cancellationReason && (
+                            <Col span={24}>
+                              <Text strong>Cancellation Reason: </Text>
+                              <Paragraph
+                                type="secondary"
+                                style={{ marginTop: 4 }}
+                              >
+                                {record.cancellationReason}
+                              </Paragraph>
+                            </Col>
+                          )}
+                        </>
+                      )}
+                    </Row>
+
+                    {/* Approvers Section */}
+                    {record.approvers && record.approvers.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                        <Divider style={{ margin: "12px 0" }} />
+                        <Text strong style={{ fontSize: 15 }}>
+                          <TeamOutlined /> Approval History:
+                        </Text>
+                        <List
+                          size="small"
+                          style={{ marginTop: 12 }}
+                          dataSource={record.approvers}
+                          renderItem={(approver) => (
+                            <List.Item
+                              style={{
+                                padding: "12px",
+                                background: "#fafafa",
+                                borderRadius: 8,
+                                marginBottom: 8,
+                              }}
+                            >
+                              <Space
+                                direction="vertical"
+                                style={{ width: "100%" }}
+                              >
+                                <Space>
+                                  {approver.status === "approved" ? (
+                                    <CheckCircleOutlined
+                                      style={{ color: "#52c41a", fontSize: 16 }}
+                                    />
+                                  ) : approver.status === "rejected" ? (
+                                    <CloseCircleOutlined
+                                      style={{ color: "#ff4d4f", fontSize: 16 }}
+                                    />
+                                  ) : (
+                                    <ClockCircleOutlined
+                                      style={{ color: "#faad14", fontSize: 16 }}
+                                    />
+                                  )}
+                                  <Text strong>
+                                    {approver.approver?.email || "N/A"}
+                                  </Text>
+                                  <Tag
+                                    color={
+                                      approver.status === "approved"
+                                        ? "green"
+                                        : approver.status === "rejected"
+                                        ? "red"
+                                        : "orange"
+                                    }
+                                  >
+                                    {approver.status.toUpperCase()}
+                                  </Tag>
+                                </Space>
+                                {approver.approvedAt && (
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12, marginLeft: 24 }}
+                                  >
+                                    <CalendarOutlined />{" "}
+                                    {formatDate(approver.approvedAt)} at{" "}
+                                    {dayjs(approver.approvedAt).format("HH:mm")}
+                                  </Text>
+                                )}
+                                {approver.remarks && (
+                                  <div style={{ marginLeft: 24, marginTop: 4 }}>
+                                    <Text
+                                      type="secondary"
+                                      style={{
+                                        fontSize: 13,
+                                        fontStyle: "italic",
+                                      }}
+                                    >
+                                      "{approver.remarks}"
+                                    </Text>
+                                  </div>
+                                )}
+                              </Space>
+                            </List.Item>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    <Divider style={{ margin: "16px 0" }} />
+                    <Row gutter={[16, 8]}>
+                      <Col xs={24} sm={12}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          <strong>Initiated:</strong>{" "}
+                          {formatDate(record.createdAt)} at{" "}
+                          {dayjs(record.createdAt).format("HH:mm")}
+                        </Text>
+                      </Col>
+                      {record.convertedAt && (
+                        <Col xs={24} sm={12}>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            <strong>Converted:</strong>{" "}
+                            {formatDate(record.convertedAt)} at{" "}
+                            {dayjs(record.convertedAt).format("HH:mm")}
+                          </Text>
+                        </Col>
+                      )}
+                      {record.cancelledAt && (
+                        <Col xs={24} sm={12}>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            <strong>Cancelled:</strong>{" "}
+                            {formatDate(record.cancelledAt)} at{" "}
+                            {dayjs(record.cancelledAt).format("HH:mm")}
+                          </Text>
+                        </Col>
+                      )}
+                    </Row>
+                  </div>
+                }
+              />
+            </List.Item>
+          )}
+        />
+      </Card>
+    );
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return <Skeleton active avatar paragraph={{ rows: 6 }} />;
@@ -847,6 +1530,26 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
           </span>
         ),
         children: renderProfessionalInfo(),
+      },
+      {
+        key: "employment",
+        label: (
+          <span>
+            <IdcardOutlined />
+            Employment Details
+          </span>
+        ),
+        children: renderEmploymentDetails(),
+      },
+      {
+        key: "attrition",
+        label: (
+          <span>
+            <FileTextOutlined />
+            Previous Employment History
+          </span>
+        ),
+        children: renderAttritionHistory(),
       },
       {
         key: "education",

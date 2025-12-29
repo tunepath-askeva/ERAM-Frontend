@@ -45,6 +45,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
 import ReactMarkdown from "react-markdown";
 import { useApproveRejectRequisitionMutation } from "../../Slices/Recruiter/RecruiterApis.js";
+import { useSnackbar } from "notistack";
 
 dayjs.extend(relativeTime);
 
@@ -52,6 +53,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea, Search } = Input;
 
 const AdminNotifications = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +83,8 @@ const AdminNotifications = () => {
     const user = JSON.parse(localStorage.getItem("adminInfo"));
     if (user) {
       setCurrentUser({
-        email: user.email, 
-        role: user.roles || user.role, 
+        email: user.email,
+        role: user.roles || user.role,
       });
     }
   }, []);
@@ -152,17 +154,25 @@ const AdminNotifications = () => {
         isAdmin: true,
       }).unwrap();
 
-      message.success(`Requisition ${actionType}d successfully`);
+      enqueueSnackbar(`Requisition ${actionType}d successfully`, {
+        variant: "success",
+      });
       setModalVisible(false);
       form.resetFields();
       setSelectedNotification(null);
       setActionType(null);
       refetch();
     } catch (error) {
-      if (error.name !== "ValidationError") {
-        message.error(`Failed to ${actionType} requisition`);
-        console.error(`${actionType} error:`, error);
-      }
+      const backendMessage =
+        error?.response?.data?.message || 
+        error?.data?.message || 
+        error?.message; 
+
+      enqueueSnackbar(backendMessage || `Failed to ${actionType} requisition`, {
+        variant: "error",
+      });
+
+      console.error(`${actionType} error:`, error);
     }
   };
 

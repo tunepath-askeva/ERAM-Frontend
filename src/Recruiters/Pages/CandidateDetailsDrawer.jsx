@@ -60,9 +60,12 @@ const CandidateDetailsDrawer = ({
   const [remarks, setRemarks] = useState("");
   const [notificationMethod, setNotificationMethod] = useState([]);
 
-  const { data, isLoading, error,refetch  } = useGetAllcandidatebyIdQuery(candidateId, {
-    skip: !candidateId,
-  });
+  const { data, isLoading, error, refetch } = useGetAllcandidatebyIdQuery(
+    candidateId,
+    {
+      skip: !candidateId,
+    }
+  );
 
   const [sendNotification, { isLoading: isNotificationLoading }] =
     useNotifyEmployeeMutation();
@@ -839,6 +842,663 @@ const CandidateDetailsDrawer = ({
                     </Card>
                   ) : (
                     <Empty description="No work experience available" />
+                  )}
+                </TabPane>
+
+                <TabPane
+                  tab={
+                    <span>
+                      <IdcardOutlined />
+                      Employment Details
+                    </span>
+                  }
+                  key="employment"
+                >
+                  {candidate.employmentDetails ? (
+                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+                      <Row gutter={[16, 16]}>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Category:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.category ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Assigned Job Title:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.assignedJobTitle ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Date of Joining:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.dateOfJoining
+                              ? dayjs(
+                                  candidate.employmentDetails.dateOfJoining
+                                ).format("MMM DD, YYYY")
+                              : "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Previous ERAM ID:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.previousEramId ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Official Email:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.officialEmail ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Badge No:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.badgeNo ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Gate Pass ID:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.gatePassId ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Aramco ID:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.aramcoId ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Other ID:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.otherId ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                          <Text strong>Plant ID:</Text>
+                          <br />
+                          <Text>
+                            {candidate.employmentDetails.plantId ||
+                              "Not provided"}
+                          </Text>
+                        </Col>
+
+                        {candidate.employmentDetails.designation && (
+                          <Col xs={24} sm={12}>
+                            <Text strong>Designation:</Text>
+                            <br />
+                            <Text>
+                              {candidate.employmentDetails.designation}
+                            </Text>
+                          </Col>
+                        )}
+
+                        {candidate.employmentDetails.familyStatus && (
+                          <Col xs={24} sm={12}>
+                            <Text strong>Family Status:</Text>
+                            <br />
+                            <Text>
+                              {candidate.employmentDetails.familyStatus}
+                            </Text>
+                          </Col>
+                        )}
+
+                        {candidate.employmentDetails.externalEmpNo && (
+                          <Col xs={24} sm={12}>
+                            <Text strong>External Employee No:</Text>
+                            <br />
+                            <Text>
+                              {candidate.employmentDetails.externalEmpNo}
+                            </Text>
+                          </Col>
+                        )}
+
+                        {candidate.employmentDetails.basicAssets && (
+                          <Col xs={24} sm={12}>
+                            <Text strong>Basic Assets:</Text>
+                            <br />
+                            <Text>
+                              {candidate.employmentDetails.basicAssets}
+                            </Text>
+                          </Col>
+                        )}
+                      </Row>
+
+                      {/* Iqama Details */}
+                      {(candidate.employmentDetails.iqamaIssueDate ||
+                        candidate.employmentDetails.iqamaExpiryDate) && (
+                        <>
+                          <Divider />
+                          <Text strong style={{ fontSize: "16px" }}>
+                            Iqama Details:
+                          </Text>
+                          <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+                            {candidate.employmentDetails.iqamaIssueDate && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Iqama Issue Date:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails.iqamaIssueDate
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.iqamaExpiryDate && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Iqama Expiry Date:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails.iqamaExpiryDate
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails
+                              .iqamaArabicDateOfIssue && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Iqama Arabic Issue Date:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails
+                                      .iqamaArabicDateOfIssue
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails
+                              .iqamaArabicDateOfExpiry && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Iqama Arabic Expiry Date:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails
+                                      .iqamaArabicDateOfExpiry
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                          </Row>
+                        </>
+                      )}
+
+                      {/* Work Details */}
+                      {(candidate.employmentDetails.workDays ||
+                        candidate.employmentDetails.workHours ||
+                        candidate.employmentDetails.airTicketFrequency) && (
+                        <>
+                          <Divider />
+                          <Text strong style={{ fontSize: "16px" }}>
+                            Work Details:
+                          </Text>
+                          <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+                            {candidate.employmentDetails.workDays && (
+                              <Col xs={24} sm={8}>
+                                <Text strong>Work Days:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.workDays}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.workHours && (
+                              <Col xs={24} sm={8}>
+                                <Text strong>Work Hours:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.workHours}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.airTicketFrequency && (
+                              <Col xs={24} sm={8}>
+                                <Text strong>Air Ticket Frequency:</Text>
+                                <br />
+                                <Text>
+                                  {
+                                    candidate.employmentDetails
+                                      .airTicketFrequency
+                                  }
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.lastArrival && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Last Arrival:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails.lastArrival
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.lastWorkingDay && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Last Working Day:</Text>
+                                <br />
+                                <Text>
+                                  {dayjs(
+                                    candidate.employmentDetails.lastWorkingDay
+                                  ).format("MMM DD, YYYY")}
+                                </Text>
+                              </Col>
+                            )}
+                          </Row>
+                        </>
+                      )}
+
+                      {/* Contract & Insurance Details */}
+                      {(candidate.employmentDetails.visaCategory ||
+                        candidate.employmentDetails.periodOfContract ||
+                        candidate.employmentDetails.probationPeriod) && (
+                        <>
+                          <Divider />
+                          <Text strong style={{ fontSize: "16px" }}>
+                            Contract & Insurance:
+                          </Text>
+                          <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
+                            {candidate.employmentDetails.visaCategory && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Visa Category:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.visaCategory}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.periodOfContract && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Period of Contract:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.periodOfContract}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.probationPeriod && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Probation Period:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.probationPeriod}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.insuranceCategory && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Insurance Category:</Text>
+                                <br />
+                                <Text>
+                                  {
+                                    candidate.employmentDetails
+                                      .insuranceCategory
+                                  }
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.gosi && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>GOSI:</Text>
+                                <br />
+                                <Text>{candidate.employmentDetails.gosi}</Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.payrollGroup && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Payroll Group:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.payrollGroup}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.noOfDependent && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Number of Dependents:</Text>
+                                <br />
+                                <Text>
+                                  {candidate.employmentDetails.noOfDependent}
+                                </Text>
+                              </Col>
+                            )}
+                            {candidate.employmentDetails.medicalPolicy && (
+                              <Col xs={24} sm={12}>
+                                <Text strong>Medical Policy:</Text>
+                                <br />
+                                <Tag color="green">Active</Tag>
+                                {candidate.employmentDetails
+                                  .medicalPolicyNumber && (
+                                  <Text style={{ marginLeft: 8 }}>
+                                    (
+                                    {
+                                      candidate.employmentDetails
+                                        .medicalPolicyNumber
+                                    }
+                                    )
+                                  </Text>
+                                )}
+                              </Col>
+                            )}
+                          </Row>
+                        </>
+                      )}
+
+                      {/* Asset Allocation */}
+                      {candidate.employmentDetails.assetAllocation &&
+                        candidate.employmentDetails.assetAllocation.length >
+                          0 && (
+                          <>
+                            <Divider />
+                            <Text strong style={{ fontSize: "16px" }}>
+                              Asset Allocation:
+                            </Text>
+                            <List
+                              style={{ marginTop: 12 }}
+                              dataSource={
+                                candidate.employmentDetails.assetAllocation
+                              }
+                              renderItem={(asset) => (
+                                <List.Item>
+                                  <Text>{asset}</Text>
+                                </List.Item>
+                              )}
+                            />
+                          </>
+                        )}
+                    </Card>
+                  ) : (
+                    <Empty description="No employment details available" />
+                  )}
+                </TabPane>
+
+                <TabPane
+                  tab={
+                    <span>
+                      <FileTextOutlined />
+                      Previous Employment History
+                    </span>
+                  }
+                  key="attrition"
+                >
+                  {data?.attritionRecords &&
+                  data.attritionRecords.length > 0 ? (
+                    <Card style={{ marginBottom: 24, borderRadius: "12px" }}>
+                      <List
+                        dataSource={data.attritionRecords}
+                        renderItem={(record) => (
+                          <List.Item>
+                            <List.Item.Meta
+                              avatar={
+                                record.status === "exit_approved" ? (
+                                  <CheckCircleOutlined
+                                    style={{ fontSize: 24, color: "#52c41a" }}
+                                  />
+                                ) : record.status === "rejected" ? (
+                                  <CloseCircleOutlined
+                                    style={{ fontSize: 24, color: "#ff4d4f" }}
+                                  />
+                                ) : record.status ===
+                                  "converted_to_candidate" ? (
+                                  <CheckCircleOutlined
+                                    style={{ fontSize: 24, color: "#1890ff" }}
+                                  />
+                                ) : (
+                                  <CloseCircleOutlined
+                                    style={{ fontSize: 24, color: "#faad14" }}
+                                  />
+                                )
+                              }
+                              title={
+                                <Space direction="vertical" size={0}>
+                                  <Space>
+                                    <Text strong style={{ fontSize: 16 }}>
+                                      {record.attritionType}
+                                    </Text>
+                                    <Tag
+                                      color={
+                                        record.status === "exit_approved"
+                                          ? "green"
+                                          : record.status === "rejected"
+                                          ? "red"
+                                          : record.status ===
+                                            "converted_to_candidate"
+                                          ? "blue"
+                                          : record.status === "cancelled"
+                                          ? "orange"
+                                          : "default"
+                                      }
+                                    >
+                                      {record.status
+                                        .replace(/_/g, " ")
+                                        .toUpperCase()}
+                                    </Tag>
+                                  </Space>
+                                </Space>
+                              }
+                              description={
+                                <div style={{ marginTop: 8 }}>
+                                  <Row gutter={[16, 8]}>
+                                    {record.previousEramId && (
+                                      <Col xs={24} sm={12}>
+                                        <Text strong>Previous ERAM ID: </Text>
+                                        <Tag color="purple">
+                                          {record.previousEramId}
+                                        </Tag>
+                                      </Col>
+                                    )}
+
+                                    {record.lastWorkingDate && (
+                                      <Col xs={24} sm={12}>
+                                        <Text strong>Last Working Date: </Text>
+                                        <Text type="secondary">
+                                          {dayjs(record.lastWorkingDate).format(
+                                            "MMM DD, YYYY"
+                                          )}
+                                        </Text>
+                                      </Col>
+                                    )}
+
+                                    <Col span={24}>
+                                      <Text strong>Reason: </Text>
+                                      <Paragraph
+                                        style={{
+                                          marginTop: 4,
+                                          marginBottom: 8,
+                                        }}
+                                      >
+                                        {record.reason}
+                                      </Paragraph>
+                                    </Col>
+
+                                    {record.projectName && (
+                                      <Col xs={24} sm={12}>
+                                        <Text strong>Project: </Text>
+                                        <Text>{record.projectName}</Text>
+                                      </Col>
+                                    )}
+
+                                    {record.noticePeriodServed && (
+                                      <Col xs={24} sm={12}>
+                                        <Text strong>
+                                          Notice Period Served:{" "}
+                                        </Text>
+                                        <Tag
+                                          color={
+                                            record.noticePeriodServed === "Yes"
+                                              ? "green"
+                                              : "red"
+                                          }
+                                        >
+                                          {record.noticePeriodServed}
+                                        </Tag>
+                                      </Col>
+                                    )}
+
+                                    {record.hrRemarks && (
+                                      <Col span={24}>
+                                        <Text strong>HR Remarks: </Text>
+                                        <Paragraph
+                                          type="secondary"
+                                          style={{ marginTop: 4 }}
+                                        >
+                                          {record.hrRemarks}
+                                        </Paragraph>
+                                      </Col>
+                                    )}
+
+                                    <Col xs={24} sm={12}>
+                                      <Text strong>Initiated By: </Text>
+                                      <Text type="secondary">
+                                        {record.initiatedBy?.email || "N/A"}
+                                      </Text>
+                                    </Col>
+
+                                    {record.convertedBy && (
+                                      <Col xs={24} sm={12}>
+                                        <Text strong>Converted By: </Text>
+                                        <Text type="secondary">
+                                          {record.convertedBy?.email || "N/A"}
+                                        </Text>
+                                      </Col>
+                                    )}
+                                  </Row>
+
+                                  {/* Approvers Section */}
+                                  {record.approvers &&
+                                    record.approvers.length > 0 && (
+                                      <div style={{ marginTop: 16 }}>
+                                        <Divider style={{ margin: "12px 0" }} />
+                                        <Text strong>Approval History:</Text>
+                                        <List
+                                          size="small"
+                                          style={{ marginTop: 8 }}
+                                          dataSource={record.approvers}
+                                          renderItem={(approver) => (
+                                            <List.Item
+                                              style={{ padding: "8px 0" }}
+                                            >
+                                              <Space>
+                                                {approver.status ===
+                                                "approved" ? (
+                                                  <CheckCircleOutlined
+                                                    style={{ color: "#52c41a" }}
+                                                  />
+                                                ) : approver.status ===
+                                                  "rejected" ? (
+                                                  <CloseCircleOutlined
+                                                    style={{ color: "#ff4d4f" }}
+                                                  />
+                                                ) : (
+                                                  <CloseCircleOutlined
+                                                    style={{ color: "#faad14" }}
+                                                  />
+                                                )}
+                                                <Text>
+                                                  {approver.approver?.email ||
+                                                    "N/A"}
+                                                </Text>
+                                                <Tag
+                                                  color={
+                                                    approver.status ===
+                                                    "approved"
+                                                      ? "green"
+                                                      : approver.status ===
+                                                        "rejected"
+                                                      ? "red"
+                                                      : "orange"
+                                                  }
+                                                >
+                                                  {approver.status.toUpperCase()}
+                                                </Tag>
+                                                {approver.approvedAt && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                  >
+                                                    {dayjs(
+                                                      approver.approvedAt
+                                                    ).format(
+                                                      "MMM DD, YYYY HH:mm"
+                                                    )}
+                                                  </Text>
+                                                )}
+                                              </Space>
+                                              {approver.remarks && (
+                                                <div
+                                                  style={{
+                                                    marginTop: 4,
+                                                    marginLeft: 24,
+                                                  }}
+                                                >
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                  >
+                                                    {approver.remarks}
+                                                  </Text>
+                                                </div>
+                                              )}
+                                            </List.Item>
+                                          )}
+                                        />
+                                      </div>
+                                    )}
+
+                                  <Divider style={{ margin: "12px 0" }} />
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    <strong>Initiated on:</strong>{" "}
+                                    {dayjs(record.createdAt).format(
+                                      "MMM DD, YYYY HH:mm"
+                                    )}
+                                  </Text>
+                                  {record.convertedAt && (
+                                    <>
+                                      {" | "}
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        <strong>Converted on:</strong>{" "}
+                                        {dayjs(record.convertedAt).format(
+                                          "MMM DD, YYYY HH:mm"
+                                        )}
+                                      </Text>
+                                    </>
+                                  )}
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    </Card>
+                  ) : (
+                    <Empty description="No previous employment records" />
                   )}
                 </TabPane>
 

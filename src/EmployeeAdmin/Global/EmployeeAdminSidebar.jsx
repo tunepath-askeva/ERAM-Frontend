@@ -17,6 +17,7 @@ import {
   UsergroupAddOutlined,
   UsergroupDeleteOutlined,
   ClockCircleOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -52,7 +53,10 @@ const EmployeeAdminSidebar = ({
     email: "",
     roles: "",
   });
-
+  const [openSubmenus, setOpenSubmenus] = useState({
+    attrition: false,
+    requests: false,
+  });
   const [logout] = useLogoutSuperAdminMutation();
   const { enqueueSnackbar } = useSnackbar();
   const [hoveredKey, setHoveredKey] = useState(null);
@@ -79,34 +83,50 @@ const EmployeeAdminSidebar = ({
       permission: "all-employee",
     },
     {
-      key: "/employee-admin/attrition-history",
-      icon: <ClockCircleOutlined />,
-      label: "Attrition History",
-      permission: "pending-attrition-emp",
-    },
-    {
-      key: "/employee-admin/exit-employees",
+      key: "attrition-group",
       icon: <UsergroupDeleteOutlined />,
-      label: "Exit Initiated Employees",
-      permission: "exit-initiated-employee",
+      label: "Attrition",
+      isGroup: true,
+      children: [
+        {
+          key: "/employee-admin/attrition-history",
+          icon: <ClockCircleOutlined />,
+          label: "Attrition History",
+          permission: "pending-attrition-emp",
+        },
+        {
+          key: "/employee-admin/exit-employees",
+          icon: <UsergroupDeleteOutlined />,
+          label: "Exit Initiated Employees",
+          permission: "exit-initiated-employee",
+        },
+        {
+          key: "/employee-admin/attrition-approvals",
+          icon: <UsergroupDeleteOutlined />,
+          label: "Pending Attrition Approvals",
+          permission: "pending-attrition-emp",
+        },
+      ],
     },
     {
-      key: "/employee-admin/attrition-approvals",
-      icon: <UsergroupDeleteOutlined />,
-      label: "Pending Attrition Approvals",
-      permission: "pending-attrition-emp",
-    },
-    {
-      key: "/employee-admin/leave-request",
-      icon: <FormOutlined />,
-      label: "Leave Request",
-      permission: "leave-request",
-    },
-    {
-      key: "/employee-admin/other-request",
+      key: "requests-group",
       icon: <PullRequestOutlined />,
-      label: "Other Requests",
-      permission: "other-request",
+      label: "Requests",
+      isGroup: true,
+      children: [
+        {
+          key: "/employee-admin/leave-request",
+          icon: <FormOutlined />,
+          label: "Leave Request",
+          permission: "leave-request",
+        },
+        {
+          key: "/employee-admin/other-request",
+          icon: <PullRequestOutlined />,
+          label: "Other Requests",
+          permission: "other-request",
+        },
+      ],
     },
     {
       key: "/employee-admin/payroll",
@@ -286,8 +306,48 @@ const EmployeeAdminSidebar = ({
 
   const filteredMenuItems =
     permissions?.length > 0
-      ? menuItems.filter((item) => permissions.includes(item.permission))
+      ? menuItems
+          .map((item) => {
+            if (item.isGroup && item.children) {
+              const filteredChildren = item.children.filter((child) =>
+                permissions.includes(child.permission)
+              );
+              if (filteredChildren.length > 0) {
+                return { ...item, children: filteredChildren };
+              }
+              return null;
+            }
+            return permissions.includes(item.permission) ? item : null;
+          })
+          .filter(Boolean)
       : menuItems;
+
+  const toggleSubmenu = (groupKey) => {
+    setOpenSubmenus((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }));
+  };
+
+  useEffect(() => {
+    // Check if any submenu item is active and open its parent
+    const checkActiveSubmenu = () => {
+      const newOpenSubmenus = {};
+
+      menuItems.forEach((item) => {
+        if (item.isGroup && item.children) {
+          const hasActiveChild = item.children.some(
+            (child) => child.key === selectedKey
+          );
+          newOpenSubmenus[item.key] = hasActiveChild;
+        }
+      });
+
+      setOpenSubmenus(newOpenSubmenus);
+    };
+
+    checkActiveSubmenu();
+  }, [selectedKey]); // Only depend on selectedKey
 
   const handleLogout = async () => {
     try {
@@ -413,59 +473,196 @@ const EmployeeAdminSidebar = ({
           gap: "8px",
         }}
       >
-        {filteredMenuItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => handleMenuClick({ key: item.key })}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              backgroundColor:
-                selectedKey === item.key
-                  ? "#fde2e4"
-                  : hoveredKey === item.key
-                  ? "#f1f5f9"
-                  : "transparent",
-              color:
-                selectedKey === item.key
-                  ? "#e11d48"
-                  : hoveredKey === item.key
-                  ? "#1e293b"
-                  : "#475569",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: screenSize.isMobile ? "16px" : "14px",
-              textAlign: "left",
-              borderRight:
-                selectedKey === item.key ? "2px solid #e11d48" : "none",
-              height: getMenuItemHeight(),
-              justifyContent:
-                collapsed && !screenSize.isMobile ? "center" : "flex-start",
-            }}
-            onMouseEnter={() => setHoveredKey(item.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            {React.cloneElement(item.icon, {
-              style: {
-                color:
-                  selectedKey === item.key
-                    ? "#e11d48"
-                    : hoveredKey === item.key
-                    ? "#e11d48"
-                    : "#64748b",
-                fontSize: getIconSize(),
-                minWidth: getIconSize(),
-              },
-            })}
-            {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
-          </button>
-        ))}
+        {filteredMenuItems.map((item) => {
+          const hasActiveChild =
+            item.isGroup &&
+            item.children?.some((child) => child.key === selectedKey);
+
+          return (
+            <div key={item.key}>
+              {item.isGroup ? (
+                <>
+                  <button
+                    onClick={() => toggleSubmenu(item.key)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      transition: "all 0.2s ease",
+                      backgroundColor: hasActiveChild
+                        ? "#fef2f2"
+                        : hoveredKey === item.key
+                        ? "#f1f5f9"
+                        : "transparent",
+                      color: hasActiveChild
+                        ? "#e11d48"
+                        : hoveredKey === item.key
+                        ? "#1e293b"
+                        : "#475569",
+                      border: "none",
+                      cursor: "pointer",
+                      fontWeight: hasActiveChild ? "600" : "500",
+                      fontSize: screenSize.isMobile ? "16px" : "14px",
+                      textAlign: "left",
+                      height: getMenuItemHeight(),
+                      justifyContent:
+                        collapsed && !screenSize.isMobile
+                          ? "center"
+                          : "flex-start",
+                    }}
+                    onMouseEnter={() => setHoveredKey(item.key)}
+                    onMouseLeave={() => setHoveredKey(null)}
+                  >
+                    {React.cloneElement(item.icon, {
+                      style: {
+                        color: hasActiveChild
+                          ? "#e11d48"
+                          : hoveredKey === item.key
+                          ? "#e11d48"
+                          : "#64748b",
+                        fontSize: getIconSize(),
+                        minWidth: getIconSize(),
+                      },
+                    })}
+                    {(!collapsed || screenSize.isMobile) && (
+                      <>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        <DownOutlined
+                          style={{
+                            fontSize: "10px",
+                            transition: "transform 0.2s ease",
+                            transform: openSubmenus[item.key]
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                            color: hasActiveChild
+                              ? "#e11d48"
+                              : hoveredKey === item.key
+                              ? "#e11d48"
+                              : "#64748b",
+                          }}
+                        />
+                      </>
+                    )}
+                  </button>
+                  {openSubmenus[item.key] &&
+                    (!collapsed || screenSize.isMobile) &&
+                    item.children.map((child) => (
+                      <button
+                        key={child.key}
+                        onClick={() => handleMenuClick({ key: child.key })}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "8px 12px",
+                          paddingLeft: "36px",
+                          borderRadius: "8px",
+                          transition: "all 0.2s ease",
+                          backgroundColor:
+                            selectedKey === child.key
+                              ? "#fde2e4"
+                              : hoveredKey === child.key
+                              ? "#f1f5f9"
+                              : "transparent",
+                          color:
+                            selectedKey === child.key
+                              ? "#e11d48"
+                              : hoveredKey === child.key
+                              ? "#1e293b"
+                              : "#475569",
+                          border: "none",
+                          cursor: "pointer",
+                          fontWeight: selectedKey === child.key ? "600" : "400",
+                          fontSize: screenSize.isMobile ? "15px" : "13px",
+                          textAlign: "left",
+                          borderRight:
+                            selectedKey === child.key
+                              ? "2px solid #e11d48"
+                              : "none",
+                          height: getMenuItemHeight(),
+                        }}
+                        onMouseEnter={() => setHoveredKey(child.key)}
+                        onMouseLeave={() => setHoveredKey(null)}
+                      >
+                        {React.cloneElement(child.icon, {
+                          style: {
+                            color:
+                              selectedKey === child.key
+                                ? "#e11d48"
+                                : hoveredKey === child.key
+                                ? "#e11d48"
+                                : "#64748b",
+                            fontSize: getIconSize(),
+                            minWidth: getIconSize(),
+                          },
+                        })}
+                        <span>{child.label}</span>
+                      </button>
+                    ))}
+                </>
+              ) : (
+                <button
+                  onClick={() => handleMenuClick({ key: item.key })}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    transition: "all 0.2s ease",
+                    backgroundColor:
+                      selectedKey === item.key
+                        ? "#fde2e4"
+                        : hoveredKey === item.key
+                        ? "#f1f5f9"
+                        : "transparent",
+                    color:
+                      selectedKey === item.key
+                        ? "#e11d48"
+                        : hoveredKey === item.key
+                        ? "#1e293b"
+                        : "#475569",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "500",
+                    fontSize: screenSize.isMobile ? "16px" : "14px",
+                    textAlign: "left",
+                    borderRight:
+                      selectedKey === item.key ? "2px solid #e11d48" : "none",
+                    height: getMenuItemHeight(),
+                    justifyContent:
+                      collapsed && !screenSize.isMobile
+                        ? "center"
+                        : "flex-start",
+                  }}
+                  onMouseEnter={() => setHoveredKey(item.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                >
+                  {React.cloneElement(item.icon, {
+                    style: {
+                      color:
+                        selectedKey === item.key
+                          ? "#e11d48"
+                          : hoveredKey === item.key
+                          ? "#e11d48"
+                          : "#64748b",
+                      fontSize: getIconSize(),
+                      minWidth: getIconSize(),
+                    },
+                  })}
+                  {(!collapsed || screenSize.isMobile) && (
+                    <span>{item.label}</span>
+                  )}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       <div
