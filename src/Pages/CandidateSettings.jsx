@@ -430,7 +430,6 @@ const CandidateSettings = () => {
         bloodGroup: candidateData.bloodGroup || "",
         religion: candidateData.religion || "",
         totalExperienceYears: candidateData.totalExperienceYears || "",
-        emergencyContactNo: candidateData.emergencyContactNo || "",
         noticePeriod: candidateData.noticePeriod || "",
         passportNo: candidateData.passportNo || "",
         passportPlaceOfIssue: candidateData.passportPlaceOfIssue || "",
