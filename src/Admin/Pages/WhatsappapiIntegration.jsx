@@ -24,6 +24,7 @@ import {
   useGetWhatsappConfigQuery,
   useSubmitWhatsappApiMutation,
   useUpdateTemplateStatusMutation,
+  useDeleteWhatsappTemplateMutation,
 } from "../../Slices/Admin/AdminApis";
 import { enqueueSnackbar } from "notistack";
 import SkeletonLoader from "../../Global/SkeletonLoader";
@@ -42,6 +43,7 @@ const WhatsAppConfig = () => {
 
   const [submitConfiguration] = useSubmitWhatsappApiMutation();
   const [updateTemplateStatus] = useUpdateTemplateStatusMutation();
+  const [deleteTemplate] = useDeleteWhatsappTemplateMutation();
   const {
     data: WhatsAppConfigData,
     isLoading,
@@ -54,8 +56,14 @@ const WhatsAppConfig = () => {
     if (existingConfig?.apiToken) {
       form.setFieldsValue({
         apiKey: existingConfig.apiToken,
+        templates: [], // Initialize with empty array to allow multiple templates
       });
       // setApiKeyDisabled(true);
+    } else {
+      // Initialize form with empty templates array if no config exists
+      form.setFieldsValue({
+        templates: [],
+      });
     }
   }, [WhatsAppConfigData, form]);
 
@@ -65,6 +73,48 @@ const WhatsAppConfig = () => {
     { label: "Status", value: "status" },
     { label: "Email", value: "email" },
     { label: "Phone", value: "phone" },
+    // Interview-specific variables
+    { label: "Interview Title", value: "interviewtitle" },
+    { label: "Interview Type", value: "interviewtype" },
+    { label: "Interview Date", value: "interviewdate" },
+    { label: "Interview Time", value: "interviewtime" },
+    { label: "Interview Date & Time", value: "interviewdatetime" },
+    { label: "Interview Location", value: "interviewlocation" },
+    { label: "Meeting Link", value: "meetinglink" },
+    { label: "Interview Notes", value: "interviewnotes" },
+    // Offer-specific variables
+    { label: "Offer Description", value: "offerdescription" },
+    { label: "Offer Document URL", value: "offerdocumenturl" },
+    { label: "Additional Documents Count", value: "additionaldocumentscount" },
+    // Stage-specific variables
+    { label: "Stage Name", value: "stagename" },
+    { label: "Required Documents", value: "requireddocuments" },
+    // Pipeline completion variables
+    { label: "Completed Stage Name", value: "completedstagename" },
+    // Stage movement variables
+    { label: "Next Stage Name", value: "nextstagename" },
+    // Employee conversion variables
+    { label: "ERAM ID", value: "eramid" },
+    { label: "Assigned Job Title", value: "assignedjobtitle" },
+    { label: "Date of Joining", value: "dateofjoining" },
+    // Request/Ticket variables
+    { label: "Request Type", value: "requesttype" },
+    { label: "Request Status", value: "requeststatus" },
+    { label: "Request Note", value: "requestnote" },
+    { label: "Ticket Count", value: "ticketcount" },
+    // Attrition variables
+    { label: "Attrition Type", value: "attritiontype" },
+    { label: "Last Working Date", value: "lastworkingdate" },
+    { label: "Attrition Reason", value: "attritionreason" },
+    { label: "Project Name", value: "projectname" },
+    // Employee to candidate variables
+    { label: "Previous ERAM ID", value: "previouseramid" },
+    // Document expiry variables
+    { label: "Document Name", value: "documentname" },
+    { label: "Expiry Date", value: "expirydate" },
+    { label: "Is Expired", value: "isexpired" },
+    // Requesting for document variables
+    { label: "Custom Message", value: "custommessage" },
   ];
 
   const fetchApprovedTemplates = async () => {
@@ -137,6 +187,11 @@ const WhatsAppConfig = () => {
       const values = await form.validateFields();
       const { apiKey, templates } = values;
 
+      if (!templates || templates.length === 0) {
+        message.warning("Please add at least one template.");
+        return;
+      }
+
       const formattedTemplates = templates.map((template, index) => ({
         name: template.name,
         triggerEvent: template.triggerEvent,
@@ -150,14 +205,20 @@ const WhatsAppConfig = () => {
       };
 
       await submitConfiguration(payload).unwrap();
-      enqueueSnackbar("Configured successfully...!", {
-        variant: "success",
-        autoHideDuration: 3000,
-      });
+      
+      // Only reset form fields after successful submission
       form.resetFields(["templates"]);
       setTemplateBodies({});
       setTemplateVariables({});
       setSelectedTemplates({});
+      
+      // Refetch immediately to get updated data
+      await refetch();
+      
+      enqueueSnackbar("Configured successfully...!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
     } catch (error) {
       console.error(error);
       message.error("Failed to submit configuration.");
@@ -187,15 +248,16 @@ const WhatsAppConfig = () => {
         },
       }).unwrap();
 
+      setIsModalOpen(false);
+      setSelectedTemplate(null);
+
+      // Refetch immediately to get updated data
+      await refetch();
+
       enqueueSnackbar(`Template ${selectedTemplate.action}d successfully!`, {
         variant: "success",
         autoHideDuration: 3000,
       });
-
-      setIsModalOpen(false);
-      setSelectedTemplate(null);
-
-      refetch();
     } catch (error) {
       console.error(error);
       message.error(`Failed to ${selectedTemplate.action} template.`);
@@ -205,6 +267,36 @@ const WhatsAppConfig = () => {
   const handleModalCancel = () => {
     setIsModalOpen(false);
     setSelectedTemplate(null);
+  };
+
+  const handleDeleteTemplate = (templateId, templateName) => {
+    setSelectedTemplate({
+      id: templateId,
+      name: templateName,
+      action: "delete",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteTemplate({
+        templateId: selectedTemplate.id,
+        parentId: existingConfig._id,
+      }).unwrap();
+
+      enqueueSnackbar("Template deleted successfully!", {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
+
+      setIsModalOpen(false);
+      setSelectedTemplate(null);
+      refetch();
+    } catch (error) {
+      console.error(error);
+      message.error("Failed to delete template.");
+    }
   };
 
   const existingConfig = WhatsAppConfigData?.whatsapp?.[0];
@@ -263,8 +355,8 @@ const WhatsAppConfig = () => {
           : "—",
     },
     {
-      title: "Action",
-      key: "action",
+      title: "Status",
+      key: "statusAction",
       width: 120,
       render: (_, record) => (
         <Switch
@@ -276,6 +368,21 @@ const WhatsAppConfig = () => {
           unCheckedChildren="Inactive"
           size="small"
         />
+      ),
+    },
+    {
+      title: "Action",
+      key: "deleteAction",
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          danger
+          size="small"
+          onClick={() => handleDeleteTemplate(record._id, record.name)}
+        >
+          Delete
+        </Button>
       ),
     },
   ];
@@ -375,8 +482,22 @@ const WhatsAppConfig = () => {
                                 options={[
                                   { label: "Sourcing", value: "sourcing" },
                                   { label: "Screening", value: "screening" },
+                                  { label: "Pipeline", value: "pipeline" },
+                                  { label: "Stage Notify", value: "stage-notify" },
+                                  { label: "Stage Moved", value: "stage-moved" },
+                                  { label: "Pipeline Completed", value: "pipeline-completed" },
                                   { label: "Interview", value: "interview" },
+                                  { label: "Interview Scheduled", value: "interview-scheduled" },
+                                  { label: "Offer", value: "offer" },
                                   { label: "Rejected", value: "rejected" },
+                                  { label: "Converted to Employee", value: "converted-to-employee" },
+                                  { label: "Request Approved", value: "request-approved" },
+                                  { label: "Request Rejected", value: "request-rejected" },
+                                  { label: "Ticket Info Sent", value: "ticket-info-sent" },
+                                  { label: "Attrition Initiated", value: "attrition-initiated" },
+                                  { label: "Employee to Candidate", value: "employee-to-candidate" },
+                                  { label: "Document Expiring", value: "document-expiring" },
+                                  { label: "Requesting for Document", value: "requesting-for-document" },
                                 ]}
                               />
                             </Form.Item>
@@ -472,15 +593,26 @@ const WhatsAppConfig = () => {
 
       <Modal
         title={`${
-          selectedTemplate?.action?.charAt(0).toUpperCase() +
-          selectedTemplate?.action?.slice(1)
+          selectedTemplate?.action === "delete"
+            ? "Delete"
+            : selectedTemplate?.action?.charAt(0).toUpperCase() +
+              selectedTemplate?.action?.slice(1)
         } Template`}
         open={isModalOpen}
-        onOk={handleModalOk}
+        onOk={
+          selectedTemplate?.action === "delete"
+            ? handleDeleteConfirm
+            : handleModalOk
+        }
         onCancel={handleModalCancel}
         okText="Yes"
         cancelText="No"
-        okType={selectedTemplate?.newStatus === "active" ? "primary" : "danger"}
+        okType={
+          selectedTemplate?.action === "delete" ||
+          selectedTemplate?.newStatus === "inactive"
+            ? "danger"
+            : "primary"
+        }
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <ExclamationCircleOutlined

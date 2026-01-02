@@ -359,6 +359,7 @@ export const adminApi = createApi({
         url: `/config`,
         method: "GET",
       }),
+      providesTags: ["WhatsAppConfig"],
     }),
     disableCandidateStatus: builder.mutation({
       query: (candidateId) => ({
@@ -545,6 +546,7 @@ export const adminApi = createApi({
         method: "POST",
         body: clientData,
       }),
+      invalidatesTags: ["WhatsAppConfig"],
     }),
     updateTemplateStatus: builder.mutation({
       query: ({ templateId, body, parentId }) => ({
@@ -555,6 +557,17 @@ export const adminApi = createApi({
           ...body,
         },
       }),
+      invalidatesTags: ["WhatsAppConfig"],
+    }),
+    deleteWhatsappTemplate: builder.mutation({
+      query: ({ templateId, parentId }) => ({
+        url: `/whatsapp-template/${templateId}`,
+        method: "DELETE",
+        body: {
+          _id: parentId,
+        },
+      }),
+      invalidatesTags: ["WhatsAppConfig"],
     }),
     getAdminNotifications: builder.query({
       query: ({ page = 1, limit = 10, search = "" }) => {
@@ -698,6 +711,7 @@ export const {
   useSubmitWhatsappApiMutation,
   useGetWhatsappConfigQuery,
   useUpdateTemplateStatusMutation,
+  useDeleteWhatsappTemplateMutation,
 
   //notifications
   useGetAdminNotificationsQuery,

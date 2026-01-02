@@ -42,7 +42,7 @@ import {
   BellOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useGetAllcandidatebyIdQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetAllcandidatebyIdQuery, useSendCandidateWhatsAppNotificationMutation } from "../../Slices/Recruiter/RecruiterApis";
 import { useSelector } from "react-redux";
 import { phoneUtils } from "../../utils/countryMobileLimits";
 
@@ -70,6 +70,9 @@ const CandidateDetailsDrawer = ({
 
   const [sendNotification, { isLoading: isNotificationLoading }] =
     useNotifyEmployeeMutation();
+  
+  const [sendWhatsAppNotification, { isLoading: isWhatsAppLoading }] =
+    useSendCandidateWhatsAppNotificationMutation();
 
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -162,11 +165,22 @@ const CandidateDetailsDrawer = ({
             );
             break;
           case "whatsapp":
-            message.success(
-              `WhatsApp notification sent to ${
-                candidate.fullName || candidate.firstName
-              }`
-            );
+            try {
+              await sendWhatsAppNotification({
+                userId: candidate._id,
+                message: remarks.trim(),
+              }).unwrap();
+              message.success(
+                `WhatsApp notification sent to ${
+                  candidate.fullName || candidate.firstName
+                }`
+              );
+            } catch (whatsappError) {
+              console.error("WhatsApp notification error:", whatsappError);
+              message.error(
+                whatsappError?.data?.message || "Failed to send WhatsApp notification"
+              );
+            }
             break;
           case "profile":
             await sendNotification(dataWithMethod).unwrap();
@@ -1600,7 +1614,7 @@ const CandidateDetailsDrawer = ({
         onOk={confirmNotification}
         onCancel={handleModalClose}
         okText="Send Notification"
-        confirmLoading={isNotificationLoading}
+        confirmLoading={isNotificationLoading || isWhatsAppLoading}
         okButtonProps={{
           style: {
             backgroundColor: "#da2c46",

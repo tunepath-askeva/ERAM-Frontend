@@ -89,10 +89,22 @@ const EmployeeDocumentDetail = () => {
 
   const handleSubmitNotification = async (values) => {
     try {
+      // Get the first expired or expiring document for WhatsApp notification
+      const targetDoc = expiredDocs.length > 0 
+        ? expiredDocs[0] 
+        : expiringSoonDocs.length > 0 
+        ? expiringSoonDocs[0] 
+        : documents?.[0] || null;
+
       await notifyEmployee({
         email: values.email,
         title: values.documentTitle,
         description: values.description,
+        // Include document details for WhatsApp notification
+        documentName: targetDoc?.documentName || "",
+        expiryDate: targetDoc?.expiryDate || "",
+        workOrder: workOrder?.title || "",
+        workOrderId: workOrder?._id || null,
       }).unwrap();
 
       message.success("Notification sent successfully!");

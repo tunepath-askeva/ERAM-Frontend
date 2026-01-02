@@ -10,6 +10,7 @@ import {
   useDeleteStageDocumentMutation,
   useUndoStageMutation,
   useRejectCandidateFromStageMutation,
+  useSendStageNotificationMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
 import {
@@ -92,6 +93,7 @@ const RecruiterJobPipeline = () => {
   const [moveToNextStage, { isLoading: isMoving }] =
     useMoveToNextStageMutation();
   const [remainder] = useStagedCandidateNotifyMutation();
+  const [sendStageNotification, { isLoading: isSendingNotification }] = useSendStageNotificationMutation();
   const [updateStageDates, { isLoading: isUpdatingDates }] =
     useUpdateStageDatesMutation();
   const [updateStageRecruiters, { isLoading: isUpdatingRecruiters }] =
@@ -591,7 +593,7 @@ const RecruiterJobPipeline = () => {
     });
   };
 
-  const handleSendNotification = async (methods, remarks) => {
+  const handleSendNotification = async (methods) => {
     const workOrderId = apiData?.data?.workOrder?._id;
     const userId = apiData?.data?.user?._id;
     const candidateEmail = apiData?.data?.user?.email;
@@ -608,45 +610,58 @@ const RecruiterJobPipeline = () => {
     }
 
     try {
-      const notificationData = {
-        workOrderId,
-        userId,
-        email: candidateEmail,
-        title: "Pipeline Stage Update - Action Required",
-      };
+      // Get current stage information
+      const currentStageProgress = apiData?.data?.stageProgress?.find(
+        (sp) => sp.stageId === activeStage
+      ) || apiData?.data?.stageProgress?.[apiData?.data?.stageProgress.length - 1];
 
-      for (const method of methods) {
-        const dataWithMethod = { ...notificationData, method };
+      const currentStageId = currentStageProgress?.stageId || activeStage;
 
-        switch (method) {
-          case "email":
-            enqueueSnackbar(`Email notification sent to ${candidateName}`, {
-              variant: "success",
-              autoHideDuration: 3000,
-            });
-            break;
-          case "whatsapp":
-            enqueueSnackbar(`WhatsApp notification sent to ${candidateName}`, {
-              variant: "success",
-              autoHideDuration: 3000,
-            });
-            break;
-          case "profile":
-            await remainder(dataWithMethod);
-            enqueueSnackbar(`Profile notification sent to ${candidateName}`, {
-              variant: "success",
-              autoHideDuration: 3000,
-            });
-            break;
-          default:
-            break;
+      // Filter methods - only email and whatsapp for stage notifications
+      const stageMethods = methods.filter(m => m === "email" || m === "whatsapp");
+      const profileMethods = methods.filter(m => m === "profile");
+
+      // Send stage notification for email and whatsapp
+      if (stageMethods.length > 0) {
+        const notificationData = {
+          workOrderId,
+          userId,
+          methods: stageMethods,
+          stageId: currentStageId,
+        };
+
+        await sendStageNotification(notificationData).unwrap();
+        
+        stageMethods.forEach(method => {
+          enqueueSnackbar(`${method === "email" ? "Email" : "WhatsApp"} notification sent to ${candidateName}`, {
+            variant: "success",
+            autoHideDuration: 3000,
+          });
+        });
+      }
+
+      // Send profile notification if selected
+      if (profileMethods.length > 0) {
+        for (const method of profileMethods) {
+          const dataWithMethod = {
+            workOrderId,
+            userId,
+            email: candidateEmail,
+            title: "Pipeline Stage Update - Action Required",
+            method,
+          };
+          await remainder(dataWithMethod);
+          enqueueSnackbar(`Profile notification sent to ${candidateName}`, {
+            variant: "success",
+            autoHideDuration: 3000,
+          });
         }
       }
 
       setIsNotifyModalVisible(false);
     } catch (error) {
       console.error("Error sending notification:", error);
-      enqueueSnackbar("Error sending notification", {
+      enqueueSnackbar(error?.data?.message || "Error sending notification", {
         variant: "error",
         autoHideDuration: 3000,
       });

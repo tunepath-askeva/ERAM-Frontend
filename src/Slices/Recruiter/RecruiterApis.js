@@ -388,6 +388,13 @@ export const recruiterApi = createApi({
         body: { userId, workOrderId, customFieldId },
       }),
     }),
+    sendCandidateWhatsAppNotification: builder.mutation({
+      query: ({ userId, message }) => ({
+        url: "/notify-whatsapp",
+        method: "POST",
+        body: { userId, message },
+      }),
+    }),
     getClients: builder.query({
       query: () => ({
         url: "/clients",
@@ -899,6 +906,14 @@ export const recruiterApi = createApi({
         body: { newEmail }, // ✅ send in request body
       }),
     }),
+
+    sendStageNotification: builder.mutation({
+      query: (data) => ({
+        url: "/stage-notify",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -930,6 +945,7 @@ export const {
   useChangeInterviewStatusMutation,
   useGetPendingCandidatesQuery,
   useNotifyCandidateMutation,
+  useSendCandidateWhatsAppNotificationMutation,
   useGetAllLevelsQuery,
   useGetAllStaffsQuery,
   useGetExactMatchCandidatesQuery,
@@ -997,4 +1013,5 @@ export const {
   useCancelAttritionMutation,
   useGetAttritionHistoryQuery,
   useUpdateEmployeeEmailMutation,
+  useSendStageNotificationMutation,
 } = recruiterApi;

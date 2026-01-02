@@ -19,6 +19,7 @@ import {
   Dropdown,
   Divider,
   Input,
+  message,
 } from "antd";
 import { useSnackbar } from "notistack";
 import {
@@ -202,11 +203,23 @@ const EmployeeDocuments = () => {
         date: dateToSet,
       }).unwrap();
 
-      message.success("Document expiry updated successfully!");
-      refetch();
+      // Close modal first
+      setIsExpiryModalVisible(false);
       resetExpiryForm();
+      
+      // Show success message
+      message.success({
+        content: "Document expiry date updated successfully!",
+        duration: 3,
+      });
+      
+      // Refetch data to update the UI
+      await refetch();
     } catch (error) {
-      message.error("Failed to update document expiry. Please try again.");
+      message.error({
+        content: error?.data?.message || "Failed to update document expiry. Please try again.",
+        duration: 4,
+      });
       console.error("Expiry update error:", error);
     }
   };
