@@ -364,6 +364,12 @@ export const userApi = createApi({
         body: data,
       }),
     }),
+    getOfferDetails: builder.query({
+      query: (workorderId) => ({
+        url: `/offer/${workorderId}`,
+        method: "GET",
+      }),
+    }),
     requestOfferRevision: builder.mutation({
       query: (body) => ({
         url: "/revising-offer",
@@ -454,6 +460,7 @@ export const {
   useMarkAsReadByIdMutation,
   useValidateUserTokenQuery,
   useUpdateCandidateOfferStatusMutation,
+  useGetOfferDetailsQuery,
   useRequestOfferRevisionMutation,
   useGetJobSuggestionsQuery,
 

@@ -174,28 +174,41 @@ const EditEmployeeModal = ({
           employee.employmentDetails?.reportingAndDocumentation || "",
       });
 
-      // Extract country code from phone number if present
+      // Use stored country code if available, otherwise extract
       let phone = employee.phone || "";
-      let phoneCountryCode = "";
+      let phoneCountryCode = employee.phoneCountryCode || "";
       
-      if (phone) {
-        // Remove + prefix if present
+      if (phone && !phoneCountryCode) {
+        // Only extract if country code is not stored
         let phoneWithoutPlus = phone.trim();
         while (phoneWithoutPlus.startsWith("+")) {
           phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
         }
         
-        // Use phoneUtils to extract country code
         const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
         if (parsed.countryCode && parsed.phoneNumber) {
           phoneCountryCode = parsed.countryCode;
           phone = parsed.phoneNumber;
+        } else {
+          phoneCountryCode = "91"; // Default
+        }
+      } else if (phone && phoneCountryCode) {
+        // If we have stored country code, remove it from phone if present
+        let phoneWithoutPlus = phone.trim();
+        while (phoneWithoutPlus.startsWith("+")) {
+          phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+        }
+        const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
+        if (cleanPhone.startsWith(phoneCountryCode)) {
+          phone = cleanPhone.slice(phoneCountryCode.length);
+        } else {
+          phone = cleanPhone;
         }
       }
 
       form.setFieldsValue({
         phone: phone,
-        phoneCountryCode: phoneCountryCode || "91", // Default to 91 if not extracted
+        phoneCountryCode: phoneCountryCode || "91",
       });
 
       setChangePassword(false);
@@ -274,12 +287,14 @@ const EditEmployeeModal = ({
 
       const phone = form.getFieldValue("phone");
       const phoneCountryCode = form.getFieldValue("phoneCountryCode");
-      const fullPhone = `${phoneCountryCode}${phone}`;
+      // Clean phone number - remove + prefix if present
+      const cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
 
       const dataToSubmit = {
         id: employeeId,
         ...formData,
-        phone: fullPhone,
+        phone: cleanPhone, // Phone number without country code
+        phoneCountryCode: phoneCountryCode || "91", // Country code sent separately
       };
 
       // Convert assetAllocation string to array

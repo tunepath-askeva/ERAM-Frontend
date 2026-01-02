@@ -20,6 +20,8 @@ import {
   SaveOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
+import PhoneInput from "../../Global/PhoneInput";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -39,11 +41,43 @@ const AdminFormModal = ({
   useEffect(() => {
     if (open) {
       if (mode === "edit" && initialValues) {
+        // Extract phone data with country code
+        let phone = initialValues.phone || "";
+        let phoneCountryCode = initialValues.phoneCountryCode || "";
+        
+        if (phone && !phoneCountryCode) {
+          // Extract country code if not stored
+          let phoneWithoutPlus = phone.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+          if (parsed.countryCode && parsed.phoneNumber) {
+            phoneCountryCode = parsed.countryCode;
+            phone = parsed.phoneNumber;
+          } else {
+            phoneCountryCode = "91"; // Default
+          }
+        } else if (phone && phoneCountryCode) {
+          // Remove country code from phone if present
+          let phoneWithoutPlus = phone.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
+          if (cleanPhone.startsWith(phoneCountryCode)) {
+            phone = cleanPhone.slice(phoneCountryCode.length);
+          } else {
+            phone = cleanPhone;
+          }
+        }
+
         form.setFieldsValue({
           firstName: initialValues.firstName,
           lastName: initialValues.lastName,
           email: initialValues.email,
-          phone: initialValues.phone,
+          phone: phone,
+          phoneCountryCode: phoneCountryCode || "91",
           branchId: initialValues.branchId,
         });
       } else {
@@ -58,6 +92,10 @@ const AdminFormModal = ({
 
       let payload;
 
+      // Clean phone number and get country code
+      const phoneNumber = values.phone ? values.phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      const phoneCountryCode = values.phoneCountryCode || "91";
+
       if (mode === "edit") {
         payload = {
           firstName: values.firstName,
@@ -65,7 +103,8 @@ const AdminFormModal = ({
           fullName: `${values.firstName} ${values.lastName}`,
           email: values.email,
           branchId: values.branchId,
-          phone: values.phone,
+          phone: phoneNumber, // Phone number without country code
+          phoneCountryCode: phoneCountryCode, // Country code sent separately
         };
 
         if (values.password && values.password.trim() !== "") {
@@ -81,7 +120,8 @@ const AdminFormModal = ({
           role: "admin",
           email: values.email,
           branchId: values.branchId,
-          phone: values.phone,
+          phone: phoneNumber, // Phone number without country code
+          phoneCountryCode: phoneCountryCode, // Country code sent separately
           cPassword: values.password,
         };
       }
@@ -216,23 +256,12 @@ const AdminFormModal = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="Phone Number"
+              <PhoneInput
+                form={form}
                 name="phone"
-                rules={[
-                  { required: true, message: "Please enter phone number" },
-                  {
-                    pattern: /^[+]?[0-9\s-()]+$/,
-                    message: "Please enter a valid phone number",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="+91 98765 43210"
-                  prefix={<PhoneOutlined />}
-                  size="large"
-                />
-              </Form.Item>
+                label="Phone Number"
+                required={true}
+              />
             </Col>
           </Row>
         </Card>

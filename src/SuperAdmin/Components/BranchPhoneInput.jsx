@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Form, Input, Select, Row, Col } from "antd";
 import { PhoneOutlined } from "@ant-design/icons";
-import { phoneUtils, countryInfo, countryMobileLimits } from "../utils/countryMobileLimits";
+import { phoneUtils, countryInfo, countryMobileLimits } from "../../utils/countryMobileLimits";
 
 const { Option } = Select;
 
-const PhoneInput = ({
+const BranchPhoneInput = ({
   form,
-  name = "phone",
-  label = "Phone",
+  label = "Branch Phone",
   required = true,
   disabled = false,
 }) => {
@@ -16,53 +15,43 @@ const PhoneInput = ({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Helper function to extract country code (memoized with useCallback)
-  // Uses countryMobileLimits directly from the utils file for reliable extraction
+  // Field names for nested structure
+  const phoneFieldName = ["location", "branch_phoneno"];
+  const countryCodeFieldName = ["location", "branch_phonenoCountryCode"];
+
+  // Helper function to extract country code
   const extractCountryCode = useCallback((phoneStr) => {
     if (!phoneStr || typeof phoneStr !== "string") return null;
     
-    // Remove + prefix if present (handle multiple + signs or spaces)
     let phoneWithoutPlus = phoneStr.trim();
-    // Remove all + signs from the beginning
     while (phoneWithoutPlus.startsWith("+")) {
       phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
     }
     
-    // Clean the phone number - remove all non-digits
     const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
     
-    if (!cleanPhone || cleanPhone.length < 7) return null; // Too short to be valid
+    if (!cleanPhone || cleanPhone.length < 7) return null;
     
-    // Get all country codes directly from countryMobileLimits object
-    // Convert to array and sort by length (longest first) to avoid partial matches
-    // Example: "880" should match before "88" or "8" for Bangladesh
     const allCountryCodes = Object.keys(countryMobileLimits);
     const sortedCodes = allCountryCodes
       .map((code) => code.toString())
       .sort((a, b) => {
-        // First sort by length (longest first) - CRITICAL for proper extraction
         if (b.length !== a.length) {
           return b.length - a.length;
         }
-        // If same length, sort numerically for consistency
         return parseInt(a) - parseInt(b);
       });
     
-    // Try each country code (longest first to avoid partial matches)
     for (const code of sortedCodes) {
       if (cleanPhone.startsWith(code)) {
         const phoneWithoutCode = cleanPhone.slice(code.length);
-        
-        // Get limits directly from countryMobileLimits
         const limits = countryMobileLimits[code];
         if (!limits) continue;
         
-        // Skip if remaining number is too short (less than minimum required)
         if (phoneWithoutCode.length < limits.min) {
-          continue; // Try next country code
+          continue;
         }
         
-        // Validate the remaining phone number against country-specific limits
         const numberLength = phoneWithoutCode.replace(/\D/g, "").length;
         if (numberLength >= limits.min && numberLength <= limits.max) {
           return {
@@ -73,16 +62,13 @@ const PhoneInput = ({
       }
     }
     
-    // If no match found with strict validation, try with relaxed validation
-    // This handles edge cases where numbers might be slightly outside limits
+    // Relaxed validation
     for (const code of sortedCodes) {
       if (cleanPhone.startsWith(code)) {
         const phoneWithoutCode = cleanPhone.slice(code.length);
         const limits = countryMobileLimits[code];
-        
         if (!limits) continue;
         
-        // If we have limits and the number is within a reasonable range (allow 1 digit tolerance)
         const numberLength = phoneWithoutCode.replace(/\D/g, "").length;
         if (numberLength >= limits.min - 1 && numberLength <= limits.max + 1 && numberLength > 0) {
           return {
@@ -100,9 +86,9 @@ const PhoneInput = ({
     // Only run on initial mount/initialization, not during typing
     if (isInitialized) return;
     
-    // Priority 1: Use stored country code from form field (most reliable)
-    const currentCountryCodeField = form.getFieldValue(`${name}CountryCode`);
-    const currentPhone = form.getFieldValue(name);
+    // Priority 1: Use stored country code from form field
+    const currentCountryCodeField = form.getFieldValue(countryCodeFieldName);
+    const currentPhone = form.getFieldValue(phoneFieldName);
     
     // If we have a stored country code, use it directly
     if (currentCountryCodeField && phoneUtils.isCountryCodeSupported(currentCountryCodeField)) {
@@ -123,8 +109,8 @@ const PhoneInput = ({
           if (phoneWithoutCode.length > 0) {
             setPhoneNumber(phoneWithoutCode);
             form.setFieldsValue({ 
-              [`${name}CountryCode`]: codeStr,
-              [name]: phoneWithoutCode 
+              [countryCodeFieldName]: codeStr,
+              [phoneFieldName]: phoneWithoutCode 
             });
             setIsInitialized(true);
             return;
@@ -133,15 +119,15 @@ const PhoneInput = ({
           // Phone doesn't have country code prefix, use as-is
           setPhoneNumber(cleanPhone);
           form.setFieldsValue({ 
-            [`${name}CountryCode`]: codeStr,
-            [name]: cleanPhone 
+            [countryCodeFieldName]: codeStr,
+            [phoneFieldName]: cleanPhone 
           });
           setIsInitialized(true);
           return;
         }
       } else {
         // Only country code, no phone number yet
-        form.setFieldsValue({ [`${name}CountryCode`]: codeStr });
+        form.setFieldsValue({ [countryCodeFieldName]: codeStr });
         setIsInitialized(true);
         return;
       }
@@ -149,7 +135,6 @@ const PhoneInput = ({
     
     // Priority 2: If we have phone but no stored country code, try extraction (only on init)
     if (currentPhone && typeof currentPhone === "string" && currentPhone.trim() !== "") {
-      // Clean the phone number first - remove + prefix and all non-digits
       let phoneWithoutPlus = currentPhone.trim();
       while (phoneWithoutPlus.startsWith("+")) {
         phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
@@ -157,12 +142,11 @@ const PhoneInput = ({
       const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
       
       if (!cleanPhone || cleanPhone.length < 7) {
-        // Phone number too short, just set default
         setSelectedCountryCode(selectedCountryCode);
         setPhoneNumber(cleanPhone || "");
         form.setFieldsValue({ 
-          [`${name}CountryCode`]: selectedCountryCode,
-          [name]: cleanPhone || "" 
+          [countryCodeFieldName]: selectedCountryCode,
+          [phoneFieldName]: cleanPhone || "" 
         });
         setIsInitialized(true);
         return;
@@ -172,12 +156,11 @@ const PhoneInput = ({
       const extracted = extractCountryCode(currentPhone);
       
       if (extracted && extracted.countryCode && extracted.phoneNumber) {
-        // Successfully extracted
         setSelectedCountryCode(extracted.countryCode);
         setPhoneNumber(extracted.phoneNumber);
         form.setFieldsValue({ 
-          [`${name}CountryCode`]: extracted.countryCode,
-          [name]: extracted.phoneNumber 
+          [countryCodeFieldName]: extracted.countryCode,
+          [phoneFieldName]: extracted.phoneNumber 
         });
         setIsInitialized(true);
         return;
@@ -188,90 +171,16 @@ const PhoneInput = ({
       setSelectedCountryCode(codeToUse);
       setPhoneNumber(cleanPhone);
       form.setFieldsValue({ 
-        [`${name}CountryCode`]: codeToUse,
-        [name]: cleanPhone 
+        [countryCodeFieldName]: codeToUse,
+        [phoneFieldName]: cleanPhone 
       });
     } else {
       // Set default country code if nothing exists
-      form.setFieldsValue({ [`${name}CountryCode`]: selectedCountryCode });
+      form.setFieldsValue({ [countryCodeFieldName]: selectedCountryCode });
     }
     
     setIsInitialized(true);
-  }, [form, name, selectedCountryCode, extractCountryCode, isInitialized]);
-
-  // Reset initialization when form values change externally (e.g., when data loads)
-  useEffect(() => {
-    const currentCountryCode = form.getFieldValue(`${name}CountryCode`);
-    const currentPhone = form.getFieldValue(name);
-    
-    // If form has values but component is initialized with defaults, re-initialize
-    if (isInitialized && currentCountryCode && currentCountryCode !== selectedCountryCode) {
-      const codeStr = currentCountryCode.toString();
-      if (phoneUtils.isCountryCodeSupported(codeStr)) {
-        setSelectedCountryCode(codeStr);
-        if (currentPhone) {
-          let phoneWithoutPlus = currentPhone.trim();
-          while (phoneWithoutPlus.startsWith("+")) {
-            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
-          }
-          const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
-          
-          // If phone starts with country code, remove it
-          if (cleanPhone.startsWith(codeStr)) {
-            const phoneWithoutCode = cleanPhone.slice(codeStr.length);
-            setPhoneNumber(phoneWithoutCode);
-            form.setFieldsValue({ 
-              [`${name}CountryCode`]: codeStr,
-              [name]: phoneWithoutCode 
-            });
-          } else {
-            setPhoneNumber(cleanPhone);
-            form.setFieldsValue({ 
-              [`${name}CountryCode`]: codeStr,
-              [name]: cleanPhone 
-            });
-          }
-        }
-      }
-    }
-  }, [form, name, isInitialized, selectedCountryCode]);
-
-  // Watch for form value changes to sync state (but don't re-extract during typing)
-  useEffect(() => {
-    if (!isInitialized) return;
-    
-    // Only sync state if country code is explicitly set, don't re-extract
-    const currentCountryCode = form.getFieldValue(`${name}CountryCode`);
-    const currentPhone = form.getFieldValue(name);
-    
-    // Only update state if country code is set and different from current state
-    // This prevents automatic country code changes while user is typing
-    if (currentCountryCode && currentCountryCode !== selectedCountryCode) {
-      const codeStr = currentCountryCode.toString();
-      if (phoneUtils.isCountryCodeSupported(codeStr)) {
-        setSelectedCountryCode(codeStr);
-        
-        // If phone number exists and starts with the country code, remove it
-        if (currentPhone && typeof currentPhone === "string" && currentPhone.trim() !== "") {
-          let phoneWithoutPlus = currentPhone.trim();
-          while (phoneWithoutPlus.startsWith("+")) {
-            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
-          }
-          const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
-          
-          if (cleanPhone.startsWith(codeStr)) {
-            const phoneWithoutCode = cleanPhone.slice(codeStr.length);
-            if (phoneWithoutCode.length > 0) {
-              setPhoneNumber(phoneWithoutCode);
-              form.setFieldsValue({ [name]: phoneWithoutCode });
-            }
-          } else {
-            setPhoneNumber(cleanPhone);
-          }
-        }
-      }
-    }
-  }, [form, name, isInitialized, selectedCountryCode, phoneNumber]);
+  }, [form, selectedCountryCode, extractCountryCode, phoneFieldName, countryCodeFieldName, isInitialized]);
 
   const validatePhoneNumber = (_, value) => {
     if (!value && required) {
@@ -282,7 +191,7 @@ const PhoneInput = ({
 
     const cleanNumber = value.replace(/\D/g, "");
     const currentCountryCode =
-      form.getFieldValue(`${name}CountryCode`) || selectedCountryCode;
+      form.getFieldValue(countryCodeFieldName) || selectedCountryCode;
     const isValid = phoneUtils.validateMobileNumber(
       currentCountryCode,
       cleanNumber
@@ -309,19 +218,19 @@ const PhoneInput = ({
     const cleanValue = value.replace(/\D/g, "");
 
     const currentCountryCode =
-      form.getFieldValue(`${name}CountryCode`) || selectedCountryCode;
+      form.getFieldValue(countryCodeFieldName) || selectedCountryCode;
     const limits = phoneUtils.getLimits(currentCountryCode);
     if (limits && cleanValue.length <= limits.max) {
       setPhoneNumber(cleanValue);
       // Update form value directly - don't trigger re-extraction
-      form.setFieldsValue({ [name]: cleanValue });
+      form.setFieldsValue({ [phoneFieldName]: cleanValue });
     }
   };
 
   const handleCountryCodeChange = (value) => {
     setSelectedCountryCode(value);
-    form.setFieldsValue({ [`${name}CountryCode`]: value });
-    form.validateFields([name]);
+    form.setFieldsValue({ [countryCodeFieldName]: value });
+    form.validateFields([phoneFieldName]);
   };
 
   const getCountryOptions = () => {
@@ -344,7 +253,7 @@ const PhoneInput = ({
     <Form.Item label={label} style={{ marginBottom: 0 }}>
       <Input.Group compact>
         <Form.Item
-          name={`${name}CountryCode`}
+          name={countryCodeFieldName}
           style={{ width: "30%" }}
           rules={
             required ? [{ required: true, message: "Select country" }] : []
@@ -374,7 +283,7 @@ const PhoneInput = ({
           </Select>
         </Form.Item>
         <Form.Item
-          name={name}
+          name={phoneFieldName}
           style={{ width: "70%" }}
           rules={required ? [{ validator: validatePhoneNumber }] : []}
         >
@@ -394,4 +303,5 @@ const PhoneInput = ({
   );
 };
 
-export default PhoneInput;
+export default BranchPhoneInput;
+

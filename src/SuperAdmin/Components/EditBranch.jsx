@@ -38,6 +38,7 @@ import {
 } from "../../Slices/SuperAdmin/SuperAdminApis.js";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
+import BranchPhoneInput from "./BranchPhoneInput";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -73,7 +74,7 @@ const EditBranch = () => {
       const branch = currentBranch;
       setInitialData(branch);
 
-      // Set form values
+      // Set form values - BranchPhoneInput will handle phone extraction
       const formValues = {
         name: branch.name,
         branchCode: branch.branchCode,
@@ -86,6 +87,7 @@ const EditBranch = () => {
           country: branch.location?.country || "",
           postalCode: branch.location?.postalCode || "",
           branch_phoneno: branch.location?.branch_phoneno || "",
+          branch_phonenoCountryCode: branch.location?.branch_phonenoCountryCode || "",
           branch_email: branch.location?.branch_email || "",
         },
         content: {
@@ -196,10 +198,14 @@ const EditBranch = () => {
       // Add location fields
       if (values.location) {
         Object.keys(values.location).forEach((key) => {
-          if (values.location[key]) {
+          if (values.location[key] && key !== "branch_phonenoCountryCode") {
             formData.append(`location[${key}]`, values.location[key]);
           }
         });
+        // Handle country code separately
+        if (values.location.branch_phonenoCountryCode) {
+          formData.append(`location[branch_phonenoCountryCode]`, values.location.branch_phonenoCountryCode);
+        }
       }
 
       // Add content fields
@@ -639,19 +645,11 @@ const EditBranch = () => {
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item
-                  name={["location", "branch_phoneno"]}
+                <BranchPhoneInput
+                  form={form}
                   label="Branch Phone"
-                  rules={[
-                    { required: true, message: "Please enter branch phone" },
-                  ]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined />}
-                    placeholder="Enter branch phone"
-                    size="large"
-                  />
-                </Form.Item>
+                  required={true}
+                />
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item

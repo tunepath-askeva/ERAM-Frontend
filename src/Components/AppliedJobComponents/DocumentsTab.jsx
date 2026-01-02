@@ -1293,6 +1293,186 @@ const DocumentsTab = ({
                     </Button>
                   </div>
                 )}
+
+                {/* Additional Documents */}
+                {offer.additionalDocuments && offer.additionalDocuments.length > 0 && (
+                  <>
+                    <div style={{ marginTop: "24px", marginBottom: "12px" }}>
+                      <Text strong style={{ fontSize: "16px" }}>
+                        Additional Supporting Documents:
+                      </Text>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                        gap: "16px",
+                      }}
+                    >
+                      {offer.additionalDocuments.map((doc, docIndex) => (
+                        <div
+                          key={docIndex}
+                          style={{
+                            padding: "16px",
+                            border: "2px solid #722ed1",
+                            borderRadius: "8px",
+                            backgroundColor: "#f9f0ff",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              <FileTextOutlined
+                                style={{ color: "#722ed1", fontSize: "20px" }}
+                              />
+                              <div>
+                                <Text strong style={{ display: "block" }}>
+                                  {doc.documentName || doc.fileName || `Additional Document ${docIndex + 1}`}
+                                </Text>
+                                {doc.fileName && (
+                                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                                    {doc.fileName}
+                                  </Text>
+                                )}
+                              </div>
+                            </div>
+                            <Tag color="purple">Supporting</Tag>
+                          </div>
+
+                          {doc.uploadedAt && (
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: "12px",
+                                display: "block",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              Uploaded:{" "}
+                              {new Date(doc.uploadedAt).toLocaleString()}
+                            </Text>
+                          )}
+
+                          <Button
+                            type="primary"
+                            icon={<EyeOutlined />}
+                            onClick={() => window.open(doc.fileUrl, "_blank")}
+                            style={{
+                              width: "100%",
+                              backgroundColor: "#722ed1",
+                              borderColor: "#722ed1",
+                            }}
+                          >
+                            View Document
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Signed Additional Documents */}
+                {offer.signedAdditionalDocuments && offer.signedAdditionalDocuments.length > 0 && (
+                  <>
+                    <div style={{ marginTop: "24px", marginBottom: "12px" }}>
+                      <Text strong style={{ fontSize: "16px" }}>
+                        Signed Additional Documents:
+                      </Text>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                        gap: "16px",
+                      }}
+                    >
+                      {offer.signedAdditionalDocuments.map((doc, docIndex) => (
+                        <div
+                          key={docIndex}
+                          style={{
+                            padding: "16px",
+                            border: "2px solid #52c41a",
+                            borderRadius: "8px",
+                            backgroundColor: "#f6ffed",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              <CheckCircleOutlined
+                                style={{ color: "#52c41a", fontSize: "20px" }}
+                              />
+                              <div>
+                                <Text strong style={{ display: "block" }}>
+                                  {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
+                                </Text>
+                                {doc.fileName && (
+                                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                                    {doc.fileName}
+                                  </Text>
+                                )}
+                              </div>
+                            </div>
+                            <Tag color="green" icon={<CheckCircleOutlined />}>
+                              Signed
+                            </Tag>
+                          </div>
+
+                          {doc.uploadedAt && (
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: "12px",
+                                display: "block",
+                                marginBottom: "8px",
+                              }}
+                            >
+                              Signed:{" "}
+                              {new Date(doc.uploadedAt).toLocaleString()}
+                            </Text>
+                          )}
+
+                          <Button
+                            type="primary"
+                            icon={<EyeOutlined />}
+                            onClick={() => window.open(doc.fileUrl, "_blank")}
+                            style={{
+                              width: "100%",
+                              backgroundColor: "#52c41a",
+                              borderColor: "#52c41a",
+                            }}
+                          >
+                            View Signed Document
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Status History */}

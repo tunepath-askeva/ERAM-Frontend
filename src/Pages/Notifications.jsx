@@ -49,6 +49,7 @@ import {
   useMarkAsReadByIdMutation,
   useDeleteNotificationMutation,
   useUpdateCandidateOfferStatusMutation,
+  useGetOfferDetailsQuery,
   useRequestOfferRevisionMutation,
 } from "../Slices/Users/UserApis";
 import dayjs from "dayjs";
@@ -77,6 +78,7 @@ const Notifications = () => {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [showSettings, setShowSettings] = useState(false);
+  const [offerDetails, setOfferDetails] = useState(null);
 
   // Modal states for different actions
   const [acceptModalVisible, setAcceptModalVisible] = useState(false);
@@ -240,6 +242,7 @@ const Notifications = () => {
   const handleAcceptOffer = (notification) => {
     setSelectedNotification(notification);
     setAcceptModalVisible(true);
+    setOfferDetails(null); // Reset offer details
   };
 
   const handleRejectOffer = (notification) => {
@@ -255,7 +258,27 @@ const Notifications = () => {
   const handleViewOfferLetter = (notification) => {
     setSelectedNotification(notification);
     setOfferLetterModalVisible(true);
+    setOfferDetails(null); // Reset offer details
   };
+
+  // Helper function to check if notification is an offer letter notification
+  const isOfferLetterNotification = (notification) => {
+    return notification?.title?.includes("Offer Letter Received");
+  };
+
+  // Fetch offer details when modal opens and workorderId is available
+  const { data: offerData, isLoading: loadingOfferDetails } = useGetOfferDetailsQuery(
+    selectedNotification?.workorderId,
+    {
+      skip: !selectedNotification?.workorderId || !isOfferLetterNotification(selectedNotification) || (!offerLetterModalVisible && !acceptModalVisible),
+    }
+  );
+
+  useEffect(() => {
+    if (offerData?.data) {
+      setOfferDetails(offerData.data);
+    }
+  }, [offerData]);
 
   // Handle form submissions for different actions
   const handleAcceptOfferSubmit = async (values) => {
@@ -270,6 +293,20 @@ const Notifications = () => {
       // ✅ Append the uploaded file
       if (values.signedOffer) {
         formData.append("signedOffer", values.signedOffer.originFileObj);
+      }
+
+      // Handle signed additional documents
+      if (values.signedAdditionalDocuments?.fileList && offerDetails?.additionalDocuments) {
+        values.signedAdditionalDocuments.fileList.forEach((file, index) => {
+          if (file.originFileObj && offerDetails.additionalDocuments[index]) {
+            // Use the original document name as part of the fieldname
+            const originalDoc = offerDetails.additionalDocuments[index];
+            const originalDocName = originalDoc.documentName || originalDoc.fileName || `Document${index + 1}`;
+            // Clean the document name to avoid issues with special characters in fieldname
+            const cleanDocName = originalDocName.replace(/[^a-zA-Z0-9]/g, '_');
+            formData.append(`signedAdditionalDoc_${cleanDocName}`, file.originFileObj);
+          }
+        });
       }
 
       await updateOfferStatus(formData).unwrap();
@@ -426,10 +463,6 @@ const Notifications = () => {
           </Tag>
         );
     }
-  };
-
-  const isOfferLetterNotification = (notification) => {
-    return notification.title.includes("Offer Letter Received");
   };
 
   const getNotificationActions = (item) => {
@@ -933,6 +966,39 @@ const Notifications = () => {
             </Upload>
           </Form.Item>
 
+          {/* Signed Additional Documents */}
+          {offerDetails?.additionalDocuments && offerDetails.additionalDocuments.length > 0 && (
+            <Form.Item
+              name="signedAdditionalDocuments"
+              label="Signed Additional Documents (PDF)"
+              tooltip="Please upload signed copies of all additional supporting documents"
+              valuePropName="fileList"
+              getValueFromEvent={(e) => e?.fileList || []}
+            >
+              <Upload
+                beforeUpload={(file) => {
+                  const isPdf = file.type === "application/pdf";
+                  if (!isPdf) {
+                    message.error("You can only upload PDF files!");
+                  }
+                  return isPdf || Upload.LIST_IGNORE;
+                }}
+                multiple
+                accept=".pdf"
+                fileList={acceptForm.getFieldValue("signedAdditionalDocuments")?.fileList || []}
+              >
+                <Button icon={<UploadOutlined />}>
+                  Upload Signed Additional Documents
+                </Button>
+              </Upload>
+              <div style={{ marginTop: 8, fontSize: "12px", color: "#666" }}>
+                {offerDetails.additionalDocuments.map((doc, index) => (
+                  <div key={index}>• {doc.documentName || doc.fileName || `Document ${index + 1}`}</div>
+                ))}
+              </div>
+            </Form.Item>
+          )}
+
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
@@ -1115,7 +1181,12 @@ const Notifications = () => {
         width={900}
         style={{ top: 20, borderRadius: "12px" }}
       >
-        {selectedNotification && selectedNotification.fileUrl ? (
+        {loadingOfferDetails ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>Loading offer details...</div>
+          </div>
+        ) : selectedNotification && selectedNotification.fileUrl ? (
           <div>
             <Alert
               message={
@@ -1130,6 +1201,30 @@ const Notifications = () => {
               }
               style={{ marginBottom: 16, borderRadius: "8px" }}
             />
+
+            {/* Additional Documents Section */}
+            {offerDetails?.additionalDocuments && offerDetails.additionalDocuments.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <Text strong style={{ display: "block", marginBottom: 8 }}>
+                  Additional Supporting Documents:
+                </Text>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  {offerDetails.additionalDocuments.map((doc, index) => (
+                    <Button
+                      key={index}
+                      type="link"
+                      icon={<FileTextOutlined />}
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ padding: 0, height: "auto" }}
+                    >
+                      {doc.documentName || doc.fileName || `Additional Document ${index + 1}`}
+                    </Button>
+                  ))}
+                </Space>
+              </div>
+            )}
 
             <div
               style={{

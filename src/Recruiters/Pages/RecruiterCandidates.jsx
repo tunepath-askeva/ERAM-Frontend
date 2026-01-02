@@ -434,6 +434,15 @@ const RecruiterCandidates = () => {
         formData.append("attachment", values.file.fileList[0].originFileObj);
       }
 
+      // Handle additional documents
+      if (values.additionalDocuments?.fileList) {
+        values.additionalDocuments.fileList.forEach((file) => {
+          if (file.originFileObj) {
+            formData.append("additionalDocuments", file.originFileObj);
+          }
+        });
+      }
+
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
 
       enqueueSnackbar("Offer sent successfully!", { variant: "success" });
@@ -458,6 +467,15 @@ const RecruiterCandidates = () => {
         formData.append("attachment", values.file.file.originFileObj);
       } else if (values.file?.fileList?.[0]?.originFileObj) {
         formData.append("attachment", values.file.fileList[0].originFileObj);
+      }
+
+      // Handle additional documents
+      if (values.additionalDocuments?.fileList) {
+        values.additionalDocuments.fileList.forEach((file) => {
+          if (file.originFileObj) {
+            formData.append("additionalDocuments", file.originFileObj);
+          }
+        });
       }
 
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
@@ -2272,7 +2290,7 @@ const RecruiterCandidates = () => {
                           </Descriptions.Item>
 
                           <Descriptions.Item label="Signed Offer Letter">
-                            {candidate.offerDetails?.[0]?.offerDocument
+                            {candidate.offerDetails?.[0]?.signedOfferDocument
                               ?.fileUrl ? (
                               <a
                                 href={
@@ -2283,12 +2301,52 @@ const RecruiterCandidates = () => {
                                 rel="noreferrer"
                               >
                                 {candidate?.offerDetails[0]?.signedOfferDocument
-                                  ?.fileName || "Download Offer Letter"}
+                                  ?.fileName || "Download Signed Offer Letter"}
                               </a>
                             ) : (
                               "No file uploaded"
                             )}
                           </Descriptions.Item>
+
+                          {candidate.offerDetails?.[0]?.additionalDocuments &&
+                            candidate.offerDetails[0].additionalDocuments.length > 0 && (
+                              <Descriptions.Item label="Additional Documents">
+                                <Space direction="vertical" size="small">
+                                  {candidate.offerDetails[0].additionalDocuments.map(
+                                    (doc, index) => (
+                                      <a
+                                        key={index}
+                                        href={doc.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {doc.documentName || doc.fileName || `Additional Document ${index + 1}`}
+                                      </a>
+                                    )
+                                  )}
+                                </Space>
+                              </Descriptions.Item>
+                            )}
+
+                          {candidate.offerDetails?.[0]?.signedAdditionalDocuments &&
+                            candidate.offerDetails[0].signedAdditionalDocuments.length > 0 && (
+                              <Descriptions.Item label="Signed Additional Documents">
+                                <Space direction="vertical" size="small">
+                                  {candidate.offerDetails[0].signedAdditionalDocuments.map(
+                                    (doc, index) => (
+                                      <a
+                                        key={index}
+                                        href={doc.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        {doc.documentName || doc.fileName || `Signed Document ${index + 1}`}
+                                      </a>
+                                    )
+                                  )}
+                                </Space>
+                              </Descriptions.Item>
+                            )}
 
                           {candidate.offerDetails?.[0]?.statusHistory?.length >
                             0 && (
@@ -3884,6 +3942,25 @@ const RecruiterCandidates = () => {
               maxCount={1}
             >
               <Button icon={<UploadOutlined />}>Click to Upload PDF</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="Additional Supporting Documents (Optional)"
+            name="additionalDocuments"
+            tooltip="Upload any additional supporting documents related to the offer (e.g., benefits package, company policies, etc.)"
+          >
+            <Upload
+              beforeUpload={(file) => {
+                const isPDF = file.type === "application/pdf";
+                if (!isPDF) {
+                  message.error("You can only upload PDF files!");
+                }
+                return false;
+              }}
+              accept=".pdf"
+              multiple
+            >
+              <Button icon={<UploadOutlined />}>Upload Additional Documents</Button>
             </Upload>
           </Form.Item>
         </Form>

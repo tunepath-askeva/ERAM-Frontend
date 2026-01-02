@@ -168,10 +168,12 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
 
       const phone = form.getFieldValue("phone");
       const phoneCountryCode = form.getFieldValue("phoneCountryCode");
-      const fullPhone = `${phoneCountryCode}${phone}`;
+      // Clean phone number - remove + prefix if present
+      const cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
 
       const { confirmPassword, ...dataToSubmit } = formData;
-      dataToSubmit.phone = fullPhone;
+      dataToSubmit.phone = cleanPhone; // Phone number without country code
+      dataToSubmit.phoneCountryCode = phoneCountryCode || "91"; // Country code sent separately
 
       // Convert assetAllocation string to array
       if (dataToSubmit.assetAllocation) {

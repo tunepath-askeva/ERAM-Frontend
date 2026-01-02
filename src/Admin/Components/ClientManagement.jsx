@@ -108,22 +108,35 @@ const ClientsManagement = () => {
     console.log("Client data:", client);
     console.log("Client Code:", client.clientCode);
 
-    // Extract country code from phone number if present
+    // Use stored country code if available, otherwise extract
     let contactNo = client.phone || "";
-    let contactNoCountryCode = "";
+    let contactNoCountryCode = client.phoneCountryCode || "";
     
-    if (contactNo) {
-      // Remove + prefix if present
+    if (contactNo && !contactNoCountryCode) {
+      // Only extract if country code is not stored
       let phoneWithoutPlus = contactNo.trim();
       while (phoneWithoutPlus.startsWith("+")) {
         phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
       }
       
-      // Use phoneUtils to extract country code
       const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
       if (parsed.countryCode && parsed.phoneNumber) {
         contactNoCountryCode = parsed.countryCode;
         contactNo = parsed.phoneNumber;
+      } else {
+        contactNoCountryCode = "91"; // Default
+      }
+    } else if (contactNo && contactNoCountryCode) {
+      // If we have stored country code, remove it from phone if present
+      let phoneWithoutPlus = contactNo.trim();
+      while (phoneWithoutPlus.startsWith("+")) {
+        phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+      }
+      const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
+      if (cleanPhone.startsWith(contactNoCountryCode)) {
+        contactNo = cleanPhone.slice(contactNoCountryCode.length);
+      } else {
+        contactNo = cleanPhone;
       }
     }
 
@@ -132,7 +145,7 @@ const ClientsManagement = () => {
       code: client.clientCode || client.code,
       email: client.email,
       contactNo: contactNo,
-      contactNoCountryCode: contactNoCountryCode || "91", // Default to 91 if not extracted
+      contactNoCountryCode: contactNoCountryCode || "91",
       contactPersonNumber: client.contactPersonMobile,
       sapCode: client.sapCode,
       type: client.clientType,
@@ -142,19 +155,17 @@ const ClientsManagement = () => {
 
   const handleFormSubmit = async (values) => {
     try {
-      // Merge country code and phone number for contactNo (without + prefix)
+      // Clean phone number - remove + prefix if present
+      const phoneNumber = values.contactNo ? values.contactNo.replace(/^\+/, "").replace(/\D/g, "") : "";
       const countryCode = values.contactNoCountryCode || "91";
-      const phoneNumber = values.contactNo || "";
-      // Remove any + prefix if present and save without it
-      const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
-      const fullPhoneNumber = `${countryCode}${cleanPhoneNumber}`;
 
       if (modalMode === "create") {
         const payload = {
           name: values.name,
           code: values.code,
           email: values.email,
-          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
+          contactNo: phoneNumber, // Phone number without country code
+          contactNoCountryCode: countryCode, // Country code sent separately
           contactPersonNumber: values.contactPersonNumber,
           sapCode: values.sapCode,
           type: values.type,
@@ -166,7 +177,8 @@ const ClientsManagement = () => {
           name: values.name,
           code: values.code,
           email: values.email,
-          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
+          contactNo: phoneNumber, // Phone number without country code
+          contactNoCountryCode: countryCode, // Country code sent separately
           contactPersonNumber: values.contactPersonNumber,
           sapCode: values.sapCode,
           type: values.type,

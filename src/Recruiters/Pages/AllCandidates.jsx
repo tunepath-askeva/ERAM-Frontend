@@ -48,6 +48,7 @@ import {
   useExportCandidatesMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useNavigate, useLocation } from "react-router-dom";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
@@ -546,7 +547,11 @@ function AllCandidates() {
       render: (text, record) => (
         <div>
           <div>{text}</div>
-          <Text type="secondary">{record.phone || "No phone"}</Text>
+          <Text type="secondary">
+            {record.phoneCountryCode && record.phone
+              ? phoneUtils.formatWithCountryCode(record.phoneCountryCode, record.phone)
+              : record.phone || "No phone"}
+          </Text>
         </div>
       ),
     },

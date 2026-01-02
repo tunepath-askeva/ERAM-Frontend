@@ -44,6 +44,7 @@ import {
 import dayjs from "dayjs";
 import { useGetAllcandidatebyIdQuery } from "../../Slices/Recruiter/RecruiterApis";
 import { useSelector } from "react-redux";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 import { useNotifyEmployeeMutation } from "../../Slices/Employee/EmployeeApis";
 
@@ -353,7 +354,9 @@ const CandidateDetailsDrawer = ({
                         <Text strong>Phone:</Text>
                         <br />
                         <Text>
-                          <PhoneOutlined /> {candidate.phone}
+                          <PhoneOutlined /> {candidate.phoneCountryCode && candidate.phone
+                            ? phoneUtils.formatWithCountryCode(candidate.phoneCountryCode, candidate.phone)
+                            : candidate.phone || "-"}
                         </Text>
                       </Col>
                       <Col xs={24} sm={12}>
@@ -503,7 +506,9 @@ const CandidateDetailsDrawer = ({
                         <Text strong>Emergency Contact:</Text>
                         <br />
                         <Text>
-                          {candidate.emergencyContactNo || "Not provided"}
+                          {candidate.emergencyContactNoCountryCode && candidate.emergencyContactNo
+                            ? phoneUtils.formatWithCountryCode(candidate.emergencyContactNoCountryCode, candidate.emergencyContactNo)
+                            : candidate.emergencyContactNo || "Not provided"}
                         </Text>
                       </Col>
                     </Row>
@@ -710,14 +715,18 @@ const CandidateDetailsDrawer = ({
                         <Text strong>Emergency Contact Mobile:</Text>
                         <br />
                         <Text>
-                          {candidate.contactPersonMobile || "Not provided"}
+                          {candidate.contactPersonMobileCountryCode && candidate.contactPersonMobile
+                            ? phoneUtils.formatWithCountryCode(candidate.contactPersonMobileCountryCode, candidate.contactPersonMobile)
+                            : candidate.contactPersonMobile || "Not provided"}
                         </Text>
                       </Col>
                       <Col xs={24} sm={12}>
                         <Text strong>Emergency Contact Home No:</Text>
                         <br />
                         <Text>
-                          {candidate.contactPersonHomeNo || "Not provided"}
+                          {candidate.contactPersonHomeNoCountryCode && candidate.contactPersonHomeNo
+                            ? phoneUtils.formatWithCountryCode(candidate.contactPersonHomeNoCountryCode, candidate.contactPersonHomeNo)
+                            : candidate.contactPersonHomeNo || "Not provided"}
                         </Text>
                       </Col>
                       <Col xs={24} sm={12}>

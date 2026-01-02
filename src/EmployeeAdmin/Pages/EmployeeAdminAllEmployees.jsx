@@ -42,6 +42,7 @@ import EmployeeDetailsDrawer from "../Components/EmployeeDetailsDrawer";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 import MoveToAttritionModal from "../Components/MoveToAttritionModal";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Text } = Typography;
 
@@ -452,6 +453,12 @@ const EmployeeAdminAllEmployees = () => {
       title: "Phone",
       dataIndex: "phone",
       key: "phone",
+      render: (phone, record) => {
+        if (record.phoneCountryCode && phone) {
+          return phoneUtils.formatWithCountryCode(record.phoneCountryCode, phone);
+        }
+        return phone || "-";
+      },
     },
     {
       title: "Job Title",

@@ -89,19 +89,23 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
 
   const handleSubmit = async (values) => {
     try {
-      // Format phone number: combine country code and phone number without + prefix
-      const phoneCountryCode = values.phoneCountryCode || "";
+      // Explicitly get phoneCountryCode from form to ensure it's included
+      const phoneCountryCode = form.getFieldValue("phoneCountryCode") || values.phoneCountryCode || "91";
       const phoneNumber = values.phone || "";
       const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
-      const formattedPhone = phoneCountryCode && cleanPhoneNumber 
-        ? `${phoneCountryCode}${cleanPhoneNumber}` 
-        : cleanPhoneNumber || phoneNumber;
 
       const submitData = {
         ...values,
-        phone: formattedPhone,
+        phone: cleanPhoneNumber, // Phone number without country code
+        phoneCountryCode: phoneCountryCode, // Country code sent separately - explicitly included
         imageFile: userData.imageFile, // Pass the file to parent
       };
+      
+      // Ensure phoneCountryCode is always in the payload
+      if (!submitData.phoneCountryCode) {
+        submitData.phoneCountryCode = "91";
+      }
+      
       await onUpdate(submitData);
       enqueueSnackbar("Personal information updated successfully!", {
         variant: "success",
@@ -124,17 +128,39 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     return dateString ? dayjs(dateString) : null;
   };
 
-  // Extract country code from phone number if present
-  const extractPhoneData = (phoneStr) => {
-    if (!phoneStr) return { phone: "", phoneCountryCode: "91" };
+  // Extract country code from phone number if present, prioritizing stored country code
+  const extractPhoneData = (phoneStr, storedCountryCode) => {
+    if (!phoneStr) return { phone: "", phoneCountryCode: storedCountryCode || "91" };
     
-    // Remove + prefix if present (handle multiple + signs)
+    // If we have a stored country code, use it
+    if (storedCountryCode) {
+      // Remove + prefix if present
+      let phoneWithoutPlus = phoneStr.trim();
+      while (phoneWithoutPlus.startsWith("+")) {
+        phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+      }
+      const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
+      
+      // If phone starts with country code, remove it
+      if (cleanPhone.startsWith(storedCountryCode)) {
+        return {
+          phone: cleanPhone.slice(storedCountryCode.length),
+          phoneCountryCode: storedCountryCode,
+        };
+      } else {
+        return {
+          phone: cleanPhone,
+          phoneCountryCode: storedCountryCode,
+        };
+      }
+    }
+    
+    // Fallback: extract country code if not stored
     let phoneWithoutPlus = phoneStr.trim();
     while (phoneWithoutPlus.startsWith("+")) {
       phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
     }
     
-    // Use phoneUtils to extract country code
     const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
     if (parsed.countryCode && parsed.phoneNumber) {
       return {
@@ -142,7 +168,6 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
         phoneCountryCode: parsed.countryCode,
       };
     } else if (phoneWithoutPlus) {
-      // If extraction fails, use the cleaned number as-is
       return {
         phone: phoneWithoutPlus.replace(/\D/g, ""),
         phoneCountryCode: "91", // Default to 91
@@ -152,7 +177,7 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     return { phone: "", phoneCountryCode: "91" };
   };
 
-  const phoneData = extractPhoneData(employeeData?.phone);
+  const phoneData = extractPhoneData(employeeData?.phone, employeeData?.phoneCountryCode);
 
   const formInitialValues = {
     firstName: employeeData?.firstName || "",

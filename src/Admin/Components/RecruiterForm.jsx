@@ -486,14 +486,12 @@ const RecruiterForm = ({
       }
       // Clean phone number - remove + prefix if present
       const cleanPhoneNumber = values.phoneno ? values.phoneno.replace(/^\+/, "").replace(/\D/g, "") : "";
-      const phoneToSave = values.phonenoCountryCode && cleanPhoneNumber
-        ? `${values.phonenoCountryCode}${cleanPhoneNumber}`
-        : cleanPhoneNumber || values.phoneno;
 
       const payload = {
         fullName: values.fullName,
         email: values.email,
-        phoneno: phoneToSave, // Country code + phone number without + prefix
+        phoneno: cleanPhoneNumber, // Phone number without country code
+        phonenoCountryCode: values.phonenoCountryCode || "91", // Country code sent separately
         specialization: values.specialization,
         experience: values.experience,
         recruiterType: values.recruiterType,

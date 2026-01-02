@@ -35,6 +35,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetSourcedCandidateQuery } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -237,7 +238,9 @@ const CandidateProfilePage = ({ candidate: propCandidate }) => {
                         style={{ marginRight: "8px", color: "red" }}
                       />
                       <Text>
-                        Emergency: {candidate.emergencyContactNo}
+                        Emergency: {candidate.emergencyContactNoCountryCode && candidate.emergencyContactNo
+                          ? phoneUtils.formatWithCountryCode(candidate.emergencyContactNoCountryCode, candidate.emergencyContactNo)
+                          : candidate.emergencyContactNo}
                         {candidate.contactPersonName &&
                           ` (${candidate.contactPersonName})`}
                       </Text>

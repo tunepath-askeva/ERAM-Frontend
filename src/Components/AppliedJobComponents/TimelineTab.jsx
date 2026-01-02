@@ -1,9 +1,10 @@
 import React from "react";
-import { Card, Typography, Timeline, Badge, Tag } from "antd";
+import { Card, Typography, Timeline, Badge, Tag, Space } from "antd";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -226,6 +227,48 @@ const TimelineTab = ({ appliedJob }) => {
                         offer.signedOfferDocument.uploadedAt
                       ).toLocaleString()}
                     </Text>
+                  </div>
+                )}
+                {offer.additionalDocuments && offer.additionalDocuments.length > 0 && (
+                  <div style={{ marginTop: "8px" }}>
+                    <Text type="secondary" style={{ fontSize: "12px", display: "block", marginBottom: "4px" }}>
+                      Additional Documents ({offer.additionalDocuments.length}):
+                    </Text>
+                    <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                      {offer.additionalDocuments.map((doc, docIndex) => (
+                        <a
+                          key={docIndex}
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ fontSize: "12px" }}
+                        >
+                          <FileTextOutlined style={{ marginRight: "4px" }} />
+                          {doc.documentName || doc.fileName || `Document ${docIndex + 1}`}
+                        </a>
+                      ))}
+                    </Space>
+                  </div>
+                )}
+                {offer.signedAdditionalDocuments && offer.signedAdditionalDocuments.length > 0 && (
+                  <div style={{ marginTop: "8px" }}>
+                    <Text type="secondary" style={{ fontSize: "12px", display: "block", marginBottom: "4px" }}>
+                      Signed Additional Documents ({offer.signedAdditionalDocuments.length}):
+                    </Text>
+                    <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                      {offer.signedAdditionalDocuments.map((doc, docIndex) => (
+                        <a
+                          key={docIndex}
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ fontSize: "12px", color: "#52c41a" }}
+                        >
+                          <CheckCircleOutlined style={{ marginRight: "4px" }} />
+                          {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
+                        </a>
+                      ))}
+                    </Space>
                   </div>
                 )}
               </div>

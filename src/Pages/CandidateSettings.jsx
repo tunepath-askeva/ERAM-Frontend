@@ -86,6 +86,7 @@ import { setUserCredentials } from "../Slices/Users/UserSlice";
 import dayjs from "dayjs";
 import PhoneInput from "../Global/PhoneInput";
 import SkeletonLoader from "../Global/SkeletonLoader";
+import { phoneUtils } from "../utils/countryMobileLimits";
 import "./CandidateSettings.css";
 
 const { Title, Text, Paragraph } = Typography;
@@ -292,9 +293,63 @@ const CandidateSettings = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Helper function to extract phone number and country code
+  const extractPhoneData = (phoneStr, storedCountryCode) => {
+    if (!phoneStr) return { phone: "", countryCode: storedCountryCode || "91" };
+    
+    // If we have a stored country code, use it
+    if (storedCountryCode) {
+      let phoneWithoutPlus = phoneStr.trim();
+      while (phoneWithoutPlus.startsWith("+")) {
+        phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+      }
+      const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
+      
+      // If phone starts with country code, remove it
+      if (cleanPhone.startsWith(storedCountryCode)) {
+        return {
+          phone: cleanPhone.slice(storedCountryCode.length),
+          countryCode: storedCountryCode,
+        };
+      } else {
+        return {
+          phone: cleanPhone,
+          countryCode: storedCountryCode,
+        };
+      }
+    }
+    
+    // Fallback: extract country code if not stored
+    let phoneWithoutPlus = phoneStr.trim();
+    while (phoneWithoutPlus.startsWith("+")) {
+      phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+    }
+    
+    const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+    if (parsed.countryCode && parsed.phoneNumber) {
+      return {
+        phone: parsed.phoneNumber,
+        countryCode: parsed.countryCode,
+      };
+    } else if (phoneWithoutPlus) {
+      return {
+        phone: phoneWithoutPlus.replace(/\D/g, ""),
+        countryCode: "91", // Default to 91
+      };
+    }
+    
+    return { phone: "", countryCode: "91" };
+  };
+
   useEffect(() => {
     if (getCandidate && getCandidate.user) {
       const candidateData = getCandidate.user;
+
+      // Extract phone data for all phone fields
+      const phoneData = extractPhoneData(candidateData.phone, candidateData.phoneCountryCode);
+      const contactMobileData = extractPhoneData(candidateData.contactPersonMobile, candidateData.contactPersonMobileCountryCode);
+      const contactHomeData = extractPhoneData(candidateData.contactPersonHomeNo, candidateData.contactPersonHomeNoCountryCode);
+      const emergencyData = extractPhoneData(candidateData.emergencyContactNo, candidateData.emergencyContactNoCountryCode);
 
       const mappedData = {
         firstName: candidateData.firstName || "",
@@ -302,7 +357,8 @@ const CandidateSettings = () => {
         middleName: candidateData.middleName || "",
         fullName: candidateData.fullName || "",
         email: candidateData.email || "",
-        phone: candidateData.phone || "",
+        phone: phoneData.phone,
+        phoneCountryCode: phoneData.countryCode,
         skills: Array.isArray(candidateData.skills) ? candidateData.skills : [],
         qualifications: Array.isArray(candidateData.qualifications)
           ? candidateData.qualifications
@@ -400,8 +456,12 @@ const CandidateSettings = () => {
         state: candidateData.state || "",
         country: candidateData.country || "",
         contactPersonName: candidateData.contactPersonName || "",
-        contactPersonMobile: candidateData.contactPersonMobile || "",
-        contactPersonHomeNo: candidateData.contactPersonHomeNo || "",
+        contactPersonMobile: contactMobileData.phone,
+        contactPersonMobileCountryCode: contactMobileData.countryCode,
+        contactPersonHomeNo: contactHomeData.phone,
+        contactPersonHomeNoCountryCode: contactHomeData.countryCode,
+        emergencyContactNo: emergencyData.phone,
+        emergencyContactNoCountryCode: emergencyData.countryCode,
         nomineeName: candidateData.nomineeName || "",
         nomineeRelationship: candidateData.nomineeRelationship || "",
         profileSummary: candidateData.profileSummary || "",
@@ -681,45 +741,54 @@ const CandidateSettings = () => {
       const contactValues = await contactForm.validateFields();
       const preferencesValues = await preferencesForm.validateFields();
 
-      const combinePhoneNumbers = (values) => {
+      // Explicitly get country codes from forms to ensure they're included
+      const phoneCountryCode = profileForm.getFieldValue("phoneCountryCode") || "91";
+      const contactPersonMobileCountryCode = contactForm.getFieldValue("contactPersonMobileCountryCode") || "91";
+      const contactPersonHomeNoCountryCode = contactForm.getFieldValue("contactPersonHomeNoCountryCode") || "91";
+      const emergencyContactNoCountryCode = contactForm.getFieldValue("emergencyContactNoCountryCode") || "91";
+
+      // Ensure country codes are in the form values
+      profileValues.phoneCountryCode = phoneCountryCode;
+      contactValues.contactPersonMobileCountryCode = contactPersonMobileCountryCode;
+      contactValues.contactPersonHomeNoCountryCode = contactPersonHomeNoCountryCode;
+      contactValues.emergencyContactNoCountryCode = emergencyContactNoCountryCode;
+
+      const preparePhoneNumbers = (values) => {
         const result = { ...values };
 
-        // Handle main phone
-        if (values.phone && values.phoneCountryCode) {
-          result.phone = `${values.phoneCountryCode}${values.phone}`;
-          delete result.phoneCountryCode;
+        // Always ensure phoneCountryCode is included (even if phone is empty)
+        if (values.phone !== undefined) {
+          result.phone = values.phone ? values.phone.replace(/^\+/, "").replace(/\D/g, "") : "";
         }
+        // Always set phoneCountryCode, use form value or default to "91"
+        result.phoneCountryCode = values.phoneCountryCode || "91";
 
-        // Handle emergency contacts
-        if (values.emergencyContactNo && values.emergencyContactNoCountryCode) {
-          result.emergencyContactNo = `${values.emergencyContactNoCountryCode}${values.emergencyContactNo}`;
-          delete result.emergencyContactNoCountryCode;
+        // Always ensure emergencyContactNoCountryCode is included
+        if (values.emergencyContactNo !== undefined) {
+          result.emergencyContactNo = values.emergencyContactNo ? values.emergencyContactNo.replace(/^\+/, "").replace(/\D/g, "") : "";
         }
+        result.emergencyContactNoCountryCode = values.emergencyContactNoCountryCode || "91";
 
-        if (
-          values.contactPersonMobile &&
-          values.contactPersonMobileCountryCode
-        ) {
-          result.contactPersonMobile = `${values.contactPersonMobileCountryCode}${values.contactPersonMobile}`;
-          delete result.contactPersonMobileCountryCode;
+        // Always ensure contactPersonMobileCountryCode is included
+        if (values.contactPersonMobile !== undefined) {
+          result.contactPersonMobile = values.contactPersonMobile ? values.contactPersonMobile.replace(/^\+/, "").replace(/\D/g, "") : "";
         }
+        result.contactPersonMobileCountryCode = values.contactPersonMobileCountryCode || "91";
 
-        if (
-          values.contactPersonHomeNo &&
-          values.contactPersonHomeNoCountryCode
-        ) {
-          result.contactPersonHomeNo = `${values.contactPersonHomeNoCountryCode}${values.contactPersonHomeNo}`;
-          delete result.contactPersonHomeNoCountryCode;
+        // Always ensure contactPersonHomeNoCountryCode is included
+        if (values.contactPersonHomeNo !== undefined) {
+          result.contactPersonHomeNo = values.contactPersonHomeNo ? values.contactPersonHomeNo.replace(/^\+/, "").replace(/\D/g, "") : "";
         }
+        result.contactPersonHomeNoCountryCode = values.contactPersonHomeNoCountryCode || "91";
 
         return result;
       };
 
       const allValues = {
-        ...combinePhoneNumbers(profileValues),
-        ...combinePhoneNumbers(personalValues),
-        ...combinePhoneNumbers(addressValues),
-        ...combinePhoneNumbers(contactValues),
+        ...preparePhoneNumbers(profileValues),
+        ...preparePhoneNumbers(personalValues),
+        ...preparePhoneNumbers(addressValues),
+        ...preparePhoneNumbers(contactValues),
         jobPreferences: preferencesValues,
         socialLinks: profileValues.socialLinks || userData.socialLinks,
         age: personalValues.age, // Add this
@@ -739,10 +808,29 @@ const CandidateSettings = () => {
           } else if (key === "socialLinks" || key === "jobPreferences") {
             // Skip these as we'll handle them separately
           } else {
-            formData.append(key, value);
+            // Ensure country code fields are always included, even if empty
+            if (key.endsWith("CountryCode")) {
+              formData.append(key, value || "91");
+            } else {
+              formData.append(key, value);
+            }
           }
         }
       });
+      
+      // Explicitly ensure all country code fields are included
+      if (allValues.phoneCountryCode === undefined || allValues.phoneCountryCode === null) {
+        formData.append("phoneCountryCode", "91");
+      }
+      if (allValues.contactPersonMobileCountryCode === undefined || allValues.contactPersonMobileCountryCode === null) {
+        formData.append("contactPersonMobileCountryCode", "91");
+      }
+      if (allValues.contactPersonHomeNoCountryCode === undefined || allValues.contactPersonHomeNoCountryCode === null) {
+        formData.append("contactPersonHomeNoCountryCode", "91");
+      }
+      if (allValues.emergencyContactNoCountryCode === undefined || allValues.emergencyContactNoCountryCode === null) {
+        formData.append("emergencyContactNoCountryCode", "91");
+      }
 
       // Handle JSON fields
       formData.append(

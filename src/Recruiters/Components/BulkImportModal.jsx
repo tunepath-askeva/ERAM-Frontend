@@ -13,6 +13,7 @@ import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { useSnackbar } from "notistack";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Paragraph, Text } = Typography;
 
@@ -166,11 +167,43 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             return;
           }
 
-          const countryCode =
-            row["Country Code"]?.toString()?.trim().replace("+", "") || "91";
-          const phoneNumber = row["Phone Number"]?.toString()?.trim() || "";
-          const phone =
-            countryCode && phoneNumber ? `+${countryCode}${phoneNumber}` : "";
+          // Handle phone number with country code
+          let phone = "";
+          let phoneCountryCode = "91";
+          
+          // Option 1: If separate Country Code and Phone Number columns exist
+          const countryCodeColumn = row["Country Code"]?.toString()?.trim().replace("+", "") || 
+                                   row["Phone Country Code"]?.toString()?.trim().replace("+", "") || "";
+          const phoneNumberColumn = row["Phone Number"]?.toString()?.trim() || 
+                                   row["Phone"]?.toString()?.trim() || "";
+          
+          if (countryCodeColumn && phoneNumberColumn) {
+            phoneCountryCode = countryCodeColumn;
+            phone = phoneNumberColumn.replace(/^\+/, "").replace(/\D/g, "");
+          } else {
+            // Option 2: If Phone column contains full number (with or without country code)
+            const phoneColumn = row["Phone"]?.toString()?.trim() || 
+                               row["Phone Number"]?.toString()?.trim() || "";
+            
+            if (phoneColumn) {
+              // Remove + prefix if present
+              let phoneWithoutPlus = phoneColumn.trim();
+              while (phoneWithoutPlus.startsWith("+")) {
+                phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+              }
+              
+              // Try to extract country code using phoneUtils
+              const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+              if (parsed.countryCode && parsed.phoneNumber) {
+                phoneCountryCode = parsed.countryCode;
+                phone = parsed.phoneNumber;
+              } else {
+                // If extraction fails, use default country code and clean the number
+                phoneCountryCode = "91";
+                phone = phoneWithoutPlus.replace(/\D/g, "");
+              }
+            }
+          }
 
           // Basic email validation
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -186,7 +219,8 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             lastName: lastName,
             fullName: fullName,
             email: email,
-            phone,
+            phone: phone,
+            phoneCountryCode: phoneCountryCode,
             password: password,
             companyName:
               row["Company Name"]?.toString()?.trim() ||
@@ -284,7 +318,7 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
       <Space direction="vertical" size="middle" style={{ width: "100%" }}>
         <Paragraph type="secondary">
           Upload a CSV or Excel file containing candidate data. The file should
-          include columns for Full Name, Email, Phone, Password, Company Name,
+          include columns for Full Name, Email, Phone (or separate Country Code and Phone Number), Password, Company Name,
           Specialization, and Qualifications.
         </Paragraph>
 
@@ -337,8 +371,15 @@ const BulkImportModal = ({ visible, onCancel, onImport }) => {
             <li>Supported formats: .csv, .xls, .xlsx</li>
             <li>Required columns: First Name OR Full Name, Email, Password</li>
             <li>
-              Optional columns: Phone, Company Name, Specialization,
+              Optional columns: Phone (or Phone Number), Country Code (or Phone Country Code), Company Name, Specialization,
               Qualifications
+            </li>
+            <li>
+              <strong>Phone Number:</strong> You can provide either:
+              <ul style={{ marginTop: "4px", paddingLeft: "20px" }}>
+                <li>Separate "Country Code" and "Phone Number" columns</li>
+                <li>Single "Phone" column with full number (country code will be extracted automatically)</li>
+              </ul>
             </li>
           </ul>
         </div>

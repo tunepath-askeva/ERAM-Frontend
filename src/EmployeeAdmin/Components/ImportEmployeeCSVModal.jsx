@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal, Button, Upload, message, Alert } from "antd";
 import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -92,23 +93,49 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           });
         }
 
-        // Rest of your existing validation code stays the same...
-        const parsePhoneNumber = (phoneStr) => {
-          if (!phoneStr || phoneStr.trim() === "") return "";
-          let phone = phoneStr.trim();
-          if (phone.includes("E") || phone.includes("e")) {
+        // Helper function to parse phone number and extract country code
+        const parsePhoneWithCountryCode = (phoneStr, countryCodeStr) => {
+          let phone = "";
+          let phoneCountryCode = "91";
+          
+          // Handle scientific notation in Excel
+          if (phoneStr && (phoneStr.includes("E") || phoneStr.includes("e"))) {
             try {
-              const num = parseFloat(phone);
+              const num = parseFloat(phoneStr);
               if (!isNaN(num)) {
-                phone = num.toFixed(0);
+                phoneStr = num.toFixed(0);
               }
             } catch (e) {
               console.warn("Failed to parse phone number:", phoneStr);
             }
           }
-          phone = phone.replace(/[^\d+]/g, "");
-          phone = phone.replace(/^\+/, "");
-          return phone;
+          
+          // Option 1: If separate Country Code column exists
+          if (countryCodeStr && countryCodeStr.trim() !== "") {
+            phoneCountryCode = countryCodeStr.toString().trim().replace("+", "").replace(/\D/g, "");
+            if (phoneStr && phoneStr.trim() !== "") {
+              phone = phoneStr.toString().trim().replace(/^\+/, "").replace(/\D/g, "");
+            }
+          } else if (phoneStr && phoneStr.trim() !== "") {
+            // Option 2: Extract from combined phone number
+            let phoneWithoutPlus = phoneStr.toString().trim();
+            while (phoneWithoutPlus.startsWith("+")) {
+              phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+            }
+            
+            // Try to extract country code using phoneUtils
+            const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+            if (parsed.countryCode && parsed.phoneNumber) {
+              phoneCountryCode = parsed.countryCode;
+              phone = parsed.phoneNumber;
+            } else {
+              // If extraction fails, use default country code and clean the number
+              phoneCountryCode = "91";
+              phone = phoneWithoutPlus.replace(/\D/g, "");
+            }
+          }
+          
+          return { phone, phoneCountryCode };
         };
 
         // Validate required headers
@@ -155,8 +182,17 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
             const middleName = employee.middlename || employee.middleName || "";
             const lastName = employee.lastname || employee.lastName || "";
             const email = employee.email || "";
-            const phone = parsePhoneNumber(employee.phone || "");
             const password = employee.password || "";
+            
+            // Parse phone number with country code
+            const countryCodeColumn = employee.phonecountrycode || employee.phoneCountryCode || 
+                                     employee["country code"] || employee["Country Code"] || "";
+            const phoneData = parsePhoneWithCountryCode(
+              employee.phone || "",
+              countryCodeColumn
+            );
+            const phone = phoneData.phone;
+            const phoneCountryCode = phoneData.phoneCountryCode;
 
             // Validate required fields
             if (!firstName || !lastName || !email || !phone || !password) {
@@ -176,6 +212,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               lastName: lastName,
               email: email,
               phone: phone,
+              phoneCountryCode: phoneCountryCode,
               password: password,
               assignedJobTitle:
                 employee.assignedjobtitle || employee.assignedJobTitle || "",
@@ -329,6 +366,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "lastname",
       "email",
       "phone",
+      "phonecountrycode",
       "password",
       "assignedjobtitle",
       "category",
@@ -381,7 +419,8 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "M",
       "Doe",
       "john.doe@example.com",
-      "='966501234567'",
+      "501234567",
+      "966",
       "password123",
       "Software Engineer",
       "IT",
@@ -509,6 +548,9 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                 email*, phone*, password*
               </p>
               <p style={{ marginBottom: "8px", fontWeight: 500 }}>
+                <strong>Optional phone columns:</strong> phoneCountryCode (or Country Code) - if not provided, country code will be extracted from phone number
+              </p>
+              <p style={{ marginBottom: "8px", fontWeight: 500 }}>
                 <strong>Recommended columns:</strong> assignedJobTitle,
                 category, eramId, dateOfJoining (YYYY-MM-DD), officialEmail
               </p>
@@ -630,9 +672,11 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
                 2024-01-15)
               </li>
               <li>
-                <strong>Phone numbers:</strong> Include country code without +
-                symbol (e.g., 966501234567)
-                <br />
+                <strong>Phone numbers:</strong> You can provide either:
+                <ul style={{ marginTop: "4px", paddingLeft: "20px" }}>
+                  <li>Separate "phoneCountryCode" (or "Country Code") and "phone" columns</li>
+                  <li>Single "phone" column with full number (country code will be extracted automatically)</li>
+                </ul>
                 <span style={{ fontSize: "12px", color: "#ff4d4f" }}>
                   ⚠ In Excel: Format phone column as TEXT or prefix with
                   apostrophe (='966501234567') to prevent scientific notation

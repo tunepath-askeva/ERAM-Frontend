@@ -20,6 +20,7 @@ import {
   useGetEmployeeDetailsQuery,
   useInitiateAttritionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const EmployeeDetailsDrawer = ({
   visible,
@@ -323,7 +324,13 @@ const EmployeeDetailsDrawer = ({
                           value={employee.email}
                           span={2}
                         />
-                        <InfoItem label="Phone" value={employee.phone} />
+                        <InfoItem 
+                          label="Phone" 
+                          value={employee.phoneCountryCode && employee.phone 
+                            ? phoneUtils.formatWithCountryCode(employee.phoneCountryCode, employee.phone)
+                            : employee.phone || "-"
+                          } 
+                        />
                         <InfoItem label="Gender" value={employee.gender} />
                         <InfoItem
                           label="Date of Birth"

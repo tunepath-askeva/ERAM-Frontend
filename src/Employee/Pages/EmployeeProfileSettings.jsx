@@ -110,6 +110,7 @@ const EmployeeProfileSettings = () => {
         "lastName",
         "fullName",
         "phone",
+        "phoneCountryCode",
         "dob",
         "age",
         "gender",
@@ -127,7 +128,10 @@ const EmployeeProfileSettings = () => {
 
       fields.forEach((field) => {
         const value = values[field];
-        if (value !== undefined && value !== null && value !== "") {
+        // For phoneCountryCode, always include it (default to "91" if not provided)
+        if (field === "phoneCountryCode") {
+          formData.append(field, value || "91");
+        } else if (value !== undefined && value !== null && value !== "") {
           // Handle dates
           if (field === "dob" && value) {
             formData.append(

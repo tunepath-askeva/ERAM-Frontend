@@ -52,6 +52,7 @@ import {
 } from "@ant-design/icons";
 import { useGetCandidateByIdQuery } from "../../Slices/Admin/AdminApis.js";
 import dayjs from "dayjs";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Text, Title, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
@@ -261,7 +262,9 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
             <Text strong>Phone:</Text>
             <br />
             <Text>
-              <PhoneOutlined /> {candidate.phone}
+              <PhoneOutlined /> {candidate.phoneCountryCode && candidate.phone
+                ? phoneUtils.formatWithCountryCode(candidate.phoneCountryCode, candidate.phone)
+                : candidate.phone || "-"}
             </Text>
           </Col>
           <Col xs={24} sm={12}>
@@ -543,17 +546,29 @@ const CandidateViewDrawer = ({ visible, onClose, candidateId }) => {
         <Col xs={24} sm={12}>
           <Text strong>Contact Mobile:</Text>
           <br />
-          <Text>{candidate.contactPersonMobile || "Not provided"}</Text>
+          <Text>
+            {candidate.contactPersonMobileCountryCode && candidate.contactPersonMobile
+              ? phoneUtils.formatWithCountryCode(candidate.contactPersonMobileCountryCode, candidate.contactPersonMobile)
+              : candidate.contactPersonMobile || "Not provided"}
+          </Text>
         </Col>
         <Col xs={24} sm={12}>
           <Text strong>Contact Home:</Text>
           <br />
-          <Text>{candidate.contactPersonHomeNo || "Not provided"}</Text>
+          <Text>
+            {candidate.contactPersonHomeNoCountryCode && candidate.contactPersonHomeNo
+              ? phoneUtils.formatWithCountryCode(candidate.contactPersonHomeNoCountryCode, candidate.contactPersonHomeNo)
+              : candidate.contactPersonHomeNo || "Not provided"}
+          </Text>
         </Col>
         <Col xs={24} sm={12}>
           <Text strong>Emergency Contact:</Text>
           <br />
-          <Text>{candidate.emergencyContactNo || "Not provided"}</Text>
+          <Text>
+            {candidate.emergencyContactNoCountryCode && candidate.emergencyContactNo
+              ? phoneUtils.formatWithCountryCode(candidate.emergencyContactNoCountryCode, candidate.emergencyContactNo)
+              : candidate.emergencyContactNo || "Not provided"}
+          </Text>
         </Col>
         <Col xs={24} sm={12}>
           <Text strong>Nominee Name:</Text>

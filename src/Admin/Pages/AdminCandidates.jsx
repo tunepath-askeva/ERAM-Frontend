@@ -461,11 +461,36 @@ const AdminCandidates = () => {
         const email = row["Email"]?.trim();
         const password = row["Password"]?.trim();
 
-        const countryCode =
-          row["Country Code"]?.toString()?.trim().replace("+", "") || "91";
-        const phoneNumber = row["Phone Number"]?.toString()?.trim() || "";
-        const phone =
-          countryCode && phoneNumber ? `${countryCode}${phoneNumber}` : "";
+        // Handle phone number with country code
+        let phone = "";
+        let phoneCountryCode = "91";
+        
+        // Option 1: If separate Country Code and Phone Number columns exist
+        const countryCodeColumn = row["Country Code"]?.toString()?.trim().replace("+", "") || 
+                                 row["Phone Country Code"]?.toString()?.trim().replace("+", "") || "";
+        const phoneNumberColumn = row["Phone Number"]?.toString()?.trim() || 
+                                 row["Phone"]?.toString()?.trim() || "";
+        
+        if (countryCodeColumn && phoneNumberColumn) {
+          phoneCountryCode = countryCodeColumn;
+          phone = phoneNumberColumn.replace(/^\+/, "").replace(/\D/g, "");
+        } else {
+          // Option 2: If Phone column contains full number
+          const phoneColumn = row["Phone"]?.toString()?.trim() || 
+                             row["Phone Number"]?.toString()?.trim() || "";
+          
+          if (phoneColumn) {
+            // Remove + prefix if present
+            let phoneWithoutPlus = phoneColumn.trim();
+            while (phoneWithoutPlus.startsWith("+")) {
+              phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+            }
+            
+            // Try to extract country code - for now use default, can enhance with phoneUtils later
+            phoneCountryCode = "91";
+            phone = phoneWithoutPlus.replace(/\D/g, "");
+          }
+        }
 
         if (fullName && email && password) {
           candidates.push({
@@ -474,7 +499,8 @@ const AdminCandidates = () => {
             lastName: lastName,
             fullName: fullName,
             email: email?.toLowerCase() || "",
-            phone,
+            phone: phone,
+            phoneCountryCode: phoneCountryCode,
             password: password || "",
             companyName:
               row["Company Name"]?.trim() || row["Company"]?.trim() || "",

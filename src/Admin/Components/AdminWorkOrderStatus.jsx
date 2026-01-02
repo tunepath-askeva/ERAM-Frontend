@@ -1076,6 +1076,130 @@ const AdminWorkOrderStatus = ({
                         </Card>
                       )}
 
+                      {/* Additional Documents */}
+                      {offer.additionalDocuments && offer.additionalDocuments.length > 0 && (
+                        <Card
+                          size="small"
+                          title="Additional Supporting Documents"
+                          style={{ marginTop: 8 }}
+                        >
+                          <Space direction="vertical" style={{ width: "100%" }}>
+                            {offer.additionalDocuments.map((doc, docIndex) => (
+                              <Card
+                                key={docIndex}
+                                size="small"
+                                style={{
+                                  border: "1px solid #722ed1",
+                                  backgroundColor: "#f9f0ff",
+                                }}
+                              >
+                                <Space>
+                                  <FilePdfOutlined
+                                    style={{ color: "#722ed1", fontSize: 20 }}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <Text strong>
+                                      {doc.documentName || doc.fileName || `Additional Document ${docIndex + 1}`}
+                                    </Text>
+                                    <div style={{ marginTop: 4 }}>
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        href={doc.fileUrl}
+                                        target="_blank"
+                                        icon={<EyeOutlined />}
+                                      >
+                                        View
+                                      </Button>
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        href={doc.fileUrl}
+                                        icon={<DownloadOutlined />}
+                                      >
+                                        Download
+                                      </Button>
+                                      {doc.uploadedAt && (
+                                        <Text
+                                          type="secondary"
+                                          style={{ marginLeft: 8, fontSize: 12 }}
+                                        >
+                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                                        </Text>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Tag color="purple">Supporting</Tag>
+                                </Space>
+                              </Card>
+                            ))}
+                          </Space>
+                        </Card>
+                      )}
+
+                      {/* Signed Additional Documents */}
+                      {offer.signedAdditionalDocuments && offer.signedAdditionalDocuments.length > 0 && (
+                        <Card
+                          size="small"
+                          title="Signed Additional Documents"
+                          style={{ marginTop: 8 }}
+                        >
+                          <Space direction="vertical" style={{ width: "100%" }}>
+                            {offer.signedAdditionalDocuments.map((doc, docIndex) => (
+                              <Card
+                                key={docIndex}
+                                size="small"
+                                style={{
+                                  border: "1px solid #52c41a",
+                                  backgroundColor: "#f6ffed",
+                                }}
+                              >
+                                <Space>
+                                  <FilePdfOutlined
+                                    style={{ color: "#52c41a", fontSize: 20 }}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <Text strong>
+                                      {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
+                                    </Text>
+                                    <div style={{ marginTop: 4 }}>
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        href={doc.fileUrl}
+                                        target="_blank"
+                                        icon={<EyeOutlined />}
+                                      >
+                                        View
+                                      </Button>
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        href={doc.fileUrl}
+                                        icon={<DownloadOutlined />}
+                                      >
+                                        Download
+                                      </Button>
+                                      {doc.uploadedAt && (
+                                        <Text
+                                          type="secondary"
+                                          style={{ marginLeft: 8, fontSize: 12 }}
+                                        >
+                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                                        </Text>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                                    Signed
+                                  </Tag>
+                                </Space>
+                              </Card>
+                            ))}
+                          </Space>
+                        </Card>
+                      )}
+
                       {/* Offer Status History */}
                       {offer.statusHistory?.length > 0 && (
                         <Card
