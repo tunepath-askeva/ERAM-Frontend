@@ -201,13 +201,16 @@ function AllCandidates() {
       setAdvancedCurrentPage(1);
       setAdvancedPageSize(pageSize);
 
-      message.success(
+      enqueueSnackbar(
         `Found ${
           response?.candidates?.length || 0
-        } candidates matching your criteria`
+        } candidates matching your criteria`,
+        { variant: "success" }
       );
     } catch (error) {
-      message.error("Failed to apply filters. Please try again.");
+      enqueueSnackbar("Failed to apply filters. Please try again.", {
+        variant: "error",
+      });
       console.error("Filter error:", error);
     }
   };
@@ -290,7 +293,7 @@ function AllCandidates() {
 
     setCurrentPage(1);
 
-    message.success("All filters cleared");
+    enqueueSnackbar("All filters cleared", { variant: "success" });
   }, []);
 
   const showCandidateDetails = useCallback((candidate) => {
@@ -357,7 +360,9 @@ function AllCandidates() {
       return { success: true, data: response };
     } catch (error) {
       console.error("❌ Bulk import error:", error);
-      message.error("Bulk import failed. Please try again.");
+      enqueueSnackbar("Bulk import failed. Please try again.", {
+        variant: "error",
+      });
       return { success: false };
     }
   };
@@ -389,9 +394,11 @@ function AllCandidates() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      message.success("Excel file downloaded successfully");
+      enqueueSnackbar("Excel file downloaded successfully", {
+        variant: "success",
+      });
     } catch (error) {
-      message.error("Failed to export candidates");
+      enqueueSnackbar("Failed to export candidates", { variant: "error" });
       console.error("Export error:", error);
     }
   };
@@ -423,7 +430,9 @@ function AllCandidates() {
           setAdvancedPageSize(size);
         }
       } catch (error) {
-        message.error("Failed to load more candidates");
+        enqueueSnackbar("Failed to load more candidates", {
+          variant: "error",
+        });
         console.error("Pagination error:", error);
       }
     },

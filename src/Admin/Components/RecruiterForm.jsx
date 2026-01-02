@@ -431,22 +431,33 @@ const RecruiterForm = ({
               ? Number(initialValues.totalExperienceYears)
               : 0;
 
+            // Extract country code from phone number properly
+            let phoneno = initialValues.phone || "";
+            let phonenoCountryCode = initialValues.phoneCountryCode || "91";
+            
+            if (phoneno && !initialValues.phoneCountryCode) {
+              // Remove + prefix if present
+              let phoneWithoutPlus = phoneno.trim();
+              while (phoneWithoutPlus.startsWith("+")) {
+                phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+              }
+              
+              // Use phoneUtils to extract country code
+              const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+              if (parsed.countryCode && parsed.phoneNumber) {
+                phonenoCountryCode = parsed.countryCode;
+                phoneno = parsed.phoneNumber;
+              } else if (phoneWithoutPlus) {
+                // If extraction fails, use the cleaned number as-is
+                phoneno = phoneWithoutPlus.replace(/\D/g, "");
+              }
+            }
+
             form.setFieldsValue({
               fullName: initialValues.fullName || "",
               email: initialValues.email || "",
-              ...(initialValues.phone?.startsWith("+")
-                ? (() => {
-                    const { countryCode, phoneNumber } =
-                      phoneUtils.parsePhoneNumber(initialValues.phone);
-                    return {
-                      phonenoCountryCode: countryCode || "91",
-                      phoneno: phoneNumber || "",
-                    };
-                  })()
-                : {
-                    phonenoCountryCode: initialValues.phoneCountryCode || "91",
-                    phoneno: initialValues.phone || "",
-                  }),
+              phonenoCountryCode: phonenoCountryCode,
+              phoneno: phoneno,
               specialization: initialValues.specialization || "",
               experience: experienceValue || 0,
               recruiterType: initialValues.recruiterType || "Recruiter",
@@ -473,12 +484,16 @@ const RecruiterForm = ({
           console.error("Failed to save custom type", err);
         }
       }
+      // Clean phone number - remove + prefix if present
+      const cleanPhoneNumber = values.phoneno ? values.phoneno.replace(/^\+/, "").replace(/\D/g, "") : "";
+      const phoneToSave = values.phonenoCountryCode && cleanPhoneNumber
+        ? `${values.phonenoCountryCode}${cleanPhoneNumber}`
+        : cleanPhoneNumber || values.phoneno;
+
       const payload = {
         fullName: values.fullName,
         email: values.email,
-        phoneno: values.phonenoCountryCode
-          ? `+${values.phonenoCountryCode}${values.phoneno}`
-          : values.phoneno,
+        phoneno: phoneToSave, // Country code + phone number without + prefix
         specialization: values.specialization,
         experience: values.experience,
         recruiterType: values.recruiterType,

@@ -171,38 +171,71 @@ const CandidateEditPage = () => {
       const parsePhoneNumbers = (data) => {
         const result = { ...data };
 
+        // Helper function to clean and parse phone number
+        const parsePhone = (phoneStr) => {
+          if (!phoneStr) return { countryCode: null, phoneNumber: null };
+          
+          // Remove + prefix if present (handle multiple + signs)
+          let phoneWithoutPlus = phoneStr.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          
+          // Use improved parsePhoneNumber that uses countryMobileLimits
+          return phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+        };
+
         // Parse main phone
-        const mainPhone = phoneUtils.parsePhoneNumber(data.phone);
-        if (mainPhone.countryCode) {
+        const mainPhone = parsePhone(data.phone);
+        if (mainPhone.countryCode && mainPhone.phoneNumber) {
           result.phoneCountryCode = mainPhone.countryCode;
           result.phone = mainPhone.phoneNumber;
+        } else if (data.phone) {
+          // If extraction fails, keep original but clean it
+          let phoneWithoutPlus = data.phone.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          result.phone = phoneWithoutPlus.replace(/\D/g, "");
         }
 
-        // Parse contact person mobile (this was the missing piece)
-        const contactMobile = phoneUtils.parsePhoneNumber(
-          data.contactPersonMobile
-        );
-        if (contactMobile.countryCode) {
+        // Parse contact person mobile
+        const contactMobile = parsePhone(data.contactPersonMobile);
+        if (contactMobile.countryCode && contactMobile.phoneNumber) {
           result.contactPersonMobileCountryCode = contactMobile.countryCode;
           result.contactPersonMobile = contactMobile.phoneNumber;
+        } else if (data.contactPersonMobile) {
+          let phoneWithoutPlus = data.contactPersonMobile.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          result.contactPersonMobile = phoneWithoutPlus.replace(/\D/g, "");
         }
 
         // Parse contact person home number
-        const contactHome = phoneUtils.parsePhoneNumber(
-          data.contactPersonHomeNo
-        );
-        if (contactHome.countryCode) {
+        const contactHome = parsePhone(data.contactPersonHomeNo);
+        if (contactHome.countryCode && contactHome.phoneNumber) {
           result.contactPersonHomeNoCountryCode = contactHome.countryCode;
           result.contactPersonHomeNo = contactHome.phoneNumber;
+        } else if (data.contactPersonHomeNo) {
+          let phoneWithoutPlus = data.contactPersonHomeNo.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          result.contactPersonHomeNo = phoneWithoutPlus.replace(/\D/g, "");
         }
 
         // Parse emergency contact number (if this field exists)
-        const emergencyPhone = phoneUtils.parsePhoneNumber(
-          data.emergencyContactNo
-        );
-        if (emergencyPhone.countryCode) {
+        const emergencyPhone = parsePhone(data.emergencyContactNo);
+        if (emergencyPhone.countryCode && emergencyPhone.phoneNumber) {
           result.emergencyContactNoCountryCode = emergencyPhone.countryCode;
           result.emergencyContactNo = emergencyPhone.phoneNumber;
+        } else if (data.emergencyContactNo) {
+          let phoneWithoutPlus = data.emergencyContactNo.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          result.emergencyContactNo = phoneWithoutPlus.replace(/\D/g, "");
         }
 
         return result;

@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import PhoneInput from "../../Global/PhoneInput";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
 import { useSnackbar } from "notistack";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const EditEmployeeModal = ({
   visible,
@@ -173,8 +174,28 @@ const EditEmployeeModal = ({
           employee.employmentDetails?.reportingAndDocumentation || "",
       });
 
+      // Extract country code from phone number if present
+      let phone = employee.phone || "";
+      let phoneCountryCode = "";
+      
+      if (phone) {
+        // Remove + prefix if present
+        let phoneWithoutPlus = phone.trim();
+        while (phoneWithoutPlus.startsWith("+")) {
+          phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+        }
+        
+        // Use phoneUtils to extract country code
+        const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+        if (parsed.countryCode && parsed.phoneNumber) {
+          phoneCountryCode = parsed.countryCode;
+          phone = parsed.phoneNumber;
+        }
+      }
+
       form.setFieldsValue({
-        phone: employee.phone || "",
+        phone: phone,
+        phoneCountryCode: phoneCountryCode || "91", // Default to 91 if not extracted
       });
 
       setChangePassword(false);

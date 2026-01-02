@@ -439,9 +439,7 @@ const RecruiterCandidates = () => {
       enqueueSnackbar("Offer sent successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
-      Promise.all([refetch(), refetchCandidateDetails()]).catch((err) =>
-        console.error("Refetch error:", err)
-      );
+      await Promise.all([refetch(), refetchCandidateDetails()]);
     } catch (err) {
       console.error("Offer submission error:", err);
       enqueueSnackbar(err?.data?.message || "Failed to send offer", {
@@ -467,9 +465,7 @@ const RecruiterCandidates = () => {
       enqueueSnackbar("Offer revised successfully!", { variant: "success" });
       setOfferModalVisible(false);
       offerForm.resetFields();
-      Promise.all([refetch(), refetchCandidateDetails()]).catch((err) =>
-        console.error("Refetch error:", err)
-      );
+      await Promise.all([refetch(), refetchCandidateDetails()]);
     } catch (err) {
       enqueueSnackbar(err?.data?.message || "Failed to revise offer", {
         variant: "error",
@@ -485,8 +481,8 @@ const RecruiterCandidates = () => {
       await offerInfo({ id: selectedCandidate._id, formData }).unwrap();
 
       enqueueSnackbar("Offer finalized!", { variant: "success" });
-      refetch();
-      refetchCandidateDetails();
+      await refetch();
+      await refetchCandidateDetails();
     } catch (err) {
       enqueueSnackbar("Failed to finalize offer", { variant: "error" });
     }
@@ -502,7 +498,7 @@ const RecruiterCandidates = () => {
       enqueueSnackbar(`${candidate.name} has been rejected.`, {
         variant: "success",
       });
-      refetch();
+      await refetch();
     } catch (error) {
       enqueueSnackbar(`Failed to reject ${candidate.name}.`, {
         variant: "error",

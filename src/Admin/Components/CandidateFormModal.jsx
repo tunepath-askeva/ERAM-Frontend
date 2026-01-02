@@ -68,16 +68,22 @@ const CandidateFormModal = ({
         const middleName =
           nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
 
-        // Parse phone number properly
+        // Parse phone number properly using countryMobileLimits
         let phoneCountryCode = "91"; // default
         let phoneNumber = "";
 
         if (editingCandidate.phone) {
-          // Remove all non-digit characters (including + and spaces)
-          const cleanPhone = editingCandidate.phone.replace(/\D/g, "");
+          // Remove + prefix if present (handle multiple + signs)
+          let phoneWithoutPlus = editingCandidate.phone.trim();
+          while (phoneWithoutPlus.startsWith("+")) {
+            phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+          }
+          
+          // Clean to digits only
+          const cleanPhone = phoneWithoutPlus.replace(/\D/g, "");
 
           if (cleanPhone) {
-            // Try to extract country code and phone number
+            // Use improved parsePhoneNumber that uses countryMobileLimits directly
             const parsed = phoneUtils.parsePhoneNumber(cleanPhone);
 
             if (parsed.countryCode && parsed.phoneNumber) {

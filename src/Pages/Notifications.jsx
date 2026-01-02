@@ -189,9 +189,21 @@ const Notifications = () => {
       await clearAllNotifications().unwrap();
       setNotifications([]);
       setFilteredNotifications([]);
-      message.success("All notifications cleared");
+      enqueueSnackbar("All notifications cleared", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+      await refetch();
     } catch (error) {
-      message.error("Failed to clear notifications");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to clear notifications",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
       console.error("Clear all notifications error:", error);
     }
   };
@@ -202,9 +214,24 @@ const Notifications = () => {
       setNotifications((prev) =>
         prev.filter((notification) => notification._id !== id)
       );
-      message.success("Notification deleted");
+      setFilteredNotifications((prev) =>
+        prev.filter((notification) => notification._id !== id)
+      );
+      enqueueSnackbar("Notification deleted", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+        autoHideDuration: 3000,
+      });
+      await refetch();
     } catch (error) {
-      message.error("Failed to delete notification");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to delete notification",
+        {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        }
+      );
       console.error("Delete notification error:", error);
     }
   };

@@ -241,7 +241,7 @@ const EmployeeProfileSettings = () => {
       setCertificateFiles([]);
 
       // Refetch data
-      refetch();
+      await refetch();
     } catch (error) {
       console.error("Failed to update profile", error);
       enqueueSnackbar(error?.data?.message || "Failed to update profile", {

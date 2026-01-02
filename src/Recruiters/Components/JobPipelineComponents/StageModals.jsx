@@ -4,7 +4,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Typography,
   Tag,
   Button,
@@ -14,6 +13,7 @@ import { UserOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { NotificationModal } from "../../../Components/NotificationModal";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -94,6 +94,7 @@ const StageModals = ({
 }) => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   // const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
 
   const isActualLastStage = (stageId) => {
@@ -155,7 +156,7 @@ const StageModals = ({
       const values = await form.validateFields();
 
       if (!selectedCandidate) {
-        message.error("No candidate selected");
+        enqueueSnackbar("No candidate selected", { variant: "error" });
         return;
       }
 
@@ -163,7 +164,9 @@ const StageModals = ({
         selectedCandidate.currentStageId || selectedCandidate.currentStage;
 
       if (!currentStageId) {
-        message.error("Cannot determine current stage for candidate");
+        enqueueSnackbar("Cannot determine current stage for candidate", {
+          variant: "error",
+        });
         return;
       }
 
@@ -200,7 +203,9 @@ const StageModals = ({
       );
 
       if (!currentStageProgress) {
-        message.error("Cannot find stage progress for current stage");
+        enqueueSnackbar("Cannot find stage progress for current stage", {
+          variant: "error",
+        });
         return;
       }
 
@@ -211,8 +216,9 @@ const StageModals = ({
         const isStageApproved =
           currentStageProgress.approval?.isApproved === true;
         if (!isStageApproved) {
-          message.warning(
-            "Cannot move candidate until current stage is approved"
+          enqueueSnackbar(
+            "Cannot move candidate until current stage is approved",
+            { variant: "warning" }
           );
           return;
         }
@@ -224,8 +230,9 @@ const StageModals = ({
       );
 
       if (hasAnyRecruiterApproved) {
-        message.warning(
-          "This candidate has already been approved by a recruiter"
+        enqueueSnackbar(
+          "This candidate has already been approved by a recruiter",
+          { variant: "warning" }
         );
         return;
       }
@@ -262,10 +269,11 @@ const StageModals = ({
             const missingDocs = uniqueRequiredDocuments.filter(
               (doc) => !uploadedDocNames.includes(doc)
             );
-            message.warning(
+            enqueueSnackbar(
               `Cannot move candidate until all required documents are uploaded. Missing: ${missingDocs.join(
                 ", "
-              )}`
+              )}`,
+              { variant: "warning" }
             );
             return;
           }
@@ -275,7 +283,9 @@ const StageModals = ({
       const currentStageRecruiterId = getReviewerIdForStage(currentStageId);
 
       if (!currentStageRecruiterId) {
-        message.error("No recruiter assigned to the current stage");
+        enqueueSnackbar("No recruiter assigned to the current stage", {
+          variant: "error",
+        });
         return;
       }
 
@@ -314,12 +324,13 @@ const StageModals = ({
 
       await moveToNextStage(payload).unwrap();
 
-      message.success(
+      enqueueSnackbar(
         isFinishing
           ? "Candidate process completed successfully"
           : isMovingToLastStage
           ? "Candidate moved to final stage successfully"
-          : "Candidate moved to next stage successfully"
+          : "Candidate moved to next stage successfully",
+        { variant: "success" }
       );
 
       // Close modal immediately
@@ -366,7 +377,7 @@ const StageModals = ({
         errorMessage = error;
       }
 
-      message.error(errorMessage);
+      enqueueSnackbar(errorMessage, { variant: "error" });
     }
   };
 
@@ -386,7 +397,9 @@ const StageModals = ({
 
       await updateStageDates(payload).unwrap();
 
-      message.success("Stage dates updated successfully");
+      enqueueSnackbar("Stage dates updated successfully", {
+        variant: "success",
+      });
       setIsDateConfirmModalVisible(false);
 
       // REFRESH FIRST
@@ -401,7 +414,9 @@ const StageModals = ({
       setTempEndDate(null);
     } catch (error) {
       console.error("Error updating stage dates:", error);
-      message.error(error?.data?.message || "Failed to update stage dates");
+      enqueueSnackbar(error?.data?.message || "Failed to update stage dates", {
+        variant: "error",
+      });
     }
   };
 
@@ -413,7 +428,9 @@ const StageModals = ({
       }
 
       if (tempRecruiters.length === 0) {
-        message.warning("Please select at least one recruiter");
+        enqueueSnackbar("Please select at least one recruiter", {
+          variant: "warning",
+        });
         return;
       }
 
@@ -431,7 +448,9 @@ const StageModals = ({
       setIsEditingRecruiters(false); // This closes the dropdown in CandidateStageView
       setTempRecruiters([]);
 
-      message.success("Recruiters updated successfully");
+      enqueueSnackbar("Recruiters updated successfully", {
+        variant: "success",
+      });
 
       // Force a complete refetch with cache invalidation
       await refetch();
@@ -447,7 +466,9 @@ const StageModals = ({
       }
     } catch (error) {
       console.error("Error updating stage recruiters:", error);
-      message.error(error?.data?.message || "Failed to update recruiters");
+      enqueueSnackbar(error?.data?.message || "Failed to update recruiters", {
+        variant: "error",
+      });
     }
   };
 
@@ -459,7 +480,7 @@ const StageModals = ({
       }
 
       if (!newDocumentName.trim()) {
-        message.error("Please enter document name");
+        enqueueSnackbar("Please enter document name", { variant: "error" });
         return;
       }
 
@@ -475,7 +496,7 @@ const StageModals = ({
 
       await addStageDocument(payload).unwrap();
 
-      message.success("Document added successfully");
+      enqueueSnackbar("Document added successfully", { variant: "success" });
       setNewDocumentName("");
       setUploadedDocumentFile(null);
       setIsDocumentModalVisible(false);
@@ -494,14 +515,18 @@ const StageModals = ({
       }
     } catch (error) {
       console.error("Error adding document:", error);
-      message.error(error?.data?.message || "Failed to add document");
+      enqueueSnackbar(error?.data?.message || "Failed to add document", {
+        variant: "error",
+      });
     }
   };
 
   const handleDeleteDocument = async () => {
     try {
       if (!activeStage || !documentToDelete) {
-        message.error("No document selected for deletion");
+        enqueueSnackbar("No document selected for deletion", {
+          variant: "error",
+        });
         return;
       }
 
@@ -513,7 +538,7 @@ const StageModals = ({
 
       await deleteStageDocument(payload).unwrap();
 
-      message.success("Document deleted successfully");
+      enqueueSnackbar("Document deleted successfully", { variant: "success" });
       setIsDeleteDocumentModalVisible(false);
       setDocumentToDelete(null);
 
@@ -524,7 +549,9 @@ const StageModals = ({
       }
     } catch (error) {
       console.error("Error deleting document:", error);
-      message.error(error?.data?.message || "Failed to delete document");
+      enqueueSnackbar(error?.data?.message || "Failed to delete document", {
+        variant: "error",
+      });
     }
   };
 
@@ -839,13 +866,17 @@ const StageModals = ({
                 beforeUpload={(file) => {
                   const isLt5M = file.size / 1024 / 1024 < 5;
                   if (!isLt5M) {
-                    message.error("File must be smaller than 5MB!");
+                    enqueueSnackbar("File must be smaller than 5MB!", {
+                      variant: "error",
+                    });
                     return Upload.LIST_IGNORE;
                   }
 
                   // Store the file
                   setUploadedDocumentFile(file);
-                  message.success(`${file.name} selected`);
+                  enqueueSnackbar(`${file.name} selected`, {
+                    variant: "success",
+                  });
 
                   // Prevent automatic upload
                   return false;

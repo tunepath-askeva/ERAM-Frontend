@@ -15,12 +15,12 @@ import {
   Popconfirm,
   Alert,
   Empty,
-  message,
   Spin,
   Dropdown,
   Divider,
   Input,
 } from "antd";
+import { useSnackbar } from "notistack";
 import {
   UploadOutlined,
   FileTextOutlined,
@@ -52,6 +52,7 @@ const { Option } = Select;
 const { Dragger } = Upload;
 
 const EmployeeDocuments = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const {
     data: apiResponse,
     isLoading,
@@ -297,7 +298,9 @@ const EmployeeDocuments = () => {
       const userId = apiResponse?.userId;
 
       if (!userId) {
-        message.error("User ID not found. Please refresh and try again.");
+        enqueueSnackbar("User ID not found. Please refresh and try again.", {
+          variant: "error",
+        });
         return;
       }
 
@@ -324,7 +327,9 @@ const EmployeeDocuments = () => {
           formData,
         }).unwrap();
 
-        message.success("Document replaced successfully!");
+        enqueueSnackbar("Document replaced successfully!", {
+          variant: "success",
+        });
       } else {
         // Use upload mutation for new documents
         await uploadEmployeeDocument({
@@ -332,17 +337,20 @@ const EmployeeDocuments = () => {
           formData,
         }).unwrap();
 
-        message.success("Document uploaded successfully!");
+        enqueueSnackbar("Document uploaded successfully!", {
+          variant: "success",
+        });
       }
 
-      refetch();
+      await refetch();
       resetUploadForm();
     } catch (error) {
-      message.error(
+      enqueueSnackbar(
         error?.data?.message ||
           `Failed to ${
             isReplaceMode ? "replace" : "upload"
-          } document. Please try again.`
+          } document. Please try again.`,
+        { variant: "error" }
       );
       console.error(`${isReplaceMode ? "Replace" : "Upload"} error:`, error);
     }

@@ -43,6 +43,7 @@ import {
 } from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import PhoneInput from "../../Global/PhoneInput";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -104,11 +105,32 @@ const StaffManagement = () => {
   const showEditModal = (staffMember) => {
     setModalMode("edit");
     setEditingStaff(staffMember);
+    
+    // Extract country code from phone number if present
+    let contactNo = staffMember.phone || "";
+    let contactNoCountryCode = "";
+    
+    if (contactNo) {
+      // Remove + prefix if present
+      let phoneWithoutPlus = contactNo.trim();
+      while (phoneWithoutPlus.startsWith("+")) {
+        phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+      }
+      
+      // Use phoneUtils to extract country code
+      const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+      if (parsed.countryCode && parsed.phoneNumber) {
+        contactNoCountryCode = parsed.countryCode;
+        contactNo = parsed.phoneNumber;
+      }
+    }
+    
     const formValues = {
       name: staffMember.fullName,
       staffType: staffMember.staffType,
       email: staffMember.email,
-      contactNo: staffMember.phone,
+      contactNo: contactNo,
+      contactNoCountryCode: contactNoCountryCode || "91", // Default to 91 if not extracted
     };
     form.setFieldsValue(formValues);
     setIsFormModalVisible(true);
@@ -118,14 +140,16 @@ const StaffManagement = () => {
     try {
       const countryCode = values.contactNoCountryCode || "91";
       const phoneNumber = values.contactNo || "";
-      const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
+      // Remove any + prefix if present and save without it
+      const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      const fullPhoneNumber = `${countryCode}${cleanPhoneNumber}`;
 
       if (modalMode === "create") {
         const payload = {
           name: values.name,
           staffType: values.staffType,
           email: values.email,
-          contactNo: fullPhoneNumber,
+          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
           role: "staff",
         };
         await addStaff(payload).unwrap();
@@ -137,7 +161,7 @@ const StaffManagement = () => {
           name: values.name,
           staffType: values.staffType,
           email: values.email,
-          contactNo: fullPhoneNumber,
+          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
         };
         await editStaff({
           staffId: editingStaff._id,
@@ -162,12 +186,19 @@ const StaffManagement = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    await deleteStaff(staffToDelete._id).unwrap();
-    enqueueSnackbar("Staff member deleted successfully", {
-      variant: "success",
-    });
-    setDeleteModalVisible(false);
-    refetchStaffs();
+    try {
+      await deleteStaff(staffToDelete._id).unwrap();
+      enqueueSnackbar("Staff member deleted successfully", {
+        variant: "success",
+      });
+      setDeleteModalVisible(false);
+      refetchStaffs();
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data?.message || error?.message || "Failed to delete staff member",
+        { variant: "error" }
+      );
+    }
   };
 
   const showDisableModal = (staff) => {

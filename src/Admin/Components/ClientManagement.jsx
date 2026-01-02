@@ -43,6 +43,7 @@ import {
 } from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import PhoneInput from "../../Global/PhoneInput";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -107,11 +108,31 @@ const ClientsManagement = () => {
     console.log("Client data:", client);
     console.log("Client Code:", client.clientCode);
 
+    // Extract country code from phone number if present
+    let contactNo = client.phone || "";
+    let contactNoCountryCode = "";
+    
+    if (contactNo) {
+      // Remove + prefix if present
+      let phoneWithoutPlus = contactNo.trim();
+      while (phoneWithoutPlus.startsWith("+")) {
+        phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+      }
+      
+      // Use phoneUtils to extract country code
+      const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+      if (parsed.countryCode && parsed.phoneNumber) {
+        contactNoCountryCode = parsed.countryCode;
+        contactNo = parsed.phoneNumber;
+      }
+    }
+
     form.setFieldsValue({
       name: client.fullName,
       code: client.clientCode || client.code,
       email: client.email,
-      contactNo: client.phone,
+      contactNo: contactNo,
+      contactNoCountryCode: contactNoCountryCode || "91", // Default to 91 if not extracted
       contactPersonNumber: client.contactPersonMobile,
       sapCode: client.sapCode,
       type: client.clientType,
@@ -121,17 +142,19 @@ const ClientsManagement = () => {
 
   const handleFormSubmit = async (values) => {
     try {
-      // Merge country code and phone number for contactNo
+      // Merge country code and phone number for contactNo (without + prefix)
       const countryCode = values.contactNoCountryCode || "91";
       const phoneNumber = values.contactNo || "";
-      const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
+      // Remove any + prefix if present and save without it
+      const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      const fullPhoneNumber = `${countryCode}${cleanPhoneNumber}`;
 
       if (modalMode === "create") {
         const payload = {
           name: values.name,
           code: values.code,
           email: values.email,
-          contactNo: fullPhoneNumber, // Merged phone number
+          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
           contactPersonNumber: values.contactPersonNumber,
           sapCode: values.sapCode,
           type: values.type,
@@ -143,7 +166,7 @@ const ClientsManagement = () => {
           name: values.name,
           code: values.code,
           email: values.email,
-          contactNo: fullPhoneNumber, // Merged phone number
+          contactNo: fullPhoneNumber, // Country code + phone number without + prefix
           contactPersonNumber: values.contactPersonNumber,
           sapCode: values.sapCode,
           type: values.type,
@@ -171,9 +194,17 @@ const ClientsManagement = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    await deleteClient(clientToDelete._id).unwrap();
-    enqueueSnackbar("Client deleted successfully", { variant: "success" });
-    setDeleteModalVisible(false);
+    try {
+      await deleteClient(clientToDelete._id).unwrap();
+      enqueueSnackbar("Client deleted successfully", { variant: "success" });
+      setDeleteModalVisible(false);
+      refetchClients();
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data?.message || error?.message || "Failed to delete client",
+        { variant: "error" }
+      );
+    }
   };
 
   const showDisableModal = (client) => {

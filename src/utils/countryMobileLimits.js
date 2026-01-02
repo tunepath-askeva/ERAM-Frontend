@@ -207,13 +207,47 @@ const phoneUtils = {
   parsePhoneNumber: (phoneString) => {
     if (!phoneString) return { countryCode: null, phoneNumber: null };
 
-    const clean = phoneString.replace(/\D/g, ""); // remove non-digits
+    // Remove + prefix if present (handle multiple + signs)
+    let phoneWithoutPlus = phoneString.trim();
+    while (phoneWithoutPlus.startsWith("+")) {
+      phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+    }
+
+    const clean = phoneWithoutPlus.replace(/\D/g, ""); // remove non-digits
     if (!clean) return { countryCode: null, phoneNumber: null };
 
-    const sortedCodes = Object.keys(countryMobileLimits).sort(
-      (a, b) => b.length - a.length
-    );
+    // Get all country codes sorted by length (longest first) to avoid partial matches
+    const sortedCodes = Object.keys(countryMobileLimits)
+      .map((code) => code.toString())
+      .sort((a, b) => {
+        // First sort by length (longest first)
+        if (b.length !== a.length) {
+          return b.length - a.length;
+        }
+        // If same length, sort numerically
+        return parseInt(a) - parseInt(b);
+      });
 
+    // Try each country code and validate against limits
+    for (const code of sortedCodes) {
+      if (clean.startsWith(code)) {
+        const phoneWithoutCode = clean.slice(code.length);
+        const limits = countryMobileLimits[code];
+        
+        if (limits) {
+          const numberLength = phoneWithoutCode.length;
+          // Validate against country limits (with slight tolerance)
+          if (numberLength >= limits.min - 1 && numberLength <= limits.max + 1 && numberLength > 0) {
+            return {
+              countryCode: code,
+              phoneNumber: phoneWithoutCode,
+            };
+          }
+        }
+      }
+    }
+
+    // If no match found with validation, return first match (fallback)
     for (const code of sortedCodes) {
       if (clean.startsWith(code)) {
         return {

@@ -31,6 +31,8 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useSnackbar } from "notistack";
+import PhoneInput from "../../Global/PhoneInput";
+import { phoneUtils } from "../../utils/countryMobileLimits";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -87,8 +89,17 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
 
   const handleSubmit = async (values) => {
     try {
+      // Format phone number: combine country code and phone number without + prefix
+      const phoneCountryCode = values.phoneCountryCode || "";
+      const phoneNumber = values.phone || "";
+      const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      const formattedPhone = phoneCountryCode && cleanPhoneNumber 
+        ? `${phoneCountryCode}${cleanPhoneNumber}` 
+        : cleanPhoneNumber || phoneNumber;
+
       const submitData = {
         ...values,
+        phone: formattedPhone,
         imageFile: userData.imageFile, // Pass the file to parent
       };
       await onUpdate(submitData);
@@ -113,6 +124,36 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     return dateString ? dayjs(dateString) : null;
   };
 
+  // Extract country code from phone number if present
+  const extractPhoneData = (phoneStr) => {
+    if (!phoneStr) return { phone: "", phoneCountryCode: "91" };
+    
+    // Remove + prefix if present (handle multiple + signs)
+    let phoneWithoutPlus = phoneStr.trim();
+    while (phoneWithoutPlus.startsWith("+")) {
+      phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
+    }
+    
+    // Use phoneUtils to extract country code
+    const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
+    if (parsed.countryCode && parsed.phoneNumber) {
+      return {
+        phone: parsed.phoneNumber,
+        phoneCountryCode: parsed.countryCode,
+      };
+    } else if (phoneWithoutPlus) {
+      // If extraction fails, use the cleaned number as-is
+      return {
+        phone: phoneWithoutPlus.replace(/\D/g, ""),
+        phoneCountryCode: "91", // Default to 91
+      };
+    }
+    
+    return { phone: "", phoneCountryCode: "91" };
+  };
+
+  const phoneData = extractPhoneData(employeeData?.phone);
+
   const formInitialValues = {
     firstName: employeeData?.firstName || "",
     middleName: employeeData?.middleName || "",
@@ -122,7 +163,8 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     nationality: employeeData?.nationality || "",
     assignedJobTitle: employeeData?.employmentDetails?.assignedJobTitle || "",
     email: employeeData?.email || "",
-    phone: employeeData?.phone || "",
+    phone: phoneData.phone,
+    phoneCountryCode: phoneData.phoneCountryCode,
     dob: formatDate(employeeData?.dob),
     age: employeeData?.age || "",
     gender: employeeData?.gender || "",
@@ -320,9 +362,13 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item label="Phone" name="phone">
-                <Input prefix={<PhoneOutlined />} disabled={!editMode} />
-              </Form.Item>
+              <PhoneInput
+                form={form}
+                name="phone"
+                label="Phone"
+                required={false}
+                disabled={!editMode}
+              />
             </Col>
             {/* Personal Details */}
             <Col xs={24} sm={8}>
