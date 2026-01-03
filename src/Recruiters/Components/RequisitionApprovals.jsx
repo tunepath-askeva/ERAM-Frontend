@@ -1378,9 +1378,7 @@ const RequisitionDetailsContent = ({
           <Space direction="vertical" style={{ width: "100%" }} size="middle">
             {req.approvalRemarks.map((remark, index) => {
               // Find the recruiter from approvalRecruiter array
-              const recruiter = req.approvalRecruiter?.find(
-                (r) => r._id === remark.recruiterId
-              );
+             const recruiter = remark.recruiterId;
 
               return (
                 <Card
