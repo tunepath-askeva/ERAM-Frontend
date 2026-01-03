@@ -202,7 +202,9 @@ const RequisitionApprovals = ({ isActive }) => {
         label: "View Details",
         onClick: () => handleViewDetails(record),
       },
-      ...(record.action === "pending" && canApprove
+      ...(record.action === "pending" && 
+          canApprove && 
+          record.requisition?.overallapprovalstatus !== "approved"
         ? [
             {
               key: "approve",
@@ -355,7 +357,9 @@ const RequisitionApprovals = ({ isActive }) => {
                   >
                     View
                   </Button>
-                  {record.action === "pending" && canApprove && (
+                  {record.action === "pending" && 
+                   canApprove && 
+                   record.requisition?.overallapprovalstatus !== "approved" && (
                     <>
                       <Button
                         type="primary"
@@ -576,7 +580,8 @@ const RequisitionApprovals = ({ isActive }) => {
           onClose={() => setDetailsModalVisible(false)}
           height="90%"
           extra={
-            selectedApproval?.action === "pending" && (
+            selectedApproval?.action === "pending" && 
+            selectedApproval?.requisition?.overallapprovalstatus !== "approved" && (
               <Space size="small">
                 <Button
                   type="primary"
@@ -634,7 +639,8 @@ const RequisitionApprovals = ({ isActive }) => {
             <Button key="close" onClick={() => setDetailsModalVisible(false)}>
               Close
             </Button>,
-            selectedApproval?.action === "pending" && (
+            selectedApproval?.action === "pending" && 
+            selectedApproval?.requisition?.overallapprovalstatus !== "approved" && (
               <Space key="actions" size="small">
                 <Button
                   type="primary"
