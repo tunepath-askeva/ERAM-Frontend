@@ -47,6 +47,7 @@ import {
   FileExcelOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
+import { useSnackbar } from "notistack";
 import {
   useGetAllRecruiterCvsQuery,
   useDeleteRecruiterCvMutation,
@@ -62,6 +63,7 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 
 const LowLevelCandidates = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
@@ -88,7 +90,7 @@ const LowLevelCandidates = () => {
   const [fileList, setFileList] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importResult, setImportResult] = useState(null);
-  const [candidateConverting] = useConvertToCandidateMutation();
+  const [fileDesignations, setFileDesignations] = useState({}); // Map file UID to designation
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -117,6 +119,9 @@ const LowLevelCandidates = () => {
     search: debouncedSearch,
   });
 
+  const [candidateConverting, { isLoading: isConverting }] =
+    useConvertToCandidateMutation();
+
   const [deleteRecruiterCv, { isLoading: isDeleting }] =
     useDeleteRecruiterCvMutation();
 
@@ -143,6 +148,9 @@ const LowLevelCandidates = () => {
         jobTitle: cv.jobId?.title || "Common Apply",
         jobCode: cv.jobId?.jobCode || "Common Apply",
         remarks: cv.remarks || "No remarks added yet...",
+        designation: cv.designation || "",
+        firstName: cv.firstName || "",
+        lastName: cv.lastName || "",
       }));
       setCandidates(formatted);
       setFilteredCandidates(formatted);
@@ -163,31 +171,72 @@ const LowLevelCandidates = () => {
       firstName: record.firstName || record.name.split(" ")[0],
       lastName: record.lastName || record.name.split(" ")[1] || "",
       email: record.email,
+      designation: record.designation || "",
+      specialization: record.designation || "", // Pre-populate specialization with designation
     });
     setConvertModalVisible(true);
   };
 
   const handleConvertSubmit = async (values) => {
-    const { phoneNumber, phoneNumberCountryCode, ...rest } = values;
-    const fullPhone = `+${phoneNumberCountryCode}${phoneNumber}`;
-
     try {
+      // Extract phone number and country code properly
+      const phoneNumber = values.phoneNumber || "";
+      const phoneCountryCode = values.phoneNumberCountryCode || "91";
+      
+      // Clean phone number - remove country code if present
+      let cleanPhone = phoneNumber.replace(/\D/g, "");
+      if (cleanPhone.startsWith(phoneCountryCode)) {
+        cleanPhone = cleanPhone.slice(phoneCountryCode.length);
+      }
+
+      // Use designation for specialization if specialization is not provided
+      const specialization = values.specialization || values.designation || candidateToConvert.designation || "";
+
+      const { phoneNumber: _, phoneNumberCountryCode: __, ...rest } = values;
+      
       await candidateConverting({
         id: candidateToConvert.id,
-        values: { ...rest, phone: fullPhone },
+        values: { 
+          ...rest, 
+          phone: cleanPhone, // Phone WITHOUT country code
+          phoneCountryCode: phoneCountryCode, // Country code separately
+          specialization: specialization, // Use designation for specialization
+        },
       }).unwrap();
 
-      message.success(
-        `${values.firstName} ${values.lastName} converted to candidate!`
+      enqueueSnackbar(
+        `${values.firstName} ${values.lastName} converted to candidate successfully!`,
+        { variant: "success" }
       );
       setConvertModalVisible(false);
+      setCandidateToConvert(null);
+      refetch(); // Refetch the list
     } catch (error) {
-      message.error("Failed to convert candidate!");
+      console.error("Conversion error:", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to convert candidate!",
+        { variant: "error" }
+      );
     }
   };
 
   const handleUploadChange = ({ fileList: newFileList }) => {
     setFileList(newFileList); // Allow multiple files
+    
+    // Initialize designation for new files
+    const newDesignations = { ...fileDesignations };
+    newFileList.forEach((file) => {
+      if (!newDesignations[file.uid]) {
+        newDesignations[file.uid] = "";
+      }
+    });
+    // Remove designations for files that are no longer in the list
+    Object.keys(newDesignations).forEach((uid) => {
+      if (!newFileList.find((f) => f.uid === uid)) {
+        delete newDesignations[uid];
+      }
+    });
+    setFileDesignations(newDesignations);
   };
 
   const beforeUpload = (file) => {
@@ -200,14 +249,27 @@ const LowLevelCandidates = () => {
 
   const handleImportCvs = async () => {
     if (fileList.length === 0) {
-      message.error("Please select at least one PDF file to upload!");
+      enqueueSnackbar("Please select at least one PDF file to upload!", {
+        variant: "error",
+      });
       return;
     }
 
     const formData = new FormData();
-    fileList.forEach((file) => {
+    const designations = [];
+    
+    fileList.forEach((file, index) => {
       formData.append("files", file.originFileObj);
+      // Add designation for each file (use filename as key to match on backend)
+      const designation = fileDesignations[file.uid] || "";
+      designations.push({
+        fileName: file.name,
+        designation: designation.trim(),
+      });
     });
+    
+    // Add designations as JSON array
+    formData.append("designations", JSON.stringify(designations));
 
     try {
       setUploadProgress(0);
@@ -230,14 +292,20 @@ const LowLevelCandidates = () => {
       // Set the import result to show in alert
       setImportResult(response);
 
-      message.success(`${fileList.length} CV(s) imported successfully!`);
+      enqueueSnackbar(`${fileList.length} CV(s) imported successfully!`, {
+        variant: "success",
+      });
       refetch();
       setIsImportModalVisible(false);
       setFileList([]);
       setUploadProgress(0);
+      setFileDesignations({});
     } catch (error) {
       console.error(error);
-      message.error("Failed to import CVs!");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to import CVs!",
+        { variant: "error" }
+      );
       setUploadProgress(0);
     }
   };
@@ -261,10 +329,15 @@ const LowLevelCandidates = () => {
 
       window.URL.revokeObjectURL(url);
 
-      message.success("CVs exported successfully!");
+      enqueueSnackbar("CVs exported successfully!", {
+        variant: "success",
+      });
     } catch (error) {
       console.error(error);
-      message.error("Failed to export CVs!");
+      enqueueSnackbar(
+        error?.data?.message || "Failed to export CVs!",
+        { variant: "error" }
+      );
     }
   };
 
@@ -333,6 +406,13 @@ const LowLevelCandidates = () => {
             <MailOutlined style={{ marginRight: "4px" }} />
             {record.email}
           </div>
+          {record.designation && (
+            <div
+              style={{ fontSize: "12px", color: "#1e293b", marginBottom: "4px", fontWeight: "500" }}
+            >
+              <strong>Designation:</strong> {record.designation}
+            </div>
+          )}
           {record.fileName}
           <div style={{ fontSize: "11px", color: "#64748b" }}>
             <CalendarOutlined style={{ marginRight: "4px" }} />
@@ -394,6 +474,16 @@ const LowLevelCandidates = () => {
           <div style={{ fontWeight: "500", color: "#1e293b" }}>
             {record.uniqueCode}
           </div>
+        </div>
+      ),
+    },
+    {
+      title: "Designation",
+      dataIndex: "designation",
+      key: "designation",
+      render: (text) => (
+        <div style={{ fontWeight: "500", color: "#1e293b" }}>
+          {text || "—"}
         </div>
       ),
     },
@@ -1114,6 +1204,7 @@ const LowLevelCandidates = () => {
           setIsImportModalVisible(false);
           setFileList([]);
           setUploadProgress(0);
+          setFileDesignations({});
         }}
         onOk={handleImportCvs}
         okText={isImporting ? "Importing..." : "Import"}
@@ -1157,7 +1248,49 @@ const LowLevelCandidates = () => {
 
         {fileList.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <Text strong>Selected Files: {fileList.length}</Text>
+            <Text strong style={{ display: "block", marginBottom: 12 }}>
+              Selected Files: {fileList.length}
+            </Text>
+            
+            <div style={{ marginTop: 16 }}>
+              <Text strong style={{ display: "block", marginBottom: 12, color: "#1e293b" }}>
+                Enter Designation for Each CV:
+              </Text>
+              
+              {fileList.map((file) => (
+                <div
+                  key={file.uid}
+                  style={{
+                    marginBottom: 12,
+                    padding: "12px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    backgroundColor: "#f8fafc",
+                  }}
+                >
+                  <div style={{ marginBottom: 8, fontSize: "13px", color: "#64748b" }}>
+                    <FileTextOutlined style={{ marginRight: 6, color: "#da2c46" }} />
+                    {file.name}
+                  </div>
+                  <Input
+                    placeholder="Enter designation (e.g., Software Engineer, Project Manager)"
+                    value={fileDesignations[file.uid] || ""}
+                    onChange={(e) => {
+                      setFileDesignations({
+                        ...fileDesignations,
+                        [file.uid]: e.target.value,
+                      });
+                    }}
+                    prefix={<UserOutlined style={{ color: "#da2c46" }} />}
+                    style={{ width: "100%" }}
+                    size="small"
+                  />
+                  <Text type="secondary" style={{ fontSize: "11px", display: "block", marginTop: 4 }}>
+                    Will be saved to title field when converting to candidate
+                  </Text>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1237,9 +1370,13 @@ const LowLevelCandidates = () => {
       {convertModalVisible && (
         <ConvertToCandidateModal
           visible={convertModalVisible}
-          onCancel={() => setConvertModalVisible(false)}
+          onCancel={() => {
+            setConvertModalVisible(false);
+            setCandidateToConvert(null);
+          }}
           initialValues={candidateToConvert}
           handleSubmit={handleConvertSubmit}
+          isSubmitting={isConverting}
         />
       )}
     </div>

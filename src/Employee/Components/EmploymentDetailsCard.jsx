@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useSnackbar } from "notistack";
+import { useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -32,6 +33,13 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const [editMode, setEditMode] = useState(false);
+  
+  // Fetch projects for project selection
+  const { data: projectsData } = useGetProjectsQuery({ 
+    page: 1, 
+    pageSize: 1000 
+  });
+  const projects = projectsData?.allProjects || [];
 
   const handleSubmit = async (values) => {
     try {
@@ -60,7 +68,9 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
 
   const formInitialValues = {
     // Read-only fields
-    workorderId: employeeData?.employmentDetails?.workorderId || "",
+    workorderId: typeof employeeData?.employmentDetails?.workorderId === "object"
+      ? employeeData.employmentDetails.workorderId._id || ""
+      : employeeData?.employmentDetails?.workorderId || "",
     dateOfJoining: formatDate(employeeData?.employmentDetails?.dateOfJoining),
     category: employeeData?.employmentDetails?.category || "",
     designation: employeeData?.employmentDetails?.designation || "",
@@ -123,6 +133,9 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
 
     // Array fields
     assetAllocation: employeeData?.employmentDetails?.assetAllocation || [],
+    
+    // Project field
+    project: employeeData?.employmentDetails?.project?._id || employeeData?.employmentDetails?.project || "",
   };
 
   return (
@@ -179,9 +192,104 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             </Form.Item>
           </Col>
 
+          {/* <Col xs={24} sm={12}>
+            <Form.Item label="Work Order ID" name="workorderId">
+              <Input 
+                prefix={<IdcardOutlined />} 
+                disabled
+                value={
+                  typeof employeeData?.employmentDetails?.workorderId === "object"
+                    ? employeeData.employmentDetails.workorderId._id || ""
+                    : employeeData?.employmentDetails?.workorderId || ""
+                }
+              />
+            </Form.Item>
+          </Col> */}
+
+          {employeeData?.employmentDetails?.workorderId && (
+            <Col xs={24} sm={12}>
+              <Form.Item label="Work Order Title">
+                <Input
+                  value={
+                    typeof employeeData.employmentDetails.workorderId === "object"
+                      ? employeeData.employmentDetails.workorderId.title || "N/A"
+                      : "N/A"
+                  }
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          )}
+
+          {employeeData?.employmentDetails?.workorderId && 
+           typeof employeeData.employmentDetails.workorderId === "object" &&
+           employeeData.employmentDetails.workorderId.jobCode && (
+            <Col xs={24} sm={12}>
+              <Form.Item label="Job Code">
+                <Input
+                  value={employeeData.employmentDetails.workorderId.jobCode || "N/A"}
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          )}
+
+          {employeeData?.employmentDetails?.workorderId?.project && (
+            <Col xs={24} sm={12}>
+              <Form.Item label="Work Order Project">
+                <Input
+                  value={
+                    typeof employeeData.employmentDetails.workorderId.project === "object"
+                      ? `${employeeData.employmentDetails.workorderId.project.name} ${
+                          employeeData.employmentDetails.workorderId.project.prefix
+                            ? `(${employeeData.employmentDetails.workorderId.project.prefix})`
+                            : ""
+                        }`
+                      : "N/A"
+                  }
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          )}
+
           <Col xs={24} sm={12}>
-            <Form.Item label="Workorder ID" name="workorderId">
-              <Input prefix={<IdcardOutlined />} disabled />
+            <Form.Item label="Assigned Project" name="project">
+              {editMode ? (
+                <Select
+                  placeholder="Select project"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                      input.toLowerCase()
+                    )
+                  }
+                  allowClear
+                  style={{ width: "100%" }}
+                >
+                  {projects.map((project) => (
+                    <Select.Option key={project._id} value={project._id}>
+                      {project.name} {project.prefix && `(${project.prefix})`}
+                    </Select.Option>
+                  ))}
+                </Select>
+              ) : (
+                <Input
+                  value={
+                    employeeData?.employmentDetails?.project
+                      ? typeof employeeData.employmentDetails.project === "object"
+                        ? `${employeeData.employmentDetails.project.name} ${
+                            employeeData.employmentDetails.project.prefix
+                              ? `(${employeeData.employmentDetails.project.prefix})`
+                              : ""
+                          }`
+                        : "N/A"
+                      : "N/A"
+                  }
+                  disabled
+                />
+              )}
             </Form.Item>
           </Col>
 

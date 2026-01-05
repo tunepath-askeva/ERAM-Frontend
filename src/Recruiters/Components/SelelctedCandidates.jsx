@@ -148,6 +148,49 @@ const SelectedCandidates = ({ jobId }) => {
   const handleBulkStatusUpdate = async (newStatus) => {
     if (selectedCandidates.length === 0) return;
 
+    // Check for mandatory documents when moving to "screening" from "selected" or "in-pending"
+    if (newStatus === "screening") {
+      const candidatesToCheck = selectedCandidates
+        .map((candidateId) => candidates.find((c) => c._id === candidateId))
+        .filter((c) => c !== undefined);
+
+      // Check each candidate for missing mandatory documents
+      const candidatesWithMissingDocs = [];
+      for (const candidate of candidatesToCheck) {
+        const workOrderDocs = candidate.workOrderDocuments || [];
+        const uploadedDocs = candidate.uploadedDocuments || [];
+        
+        const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+        if (mandatoryDocs.length > 0) {
+          const uploadedDocNames = uploadedDocs.map((doc) =>
+            doc.documentName?.toLowerCase()
+          );
+          const missingMandatoryDocs = mandatoryDocs.filter(
+            (doc) => !uploadedDocNames.includes(doc.name?.toLowerCase())
+          );
+          
+          if (missingMandatoryDocs.length > 0) {
+            candidatesWithMissingDocs.push({
+              candidate,
+              missingDocs: missingMandatoryDocs,
+            });
+          }
+        }
+      }
+
+      // If any candidates have missing mandatory documents, prevent the move
+      if (candidatesWithMissingDocs.length > 0) {
+        const missingDocNames = candidatesWithMissingDocs[0].missingDocs
+          .map((doc) => doc.name)
+          .join(", ");
+        enqueueSnackbar(
+          `Cannot move to screening. ${candidatesWithMissingDocs.length} candidate(s) are missing mandatory documents: ${missingDocNames}`,
+          { variant: "error", autoHideDuration: 5000 }
+        );
+        return;
+      }
+    }
+
     try {
       const updatePromises = selectedCandidates.map((candidateId) => {
         const candidate = candidates.find((c) => c._id === candidateId);
@@ -172,10 +215,10 @@ const SelectedCandidates = ({ jobId }) => {
       refetch();
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      enqueueSnackbar("Failed to update some candidate statuses", {
-        variant: "error",
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error.data?.message || "Failed to update some candidate statuses",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     }
   };
 
@@ -213,6 +256,31 @@ const SelectedCandidates = ({ jobId }) => {
     newStatus,
     selectedPipelineId
   ) => {
+    // Check for mandatory documents when moving to "screening" from "selected" or "in-pending"
+    if (newStatus === "screening") {
+      const workOrderDocs = candidate.workOrderDocuments || [];
+      const uploadedDocs = candidate.uploadedDocuments || [];
+      
+      const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+      if (mandatoryDocs.length > 0) {
+        const uploadedDocNames = uploadedDocs.map((doc) =>
+          doc.documentName?.toLowerCase()
+        );
+        const missingMandatoryDocs = mandatoryDocs.filter(
+          (doc) => !uploadedDocNames.includes(doc.name?.toLowerCase())
+        );
+        
+        if (missingMandatoryDocs.length > 0) {
+          const missingDocNames = missingMandatoryDocs.map((doc) => doc.name).join(", ");
+          enqueueSnackbar(
+            `Cannot move to screening. Missing mandatory documents: ${missingDocNames}`,
+            { variant: "error", autoHideDuration: 5000 }
+          );
+          return;
+        }
+      }
+    }
+    
     try {
       const pipelineToSend =
         selectedPipelineId === null || selectedPipelineId === undefined

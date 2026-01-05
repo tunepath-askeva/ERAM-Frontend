@@ -10,9 +10,10 @@ import {
   message,
   Spin,
   Alert,
+  Card,
 } from "antd";
 import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
-import { useGetRecruitersNameQuery } from "../../Slices/Admin/AdminApis";
+import { useGetRecruitersNameQuery, useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 import { useUpdateEmployeeEmailMutation } from "../../Slices/Recruiter/RecruiterApis";
 import { useSnackbar } from "notistack";
 
@@ -64,10 +65,18 @@ const MoveToAttritionModal = ({
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
 
   // Fetch admin users for approver selection
   const { data: adminUsers, isLoading: loadingAdmins } =
     useGetRecruitersNameQuery();
+
+  // Fetch projects for project selection
+  const { data: projectsData } = useGetProjectsQuery({ 
+    page: 1, 
+    pageSize: 1000 
+  });
+  const projects = projectsData?.allProjects || [];
 
   // Email update mutation
   const [updateEmail, { isLoading: isUpdatingEmail }] =
@@ -75,12 +84,30 @@ const MoveToAttritionModal = ({
 
   useEffect(() => {
     if (visible && employee) {
+      // Get project ID from employee's project or work order project
+      let projectId = "";
+      if (employee.employmentDetails?.project) {
+        if (typeof employee.employmentDetails.project === "object") {
+          projectId = employee.employmentDetails.project._id || "";
+        } else {
+          projectId = employee.employmentDetails.project || "";
+        }
+      } else if (employee.employmentDetails?.workorderId?.project) {
+        if (typeof employee.employmentDetails.workorderId.project === "object") {
+          projectId = employee.employmentDetails.workorderId.project._id || "";
+        } else {
+          projectId = employee.employmentDetails.workorderId.project || "";
+        }
+      }
+
       form.setFieldsValue({
         employeeId: employee._id,
         employeeName: employee.fullName,
         eramId: employee.employmentDetails?.eramId || "N/A",
         noticePeriodServed: "N/A",
+        project: projectId,
       });
+      setSelectedProjectId(projectId);
       setNewEmail(employee.email);
     }
   }, [visible, employee, form]);
@@ -142,13 +169,19 @@ const MoveToAttritionModal = ({
     try {
       const values = await form.validateFields();
 
+      // Get project name from selected project ID
+      const selectedProject = projects.find(p => p._id === values.project);
+      const projectName = selectedProject 
+        ? `${selectedProject.name}${selectedProject.prefix ? ` (${selectedProject.prefix})` : ""}`
+        : "";
+
       // Format the data for API
       const attritionData = {
         attritionType: values.attritionType,
         otherAttritionType: values.otherAttritionType,
         reason: values.reason,
         lastWorkingDate: values.lastWorkingDate?.format("YYYY-MM-DD"),
-        projectName: values.projectName,
+        projectName: projectName,
         noticePeriodServed: values.noticePeriodServed,
         hrRemarks: values.hrRemarks,
         approvers: values.approvers, // Array of approver IDs
@@ -172,6 +205,7 @@ const MoveToAttritionModal = ({
     setIsEditingEmail(false);
     setNewEmail("");
     setEmailError("");
+    setSelectedProjectId("");
     onCancel();
   };
 
@@ -360,6 +394,38 @@ const MoveToAttritionModal = ({
                   </div>
                 </div>
               )}
+              
+              {/* Project Information */}
+              {(employee?.employmentDetails?.project || employee?.employmentDetails?.workorderId?.project) && (
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <div style={{ fontSize: "12px", color: "#888" }}>
+                    Current Project
+                  </div>
+                  <div style={{ fontWeight: 500 }}>
+                    {(() => {
+                      let projectDisplay = "N/A";
+                      if (employee.employmentDetails?.project) {
+                        if (typeof employee.employmentDetails.project === "object") {
+                          projectDisplay = `${employee.employmentDetails.project.name || ""}${
+                            employee.employmentDetails.project.prefix 
+                              ? ` (${employee.employmentDetails.project.prefix})` 
+                              : ""
+                          }`;
+                        }
+                      } else if (employee.employmentDetails?.workorderId?.project) {
+                        if (typeof employee.employmentDetails.workorderId.project === "object") {
+                          projectDisplay = `${employee.employmentDetails.workorderId.project.name || ""}${
+                            employee.employmentDetails.workorderId.project.prefix 
+                              ? ` (${employee.employmentDetails.workorderId.project.prefix})` 
+                              : ""
+                          }`;
+                        }
+                      }
+                      return projectDisplay;
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -438,10 +504,70 @@ const MoveToAttritionModal = ({
             <DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
           </Form.Item>
 
-          {/* Project Name */}
-          <Form.Item name="projectName" label="Project Name">
-            <Input placeholder="Enter project name (if applicable)" />
+          {/* Project Selection */}
+          <Form.Item 
+            name="project" 
+            label="Project"
+            tooltip="Select the project for this attrition. The current project is pre-selected if available."
+          >
+            <Select
+              placeholder="Select project"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                  input.toLowerCase()
+                )
+              }
+              allowClear
+              style={{ width: "100%" }}
+              notFoundContent={projects.length === 0 ? "No projects available" : "No projects found"}
+              onChange={(value) => setSelectedProjectId(value || "")}
+            >
+              {projects.map((project) => (
+                <Option key={project._id} value={project._id}>
+                  {project.name} {project.prefix && `(${project.prefix})`}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
+          
+          {/* Display selected project details */}
+          {selectedProjectId && (() => {
+            const selectedProject = projects.find(p => p._id === selectedProjectId);
+            if (selectedProject) {
+              return (
+                <Card 
+                  size="small" 
+                  style={{ 
+                    marginTop: "-8px", 
+                    marginBottom: "16px",
+                    backgroundColor: "#f0f9ff",
+                    border: "1px solid #91d5ff"
+                  }}
+                  bodyStyle={{ padding: "12px" }}
+                >
+                  <div style={{ fontSize: "13px", color: "#0050b3" }}>
+                    <strong style={{ display: "block", marginBottom: "4px" }}>
+                      Selected Project Details:
+                    </strong>
+                    <div style={{ marginLeft: "8px" }}>
+                      <div><strong>Name:</strong> {selectedProject.name}</div>
+                      {selectedProject.prefix && (
+                        <div><strong>Prefix:</strong> {selectedProject.prefix}</div>
+                      )}
+                      {selectedProject.description && (
+                        <div style={{ marginTop: "4px", fontStyle: "italic", color: "#595959" }}>
+                          <strong>Description:</strong> {selectedProject.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            }
+            return null;
+          })()}
 
           {/* Notice Period Served */}
           <Form.Item

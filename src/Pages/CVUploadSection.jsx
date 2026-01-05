@@ -22,6 +22,7 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
   const [lastName, setLastName] = useState("");
   const [applicantName, setApplicantName] = useState("");
   const [email, setEmail] = useState("");
+  const [designation, setDesignation] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const [submitCV, { isLoading }] = useSubmitCVApplicationMutation();
 
@@ -119,6 +120,7 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
     formData.append("lastName", lastName.trim());
     formData.append("applicantName", applicantName.trim());
     formData.append("email", email.trim());
+    formData.append("designation", designation.trim());
 
     if (jobId) {
       formData.append("jobId", jobId);
@@ -133,6 +135,7 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
       setFirstName("");
       setLastName("");
       setEmail("");
+      setDesignation("");
       closeCvModal();
     } catch (error) {
       enqueueSnackbar(error?.data?.message, { variant: "error" });
@@ -248,6 +251,19 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
                 </List.Item>
               )}
               style={{ marginBottom: "20px" }}
+            />
+
+            <Input
+              placeholder="Enter designation (e.g., Software Engineer, Project Manager)"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              prefix={<UserOutlined style={{ color: "#da2c46" }} />}
+              size="large"
+              style={{
+                marginBottom: "20px",
+                borderRadius: "8px",
+                borderColor: "#da2c46",
+              }}
             />
 
             <Button

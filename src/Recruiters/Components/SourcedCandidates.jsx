@@ -1009,6 +1009,47 @@ const SourcedCandidates = ({ jobId }) => {
   const handleBulkStatusUpdate = async (newStatus) => {
     if (selectedCandidates.length === 0) return;
 
+    // Check for mandatory documents when moving to "selected" status
+    if (newStatus === "selected") {
+      const candidatesToCheck = selectedCandidates
+        .map((candidateId) => allCandidates.find((c) => c._id === candidateId))
+        .filter((c) => c !== undefined);
+
+      // Check each candidate for missing mandatory documents
+      const candidatesWithMissingDocs = [];
+      for (const candidate of candidatesToCheck) {
+        const workOrderDocs = candidate.workOrder?.documents || candidate.workOrderDocuments || [];
+        const uploadedDocs = candidate.workOrderuploadedDocuments || candidate.uploadedDocuments || [];
+        
+        const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+        if (mandatoryDocs.length > 0) {
+          const uploadedDocNames = uploadedDocs.map((doc) =>
+            doc.documentName?.toLowerCase()
+          );
+          const missingMandatoryDocs = mandatoryDocs.filter(
+            (doc) => !uploadedDocNames.includes(doc.name?.toLowerCase())
+          );
+          
+          if (missingMandatoryDocs.length > 0) {
+            candidatesWithMissingDocs.push({
+              candidate,
+              missingDocs: missingMandatoryDocs,
+            });
+          }
+        }
+      }
+
+      // If any candidates have missing mandatory documents, show warning
+      // The backend will automatically set them to "in-pending" status
+      if (candidatesWithMissingDocs.length > 0) {
+        const missingCount = candidatesWithMissingDocs.length;
+        enqueueSnackbar(
+          `${missingCount} candidate(s) will be moved to "Pending" status due to missing mandatory documents. The backend will handle this automatically.`,
+          { variant: "info", autoHideDuration: 5000 }
+        );
+      }
+    }
+
     try {
       const updatePromises = selectedCandidates.map((candidateId) => {
         const candidate = allCandidates.find((c) => c._id === candidateId);
@@ -1045,10 +1086,10 @@ const SourcedCandidates = ({ jobId }) => {
       jobRefetch();
     } catch (error) {
       console.error("Failed to update candidate status:", error);
-      enqueueSnackbar("Failed to update some candidate statuses", {
-        variant: "error",
-        autoHideDuration: 3000,
-      });
+      enqueueSnackbar(
+        error.data?.message || "Failed to update some candidate statuses",
+        { variant: "error", autoHideDuration: 3000 }
+      );
     }
   };
 

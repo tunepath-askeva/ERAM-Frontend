@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Input, Checkbox, Form, DatePicker } from "antd";
+import { Modal, Input, Checkbox, Form, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 import PhoneInput from "../../Global/PhoneInput";
 import { useGetEmployeeDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 import { useSnackbar } from "notistack";
 import { phoneUtils } from "../../utils/countryMobileLimits";
 
@@ -21,6 +22,13 @@ const EditEmployeeModal = ({
 
   const employee = employeeDetails?.employee;
   const [form] = Form.useForm();
+  
+  // Fetch projects for project selection
+  const { data: projectsData } = useGetProjectsQuery({ 
+    page: 1, 
+    pageSize: 1000 
+  });
+  const projects = projectsData?.allProjects || [];
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -74,6 +82,7 @@ const EditEmployeeModal = ({
     firstTimeLogin: false,
     basicAssets: "",
     reportingAndDocumentation: "",
+    project: "",
   });
 
   const [changePassword, setChangePassword] = useState(false);
@@ -172,6 +181,7 @@ const EditEmployeeModal = ({
         basicAssets: employee.employmentDetails?.basicAssets || "",
         reportingAndDocumentation:
           employee.employmentDetails?.reportingAndDocumentation || "",
+        project: employee.employmentDetails?.project?._id || employee.employmentDetails?.project || "",
       });
 
       // Use stored country code if available, otherwise extract
@@ -286,15 +296,20 @@ const EditEmployeeModal = ({
       if (!validateForm()) return;
 
       const phone = form.getFieldValue("phone");
-      const phoneCountryCode = form.getFieldValue("phoneCountryCode");
-      // Clean phone number - remove + prefix if present
-      const cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      const phoneCountryCode = form.getFieldValue("phoneCountryCode") || "91";
+      // Clean phone number - remove + prefix and non-digits
+      let cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      
+      // Remove country code from phone if it starts with it
+      if (cleanPhone && cleanPhone.startsWith(phoneCountryCode)) {
+        cleanPhone = cleanPhone.slice(phoneCountryCode.length);
+      }
 
       const dataToSubmit = {
         id: employeeId,
         ...formData,
-        phone: cleanPhone, // Phone number without country code
-        phoneCountryCode: phoneCountryCode || "91", // Country code sent separately
+        phone: cleanPhone, // Phone number WITHOUT country code
+        phoneCountryCode: phoneCountryCode, // Country code sent separately
       };
 
       // Convert assetAllocation string to array
@@ -910,6 +925,37 @@ const EditEmployeeModal = ({
                       handleInputChange("sponsorName", e.target.value)
                     }
                   />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Project
+                  </label>
+                  <Select
+                    placeholder="Select project"
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                        input.toLowerCase()
+                      )
+                    }
+                    style={{ width: "100%" }}
+                    value={formData.project || undefined}
+                    onChange={(value) => handleInputChange("project", value)}
+                  >
+                    {projects.map((project) => (
+                      <Select.Option key={project._id} value={project._id}>
+                        {project.name} {project.prefix && `(${project.prefix})`}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div>

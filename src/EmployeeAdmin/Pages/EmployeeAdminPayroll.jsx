@@ -105,6 +105,7 @@ const payrollHeaders = [
   "U_gosi",
   "U_TPAD_1",
   "U_ADMC",
+  "U_totaldeduction",
 
   // Actual Values (Optional)
   "U_albasic",
@@ -186,6 +187,7 @@ const sampleRow = [
   "0",
   "0",
   "0",
+  "270",
   "5000",
   "500",
   "1000",
@@ -412,21 +414,24 @@ const EmployeeAdminPayroll = () => {
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
-      await editPayroll({
+      const result = await editPayroll({
         id: selectedRecord._id,
         payload: values,
       }).unwrap();
 
+      // Close modal first
+      setIsEditModalVisible(false);
+      setSelectedRecord(null);
+      form.resetFields();
+
+      // Show success message
       enqueueSnackbar("Payroll record updated successfully", {
         variant: "success",
         autoHideDuration: 3000,
       });
 
-      setIsEditModalVisible(false);
-      setSelectedRecord(null);
-
-      // Refetch the data
-      await refetchPayroll();
+      // Immediately refetch the data
+      refetchPayroll();
     } catch (error) {
       console.error("Validation failed:", error);
       enqueueSnackbar(
@@ -763,6 +768,11 @@ const EmployeeAdminPayroll = () => {
             <Descriptions.Item label="Admin Charge">
               {recordToDisplay.U_ADMC}
             </Descriptions.Item>
+            <Descriptions.Item label="Total Deduction" span={2}>
+              <strong style={{ fontSize: "14px", color: "#ff4d4f" }}>
+                {recordToDisplay.U_totaldeduction || "—"}
+              </strong>
+            </Descriptions.Item>
           </Descriptions>
         </TabPane>
 
@@ -857,6 +867,11 @@ const EmployeeAdminPayroll = () => {
             <Descriptions.Item label="Total Earnings" span={2}>
               <strong style={{ fontSize: "16px", color: "#52c41a" }}>
                 {recordToDisplay.U_totalearn}
+              </strong>
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Deductions" span={2}>
+              <strong style={{ fontSize: "16px", color: "#ff4d4f" }}>
+                {recordToDisplay.U_totaldeduction || "—"}
               </strong>
             </Descriptions.Item>
             <Descriptions.Item label="Overall Net Payable" span={2}>
@@ -1196,6 +1211,15 @@ const EmployeeAdminPayroll = () => {
               <Col span={12}>
                 <Form.Item name="U_ADMC" label="Admin Charge">
                   <Input type="number" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item 
+                  name="U_totaldeduction" 
+                  label="Total Deduction"
+                  tooltip="Total deduction amount from the uploaded sheet. If provided, this value will be used instead of calculating from individual deduction items."
+                >
+                  <Input type="number" step="0.01" />
                 </Form.Item>
               </Col>
             </Row>

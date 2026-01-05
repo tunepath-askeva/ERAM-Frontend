@@ -398,25 +398,43 @@ const CandidateEditPage = () => {
       const addressValues = await addressForm.validateFields();
       const contactValues = await contactForm.validateFields();
 
-      const combinePhoneNumbers = (values) => {
+      // Clean phone numbers - ensure they don't contain country codes
+      // Phone numbers should be stored WITHOUT country code, country codes stored separately
+      const cleanPhoneNumbers = (values) => {
         const result = { ...values };
         Object.keys(values).forEach((key) => {
-          if (key.endsWith("CountryCode") && values[key]) {
-            const fieldName = key.replace("CountryCode", "");
-            if (values[fieldName]) {
-              result[fieldName] = `${values[key]}${values[fieldName]}`;
+          if (key.endsWith("CountryCode")) {
+            // Keep country code fields as-is
+            return;
+          }
+          
+          // For phone number fields, ensure they don't contain country code
+          const phoneFields = ["phone", "contactPersonMobile", "contactPersonHomeNo", "emergencyContactNo"];
+          if (phoneFields.includes(key) && values[key]) {
+            const countryCodeKey = `${key}CountryCode`;
+            const countryCode = values[countryCodeKey] || result[countryCodeKey];
+            
+            if (countryCode && values[key]) {
+              // Remove country code from phone number if present
+              let cleanPhone = values[key].toString().replace(/^\+/, "").replace(/\D/g, "");
+              if (cleanPhone.startsWith(countryCode)) {
+                cleanPhone = cleanPhone.slice(countryCode.length);
+              }
+              result[key] = cleanPhone; // Store phone WITHOUT country code
+            } else if (values[key]) {
+              // Just clean the phone number
+              result[key] = values[key].toString().replace(/^\+/, "").replace(/\D/g, "");
             }
-            delete result[key];
           }
         });
         return result;
       };
 
       const allValues = {
-        ...combinePhoneNumbers(profileValues),
-        ...combinePhoneNumbers(personalValues),
-        ...combinePhoneNumbers(addressValues),
-        ...combinePhoneNumbers(contactValues),
+        ...cleanPhoneNumbers(profileValues),
+        ...cleanPhoneNumbers(personalValues),
+        ...cleanPhoneNumbers(addressValues),
+        ...cleanPhoneNumbers(contactValues),
         skills,
         languages,
         education,

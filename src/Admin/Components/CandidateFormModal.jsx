@@ -140,8 +140,13 @@ const CandidateFormModal = ({
         .map((name) => name.trim())
         .join(" ");
 
-      const fullPhoneNumber =
-        phoneCountryCode && phone ? phoneCountryCode + phone : "";
+      // Clean phone number - remove country code if present, store number alone
+      const cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      // Remove country code from phone if it starts with it
+      const phoneWithoutCode = phoneCountryCode && cleanPhone.startsWith(phoneCountryCode)
+        ? cleanPhone.slice(phoneCountryCode.length)
+        : cleanPhone;
+      
       if (isEditMode) {
         const editPayload = {
           ...payload,
@@ -149,7 +154,8 @@ const CandidateFormModal = ({
           middleName: middleName?.trim() || "",
           lastName: lastName?.trim(),
           fullName,
-          phone: fullPhoneNumber,
+          phone: phoneWithoutCode, // Phone number WITHOUT country code
+          phoneCountryCode: phoneCountryCode || "91", // Country code sent separately
           supplier: payload.supplierId,
         };
 
@@ -172,7 +178,8 @@ const CandidateFormModal = ({
           middleName: middleName?.trim() || "",
           lastName: lastName?.trim(),
           fullName,
-          phone: fullPhoneNumber,
+          phone: phoneWithoutCode, // Phone number WITHOUT country code
+          phoneCountryCode: phoneCountryCode || "91", // Country code sent separately
           role: "candidate",
         };
 

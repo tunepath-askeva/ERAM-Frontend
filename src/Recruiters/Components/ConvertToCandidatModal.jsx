@@ -139,6 +139,9 @@ const ConvertToCandidateModal = ({
               label="Phone Number"
               required
             />
+            <div style={{ fontSize: "12px", color: "#8c8c8c", marginTop: "4px" }}>
+              Phone number will be stored without country code prefix
+            </div>
           </Col>
         </Row>
 
@@ -159,13 +162,14 @@ const ConvertToCandidateModal = ({
             <Form.Item
               label="Specialization"
               name="specialization"
+              tooltip="If designation was provided during CV upload, it will be used here. You can modify if needed."
               rules={[
                 { required: true, message: "Please enter specialization" },
               ]}
             >
               <Input
                 prefix={<StarOutlined />}
-                placeholder="e.g., React.js, Node.js, Python"
+                placeholder="e.g., React.js, Node.js, Python (or use designation)"
               />
             </Form.Item>
           </Col>
@@ -192,6 +196,18 @@ const ConvertToCandidateModal = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
+              label="Designation"
+              name="designation"
+              tooltip="Designation from CV upload will be pre-filled if available"
+            >
+              <Input 
+                prefix={<UserOutlined />}
+                placeholder="e.g., Software Engineer, Project Manager" 
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
               label="Experience"
               name="experience"
               rules={[{ required: true, message: "Please enter experience" }]}
@@ -207,6 +223,9 @@ const ConvertToCandidateModal = ({
               </Select>
             </Form.Item>
           </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="Qualifications"

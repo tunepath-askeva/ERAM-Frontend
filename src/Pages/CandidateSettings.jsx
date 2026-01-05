@@ -752,31 +752,53 @@ const CandidateSettings = () => {
       contactValues.contactPersonHomeNoCountryCode = contactPersonHomeNoCountryCode;
       contactValues.emergencyContactNoCountryCode = emergencyContactNoCountryCode;
 
+      // Clean phone numbers - ensure they don't contain country codes
+      // Phone numbers should be stored WITHOUT country code, country codes stored separately
       const preparePhoneNumbers = (values) => {
         const result = { ...values };
 
-        // Always ensure phoneCountryCode is included (even if phone is empty)
+        // Process phone number - remove country code if present
         if (values.phone !== undefined) {
-          result.phone = values.phone ? values.phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+          let cleanPhone = values.phone ? values.phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+          const countryCode = values.phoneCountryCode || "91";
+          // Remove country code from phone if it starts with it
+          if (cleanPhone && cleanPhone.startsWith(countryCode)) {
+            cleanPhone = cleanPhone.slice(countryCode.length);
+          }
+          result.phone = cleanPhone; // Store phone WITHOUT country code
         }
-        // Always set phoneCountryCode, use form value or default to "91"
         result.phoneCountryCode = values.phoneCountryCode || "91";
 
-        // Always ensure emergencyContactNoCountryCode is included
+        // Process emergency contact number
         if (values.emergencyContactNo !== undefined) {
-          result.emergencyContactNo = values.emergencyContactNo ? values.emergencyContactNo.replace(/^\+/, "").replace(/\D/g, "") : "";
+          let cleanPhone = values.emergencyContactNo ? values.emergencyContactNo.replace(/^\+/, "").replace(/\D/g, "") : "";
+          const countryCode = values.emergencyContactNoCountryCode || "91";
+          if (cleanPhone && cleanPhone.startsWith(countryCode)) {
+            cleanPhone = cleanPhone.slice(countryCode.length);
+          }
+          result.emergencyContactNo = cleanPhone; // Store phone WITHOUT country code
         }
         result.emergencyContactNoCountryCode = values.emergencyContactNoCountryCode || "91";
 
-        // Always ensure contactPersonMobileCountryCode is included
+        // Process contact person mobile
         if (values.contactPersonMobile !== undefined) {
-          result.contactPersonMobile = values.contactPersonMobile ? values.contactPersonMobile.replace(/^\+/, "").replace(/\D/g, "") : "";
+          let cleanPhone = values.contactPersonMobile ? values.contactPersonMobile.replace(/^\+/, "").replace(/\D/g, "") : "";
+          const countryCode = values.contactPersonMobileCountryCode || "91";
+          if (cleanPhone && cleanPhone.startsWith(countryCode)) {
+            cleanPhone = cleanPhone.slice(countryCode.length);
+          }
+          result.contactPersonMobile = cleanPhone; // Store phone WITHOUT country code
         }
         result.contactPersonMobileCountryCode = values.contactPersonMobileCountryCode || "91";
 
-        // Always ensure contactPersonHomeNoCountryCode is included
+        // Process contact person home number
         if (values.contactPersonHomeNo !== undefined) {
-          result.contactPersonHomeNo = values.contactPersonHomeNo ? values.contactPersonHomeNo.replace(/^\+/, "").replace(/\D/g, "") : "";
+          let cleanPhone = values.contactPersonHomeNo ? values.contactPersonHomeNo.replace(/^\+/, "").replace(/\D/g, "") : "";
+          const countryCode = values.contactPersonHomeNoCountryCode || "91";
+          if (cleanPhone && cleanPhone.startsWith(countryCode)) {
+            cleanPhone = cleanPhone.slice(countryCode.length);
+          }
+          result.contactPersonHomeNo = cleanPhone; // Store phone WITHOUT country code
         }
         result.contactPersonHomeNoCountryCode = values.contactPersonHomeNoCountryCode || "91";
 
@@ -795,41 +817,41 @@ const CandidateSettings = () => {
         updatedAt: new Date().toISOString(),
       };
 
+      // CRITICAL: Explicitly ensure all country code fields are in allValues with proper values
+      // This ensures they're not lost during form merging
+      allValues.phoneCountryCode = phoneCountryCode || allValues.phoneCountryCode || "91";
+      allValues.contactPersonMobileCountryCode = contactPersonMobileCountryCode || allValues.contactPersonMobileCountryCode || "91";
+      allValues.contactPersonHomeNoCountryCode = contactPersonHomeNoCountryCode || allValues.contactPersonHomeNoCountryCode || "91";
+      allValues.emergencyContactNoCountryCode = emergencyContactNoCountryCode || allValues.emergencyContactNoCountryCode || "91";
+
       setLoading(true);
 
       const formData = new FormData();
 
-      // Handle regular form fields
+      // Handle regular form fields (skip country codes - we'll handle them explicitly)
       Object.entries(allValues).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
+          // Skip country code fields - we'll append them explicitly at the end
+          if (key.endsWith("CountryCode")) {
+            return; // Skip country codes in this loop
+          }
+          
           if (dayjs.isDayjs(value)) {
             formData.append(key, value.format("YYYY-MM-DD"));
           } else if (key === "socialLinks" || key === "jobPreferences") {
             // Skip these as we'll handle them separately
           } else {
-            // Ensure country code fields are always included, even if empty
-            if (key.endsWith("CountryCode")) {
-              formData.append(key, value || "91");
-            } else {
-              formData.append(key, value);
-            }
+            formData.append(key, value);
           }
         }
       });
       
-      // Explicitly ensure all country code fields are included
-      if (allValues.phoneCountryCode === undefined || allValues.phoneCountryCode === null) {
-        formData.append("phoneCountryCode", "91");
-      }
-      if (allValues.contactPersonMobileCountryCode === undefined || allValues.contactPersonMobileCountryCode === null) {
-        formData.append("contactPersonMobileCountryCode", "91");
-      }
-      if (allValues.contactPersonHomeNoCountryCode === undefined || allValues.contactPersonHomeNoCountryCode === null) {
-        formData.append("contactPersonHomeNoCountryCode", "91");
-      }
-      if (allValues.emergencyContactNoCountryCode === undefined || allValues.emergencyContactNoCountryCode === null) {
-        formData.append("emergencyContactNoCountryCode", "91");
-      }
+      // CRITICAL: Explicitly append all country code fields to ensure they're always included
+      // This ensures country codes are never lost, even if they were empty or undefined
+      formData.append("phoneCountryCode", allValues.phoneCountryCode || "91");
+      formData.append("contactPersonMobileCountryCode", allValues.contactPersonMobileCountryCode || "91");
+      formData.append("contactPersonHomeNoCountryCode", allValues.contactPersonHomeNoCountryCode || "91");
+      formData.append("emergencyContactNoCountryCode", allValues.emergencyContactNoCountryCode || "91");
 
       // Handle JSON fields
       formData.append(

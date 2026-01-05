@@ -210,6 +210,11 @@ const EmployeeProfileSettings = () => {
             }
           }
         });
+
+        // Add project field if present
+        if (values.employmentDetails.project !== undefined && values.employmentDetails.project !== null && values.employmentDetails.project !== "") {
+          formData.append("project", values.employmentDetails.project);
+        }
       }
 
       // Add image file if selected

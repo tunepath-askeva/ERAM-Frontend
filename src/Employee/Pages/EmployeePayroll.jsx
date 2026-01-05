@@ -93,10 +93,9 @@ const EmployeePayroll = () => {
       otAllowance: parseFloat(payroll.U_otallow || 0),
       airTicketAllowance: parseFloat(payroll.U_airtallow || 0),
       totalEarnings: parseFloat(payroll.U_totalearn || 0),
-      deductions:
-        parseFloat(payroll.U_adv || 0) +
-        parseFloat(payroll.U_loan || 0) +
-        parseFloat(payroll.U_gosi || 0),
+      deductions: payroll.U_totaldeduction && payroll.U_totaldeduction !== "" && payroll.U_totaldeduction !== null
+        ? parseFloat(payroll.U_totaldeduction)
+        : null, // Don't calculate, only use if field exists
       netPay: parseFloat(payroll.U_ONP || 0),
       status: "Paid",
       payDate: new Date().toISOString().split("T")[0],
@@ -126,6 +125,12 @@ const EmployeePayroll = () => {
       projectAllowance: parseFloat(payroll.U_projallow || 0),
       offshoreAllowance: parseFloat(payroll.U_offsallow || 0),
       executiveAllowance: parseFloat(payroll.U_exefallow || 0),
+      otherDeduction: parseFloat(payroll.U_ODED || 0),
+      otherDeductionSA: parseFloat(payroll.U_ODEDSA || 0),
+      tpaDeduction: parseFloat(payroll.U_TPAD || 0),
+      tpaDeduction1: parseFloat(payroll.U_TPAD_1 || 0),
+      adminCharge: parseFloat(payroll.U_ADMC || 0),
+      absentDaysDeduction: parseFloat(payroll.U_absdays || 0),
     }));
   };
 
@@ -163,7 +168,7 @@ const EmployeePayroll = () => {
       dataIndex: "deductions",
       key: "deductions",
       width: 120,
-      render: (value) => `SAR ${value.toLocaleString()}`,
+      render: (value) => value !== null && value !== undefined ? `SAR ${value.toLocaleString()}` : "—",
     },
     {
       title: "Net Pay",
@@ -824,20 +829,28 @@ const EmployeePayroll = () => {
                 {renderDeductionItem("Advance", payroll.advance)}
                 {renderDeductionItem("Loan", payroll.loan)}
                 {renderDeductionItem("GOSI", payroll.gosi)}
+                {renderDeductionItem("Other Deduction", payroll.otherDeduction)}
+                {renderDeductionItem("Other Deduction Staff Accounts", payroll.otherDeductionSA)}
+                {renderDeductionItem("TPA Deduction", payroll.tpaDeduction)}
+                {renderDeductionItem("TPA Deduction 1", payroll.tpaDeduction1)}
+                {renderDeductionItem("Admin Charge", payroll.adminCharge)}
+                {renderDeductionItem("Absent Days Deduction", payroll.absentDaysDeduction)}
 
-                <div
-                  style={{
-                    borderTop: "1px solid #000",
-                    paddingTop: "8px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: "auto",
-                  }}
-                >
-                  <span>Deduction Total :</span>
-                  <span>{payroll.deductions.toFixed(2)}</span>
-                </div>
+                {payroll.deductions !== null && (
+                  <div
+                    style={{
+                      borderTop: "1px solid #000",
+                      paddingTop: "8px",
+                      fontWeight: "bold",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "auto",
+                    }}
+                  >
+                    <span>Deduction Total :</span>
+                    <span>{payroll.deductions.toFixed(2)}</span>
+                  </div>
+                )}
               </td>
             </tr>
           </tbody>
@@ -859,10 +872,10 @@ const EmployeePayroll = () => {
                   padding: "8px",
                   backgroundColor: "#f8f9fa",
                   fontWeight: "bold",
-                  width: "15%",
+                  width: "20%",
                 }}
               >
-                Net Pay
+                Net Payable (SAR)
               </td>
               <td
                 style={{
@@ -880,7 +893,7 @@ const EmployeePayroll = () => {
                   padding: "8px",
                   fontWeight: "bold",
                   fontSize: "14px",
-                  width: "20%",
+                  width: "25%",
                 }}
               >
                 {payroll.netPay.toFixed(2)}
@@ -891,7 +904,7 @@ const EmployeePayroll = () => {
                   padding: "8px",
                   backgroundColor: "#f8f9fa",
                   fontWeight: "bold",
-                  width: "15%",
+                  width: "20%",
                 }}
               >
                 Amount In Words
@@ -910,10 +923,42 @@ const EmployeePayroll = () => {
                 style={{
                   border: "1px solid #000",
                   padding: "8px",
-                  width: "40%",
+                  width: "25%",
                 }}
               >
                 Saudi Riyal - {numberToWords(Math.floor(payroll.netPay))} Only
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  border: "1px solid #000",
+                  padding: "8px",
+                  backgroundColor: "#f8f9fa",
+                  fontWeight: "bold",
+                }}
+              >
+                Remarks
+              </td>
+              <td
+                style={{
+                  border: "1px solid #000",
+                  padding: "8px",
+                  textAlign: "center",
+                }}
+              >
+                :
+              </td>
+              <td
+                colSpan={4}
+                style={{
+                  border: "1px solid #000",
+                  padding: "8px",
+                }}
+              >
+                {payroll.deductions !== null && payroll.deductions > 0
+                  ? `DEDUCT SAR ${payroll.deductions.toFixed(2)} FOR ADVANCE/LOAN`
+                  : ""}
               </td>
             </tr>
           </tbody>
@@ -927,8 +972,8 @@ const EmployeePayroll = () => {
             marginTop: "15px",
           }}
         >
-          Note : This is system generated payslip and does not require
-          signatures or stamps.
+          Note : This is system generated payslip for reference purposes only.
+          Please contact HR.
         </div>
       </div>
     );

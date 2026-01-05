@@ -117,10 +117,12 @@ const AddCandidateModal = ({
         .map((name) => name.trim())
         .join(" ");
 
-      const fullPhoneNumber = phoneUtils.formatWithCountryCode(
-        countryCode,
-        phoneNumber
-      );
+      // Clean phone number - remove country code if present, store number alone
+      const cleanPhone = phoneNumber ? phoneNumber.replace(/^\+/, "").replace(/\D/g, "") : "";
+      // Remove country code from phone if it starts with it
+      const phoneWithoutCode = cleanPhone.startsWith(countryCode) 
+        ? cleanPhone.slice(countryCode.length) 
+        : cleanPhone;
 
       const createPayload = {
         ...payload,
@@ -128,7 +130,8 @@ const AddCandidateModal = ({
         middleName: middleName?.trim() || "",
         lastName: lastName?.trim(),
         fullName,
-        phone: fullPhoneNumber,
+        phone: phoneWithoutCode, // Phone number WITHOUT country code
+        phoneCountryCode: countryCode || "91", // Country code sent separately
         role: "candidate",
       };
 

@@ -26,6 +26,7 @@ import {
   message,
   DatePicker,
   Checkbox,
+  Select,
 } from "antd";
 import {
   SearchOutlined,
@@ -48,6 +49,7 @@ import {
   useGetPipelineCompletedCandidateByIdQuery,
   useRejectCandidateFromStageMutation,
 } from "../../Slices/Recruiter/RecruiterApis"; // Update this path
+import { useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 import { debounce } from "lodash";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
@@ -127,6 +129,13 @@ const CompletedCandidates = () => {
 
   const [rejectCandidateFromStage, { isLoading: isRejecting }] =
     useRejectCandidateFromStageMutation();
+
+  // Fetch projects for project selection
+  const { data: projectsData } = useGetProjectsQuery({ 
+    page: 1, 
+    pageSize: 1000 
+  });
+  const projects = projectsData?.allProjects || [];
 
   React.useEffect(() => {
     if (apiData?.total) {
@@ -638,6 +647,12 @@ const CompletedCandidates = () => {
               type="default"
               onClick={() => {
                 setCandidateToConvert(record);
+                // Get project from work order if available
+                const workOrderProject = record.workOrder?.project;
+                const projectId = typeof workOrderProject === "object" 
+                  ? workOrderProject._id 
+                  : workOrderProject || "";
+
                 convertForm.setFieldsValue({
                   fullName: record.user?.fullName || "",
                   dateOfJoining: null,
@@ -655,6 +670,7 @@ const CompletedCandidates = () => {
                   employeeGroup: "",
                   reportingAndDocumentation: "",
                   employmentType: "",
+                  project: projectId,
                 });
                 setConvertModalVisible(true);
               }}
@@ -884,6 +900,8 @@ const CompletedCandidates = () => {
                 assetAllocation: values.assetAllocation
                   ? values.assetAllocation.split(",").map((item) => item.trim())
                   : [],
+                // Include project if provided, otherwise use work order project
+                project: values.project || candidateToConvert.workOrder?.project?._id || candidateToConvert.workOrder?.project || null,
               };
 
               await convertEmployee(payload).unwrap();
@@ -1086,6 +1104,34 @@ const CompletedCandidates = () => {
               <Col xs={24} sm={24} md={12}>
                 <Form.Item label="Sponsor Name" name="sponsorName">
                   <Input placeholder="Enter sponsor name" maxLength={100} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 8]}>
+              <Col xs={24} sm={24} md={12}>
+                <Form.Item 
+                  label="Project" 
+                  name="project"
+                  tooltip="Project will be automatically assigned from work order, but you can change it if needed"
+                >
+                  <Select
+                    placeholder="Select project"
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                        input.toLowerCase()
+                      )
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    {projects.map((project) => (
+                      <Select.Option key={project._id} value={project._id}>
+                        {project.name} {project.prefix && `(${project.prefix})`}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>

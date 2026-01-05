@@ -44,6 +44,7 @@ import {
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import { NotificationModal } from "../../Components/NotificationModal";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -52,6 +53,7 @@ const { TextArea } = Input;
 const { TabPane } = Tabs;
 
 const PendingCandidates = ({ jobId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -178,10 +180,53 @@ const PendingCandidates = ({ jobId }) => {
   };
 
   const handleStatusUpdate = async (newStatus) => {
-    if (!selectedCandidate) return;
+    if (!selectedCandidate) {
+      enqueueSnackbar("Please select a candidate first", {
+        variant: "warning",
+        autoHideDuration: 3000,
+      });
+      return;
+    }
 
-    // Show pipeline selection modal for screening status
+    // Check for mandatory documents when moving to "screening" from "in-pending"
     if (newStatus === "screening") {
+      const workOrderDocs = selectedCandidate.workOrderDocuments || [];
+      const uploadedDocs = selectedCandidate.uploadedDocuments || [];
+      
+      const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+      
+      if (mandatoryDocs.length > 0) {
+        const uploadedDocNames = uploadedDocs.map((doc) =>
+          (doc.documentName || doc.fileName || "").toLowerCase().trim()
+        );
+        
+        const missingMandatoryDocs = mandatoryDocs.filter((doc) => {
+          const docName = (doc.name || "").toLowerCase().trim();
+          return !uploadedDocNames.some((uploadedName) => 
+            uploadedName === docName || uploadedName.includes(docName) || docName.includes(uploadedName)
+          );
+        });
+        
+        if (missingMandatoryDocs.length > 0) {
+          const missingDocNames = missingMandatoryDocs.map((doc) => doc.name || "Unknown Document").join(", ");
+          
+          // Show snackbar alert with missing documents
+          enqueueSnackbar(
+            `${selectedCandidate.fullName} cannot be moved to screening. Missing mandatory documents: ${missingDocNames}`,
+            {
+              variant: "error",
+              autoHideDuration: 6000,
+              anchorOrigin: {
+                vertical: "top",
+                horizontal: "right",
+              },
+            }
+          );
+          return;
+        }
+      }
+      
+      // Show pipeline selection modal for screening status
       setPendingStatusUpdate(newStatus);
       setSelectedPipelineForUpdate(selectedCandidate.tagPipelineId || null);
       setIsPipelineModalVisible(true);
@@ -207,6 +252,43 @@ const PendingCandidates = ({ jobId }) => {
 
   // Add new function to update status with pipeline
   const updateStatusWithPipeline = async (candidate, newStatus, pipelineId) => {
+    // Check for mandatory documents when moving to "screening" from "in-pending"
+    if (newStatus === "screening") {
+      const workOrderDocs = candidate.workOrderDocuments || [];
+      const uploadedDocs = candidate.uploadedDocuments || [];
+      
+      const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+      if (mandatoryDocs.length > 0) {
+        const uploadedDocNames = uploadedDocs.map((doc) =>
+          (doc.documentName || doc.fileName || "").toLowerCase().trim()
+        );
+        const missingMandatoryDocs = mandatoryDocs.filter((doc) => {
+          const docName = (doc.name || "").toLowerCase().trim();
+          return !uploadedDocNames.some((uploadedName) => 
+            uploadedName === docName || uploadedName.includes(docName) || docName.includes(uploadedName)
+          );
+        });
+        
+        if (missingMandatoryDocs.length > 0) {
+          const missingDocNames = missingMandatoryDocs.map((doc) => doc.name || "Unknown Document").join(", ");
+          
+          // Show snackbar alert with missing documents
+          enqueueSnackbar(
+            `${candidate.fullName} cannot be moved to screening. Missing mandatory documents: ${missingDocNames}`,
+            {
+              variant: "error",
+              autoHideDuration: 6000,
+              anchorOrigin: {
+                vertical: "top",
+                horizontal: "right",
+              },
+            }
+          );
+          return;
+        }
+      }
+    }
+    
     try {
       await moveCandidateStatus({
         id: candidate.applicationId,
@@ -253,6 +335,60 @@ const PendingCandidates = ({ jobId }) => {
     if (selectedCandidates.length === 0) {
       message.warning("Please select at least one candidate");
       return;
+    }
+
+    // Check for mandatory documents when moving to "screening" from "in-pending"
+    if (newStatus === "screening") {
+      const candidatesToCheck = selectedCandidates
+        .map((candidateId) => allCandidates.find((c) => c._id === candidateId))
+        .filter((c) => c !== undefined);
+
+      // Check each candidate for missing mandatory documents
+      const candidatesWithMissingDocs = [];
+      for (const candidate of candidatesToCheck) {
+        const workOrderDocs = candidate.workOrderDocuments || [];
+        const uploadedDocs = candidate.uploadedDocuments || [];
+        
+        const mandatoryDocs = workOrderDocs.filter((doc) => doc.isMandatory === true);
+        if (mandatoryDocs.length > 0) {
+          const uploadedDocNames = uploadedDocs.map((doc) =>
+            doc.documentName?.toLowerCase()
+          );
+          const missingMandatoryDocs = mandatoryDocs.filter(
+            (doc) => !uploadedDocNames.includes(doc.name?.toLowerCase())
+          );
+          
+          if (missingMandatoryDocs.length > 0) {
+            candidatesWithMissingDocs.push({
+              candidate,
+              missingDocs: missingMandatoryDocs,
+            });
+          }
+        }
+      }
+
+      // If any candidates have missing mandatory documents, prevent the move
+      if (candidatesWithMissingDocs.length > 0) {
+        // Build detailed message for snackbar
+        const candidatesInfo = candidatesWithMissingDocs.map((item) => {
+          const missingDocNames = item.missingDocs.map((doc) => doc.name || "Unknown Document").join(", ");
+          return `${item.candidate.fullName}: ${missingDocNames}`;
+        }).join("; ");
+        
+        // Show snackbar alert with missing documents
+        enqueueSnackbar(
+          `Cannot move ${candidatesWithMissingDocs.length} candidate(s) to screening. Missing mandatory documents: ${candidatesInfo}`,
+          {
+            variant: "error",
+            autoHideDuration: 8000,
+            anchorOrigin: {
+              vertical: "top",
+              horizontal: "right",
+            },
+          }
+        );
+        return;
+      }
     }
 
     setIsBulkMoving(true);
@@ -822,8 +958,12 @@ const PendingCandidates = ({ jobId }) => {
                 )}
                 <Button
                   type="primary"
-                  onClick={() => handleStatusUpdate("screening")}
+                  onClick={() => {
+                    console.log("Move to Screening button clicked");
+                    handleStatusUpdate("screening");
+                  }}
                   style={{ backgroundColor: "#da2c46" }}
+                  loading={isUpdatingStatus}
                 >
                   Move to Screening
                 </Button>

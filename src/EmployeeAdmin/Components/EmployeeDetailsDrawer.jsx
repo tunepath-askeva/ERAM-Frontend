@@ -460,10 +460,10 @@ const EmployeeDetailsDrawer = ({
                           label="Plant ID"
                           value={employee.employmentDetails?.plantId}
                         />
-                        <InfoItem
+                        {/* <InfoItem
                           label="Work Order ID"
                           value={employee.employmentDetails?.workorderId}
-                        />
+                        /> */}
                         <InfoItem
                           label="External Employee No"
                           value={employee.employmentDetails?.externalEmpNo}

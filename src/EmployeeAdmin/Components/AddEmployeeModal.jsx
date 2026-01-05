@@ -1,12 +1,18 @@
 import React, { useState } from "react";
-import { Modal, Input, message, Form, Checkbox, DatePicker } from "antd";
+import { Modal, Input, message, Form, Checkbox, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 import PhoneInput from "../../Global/PhoneInput";
 import { useSnackbar } from "notistack";
+import { useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 
 const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
   const [form] = Form.useForm();
   const { enqueueSnackbar } = useSnackbar();
+  const { data: projectsData } = useGetProjectsQuery({ 
+    page: 1, 
+    pageSize: 1000 
+  });
+  const projects = projectsData?.allProjects || [];
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -72,6 +78,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
 
     basicAssets: "",
     reportingAndDocumentation: "",
+    project: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -167,13 +174,18 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
       if (!validateForm()) return;
 
       const phone = form.getFieldValue("phone");
-      const phoneCountryCode = form.getFieldValue("phoneCountryCode");
-      // Clean phone number - remove + prefix if present
-      const cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      const phoneCountryCode = form.getFieldValue("phoneCountryCode") || "91";
+      // Clean phone number - remove + prefix and non-digits
+      let cleanPhone = phone ? phone.replace(/^\+/, "").replace(/\D/g, "") : "";
+      
+      // Remove country code from phone if it starts with it
+      if (cleanPhone && cleanPhone.startsWith(phoneCountryCode)) {
+        cleanPhone = cleanPhone.slice(phoneCountryCode.length);
+      }
 
       const { confirmPassword, ...dataToSubmit } = formData;
-      dataToSubmit.phone = cleanPhone; // Phone number without country code
-      dataToSubmit.phoneCountryCode = phoneCountryCode || "91"; // Country code sent separately
+      dataToSubmit.phone = cleanPhone; // Phone number WITHOUT country code
+      dataToSubmit.phoneCountryCode = phoneCountryCode; // Country code sent separately
 
       // Convert assetAllocation string to array
       if (dataToSubmit.assetAllocation) {
@@ -244,6 +256,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
       firstTimeLogin: false,
       basicAssets: "",
       reportingAndDocumentation: "",
+      project: "",
     });
     onCancel();
   };
@@ -647,6 +660,37 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                     handleInputChange("basicAssets", e.target.value)
                   }
                 />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Project
+                </label>
+                <Select
+                  placeholder="Select project"
+                  value={formData.project}
+                  onChange={(value) => handleInputChange("project", value)}
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    (option?.children?.toString()?.toLowerCase() ?? "").includes(
+                      input.toLowerCase()
+                    )
+                  }
+                  style={{ width: "100%" }}
+                >
+                  {projects.map((project) => (
+                    <Select.Option key={project._id} value={project._id}>
+                      {project.name} {project.prefix && `(${project.prefix})`}
+                    </Select.Option>
+                  ))}
+                </Select>
               </div>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>

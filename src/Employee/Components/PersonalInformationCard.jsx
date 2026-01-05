@@ -92,12 +92,17 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
       // Explicitly get phoneCountryCode from form to ensure it's included
       const phoneCountryCode = form.getFieldValue("phoneCountryCode") || values.phoneCountryCode || "91";
       const phoneNumber = values.phone || "";
-      const cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      let cleanPhoneNumber = phoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      
+      // Remove country code from phone if it starts with it
+      if (cleanPhoneNumber && cleanPhoneNumber.startsWith(phoneCountryCode)) {
+        cleanPhoneNumber = cleanPhoneNumber.slice(phoneCountryCode.length);
+      }
 
       const submitData = {
         ...values,
-        phone: cleanPhoneNumber, // Phone number without country code
-        phoneCountryCode: phoneCountryCode, // Country code sent separately - explicitly included
+        phone: cleanPhoneNumber, // Phone number WITHOUT country code
+        phoneCountryCode: phoneCountryCode, // Country code sent separately
         imageFile: userData.imageFile, // Pass the file to parent
       };
       
