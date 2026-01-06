@@ -16,21 +16,24 @@ export const NotificationModal = ({
   candidateName = "candidate",
 }) => {
   const [selectedMethods, setSelectedMethods] = useState([]);
+  const [customMessage, setCustomMessage] = useState("");
 
   const handleSend = () => {
     if (selectedMethods.length === 0) {
       return; // Let parent handle validation message
     }
     if (onSend) {
-      onSend(selectedMethods);
+      onSend(selectedMethods, customMessage);
     }
     // Reset on successful send
     setSelectedMethods([]);
+    setCustomMessage("");
     onClose();
   };
 
   const handleCancel = () => {
     setSelectedMethods([]);
+    setCustomMessage("");
     onClose();
   };
 
@@ -98,7 +101,7 @@ export const NotificationModal = ({
                   marginLeft: "24px",
                 }}
               >
-                (Only configured message template will be sent)
+                (You can add a custom message below)
               </div>
             </Checkbox>
             <Checkbox
@@ -122,6 +125,22 @@ export const NotificationModal = ({
             </Checkbox>
           </Space>
         </Checkbox.Group>
+
+        {selectedMethods.includes("whatsapp") && (
+          <div style={{ marginTop: "20px" }}>
+            <p style={{ marginBottom: "8px", fontWeight: 500 }}>
+              Custom Message for WhatsApp:
+            </p>
+            <TextArea
+              rows={4}
+              placeholder="Enter your custom message for WhatsApp notification..."
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              maxLength={1000}
+              showCount
+            />
+          </div>
+        )}
       </div>
     </Modal>
   );

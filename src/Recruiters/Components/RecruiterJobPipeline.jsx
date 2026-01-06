@@ -593,7 +593,7 @@ const RecruiterJobPipeline = () => {
     });
   };
 
-  const handleSendNotification = async (methods) => {
+  const handleSendNotification = async (methods, customMessage = "") => {
     const workOrderId = apiData?.data?.workOrder?._id;
     const userId = apiData?.data?.user?._id;
     const candidateEmail = apiData?.data?.user?.email;
@@ -628,6 +628,7 @@ const RecruiterJobPipeline = () => {
           userId,
           methods: stageMethods,
           stageId: currentStageId,
+          customMessage: customMessage || undefined,
         };
 
         await sendStageNotification(notificationData).unwrap();

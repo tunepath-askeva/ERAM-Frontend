@@ -41,6 +41,7 @@ import {
   useGetPendingCandidatesQuery,
   useNotifyCandidateMutation,
   useGetPipelinesQuery,
+  useSendCandidateWhatsAppNotificationMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import { NotificationModal } from "../../Components/NotificationModal";
@@ -81,6 +82,8 @@ const PendingCandidates = ({ jobId }) => {
     useMoveCandidateStatusMutation();
   const [notifyCandidate, { isLoading: isNotifying }] =
     useNotifyCandidateMutation();
+  const [sendWhatsAppNotification, { isLoading: isWhatsAppLoading }] =
+    useSendCandidateWhatsAppNotificationMutation();
 
   const {
     data: pendingData,
@@ -422,10 +425,24 @@ const PendingCandidates = ({ jobId }) => {
     setIsNotificationModalVisible(true);
   };
 
-  const handleSendNotification = async (selectedMethods) => {
+  const handleSendNotification = async (selectedMethods, customMessage = "") => {
     if (!selectedCandidate) return;
 
-    // Only handle 'profile' method for now
+    // Handle WhatsApp notification
+    if (selectedMethods.includes("whatsapp")) {
+      try {
+        await sendWhatsAppNotification({
+          userId: selectedCandidate._id,
+          message: customMessage || "Please check your application status.",
+        }).unwrap();
+        message.success("WhatsApp notification sent successfully");
+      } catch (error) {
+        console.error("Failed to send WhatsApp notification:", error);
+        message.error(error.data?.message || "Failed to send WhatsApp notification");
+      }
+    }
+
+    // Handle profile notification
     if (selectedMethods.includes("profile")) {
       try {
         await notifyCandidate({
@@ -439,8 +456,11 @@ const PendingCandidates = ({ jobId }) => {
         console.error("Failed to send notification:", error);
         message.error(error.data?.message || "Failed to send notification");
       }
-    } else {
-      message.info("Email and WhatsApp notifications will be implemented soon");
+    }
+
+    // Handle email notification
+    if (selectedMethods.includes("email")) {
+      message.info("Email notifications will be implemented soon");
     }
   };
 
