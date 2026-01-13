@@ -36,10 +36,15 @@ const DocumentsCertificatesCard = ({
   };
 
   const handleDownload = (fileUrl, fileName) => {
-    const downloadUrl = fileUrl.replace(
-      "/raw/upload/",
-      "/raw/upload/fl_attachment/"
-    );
+    // Cloudinary-specific: add fl_attachment parameter to force download
+    // For Digital Ocean Spaces, use the URL directly
+    let downloadUrl = fileUrl;
+    if (fileUrl.includes("cloudinary.com") && fileUrl.includes("/raw/upload/")) {
+      downloadUrl = fileUrl.replace(
+        "/raw/upload/",
+        "/raw/upload/fl_attachment/"
+      );
+    }
 
     const link = document.createElement("a");
     link.href = downloadUrl;
