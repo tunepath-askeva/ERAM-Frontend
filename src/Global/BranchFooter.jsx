@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   Layout,
   Row,
@@ -35,6 +35,8 @@ const { Search } = Input;
 const BranchFooter = ({ currentBranch }) => {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
+  const params = useParams();
+  const branchCode = params.branchCode;
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 100);
@@ -290,17 +292,28 @@ const BranchFooter = ({ currentBranch }) => {
                   { label: "Apply / Login", path: "/branch-login" },
                   { label: "Register", path: "/branch-register" },
                 ].map((item) => {
-                  const isActive =
-                    window.location.pathname === item.path ||
-                    (item.label === "Home" &&
-                      window.location.pathname === "/home") ||
-                    (item.label === "Apply / Login" &&
-                      window.location.pathname.includes("branch-login"));
+                  const pathWithParams = branchCode 
+                    ? `/${encodeURIComponent(branchCode)}${item.path}`
+                    : item.path;
+                  
+                  // Check if current path matches (with or without branch code)
+                  const currentPath = window.location.pathname;
+                  const isActive = 
+                    currentPath === pathWithParams ||
+                    currentPath === item.path ||
+                    (item.label === "Home" && (
+                      currentPath === "/home" || 
+                      currentPath.endsWith("/home")
+                    )) ||
+                    (item.label === "Apply / Login" && 
+                      currentPath.includes("branch-login")) ||
+                    (item.label === "Register" && 
+                      currentPath.includes("branch-register"));
 
                   return (
                     <Link
                       key={item.label}
-                      to={item.path}
+                      to={pathWithParams}
                       style={{
                         ...linkStyle,
                         textDecoration: isActive ? "underline" : "none",

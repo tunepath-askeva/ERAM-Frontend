@@ -21,7 +21,8 @@ import {
   Breadcrumb,
   Button,
 } from "antd";
-import { CheckCircleOutlined, LeftOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, LeftOutlined, ShareAltOutlined } from "@ant-design/icons";
+import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import SourcedCandidates from "./SourcedCandidates";
 import ScreeningCandidates from "./ScreeningCandidates";
@@ -41,10 +42,12 @@ const { TextArea } = Input;
 const RecruiterViewJob = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const { data, error, isLoading } = useGetRecruiterJobIdQuery(id);
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
   );
+  const recruiterInfo = useSelector((state) => state.userAuth.recruiterInfo);
 
   if (isLoading) {
     return (
@@ -70,6 +73,55 @@ const RecruiterViewJob = () => {
 
   const hasPermission = (permissionKey) => {
     return recruiterPermissions.includes(permissionKey);
+  };
+
+  const handleShareJob = () => {
+    if (!workOrder?.jobCode) {
+      enqueueSnackbar("Job code is missing. Cannot generate share link.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    // Get branchCode from workOrder.branch if populated (should be populated now after backend update)
+    let branchCode = workOrder?.branch?.branchCode;
+
+    // If branch is not populated but we have branch as an object with _id, it might not be populated
+    // Try to get from recruiter's branch info as fallback
+    if (!branchCode && recruiterInfo?.branch?.branchCode) {
+      branchCode = recruiterInfo.branch.branchCode;
+    }
+
+    // Last resort: if branch is just an ID string, we can't get branchCode without fetching
+    // Show helpful error message
+    if (!branchCode) {
+      enqueueSnackbar(
+        "Branch code is missing. The job may not be associated with a branch. Please contact support.",
+        {
+          variant: "error",
+        }
+      );
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(branchCode)}/${encodeURIComponent(workOrder.jobCode)}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      enqueueSnackbar("Job link copied to clipboard!", {
+        variant: "success",
+      });
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      enqueueSnackbar("Job link copied to clipboard!", {
+        variant: "success",
+      });
+    });
   };
 
   const renderJobOverview = () => (
@@ -930,6 +982,9 @@ const RecruiterViewJob = () => {
             padding: "16px",
             backgroundColor: "#fff",
             borderBottom: "1px solid #f0f0f0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
           <Title
@@ -938,6 +993,17 @@ const RecruiterViewJob = () => {
           >
             Job Details - {workOrder.title}
           </Title>
+          <Button
+            type="default"
+            icon={<ShareAltOutlined />}
+            onClick={handleShareJob}
+            style={{
+              borderColor: "#da2c46",
+              color: "#da2c46",
+            }}
+          >
+            Share Job
+          </Button>
         </div>
 
         {/* Content with Tabs */}

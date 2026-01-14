@@ -18,7 +18,7 @@ import {
   EyeTwoTone,
   MailOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
@@ -29,6 +29,8 @@ const { Title, Text, Link } = Typography;
 
 const LoginSection = ({ currentBranch }) => {
   const navigate = useNavigate();
+  const params = useParams();
+  const branchCode = params.branchCode;
 
   const dispatch = useDispatch();
   const [loginUser] = useLoginUserMutation();
@@ -79,7 +81,7 @@ const LoginSection = ({ currentBranch }) => {
       // BUILD PAYLOAD
       const loginPayload = {
         password: values.password,
-        domain: window.location.hostname,
+        ...(branchCode ? { branchCode } : { domain: window.location.hostname }),
       };
 
       if (isEmail) {
@@ -123,6 +125,14 @@ const LoginSection = ({ currentBranch }) => {
 
       // ✅ store in Redux + localStorage
       dispatch(setUserCredentials(payload));
+
+      // Check if there's a redirect path stored (e.g., from shared job link)
+      const redirectPath = sessionStorage.getItem("redirectAfterAuth");
+      if (redirectPath && userRole === "candidate") {
+        sessionStorage.removeItem("redirectAfterAuth");
+        navigate(redirectPath);
+        return;
+      }
 
       // ✅ Navigate by role
       switch (userRole) {
@@ -330,10 +340,13 @@ const LoginSection = ({ currentBranch }) => {
 
           {/* ✅ Sign up section */}
           <div style={{ textAlign: "center" }}>
-            <Text>Don’t have an account? </Text>
+            <Text>Don't have an account? </Text>
             <Link
               style={{ color: "#da2c46", fontWeight: "500" }}
-              onClick={() => navigate("/branch-register")}
+              onClick={() => {
+                const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+                navigate(`${pathPrefix}/branch-register`);
+              }}
             >
               Sign up here
             </Link>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Layout,
   Row,
@@ -23,6 +23,7 @@ const { Content } = Layout;
 
 const BranchHome = () => {
   const navigate = useNavigate();
+  const params = useParams();
 
   const { currentBranch, isLoading, error, domain } = useBranch();
 
@@ -157,7 +158,7 @@ const BranchHome = () => {
           >
             <Alert
               message="Branch Not Found"
-              description={`No branch is configured for this domain: ${window.location.hostname}`}
+              description={`No branch is configured for ${params.branchCode ? `branch code: ${params.branchCode}` : `domain: ${window.location.hostname}`}`}
               type="warning"
               showIcon
               action={

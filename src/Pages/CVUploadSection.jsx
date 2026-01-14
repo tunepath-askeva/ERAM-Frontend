@@ -9,6 +9,7 @@ import {
   UserOutlined,
   MailOutlined,
 } from "@ant-design/icons";
+import { useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useSubmitCVApplicationMutation } from "../Slices/Users/UserApis";
 
@@ -16,6 +17,8 @@ const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
 const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
+  const params = useParams();
+  const branchCode = params.branchCode;
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -115,7 +118,11 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
     uploadedFiles.forEach((file, index) => {
       formData.append(`file_${index}`, file.originFileObj);
     });
-    formData.append("domain", window.location.hostname);
+    if (branchCode) {
+      formData.append("branchCode", branchCode);
+    } else {
+      formData.append("domain", window.location.hostname);
+    }
     formData.append("firstName", firstName.trim());
     formData.append("lastName", lastName.trim());
     formData.append("applicantName", applicantName.trim());

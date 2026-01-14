@@ -194,16 +194,55 @@ const JobDetailsPage = () => {
   };
 
   const handleShareJob = () => {
+    if (!job?.jobCode) {
+      enqueueSnackbar("Job code is missing. Cannot generate share link.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    // Get branchCode from job.branch if populated, or try to get from URL/context
+    const branchCode = job?.branch?.branchCode || 
+                      (window.location.pathname.includes('/') ? 
+                        window.location.pathname.split('/')[1] : null);
+
+    if (!branchCode) {
+      enqueueSnackbar("Branch code is missing. Cannot generate share link.", {
+        variant: "error",
+      });
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(branchCode)}/${encodeURIComponent(job.jobCode)}`;
+    
     if (navigator.share) {
       navigator.share({
         title: job?.title,
         text: `Check out this job opportunity: ${job?.title}`,
-        url: window.location.href,
+        url: shareUrl,
+      }).catch(() => {
+        // Fallback to clipboard if share fails
+        navigator.clipboard.writeText(shareUrl);
+        enqueueSnackbar("Job link copied to clipboard!", {
+          variant: "success",
+        });
       });
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      enqueueSnackbar("Job URL copied to clipboard!", {
-        variant: "success",
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        enqueueSnackbar("Job link copied to clipboard!", {
+          variant: "success",
+        });
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        enqueueSnackbar("Job link copied to clipboard!", {
+          variant: "success",
+        });
       });
     }
   };

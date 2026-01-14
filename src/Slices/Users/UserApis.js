@@ -394,27 +394,77 @@ export const userApi = createApi({
     }),
 
     getBranchByDomain: builder.query({
-      query: (domain) => ({
-        url: `/branch-details?domain=${encodeURIComponent(domain)}`,
-        method: "GET",
-      }),
+      query: ({ domain, branchCode }) => {
+        const params = new URLSearchParams();
+        if (domain) params.append("domain", domain);
+        if (branchCode) params.append("branchCode", branchCode);
+        return {
+          url: `/branch-details?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getBranchJobs: builder.query({
-      query: ({ domain, page = 1, limit = 12, search = "" }) => ({
-        url: `/branch-jobs?domain=${encodeURIComponent(
-          domain
-        )}&page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`,
-        method: "GET",
-      }),
+      query: ({ 
+        domain, 
+        branchCode, 
+        page = 1, 
+        limit = 12, 
+        search = "",
+        skills,
+        location,
+        salaryMin,
+        salaryMax,
+        experienceMin,
+        experienceMax,
+        workplace,
+        employmentType
+      }) => {
+        const params = new URLSearchParams();
+        if (domain) params.append("domain", domain);
+        if (branchCode) params.append("branchCode", branchCode);
+        params.append("page", page);
+        params.append("limit", limit);
+        if (search) params.append("search", search);
+        if (skills && skills.length > 0) {
+          if (Array.isArray(skills)) {
+            skills.forEach(skill => params.append("skills", skill));
+          } else {
+            params.append("skills", skills);
+          }
+        }
+        if (location) params.append("location", location);
+        if (salaryMin) params.append("salaryMin", salaryMin);
+        if (salaryMax) params.append("salaryMax", salaryMax);
+        if (experienceMin !== undefined && experienceMin !== null) params.append("experienceMin", experienceMin);
+        if (experienceMax !== undefined && experienceMax !== null) params.append("experienceMax", experienceMax);
+        if (workplace) params.append("workplace", workplace);
+        if (employmentType) params.append("employmentType", employmentType);
+        return {
+          url: `/branch-jobs?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     getBranchJobById: builder.query({
       query: (id) => `/branch-jobs/${id}`,
     }),
-    getTrendingSkills: builder.query({
-      query: (domain) => ({
-        url: `/trending-skills?domain=${encodeURIComponent(domain)}`,
+    getSharedJob: builder.query({
+      query: ({ branchCode, jobCode }) => ({
+        url: `/shared-job?branchCode=${encodeURIComponent(branchCode)}&jobCode=${encodeURIComponent(jobCode)}`,
         method: "GET",
       }),
+    }),
+    getTrendingSkills: builder.query({
+      query: ({ domain, branchCode }) => {
+        const params = new URLSearchParams();
+        if (domain) params.append("domain", domain);
+        if (branchCode) params.append("branchCode", branchCode);
+        return {
+          url: `/trending-skills?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
     submitCVApplication: builder.mutation({
       query: (formData) => ({
@@ -468,6 +518,7 @@ export const {
   useGetBranchByIdQuery,
   useGetBranchJobsQuery,
   useGetBranchJobByIdQuery,
+  useGetSharedJobQuery,
   useSubmitCVApplicationMutation,
   useGetBranchByDomainQuery,
   useGetTrendingSkillsQuery,

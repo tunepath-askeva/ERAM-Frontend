@@ -10,7 +10,7 @@ import {
   BankOutlined,
   LoginOutlined,
 } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -20,6 +20,8 @@ const BranchHeader = ({ currentBranch }) => {
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
+  const branchCode = params.branchCode;
 
   useEffect(() => {
     const handleResize = () => {
@@ -56,14 +58,15 @@ const BranchHeader = ({ currentBranch }) => {
   ];
 
   const handleMenuClick = (e) => {
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
     if (e.key === "home") {
-      navigate("/home");
+      navigate(`${pathPrefix}/home`);
     }
     if (e.key === "branch-login") {
-      navigate("/branch-login");
+      navigate(`${pathPrefix}/branch-login`);
     }
     if (e.key === "branch-register") {
-      navigate("/branch-register");
+      navigate(`${pathPrefix}/branch-register`);
     }
   };
 
@@ -78,15 +81,18 @@ const BranchHeader = ({ currentBranch }) => {
   };
 
   const handleLogin = () => {
-    navigate("/branch-login");
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+    navigate(`${pathPrefix}/branch-login`);
   };
 
   const handleRegister = () => {
-    navigate("/branch-register");
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+    navigate(`${pathPrefix}/branch-register`);
   };
 
   const handleLogoClick = () => {
-    navigate("/home");
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+    navigate(`${pathPrefix}/home`);
   };
 
   const getLogoSrc = () => {

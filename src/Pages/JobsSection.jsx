@@ -16,6 +16,12 @@ import {
   Alert,
   Modal,
   Pagination,
+  Drawer,
+  Select,
+  InputNumber,
+  Checkbox,
+  Collapse,
+  AutoComplete,
 } from "antd";
 import {
   SearchOutlined,
@@ -33,18 +39,22 @@ import {
   ShareAltOutlined,
   FireOutlined,
   TrophyOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import {
   useGetBranchJobsQuery,
   useGetTrendingSkillsQuery,
 } from "../Slices/Users/UserApis.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
 import CVUploadSection from "./CVUploadSection.jsx";
 import SkeletonLoader from "../Global/SkeletonLoader.jsx";
 import JobDetailsModal from "../Components/JobDetailsModa.jsx";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
+const { Panel } = Collapse;
+const { Option } = Select;
 
 const JOBS_PER_PAGE = 12;
 
@@ -72,8 +82,37 @@ const JobsSection = ({ currentBranch }) => {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [detailsJobId, setDetailsJobId] = useState(null);
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false);
+  
+  // Applied filters (used in API call)
+  const [appliedFilters, setAppliedFilters] = useState({
+    skills: [],
+    location: "",
+    salaryMin: null,
+    salaryMax: null,
+    experienceMin: null,
+    experienceMax: null,
+    workplace: "",
+    employmentType: "",
+  });
+
+  // Temporary filters (used in drawer, applied on button click)
+  const [tempFilters, setTempFilters] = useState({
+    skills: [],
+    location: "",
+    salaryMin: null,
+    salaryMax: null,
+    experienceMin: null,
+    experienceMax: null,
+    workplace: "",
+    employmentType: "",
+  });
 
   const navigate = useNavigate();
+  const params = useParams();
+  const branchCode = params.branchCode;
+  const currentDomain = window.location.hostname;
+  const { enqueueSnackbar } = useSnackbar();
   const trendingSkillsRef = useRef(null);
   const trendingJobsRef = useRef(null);
 
@@ -86,14 +125,22 @@ const JobsSection = ({ currentBranch }) => {
     refetch: refetchJobs,
     isFetching,
   } = useGetBranchJobsQuery({
-    domain: window.location.hostname,
+    ...(branchCode ? { branchCode } : { domain: currentDomain }),
     page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
+    skills: appliedFilters.skills.length > 0 ? appliedFilters.skills : undefined,
+    location: appliedFilters.location || undefined,
+    salaryMin: appliedFilters.salaryMin || undefined,
+    salaryMax: appliedFilters.salaryMax || undefined,
+    experienceMin: appliedFilters.experienceMin !== null ? appliedFilters.experienceMin : undefined,
+    experienceMax: appliedFilters.experienceMax !== null ? appliedFilters.experienceMax : undefined,
+    workplace: appliedFilters.workplace || undefined,
+    employmentType: appliedFilters.employmentType || undefined,
   });
 
   const { data: skillsResponse } = useGetTrendingSkillsQuery(
-    window.location.hostname
+    branchCode ? { branchCode } : { domain: currentDomain }
   );
 
   const jobs = jobsResponse?.jobs || [];
@@ -117,6 +164,110 @@ const JobsSection = ({ currentBranch }) => {
       setCurrentPage(1);
     }
   }, [debouncedSearchTerm]);
+
+  // Reset to first page when applied filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    appliedFilters.skills,
+    appliedFilters.location,
+    appliedFilters.salaryMin,
+    appliedFilters.salaryMax,
+    appliedFilters.experienceMin,
+    appliedFilters.experienceMax,
+    appliedFilters.workplace,
+    appliedFilters.employmentType,
+  ]);
+
+  // Extract unique values from jobs for filter options
+  const uniqueLocations = useMemo(() => {
+    const locations = new Set();
+    jobs.forEach(job => {
+      if (job.officeLocation) locations.add(job.officeLocation);
+    });
+    return Array.from(locations).sort();
+  }, [jobs]);
+
+  const uniqueWorkplaces = useMemo(() => {
+    const workplaces = new Set();
+    jobs.forEach(job => {
+      if (job.workplace) workplaces.add(job.workplace);
+    });
+    return Array.from(workplaces).sort();
+  }, [jobs]);
+
+  const uniqueEmploymentTypes = useMemo(() => {
+    const types = new Set();
+    jobs.forEach(job => {
+      if (job.EmploymentType) types.add(job.EmploymentType);
+    });
+    return Array.from(types).sort();
+  }, [jobs]);
+
+  const allSkills = useMemo(() => {
+    const skillsSet = new Set();
+    // Add skills from current jobs
+    jobs.forEach(job => {
+      if (job.requiredSkills && Array.isArray(job.requiredSkills)) {
+        job.requiredSkills.forEach(skill => skillsSet.add(skill));
+      }
+    });
+    // Also add trending skills
+    if (apiTrendingSkills && Array.isArray(apiTrendingSkills)) {
+      apiTrendingSkills.forEach(skill => skillsSet.add(skill));
+    }
+    return Array.from(skillsSet).sort();
+  }, [jobs, apiTrendingSkills]);
+
+  // Filter handlers
+  const handleTempFilterChange = (key, value) => {
+    setTempFilters(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...tempFilters });
+    setCurrentPage(1);
+    setFilterDrawerVisible(false);
+  };
+
+  const handleClearFilters = () => {
+    const emptyFilters = {
+      skills: [],
+      location: "",
+      salaryMin: null,
+      salaryMax: null,
+      experienceMin: null,
+      experienceMax: null,
+      workplace: "",
+      employmentType: "",
+    };
+    setTempFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      appliedFilters.skills.length > 0 ||
+      appliedFilters.location ||
+      appliedFilters.salaryMin !== null ||
+      appliedFilters.salaryMax !== null ||
+      appliedFilters.experienceMin !== null ||
+      appliedFilters.experienceMax !== null ||
+      appliedFilters.workplace ||
+      appliedFilters.employmentType
+    );
+  };
+
+  // Sync tempFilters with appliedFilters when drawer opens
+  useEffect(() => {
+    if (filterDrawerVisible) {
+      setTempFilters({ ...appliedFilters });
+    }
+  }, [filterDrawerVisible]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -178,17 +329,54 @@ const JobsSection = ({ currentBranch }) => {
   };
 
   const handleJobClick = () => {
-    navigate("/branch-login");
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+    navigate(`${pathPrefix}/branch-login`);
   };
 
-  const openDetailsModal = (jobId) => {
-    setDetailsJobId(jobId);
-    setDetailsVisible(true);
+  const openDetailsModal = (job) => {
+    // Navigate to shared job page instead of showing modal
+    if (job.jobCode && branchCode) {
+      navigate(`/${encodeURIComponent(branchCode)}/${encodeURIComponent(job.jobCode)}`);
+    } else {
+      // Fallback to modal if jobCode or branchCode is missing
+      setDetailsJobId(job._id);
+      setDetailsVisible(true);
+    }
   };
 
   const closeDetailsModal = () => {
     setDetailsVisible(false);
     setDetailsJobId(null);
+  };
+
+  const handleShareJob = (e, job) => {
+    e.stopPropagation();
+    if (!job.jobCode || !branchCode) {
+      enqueueSnackbar("Job code or branch code is missing", {
+        variant: "error",
+      });
+      return;
+    }
+    
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(branchCode)}/${encodeURIComponent(job.jobCode)}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      enqueueSnackbar("Job link copied to clipboard!", {
+        variant: "success",
+      });
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      enqueueSnackbar("Job link copied to clipboard!", {
+        variant: "success",
+      });
+    });
   };
 
   const openCvModal = (jobId) => {
@@ -563,11 +751,28 @@ const JobsSection = ({ currentBranch }) => {
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                openDetailsModal(job._id);
+                openDetailsModal(job);
               }}
             >
               View Details
             </Button>
+
+            <Tooltip title="Share Job">
+              <Button
+                type="default"
+                icon={<ShareAltOutlined />}
+                style={{
+                  minWidth: "40px",
+                  borderRadius: "6px",
+                  height: "36px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                }}
+                onClick={(e) => handleShareJob(e, job)}
+              >
+                Share
+              </Button>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -848,9 +1053,17 @@ const JobsSection = ({ currentBranch }) => {
               <Button
                 type="text"
                 icon={<FilterOutlined />}
-                style={{ color: "#64748b" }}
+                style={{ 
+                  color: hasActiveFilters() ? "#da2c46" : "#64748b",
+                  fontWeight: hasActiveFilters() ? "600" : "normal"
+                }}
+                onClick={() => setFilterDrawerVisible(true)}
               >
-                Filter
+                Filter {hasActiveFilters() && `(${Object.values(appliedFilters).filter(v => 
+                  (Array.isArray(v) && v.length > 0) || 
+                  (typeof v === 'string' && v) || 
+                  (typeof v === 'number' && v !== null)
+                ).length})`}
               </Button>
             </div>
 
@@ -914,30 +1127,48 @@ const JobsSection = ({ currentBranch }) => {
           <Empty
             description={
               <span style={{ color: "#64748b" }}>
-                {searchTerm
-                  ? `No jobs found for "${searchTerm}"`
+                {searchTerm || hasActiveFilters()
+                  ? `No jobs found matching your ${searchTerm ? "search" : ""}${searchTerm && hasActiveFilters() ? " and " : ""}${hasActiveFilters() ? "filters" : ""}`
                   : "No job opportunities available at this time"}
               </span>
             }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{ paddingTop: "60px" }}
           >
-            {searchTerm && (
-              <Button
-                type="primary"
-                onClick={() => {
-                  setSearchTerm("");
-                  setCurrentPage(1);
-                }}
-                style={{
-                  background:
-                    "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-                  border: "none",
-                  borderRadius: "6px",
-                }}
-              >
-                Show All Jobs
-              </Button>
+            {(searchTerm || hasActiveFilters()) && (
+              <Space>
+                {searchTerm && (
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setCurrentPage(1);
+                    }}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                      border: "none",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    Clear Search
+                  </Button>
+                )}
+                {hasActiveFilters() && (
+                  <Button
+                    onClick={() => {
+                      handleClearFilters();
+                    }}
+                    style={{
+                      borderColor: "#da2c46",
+                      color: "#da2c46",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </Space>
             )}
           </Empty>
         )}
@@ -977,7 +1208,10 @@ const JobsSection = ({ currentBranch }) => {
             padding: "0 24px",
             height: "40px",
           }}
-          onClick={() => navigate(`/branch-login`)}
+          onClick={() => {
+            const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+            navigate(`${pathPrefix}/branch-login`);
+          }}
         >
           Submit Your Resume
         </Button>
@@ -1002,6 +1236,198 @@ const JobsSection = ({ currentBranch }) => {
         visible={detailsVisible}
         onClose={closeDetailsModal}
       />
+
+      {/* Filter Drawer */}
+      <Drawer
+        title={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Filter Jobs</span>
+            {hasActiveFilters() && (
+              <Button
+                type="link"
+                onClick={handleClearFilters}
+                style={{ padding: 0, color: "#da2c46" }}
+              >
+                Clear All
+              </Button>
+            )}
+          </div>
+        }
+        placement="right"
+        onClose={() => setFilterDrawerVisible(false)}
+        open={filterDrawerVisible}
+        width={400}
+        bodyStyle={{ paddingBottom: 100 }}
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          {/* Skills Filter - Typeable */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Skills
+            </Text>
+            <Select
+              mode="tags"
+              placeholder="Type or select skills"
+              style={{ width: "100%" }}
+              value={tempFilters.skills}
+              onChange={(value) => handleTempFilterChange("skills", value)}
+              options={allSkills.map(skill => ({ label: skill, value: skill }))}
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+              showSearch
+              allowClear
+            />
+          </div>
+
+          {/* Location Filter - Typeable */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Location
+            </Text>
+            <AutoComplete
+              placeholder="Type location"
+              style={{ width: "100%" }}
+              value={tempFilters.location}
+              onChange={(value) => handleTempFilterChange("location", value)}
+              options={uniqueLocations.map(location => ({ label: location, value: location }))}
+              filterOption={(input, option) =>
+                (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+              allowClear
+            />
+          </div>
+
+          {/* Salary Range Filter */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Salary Range (SAR)
+            </Text>
+            <Row gutter={8}>
+              <Col span={12}>
+                <InputNumber
+                  placeholder="Min"
+                  style={{ width: "100%" }}
+                  value={tempFilters.salaryMin}
+                  onChange={(value) => handleTempFilterChange("salaryMin", value)}
+                  min={0}
+                  formatter={(value) => value ? `SAR ${value}` : ''}
+                  parser={(value) => value.replace(/SAR\s?/g, '')}
+                />
+              </Col>
+              <Col span={12}>
+                <InputNumber
+                  placeholder="Max"
+                  style={{ width: "100%" }}
+                  value={tempFilters.salaryMax}
+                  onChange={(value) => handleTempFilterChange("salaryMax", value)}
+                  min={0}
+                  formatter={(value) => value ? `SAR ${value}` : ''}
+                  parser={(value) => value.replace(/SAR\s?/g, '')}
+                />
+              </Col>
+            </Row>
+          </div>
+
+          {/* Experience Range Filter */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Experience (Years)
+            </Text>
+            <Row gutter={8}>
+              <Col span={12}>
+                <InputNumber
+                  placeholder="Min"
+                  style={{ width: "100%" }}
+                  value={tempFilters.experienceMin}
+                  onChange={(value) => handleTempFilterChange("experienceMin", value)}
+                  min={0}
+                  max={50}
+                />
+              </Col>
+              <Col span={12}>
+                <InputNumber
+                  placeholder="Max"
+                  style={{ width: "100%" }}
+                  value={tempFilters.experienceMax}
+                  onChange={(value) => handleTempFilterChange("experienceMax", value)}
+                  min={0}
+                  max={50}
+                />
+              </Col>
+            </Row>
+          </div>
+
+          {/* Workplace Filter */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Workplace
+            </Text>
+            <Select
+              placeholder="Select workplace"
+              style={{ width: "100%" }}
+              value={tempFilters.workplace || undefined}
+              onChange={(value) => handleTempFilterChange("workplace", value)}
+              allowClear
+            >
+              <Option value="on-site">On-site</Option>
+              <Option value="hybrid">Hybrid</Option>
+              <Option value="remote">Remote</Option>
+              <Option value="offshore">Offshore</Option>
+            </Select>
+          </div>
+
+          {/* Employment Type Filter */}
+          <div>
+            <Text strong style={{ display: "block", marginBottom: "8px" }}>
+              Employment Type
+            </Text>
+            <Select
+              placeholder="Select employment type"
+              style={{ width: "100%" }}
+              value={tempFilters.employmentType || undefined}
+              onChange={(value) => handleTempFilterChange("employmentType", value)}
+              allowClear
+            >
+              <Option value="full-time">Full-time</Option>
+              <Option value="part-time">Part-time</Option>
+              <Option value="contract">Contract</Option>
+              <Option value="internship">Internship</Option>
+            </Select>
+          </div>
+        </Space>
+
+        <div style={{ 
+          position: "absolute", 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          padding: "16px", 
+          borderTop: "1px solid #f0f0f0",
+          background: "#fff"
+        }}>
+          <Space style={{ width: "100%", justifyContent: "space-between" }}>
+            <Button onClick={handleClearFilters}>
+              Clear All
+            </Button>
+            <Space>
+              <Button onClick={() => setFilterDrawerVisible(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary"
+                onClick={handleApplyFilters}
+                style={{
+                  background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                  border: "none",
+                }}
+              >
+                Apply Filters
+              </Button>
+            </Space>
+          </Space>
+        </div>
+      </Drawer>
 
       <style jsx>
         {`

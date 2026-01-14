@@ -100,6 +100,7 @@ import BranchHome from "./Pages/BranchHome";
 import BranchLogin from "./Pages/BranchLogin";
 import BranchRegister from "./Pages/BranchRegister";
 import BranchNotFound from "./Pages/BranchNotFound";
+import SharedJobPage from "./Pages/SharedJobPage";
 import { Navigate } from "react-router-dom";
 import LowLevelCandidates from "./Recruiters/Pages/LowLevelCandidates";
 import RecruiterPipelines from "./Recruiters/Pages/RecruiterPipelines";
@@ -129,17 +130,29 @@ const AppRoutes = () => {
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<Services />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/branches" element={<Branches />} />
+          {/* Branch code based routes */}
+          <Route path="/:branchCode/home" element={<BranchHome />} />
+          <Route path="/:branchCode/branch-login" element={<BranchLogin />} />
+          <Route path="/:branchCode/branch-register" element={<BranchRegister />} />
+          <Route path="/:branchCode/:jobCode" element={<SharedJobPage />} />
+          {/* Fallback routes for backward compatibility */}
           <Route path="/home" element={<BranchHome />} />
           <Route path="/branch-login" element={<BranchLogin />} />
           <Route path="/branch-register" element={<BranchRegister />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/branches" element={<Branches />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/404" element={<NotFound />} />
         </>
       ) : (
         <>
           <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* Branch code based routes */}
+          <Route path="/:branchCode/home" element={<BranchHome />} />
+          <Route path="/:branchCode/branch-login" element={<BranchLogin />} />
+          <Route path="/:branchCode/branch-register" element={<BranchRegister />} />
+          <Route path="/:branchCode/:jobCode" element={<SharedJobPage />} />
+          {/* Fallback routes for backward compatibility */}
           <Route path="/home" element={<BranchHome />} />
           <Route path="/branch-login" element={<BranchLogin />} />
           <Route path="/branch-register" element={<BranchRegister />} />

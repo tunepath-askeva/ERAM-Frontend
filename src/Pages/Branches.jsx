@@ -46,14 +46,14 @@ const Branches = () => {
   };
 
   const handleView = (branch) => {
-    if (branch.url) {
-      const targetUrl = branch.url.startsWith("http")
-        ? `${branch.url}/home` // Remove ?branchId=${branch._id}
-        : `${branch.url}/home`;
-
+    if (branch.branchCode) {
+      // Use current domain with branch code in path
+      const currentOrigin = window.location.origin;
+      const targetUrl = `${currentOrigin}/${encodeURIComponent(branch.branchCode)}/home`;
       window.open(targetUrl, "_blank", "noopener,noreferrer");
     } else {
-      const targetUrl = "/home"; // Remove ?branchId=${branch._id}
+      // Fallback to /home if no branch code
+      const targetUrl = "/home";
       window.open(targetUrl, "_blank", "noopener,noreferrer");
     }
   };

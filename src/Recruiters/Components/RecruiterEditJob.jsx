@@ -866,6 +866,23 @@ const RecruiterEditJob = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      // Validate that at least one application field is added
+      if (!applicationFields || applicationFields.length === 0) {
+        enqueueSnackbar(
+          "Please add at least one application field before submitting the work order.",
+          {
+            variant: "error",
+            autoHideDuration: 4000,
+          }
+        );
+        setLoading(false);
+        // Navigate to the application fields step if not already there
+        if (currentStep < 1) {
+          setCurrentStep(1);
+        }
+        return;
+      }
+
       const values = jobForm.getFieldsValue();
 
       const allDocuments = [

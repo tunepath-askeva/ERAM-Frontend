@@ -19,7 +19,7 @@ import {
   LockOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { useRegisterUserMutation } from "../Slices/Users/UserApis.js";
 import OtpModal from "../Modal/OtpModal";
@@ -33,6 +33,8 @@ const Register = ({ currentBranch }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const params = useParams();
+  const branchCode = params.branchCode;
   const { enqueueSnackbar } = useSnackbar();
 
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -243,7 +245,7 @@ const Register = ({ currentBranch }) => {
         email: values.email.trim().toLowerCase(),
         phone: formattedPhone,
         cPassword: values.cPassword,
-        domain: window.location.hostname,
+        ...(branchCode ? { branchCode } : { domain: window.location.hostname }),
       };
 
       console.log("Registration data:", userData);
@@ -304,7 +306,15 @@ const Register = ({ currentBranch }) => {
       autoHideDuration: 3000,
     });
 
-    navigate(`/branch-login`);
+    // Preserve redirect path if it exists (from shared job link)
+    const redirectPath = sessionStorage.getItem("redirectAfterAuth");
+    if (redirectPath) {
+      // Keep it in sessionStorage for after login
+      sessionStorage.setItem("redirectAfterAuth", redirectPath);
+    }
+
+    const pathPrefix = branchCode ? `/${encodeURIComponent(branchCode)}` : "";
+    navigate(`${pathPrefix}/branch-login`);
   };
 
   const handleOtpModalCancel = () => {
