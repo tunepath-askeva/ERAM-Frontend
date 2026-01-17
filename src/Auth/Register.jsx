@@ -235,7 +235,11 @@ const Register = ({ currentBranch }) => {
       const fullName = `${values.firstName.trim()} ${values.lastName.trim()}`;
 
       const cleanPhoneNumber = values.phoneNumber.replace(/\D/g, "");
-      const formattedPhone = `+${selectedCountryCode}${cleanPhoneNumber}`;
+      // Remove country code from phone if it's already included
+      let phoneWithoutCode = cleanPhoneNumber;
+      if (cleanPhoneNumber.startsWith(selectedCountryCode)) {
+        phoneWithoutCode = cleanPhoneNumber.slice(selectedCountryCode.length);
+      }
 
       const userData = {
         firstName: values.firstName.trim(),
@@ -243,7 +247,8 @@ const Register = ({ currentBranch }) => {
         fullName: fullName,
         role: "candidate",
         email: values.email.trim().toLowerCase(),
-        phone: formattedPhone,
+        phone: phoneWithoutCode, // Phone number without country code
+        phoneCountryCode: selectedCountryCode, // Country code sent separately
         cPassword: values.cPassword,
         ...(branchCode ? { branchCode } : { domain: window.location.hostname }),
       };
