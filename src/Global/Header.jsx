@@ -128,7 +128,7 @@ const Header = () => {
           }} onClick={() => navigate('/')}>
             <img
               src="/Workforce.svg"
-              alt="ERAM TALENT Logo"
+              alt="ERAM Workforce Logo"
               style={{
                 height: '100px',
                 width: 'auto',
@@ -213,7 +213,7 @@ const Header = () => {
           }}>
             <img
               src="/Workforce.svg"
-              alt="ERAM TALENT Logo"
+              alt="ERAM Workforce Logo"
               style={{
                 height: '40px',
                 width: 'auto',

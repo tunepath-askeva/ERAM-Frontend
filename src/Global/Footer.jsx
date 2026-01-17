@@ -98,7 +98,7 @@ const HomeFooter = () => {
                                         width: 'auto',
                                         objectFit: 'contain',
                                     }}
-                                    alt="ERAM TALENT Logo"
+                                    alt="ERAM Workforce Logo"
                                 />
                             </div>
                             <Paragraph style={{
@@ -125,7 +125,7 @@ const HomeFooter = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <MailOutlined style={{ color: '#da2c46', fontSize: '16px' }} />
                                     <Text style={{ color: 'rgba(0, 0, 0, 0.7)', fontSize: '14px' }}>
-                                        info@eramtalent.com
+                                        info@eramengineering.com
                                     </Text>
                                 </div>
                             </Space>
@@ -282,7 +282,7 @@ const HomeFooter = () => {
                             textAlign: 'center',
                             display: 'block'
                         }}>
-                            © {new Date().getFullYear()} Eram Talent. All rights reserved.
+                            © {new Date().getFullYear()} Eram Company limited. All rights reserved.
                         </Text>
                     </Col>
                 </Row>

@@ -151,13 +151,13 @@ const About = () => {
             <div className="container">
               <div className="section-header">
                 <h2 id="about-heading">Our Story</h2>
-                <p>ERAM Talent is an independent Human Capital Management company</p>
+                <p>ERAM Workforce is an independent Human Capital Management company</p>
                 <div className="header-underline"></div>
               </div>
 
               <div className="about-content">
                 <div className="about-text">
-                  <p>ERAM Talent is an independent Human Capital Management company with global expertise in providing end-to-end recruitment solutions to clients across diverse industries including Oil & Gas, Petrochemicals, Power, Water, Infrastructure, Healthcare, IT, and more.</p>
+                  <p>ERAM Workforce is an independent Human Capital Management company with global expertise in providing end-to-end recruitment solutions to clients across diverse industries including Oil & Gas, Petrochemicals, Power, Water, Infrastructure, Healthcare, IT, and more.</p>
 
                   <p>Based in the Kingdom of Saudi Arabia, we cater to requirements where we are able to provide manpower that is carefully headhunted by a dedicated team of Talent Acquisition Specialists on a global scale which includes regions such as but not limited to the Middle East, Asia, Europe, Far East, Africa, Caucasian, etc.</p>
 
