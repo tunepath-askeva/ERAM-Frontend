@@ -93,7 +93,7 @@ const SourcedOverviewTab = ({ sourcedJob, workOrder }) => {
           {workOrder.companyIndustry || "Not specified"}
         </Descriptions.Item>
         <Descriptions.Item label="Salary Range">
-          {workOrder.salaryMin && workOrder.salaryMax
+          {workOrder.isSalaryVisible && workOrder.salaryMin && workOrder.salaryMax
             ? `${workOrder.salaryMin} - ${workOrder.salaryMax} (${
                 workOrder.salaryType || "monthly"
               })`

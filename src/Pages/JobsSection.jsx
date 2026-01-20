@@ -521,63 +521,75 @@ const JobsSection = ({ currentBranch }) => {
         </div>
 
         {/* Function / Industry */}
-        <Text
-          style={{
-            color: "#64748b",
-            marginBottom: "10px",
-            display: "block",
-            fontSize: "13px",
-            lineHeight: "1.2",
-          }}
-          ellipsis
-        >
-          {job.jobFunction || job.companyIndustry || "General"}
-        </Text>
+        {(job.jobFunction || job.companyIndustry) && (
+          <Text
+            style={{
+              color: "#64748b",
+              marginBottom: "10px",
+              display: "block",
+              fontSize: "13px",
+              lineHeight: "1.2",
+            }}
+            ellipsis
+          >
+            {job.jobFunction || job.companyIndustry}
+          </Text>
+        )}
 
         {/* Tags (employment type, workplace) */}
         <Space wrap size="small" style={{ marginBottom: "10px" }}>
-          <Tag
-            color={getJobTypeColor(job.EmploymentType)}
-            style={{
-              borderRadius: "3px",
-              fontSize: "11px",
-              padding: "2px 6px",
-            }}
-          >
-            {job.EmploymentType || "Full-time"}
-          </Tag>
-          <Tag
-            color={getWorkplaceColor(job.workplace)}
-            style={{
-              borderRadius: "3px",
-              fontSize: "11px",
-              padding: "2px 6px",
-            }}
-          >
-            {job.workplace}
-          </Tag>
+          {job.EmploymentType && (
+            <Tag
+              color={getJobTypeColor(job.EmploymentType)}
+              style={{
+                borderRadius: "3px",
+                fontSize: "11px",
+                padding: "2px 6px",
+              }}
+            >
+              {job.EmploymentType}
+            </Tag>
+          )}
+          {job.workplace && (
+            <Tag
+              color={getWorkplaceColor(job.workplace)}
+              style={{
+                borderRadius: "3px",
+                fontSize: "11px",
+                padding: "2px 6px",
+              }}
+            >
+              {job.workplace}
+            </Tag>
+          )}
         </Space>
 
         {/* Location */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            marginBottom: "10px",
-          }}
-        >
-          <EnvironmentOutlined style={{ color: "#10b981", fontSize: "12px" }} />
-          <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
-            {job.officeLocation}
-          </Text>
-        </div>
+        {job.officeLocation && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "10px",
+            }}
+          >
+            <EnvironmentOutlined style={{ color: "#10b981", fontSize: "12px" }} />
+            <Text style={{ fontSize: "12px", color: "#374151" }} ellipsis>
+              {job.officeLocation}
+            </Text>
+          </div>
+        )}
 
         {/* Experience & Education */}
         <Space wrap size="small" style={{ marginBottom: "10px" }}>
-          {job.experienceMin && job.experienceMax && (
+          {(job.experienceMin || job.experienceMax) && (
             <Tag style={{ fontSize: "11px", padding: "2px 6px" }}>
-              {job.experienceMin}-{job.experienceMax} yrs
+              Experience: {job.experienceMin && job.experienceMax
+                ? `${job.experienceMin}-${job.experienceMax} years`
+                : job.experienceMin
+                ? `${job.experienceMin}+ years`
+                : `Up to ${job.experienceMax} years`}
             </Tag>
           )}
           {job.Education && (
@@ -650,18 +662,20 @@ const JobsSection = ({ currentBranch }) => {
               gap: "6px",
             }}
           >
-            <Space size="small" align="center">
-              <DollarOutlined style={{ color: "#3b82f6", fontSize: "12px" }} />
-              <Text
-                style={{
-                  fontSize: "12px",
-                  color: "#374151",
-                  fontWeight: "500",
-                }}
-              >
-                {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
-              </Text>
-            </Space>
+            {job.isSalaryVisible && (job.salaryMin || job.salaryMax) && (
+              <Space size="small" align="center">
+                <DollarOutlined style={{ color: "#3b82f6", fontSize: "12px" }} />
+                <Text
+                  style={{
+                    fontSize: "12px",
+                    color: "#374151",
+                    fontWeight: "500",
+                  }}
+                >
+                  {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
+                </Text>
+              </Space>
+            )}
 
             {job.createdAt && (
               <Space size="small" align="center">
@@ -674,14 +688,14 @@ const JobsSection = ({ currentBranch }) => {
               </Space>
             )}
 
-            {job.createdAt && (
+            {job.deadlineDate && (
               <Space size="small" align="center">
                 <CalendarOutlined
                   style={{ color: "#da2c46", fontSize: "12px" }}
                 />
                 <Text style={{ fontSize: "11px", color: "#da2c46" }}>
                   Deadline:{" "}
-                  {new Date(job.createdAt).toLocaleDateString("en-GB")}
+                  {new Date(job.deadlineDate).toLocaleDateString("en-GB")}
                 </Text>
               </Space>
             )}

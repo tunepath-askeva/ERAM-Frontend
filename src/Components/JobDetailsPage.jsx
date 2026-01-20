@@ -568,6 +568,65 @@ const JobDetailsPage = () => {
     }
   };
 
+  // Helper function to split text into bullet points
+  const splitIntoPoints = (text) => {
+    if (!text || !text.trim()) return [];
+    
+    let points = [];
+    
+    // First, check for numbered lists (1. 2. 3.)
+    if (text.match(/^\d+\./m)) {
+      points = text.split(/(?=^\d+\.\s)/m)
+        .map(item => item.trim().replace(/^\d+\.\s*/, ""))
+        .filter(item => item.trim());
+    }
+    // Then check for double newlines (paragraphs)
+    else if (text.includes("\n\n")) {
+      points = text.split(/\n\n+/)
+        .map(item => item.trim())
+        .filter(item => item.trim());
+    }
+    // Then check for single newlines
+    else if (text.includes("\n")) {
+      points = text.split(/\n+/)
+        .map(item => item.trim())
+        .filter(item => item.trim());
+    }
+    // Finally, split by sentence boundaries (periods followed by space and capital letter)
+    else {
+      // Split by period followed by space and capital letter (new sentence)
+      const sentencePattern = /(?<=[.!?])\s+(?=[A-Z][a-z])/;
+      points = text.split(sentencePattern)
+        .map(item => item.trim())
+        .filter(item => item.trim() && item.length > 0);
+      
+      // If splitting didn't create meaningful points, try splitting by periods more generally
+      if (points.length <= 1) {
+        points = text.split(/(?<=[.!?])\s+/)
+          .map(item => item.trim())
+          .filter(item => item.trim() && item.length > 3);
+      }
+      
+      // If still no good split, keep as single point
+      if (points.length === 0) {
+        points = [text.trim()];
+      }
+    }
+    
+    // Clean up each point
+    return points
+      .map(item => {
+        item = item.replace(/^\d+\.\s*/, "");
+        item = item.replace(/^[-•]\s*/, "");
+        item = item.trim();
+        if (item && !item.match(/[.!?]$/) && item.length > 10) {
+          item = item + ".";
+        }
+        return item;
+      })
+      .filter(item => item && item.length > 0);
+  };
+
   const JobOverview = () => (
     <div className="job-overview">
       {/* Job Header */}
@@ -585,39 +644,53 @@ const JobDetailsPage = () => {
               <Title level={2} className="job-title">
                 {job.title}
               </Title>
-              <Text className="company-name">{job.companyIndustry}</Text>
+              {job.companyIndustry && (
+                <Text className="company-name">{job.companyIndustry}</Text>
+              )}
               {job.jobCode && (
                 <Text type="secondary" className="job-code">
                   Job Code: {job.jobCode}
                 </Text>
               )}
               <div className="job-tags">
-                <Tag
-                  icon={<EnvironmentOutlined />}
-                  color="blue"
-                  className="job-tag"
-                >
-                  {job.officeLocation}
-                </Tag>
-                <Tag
-                  icon={
-                    job.workplace === "remote" ? (
-                      <HomeOutlined />
-                    ) : (
-                      <BankOutlined />
-                    )
-                  }
-                  color="green"
-                  className="job-tag"
-                >
-                  {job.workplace}
-                </Tag>
-                <Tag color="orange" className="job-tag">
-                  {job.EmploymentType}
-                </Tag>
-                <Tag color="purple" className="job-tag">
-                  {job.experienceMin}-{job.experienceMax} years exp
-                </Tag>
+                {job.officeLocation && (
+                  <Tag
+                    icon={<EnvironmentOutlined />}
+                    color="blue"
+                    className="job-tag"
+                  >
+                    {job.officeLocation}
+                  </Tag>
+                )}
+                {job.workplace && (
+                  <Tag
+                    icon={
+                      job.workplace === "remote" ? (
+                        <HomeOutlined />
+                      ) : (
+                        <BankOutlined />
+                      )
+                    }
+                    color="green"
+                    className="job-tag"
+                  >
+                    {job.workplace}
+                  </Tag>
+                )}
+                {job.EmploymentType && (
+                  <Tag color="orange" className="job-tag">
+                    {job.EmploymentType}
+                  </Tag>
+                )}
+                {(job.experienceMin || job.experienceMax) && (
+                  <Tag color="purple" className="job-tag">
+                    {job.experienceMin && job.experienceMax
+                      ? `${job.experienceMin}-${job.experienceMax} years exp`
+                      : job.experienceMin
+                      ? `${job.experienceMin}+ years exp`
+                      : `Up to ${job.experienceMax} years exp`}
+                  </Tag>
+                )}
                 {job.numberOfCandidate && (
                   <Tag color="cyan" className="job-tag">
                     {job.numberOfCandidate} positions
@@ -675,15 +748,17 @@ const JobDetailsPage = () => {
           </Card>
         </Col>
 
-        <Col xs={12} sm={12} md={6}>
-          <Card className="info-card">
-            <BookOutlined className="info-icon" />
-            <div className="info-content">
-              <Text className="info-label">Function</Text>
-              <Text className="info-value">{job.jobFunction}</Text>
-            </div>
-          </Card>
-        </Col>
+        {job.jobFunction && (
+          <Col xs={12} sm={12} md={6}>
+            <Card className="info-card">
+              <BookOutlined className="info-icon" />
+              <div className="info-content">
+                <Text className="info-label">Function</Text>
+                <Text className="info-value">{job.jobFunction}</Text>
+              </div>
+            </Card>
+          </Col>
+        )}
 
         {job.deadlineDate && (
           <Col xs={12} sm={12} md={6}>
@@ -701,12 +776,21 @@ const JobDetailsPage = () => {
       </Row>
 
       {/* Job Description */}
-      <Card className="content-card">
-        <Title level={4} className="section-title">
-          Job Description
-        </Title>
-        <Paragraph className="job-description">{job.description}</Paragraph>
-      </Card>
+      {job.description && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            Job Description
+          </Title>
+          <div className="requirements-list">
+            {splitIntoPoints(job.description).map((point, index) => (
+              <div key={index} className="requirement-item">
+                <CheckCircleOutlined className="check-icon" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Requirements */}
       {job.jobRequirements && (
@@ -715,7 +799,7 @@ const JobDetailsPage = () => {
             Requirements
           </Title>
           <div className="requirements-list">
-            {job.jobRequirements.split("\n\n").map((requirement, index) => (
+            {splitIntoPoints(job.jobRequirements).map((requirement, index) => (
               <div key={index} className="requirement-item">
                 <CheckCircleOutlined className="check-icon" />
                 <span>{requirement}</span>
@@ -732,14 +816,12 @@ const JobDetailsPage = () => {
             Key Responsibilities
           </Title>
           <div className="requirements-list">
-            {job.keyResponsibilities
-              .split("\n\n")
-              .map((responsibility, index) => (
-                <div key={index} className="requirement-item">
-                  <CheckCircleOutlined className="check-icon" />
-                  <span>{responsibility}</span>
-                </div>
-              ))}
+            {splitIntoPoints(job.keyResponsibilities).map((responsibility, index) => (
+              <div key={index} className="requirement-item">
+                <CheckCircleOutlined className="check-icon" />
+                <span>{responsibility}</span>
+              </div>
+            ))}
           </div>
         </Card>
       )}
@@ -751,7 +833,7 @@ const JobDetailsPage = () => {
             Qualifications
           </Title>
           <div className="requirements-list">
-            {job.qualification.split("\n\n").map((qualification, index) => (
+            {splitIntoPoints(job.qualification).map((qualification, index) => (
               <div key={index} className="requirement-item">
                 <CheckCircleOutlined className="check-icon" />
                 <span>{qualification}</span>
@@ -799,37 +881,39 @@ const JobDetailsPage = () => {
       )}
 
       {/* Additional Info */}
-      <Card className="content-card">
-        <Title level={4} className="section-title">
-          Additional Information
-        </Title>
-        <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
-          {job.Education && (
-            <Descriptions.Item label="Education">
-              {job.Education}
-            </Descriptions.Item>
-          )}
-          {job.startDate && (
-            <Descriptions.Item label="Start Date">
-              {new Date(job.startDate).toLocaleDateString()}
-            </Descriptions.Item>
-          )}
-          {job.endDate && (
-            <Descriptions.Item label="End Date">
-              {new Date(job.endDate).toLocaleDateString()}
-            </Descriptions.Item>
-          )}
-          {job.benefits && job.benefits.length > 0 && (
-            <Descriptions.Item label="Responsibilities" span={2}>
-              <ul className="benefits-list">
-                {job.benefits.map((benefit, index) => (
-                  <li key={index}>{benefit}</li>
-                ))}
-              </ul>
-            </Descriptions.Item>
-          )}
-        </Descriptions>
-      </Card>
+      {(job.Education || job.startDate || job.endDate || (job.benefits && job.benefits.length > 0)) && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            Additional Information
+          </Title>
+          <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
+            {job.Education && (
+              <Descriptions.Item label="Education">
+                {job.Education}
+              </Descriptions.Item>
+            )}
+            {job.startDate && (
+              <Descriptions.Item label="Start Date">
+                {new Date(job.startDate).toLocaleDateString()}
+              </Descriptions.Item>
+            )}
+            {job.endDate && (
+              <Descriptions.Item label="End Date">
+                {new Date(job.endDate).toLocaleDateString()}
+              </Descriptions.Item>
+            )}
+            {job.benefits && job.benefits.length > 0 && (
+              <Descriptions.Item label="Benefits" span={2}>
+                <ul className="benefits-list">
+                  {job.benefits.map((benefit, index) => (
+                    <li key={index}>{benefit}</li>
+                  ))}
+                </ul>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        </Card>
+      )}
     </div>
   );
 

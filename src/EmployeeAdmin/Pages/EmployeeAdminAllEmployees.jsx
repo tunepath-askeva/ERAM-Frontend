@@ -429,23 +429,43 @@ const EmployeeAdminAllEmployees = () => {
         const code = record.uniqueCode || "";
         const entry = record.enteringCandidate;
 
-        // 🟢 Converted from Candidate
+        // Primary: Check enteringCandidate field first
+        if (entry === "convertToEmployee") {
+          return <Tag color="green">Converted to Employee</Tag>;
+        }
+        if (entry === "bulk") {
+          return <Tag color="cyan">Bulk Imported</Tag>;
+        }
+        if (entry === "addedemployee") {
+          return <Tag color="purple">Added Employee</Tag>;
+        }
+
+        // Fallback: Check uniqueCode patterns (new format: B1-C2, B1-E5)
+        // New format: Check for -C (candidate converted to employee)
+        if (code.match(/-C\d+$/i)) {
+          return <Tag color="green">Converted to Employee</Tag>;
+        }
+        // New format: Check for -E (direct employee)
+        if (code.match(/-E\d+$/i)) {
+          if (entry === "bulk") {
+            return <Tag color="cyan">Bulk Imported</Tag>;
+          }
+          return <Tag color="purple">Added Employee</Tag>;
+        }
+
+        // Legacy format: Check for old patterns (CAND, EMP)
         if (code.includes("CAND")) {
           return <Tag color="green">Converted to Employee</Tag>;
         }
-
-        // 🔵 Direct Employee (EMP)
         if (code.includes("EMP")) {
           if (entry === "bulk") {
             return <Tag color="cyan">Bulk Imported</Tag>;
           }
-
-          if (entry === "addedemployee" || !entry) {
-            return <Tag color="purple">Added Employee</Tag>;
-          }
+          return <Tag color="purple">Added Employee</Tag>;
         }
 
-        return "-";
+        // Default fallback
+        return <Tag color="default">Unknown</Tag>;
       },
     },
 

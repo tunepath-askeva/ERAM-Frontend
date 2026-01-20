@@ -523,6 +523,72 @@ const SharedJobPage = () => {
     );
   }
 
+  // Helper function to split text into bullet points
+  const splitIntoPoints = (text) => {
+    if (!text || !text.trim()) return [];
+    
+    let points = [];
+    
+    // First, check for numbered lists (1. 2. 3.)
+    if (text.match(/^\d+\./m)) {
+      points = text.split(/(?=^\d+\.\s)/m)
+        .map(item => item.trim().replace(/^\d+\.\s*/, ""))
+        .filter(item => item.trim());
+    }
+    // Then check for double newlines (paragraphs)
+    else if (text.includes("\n\n")) {
+      points = text.split(/\n\n+/)
+        .map(item => item.trim())
+        .filter(item => item.trim());
+    }
+    // Then check for single newlines
+    else if (text.includes("\n")) {
+      points = text.split(/\n+/)
+        .map(item => item.trim())
+        .filter(item => item.trim());
+    }
+    // Finally, split by sentence boundaries (periods followed by space and capital letter)
+    else {
+      // Split by period followed by space and capital letter (new sentence)
+      // But avoid splitting on abbreviations like "Dr.", "Mr.", "Inc.", etc.
+      // Also avoid splitting on decimal numbers like "3.5"
+      const sentencePattern = /(?<=[.!?])\s+(?=[A-Z][a-z])/;
+      points = text.split(sentencePattern)
+        .map(item => item.trim())
+        .filter(item => item.trim() && item.length > 0);
+      
+      // If splitting didn't create meaningful points, try splitting by periods more generally
+      if (points.length <= 1) {
+        // Split by period-space pattern, but be more careful
+        points = text.split(/(?<=[.!?])\s+/)
+          .map(item => item.trim())
+          .filter(item => item.trim() && item.length > 3); // Filter out very short fragments
+      }
+      
+      // If still no good split, keep as single point
+      if (points.length === 0) {
+        points = [text.trim()];
+      }
+    }
+    
+    // Clean up each point: remove leading numbers, extra spaces, ensure it ends properly
+    return points
+      .map(item => {
+        // Remove leading numbers and dots (e.g., "1. ", "2. ")
+        item = item.replace(/^\d+\.\s*/, "");
+        // Remove leading dashes or bullets
+        item = item.replace(/^[-•]\s*/, "");
+        // Trim whitespace
+        item = item.trim();
+        // Ensure it ends with a period if it's a complete sentence (and doesn't already end with punctuation)
+        if (item && !item.match(/[.!?]$/) && item.length > 10) {
+          item = item + ".";
+        }
+        return item;
+      })
+      .filter(item => item && item.length > 0);
+  };
+
   // Render Job Overview
   const renderJobOverview = () => (
     <div style={{ padding: "0" }}>
@@ -560,20 +626,28 @@ const SharedJobPage = () => {
           gap: "12px",
         }}
       >
-        <Tag color="blue" style={{ fontSize: "12px", padding: "6px 10px" }}>
-          <strong>Work Type:</strong> {job.EmploymentType || "Full-time"}
-        </Tag>
-        <Tag color="green" style={{ fontSize: "12px", padding: "6px 10px" }}>
-          <strong>Work Place:</strong> {job.workplace || "Remote"}
-        </Tag>
+        {job.EmploymentType && (
+          <Tag color="blue" style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <strong>Work Type:</strong> {job.EmploymentType}
+          </Tag>
+        )}
+        {job.workplace && (
+          <Tag color="green" style={{ fontSize: "12px", padding: "6px 10px" }}>
+            <strong>Work Place:</strong> {job.workplace}
+          </Tag>
+        )}
         {job.officeLocation && (
           <Tag color="orange" style={{ fontSize: "12px", padding: "6px 10px" }}>
             <EnvironmentOutlined /> {job.officeLocation}
           </Tag>
         )}
-        {job.experienceMin && job.experienceMax && (
+        {(job.experienceMin || job.experienceMax) && (
           <Tag style={{ fontSize: "12px", padding: "6px 10px" }}>
-            <strong>Experience:</strong> {job.experienceMin} - {job.experienceMax} years
+            <strong>Experience:</strong> {job.experienceMin && job.experienceMax
+              ? `${job.experienceMin} - ${job.experienceMax} years`
+              : job.experienceMin
+              ? `${job.experienceMin}+ years`
+              : `Up to ${job.experienceMax} years`}
           </Tag>
         )}
         {job.Education && (
@@ -581,7 +655,7 @@ const SharedJobPage = () => {
             <strong>Education:</strong> {job.Education}
           </Tag>
         )}
-        {(job.salaryMin || job.salaryMax) && (
+        {job.isSalaryVisible && (job.salaryMin || job.salaryMax) && (
           <Tag color="purple" style={{ fontSize: "12px", padding: "6px 10px" }}>
             <DollarOutlined /> {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
           </Tag>
@@ -590,45 +664,157 @@ const SharedJobPage = () => {
 
       {job.description && (
         <div style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "8px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
             Job Description
           </Title>
-          <Paragraph style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            {job.description}
-          </Paragraph>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {splitIntoPoints(job.description).map((point, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                  color: "#444",
+                }}
+              >
+                <CheckCircleOutlined
+                  style={{
+                    color: "#52c41a",
+                    marginTop: "4px",
+                    flexShrink: 0,
+                    fontSize: "16px",
+                  }}
+                />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {job.jobRequirements && (
         <div style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "8px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
             Job Requirements
           </Title>
-          <Paragraph style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            {job.jobRequirements}
-          </Paragraph>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {splitIntoPoints(job.jobRequirements).map((requirement, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                    color: "#444",
+                  }}
+                >
+                  <CheckCircleOutlined
+                    style={{
+                      color: "#52c41a",
+                      marginTop: "4px",
+                      flexShrink: 0,
+                      fontSize: "16px",
+                    }}
+                  />
+                  <span>{requirement}</span>
+                </div>
+              ))}
+          </div>
         </div>
       )}
 
       {job.keyResponsibilities && (
         <div style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "8px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
             Key Responsibilities
           </Title>
-          <Paragraph style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            {job.keyResponsibilities}
-          </Paragraph>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {splitIntoPoints(job.keyResponsibilities).map((responsibility, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                    color: "#444",
+                  }}
+                >
+                  <CheckCircleOutlined
+                    style={{
+                      color: "#52c41a",
+                      marginTop: "4px",
+                      flexShrink: 0,
+                      fontSize: "16px",
+                    }}
+                  />
+                  <span>{responsibility}</span>
+                </div>
+              ))}
+          </div>
         </div>
       )}
 
       {job.qualification && (
         <div style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "8px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
             Qualification
           </Title>
-          <Paragraph style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            {job.qualification}
-          </Paragraph>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {splitIntoPoints(job.qualification).map((qualification, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                    color: "#444",
+                  }}
+                >
+                  <CheckCircleOutlined
+                    style={{
+                      color: "#52c41a",
+                      marginTop: "4px",
+                      flexShrink: 0,
+                      fontSize: "16px",
+                    }}
+                  />
+                  <span>{qualification}</span>
+                </div>
+              ))}
+          </div>
         </div>
       )}
 
@@ -664,16 +850,24 @@ const SharedJobPage = () => {
 
       {job.benefits && job.benefits.length > 0 && (
         <div style={{ marginBottom: "16px" }}>
-          <Title level={5} style={{ marginBottom: "8px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
             Benefits
           </Title>
-          <Space wrap>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "20px",
+              fontSize: "14px",
+              lineHeight: "1.8",
+              color: "#444",
+            }}
+          >
             {job.benefits.map((benefit, index) => (
-              <Tag key={index} color="green" style={{ fontSize: "12px", padding: "4px 8px" }}>
+              <li key={index} style={{ marginBottom: "8px" }}>
                 {benefit}
-              </Tag>
+              </li>
             ))}
-          </Space>
+          </ul>
         </div>
       )}
 

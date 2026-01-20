@@ -2869,7 +2869,16 @@ const RecruiterEditJob = () => {
 
             <Row gutter={[24, 16]}>
               <Col xs={24} sm={12}>
-                <Form.Item name="officeLocation" label="Office Location">
+                <Form.Item
+                  name="officeLocation"
+                  label="Office Location"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter office location.",
+                    },
+                  ]}
+                >
                   <Input placeholder="e.g. San Francisco, CA" />
                 </Form.Item>
               </Col>
@@ -2936,7 +2945,10 @@ const RecruiterEditJob = () => {
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="experienceMin"
-                  label="Minimum Experience (years)"
+                  label="Minimum Experience (Years)"
+                  rules={[
+                    { required: true, message: "Please enter minimum experience" },
+                  ]}
                 >
                   <InputNumber
                     min={0}
@@ -2949,7 +2961,10 @@ const RecruiterEditJob = () => {
               <Col xs={24} sm={12}>
                 <Form.Item
                   name="experienceMax"
-                  label="Maximum Experience (years)"
+                  label="Maximum Experience (Years)"
+                  rules={[
+                    { required: true, message: "Please enter maximum experience" },
+                  ]}
                 >
                   <InputNumber
                     min={0}
@@ -2957,6 +2972,28 @@ const RecruiterEditJob = () => {
                     style={{ width: "100%" }}
                     placeholder="e.g. 5"
                   />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {/* Education */}
+            <Row gutter={[24, 16]}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="Education"
+                  label="Education"
+                  rules={[
+                    { required: true, message: "Please select education requirement" },
+                  ]}
+                >
+                  <Select placeholder="Select education level">
+                    <Option value="high-school">High School</Option>
+                    <Option value="associate">Associate Degree</Option>
+                    <Option value="bachelor">Bachelor's Degree</Option>
+                    <Option value="master">Master's Degree</Option>
+                    <Option value="phd">PhD</Option>
+                    <Option value="none">None</Option>
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>
@@ -3055,12 +3092,12 @@ const RecruiterEditJob = () => {
 
             <Form.Item
               name="qualification"
-              label="Qualifications"
+              label="Qualification"
               rules={[
-                { required: true, message: "Please enter qualifications" },
+                { required: true, message: "Please enter qualification" },
               ]}
             >
-              <TextArea rows={4} placeholder="Enter required qualifications" />
+              <TextArea rows={4} placeholder="List required qualifications..." />
             </Form.Item>
 
             <Form.Item
@@ -3087,14 +3124,14 @@ const RecruiterEditJob = () => {
 
             <Form.Item
               name="jobRequirements"
-              label="Additional Requirements"
+              label="Job Requirements"
               rules={[
                 { required: true, message: "Please enter job requirements" },
               ]}
             >
               <TextArea
                 rows={4}
-                placeholder="Enter any additional requirements"
+                placeholder="Enter detailed job requirements"
               />
             </Form.Item>
 
@@ -3178,7 +3215,7 @@ const RecruiterEditJob = () => {
               <Col xs={24} sm={6}>
                 <Form.Item
                   name="isSalaryVisible"
-                  label="Show Salary"
+                  label="Show salary"
                   valuePropName="checked"
                 >
                   <Switch />

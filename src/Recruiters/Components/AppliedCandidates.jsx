@@ -25,6 +25,7 @@ import {
   Skeleton,
   Pagination,
   Checkbox,
+  Tabs,
 } from "antd";
 import {
   UserOutlined,
@@ -40,8 +41,24 @@ import {
   DollarOutlined,
   InfoCircleOutlined,
   ArrowRightOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  ToolOutlined,
+  BookOutlined,
+  GlobalOutlined,
+  IdcardOutlined,
+  HomeOutlined,
+  LinkedinOutlined,
+  GithubOutlined,
+  TwitterOutlined,
+  FacebookOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
+import { phoneUtils } from "../../utils/countryMobileLimits";
+import dayjs from "dayjs";
+
+const { TabPane } = Tabs;
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -104,14 +121,6 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       </div>
     );
   }
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   // Filter candidates based on type
   const filteredCandidates = formResponses.filter((app) => {
@@ -279,9 +288,44 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       return true;
     }
 
-    // Check if documents are uploaded
+    // Get mandatory documents
+    const mandatoryDocuments = requiredDocuments.filter(
+      (doc) => doc.isMandatory === true
+    );
+
+    // If no mandatory documents, return true
+    if (mandatoryDocuments.length === 0) {
+      return true;
+    }
+
+    // Check if all mandatory documents are uploaded
     const uploadedDocuments = workOrderuploadedDocuments || [];
-    return uploadedDocuments.length > 0;
+    const uploadedDocNames = uploadedDocuments.map((doc) =>
+      (doc.documentName || doc.fileName || "").toLowerCase().trim()
+    );
+
+    // Check if all mandatory documents are present
+    const allMandatoryUploaded = mandatoryDocuments.every((mandatoryDoc) => {
+      const docName = (mandatoryDoc.name || "").toLowerCase().trim();
+      return uploadedDocNames.some(
+        (uploadedName) =>
+          uploadedName === docName ||
+          uploadedName.includes(docName) ||
+          docName.includes(uploadedName)
+      );
+    });
+
+    return allMandatoryUploaded;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not specified";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   const renderUploadedDocuments = (documents) => {
@@ -327,108 +371,492 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     if (!selectedApplication) return null;
 
     const { user, responses, workOrderuploadedDocuments } = selectedApplication;
+    const workOrder = data?.workOrder || selectedApplication.workOrder;
 
     const resumeField = responses?.find(
       (response) =>
         response.fieldType === "file" ||
         (response.label && response.label.toLowerCase().includes("resume"))
     );
-    const resumeUrl = user?.resume || resumeField?.value;
+    const resumeUrl = user?.resume || user?.resumeUrl || resumeField?.value;
     const candidateName = user?.fullName || "Candidate";
+
+    // Get application form responses (excluding file fields)
+    const applicationFormFields = responses?.filter(
+      (response) =>
+        response.value &&
+        response.fieldType !== "file" &&
+        !(
+          response.label &&
+          response.label.toLowerCase().includes("resume")
+        )
+    ) || [];
+
+    // Document verification
+    const requiredDocs = workOrder?.documents || [];
+    const mandatoryDocs = requiredDocs.filter((doc) => doc.isMandatory === true);
+    const uploadedDocs = workOrderuploadedDocuments || [];
+    const uploadedDocNames = uploadedDocs.map((doc) =>
+      (doc.documentName || doc.fileName || "").toLowerCase().trim()
+    );
+
+    const missingMandatoryDocs = mandatoryDocs.filter((mandatoryDoc) => {
+      const docName = (mandatoryDoc.name || "").toLowerCase().trim();
+      return !uploadedDocNames.some(
+        (uploadedName) =>
+          uploadedName === docName ||
+          uploadedName.includes(docName) ||
+          docName.includes(uploadedName)
+      );
+    });
+
+    const allDocsUploaded = checkDocumentsUploaded(selectedApplication);
 
     return (
       <div>
-        <Descriptions bordered column={1} size="small">
-          {responses?.map((response, index) => {
-            if (
-              !response.value ||
-              response.fieldType === "file" ||
-              (response.label &&
-                response.label.toLowerCase().includes("resume"))
-            ) {
-              return null;
-            }
-
-            return (
-              <Descriptions.Item
-                key={`field-${index}`}
-                label={response.label || `Field ${index + 1}`}
-              >
-                {response.value}
-              </Descriptions.Item>
-            );
-          })}
-        </Descriptions>
-
-        {!checkDocumentsUploaded(selectedApplication) && (
-          <>
-            <Divider />
-            <Alert
-              message="Required Documents Missing"
-              description="This candidate must upload all required documents before they can be moved to screening."
-              type="warning"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          </>
-        )}
-
-        <Divider orientation="left">
-          Required Documents
-          {workOrder?.documents && workOrder.documents.length > 0 && (
-            <Tag
-              color={
-                checkDocumentsUploaded(selectedApplication)
-                  ? "success"
-                  : "warning"
-              }
-              style={{ marginLeft: 8 }}
+        <Row gutter={[24, 24]}>
+          {/* Left Column - Profile Overview */}
+          <Col xs={24} md={8}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
             >
-              {workOrderuploadedDocuments?.length || 0} /{" "}
-              {workOrder.documents.length} Uploaded
-            </Tag>
-          )}
-        </Divider>
+              <Avatar
+                size={150}
+                src={user?.image}
+                icon={<UserOutlined />}
+                style={{ marginBottom: "16px" }}
+              />
+              <Title level={3} style={{ textAlign: "center" }}>
+                {user?.fullName || candidateName}
+              </Title>
+              <Text strong style={{ fontSize: "16px", marginBottom: "8px" }}>
+                {user?.title || "Candidate"}
+              </Text>
+              <Tag color="blue">Applied</Tag>
 
-        {workOrder?.documents && workOrder.documents.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>Required:</Text>
-            <div style={{ marginTop: 8 }}>
-              {workOrder.documents.map((doc, index) => (
-                <Tag key={index} color="blue" style={{ margin: "4px" }}>
-                  {doc.name}
-                  {doc.isMandatory && (
-                    <span style={{ color: "#ff4d4f" }}> *</span>
+              {user?.age && (
+                <Text type="secondary" style={{ marginTop: "8px" }}>
+                  Age: {user.age} years
+                </Text>
+              )}
+
+              <Divider />
+
+              {/* Contact Information */}
+              <div style={{ width: "100%" }}>
+                <Title level={5}>Contact Information</Title>
+                <Space
+                  direction="vertical"
+                  size="middle"
+                  style={{ width: "100%" }}
+                >
+                  <div>
+                    <MailOutlined style={{ marginRight: "8px" }} />
+                    <Text>{user?.email || "N/A"}</Text>
+                  </div>
+                  <div>
+                    <PhoneOutlined style={{ marginRight: "8px" }} />
+                    <Text>
+                      {user?.phoneCountryCode && user?.phone
+                        ? phoneUtils.formatWithCountryCode(
+                            user.phoneCountryCode,
+                            user.phone
+                          )
+                        : user?.phone || "N/A"}
+                    </Text>
+                  </div>
+                  <div>
+                    <EnvironmentOutlined style={{ marginRight: "8px" }} />
+                    <Text>{user?.location || "N/A"}</Text>
+                  </div>
+                  {user?.emergencyContactNo && (
+                    <div>
+                      <PhoneOutlined
+                        style={{ marginRight: "8px", color: "red" }}
+                      />
+                      <Text>
+                        Emergency:{" "}
+                        {user?.emergencyContactNoCountryCode &&
+                        user?.emergencyContactNo
+                          ? phoneUtils.formatWithCountryCode(
+                              user.emergencyContactNoCountryCode,
+                              user.emergencyContactNo
+                            )
+                          : user?.emergencyContactNo}
+                        {user?.contactPersonName &&
+                          ` (${user.contactPersonName})`}
+                      </Text>
+                    </div>
                   )}
-                </Tag>
-              ))}
+                </Space>
+              </div>
+
+              {/* Social Links */}
+              {user?.socialLinks && (
+                <div style={{ marginTop: "16px", width: "100%" }}>
+                  <Title level={5}>Social Links</Title>
+                  <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                    {user.socialLinks.linkedin && (
+                      <div>
+                        <LinkedinOutlined
+                          style={{ marginRight: "8px", color: "#0077B5" }}
+                        />
+                        <a
+                          href={
+                            user.socialLinks.linkedin.startsWith("http")
+                              ? user.socialLinks.linkedin
+                              : `https://${user.socialLinks.linkedin}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          LinkedIn
+                        </a>
+                      </div>
+                    )}
+                    {user.socialLinks.github && (
+                      <div>
+                        <GithubOutlined style={{ marginRight: "8px" }} />
+                        <a
+                          href={
+                            user.socialLinks.github.startsWith("http")
+                              ? user.socialLinks.github
+                              : `https://${user.socialLinks.github}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          GitHub
+                        </a>
+                      </div>
+                    )}
+                  </Space>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          </Col>
 
-        <Text strong>Uploaded:</Text>
-        {renderUploadedDocuments(workOrderuploadedDocuments)}
+          {/* Right Column - Detailed Information */}
+          <Col xs={24} md={16}>
+            <Tabs defaultActiveKey="1">
+              <TabPane
+                tab={
+                  <span>
+                    <UserOutlined /> Overview
+                  </span>
+                }
+                key="1"
+              >
+                <Descriptions bordered column={1}>
+                  <Descriptions.Item label="Current Status">
+                    <Tag color="blue">Applied</Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Current Company">
+                    {user?.currentCompany ||
+                      user?.workExperience?.[0]?.company ||
+                      "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Total Experience">
+                    {user?.totalExperienceYears || 0} years
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Notice Period">
+                    {user?.noticePeriod || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Current Salary">
+                    {user?.currentSalary || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Expected Salary">
+                    {user?.expectedSalary || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Industry">
+                    {user?.industry?.join(", ") || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Languages">
+                    {user?.languages?.join(", ") || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Nationality">
+                    {user?.nationality || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Visa Status">
+                    {user?.visaStatus?.join(", ") || "Not specified"}
+                  </Descriptions.Item>
+                </Descriptions>
 
-        {resumeUrl && (
-          <>
-            <Divider orientation="left">Resume</Divider>
-            <Space>
-              <Button
-                type="primary"
-                icon={<EyeOutlined />}
-                onClick={() => handleViewResume(resumeUrl, candidateName)}
+                {user?.profileSummary && (
+                  <>
+                    <Divider />
+                    <Title level={5}>Summary</Title>
+                    <div style={{ marginBottom: "24px" }}>
+                      {user.profileSummary}
+                    </div>
+                  </>
+                )}
+
+                <Divider />
+                <Title level={5}>Skills</Title>
+                <div style={{ marginBottom: "24px" }}>
+                  {user?.skills?.length > 0 ? (
+                    user.skills.map((skill, index) => (
+                      <Tag key={index} style={{ marginBottom: "8px" }}>
+                        {skill}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Text>No skills listed</Text>
+                  )}
+                </div>
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <BookOutlined /> Experience
+                  </span>
+                }
+                key="2"
               >
-                View Resume
-              </Button>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => handleDownloadResume(resumeUrl, candidateName)}
+                {user?.workExperience?.length > 0 ? (
+                  user.workExperience.map((exp, index) => (
+                    <Card key={index} style={{ marginBottom: "16px" }}>
+                      <Title level={5}>{exp.company}</Title>
+                      <Text strong>{exp.title}</Text>
+                      <div style={{ margin: "8px 0" }}>
+                        <Text type="secondary">
+                          {formatDate(exp.startDate)} -{" "}
+                          {exp.endDate === "Present"
+                            ? "Present"
+                            : formatDate(exp.endDate)}
+                        </Text>
+                      </div>
+                      {exp.description && <Text>{exp.description}</Text>}
+                    </Card>
+                  ))
+                ) : (
+                  <Text>No work experience added</Text>
+                )}
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <BookOutlined /> Education
+                  </span>
+                }
+                key="3"
               >
-                Download Resume
-              </Button>
-            </Space>
-          </>
-        )}
+                {user?.education?.length > 0 ? (
+                  user.education.map((edu, index) => (
+                    <Card key={index} style={{ marginBottom: "16px" }}>
+                      <Title level={5}>{edu.institution}</Title>
+                      <Text strong>
+                        {edu.degree} {edu.field ? `in ${edu.field}` : ""}
+                      </Text>
+                      <div style={{ margin: "8px 0" }}>
+                        <Text type="secondary">Graduated: {edu.year}</Text>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <Text>No education information added</Text>
+                )}
+
+                {user?.qualifications?.length > 0 && (
+                  <>
+                    <Divider />
+                    <Title level={5}>Additional Qualifications</Title>
+                    {user.qualifications.map((qual, index) => (
+                      <Tag key={index} style={{ marginBottom: "8px" }}>
+                        {qual}
+                      </Tag>
+                    ))}
+                  </>
+                )}
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <FileTextOutlined /> Application Form
+                  </span>
+                }
+                key="4"
+              >
+                {applicationFormFields.length > 0 ? (
+                  <Descriptions bordered column={1}>
+                    {applicationFormFields.map((response, index) => (
+                      <Descriptions.Item
+                        key={`field-${index}`}
+                        label={response.label || `Field ${index + 1}`}
+                      >
+                        {Array.isArray(response.value)
+                          ? response.value.join(", ")
+                          : String(response.value)}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
+                ) : (
+                  <Text>No application form data available</Text>
+                )}
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <IdcardOutlined /> Personal Details
+                  </span>
+                }
+                key="5"
+              >
+                <Descriptions bordered column={1}>
+                  <Descriptions.Item label="Full Name">
+                    {user?.fullName ||
+                      `${user?.firstName || ""} ${
+                        user?.middleName ? user.middleName + " " : ""
+                      }${user?.lastName || ""}`.trim() ||
+                      "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Gender">
+                    {user?.gender || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Age">
+                    {user?.age || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Marital Status">
+                    {user?.maritalStatus || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Blood Group">
+                    {user?.bloodGroup || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Religion">
+                    {user?.religion || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Country of Birth">
+                    {user?.countryOfBirth || "Not specified"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Address">
+                    {[
+                      user?.streetName,
+                      user?.region,
+                      user?.city,
+                      user?.state,
+                      user?.country,
+                      user?.zipCode,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || "Not specified"}
+                  </Descriptions.Item>
+                </Descriptions>
+              </TabPane>
+
+              <TabPane
+                tab={
+                  <span>
+                    <FileTextOutlined /> Documents
+                  </span>
+                }
+                key="6"
+              >
+                {!allDocsUploaded && (
+                  <Alert
+                    message="Required Documents Missing"
+                    description={
+                      missingMandatoryDocs.length > 0
+                        ? `Missing mandatory documents: ${missingMandatoryDocs
+                            .map((doc) => doc.name)
+                            .join(", ")}`
+                        : "This candidate must upload all required documents before they can be moved to screening."
+                    }
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+
+                <Title level={5} style={{ marginBottom: 16 }}>
+                  Required Documents
+                  {requiredDocs.length > 0 && (
+                    <Tag
+                      color={allDocsUploaded ? "success" : "warning"}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {uploadedDocs.length} / {requiredDocs.length} Uploaded
+                    </Tag>
+                  )}
+                </Title>
+
+                {requiredDocs.length > 0 ? (
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong>Required:</Text>
+                    <div style={{ marginTop: 8 }}>
+                      {requiredDocs.map((doc, index) => {
+                        const isUploaded = uploadedDocNames.some(
+                          (uploadedName) => {
+                            const docName = (doc.name || "").toLowerCase().trim();
+                            return (
+                              uploadedName === docName ||
+                              uploadedName.includes(docName) ||
+                              docName.includes(uploadedName)
+                            );
+                          }
+                        );
+                        return (
+                          <Tag
+                            key={index}
+                            color={isUploaded ? "green" : "blue"}
+                            style={{ margin: "4px" }}
+                          >
+                            {doc.name}
+                            {doc.isMandatory && (
+                              <span style={{ color: "#ff4d4f" }}> *</span>
+                            )}
+                            {isUploaded && (
+                              <CheckCircleOutlined
+                                style={{ marginLeft: "4px", color: "#52c41a" }}
+                              />
+                            )}
+                          </Tag>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <Text type="secondary">No required documents specified</Text>
+                )}
+
+                <Divider />
+                <Title level={5}>Uploaded Documents</Title>
+                {renderUploadedDocuments(uploadedDocs)}
+
+                {resumeUrl && (
+                  <>
+                    <Divider orientation="left">Resume</Divider>
+                    <Space>
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewResume(resumeUrl, candidateName)}
+                      >
+                        View Resume
+                      </Button>
+                      <Button
+                        icon={<DownloadOutlined />}
+                        onClick={() =>
+                          handleDownloadResume(resumeUrl, candidateName)
+                        }
+                      >
+                        Download Resume
+                      </Button>
+                    </Space>
+                  </>
+                )}
+              </TabPane>
+            </Tabs>
+          </Col>
+        </Row>
       </div>
     );
   };

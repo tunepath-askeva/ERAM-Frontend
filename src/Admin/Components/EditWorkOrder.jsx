@@ -2297,7 +2297,13 @@ const EditWorkOrder = () => {
             >
               <Row gutter={[16, 8]}>
                 <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="deadlineDate" label="Deadline Date">
+                  <Form.Item
+                    name="deadlineDate"
+                    label="Deadline Date"
+                    rules={[
+                      { required: true, message: "Please select deadline date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -2305,7 +2311,13 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="startDate" label="Start Date">
+                  <Form.Item
+                    name="startDate"
+                    label="Start Date"
+                    rules={[
+                      { required: true, message: "Please select start date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -2313,7 +2325,13 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="endDate" label="End Date">
+                  <Form.Item
+                    name="endDate"
+                    label="End Date"
+                    rules={[
+                      { required: true, message: "Please select end date" },
+                    ]}
+                  >
                     <DatePicker
                       style={{ width: "100%" }}
                       disabledDate={disablePastDates}
@@ -2430,13 +2448,7 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="languagesRequired"
-                    label="Languages Required"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter at least one language",
-                      },
-                    ]}
+                    label="Languages Required (comma separated)"
                   >
                     <Select
                       mode="tags"
@@ -2475,7 +2487,16 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item name="officeLocation" label="Office Location">
+                  <Form.Item
+                    name="officeLocation"
+                    label="Office Location"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter office location.",
+                      },
+                    ]}
+                  >
                     <Input placeholder="Enter office location" />
                   </Form.Item>
                 </Col>
@@ -2554,6 +2575,9 @@ const EditWorkOrder = () => {
                   <Form.Item
                     name="experienceMin"
                     label="Minimum Experience (Years)"
+                    rules={[
+                      { required: true, message: "Please enter minimum experience" },
+                    ]}
                   >
                     <InputNumber
                       style={{ width: "100%" }}
@@ -2566,6 +2590,9 @@ const EditWorkOrder = () => {
                   <Form.Item
                     name="experienceMax"
                     label="Maximum Experience (Years)"
+                    rules={[
+                      { required: true, message: "Please enter maximum experience" },
+                    ]}
                   >
                     <InputNumber
                       style={{ width: "100%" }}
@@ -2575,7 +2602,13 @@ const EditWorkOrder = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item name="Education" label="Education Requirement">
+                  <Form.Item
+                    name="Education"
+                    label="Education"
+                    rules={[
+                      { required: true, message: "Please select education requirement" },
+                    ]}
+                  >
                     <Select placeholder="Select education level">
                       <Option value="high-school">High School</Option>
                       <Option value="associate">Associate Degree</Option>
@@ -2722,7 +2755,7 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={8}>
                   <Form.Item
                     name="isCommon"
-                    label="Common Workorder"
+                    label="Common Work Order"
                     valuePropName="checked"
                   >
                     <Switch
@@ -2738,7 +2771,7 @@ const EditWorkOrder = () => {
                 <Col xs={24} md={8}>
                   <Form.Item
                     name="isSalaryVisible"
-                    label="Show Salary"
+                    label="Show salary"
                     valuePropName="checked"
                   >
                     <Switch
@@ -2786,7 +2819,13 @@ const EditWorkOrder = () => {
                 />
               </Form.Item>
 
-              <Form.Item name="qualification" label="Qualification">
+              <Form.Item
+                name="qualification"
+                label="Qualification"
+                rules={[
+                  { required: true, message: "Please enter qualification" },
+                ]}
+              >
                 <TextArea
                   rows={3}
                   placeholder="List required qualifications..."
