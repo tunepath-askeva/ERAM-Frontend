@@ -910,6 +910,9 @@ const AddWorkOrder = () => {
           })),
       ];
 
+      // Get isSalaryVisible from form values
+      const isSalaryVisible = jobForm.getFieldValue("isSalaryVisible");
+      
       const workOrderData = {
         ...jobData,
         customFields: applicationFields,
@@ -919,6 +922,7 @@ const AddWorkOrder = () => {
         requiredDocuments: allDocuments,
         client: jobForm.getFieldValue("client"),
         languagesRequired: jobForm.getFieldValue("languagesRequired") || [],
+        isSalaryVisible: isSalaryVisible !== undefined ? Boolean(isSalaryVisible) : false,
         isRequisition: isRequisitionBased,
         ...(isRequisitionBased && {
           requisitionNo: requisitionData.requisitionNo,

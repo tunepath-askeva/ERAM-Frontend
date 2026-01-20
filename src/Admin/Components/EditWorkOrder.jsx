@@ -746,6 +746,11 @@ const EditWorkOrder = () => {
         );
       });
 
+      // Get isSalaryVisible from form values, with fallback to jobData
+      const isSalaryVisibleValue = values.isSalaryVisible !== undefined 
+        ? values.isSalaryVisible 
+        : (jobData?.isSalaryVisible !== undefined ? jobData.isSalaryVisible : false);
+
       const workOrderPayload = {
         ...values,
         ...jobData,
@@ -762,6 +767,7 @@ const EditWorkOrder = () => {
         client: values.client || jobData.client,
         languagesRequired:
           values.languagesRequired || jobData.languagesRequired || [],
+        isSalaryVisible: Boolean(isSalaryVisibleValue),
         startDate: values.startDate
           ? dayjs.isDayjs(values.startDate)
             ? values.startDate.format("YYYY-MM-DD")
@@ -2774,16 +2780,7 @@ const EditWorkOrder = () => {
                     label="Show salary"
                     valuePropName="checked"
                   >
-                    <Switch
-                      checked={
-                        workOrderData?.workOrder?.isSalaryVisible === true
-                      }
-                      onChange={(checked) => {
-                        jobForm.setFieldsValue({
-                          isSalaryVisible: checked ? true : false,
-                        });
-                      }}
-                    />
+                    <Switch />
                   </Form.Item>
                 </Col>
               </Row>

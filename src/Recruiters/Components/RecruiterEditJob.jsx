@@ -1020,7 +1020,9 @@ const RecruiterEditJob = () => {
         visacategory: values.visacategory || jobData.visacategory,
         visacategorytype: values.visacategorytype || jobData.visacategorytype,
         isCommon: Boolean(values.isCommon),
-        isSalaryVisible: Boolean(values.isSalaryVisible),
+        isSalaryVisible: values.isSalaryVisible !== undefined 
+          ? Boolean(values.isSalaryVisible) 
+          : (jobData?.isSalaryVisible !== undefined ? Boolean(jobData.isSalaryVisible) : false),
 
         // CRITICAL FIELDS - Properly formatted
         client: values.client || jobData.client,
