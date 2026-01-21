@@ -381,11 +381,10 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
     const resumeUrl = user?.resume || user?.resumeUrl || resumeField?.value;
     const candidateName = user?.fullName || "Candidate";
 
-    // Get application form responses (excluding file fields)
+    // Get application form responses (including file fields for display)
     const applicationFormFields = responses?.filter(
       (response) =>
         response.value &&
-        response.fieldType !== "file" &&
         !(
           response.label &&
           response.label.toLowerCase().includes("resume")
@@ -692,9 +691,37 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                         key={`field-${index}`}
                         label={response.label || `Field ${index + 1}`}
                       >
-                        {Array.isArray(response.value)
-                          ? response.value.join(", ")
-                          : String(response.value)}
+                        {response.fieldType === "file" ? (
+                          // File field - show view and download buttons
+                          <Space>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<EyeOutlined />}
+                              onClick={() => handleViewResume(response.value, response.label || "File")}
+                              style={{ padding: "0", fontSize: "12px", height: "auto" }}
+                            >
+                              View File
+                            </Button>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<DownloadOutlined />}
+                              onClick={() => handleDownloadResume(response.value, response.label || "File")}
+                              style={{ padding: "0", fontSize: "12px", height: "auto" }}
+                            >
+                              Download
+                            </Button>
+                            <Text type="secondary" style={{ fontSize: "12px" }}>
+                              ({response.value ? new URL(response.value).pathname.split('/').pop() : "No file"})
+                            </Text>
+                          </Space>
+                        ) : (
+                          // Non-file field - display value normally
+                          Array.isArray(response.value)
+                            ? response.value.join(", ")
+                            : String(response.value)
+                        )}
                       </Descriptions.Item>
                     ))}
                   </Descriptions>
@@ -1241,13 +1268,21 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
       >
         {selectedResume?.url && (
           <iframe
-            src={selectedResume.url}
+            src={
+              selectedResume.url.endsWith(".pdf")
+                ? `https://docs.google.com/viewer?url=${encodeURIComponent(selectedResume.url)}&embedded=true`
+                : selectedResume.url
+            }
             style={{
               width: "100%",
               height: "100%",
               border: "none",
             }}
             title="Resume Preview"
+            onError={() => {
+              // Fallback: open in new tab if iframe fails
+              window.open(selectedResume.url, "_blank");
+            }}
           />
         )}
       </Modal>
