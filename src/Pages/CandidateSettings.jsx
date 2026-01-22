@@ -970,9 +970,10 @@ const CandidateSettings = () => {
       );
 
       // Process certificates from response or preserve existing ones
-      let updatedCertificates = Array.isArray(userData.certificates) ? userData.certificates : [];
+      // Backend now returns ALL certificates (existing + newly uploaded), so use API response as source of truth
+      let updatedCertificates = [];
       
-      // If API returned certificates, merge them with existing ones
+      // If API returned certificates, use them as the source of truth (they include all existing + new ones)
       if (res?.user?.certificates && Array.isArray(res.user.certificates)) {
         // Map API certificates to match frontend format
         const apiCertificates = res.user.certificates.map((cert) => ({
@@ -982,30 +983,34 @@ const CandidateSettings = () => {
           certificateFile: null, // Clear file reference after upload
         }));
         
-        // Merge: keep certificates that were just uploaded (have fileUrl from API)
-        // and preserve local certificates that haven't been uploaded yet (have certificateFile)
-        const uploadedFileUrls = new Set(
-          apiCertificates.map(c => c.fileUrl).filter(Boolean)
+        // Use API certificates as the base (they include all existing + newly uploaded)
+        updatedCertificates = [...apiCertificates];
+        
+        // Also preserve any local certificates that haven't been uploaded yet (have certificateFile but no fileUrl)
+        // These are certificates that were added in the UI but not yet saved
+        const localUnuploadedCerts = (userData.certificates || []).filter(
+          cert => cert.certificateFile && !cert.fileUrl
         );
         
-        updatedCertificates = [
-          // Keep local certificates that haven't been uploaded yet (have certificateFile but no fileUrl)
-          ...updatedCertificates.filter(cert => cert.certificateFile && !cert.fileUrl),
-          // Add/update certificates from API response (avoid duplicates by fileUrl)
-          ...apiCertificates.filter(apiCert => {
-            // Only add if not already in local certificates
-            return !updatedCertificates.some(localCert => 
-              localCert.fileUrl === apiCert.fileUrl && localCert.fileUrl
-            );
-          }),
-        ];
+        // Add local unuploaded certificates (avoid duplicates by checking fileUrl)
+        localUnuploadedCerts.forEach(localCert => {
+          const exists = updatedCertificates.some(
+            apiCert => apiCert.fileUrl && localCert.fileUrl && apiCert.fileUrl === localCert.fileUrl
+          );
+          if (!exists) {
+            updatedCertificates.push(localCert);
+          }
+        });
       } else {
-        // If no certificates in response, preserve existing ones but clear file references for uploaded ones
-        updatedCertificates = updatedCertificates.map(cert => {
-          // If certificate was uploaded (has certificateFile but no fileUrl), keep it
-          // Otherwise, return as is
+        // If no certificates in response, preserve existing ones
+        // Clear file references for certificates that were just uploaded (they should now have fileUrl from API)
+        updatedCertificates = (userData.certificates || []).map(cert => {
+          // If certificate was uploaded (has certificateFile but no fileUrl), it should now be in API response
+          // So we remove it from local state. Otherwise, keep it.
           if (cert.certificateFile && !cert.fileUrl) {
-            return cert; // Keep local certificate that hasn't been uploaded
+            // This certificate was uploaded, so it should be in API response
+            // If API didn't return certificates, something went wrong, but keep it for now
+            return { ...cert, certificateFile: null }; // Clear file reference
           }
           return cert; // Keep existing certificate with fileUrl
         });
