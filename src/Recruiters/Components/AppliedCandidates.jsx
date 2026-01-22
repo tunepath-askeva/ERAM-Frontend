@@ -692,30 +692,133 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                         label={response.label || `Field ${index + 1}`}
                       >
                         {response.fieldType === "file" ? (
-                          // File field - show view and download buttons
-                          <Space>
-                            <Button
-                              type="link"
-                              size="small"
-                              icon={<EyeOutlined />}
-                              onClick={() => handleViewResume(response.value, response.label || "File")}
-                              style={{ padding: "0", fontSize: "12px", height: "auto" }}
-                            >
-                              View File
-                            </Button>
-                            <Button
-                              type="link"
-                              size="small"
-                              icon={<DownloadOutlined />}
-                              onClick={() => handleDownloadResume(response.value, response.label || "File")}
-                              style={{ padding: "0", fontSize: "12px", height: "auto" }}
-                            >
-                              Download
-                            </Button>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>
-                              ({response.value ? new URL(response.value).pathname.split('/').pop() : "No file"})
-                            </Text>
-                          </Space>
+                          // File field - show view and download buttons with proper filename
+                          (() => {
+                            const fileUrl = response.value;
+                            if (!fileUrl) {
+                              return <Text type="secondary">No file uploaded</Text>;
+                            }
+
+                            // Extract filename from URL with better handling
+                            let fileName = response.label || "Document";
+                            let fileExtension = "";
+                            
+                            try {
+                              const url = new URL(fileUrl);
+                              const pathParts = url.pathname.split('/').filter(Boolean);
+                              const lastPart = pathParts[pathParts.length - 1] || "";
+                              
+                              // Extract extension
+                              const extMatch = lastPart.match(/\.[^.]+$/);
+                              fileExtension = extMatch ? extMatch[0] : "";
+                              
+                              // Get filename from URL path
+                              let urlFileName = lastPart.split('?')[0]; // Remove query params
+                              urlFileName = decodeURIComponent(urlFileName);
+                              
+                              // If the URL filename is meaningful (not generic like "files-1.pdf")
+                              // and not too long, use it; otherwise use the field label
+                              const isGenericName = urlFileName.includes('files-') || 
+                                                   urlFileName.match(/^[a-z0-9-]+-\d+\./i) || // Pattern like "b2-c7-files-1.pdf"
+                                                   urlFileName.length < 5;
+                              
+                              if (!isGenericName && urlFileName.length <= 60) {
+                                fileName = urlFileName;
+                              } else {
+                                // Use field label with extension
+                                fileName = response.label || response.fieldName || "Document";
+                                if (fileExtension && !fileName.toLowerCase().endsWith(fileExtension.toLowerCase())) {
+                                  fileName += fileExtension;
+                                }
+                              }
+                            } catch (e) {
+                              // If URL parsing fails, try simple string extraction
+                              try {
+                                const urlParts = fileUrl.split('/');
+                                const lastPart = urlParts[urlParts.length - 1] || "";
+                                const extractedName = lastPart.split('?')[0];
+                                
+                                if (extractedName && extractedName.length > 0 && !extractedName.includes('files-')) {
+                                  fileName = decodeURIComponent(extractedName);
+                                } else {
+                                  fileName = response.label || "Document";
+                                  // Try to get extension from URL
+                                  const extMatch = fileUrl.match(/\.[^.]+(?:\?|$)/);
+                                  if (extMatch) {
+                                    fileExtension = extMatch[0].split('?')[0];
+                                    if (!fileName.includes('.')) {
+                                      fileName += fileExtension;
+                                    }
+                                  }
+                                }
+                              } catch (err) {
+                                // Final fallback
+                                fileName = response.label || "Document";
+                              }
+                            }
+                            
+                            // Ensure filename is not empty
+                            if (!fileName || fileName.trim() === "") {
+                              fileName = "Document" + (fileExtension || ".pdf");
+                            }
+
+                            // Get file extension for icon
+                            const fileExt = fileName.split('.').pop()?.toLowerCase();
+                            const isPdf = fileExt === 'pdf';
+                            const FileIcon = isPdf ? FilePdfOutlined : FileTextOutlined;
+
+                            return (
+                              <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                                <Space>
+                                  <FileIcon style={{ color: "#da2c46", fontSize: "16px" }} />
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      color: "#1890ff",
+                                      textDecoration: "none",
+                                      fontSize: "13px",
+                                      fontWeight: 500,
+                                      maxWidth: "300px",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                      display: "inline-block",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.textDecoration = "underline";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.textDecoration = "none";
+                                    }}
+                                  >
+                                    {fileName}
+                                  </a>
+                                </Space>
+                                <Space size="small">
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<EyeOutlined />}
+                                    onClick={() => handleViewResume(fileUrl, fileName)}
+                                    style={{ padding: "0 4px", fontSize: "12px", height: "auto" }}
+                                  >
+                                    View
+                                  </Button>
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<DownloadOutlined />}
+                                    onClick={() => handleDownloadResume(fileUrl, fileName)}
+                                    style={{ padding: "0 4px", fontSize: "12px", height: "auto" }}
+                                  >
+                                    Download
+                                  </Button>
+                                </Space>
+                              </Space>
+                            );
+                          })()
                         ) : (
                           // Non-file field - display value normally
                           Array.isArray(response.value)
