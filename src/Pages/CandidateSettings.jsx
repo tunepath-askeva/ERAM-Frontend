@@ -734,11 +734,44 @@ const CandidateSettings = () => {
         return;
       }
 
-      const profileValues = await profileForm.validateFields();
-      const personalValues = await personalForm.validateFields();
-      const addressValues = await addressForm.validateFields();
-      const contactValues = await contactForm.validateFields();
-      const preferencesValues = await preferencesForm.validateFields();
+      // Get form values - ensure we always have values even if forms weren't fully filled
+      // Use getFieldsValue() as fallback to get current form values, then validate
+      let profileValues = {};
+      let personalValues = {};
+      let addressValues = {};
+      let contactValues = {};
+      let preferencesValues = {};
+
+      try {
+        profileValues = await profileForm.validateFields();
+      } catch (error) {
+        // If validation fails, get current form values
+        profileValues = profileForm.getFieldsValue();
+      }
+
+      try {
+        personalValues = await personalForm.validateFields();
+      } catch (error) {
+        personalValues = personalForm.getFieldsValue();
+      }
+
+      try {
+        addressValues = await addressForm.validateFields();
+      } catch (error) {
+        addressValues = addressForm.getFieldsValue();
+      }
+
+      try {
+        contactValues = await contactForm.validateFields();
+      } catch (error) {
+        contactValues = contactForm.getFieldsValue();
+      }
+
+      try {
+        preferencesValues = await preferencesForm.validateFields();
+      } catch (error) {
+        preferencesValues = preferencesForm.getFieldsValue();
+      }
 
       // Explicitly get country codes from forms to ensure they're included
       const phoneCountryCode = profileForm.getFieldValue("phoneCountryCode") || "91";
@@ -815,6 +848,11 @@ const CandidateSettings = () => {
         age: personalValues.age, // Add this
         dob: personalValues.dob,
         updatedAt: new Date().toISOString(),
+        // Ensure firstName and lastName are always included (from form or existing data)
+        firstName: profileValues.firstName || personalValues.firstName || userData.firstName || "",
+        lastName: profileValues.lastName || personalValues.lastName || userData.lastName || "",
+        middleName: profileValues.middleName || personalValues.middleName || userData.middleName || "",
+        email: profileValues.email || userData.email || "",
       };
 
       // CRITICAL: Explicitly ensure all country code fields are in allValues with proper values
@@ -911,9 +949,16 @@ const CandidateSettings = () => {
 
       const emailChanged = allValues.email !== userData.email;
 
+      // Use API response data or fallback to existing userData to avoid undefined values
+      const responseUser = res?.user || {};
+      const firstName = responseUser.firstName || allValues.firstName || userData.firstName || "";
+      const lastName = responseUser.lastName || allValues.lastName || userData.lastName || "";
+      const email = responseUser.email || allValues.email || userData.email || "";
+      const fullName = responseUser.fullName || `${firstName} ${lastName}`.trim() || userData.fullName || "";
+
       const updatedUserInfo = {
-        email: allValues.email,
-        name: `${allValues.firstName} ${allValues.lastName}`.trim(),
+        email: email,
+        name: fullName || `${firstName} ${lastName}`.trim() || userData.fullName || "",
         roles: "candidate",
       };
 
@@ -966,11 +1011,33 @@ const CandidateSettings = () => {
         });
       }
 
+      // Merge API response data with existing userData to ensure all fields are preserved
+      // Use API response as source of truth for updated fields, but preserve all existing fields
+      // Priority: API response > form values (allValues) > existing userData
       const updatedData = {
-        ...userData,
-        ...allValues,
-        imageFile: null,
-        fullName: `${allValues.firstName} ${allValues.lastName}`.trim(),
+        ...userData, // Start with ALL existing data to preserve everything
+        // Apply form values (only update fields that were actually in the form)
+        ...Object.fromEntries(
+          Object.entries(allValues).filter(([_, value]) => value !== undefined && value !== null)
+        ),
+        // Use API response data for fields that were updated on server
+        ...(responseUser.firstName !== undefined && { firstName: responseUser.firstName }),
+        ...(responseUser.lastName !== undefined && { lastName: responseUser.lastName }),
+        ...(responseUser.middleName !== undefined && { middleName: responseUser.middleName }),
+        ...(responseUser.email !== undefined && { email: responseUser.email }),
+        ...(responseUser.fullName !== undefined && { fullName: responseUser.fullName }),
+        ...(responseUser.image !== undefined && { image: responseUser.image }),
+        ...(responseUser.resumeUrl !== undefined && { resumeUrl: responseUser.resumeUrl }),
+        ...(responseUser.skills !== undefined && { skills: responseUser.skills }),
+        ...(responseUser.languages !== undefined && { languages: responseUser.languages }),
+        ...(responseUser.education !== undefined && { education: responseUser.education }),
+        ...(responseUser.workExperience !== undefined && { workExperience: responseUser.workExperience }),
+        ...(responseUser.socialLinks !== undefined && { socialLinks: responseUser.socialLinks }),
+        ...(responseUser.jobPreferences !== undefined && { jobPreferences: responseUser.jobPreferences }),
+        // Always update these
+        fullName: fullName || userData.fullName || `${firstName} ${lastName}`.trim(),
+        imageFile: null, // Clear file reference after upload
+        resumeFile: null, // Clear file reference after upload
         certificates: updatedCertificates, // Preserve certificates
       };
 
