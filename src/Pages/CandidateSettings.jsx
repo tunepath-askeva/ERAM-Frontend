@@ -80,6 +80,8 @@ import {
   useGetCandidateQuery,
   useProfileCompletionMutation,
   useChangePasswordMutation,
+  useAddCertificateMutation,
+  useDeleteCertificateMutation,
 } from "../Slices/Users/UserApis";
 import { useDispatch } from "react-redux";
 import { setUserCredentials } from "../Slices/Users/UserSlice";
@@ -273,6 +275,8 @@ const CandidateSettings = () => {
   const { data: getCandidate, isLoading } = useGetCandidateQuery();
   const [profileComplete] = useProfileCompletionMutation();
   const [changePassword] = useChangePasswordMutation();
+  const [addCertificate] = useAddCertificateMutation();
+  const [deleteCertificate] = useDeleteCertificateMutation();
 
   const [profileForm] = Form.useForm();
   const [personalForm] = Form.useForm();
@@ -907,31 +911,8 @@ const CandidateSettings = () => {
         "workExperience",
         JSON.stringify(userData.workExperience || [])
       );
-      const certificatesData = userData.certificates
-        .filter((cert) => cert.certificateFile)
-        .map((cert) => ({
-          fieldName: cert.title || "certificate", // ✅ Use the title for fieldName
-          fileName: cert.certificateFile.name,
-          mimeType: cert.certificateFile.type,
-          size: cert.certificateFile.size,
-        }));
-
-      userData.certificates.forEach((cert) => {
-        if (cert.certificateFile) {
-          // Set the fieldname in the file object itself before appending
-          Object.defineProperty(cert.certificateFile, "fieldname", {
-            value: cert.title || "certificate",
-            writable: false,
-          });
-
-          // Append under the same key "certificates"
-          formData.append(
-            "certificates",
-            cert.certificateFile,
-            cert.title || "certificate"
-          );
-        }
-      });
+      // Certificates are now managed via separate add/delete endpoints
+      // No need to include them in profile completion
 
       // Handle image file
       if (imageFile) {
@@ -969,52 +950,12 @@ const CandidateSettings = () => {
         })
       );
 
-      // Process certificates from response or preserve existing ones
-      // Backend now returns ALL certificates (existing + newly uploaded), so use API response as source of truth
-      let updatedCertificates = [];
-      
-      // If API returned certificates, use them as the source of truth (they include all existing + new ones)
-      if (res?.user?.certificates && Array.isArray(res.user.certificates)) {
-        // Map API certificates to match frontend format
-        const apiCertificates = res.user.certificates.map((cert) => ({
-          id: cert.id || cert._id || Math.random().toString(36).substr(2, 9),
-          title: cert.title || cert.fileName || cert.documentName || "certificate",
-          fileUrl: cert.fileUrl || cert.url || "",
-          certificateFile: null, // Clear file reference after upload
-        }));
-        
-        // Use API certificates as the base (they include all existing + newly uploaded)
-        updatedCertificates = [...apiCertificates];
-        
-        // Also preserve any local certificates that haven't been uploaded yet (have certificateFile but no fileUrl)
-        // These are certificates that were added in the UI but not yet saved
-        const localUnuploadedCerts = (userData.certificates || []).filter(
-          cert => cert.certificateFile && !cert.fileUrl
-        );
-        
-        // Add local unuploaded certificates (avoid duplicates by checking fileUrl)
-        localUnuploadedCerts.forEach(localCert => {
-          const exists = updatedCertificates.some(
-            apiCert => apiCert.fileUrl && localCert.fileUrl && apiCert.fileUrl === localCert.fileUrl
-          );
-          if (!exists) {
-            updatedCertificates.push(localCert);
-          }
-        });
-      } else {
-        // If no certificates in response, preserve existing ones
-        // Clear file references for certificates that were just uploaded (they should now have fileUrl from API)
-        updatedCertificates = (userData.certificates || []).map(cert => {
-          // If certificate was uploaded (has certificateFile but no fileUrl), it should now be in API response
-          // So we remove it from local state. Otherwise, keep it.
-          if (cert.certificateFile && !cert.fileUrl) {
-            // This certificate was uploaded, so it should be in API response
-            // If API didn't return certificates, something went wrong, but keep it for now
-            return { ...cert, certificateFile: null }; // Clear file reference
-          }
-          return cert; // Keep existing certificate with fileUrl
-        });
-      }
+      // Certificates are now managed via separate add/delete endpoints
+      // Preserve existing certificates from userData (they're managed separately)
+      const updatedCertificates = (userData.certificates || []).map(cert => ({
+        ...cert,
+        certificateFile: null, // Clear any file references after profile save
+      }));
 
       // Merge API response data with existing userData to ensure all fields are preserved
       // Use API response as source of truth for updated fields, but preserve all existing fields
@@ -1141,19 +1082,50 @@ const CandidateSettings = () => {
           userData.certificates.find((c) => c.id === editingCertId)
             ?.certificateFile);
 
+      // If editing existing certificate (that already has fileUrl), just update title locally
+      if (editingCertId) {
+        const existingCert = userData.certificates.find((c) => c.id === editingCertId);
+        if (existingCert?.fileUrl && !certificateFile) {
+          // Just updating title, no file upload needed
+          setUserData((prev) => ({
+            ...prev,
+            certificates: prev.certificates.map((cert) =>
+              cert.id === editingCertId ? { ...cert, title: values.title } : cert
+            ),
+          }));
+          setIsCertModalVisible(false);
+          setEditingCertId(null);
+          setEditingCertData({});
+          return;
+        }
+      }
+
+      // If no file is selected, show error
+      if (!certificateFile) {
+        enqueueSnackbar("Please select a certificate file", {
+          variant: "error",
+        });
+        return;
+      }
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("certificate", certificateFile);
+      formData.append("title", values.title);
+
+      // Call API to add certificate
+      const res = await addCertificate(formData).unwrap();
+
+      // Update local state with the new certificate from API
       const newCertificate = {
-        ...values,
-        id: editingCertId || Math.random().toString(36).substr(2, 9),
-        certificateFile: certificateFile || null,
-        fileUrl:
-          editingCertData.fileUrl ||
-          (editingCertId &&
-            userData.certificates.find((c) => c.id === editingCertId)
-              ?.fileUrl) ||
-          "",
+        id: res.certificate._id || res.certificate.id || Math.random().toString(36).substr(2, 9),
+        title: res.certificate.fileName || values.title,
+        fileUrl: res.certificate.fileUrl,
+        certificateFile: null, // Clear file reference after upload
       };
 
       if (editingCertId) {
+        // Replace existing certificate
         setUserData((prev) => ({
           ...prev,
           certificates: prev.certificates.map((cert) =>
@@ -1161,17 +1133,22 @@ const CandidateSettings = () => {
           ),
         }));
       } else {
+        // Add new certificate
         setUserData((prev) => ({
           ...prev,
           certificates: [...prev.certificates, newCertificate],
         }));
       }
+
+      enqueueSnackbar("Certificate added successfully", {
+        variant: "success",
+      });
       setIsCertModalVisible(false);
       setEditingCertId(null);
-      setEditingCertData({}); // Clear temporary data
+      setEditingCertData({});
     } catch (err) {
-      console.log("Validation error:", err);
-      enqueueSnackbar("Please enter certificate title", {
+      console.error("Certificate upload error:", err);
+      enqueueSnackbar(err?.data?.message || "Failed to upload certificate", {
         variant: "error",
       });
     }
@@ -1194,11 +1171,36 @@ const CandidateSettings = () => {
     setIsCertModalVisible(true);
   };
 
-  const removeCertificate = (id) => {
+  const removeCertificate = async (id) => {
     if (!isProfileEditable) {
       message.warning("Please enable edit mode to remove certificate/document");
       return;
     }
+
+    const certificate = userData.certificates.find((c) => c.id === id);
+    
+    // If certificate has a fileUrl, it's been uploaded - delete from server
+    if (certificate?.fileUrl) {
+      try {
+        // Find the certificate ID from the database (could be _id or id)
+        const certificateId = certificate._id || certificate.id;
+        
+        if (certificateId) {
+          await deleteCertificate(certificateId).unwrap();
+          enqueueSnackbar("Certificate deleted successfully", {
+            variant: "success",
+          });
+        }
+      } catch (err) {
+        console.error("Certificate delete error:", err);
+        enqueueSnackbar(err?.data?.message || "Failed to delete certificate", {
+          variant: "error",
+        });
+        return; // Don't remove from UI if delete failed
+      }
+    }
+
+    // Remove from local state
     setUserData({
       ...userData,
       certificates: userData.certificates.filter((cert) => cert.id !== id),

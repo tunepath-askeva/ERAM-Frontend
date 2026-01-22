@@ -154,6 +154,19 @@ export const userApi = createApi({
         body: formData,
       }),
     }),
+    addCertificate: builder.mutation({
+      query: (formData) => ({
+        url: `/certificate`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    deleteCertificate: builder.mutation({
+      query: (certificateId) => ({
+        url: `/certificate/${certificateId}`,
+        method: "DELETE",
+      }),
+    }),
     getCandidate: builder.query({
       query: () => ({
         url: `/candidate`,
