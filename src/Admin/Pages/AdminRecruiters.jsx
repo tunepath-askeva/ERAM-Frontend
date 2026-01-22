@@ -1253,7 +1253,7 @@ const AdminRecruiter = () => {
                       </Text>
                     </div>
                   ) : (
-                    <Text type="secondary">Not specified</Text>
+                    <Text type="secondary">N/A</Text>
                   )}
                 </Descriptions.Item>
               </Descriptions>

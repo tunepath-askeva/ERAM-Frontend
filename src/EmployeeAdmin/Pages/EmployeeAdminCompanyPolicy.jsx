@@ -592,7 +592,7 @@ const EmployeeAdminCompanyPolicy = () => {
             </div>
           </div>
         ) : (
-          "N/A"
+          <Text type="secondary">N/A</Text>
         ),
     },
     {

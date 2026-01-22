@@ -1460,7 +1460,8 @@ const EmployeeDetailsDrawer = ({
                           label="Created By"
                           value={
                             employee.createdBy?.fullName ||
-                            employee.createdBy?.email
+                            employee.createdBy?.email ||
+                            "Self-Registered"
                           }
                         />
                         <InfoItem

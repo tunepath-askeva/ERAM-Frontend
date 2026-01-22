@@ -531,7 +531,7 @@ const StaffManagement = () => {
                       <Tag color="blue">
                         {staffMember?.createdBy?.fullName
                           ? `${staffMember.createdBy.fullName} (${staffMember.createdBy.email})`
-                          : staffMember?.createdBy?.email}
+                          : staffMember?.createdBy?.email || "N/A"}
                       </Tag>
                     </div>
                   </div>

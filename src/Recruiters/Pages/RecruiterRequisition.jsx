@@ -306,7 +306,9 @@ const RecruiterRequisition = () => {
       render: (_, record) => {
         const createdBy = record?.createdBy;
 
-        if (!createdBy) return "-";
+        if (!createdBy) {
+          return <Text type="secondary">N/A</Text>;
+        }
 
         return (
           <Space direction="vertical" size={0}>

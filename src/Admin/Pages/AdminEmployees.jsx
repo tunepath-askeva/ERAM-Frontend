@@ -247,9 +247,13 @@ const AdminEmployees = () => {
       dataIndex: "createdBy",
       key: "createdBy",
       width: 200,
-      render: (createdBy) => {
+      render: (createdBy, record) => {
         if (!createdBy) {
-          return <Text type="secondary">N/A</Text>;
+          return (
+            <Tag color="green" style={{ margin: 0 }}>
+              Self-Registered
+            </Tag>
+          );
         }
 
         return (
