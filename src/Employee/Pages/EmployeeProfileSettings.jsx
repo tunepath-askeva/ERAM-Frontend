@@ -37,7 +37,14 @@ const EmployeeProfileSettings = () => {
 
   useEffect(() => {
     if (data && data.employee) {
-      setEmployeeData(data.employee);
+      // Ensure certificates is always an array, never undefined
+      const employeeDataWithCertificates = {
+        ...data.employee,
+        certificates: Array.isArray(data.employee.certificates) 
+          ? data.employee.certificates 
+          : [],
+      };
+      setEmployeeData(employeeDataWithCertificates);
     }
   }, [data]);
 

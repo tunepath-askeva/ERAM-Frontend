@@ -924,11 +924,54 @@ const CandidateSettings = () => {
         })
       );
 
+      // Process certificates from response or preserve existing ones
+      let updatedCertificates = Array.isArray(userData.certificates) ? userData.certificates : [];
+      
+      // If API returned certificates, merge them with existing ones
+      if (res?.user?.certificates && Array.isArray(res.user.certificates)) {
+        // Map API certificates to match frontend format
+        const apiCertificates = res.user.certificates.map((cert) => ({
+          id: cert.id || cert._id || Math.random().toString(36).substr(2, 9),
+          title: cert.title || cert.fileName || cert.documentName || "certificate",
+          fileUrl: cert.fileUrl || cert.url || "",
+          certificateFile: null, // Clear file reference after upload
+        }));
+        
+        // Merge: keep certificates that were just uploaded (have fileUrl from API)
+        // and preserve local certificates that haven't been uploaded yet (have certificateFile)
+        const uploadedFileUrls = new Set(
+          apiCertificates.map(c => c.fileUrl).filter(Boolean)
+        );
+        
+        updatedCertificates = [
+          // Keep local certificates that haven't been uploaded yet (have certificateFile but no fileUrl)
+          ...updatedCertificates.filter(cert => cert.certificateFile && !cert.fileUrl),
+          // Add/update certificates from API response (avoid duplicates by fileUrl)
+          ...apiCertificates.filter(apiCert => {
+            // Only add if not already in local certificates
+            return !updatedCertificates.some(localCert => 
+              localCert.fileUrl === apiCert.fileUrl && localCert.fileUrl
+            );
+          }),
+        ];
+      } else {
+        // If no certificates in response, preserve existing ones but clear file references for uploaded ones
+        updatedCertificates = updatedCertificates.map(cert => {
+          // If certificate was uploaded (has certificateFile but no fileUrl), keep it
+          // Otherwise, return as is
+          if (cert.certificateFile && !cert.fileUrl) {
+            return cert; // Keep local certificate that hasn't been uploaded
+          }
+          return cert; // Keep existing certificate with fileUrl
+        });
+      }
+
       const updatedData = {
         ...userData,
         ...allValues,
         imageFile: null,
         fullName: `${allValues.firstName} ${allValues.lastName}`.trim(),
+        certificates: updatedCertificates, // Preserve certificates
       };
 
       setUserData(updatedData);
