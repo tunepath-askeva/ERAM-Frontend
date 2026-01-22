@@ -184,7 +184,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
         (pagination.current - 1) * pagination.pageSize,
         pagination.current * pagination.pageSize
       )
-      .map((app) => app.user._id);
+      .map((app) => app?.user?._id).filter(Boolean);
 
     setSelectedCandidates((prev) =>
       checked
@@ -266,7 +266,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
     return (
       <Menu
-        onClick={({ key }) => handleStatusChange(application._id, key)}
+        onClick={({ key }) => handleStatusChange(application?._id, key)}
         items={items}
       />
     );
@@ -889,6 +889,11 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
   };
 
   const renderCandidateCard = (application, index) => {
+    // Skip if application or user is null
+    if (!application || !application.user) {
+      return null;
+    }
+
     const {
       user,
       responses,
@@ -901,7 +906,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
 
     return (
       <Card
-        key={application._id || index}
+        key={application?._id || index}
         size="small"
         style={{
           marginBottom: "12px",
@@ -1169,28 +1174,33 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                 pagination.current * pagination.pageSize
               )
               .map((application) => {
+                // Skip if user is null
+                if (!application?.user) {
+                  return null;
+                }
+
                 const candidate = {
                   ...application.user,
-                  _id: application.user._id,
-                  applicationId: application._id,
-                  status: application.status,
-                  appliedDate: application.createdAt,
+                  _id: application.user?._id,
+                  applicationId: application?._id,
+                  status: application?.status,
+                  appliedDate: application?.createdAt,
                   isApplied: true,
-                  responses: application.responses,
+                  responses: application?.responses,
                   workOrderuploadedDocuments:
-                    application.workOrderuploadedDocuments,
+                    application?.workOrderuploadedDocuments,
                 };
 
                 return (
                   <CandidateCard
-                    key={application._id}
+                    key={application?._id || Math.random()}
                     candidate={candidate}
                     onViewProfile={() => handleViewDetails(application)}
                     showExperience={false}
                     showSkills={false}
                     onSelectCandidate={handleCandidateSelect}
                     isSelected={selectedCandidates.includes(
-                      application.user._id
+                      application.user?._id
                     )}
                     isSelectable={candidateType === "applied"}
                     customActions={
@@ -1301,7 +1311,7 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
               type="primary"
               icon={<ArrowRightOutlined />}
               onClick={() =>
-                handleMoveToScreening(selectedApplication.user._id)
+                handleMoveToScreening(selectedApplication?.user?._id)
               }
               loading={isUpdatingStatus}
               disabled={!checkDocumentsUploaded(selectedApplication)}
