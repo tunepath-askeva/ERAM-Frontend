@@ -275,8 +275,8 @@ const CandidateSettings = () => {
   const { data: getCandidate, isLoading } = useGetCandidateQuery();
   const [profileComplete] = useProfileCompletionMutation();
   const [changePassword] = useChangePasswordMutation();
-  const [addCertificate] = useAddCertificateMutation();
-  const [deleteCertificate] = useDeleteCertificateMutation();
+  const [addCertificateMutation] = useAddCertificateMutation();
+  const [deleteCertificateMutation] = useDeleteCertificateMutation();
 
   const [profileForm] = Form.useForm();
   const [personalForm] = Form.useForm();
@@ -1114,7 +1114,7 @@ const CandidateSettings = () => {
       formData.append("title", values.title);
 
       // Call API to add certificate
-      const res = await addCertificate(formData).unwrap();
+      const res = await addCertificateMutation(formData).unwrap();
 
       // Update local state with the new certificate from API
       const newCertificate = {
@@ -1186,7 +1186,7 @@ const CandidateSettings = () => {
         const certificateId = certificate._id || certificate.id;
         
         if (certificateId) {
-          await deleteCertificate(certificateId).unwrap();
+          await deleteCertificateMutation(certificateId).unwrap();
           enqueueSnackbar("Certificate deleted successfully", {
             variant: "success",
           });

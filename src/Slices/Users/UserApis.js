@@ -510,6 +510,8 @@ export const {
   useWithdrawJobApplicationMutation,
   useGetCandidateQuery,
   useProfileCompletionMutation,
+  useAddCertificateMutation,
+  useDeleteCertificateMutation,
   useLazySearchJobsQuery,
   useLazyFilterJobsQuery,
   useGetSourcedJobByIdQuery,
