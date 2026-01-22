@@ -686,12 +686,20 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
               >
                 {applicationFormFields.length > 0 ? (
                   <Descriptions bordered column={1}>
-                    {applicationFormFields.map((response, index) => (
+                    {applicationFormFields.map((response, index) => {
+                      // Detect if value is a file URL (even if fieldType is not set)
+                      const isFileUrl = response.value && 
+                        typeof response.value === 'string' && 
+                        (response.value.startsWith('http://') || 
+                         response.value.startsWith('https://') ||
+                         response.fieldType === "file");
+                      
+                      return (
                       <Descriptions.Item
                         key={`field-${index}`}
                         label={response.label || `Field ${index + 1}`}
                       >
-                        {response.fieldType === "file" ? (
+                        {isFileUrl ? (
                           // File field - show view and download buttons with proper filename
                           (() => {
                             const fileUrl = response.value;
@@ -826,7 +834,8 @@ const AppliedCandidates = ({ jobId, candidateType = "applied" }) => {
                             : String(response.value)
                         )}
                       </Descriptions.Item>
-                    ))}
+                      );
+                    })}
                   </Descriptions>
                 ) : (
                   <Text>No application form data available</Text>
