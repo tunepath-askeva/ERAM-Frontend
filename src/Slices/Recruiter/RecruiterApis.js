@@ -77,6 +77,16 @@ export const recruiterApi = createApi({
         body: patch,
       }),
     }),
+    cloneWorkOrder: builder.mutation({
+      query: (data) => {
+        const { id, title } = typeof data === 'object' ? data : { id: data };
+        return {
+          url: `/workOrder/clone/${id}`,
+          method: "POST",
+          body: title ? { title } : {},
+        };
+      },
+    }),
     getRecruiterJobId: builder.query({
       query: (id) => `/jobs/${id}`,
     }),
@@ -401,6 +411,18 @@ export const recruiterApi = createApi({
         method: "GET",
       }),
     }),
+    getAllClientsForDropdown: builder.query({
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.search) {
+          queryParams.append("search", params.search);
+        }
+        return {
+          url: `/clients/all${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
+          method: "GET",
+        };
+      },
+    }),
     getRequisitions: builder.query({
       query: ({ search = "", filters = {}, pagination = {} }) => {
         const params = new URLSearchParams();
@@ -622,10 +644,18 @@ export const recruiterApi = createApi({
     }),
 
     getRecruiterInterviews: builder.query({
-      query: () => ({
-        url: `/rec-interview`,
-        method: "GET",
-      }),
+      query: ({ page = 1, limit = 10, search = "" } = {}) => {
+        const params = new URLSearchParams();
+        params.append("page", page);
+        params.append("limit", limit);
+        if (search) {
+          params.append("search", search);
+        }
+        return {
+          url: `/rec-interview?${params.toString()}`,
+          method: "GET",
+        };
+      },
     }),
 
     offerInfo: builder.mutation({
@@ -794,6 +824,26 @@ export const recruiterApi = createApi({
         body: { stageId, documentId },
       }),
     }),
+    uploadStageDocumentsOnBehalf: builder.mutation({
+      query: ({ id, stageId, files, filesMetadata }) => {
+        const formData = new FormData();
+        formData.append("stageId", stageId);
+        formData.append("filesMetadata", JSON.stringify(filesMetadata || []));
+        
+        // Append all files
+        if (files && files.length > 0) {
+          files.forEach((file) => {
+            formData.append("files", file);
+          });
+        }
+
+        return {
+          url: `/upload-stage-documents/${id}`,
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
     undoStage: builder.mutation({
       query: ({ id, stageId }) => ({
         url: `/undo-stage/${id}`,
@@ -914,6 +964,26 @@ export const recruiterApi = createApi({
         body: data,
       }),
     }),
+    acceptOfferOnBehalfOfCandidate: builder.mutation({
+      query: (formData) => ({
+        url: "/accept-offer-on-behalf",
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    addCandidateCertificate: builder.mutation({
+      query: ({ candidateId, formData }) => ({
+        url: `/candidate/${candidateId}/certificate`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
+    deleteCandidateCertificate: builder.mutation({
+      query: ({ candidateId, certificateId }) => ({
+        url: `/candidate/${candidateId}/certificate/${certificateId}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -922,6 +992,7 @@ export const {
   useGetPipelinesQuery,
   useGetRecruiterJobsQuery,
   useUpdateRecruiterJobMutation,
+  useCloneWorkOrderMutation,
   useGetRecruiterJobIdQuery,
   useGetJobApplicationsQuery,
   useGetSourcedCandidateQuery,
@@ -951,6 +1022,7 @@ export const {
   useGetExactMatchCandidatesQuery,
   useSubmitRequisitionMutation,
   useGetClientsQuery,
+  useGetAllClientsForDropdownQuery,
   useGetRequisitionsQuery,
   useEditRequisitionMutation,
   useDeleteRequisitionMutation,
@@ -961,6 +1033,8 @@ export const {
   useGetAllBranchedCandidateQuery,
   useGetAllcandidatebyIdQuery,
   useUpdateBranchedCandidateMutation,
+  useAddCandidateCertificateMutation,
+  useDeleteCandidateCertificateMutation,
   useStagedCandidateNotifyMutation,
   useGetRecruiterJobTimelineIdQuery,
   useConvertEmployeeMutation,
@@ -998,6 +1072,7 @@ export const {
   useGetRequisitionApprovalsQuery,
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
+  useUploadStageDocumentsOnBehalfMutation,
   useUndoStageMutation,
   useLazyExportEmployeesCSVQuery,
   useRejectCandidateFromStageMutation,
@@ -1014,4 +1089,5 @@ export const {
   useGetAttritionHistoryQuery,
   useUpdateEmployeeEmailMutation,
   useSendStageNotificationMutation,
+  useAcceptOfferOnBehalfOfCandidateMutation,
 } = recruiterApi;

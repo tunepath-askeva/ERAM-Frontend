@@ -355,6 +355,36 @@ const ViewWorkOrder = () => {
           </div>
         )}
 
+        {workOrder.aboutUs && (
+          <div style={{ marginBottom: "16px" }}>
+            <Text
+              strong
+              style={{
+                fontSize: "13px",
+                display: "block",
+                marginBottom: "8px",
+              }}
+            >
+              About Us
+            </Text>
+            <Paragraph
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0",
+                fontSize: "13px",
+                wordBreak: "break-word",
+                lineHeight: "1.5",
+                backgroundColor: "#fff",
+                padding: "12px",
+                borderRadius: "6px",
+                border: "1px solid #f0f0f0",
+              }}
+            >
+              {workOrder.aboutUs}
+            </Paragraph>
+          </div>
+        )}
+
         {workOrder.requiredSkills?.length > 0 && (
           <div style={{ marginBottom: "16px" }}>
             <Text

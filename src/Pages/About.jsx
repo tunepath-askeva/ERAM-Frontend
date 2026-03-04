@@ -18,25 +18,23 @@ const GLOBAL_LOCATIONS = [
 
 const LEADERSHIP_TEAM = [
   {
-    name: "John Smith",
     position: "Chairman & CEO",
-    bio: "With over 25 years of experience in human capital management, John founded ERAM Workforce with a vision to revolutionize global recruitment.",
+    bio: "With over 25 years of experience in human capital management, Our CEO founded ERAM Workforce with a vision to revolutionize global recruitment.",
   },
   {
-    name: "Sarah Johnson",
     position: "Chief Operating Officer",
-    bio: "Sarah oversees all operational aspects of ERAM Workforce, ensuring seamless service delivery across all our global offices.",
+    bio: "Our COO oversees all operational aspects of ERAM Workforce, ensuring seamless service delivery across all our global offices.",
   },
-  {
-    name: "Michael Chen",
-    position: "Director of Global Recruitment",
-    bio: "Michael leads our international recruitment teams, specializing in cross-border talent acquisition strategies.",
-  },
-  {
-    name: "Aisha Al-Mansoori",
-    position: "Middle East Regional Director",
-    bio: "Aisha manages our operations across the GCC, bringing deep expertise in the regional labor markets.",
-  }
+  // {
+  //   name: "Michael Chen",
+  //   position: "Director of Global Recruitment",
+  //   bio: "Michael leads our international recruitment teams, specializing in cross-border talent acquisition strategies.",
+  // },
+  // {
+  //   name: "Aisha Al-Mansoori",
+  //   position: "Middle East Regional Director",
+  //   bio: "Aisha manages our operations across the GCC, bringing deep expertise in the regional labor markets.",
+  // }
 ];
 
 const INDUSTRIES = [
@@ -312,14 +310,14 @@ const About = () => {
                     <div className="leader-image">
                       <img
                         src={member.image}
-                        alt={`Portrait of ${member.name}, ${member.position}`}
+                        // alt={`Portrait of ${member.name}, ${member.position}`}
                         width={334}
                         height={334}
                       />
                       <div className="image-overlay"></div>
                     </div>
                     <div className="leader-info">
-                      <h3>{member.name}</h3>
+                      {/* <h3>{member.name}</h3> */}
                       <p className="position">{member.position}</p>
                       <p className="bio">{member.bio}</p>
                     </div>

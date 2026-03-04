@@ -8,6 +8,7 @@ import {
   Tag,
   Button,
   Upload,
+  Grid,
 } from "antd";
 import { UserOutlined, UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -18,6 +19,7 @@ import { useSnackbar } from "notistack";
 const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+const { useBreakpoint } = Grid;
 
 const StageModals = ({
   isMoveModalVisible,
@@ -91,10 +93,19 @@ const StageModals = ({
   setRejectionReason,
   handleRejectCandidate,
   isRejecting,
+  isUploadRequiredDocsModalVisible,
+  setIsUploadRequiredDocsModalVisible,
+  requiredDocsFiles,
+  setRequiredDocsFiles,
+  fileDocumentMapping,
+  setFileDocumentMapping,
+  handleUploadRequiredDocuments,
+  isUploadingDocuments,
 }) => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const screens = useBreakpoint();
   // const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
 
   const isActualLastStage = (stageId) => {
@@ -1085,6 +1096,431 @@ const StageModals = ({
               </ul>
             </Text>
           </div>
+        </div>
+      </Modal>
+
+      {/* Upload Required Documents Modal */}
+      <Modal
+        title={
+          <Text
+            strong
+            style={{
+              fontSize: screens.xs ? "16px" : "18px",
+              display: "block",
+            }}
+          >
+            Upload Required Documents on Behalf of Candidate
+          </Text>
+        }
+        visible={isUploadRequiredDocsModalVisible}
+        onOk={() => {
+          if (!requiredDocsFiles || requiredDocsFiles.length === 0) {
+            enqueueSnackbar("Please select at least one file to upload", {
+              variant: "error",
+            });
+            return;
+          }
+
+          const currentCandidate = processedJobData?.candidates?.[0];
+          if (!currentCandidate) {
+            enqueueSnackbar("Candidate not found", { variant: "error" });
+            return;
+          }
+
+          const stage = currentCandidate.stageProgress?.find(
+            (sp) => sp.stageId === activeStage
+          );
+          const baseRequiredDocuments = stage?.fullStage?.requiredDocuments || [];
+
+          // Validate that all files have a document type selected
+          const filesWithoutDocType = requiredDocsFiles.filter(
+            (file) => !fileDocumentMapping[file.uid] && !fileDocumentMapping[file.name]
+          );
+          if (filesWithoutDocType.length > 0) {
+            enqueueSnackbar(
+              "Please select the document type for all uploaded files",
+              { variant: "error" }
+            );
+            return;
+          }
+
+          // Create filesMetadata using the selected document types
+          const filesMetadata = requiredDocsFiles.map((file) => {
+            const selectedDocName =
+              fileDocumentMapping[file.uid] ||
+              fileDocumentMapping[file.name] ||
+              file.name?.replace(/\.[^/.]+$/, "") ||
+              `Document`;
+            
+            return {
+              documentName: selectedDocName, // Use the selected required document name
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            };
+          });
+
+          handleUploadRequiredDocuments(requiredDocsFiles, filesMetadata);
+        }}
+        onCancel={() => {
+          setIsUploadRequiredDocsModalVisible(false);
+          setRequiredDocsFiles([]);
+          setFileDocumentMapping({});
+        }}
+        okText="Upload Documents"
+        cancelText="Cancel"
+        okButtonProps={{
+          style: { backgroundColor: primaryColor, borderColor: primaryColor },
+          loading: isUploadingDocuments,
+        }}
+        width={screens.xs ? "95%" : screens.sm ? "90%" : screens.md ? 700 : 600}
+        style={{ top: screens.xs ? 20 : 100 }}
+        bodyStyle={{
+          padding: screens.xs ? "12px" : "16px",
+          maxHeight: screens.xs ? "calc(100vh - 200px)" : "none",
+          overflowY: screens.xs ? "auto" : "visible",
+        }}
+      >
+        <div style={{ padding: screens.xs ? "8px 0" : "16px 0" }}>
+          <Text
+            type="secondary"
+            style={{
+              display: "block",
+              marginBottom: screens.xs ? "12px" : "16px",
+              fontSize: screens.xs ? "13px" : "14px",
+              lineHeight: screens.xs ? "1.5" : "1.6",
+            }}
+          >
+            Upload the required documents for this stage on behalf of the candidate.
+            These documents will be added to the candidate's uploaded documents.
+          </Text>
+
+          {(() => {
+            const currentCandidate = processedJobData?.candidates?.[0];
+            if (!currentCandidate) return null;
+
+            const stage = currentCandidate.stageProgress?.find(
+              (sp) => sp.stageId === activeStage
+            );
+            const baseRequiredDocuments = stage?.fullStage?.requiredDocuments || [];
+            const uploadedDocs = stage?.uploadedDocuments || [];
+            const uploadedDocNames = uploadedDocs.map(
+              (doc) => doc.documentName || doc.fileName
+            );
+            const missingDocs = baseRequiredDocuments.filter(
+              (doc) => !uploadedDocNames.includes(doc)
+            );
+
+            return (
+              <>
+                <div style={{ marginBottom: screens.xs ? "12px" : "16px" }}>
+                  <Text
+                    strong
+                    style={{
+                      display: "block",
+                      marginBottom: screens.xs ? "6px" : "8px",
+                      fontSize: screens.xs ? "14px" : "15px",
+                    }}
+                  >
+                    Required Documents:
+                  </Text>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: screens.xs ? "6px" : "8px",
+                    }}
+                  >
+                    {baseRequiredDocuments.map((doc, index) => {
+                      const isUploaded = uploadedDocNames.includes(doc);
+                      return (
+                        <Tag
+                          key={index}
+                          color={isUploaded ? "green" : "blue"}
+                          style={{
+                            fontSize: screens.xs ? "11px" : "13px",
+                            padding: screens.xs ? "2px 8px" : "4px 12px",
+                            marginBottom: screens.xs ? "4px" : "0",
+                            maxWidth: screens.xs ? "100%" : "auto",
+                            wordBreak: screens.xs ? "break-word" : "normal",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: "inline-block",
+                              maxWidth: screens.xs ? "calc(100% - 20px)" : "none",
+                              overflow: screens.xs ? "hidden" : "visible",
+                              textOverflow: screens.xs ? "ellipsis" : "clip",
+                              whiteSpace: screens.xs ? "nowrap" : "normal",
+                            }}
+                          >
+                            {doc}
+                          </span>
+                          {isUploaded && (
+                            <span style={{ marginLeft: "4px" }}>✓</span>
+                          )}
+                        </Tag>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {missingDocs.length > 0 && (
+                  <div
+                    style={{
+                      marginBottom: screens.xs ? "12px" : "16px",
+                      padding: screens.xs ? "10px" : "12px",
+                      backgroundColor: "#fff7e6",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <Text
+                      type="warning"
+                      style={{
+                        fontSize: screens.xs ? "12px" : "13px",
+                        lineHeight: screens.xs ? "1.5" : "1.6",
+                        display: "block",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <strong>Missing documents:</strong>{" "}
+                      {screens.xs ? (
+                        <div style={{ marginTop: "4px" }}>
+                          {missingDocs.map((doc, idx) => (
+                            <div key={idx} style={{ marginBottom: "2px" }}>
+                              • {doc}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        missingDocs.join(", ")
+                      )}
+                    </Text>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+
+          <Upload
+            multiple
+            fileList={requiredDocsFiles}
+            onChange={(info) => {
+              setRequiredDocsFiles(info.fileList);
+              // Clear mapping for removed files
+              const currentFileUids = new Set(
+                info.fileList.map((f) => f.uid || f.name)
+              );
+              setFileDocumentMapping((prev) => {
+                const updated = { ...prev };
+                Object.keys(updated).forEach((key) => {
+                  if (!currentFileUids.has(key)) {
+                    delete updated[key];
+                  }
+                });
+                return updated;
+              });
+            }}
+            beforeUpload={(file) => {
+              const isLt10M = file.size / 1024 / 1024 < 10;
+              if (!isLt10M) {
+                enqueueSnackbar("File must be smaller than 10MB!", {
+                  variant: "error",
+                });
+                return Upload.LIST_IGNORE;
+              }
+              return false; // Prevent auto-upload
+            }}
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            listType={screens.xs ? "text" : "picture"}
+          >
+            <Button
+              icon={<UploadOutlined />}
+              style={{
+                width: "100%",
+                height: screens.xs ? "40px" : "40px",
+                fontSize: screens.xs ? "13px" : "14px",
+              }}
+              block={screens.xs}
+            >
+              {screens.xs ? "Select Files" : "Select Files to Upload"}
+            </Button>
+          </Upload>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: screens.xs ? "11px" : "12px",
+              display: "block",
+              marginTop: screens.xs ? "6px" : "8px",
+              lineHeight: screens.xs ? "1.4" : "1.5",
+            }}
+          >
+            {screens.xs ? (
+              <>
+                Upload multiple files. Formats: PDF, DOC, DOCX, JPG, JPEG, PNG
+                <br />
+                Max 10MB per file
+              </>
+            ) : (
+              <>
+                You can upload multiple files. Supported formats: PDF, DOC, DOCX,
+                JPG, JPEG, PNG (Max 10MB per file)
+              </>
+            )}
+          </Text>
+
+          {/* Document Type Selection for each file */}
+          {requiredDocsFiles.length > 0 && (() => {
+            const currentCandidate = processedJobData?.candidates?.[0];
+            if (!currentCandidate) return null;
+
+            const stage = currentCandidate.stageProgress?.find(
+              (sp) => sp.stageId === activeStage
+            );
+            const baseRequiredDocuments = stage?.fullStage?.requiredDocuments || [];
+            
+            if (baseRequiredDocuments.length === 0) return null;
+
+            return (
+              <div style={{ marginTop: screens.xs ? "16px" : "20px" }}>
+                <Text
+                  strong
+                  style={{
+                    display: "block",
+                    marginBottom: screens.xs ? "8px" : "12px",
+                    fontSize: screens.xs ? "14px" : "15px",
+                  }}
+                >
+                  Select Document Type for Each File:
+                </Text>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: screens.xs ? "10px" : "12px",
+                  }}
+                >
+                  {requiredDocsFiles.map((file) => {
+                    const fileKey = file.uid || file.name;
+                    const currentSelection = fileDocumentMapping[fileKey] || "";
+                    
+                    return (
+                      <div
+                        key={fileKey}
+                        style={{
+                          padding: screens.xs ? "10px" : "12px",
+                          border: "1px solid #d9d9d9",
+                          borderRadius: "6px",
+                          backgroundColor: "#fafafa",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: screens.xs ? "column" : "row",
+                            alignItems: screens.xs ? "flex-start" : "center",
+                            gap: screens.xs ? "8px" : "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontSize: screens.xs ? "12px" : "13px",
+                            }}
+                          >
+                            <Text
+                              strong
+                              style={{
+                                display: "block",
+                                marginBottom: screens.xs ? "4px" : "6px",
+                                fontSize: screens.xs ? "12px" : "13px",
+                              }}
+                            >
+                              File:
+                            </Text>
+                            <Text
+                              ellipsis
+                              style={{
+                                fontSize: screens.xs ? "11px" : "12px",
+                                color: "#666",
+                              }}
+                              title={file.name}
+                            >
+                              {file.name}
+                            </Text>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: screens.xs ? "10px" : "11px",
+                                display: "block",
+                                marginTop: "2px",
+                              }}
+                            >
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </Text>
+                          </div>
+                          <div
+                            style={{
+                              flex: screens.xs ? "1" : "1",
+                              width: screens.xs ? "100%" : "auto",
+                              minWidth: screens.xs ? "100%" : "200px",
+                            }}
+                          >
+                            <Text
+                              strong
+                              style={{
+                                display: "block",
+                                marginBottom: screens.xs ? "4px" : "6px",
+                                fontSize: screens.xs ? "12px" : "13px",
+                              }}
+                            >
+                              Document Type: <span style={{ color: "red" }}>*</span>
+                            </Text>
+                            <Select
+                              placeholder="Select document type"
+                              value={currentSelection}
+                              onChange={(value) => {
+                                setFileDocumentMapping((prev) => ({
+                                  ...prev,
+                                  [fileKey]: value,
+                                }));
+                              }}
+                              style={{ width: "100%" }}
+                              size={screens.xs ? "small" : "middle"}
+                              showSearch
+                              filterOption={(input, option) =>
+                                (option?.label ?? "")
+                                  .toLowerCase()
+                                  .includes(input.toLowerCase())
+                              }
+                            >
+                              {baseRequiredDocuments.map((docName) => (
+                                <Option key={docName} value={docName}>
+                                  {docName}
+                                </Option>
+                              ))}
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: screens.xs ? "10px" : "11px",
+                    display: "block",
+                    marginTop: screens.xs ? "8px" : "10px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  * Please select which required document each file corresponds to
+                </Text>
+              </div>
+            );
+          })()}
         </div>
       </Modal>
     </>

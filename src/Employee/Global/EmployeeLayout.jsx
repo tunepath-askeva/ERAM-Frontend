@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Layout } from "antd";
 import EmployeeNavbar from "./EmployeeNavbar";
 import EmployeeSidebar from "./EmployeeSidebar";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 const { Content } = Layout;
 
@@ -14,7 +14,10 @@ const BREAKPOINTS = {
 };
 
 const EmployeeLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const isDashboard = location.pathname === "/employee/dashboard";
+  
+  const [collapsed, setCollapsed] = useState(isDashboard);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [screenSize, setScreenSize] = useState({
     width: window.innerWidth,
@@ -24,6 +27,13 @@ const EmployeeLayout = () => {
     isDesktop: window.innerWidth >= BREAKPOINTS.tablet && window.innerWidth < BREAKPOINTS.largeDesktop,
     isLargeDesktop: window.innerWidth >= BREAKPOINTS.largeDesktop
   });
+
+  useEffect(() => {
+    // Set collapsed state based on dashboard route
+    if (!screenSize.isMobile) {
+      setCollapsed(isDashboard);
+    }
+  }, [isDashboard, screenSize.isMobile]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,7 +55,9 @@ const EmployeeLayout = () => {
         setCollapsed(true);
         setDrawerVisible(false);
       } else if (newScreenSize.isTablet && width < 900) {
-        setCollapsed(true);
+        setCollapsed(isDashboard || true);
+      } else if (!newScreenSize.isMobile) {
+        setCollapsed(isDashboard);
       }
     };
 
@@ -53,7 +65,7 @@ const EmployeeLayout = () => {
     handleResize(); 
     
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [isDashboard]);
 
   const getLayoutMargin = () => {
     if (screenSize.isMobile) return 0;
@@ -91,12 +103,18 @@ const EmployeeLayout = () => {
     return 64;
   };
 
+  const getAvailableHeight = () => {
+    const navbarHeight = getNavbarHeight();
+    return `calc(100vh - ${navbarHeight}px)`;
+  };
+
   return (
     <Layout 
       style={{ 
         minHeight: "100vh", 
+        height: isDashboard && !screenSize.isMobile && !screenSize.isTablet ? "100vh" : "auto",
         background: "#f8f9fa",
-        overflow: screenSize.isMobile ? "hidden" : "auto"
+        overflow: isDashboard && !screenSize.isMobile && !screenSize.isTablet ? "hidden" : (screenSize.isMobile ? "hidden" : "auto")
       }}
     >
       <EmployeeSidebar
@@ -110,9 +128,11 @@ const EmployeeLayout = () => {
         style={{
           marginLeft: getLayoutMargin(),
           transition: "margin-left 0.3s ease",
-          minHeight: "100vh",
+          minHeight: isDashboard && !screenSize.isMobile && !screenSize.isTablet ? "100vh" : "100vh",
+          height: isDashboard && !screenSize.isMobile && !screenSize.isTablet ? "100vh" : "auto",
           position: "relative",
-          paddingTop: getNavbarHeight(), 
+          paddingTop: getNavbarHeight(),
+          overflow: isDashboard && !screenSize.isMobile && !screenSize.isTablet ? "hidden" : "auto",
         }}
       >
         <EmployeeNavbar
@@ -123,22 +143,25 @@ const EmployeeLayout = () => {
         
         <Content
           style={{
-            padding: getContentPadding(),
-            minHeight: `calc(100vh - ${getNavbarHeight() + 40}px)`, 
+            padding: isDashboard ? 0 : getContentPadding(),
+            minHeight: isDashboard ? (screenSize.isMobile || screenSize.isTablet ? "auto" : getAvailableHeight()) : `calc(100vh - ${getNavbarHeight() + 40}px)`, 
             background: "#fff",
-            borderRadius: screenSize.isMobile ? 6 : 8,
-            boxShadow: screenSize.isMobile ? 
+            borderRadius: isDashboard ? 0 : (screenSize.isMobile ? 6 : 8),
+            boxShadow: isDashboard ? "none" : (screenSize.isMobile ? 
               "0 1px 2px rgba(0, 0, 0, 0.1)" : 
-              "0 1px 4px rgba(0, 0, 0, 0.1)",
-            overflow: "auto",
+              "0 1px 4px rgba(0, 0, 0, 0.1)"),
+            overflow: isDashboard ? (screenSize.isMobile || screenSize.isTablet ? "auto" : "hidden") : "auto",
             position: "relative",
+            width: isDashboard ? "100%" : "auto",
+            height: isDashboard ? (screenSize.isMobile || screenSize.isTablet ? "auto" : getAvailableHeight()) : "auto",
           }}
         >
           <div
             style={{
               width: "100%",
-              maxWidth: screenSize.isLargeDesktop ? "1400px" : "100%",
-              margin: screenSize.isLargeDesktop ? "0 auto" : "0",
+              maxWidth: isDashboard ? "100%" : (screenSize.isLargeDesktop ? "1400px" : "100%"),
+              margin: isDashboard ? 0 : (screenSize.isLargeDesktop ? "0 auto" : "0"),
+              height: isDashboard ? "100%" : "auto",
             }}
           >
             <Outlet />

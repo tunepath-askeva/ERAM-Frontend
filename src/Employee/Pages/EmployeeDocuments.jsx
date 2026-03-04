@@ -305,8 +305,6 @@ const EmployeeDocuments = () => {
 
   const confirmUpload = async () => {
     try {
-      console.log("API Response:", apiResponse);
-      console.log("User ID:", apiResponse?.userId);
 
       const userId = apiResponse?.userId;
 

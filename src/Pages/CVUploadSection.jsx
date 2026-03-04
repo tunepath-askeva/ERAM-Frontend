@@ -134,10 +134,24 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
     }
 
     try {
-      await submitCV(formData).unwrap();
-      enqueueSnackbar("Application submitted successfully!", {
-        variant: "success",
-      });
+      const response = await submitCV(formData).unwrap();
+      
+      // If job is inactive, only show warning message
+      if (response?.isJobInactive || response?.warning) {
+        enqueueSnackbar(
+          response.warning || "This job has expired. Please try applying for other jobs.",
+          {
+            variant: "warning",
+            autoHideDuration: 6000,
+          }
+        );
+      } else {
+        // Show success message only if job is active
+        enqueueSnackbar("Application submitted successfully!", {
+          variant: "success",
+        });
+      }
+      
       setUploadedFiles([]);
       setFirstName("");
       setLastName("");
@@ -145,7 +159,7 @@ const CVUploadSection = ({ currentBranch, jobId, closeCvModal }) => {
       setDesignation("");
       closeCvModal();
     } catch (error) {
-      enqueueSnackbar(error?.data?.message, { variant: "error" });
+      enqueueSnackbar(error?.data?.message || "Failed to submit application", { variant: "error" });
     }
   };
 

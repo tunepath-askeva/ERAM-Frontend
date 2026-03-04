@@ -1,76 +1,198 @@
-import React, { useMemo } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Statistic, 
-  Typography, 
-  Space, 
-  Avatar, 
-  Badge, 
+import React, { useMemo, useState, useEffect } from "react";
+import {
+  Card,
+  Typography,
   Spin,
   Empty,
-  Progress,
-  Tag,
-  Divider
-} from 'antd';
+} from "antd";
 import {
-  UserOutlined,
-  BranchesOutlined,
-  TeamOutlined,
-  TrophyOutlined,
-  RiseOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  FileDoneOutlined,
-  EnvironmentOutlined,
-  PhoneOutlined,
-  MailOutlined
-} from '@ant-design/icons';
-import { 
-  Column, 
-  Pie, 
-  Area,
-  Bar
-} from '@ant-design/plots';
-import { useGetSuperDashboardDataQuery } from "../../Slices/SuperAdmin/SuperAdminApis";
+  useGetSuperDashboardDataQuery,
+  useGetBranchesQuery,
+  useGetBranchFilterOptionsQuery,
+  useGetFilteredDashboardDataQuery,
+  useGetSuperAdminChartDataQuery,
+} from "../../Slices/SuperAdmin/SuperAdminApis";
+import SuperDashboardFilters from "../Components/SuperDashboardFilters";
+import StatisticsSection, { CandidateMetricsSection } from "../../Admin/Components/StatisticsSection";
+import ActionItemsSection from "../../Admin/Components/ActionItemsSection";
+import KPISection from "../../Admin/Components/KPISection";
+import AchievementsSection from "../../Admin/Components/AchievementsSection";
+import ChartsSection from "../../Admin/Components/DashboardCharts";
+import BranchPerformanceSection from "../Components/BranchPerformanceChart";
+import { handleSuperDashboardExportExcel } from "../Components/superDashboardUtils";
 
 const { Title, Text } = Typography;
 
 const SuperDashboard = () => {
-  const { data: branchesData, isLoading } = useGetSuperDashboardDataQuery();
+  const [filters, setFilters] = useState({
+    branchId: [], // Changed to array for multi-select
+    clientId: [], // Changed to array for multi-select
+    projectId: [], // Changed to array for multi-select
+    workOrderId: "all",
+    referenceCode: "all",
+    startDate: null,
+    endDate: null,
+    deadlinePeriod: null, // New: 7, 15, or 30
+    completionPercentage: null, // New: "<=25" or "<=50"
+    dateRange: "7", // Default to 7 days for achievements/KPIs
+  });
 
+  const { data: branchesData, isLoading } = useGetSuperDashboardDataQuery();
+  const { data: branchesResponse } = useGetBranchesQuery();
+  const branchesList = branchesResponse?.branch || [];
+
+  // Get filter options based on selected branches
+  const selectedBranches =
+    Array.isArray(filters.branchId) && filters.branchId.length > 0
+      ? filters.branchId[0]
+      : filters.branchId === "all"
+        ? "all"
+        : filters.branchId;
+
+  const { data: filterOptions = {}, isLoading: filterOptionsLoading } =
+    useGetBranchFilterOptionsQuery(selectedBranches, {
+      skip:
+        selectedBranches === "all" ||
+        (Array.isArray(selectedBranches) && selectedBranches.length === 0),
+    });
+
+  const {
+    data: filteredData,
+    isLoading: filteredDataLoading,
+    refetch: refetchFilteredData,
+  } = useGetFilteredDashboardDataQuery(filters, {
+    skip: false, // Always fetch to get initial data (all branches when no filters)
+    refetchOnMountOrArgChange: true, // Refetch when filters change
+  });
+
+  // Get chart-specific data with counts
+  const { data: chartData, isLoading: chartDataLoading } =
+    useGetSuperAdminChartDataQuery(filters, {
+      skip: false,
+      refetchOnMountOrArgChange: true,
+    });
+
+  // Helper function to safely get numeric value - available throughout component
+  const getSafeNumber = (value) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === "null" ||
+      value === "undefined"
+    ) {
+      return 0;
+    }
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Update filter options when branch changes
+  useEffect(() => {
+    const hasBranches = Array.isArray(filters.branchId)
+      ? filters.branchId.length > 0
+      : filters.branchId !== "all";
+
+    if (hasBranches) {
+      setFilters((prev) => ({
+        ...prev,
+        clientId: [],
+        projectId: [],
+        workOrderId: "all",
+        referenceCode: "all",
+      }));
+    }
+  }, [filters.branchId]);
+
+  // Excel Export Function
+  const onExportExcel = () => {
+    handleSuperDashboardExportExcel(filteredData, filters, filterOptions, branchesList, processedData);
+  };
+
+  // Reset filters
+  const onResetFilters = () => {
+    setFilters({
+      branchId: [],
+      clientId: [],
+      projectId: [],
+      workOrderId: "all",
+      referenceCode: "all",
+      startDate: null,
+      endDate: null,
+      deadlinePeriod: null,
+      completionPercentage: null,
+      dateRange: "7",
+    });
+  };
+
+  // Process branches data first (needed by branchPerformanceData)
   const processedData = useMemo(() => {
     if (!branchesData?.branches) return null;
 
     const branches = branchesData.branches;
-    
+
     // Calculate totals
-    const totalUsers = branches.reduce((sum, branch) => sum + branch.totalUsers, 0);
-    const totalBranches = branches.length;
-    const activeBranches = branches.filter(branch => branch.isActive).length;
-    
+    const totalUsers = branches.reduce(
+      (sum, branch) => sum + (branch?.totalUsers || 0),
+      0,
+    );
+    const totalBranches = branches?.length || 0;
+    const activeBranches = branches.filter(
+      (branch) => branch?.isActive === true,
+    ).length;
+
     // Branch performance data
-    const branchPerformanceData = branches.map(branch => ({
-      branch: branch.name,
-      users: branch.totalUsers,
-      applications: Object.values(branch.applications || {}).reduce((sum, val) => sum + val, 0)
+    const branchPerformanceData = branches.map((branch) => ({
+      branch: branch?.name || "N/A",
+      users: branch?.totalUsers || 0,
+      applications: Object.values(branch?.applications || {}).reduce(
+        (sum, val) => sum + (val || 0),
+        0,
+      ),
     }));
 
-    // Applications data
+    // Applications data - dynamically get all statuses
     const totalApplications = branches.reduce((sum, branch) => {
-      if (!branch.applications) return sum;
-      return sum + Object.values(branch.applications).reduce((appSum, val) => appSum + val, 0);
+      if (!branch?.applications) return sum;
+      return (
+        sum +
+        Object.values(branch.applications).reduce(
+          (appSum, val) => appSum + (val || 0),
+          0,
+        )
+      );
     }, 0);
 
-    const applicationStatusData = [
-      { status: 'Hired', count: branches.reduce((sum, branch) => sum + (branch.applications?.hired || 0), 0) },
-      { status: 'Offers', count: branches.reduce((sum, branch) => sum + (branch.applications?.offer || 0), 0) },
-      { status: 'Pipeline', count: branches.reduce((sum, branch) => sum + (branch.applications?.pipeline || 0), 0) },
-    ].filter(item => item.count > 0);
+    // Collect all unique statuses from all branches
+    const allStatuses = new Set();
+    branches.forEach((branch) => {
+      if (branch?.applications) {
+        Object.keys(branch.applications).forEach((status) => {
+          allStatuses.add(status);
+        });
+      }
+    });
 
-    const successRate = totalApplications > 0 ? 
-      Math.round((branches.reduce((sum, branch) => sum + (branch.applications?.hired || 0), 0) / totalApplications) * 100) : 0;
+    // Create application status data dynamically
+    const applicationStatusData = Array.from(allStatuses)
+      .map((status) => {
+        const count = branches.reduce((sum, branch) => {
+          return sum + (branch?.applications?.[status] || 0);
+        }, 0);
+        return { status, count };
+      })
+      .filter((item) => item?.count > 0);
+
+    const successRate =
+      totalApplications > 0
+        ? Math.round(
+            (branches.reduce(
+              (sum, branch) => sum + (branch?.applications?.hired || 0),
+              0,
+            ) /
+              totalApplications) *
+              100,
+          )
+        : 0;
 
     return {
       totalUsers,
@@ -80,27 +202,84 @@ const SuperDashboard = () => {
       successRate,
       branchPerformanceData,
       applicationStatusData,
-      branches
+      branches,
     };
   }, [branchesData]);
 
+  // Get branch performance data - computed from filteredData or processedData
+  const computedBranchPerformanceData = useMemo(() => {
+    // Prioritize filtered data from backend
+    if (
+      filteredData?.branchPerformance &&
+      filteredData.branchPerformance.length > 0
+    ) {
+      return filteredData.branchPerformance.map((branch) => ({
+        branchName: branch?.name || "N/A",
+        users: branch?.users?.total || 0,
+        applications: Object.values(branch?.applications || {}).reduce(
+          (sum, val) => sum + (val || 0),
+          0,
+        ),
+        workOrders: branch?.workOrders?.total || 0,
+        candidates: branch?.candidates?.total || 0,
+        hired: branch?.candidates?.hired || 0,
+      }));
+    }
+
+    // Fallback to processed data if no filters applied
+    const branchIds = Array.isArray(filters.branchId)
+      ? filters.branchId
+      : filters.branchId === "all"
+        ? []
+        : [filters.branchId];
+    if (branchIds.length > 0 && processedData?.branches) {
+      return processedData.branches
+        .filter((b) =>
+          branchIds.includes(b?.branchId?.toString() || b?._id?.toString()),
+        )
+        .map((branch) => ({
+          branchName: branch?.name || "N/A",
+          users: branch?.totalUsers || 0,
+          applications: Object.values(branch?.applications || {}).reduce(
+            (sum, val) => sum + (val || 0),
+            0,
+          ),
+          workOrders: 0,
+          candidates: 0,
+          hired: 0,
+        }));
+    }
+
+    return processedData?.branchPerformanceData?.map(branch => ({
+      branchName: branch?.branch || branch?.branchName || "N/A",
+      users: branch?.users || 0,
+      applications: branch?.applications || 0,
+      workOrders: branch?.workOrders || 0,
+      candidates: branch?.candidates || 0,
+      hired: branch?.hired || 0,
+    })) || [];
+  }, [filteredData, processedData, filters.branchId]);
+
   if (isLoading) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        padding: '16px'
-      }}>
-        <Card style={{ 
-          textAlign: 'center', 
-          width: '100%',
-          maxWidth: '300px'
-        }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "16px",
+        }}
+      >
+        <Card
+          style={{
+            textAlign: "center",
+            width: "100%",
+            maxWidth: "300px",
+          }}
+        >
           <Spin size="large" />
-          <Title level={4} style={{ marginTop: '16px', color: '#da2c46' }}>
+          <Title level={4} style={{ marginTop: "16px", color: "#da2c46" }}>
             Loading Dashboard Data...
           </Title>
         </Card>
@@ -110,575 +289,358 @@ const SuperDashboard = () => {
 
   if (!processedData) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        padding: '16px'
-      }}>
-        <Card style={{ width: '100%', maxWidth: '400px' }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "16px",
+        }}
+      >
+        <Card style={{ width: "100%", maxWidth: "400px" }}>
           <Empty description="No dashboard data available" />
         </Card>
       </div>
     );
   }
 
-  const primaryColor = '#da2c46';
-  const gradientColors = ['#da2c46', '#ff7875', '#ffa39e', '#ffb3b3', '#ffc9c9', '#ffdbdb', '#ffe7e7'];
+  const primaryColor = "#da2c46";
 
-  // Chart configurations
-  const branchUsersChartConfig = {
-    data: processedData.branchPerformanceData,
-    xField: 'branch',
-    yField: 'users',
-    color: primaryColor,
+  // Status color mapping
+  const getStatusColor = (status) => {
+    const colorMap = {
+      hired: "#52c41a",
+      offer: "#faad14",
+      offer_pending: "#faad14",
+      offer_revised: "#faad14",
+      pipeline: "#1890ff",
+      applied: "#6b7280",
+      sourced: "#8b5cf6",
+      rejected: "#ef4444",
+      screening: "#f59e0b",
+      selected: "#f59e0b",
+      approved: "#52c41a",
+      completed: "#52c41a",
+      interview: "#8b5cf6",
+      "in-pending": "#3b82f6",
+    };
+    return colorMap[status?.toLowerCase()] || primaryColor;
+  };
+
+  // Format status label for display
+  const formatStatusLabel = (status) => {
+    const statusMap = {
+      hired: "Hired",
+      offer: "Offer",
+      offer_pending: "Offer Pending",
+      offer_revised: "Offer Revised",
+      pipeline: "Pipeline",
+      applied: "Applied",
+      sourced: "Sourced",
+      rejected: "Rejected",
+      screening: "Screening",
+      selected: "Selected",
+      approved: "Approved",
+      completed: "Completed",
+      interview: "Interview",
+      "in-pending": "Pending",
+    };
+    return (
+      statusMap[status?.toLowerCase()] ||
+      status?.charAt(0).toUpperCase() + status?.slice(1) ||
+      "Unknown"
+    );
+  };
+
+  // Get application status data - use chart data API if available, otherwise fallback
+  const getApplicationStatusData = () => {
+    // Helper function to ensure count is a valid number
+    const ensureValidCount = (count) => {
+      if (
+        count === null ||
+        count === undefined ||
+        count === "null" ||
+        count === "undefined"
+      ) {
+        return 0;
+      }
+      const numCount = Number(count);
+      return isNaN(numCount) ? 0 : numCount;
+    };
+
+    // Prioritize chart data from API
+    if (
+      chartData?.applicationStatusData &&
+      Array.isArray(chartData.applicationStatusData)
+    ) {
+      return chartData.applicationStatusData
+        .map((item) => {
+          const count = ensureValidCount(item?.count);
+          return {
+            status: formatStatusLabel(item?.status || "unknown"),
+            originalStatus: item?.status || "unknown",
+            count: count,
+          };
+        })
+        .filter(
+          (item) => item.count > 0 && item.status && item.status !== "unknown",
+        );
+    }
+
+    // Fallback to filtered data if chart data not available
+    if (
+      filteredData?.applicationStatusData &&
+      Array.isArray(filteredData.applicationStatusData)
+    ) {
+      return filteredData.applicationStatusData
+        .map((item) => {
+          const count = ensureValidCount(item?.count);
+          return {
+            status: formatStatusLabel(item?.status || "unknown"),
+            originalStatus: item?.status || "unknown",
+            count: count,
+          };
+        })
+        .filter(
+          (item) => item.count > 0 && item.status && item.status !== "unknown",
+        );
+    }
+
+    // Return empty array if no data available
+    return [];
+  };
+
+  const applicationStatusConfig = {
+    data: getApplicationStatusData()
+      .map((item) => ({
+        status: item?.status || "Unknown",
+        count: item?.count ?? 0,
+        originalStatus: item?.originalStatus || item?.status,
+      }))
+      .filter((item) => item.count > 0),
+    xField: "status",
+    yField: "count",
+    seriesField: "status",
+    color: (datum) => {
+      const originalStatus =
+        datum?.originalStatus || datum?.status || "unknown";
+      return getStatusColor(originalStatus);
+    },
     columnStyle: {
       radius: [8, 8, 0, 0],
     },
     label: {
-      position: 'middle',
+      position: "middle",
+      formatter: (datum) => {
+        const count = Number(datum?.count ?? datum?.value ?? 0);
+        return count > 0 ? String(count) : "";
+      },
       style: {
-        fill: '#FFFFFF',
-        opacity: 0.8,
-        fontSize: 12,
-        fontWeight: 'bold'
+        fill: "#FFFFFF",
+        opacity: 0.9,
+        fontSize: window.innerWidth < 768 ? 10 : 12,
+        fontWeight: "bold",
       },
     },
     tooltip: {
       customContent: (title, items) => {
-        if (items && items.length > 0) {
-          const data = items[0].data;
-          return `<div style="padding: 12px;">
-            <h4 style="margin: 0 0 8px 0; color: ${primaryColor};">${title}</h4>
-            <p style="margin: 4px 0;"><span style="color: ${primaryColor};">●</span> Users: ${data.users}</p>
-            <p style="margin: 4px 0;"><span style="color: #1890ff;">●</span> Applications: ${data.applications}</p>
-          </div>`;
-        }
-        return '';
-      }
-    }
+        if (!items || items.length === 0) return "";
+        const item = items[0];
+        const datum = item?.data || {};
+        // Access value: item.value (computed) takes priority, then item.data.count (original)
+        const count = getSafeNumber(item?.value ?? datum?.count ?? 0);
+        const status = datum?.status ?? item?.name ?? title ?? "Unknown";
+        return `<div style="padding:10px;">
+      <strong>${status}</strong><br/>
+      Candidates: ${count}
+    </div>`;
+      },
+    },
   };
 
-  const applicationStatusConfig = {
-    data: processedData.applicationStatusData,
-    xField: 'status',
-    yField: 'count',
-    seriesField: 'status',
-    color: ({ status }) => {
-      const colorMap = {
-        'Hired': '#52c41a',
-        'Offers': '#faad14',
-        'Pipeline': '#1890ff'
-      };
-      return colorMap[status] || primaryColor;
-    },
-    columnStyle: {
-      radius: [8, 8, 0, 0],
-    },
-    label: {
-      position: 'middle',
-      style: {
-        fill: '#FFFFFF',
-        opacity: 0.9,
-        fontSize: 12,
-        fontWeight: 'bold'
-      },
+  // Get branch area chart data - use chart data API if available
+  const getBranchAreaChartData = () => {
+    if (
+      chartData?.branchPerformanceAreaData &&
+      Array.isArray(chartData.branchPerformanceAreaData) &&
+      chartData.branchPerformanceAreaData.length > 0
+    ) {
+      return chartData.branchPerformanceAreaData.map((item) => ({
+        branch: item.branch || "N/A",
+        users: getSafeNumber(item.users),
+        workOrders: getSafeNumber(item.workOrders),
+        candidates: getSafeNumber(item.candidates),
+        hired: getSafeNumber(item.hired),
+      }));
     }
+    // Fallback to computedBranchPerformanceData
+    return computedBranchPerformanceData.map(branch => ({
+      branch: branch.branchName || "N/A",
+      users: branch.users || 0,
+      workOrders: branch.workOrders || 0,
+      candidates: branch.candidates || 0,
+      hired: branch.hired || 0,
+    }));
   };
 
   const branchAreaChartConfig = {
-    data: processedData.branchPerformanceData,
-    xField: 'branch',
-    yField: 'users',
+    data: getBranchAreaChartData(),
+    xField: "branch",
+    yField: "users",
     smooth: true,
     areaStyle: {
-      fill: `l(270) 0:${primaryColor}40 1:${primaryColor}10`
+      fill: `l(270) 0:${primaryColor}40 1:${primaryColor}10`,
     },
     line: {
       color: primaryColor,
-      size: 3
+      size: 3,
     },
     point: {
-      color: primaryColor,
-      size: 6
-    }
+      size: 6,
+      shape: "circle",
+      style: {
+        fill: primaryColor,
+        stroke: "#fff",
+        lineWidth: 2,
+      },
+    },
+    label: {
+      position: "top",
+      formatter: (datum) => {
+        const val = getSafeNumber(datum?.users ?? datum?.value ?? 0);
+        return String(val);
+      },
+      style: {
+        fill: "#666",
+        fontSize: window.innerWidth < 768 ? 10 : 12,
+        fontWeight: "bold",
+      },
+    },
+    tooltip: {
+      customContent: (title, items) => {
+        if (!items || items.length === 0) return "";
+
+        const item = items[0];
+        const datum = item?.data || {};
+        const branchName = datum?.branch ?? item?.name ?? title ?? "Branch";
+        // Access value: item.value (computed) takes priority, then item.data.users (original)
+        const users = getSafeNumber(item?.value ?? datum?.users ?? 0);
+        const workOrders = getSafeNumber(datum?.workOrders ?? 0);
+        const candidates = getSafeNumber(datum?.candidates ?? 0);
+        const hired = getSafeNumber(datum?.hired ?? 0);
+
+        return `<div style="padding: 12px;">
+          <h4 style="margin: 0 0 8px 0; color: ${primaryColor};">${branchName}</h4>
+          <p style="margin: 4px 0;"><span style="color: ${primaryColor};">●</span> Users: ${users}</p>
+          <p style="margin: 4px 0;"><span style="color: #52c41a;">●</span> Work Orders: ${workOrders}</p>
+          <p style="margin: 4px 0;"><span style="color: #faad14;">●</span> Candidates: ${candidates}</p>
+          <p style="margin: 4px 0;"><span style="color: #52c41a;">●</span> Hired: ${hired}</p>
+        </div>`;
+      },
+    },
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      padding: '8px 12px 24px',
-      // Responsive padding
-      '@media (min-width: 576px)': {
-        padding: '16px 20px 24px'
-      },
-      '@media (min-width: 768px)': {
-        padding: '24px'
-      }
-    }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        padding:
+          window.innerWidth < 576
+            ? "8px 12px 24px"
+            : window.innerWidth < 768
+              ? "16px 20px 24px"
+              : "24px",
+      }}
+    >
       {/* Header - Responsive */}
-      <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-        <Title 
-          level={1} 
-          style={{ 
-            margin: 0, 
+      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+        <Title
+          level={1}
+          style={{
+            margin: 0,
             color: primaryColor,
-            fontSize: 'clamp(1.5rem, 5vw, 3rem)',
+            fontSize: "clamp(1.5rem, 5vw, 3rem)",
             background: `linear-gradient(135deg, ${primaryColor}, #ff7875)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '8px'
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            marginBottom: "8px",
           }}
         >
           Super Admin Dashboard
         </Title>
-        <Text style={{ 
-          fontSize: 'clamp(14px, 2.5vw, 18px)', 
-          color: '#666',
-          display: 'block',
-          padding: '0 16px'
-        }}>
+        <Text
+          style={{
+            fontSize: "clamp(14px, 2.5vw, 18px)",
+            color: "#666",
+            display: "block",
+            padding: "0 16px",
+          }}
+        >
           Comprehensive overview of all branches and operations
         </Text>
       </div>
 
-      {/* Key Metrics Row - Fully Responsive */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card 
-            hoverable
-            style={{ 
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #fff 0%, #f8f9ff 100%)',
-              border: 'none',
-              boxShadow: '0 8px 24px rgba(218, 44, 70, 0.12)',
-              height: '100%'
-            }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: '600' }}>Total Branches</span>}
-              value={processedData.totalBranches}
-              prefix={<BranchesOutlined style={{ color: primaryColor, fontSize: 'clamp(20px, 3vw, 24px)' }} />}
-              valueStyle={{ color: primaryColor, fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 'bold' }}
-            />
-            <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: '#f6ffed', borderRadius: '8px' }}>
-              <Text style={{ color: '#52c41a', fontWeight: '600', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
-                <CheckCircleOutlined /> {processedData.activeBranches} Active
-              </Text>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card 
-            hoverable
-            style={{ 
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #fff 0%, #f0f9ff 100%)',
-              border: 'none',
-              boxShadow: '0 8px 24px rgba(24, 144, 255, 0.12)',
-              height: '100%'
-            }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: '600' }}>Total Users</span>}
-              value={processedData.totalUsers}
-              prefix={<UserOutlined style={{ color: '#1890ff', fontSize: 'clamp(20px, 3vw, 24px)' }} />}
-              valueStyle={{ color: '#1890ff', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 'bold' }}
-            />
-            <div style={{ marginTop: '12px' }}>
-              <Progress 
-                percent={100} 
-                strokeColor='#1890ff'
-                showInfo={false} 
-                size="small" 
-              />
-              <Text style={{ color: '#666', fontSize: 'clamp(10px, 1.5vw, 12px)' }}>Across all branches</Text>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card 
-            hoverable
-            style={{ 
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #fff 0%, #fffbf0 100%)',
-              border: 'none',
-              boxShadow: '0 8px 24px rgba(250, 173, 20, 0.12)',
-              height: '100%'
-            }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: '600' }}>Total Applications</span>}
-              value={processedData.totalApplications}
-              prefix={<FileDoneOutlined style={{ color: '#faad14', fontSize: 'clamp(20px, 3vw, 24px)' }} />}
-              valueStyle={{ color: '#faad14', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 'bold' }}
-            />
-            <div style={{ marginTop: '12px' }}>
-              <Space>
-                <Tag color="processing">All Status</Tag>
-              </Space>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card 
-            hoverable
-            style={{ 
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #fff 0%, #f6ffed 100%)',
-              border: 'none',
-              boxShadow: '0 8px 24px rgba(82, 196, 26, 0.12)',
-              height: '100%'
-            }}
-          >
-            <Statistic
-              title={<span style={{ fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: '600' }}>Success Rate</span>}
-              value={processedData.successRate}
-              suffix="%"
-              prefix={<TrophyOutlined style={{ color: '#52c41a', fontSize: 'clamp(20px, 3vw, 24px)' }} />}
-              valueStyle={{ color: '#52c41a', fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 'bold' }}
-            />
-            <div style={{ marginTop: '12px' }}>
-              <Progress 
-                percent={processedData.successRate} 
-                strokeColor='#52c41a'
-                size="small" 
-              />
-            </div>
-          </Card>
-        </Col>
-      </Row>
+      {/* Filters Section */}
+      <SuperDashboardFilters
+        filters={filters}
+        setFilters={setFilters}
+        filterOptions={filterOptions}
+        filterOptionsLoading={filterOptionsLoading}
+        branchesList={branchesList}
+        onExportExcel={onExportExcel}
+        onReset={onResetFilters}
+        primaryColor={primaryColor}
+      />
 
-      {/* Single Chart Row - Application Status Only */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col span={24}>
-          <Card 
-            title={
-              <Space>
-                <RiseOutlined style={{ color: primaryColor }} />
-                <span style={{ fontSize: 'clamp(16px, 2.5vw, 18px)', fontWeight: '600' }}>Application Status</span>
-              </Space>
-            }
-            style={{ 
-              borderRadius: '16px',
-              minHeight: '400px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)'
-            }}
-            headStyle={{ 
-              borderBottom: `2px solid ${primaryColor}20`,
-              borderRadius: '16px 16px 0 0'
-            }}
-          >
-            {processedData.applicationStatusData.length > 0 ? (
-              <Column {...applicationStatusConfig} height={320} />
-            ) : (
-              <Empty 
-                description="No application data available"
-                style={{ padding: '80px 0' }}
-              />
-            )}
-          </Card>
-        </Col>
-      </Row>
+      {/* Branch Performance Section */}
+      <BranchPerformanceSection
+        branchPerformanceData={computedBranchPerformanceData}
+        loading={filteredDataLoading}
+        primaryColor={primaryColor}
+      />
 
-      {/* Branch Performance Chart - Responsive */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col span={24}>
-          <Card 
-            title={
-              <Space>
-                <BranchesOutlined style={{ color: primaryColor }} />
-                <span style={{ fontSize: 'clamp(16px, 2.5vw, 18px)', fontWeight: '600' }}>Branch Performance Overview</span>
-              </Space>
-            }
-            style={{ 
-              borderRadius: '16px',
-              minHeight: '400px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.08)'
-            }}
-            headStyle={{ 
-              borderBottom: `2px solid ${primaryColor}20`,
-              borderRadius: '16px 16px 0 0'
-            }}
-          >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={12}>
-                <Title level={5} style={{ 
-                  color: '#666', 
-                  textAlign: 'center',
-                  fontSize: 'clamp(14px, 2vw, 16px)',
-                  marginBottom: '16px'
-                }}>
-                  User Count by Branch
-                </Title>
-                <Column {...branchUsersChartConfig} height={280} />
-              </Col>
-              <Col xs={24} lg={12}>
-                <Title level={5} style={{ 
-                  color: '#666', 
-                  textAlign: 'center',
-                  fontSize: 'clamp(14px, 2vw, 16px)',
-                  marginBottom: '16px'
-                }}>
-                  User Growth Trend
-                </Title>
-                <Area {...branchAreaChartConfig} height={280} />
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-      </Row>
+      {/* Main Statistics */}
+      <StatisticsSection
+        statistics={filteredData?.statistics}
+        hoverData={filteredData?.hoverData}
+        primaryColor={primaryColor}
+      />
 
-      {/* Branch Details Grid - Fully Responsive */}
-      <Card 
-        title={
-          <Space>
-            <BranchesOutlined style={{ color: primaryColor }} />
-            <span style={{ fontSize: 'clamp(18px, 3vw, 20px)', fontWeight: '600' }}>Branch Details</span>
-          </Space>
-        }
-        style={{ 
-          borderRadius: '16px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.08)'
-        }}
-        headStyle={{ 
-          borderBottom: `2px solid ${primaryColor}20`,
-          borderRadius: '16px 16px 0 0'
-        }}
-      >
-        <Row gutter={[16, 16]}>
-          {processedData.branches.map((branch) => {
-            const totalApps = Object.values(branch.applications || {}).reduce((sum, val) => sum + val, 0);
-            const hiredCount = branch.applications?.hired || 0;
-            const offersCount = branch.applications?.offer || 0;
-            const pipelineCount = branch.applications?.pipeline || 0;
-            
-            return (
-              <Col xs={24} sm={24} md={12} lg={8} xl={6} key={branch.branchId}>
-                <Card
-                  hoverable
-                  style={{ 
-                    borderRadius: '12px',
-                    border: `2px solid ${branch.isActive ? primaryColor : '#d9d9d9'}`,
-                    background: branch.isActive 
-                      ? 'linear-gradient(135deg, #fff 0%, #fef7f7 100%)'
-                      : 'linear-gradient(135deg, #fff 0%, #f5f5f5 100%)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                    transition: 'all 0.3s ease',
-                    height: '100%'
-                  }}
-                >
-                  {/* Branch Header - Responsive */}
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <Avatar 
-                      src={branch.brand_logo} 
-                      size={window.innerWidth < 768 ? 48 : 56}
-                      style={{ 
-                        marginRight: '12px', 
-                        backgroundColor: primaryColor,
-                        border: `2px solid ${primaryColor}30`,
-                        marginBottom: window.innerWidth < 480 ? '8px' : '0'
-                      }}
-                    >
-                      {branch.name.charAt(0)}
-                    </Avatar>
-                    <div style={{ flex: 1, minWidth: '120px' }}>
-                      <Title level={5} style={{ 
-                        margin: 0, 
-                        color: primaryColor,
-                        fontSize: 'clamp(14px, 2.2vw, 16px)'
-                      }}>
-                        {branch.name}
-                      </Title>
-                      <Text type="secondary" style={{ fontSize: 'clamp(10px, 1.8vw, 12px)' }}>
-                        {branch.branchCode}
-                      </Text>
-                    </div>
-                    <Badge 
-                      status={branch.isActive ? 'success' : 'default'} 
-                      text={
-                        <span style={{ 
-                          fontWeight: '600',
-                          color: branch.isActive ? '#52c41a' : '#999',
-                          fontSize: 'clamp(11px, 1.5vw, 12px)'
-                        }}>
-                          {branch.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      }
-                    />
-                  </div>
-                  
-                  <Divider style={{ margin: '12px 0' }} />
-                  
-                  {/* User Statistics - Responsive */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px',
-                      flexWrap: 'wrap',
-                      gap: '8px'
-                    }}>
-                      <Text style={{ fontWeight: '600', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>Total Users:</Text>
-                      <Tag color="red" style={{ 
-                        fontSize: 'clamp(12px, 2vw, 14px)', 
-                        fontWeight: 'bold',
-                        padding: '4px 8px'
-                      }}>
-                        {branch.totalUsers}
-                      </Tag>
-                    </div>
-                    
-                    <Row gutter={[8, 8]}>
-                      <Col xs={12} sm={12}>
-                        <div style={{ 
-                          background: '#f0f9ff', 
-                          padding: '8px', 
-                          borderRadius: '8px',
-                          textAlign: 'center'
-                        }}>
-                          <Text style={{ 
-                            fontSize: 'clamp(14px, 2.5vw, 16px)', 
-                            fontWeight: 'bold', 
-                            color: '#1890ff' 
-                          }}>
-                            {branch.users?.candidates || 0}
-                          </Text>
-                          <br />
-                          <Text style={{ fontSize: 'clamp(9px, 1.5vw, 11px)', color: '#666' }}>Candidates</Text>
-                        </div>
-                      </Col>
-                      <Col xs={12} sm={12}>
-                        <div style={{ 
-                          background: '#fff7e6', 
-                          padding: '8px', 
-                          borderRadius: '8px',
-                          textAlign: 'center'
-                        }}>
-                          <Text style={{ 
-                            fontSize: 'clamp(14px, 2.5vw, 16px)', 
-                            fontWeight: 'bold', 
-                            color: '#faad14' 
-                          }}>
-                            {branch.users?.recruiters || 0}
-                          </Text>
-                          <br />
-                          <Text style={{ fontSize: 'clamp(9px, 1.5vw, 11px)', color: '#666' }}>Recruiters</Text>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                  
-                  {/* Applications Section - Responsive */}
-                  {totalApps > 0 && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <Divider style={{ margin: '12px 0' }} />
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '8px',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
-                        <Text style={{ fontWeight: '600', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>Applications:</Text>
-                        <Tag color="blue" style={{ 
-                          fontSize: 'clamp(12px, 2vw, 14px)', 
-                          fontWeight: 'bold',
-                          padding: '4px 8px'
-                        }}>
-                          {totalApps}
-                        </Tag>
-                      </div>
-                      
-                      <Row gutter={[4, 4]}>
-                        <Col xs={8} sm={8}>
-                          <div style={{ 
-                            background: '#f6ffed', 
-                            padding: '6px 4px', 
-                            borderRadius: '6px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: 'clamp(12px, 2vw, 14px)', 
-                              fontWeight: 'bold', 
-                              color: '#52c41a' 
-                            }}>
-                              {hiredCount}
-                            </Text>
-                            <br />
-                            <Text style={{ fontSize: 'clamp(8px, 1.3vw, 10px)', color: '#666' }}>Hired</Text>
-                          </div>
-                        </Col>
-                        <Col xs={8} sm={8}>
-                          <div style={{ 
-                            background: '#fff7e6', 
-                            padding: '6px 4px', 
-                            borderRadius: '6px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: 'clamp(12px, 2vw, 14px)', 
-                              fontWeight: 'bold', 
-                              color: '#faad14' 
-                            }}>
-                              {offersCount}
-                            </Text>
-                            <br />
-                            <Text style={{ fontSize: 'clamp(8px, 1.3vw, 10px)', color: '#666' }}>Offers</Text>
-                          </div>
-                        </Col>
-                        <Col xs={8} sm={8}>
-                          <div style={{ 
-                            background: '#f0f9ff', 
-                            padding: '6px 4px', 
-                            borderRadius: '6px',
-                            textAlign: 'center'
-                          }}>
-                            <Text style={{ 
-                              fontSize: 'clamp(12px, 2vw, 14px)', 
-                              fontWeight: 'bold', 
-                              color: '#1890ff' 
-                            }}>
-                              {pipelineCount}
-                            </Text>
-                            <br />
-                            <Text style={{ fontSize: 'clamp(8px, 1.3vw, 10px)', color: '#666' }}>Pipeline</Text>
-                          </div>
-                        </Col>
-                      </Row>
-                    </div>
-                  )}
-                  
-                  {/* Location Info - Responsive */}
-                  <div style={{ 
-                    background: '#fafafa', 
-                    padding: '10px', 
-                    borderRadius: '8px',
-                    marginTop: '12px'
-                  }}>
-                    <div style={{ marginBottom: '4px' }}>
-                      <Text style={{ fontSize: 'clamp(10px, 1.5vw, 12px)', color: '#666' }}>
-                        <EnvironmentOutlined style={{ marginRight: '4px' }} />
-                        {branch.location.city}, {branch.location.state}
-                      </Text>
-                    </div>
-                    <div>
-                      <Text style={{ fontSize: 'clamp(9px, 1.3vw, 11px)', color: '#999' }}>
-                        <PhoneOutlined style={{ marginRight: '4px' }} />
-                        {branch.location.branch_phoneno}
-                      </Text>
-                    </div>
-                  </div>
-                </Card>
-              </Col>
-            );
-          })}
-        </Row>
-      </Card>
+      {/* Candidate Metrics */}
+      <CandidateMetricsSection
+        statistics={filteredData?.statistics}
+        primaryColor={primaryColor}
+      />
+
+      {/* Action Items */}
+      <ActionItemsSection
+        hoverData={filteredData?.hoverData}
+        primaryColor={primaryColor}
+      />
+
+      {/* KPIs Section */}
+      <KPISection
+        kpis={filteredData?.kpis}
+        primaryColor={primaryColor}
+      />
+
+      {/* Achievements Section */}
+      <AchievementsSection
+        achievements={filteredData?.achievements}
+        dateRange={filters.dateRange}
+        primaryColor={primaryColor}
+      />
+
+      {/* Charts Section */}
+      <ChartsSection
+        filteredData={filteredData}
+        chartData={chartData}
+        filteredDataLoading={filteredDataLoading}
+        chartDataLoading={chartDataLoading}
+        primaryColor={primaryColor}
+      />
     </div>
   );
 };

@@ -843,6 +843,23 @@ const JobDetailsPage = () => {
         </Card>
       )}
 
+      {/* About Us */}
+      {job.aboutUs && (
+        <Card className="content-card">
+          <Title level={4} className="section-title">
+            About Us
+          </Title>
+          <div className="requirements-list">
+            {splitIntoPoints(job.aboutUs).map((point, index) => (
+              <div key={index} className="requirement-item">
+                <CheckCircleOutlined className="check-icon" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Skills */}
       {job.requiredSkills && job.requiredSkills.length > 0 && (
         <Card className="content-card">

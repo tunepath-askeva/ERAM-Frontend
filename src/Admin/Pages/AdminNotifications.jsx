@@ -310,6 +310,50 @@ const AdminNotifications = () => {
     );
   };
 
+  // Helper function to get admin-appropriate redirect path
+  const getAdminRedirectPath = (redirectPath, workorderId) => {
+    if (!redirectPath) return null;
+    
+    // If it's already an admin path, return it
+    if (redirectPath.startsWith('/admin/')) {
+      return redirectPath;
+    }
+    
+    // Map recruiter paths to admin paths
+    if (redirectPath.startsWith('/recruiter/')) {
+      // Map staged-candidates to admin candidates or workorder
+      if (redirectPath.includes('/staged-candidates')) {
+        // Extract workOrderId and stageId from query params if available
+        const urlParams = new URLSearchParams(redirectPath.split('?')[1] || '');
+        const woId = urlParams.get('workOrder') || workorderId;
+        
+        if (woId) {
+          // Navigate to view workorder with the specific work order
+          return `/admin/view-workorder/${woId}`;
+        }
+        // Fallback to candidates page
+        return '/admin/candidates';
+      }
+      
+      // Map recruiter jobs to admin workorder
+      if (redirectPath.includes('/recruiter/jobs')) {
+        return '/admin/workorder';
+      }
+      
+      // Map other recruiter paths to admin workorder as fallback
+      return '/admin/workorder';
+    }
+    
+    // For other paths, check if they're admin-appropriate
+    // If not, return null to hide the link
+    if (redirectPath.startsWith('/admin/')) {
+      return redirectPath;
+    }
+    
+    // Don't show link for non-admin paths
+    return null;
+  };
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (loading || apiLoading) {
@@ -718,18 +762,21 @@ const AdminNotifications = () => {
                           </Button>
                         )}
 
-                        {item.redirectPath && (
-                          <Button
-                            type="link"
-                            size="small"
-                            onClick={() => {
-                              navigate(item.redirectPath);
-                            }}
-                            style={{ padding: 0, color: "#da2c46" }}
-                          >
-                            Click here to visit →
-                          </Button>
-                        )}
+                        {(() => {
+                          const adminPath = getAdminRedirectPath(item.redirectPath, item.workorderId);
+                          return adminPath ? (
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => {
+                                navigate(adminPath);
+                              }}
+                              style={{ padding: 0, color: "#da2c46" }}
+                            >
+                              Click here to visit →
+                            </Button>
+                          ) : null;
+                        })()}
                       </Space>
                     </div>
                   }

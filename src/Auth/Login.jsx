@@ -62,7 +62,7 @@ const Login = () => {
           navigate("/admin/dashboard", { replace: true });
           break;
         case "employee":
-          navigate("/employee/company-news", { replace: true });
+          navigate("/employee/dashboard", { replace: true });
           break;
         case "recruiter":
           if (userDetails?.employeeAdmin === "Employee Admin") {
@@ -171,6 +171,7 @@ const Login = () => {
         name: response.user.name,
         roles: response.user.roles,
         employeeAdmin: response.user.employeeAdmin || null,
+        branch: response.user.branch || null, // Include branch data
       };
 
       const payload = {
@@ -193,7 +194,7 @@ const Login = () => {
           navigate("/candidate-jobs");
           break;
         case "employee":
-          navigate("/employee/company-news");
+          navigate("/employee/dashboard");
           break;
         case "recruiter":
           if (response.user.employeeAdmin === "Employee Admin") {

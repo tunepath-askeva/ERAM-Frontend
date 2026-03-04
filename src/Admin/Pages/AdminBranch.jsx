@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   Typography,
@@ -12,6 +12,10 @@ import {
   Badge,
   Button,
   Tooltip,
+  Modal,
+  Form,
+  Input,
+  message,
 } from "antd";
 import {
   BankOutlined,
@@ -23,14 +27,21 @@ import {
   EditOutlined,
   FileTextOutlined,
   SettingOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
-import { useGetAdminBranchQuery } from "../../Slices/Admin/AdminApis.js";
+import { useGetAdminBranchQuery, useUpdateAdminBranchAboutUsMutation } from "../../Slices/Admin/AdminApis.js";
 import SkeletonLoader from "../../Global/SkeletonLoader.jsx";
+import { useSnackbar } from "notistack";
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 const AdminBranch = () => {
-  const { data, isLoading } = useGetAdminBranchQuery();
+  const { data, isLoading, refetch } = useGetAdminBranchQuery();
+  const [updateAboutUs, { isLoading: isUpdating }] = useUpdateAdminBranchAboutUsMutation();
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const { enqueueSnackbar } = useSnackbar();
 
   if (isLoading) {
     return (
@@ -78,6 +89,39 @@ const AdminBranch = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const handleEditAboutUs = () => {
+    form.setFieldsValue({
+      aboutUs: branch.aboutUs || "",
+    });
+    setIsEditModalVisible(true);
+  };
+
+  const handleSaveAboutUs = async (values) => {
+    try {
+      await updateAboutUs(values.aboutUs).unwrap();
+      message.success("About Us updated successfully!");
+      enqueueSnackbar("About Us updated successfully!", {
+        variant: "success",
+      });
+      setIsEditModalVisible(false);
+      refetch();
+    } catch (error) {
+      console.error("Error updating About Us:", error);
+      message.error(
+        error?.data?.message || "Failed to update About Us. Please try again."
+      );
+      enqueueSnackbar(
+        error?.data?.message || "Failed to update About Us. Please try again.",
+        { variant: "error" }
+      );
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditModalVisible(false);
+    form.resetFields();
   };
 
   return (
@@ -567,6 +611,85 @@ const AdminBranch = () => {
                   {branch.description}
                 </Text>
               </div>
+
+              {/* About Us */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  marginBottom: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    minWidth: "fit-content",
+                  }}
+                >
+                  <InfoCircleOutlined
+                    style={{ color: "rgb(218, 44, 70)", fontSize: "14px" }}
+                  />
+                  <Text
+                    strong
+                    style={{
+                      color: "#595959",
+                      fontSize: "12px",
+                      whiteSpace: "nowrap",
+                      "@media (min-width: 576px)": {
+                        fontSize: "14px",
+                      },
+                    }}
+                  >
+                    About Us
+                  </Text>
+                </div>
+                <span style={{ color: "#d9d9d9", fontSize: "14px" }}>-</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "8px",
+                    flex: 1,
+                    minWidth: "200px",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: "12px",
+                      color: "#262626",
+                      lineHeight: "1.6",
+                      flex: 1,
+                      whiteSpace: "pre-wrap",
+                      "@media (min-width: 576px)": {
+                        fontSize: "14px",
+                      },
+                    }}
+                  >
+                    {branch.aboutUs || (
+                      <span style={{ fontStyle: "italic", color: "#8c8c8c" }}>
+                        No About Us content set. Click Edit to add.
+                      </span>
+                    )}
+                  </Text>
+                  <Button
+                    type="link"
+                    icon={<EditOutlined />}
+                    onClick={handleEditAboutUs}
+                    style={{
+                      padding: "0 4px",
+                      height: "auto",
+                      color: "rgb(218, 44, 70)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </div>
             </Space>
           </Card>
         </Col>
@@ -855,6 +978,53 @@ const AdminBranch = () => {
           </Space>
         </Col>
       </Row>
+
+      {/* Edit About Us Modal */}
+      <Modal
+        title={
+          <Space>
+            <EditOutlined />
+            <span>Edit About Us</span>
+          </Space>
+        }
+        open={isEditModalVisible}
+        onCancel={handleCancelEdit}
+        footer={[
+          <Button key="cancel" onClick={handleCancelEdit}>
+            Cancel
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            loading={isUpdating}
+            onClick={() => form.submit()}
+            style={{
+              background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+              border: "none",
+            }}
+          >
+            Save
+          </Button>,
+        ]}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSaveAboutUs}
+        >
+          <Form.Item
+            name="aboutUs"
+            label="About Us (for Work Orders)"
+            tooltip="This content will be automatically populated in work order creation forms. You can edit it when creating work orders."
+          >
+            <TextArea
+              rows={8}
+              placeholder="Enter About Us content that will be used in work orders. This helps provide consistent information about your branch in job postings."
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

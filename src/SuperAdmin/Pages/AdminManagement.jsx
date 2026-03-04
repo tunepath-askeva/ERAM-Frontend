@@ -511,6 +511,7 @@ const AdminManagement = () => {
 
       <Card>
         <Table
+          rowKey="id"
           columns={columns}
           dataSource={transformedAdmins}
           loading={{

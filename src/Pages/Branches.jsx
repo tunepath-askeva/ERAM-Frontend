@@ -1,5 +1,16 @@
 import React from "react";
-import { Card, Row, Col, Tag, Typography, Space, Avatar, Divider } from "antd";
+import {
+  Card,
+  Row,
+  Col,
+  Tag,
+  Typography,
+  Space,
+  Avatar,
+  Divider,
+  Result,
+  Button,
+} from "antd";
 import {
   PhoneOutlined,
   MailOutlined,
@@ -30,7 +41,22 @@ const Branches = () => {
         <SkeletonLoader />
       </div>
     );
-  if (error) return <div>Error loading branches</div>;
+  if (error)
+    return (
+      <div>
+        <Header />
+        <Result
+          status="500"
+          title="There are no branches available for now!!!"
+          extra={[
+            <Button type="primary" onClick={() => window.location.reload()}>
+              Retry
+            </Button>,
+          ]}
+        />
+        <HomeFooter />
+      </div>
+    );
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {

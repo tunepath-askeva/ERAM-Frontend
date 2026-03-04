@@ -140,6 +140,20 @@ const EditWorkOrder = () => {
 
   const branchId = Branch?.branch?._id;
 
+  // Auto-populate aboutUs from branch if work order doesn't have it
+  useEffect(() => {
+    if (Branch?.branch?.aboutUs && workOrderData?.workorder) {
+      const currentAboutUs = jobForm.getFieldValue("aboutUs");
+      const workOrderAboutUs = workOrderData.workorder.aboutUs;
+      // Only auto-populate if work order doesn't have aboutUs and form field is empty
+      if (!workOrderAboutUs && !currentAboutUs) {
+        jobForm.setFieldsValue({
+          aboutUs: Branch.branch.aboutUs,
+        });
+      }
+    }
+  }, [Branch, workOrderData, jobForm]);
+
   const activeRecruiters =
     recruiters?.recruitername?.filter(
       (recruiter) => recruiter.accountStatus === "active"
@@ -167,12 +181,12 @@ const EditWorkOrder = () => {
   const disablePastDates = (current) =>
     current && current < dayjs().startOf("day");
 
-  useEffect(() => {
-    console.log("Edit WorkOrder - Clients Data:", clientsData);
-    console.log("Edit WorkOrder - Active Clients:", activeClients);
-    console.log("Edit WorkOrder - Staffs Data:", staffsData);
-    console.log("Edit WorkOrder - Active Staffs:", activeStaffs);
-  }, [clientsData, staffsData]);
+  // useEffect(() => {
+  //   console.log("Edit WorkOrder - Clients Data:", clientsData);
+  //   console.log("Edit WorkOrder - Active Clients:", activeClients);
+  //   console.log("Edit WorkOrder - Staffs Data:", staffsData);
+  //   console.log("Edit WorkOrder - Active Staffs:", activeStaffs);
+  // }, [clientsData, staffsData]);
 
   useEffect(() => {
     if (workOrderData?.workOrder) {
@@ -266,6 +280,8 @@ const EditWorkOrder = () => {
           isSalaryVisible: workOrder.isSalaryVisible || false,
           isActive: workOrder.isActive === "active",
           benefits: benefits,
+          aboutUs: workOrder.aboutUs || Branch?.branch?.aboutUs || "",
+          priority: workOrder.priority || null,
         };
 
         jobForm.setFieldsValue(formData);
@@ -790,9 +806,9 @@ const EditWorkOrder = () => {
           : jobData.alertDate,
         isActive: "active",
         numberOfCandidate: values.numberOfCandidates,
+        aboutUs: values.aboutUs || jobData?.aboutUs || "",
       };
 
-      console.log("Final payload:", workOrderPayload); // Debug log
       const result = await editWorkOrder({ id, ...workOrderPayload }).unwrap();
 
       enqueueSnackbar("Work order updated and published successfully!", {
@@ -2292,6 +2308,20 @@ const EditWorkOrder = () => {
                     />
                   </Form.Item>
                 </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="priority"
+                    label="Priority (1-5)"
+                    tooltip="Optional: Set priority from 1 (lowest) to 5 (highest). Higher priority jobs appear first."
+                  >
+                    <InputNumber
+                      min={1}
+                      max={5}
+                      placeholder="Select priority (optional)"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
               </Row>
             </Card>
 
@@ -2518,6 +2548,17 @@ const EditWorkOrder = () => {
                 <TextArea
                   rows={4}
                   placeholder="Enter detailed job description"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="aboutUs"
+                label="About Us"
+                tooltip="Branch About Us content is automatically loaded. You can edit or add additional information."
+              >
+                <TextArea
+                  rows={5}
+                  placeholder="About Us content will be automatically populated from your branch details. You can edit or add to it here."
                 />
               </Form.Item>
 

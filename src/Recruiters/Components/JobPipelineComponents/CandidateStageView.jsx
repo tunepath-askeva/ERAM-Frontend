@@ -28,6 +28,7 @@ import {
   CommentOutlined,
   EditOutlined,
   CloseOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -69,6 +70,12 @@ const CandidateStageView = ({
   isUndoingStage,
    handleRejectClick,
   isRejecting,
+  isUploadRequiredDocsModalVisible,
+  setIsUploadRequiredDocsModalVisible,
+  requiredDocsFiles,
+  setRequiredDocsFiles,
+  handleUploadRequiredDocuments,
+  isUploadingDocuments,
 }) => {
   const screens = useBreakpoint();
 
@@ -757,64 +764,119 @@ const CandidateStageView = ({
     };
 
     return (
-      <div style={{ marginTop: "16px" }}>
+      <div style={{ marginTop: screens.xs ? "12px" : "16px" }}>
         <div
           style={{
-            marginBottom: "20px",
-            padding: "16px",
+            marginBottom: screens.xs ? "16px" : "20px",
+            padding: screens.xs ? "12px" : "16px",
             borderRadius: "8px",
           }}
         >
           <div
             style={{
               display: "flex",
+              flexDirection: screens.xs ? "column" : "row",
               justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "12px",
+              alignItems: screens.xs ? "flex-start" : "center",
+              marginBottom: screens.xs ? "16px" : "12px",
+              gap: screens.xs ? "12px" : "0",
             }}
           >
-            <Title level={5} style={{ marginBottom: "12px", color: "#1890ff" }}>
-              <FileOutlined style={{ marginRight: "8px" }} />
-              Required Documents for this Stage
+            <Title
+              level={5}
+              style={{
+                marginBottom: screens.xs ? "8px" : "12px",
+                color: "#1890ff",
+                fontSize: screens.xs ? "16px" : "18px",
+              }}
+            >
+              <FileOutlined style={{ marginRight: screens.xs ? "6px" : "8px" }} />
+              {screens.xs
+                ? "Required Documents"
+                : "Required Documents for this Stage"}
             </Title>
 
-            <Button
-              type="primary"
-              icon={<FileOutlined />}
-              onClick={() => setIsDocumentModalVisible(true)}
-              style={{ background: primaryColor, borderColor: primaryColor }}
-              disabled={
-                candidate.stageProgress?.find(
-                  (sp) => sp.stageId === activeStage
-                )?.stageStatus === "approved"
-              }
+            <Space
+              direction={screens.xs ? "vertical" : "horizontal"}
+              style={{ width: screens.xs ? "100%" : "auto" }}
+              size={screens.xs ? "small" : "middle"}
             >
-              Add Document
-            </Button>
+              <Button
+                type="primary"
+                icon={<FileOutlined />}
+                onClick={() => setIsDocumentModalVisible(true)}
+                style={{
+                  background: primaryColor,
+                  borderColor: primaryColor,
+                  width: screens.xs ? "100%" : "auto",
+                }}
+                disabled={
+                  candidate.stageProgress?.find(
+                    (sp) => sp.stageId === activeStage
+                  )?.stageStatus === "approved"
+                }
+                block={screens.xs}
+              >
+                {screens.xs ? "Add Reference Doc" : "Add Reference Document"}
+              </Button>
+              {baseRequiredDocuments.length > 0 && (
+                <Button
+                  type="default"
+                  icon={<UploadOutlined />}
+                  onClick={() => setIsUploadRequiredDocsModalVisible(true)}
+                  style={{
+                    borderColor: "#52c41a",
+                    color: "#52c41a",
+                    width: screens.xs ? "100%" : "auto",
+                  }}
+                  disabled={
+                    candidate.stageProgress?.find(
+                      (sp) => sp.stageId === activeStage
+                    )?.stageStatus === "approved"
+                  }
+                  block={screens.xs}
+                >
+                  {screens.xs
+                    ? "Upload on Behalf"
+                    : "Upload Required Documents on Behalf"}
+                </Button>
+              )}
+            </Space>
           </div>
 
           {/* Show base required documents separately */}
           {baseRequiredDocuments.length > 0 && (
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: screens.xs ? "12px" : "16px" }}>
               <Text
                 strong
                 style={{
                   display: "block",
-                  marginBottom: "8px",
-                  fontSize: "14px",
+                  marginBottom: screens.xs ? "6px" : "8px",
+                  fontSize: screens.xs ? "13px" : "14px",
                 }}
               >
-                Mandatory Documents (Must be uploaded by candidate):
+                {screens.xs
+                  ? "Mandatory Documents:"
+                  : "Mandatory Documents (Must be uploaded by candidate):"}
               </Text>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: screens.xs ? "6px" : "8px",
+                }}
+              >
                 {baseRequiredDocuments.map((doc, index) => (
                   <Tag
                     key={`base-${index}`}
                     color="blue"
                     style={{
-                      fontSize: "14px",
-                      padding: "4px 12px",
+                      fontSize: screens.xs ? "12px" : "14px",
+                      padding: screens.xs ? "2px 8px" : "4px 12px",
                       border: "1px solid #1890ff",
+                      marginBottom: screens.xs ? "4px" : "0",
+                      maxWidth: screens.xs ? "100%" : "auto",
+                      wordBreak: screens.xs ? "break-word" : "normal",
                     }}
                   >
                     {doc}
@@ -826,19 +888,25 @@ const CandidateStageView = ({
 
           {/* Show additional documents separately with delete option */}
           {additionalDocs.length > 0 && (
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: screens.xs ? "12px" : "16px" }}>
               <Text
                 strong
                 style={{
                   display: "block",
-                  marginBottom: "8px",
-                  fontSize: "14px",
+                  marginBottom: screens.xs ? "6px" : "8px",
+                  fontSize: screens.xs ? "13px" : "14px",
                   color: "#52c41a",
                 }}
               >
-                Additional Documents :
+                Additional Documents:
               </Text>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: screens.xs ? "6px" : "8px",
+                }}
+              >
                 {additionalDocs.map((doc, index) => (
                   <Tag
                     key={`additional-${doc._id || index}`}
@@ -862,22 +930,38 @@ const CandidateStageView = ({
                     closeIcon={
                       <CloseOutlined
                         style={{
-                          fontSize: "12px",
-                          marginLeft: "4px",
+                          fontSize: screens.xs ? "10px" : "12px",
+                          marginLeft: screens.xs ? "2px" : "4px",
                           color: "red",
                         }}
                       />
                     }
                     style={{
-                      fontSize: "14px",
-                      padding: "4px 12px",
+                      fontSize: screens.xs ? "12px" : "14px",
+                      padding: screens.xs ? "2px 8px" : "4px 12px",
                       border: "1px dashed #52c41a",
                       backgroundColor: "#f6ffed",
                       cursor: "default",
-                      height: 30,
+                      height: screens.xs ? "auto" : 30,
+                      minHeight: screens.xs ? "24px" : "30px",
+                      marginBottom: screens.xs ? "4px" : "0",
+                      maxWidth: screens.xs ? "100%" : "auto",
+                      wordBreak: screens.xs ? "break-word" : "normal",
                     }}
                   >
-                    {doc.documentName}
+                    <span
+                      style={{
+                        display: "inline-block",
+                        maxWidth: screens.xs
+                          ? "calc(100% - 30px)"
+                          : "none",
+                        overflow: screens.xs ? "hidden" : "visible",
+                        textOverflow: screens.xs ? "ellipsis" : "clip",
+                        whiteSpace: screens.xs ? "nowrap" : "normal",
+                      }}
+                    >
+                      {doc.documentName}
+                    </span>
                     {doc.fileUrl && (
                       <Button
                         type="link"
@@ -887,7 +971,11 @@ const CandidateStageView = ({
                           e.stopPropagation();
                           window.open(doc.fileUrl, "_blank");
                         }}
-                        style={{ padding: "0 4px", marginLeft: "4px" }}
+                        style={{
+                          padding: screens.xs ? "0 2px" : "0 4px",
+                          marginLeft: screens.xs ? "2px" : "4px",
+                          fontSize: screens.xs ? "12px" : "14px",
+                        }}
                       />
                     )}
                   </Tag>
@@ -895,10 +983,16 @@ const CandidateStageView = ({
               </div>
               <Text
                 type="secondary"
-                style={{ fontSize: "12px", marginTop: "8px", display: "block" }}
+                style={{
+                  fontSize: screens.xs ? "11px" : "12px",
+                  marginTop: screens.xs ? "6px" : "8px",
+                  display: "block",
+                  lineHeight: screens.xs ? "1.4" : "1.5",
+                }}
               >
-                ℹ️ These are reference documents for the candidate. Click × to
-                remove or 👁️ to view.
+                ℹ️ {screens.xs
+                  ? "Reference documents. Tap × to remove or 👁️ to view."
+                  : "These are reference documents for the candidate. Click × to remove or 👁️ to view."}
               </Text>
             </div>
           )}
@@ -914,19 +1008,28 @@ const CandidateStageView = ({
           {/* Upload status summary */}
           <div
             style={{
-              marginTop: "16px",
-              paddingTop: "12px",
+              marginTop: screens.xs ? "12px" : "16px",
+              paddingTop: screens.xs ? "10px" : "12px",
               borderTop: "1px dashed #d9d9d9",
             }}
           >
-            <Text type="secondary" style={{ fontSize: "12px" }}>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: screens.xs ? "11px" : "12px",
+                display: "block",
+              }}
+            >
               {uploadedDocs.length > 0
                 ? `✅ ${uploadedDocs.length} document(s) uploaded`
                 : "⚠️ No documents uploaded yet"}
             </Text>
             {baseRequiredDocuments.length > 0 && (
-              <div style={{ marginTop: "4px" }}>
-                <Text type="secondary" style={{ fontSize: "11px" }}>
+              <div style={{ marginTop: screens.xs ? "2px" : "4px" }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: screens.xs ? "10px" : "11px" }}
+                >
                   Required uploads: {baseRequiredDocuments.length} document(s)
                 </Text>
               </div>
@@ -934,26 +1037,50 @@ const CandidateStageView = ({
           </div>
         </div>
 
-        {/* Uploaded documents section - REMAINS UNCHANGED */}
-        <Title level={5} style={{ marginBottom: "12px" }}>
-          <FileOutlined style={{ marginRight: "8px" }} />
+        {/* Uploaded documents section */}
+        <Title
+          level={5}
+          style={{
+            marginBottom: screens.xs ? "10px" : "12px",
+            fontSize: screens.xs ? "16px" : "18px",
+          }}
+        >
+          <FileOutlined style={{ marginRight: screens.xs ? "6px" : "8px" }} />
           Uploaded Documents ({uploadedDocs.length})
         </Title>
 
         {uploadedDocs.length === 0 ? (
           <Empty
-            description="No documents uploaded yet"
+            description={
+              <Text
+                style={{
+                  fontSize: screens.xs ? "13px" : "14px",
+                }}
+              >
+                No documents uploaded yet
+              </Text>
+            }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            style={{ margin: "20px 0" }}
+            style={{ margin: screens.xs ? "16px 0" : "20px 0" }}
           />
         ) : (
-          <Row gutter={[16, 16]}>
+          <Row gutter={[screens.xs ? 8 : 16, screens.xs ? 8 : 16]}>
             {uploadedDocs.map((doc, index) => (
-              <Col xs={24} sm={12} md={8} lg={6} key={doc._id || index}>
+              <Col
+                xs={24}
+                sm={12}
+                md={8}
+                lg={6}
+                key={doc._id || index}
+              >
                 <Card
                   size="small"
                   hoverable
-                  style={{ borderRadius: "8px", border: "1px solid #f0f0f0" }}
+                  style={{
+                    borderRadius: "8px",
+                    border: "1px solid #f0f0f0",
+                    height: "100%",
+                  }}
                   actions={[
                     <Button
                       type="text"
@@ -961,28 +1088,50 @@ const CandidateStageView = ({
                       onClick={() =>
                         handleViewDocument(doc.fileUrl, doc.fileName)
                       }
-                      style={{ color: primaryColor }}
+                      style={{
+                        color: primaryColor,
+                        fontSize: screens.xs ? "12px" : "14px",
+                      }}
+                      size={screens.xs ? "small" : "middle"}
                     >
-                      View
+                      {screens.xs ? "" : "View"}
                     </Button>,
                   ]}
                 >
                   <Card.Meta
                     avatar={
                       <FileOutlined
-                        style={{ fontSize: "24px", color: primaryColor }}
+                        style={{
+                          fontSize: screens.xs ? "20px" : "24px",
+                          color: primaryColor,
+                        }}
                       />
                     }
                     title={
                       <Tooltip title={doc.fileName}>
-                        <Text style={{ fontSize: "12px" }} ellipsis>
+                        <Text
+                          style={{
+                            fontSize: screens.xs ? "11px" : "12px",
+                          }}
+                          ellipsis
+                        >
                           {doc.fileName}
                         </Text>
                       </Tooltip>
                     }
                     description={
-                      <Text type="secondary" style={{ fontSize: "11px" }}>
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: screens.xs ? "10px" : "11px",
+                        }}
+                      >
                         Uploaded: {formatDate(doc.uploadedAt)}
+                        {doc.uploadedBy === "recruiter" && doc.recruiterName && (
+                          <div style={{ marginTop: "2px", fontSize: screens.xs ? "9px" : "10px" }}>
+                            By: {doc.recruiterName}
+                          </div>
+                        )}
                       </Text>
                     }
                   />

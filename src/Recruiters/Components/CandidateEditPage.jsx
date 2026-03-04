@@ -26,6 +26,7 @@ import {
   Alert,
   Progress,
   Modal,
+  Popconfirm,
 } from "antd";
 import {
   UserOutlined,
@@ -48,10 +49,13 @@ import {
   LockOutlined,
   FileTextOutlined,
   LeftOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import {
   useUpdateBranchedCandidateMutation,
   useGetAllcandidatebyIdQuery,
+  useAddCandidateCertificateMutation,
+  useDeleteCandidateCertificateMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { useSnackbar } from "notistack";
 import dayjs from "dayjs";
@@ -134,7 +138,14 @@ const CandidateEditPage = () => {
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [imageFile, setImageFile] = useState(null);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [documentFiles, setDocumentFiles] = useState([]);
   const [isCurrentJob, setIsCurrentJob] = useState(false);
+  const [isCertModalVisible, setIsCertModalVisible] = useState(false);
+  const [editingCertId, setEditingCertId] = useState(null);
+  const [editingCertData, setEditingCertData] = useState({});
+  const [isCertificateLoading, setIsCertificateLoading] = useState(false);
+  const [deletingCertId, setDeletingCertId] = useState(null);
   const [isEduModalVisible, setIsEduModalVisible] = useState(false);
   const [isWorkModalVisible, setIsWorkModalVisible] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState(null);
@@ -155,6 +166,7 @@ const CandidateEditPage = () => {
   const [contactForm] = Form.useForm();
   const [educationForm] = Form.useForm();
   const [workForm] = Form.useForm();
+  const [certForm] = Form.useForm();
 
   // const candidate = state?.candidate || {};
   const {
@@ -164,6 +176,8 @@ const CandidateEditPage = () => {
     refetch,
   } = useGetAllcandidatebyIdQuery(id);
   const [updateCandidate] = useUpdateBranchedCandidateMutation();
+  const [addCertificateMutation] = useAddCandidateCertificateMutation();
+  const [deleteCertificateMutation] = useDeleteCandidateCertificateMutation();
 
   const candidate = candidateData?.candidateDetails || {};
   useEffect(() => {
@@ -486,6 +500,14 @@ const CandidateEditPage = () => {
         formData.append("image", imageFile);
       }
 
+      // Handle resume file upload
+      if (resumeFile) {
+        formData.append("resume", resumeFile);
+      }
+
+      // Note: Certificates are now managed via separate add/delete endpoints
+      // No need to include them in the bulk update
+
       for (let pair of formData.entries()) {
         console.log(pair[0], pair[1]);
       }
@@ -495,6 +517,11 @@ const CandidateEditPage = () => {
       enqueueSnackbar("Candidate updated successfully!", {
         variant: "success",
       });
+      
+      // Reset file states after successful upload
+      setResumeFile(null);
+      setDocumentFiles([]);
+      
       refetch();
       navigate("/recruiter/allcandidates", {
         state: { shouldRefresh: true },
@@ -516,6 +543,152 @@ const CandidateEditPage = () => {
       setImageFile(file);
     } else {
       setImageFile(null);
+    }
+  };
+
+  const handleResumeUpload = (file) => {
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error("Resume must be smaller than 5MB!");
+      return false;
+    }
+
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Only PDF, DOC, and DOCX files are allowed!");
+      return false;
+    }
+
+    setResumeFile(file);
+    return false; // prevent auto upload
+  };
+
+  const handleDocumentUpload = (file) => {
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      message.error("File must be smaller than 10MB!");
+      return false;
+    }
+
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+      return false;
+    }
+
+    // Add unique uid if not present
+    if (!file.uid) {
+      file.uid = `doc-${Date.now()}-${Math.random()}`;
+    }
+
+    setDocumentFiles((prev) => [...prev, file]);
+    return false; // prevent auto upload
+  };
+
+  const handleDocumentRemove = (file) => {
+    setDocumentFiles((prev) => prev.filter((item) => {
+      const itemUid = item.uid || item.name;
+      const fileUid = file.uid || file.name;
+      return itemUid !== fileUid;
+    }));
+  };
+
+  const addCertificate = () => {
+    certForm.resetFields();
+    setEditingCertId(null);
+    setEditingCertData({});
+    setIsCertModalVisible(true);
+  };
+
+  const handleCertificateSubmit = async () => {
+    try {
+      setIsCertificateLoading(true);
+      const values = await certForm.validateFields();
+      const certificateFile =
+        editingCertData.certificateFile ||
+        (editingCertId &&
+          candidate.certificates?.find((c) => c._id === editingCertId || c.id === editingCertId)
+            ?.certificateFile);
+
+      // If no file is selected, show error
+      if (!certificateFile) {
+        enqueueSnackbar("Please select a certificate file", {
+          variant: "error",
+        });
+        setIsCertificateLoading(false);
+        return;
+      }
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("certificate", certificateFile);
+      formData.append("title", values.title);
+
+      // Call API to add certificate
+      const res = await addCertificateMutation({
+        candidateId: id,
+        formData,
+      }).unwrap();
+
+      enqueueSnackbar("Certificate added successfully", {
+        variant: "success",
+      });
+      setIsCertModalVisible(false);
+      setEditingCertId(null);
+      setEditingCertData({});
+      refetch();
+    } catch (err) {
+      console.error("Certificate upload error:", err);
+      enqueueSnackbar(err?.data?.message || "Failed to upload certificate", {
+        variant: "error",
+      });
+    } finally {
+      setIsCertificateLoading(false);
+    }
+  };
+
+  const handleEditCertificate = (cert) => {
+    setEditingCertId(cert._id || cert.id);
+    setEditingCertData({
+      ...cert,
+      certificateFile: cert.certificateFile || null,
+      fileUrl: cert.fileUrl || "",
+    });
+    certForm.setFieldsValue({
+      title: cert.fileName || cert.documentName || cert.title,
+    });
+    setIsCertModalVisible(true);
+  };
+
+  const removeCertificate = async (certId) => {
+    try {
+      setDeletingCertId(certId);
+      await deleteCertificateMutation({
+        candidateId: id,
+        certificateId: certId,
+      }).unwrap();
+      enqueueSnackbar("Certificate deleted successfully", {
+        variant: "success",
+      });
+      refetch();
+    } catch (err) {
+      console.error("Certificate delete error:", err);
+      enqueueSnackbar(err?.data?.message || "Failed to delete certificate", {
+        variant: "error",
+      });
+    } finally {
+      setDeletingCertId(null);
     }
   };
 
@@ -1503,6 +1676,157 @@ const CandidateEditPage = () => {
               </Row>
             </Form>
           </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <FileTextOutlined />
+                Documents
+              </span>
+            }
+            key="documents"
+          >
+            <Card title="Resume & Certificates" size="small">
+              <Row gutter={24}>
+                <Col span={24}>
+                  <Divider orientation="left">Resume</Divider>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    {candidate.resumeUrl && (
+                      <div>
+                        <Text strong>Current Resume: </Text>
+                        <a
+                          href={candidate.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            type="link"
+                            icon={<FileTextOutlined />}
+                            size="small"
+                          >
+                            View Current Resume
+                          </Button>
+                        </a>
+                      </div>
+                    )}
+                    <Upload
+                      accept=".pdf,.doc,.docx"
+                      showUploadList={false}
+                      beforeUpload={handleResumeUpload}
+                    >
+                      <Button icon={<UploadOutlined />} type="default">
+                        {resumeFile
+                          ? `Resume Selected: ${resumeFile.name}`
+                          : "Upload New Resume"}
+                      </Button>
+                    </Upload>
+                    {resumeFile && (
+                      <Text type="secondary" style={{ display: "block" }}>
+                        New resume will replace the existing one
+                      </Text>
+                    )}
+                  </Space>
+                </Col>
+
+                <Col span={24} style={{ marginTop: 24 }}>
+                  <Card
+                    title={
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>
+                          <FileTextOutlined
+                            style={{ marginRight: 8, color: "#da2c46" }}
+                          />
+                          <span style={{ color: "#da2c46" }}>
+                            Certificates & Documents
+                          </span>
+                        </span>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={addCertificate}
+                          style={{ background: "#da2c46", border: "none" }}
+                        >
+                          Add Certificate/Document
+                        </Button>
+                      </div>
+                    }
+                    style={{ marginBottom: 24, borderRadius: "12px" }}
+                  >
+                    {!candidate.certificates || candidate.certificates.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 16 }}>
+                        <Text type="secondary">
+                          No certificates or documents added yet
+                        </Text>
+                      </div>
+                    ) : (
+                      <List
+                        dataSource={candidate.certificates}
+                        renderItem={(item) => (
+                          <List.Item
+                            actions={[
+                              <Button
+                                type="text"
+                                icon={<EditOutlined />}
+                                onClick={() => handleEditCertificate(item)}
+                              />,
+                              <Popconfirm
+                                title="Delete Certificate"
+                                description="Are you sure you want to delete this certificate? This action cannot be undone."
+                                onConfirm={() => removeCertificate(item._id || item.id)}
+                                okText="Yes, Delete"
+                                cancelText="Cancel"
+                                okButtonProps={{ danger: true, loading: deletingCertId === (item._id || item.id) }}
+                              >
+                                <Button
+                                  type="text"
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  loading={deletingCertId === (item._id || item.id)}
+                                >
+                                  Delete
+                                </Button>
+                              </Popconfirm>,
+                            ]}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <Text strong>
+                                  {item.fileName || item.documentName || item.title}
+                                </Text>
+                              }
+                              description={
+                                <div>
+                                  {item.fileUrl && (
+                                    <div style={{ marginTop: 4 }}>
+                                      <Button
+                                        type="link"
+                                        size="small"
+                                        href={item.fileUrl}
+                                        target="_blank"
+                                        icon={<EyeOutlined />}
+                                      >
+                                        View Certificate
+                                      </Button>
+                                    </div>
+                                  )}
+                                  {item.uploadedBy === "recruiter" && item.recruiterName && (
+                                    <Text type="secondary" style={{ fontSize: "12px", display: "block", marginTop: 4 }}>
+                                      Uploaded by: {item.recruiterName}
+                                    </Text>
+                                  )}
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                </Col>
+              </Row>
+            </Card>
+          </TabPane>
         </Tabs>
       </Card>
 
@@ -1593,6 +1917,116 @@ const CandidateEditPage = () => {
               rows={4}
               placeholder="Describe your responsibilities and achievements"
             />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title={`${editingCertId ? "Edit" : "Add"} Certificate`}
+        open={isCertModalVisible}
+        onOk={handleCertificateSubmit}
+        onCancel={() => {
+          if (!isCertificateLoading) {
+            setIsCertModalVisible(false);
+            setEditingCertId(null);
+            setEditingCertData({});
+            certForm.resetFields();
+          }
+        }}
+        okText="Save"
+        cancelText="Cancel"
+        width={600}
+        okButtonProps={{ loading: isCertificateLoading }}
+        cancelButtonProps={{ disabled: isCertificateLoading }}
+        maskClosable={!isCertificateLoading}
+        closable={!isCertificateLoading}
+      >
+        <Form form={certForm} layout="vertical">
+          <Form.Item
+            name="title"
+            label="Certificate Title"
+            rules={[
+              { required: true, message: "Please enter certificate title" },
+            ]}
+          >
+            <Input placeholder="e.g. AWS Certified Solutions Architect" />
+          </Form.Item>
+
+          <Form.Item label="Upload Certificate">
+            <Upload
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              showUploadList={false}
+              beforeUpload={(file) => {
+                const isLt10M = file.size / 1024 / 1024 < 10;
+                if (!isLt10M) {
+                  message.error("Certificate must be smaller than 10MB!");
+                  return false;
+                }
+
+                const allowedTypes = [
+                  "application/pdf",
+                  "application/msword",
+                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                ];
+                if (!allowedTypes.includes(file.type)) {
+                  message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+                  return false;
+                }
+
+                // Store the file for the certificate being edited/added
+                setEditingCertData((prev) => ({
+                  ...prev,
+                  certificateFile: file,
+                  fileUrl: URL.createObjectURL(file),
+                }));
+
+                return false; // prevent auto upload
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Upload Certificate</Button>
+            </Upload>
+
+            {/* Show current file info */}
+            {(editingCertData.fileUrl ||
+              (editingCertId &&
+                candidate.certificates?.find(
+                  (c) => c._id === editingCertId || c.id === editingCertId
+                )?.fileUrl)) && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary">Current certificate: </Text>
+                <Button
+                  type="link"
+                  href={
+                    editingCertData.fileUrl ||
+                    candidate.certificates?.find(
+                      (c) => c._id === editingCertId || c.id === editingCertId
+                    )?.fileUrl
+                  }
+                  target="_blank"
+                  icon={<EyeOutlined />}
+                  size="small"
+                >
+                  View
+                </Button>
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  onClick={() => {
+                    setEditingCertData((prev) => ({
+                      ...prev,
+                      fileUrl: "",
+                      certificateFile: null,
+                    }));
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
           </Form.Item>
         </Form>
       </Modal>

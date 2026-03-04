@@ -80,6 +80,7 @@ const EditBranch = () => {
         branchCode: branch.branchCode,
         isActive: Boolean(branch.isActive), // Ensure it's a proper boolean
         description: branch.description || "",
+        aboutUs: branch.aboutUs || "",
         location: {
           street: branch.location?.street || "",
           city: branch.location?.city || "",
@@ -194,6 +195,7 @@ const EditBranch = () => {
       // Explicitly convert boolean to string for FormData
       formData.append("isActive", values.isActive ? "true" : "false");
       formData.append("description", values.description || "");
+      formData.append("aboutUs", values.aboutUs || "");
 
       // Add location fields
       if (values.location) {
@@ -581,6 +583,17 @@ const EditBranch = () => {
 
             <Form.Item name="description" label="Description">
               <TextArea rows={4} placeholder="Enter Branch description" />
+            </Form.Item>
+
+            <Form.Item 
+              name="aboutUs" 
+              label="About Us (for Work Orders)"
+              tooltip="This content will be automatically populated in work order creation forms. You can edit it when creating work orders."
+            >
+              <TextArea 
+                rows={6} 
+                placeholder="Enter About Us content that will be used in work orders. This helps provide consistent information about your branch in job postings." 
+              />
             </Form.Item>
           </Card>
 

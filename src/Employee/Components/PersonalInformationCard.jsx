@@ -99,16 +99,32 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
         cleanPhoneNumber = cleanPhoneNumber.slice(phoneCountryCode.length);
       }
 
+      // Handle emergency contact number
+      const emergencyCountryCode = form.getFieldValue("emergencyContactNoCountryCode") || values.emergencyContactNoCountryCode || "91";
+      const emergencyPhoneNumber = values.emergencyContactNo || "";
+      let cleanEmergencyPhoneNumber = emergencyPhoneNumber.replace(/^\+/, "").replace(/\D/g, "");
+      
+      // Remove country code from emergency phone if it starts with it
+      if (cleanEmergencyPhoneNumber && cleanEmergencyPhoneNumber.startsWith(emergencyCountryCode)) {
+        cleanEmergencyPhoneNumber = cleanEmergencyPhoneNumber.slice(emergencyCountryCode.length);
+      }
+
       const submitData = {
         ...values,
         phone: cleanPhoneNumber, // Phone number WITHOUT country code
         phoneCountryCode: phoneCountryCode, // Country code sent separately
+        emergencyContactNo: cleanEmergencyPhoneNumber, // Emergency phone number WITHOUT country code
+        emergencyContactNoCountryCode: emergencyCountryCode, // Emergency country code sent separately
         imageFile: userData.imageFile, // Pass the file to parent
       };
       
       // Ensure phoneCountryCode is always in the payload
       if (!submitData.phoneCountryCode) {
         submitData.phoneCountryCode = "91";
+      }
+      // Ensure emergencyContactNoCountryCode is always in the payload
+      if (!submitData.emergencyContactNoCountryCode) {
+        submitData.emergencyContactNoCountryCode = "91";
       }
       
       await onUpdate(submitData);
@@ -183,6 +199,7 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
   };
 
   const phoneData = extractPhoneData(employeeData?.phone, employeeData?.phoneCountryCode);
+  const emergencyPhoneData = extractPhoneData(employeeData?.emergencyContactNo, employeeData?.emergencyContactNoCountryCode);
 
   const formInitialValues = {
     firstName: employeeData?.firstName || "",
@@ -195,6 +212,8 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     email: employeeData?.email || "",
     phone: phoneData.phone,
     phoneCountryCode: phoneData.phoneCountryCode,
+    emergencyContactNo: emergencyPhoneData.phone,
+    emergencyContactNoCountryCode: emergencyPhoneData.phoneCountryCode,
     dob: formatDate(employeeData?.dob),
     age: employeeData?.age || "",
     gender: employeeData?.gender || "",
@@ -399,6 +418,51 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
                 required={false}
                 disabled={!editMode}
               />
+            </Col>
+            <Col xs={24} sm={12}>
+              {!editMode ? (
+                <Form.Item label="Emergency Contact Number">
+                  <div style={{ 
+                    padding: "4px 11px",
+                    border: "1px solid #d9d9d9",
+                    borderRadius: "6px",
+                    minHeight: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    backgroundColor: "#fafafa"
+                  }}>
+                    {employeeData?.emergencyContactNoCountryCode && employeeData?.emergencyContactNo ? (
+                      <Space>
+                        <PhoneOutlined style={{ color: "#da2c46" }} />
+                        <Text>
+                          {phoneUtils.formatWithCountryCode(
+                            employeeData.emergencyContactNoCountryCode,
+                            employeeData.emergencyContactNo
+                          )}
+                        </Text>
+                      </Space>
+                    ) : employeeData?.emergencyContactNo ? (
+                      <Space>
+                        <PhoneOutlined style={{ color: "#da2c46" }} />
+                        <Text>{employeeData.emergencyContactNo}</Text>
+                      </Space>
+                    ) : (
+                      <Text type="secondary" style={{ fontStyle: "italic" }}>
+                        Not provided
+                      </Text>
+                    )}
+                  </div>
+                </Form.Item>
+              ) : (
+                <PhoneInput
+                  form={form}
+                  name="emergencyContactNo"
+                  label="Emergency Contact Number"
+                  required={false}
+                  disabled={false}
+                  countryCodeFieldName="emergencyContactNoCountryCode"
+                />
+              )}
             </Col>
             {/* Personal Details */}
             <Col xs={24} sm={8}>

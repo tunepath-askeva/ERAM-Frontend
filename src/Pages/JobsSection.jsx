@@ -10,7 +10,7 @@ import {
   Col,
   Badge,
   Divider,
-  Empty,
+  Result,
   Tooltip,
   Avatar,
   Alert,
@@ -246,6 +246,7 @@ const JobsSection = ({ currentBranch }) => {
     };
     setTempFilters(emptyFilters);
     setAppliedFilters(emptyFilters);
+    setSearchTerm(""); // Clear search term when clearing filters
     setCurrentPage(1);
   };
 
@@ -793,6 +794,21 @@ const JobsSection = ({ currentBranch }) => {
     </Card>
   );
 
+  const handleTrendingSkillClick = (skill) => {
+    setSearchTerm(skill);
+    setCurrentPage(1);
+    // Also add to skills filter
+    if (!appliedFilters.skills.includes(skill)) {
+      const newSkills = [...appliedFilters.skills, skill];
+      setAppliedFilters(prev => ({ ...prev, skills: newSkills }));
+    }
+  };
+
+  const handleTrendingJobClick = (jobTitle) => {
+    setSearchTerm(jobTitle);
+    setCurrentPage(1);
+  };
+
   const TrendingSkillsCarousel = () => {
     const createInfiniteArray = (arr, minLength = 20) => {
       if (!arr || arr.length === 0) return [];
@@ -821,7 +837,12 @@ const JobsSection = ({ currentBranch }) => {
         <div className="carousel-wrapper">
           <div className="carousel-track skills-track">
             {infiniteSkills.map((skill, index) => (
-              <Tag key={`skill-${index}`} className="carousel-item">
+              <Tag 
+                key={`skill-${index}`} 
+                className="carousel-item clickable-trending-item"
+                onClick={() => handleTrendingSkillClick(skill)}
+                style={{ cursor: "pointer" }}
+              >
                 {skill}
               </Tag>
             ))}
@@ -862,7 +883,12 @@ const JobsSection = ({ currentBranch }) => {
         <div className="carousel-wrapper">
           <div className="carousel-track jobs-track">
             {infiniteJobs.map((job, index) => (
-              <Tag key={`job-${index}`} className="carousel-item">
+              <Tag 
+                key={`job-${index}`} 
+                className="carousel-item clickable-trending-item"
+                onClick={() => handleTrendingJobClick(job)}
+                style={{ cursor: "pointer" }}
+              >
                 {job}
               </Tag>
             ))}
@@ -942,30 +968,61 @@ const JobsSection = ({ currentBranch }) => {
         </Text>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar and Filter - Responsive Layout */}
       <div style={{ marginBottom: "24px" }}>
-        <Search
-          placeholder="Search jobs by title, function......"
-          allowClear
-          enterButton={
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} sm={24} md={18} lg={20} xl={20}>
+            <Search
+              placeholder="Search by job title, skills, or location..."
+              allowClear
+              enterButton={
+                <Button
+                  icon={<SearchOutlined />}
+                  style={{
+                    background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                    border: "none",
+                    color: "white",
+                  }}
+                  loading={isFetching}
+                >
+                  <span className="search-button-text">Search</span>
+                </Button>
+              }
+              size="large"
+              onSearch={handleSearch}
+              onChange={handleSearchChange}
+              style={{ borderRadius: "8px", width: "100%" }}
+              value={searchTerm}
+            />
+          </Col>
+          <Col xs={24} sm={24} md={6} lg={4} xl={4}>
             <Button
-              icon={<SearchOutlined />}
+              type="default"
+              icon={<FilterOutlined />}
+              size="large"
+              onClick={() => setFilterDrawerVisible(true)}
               style={{
-                background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-                border: "none",
-                color: "white",
+                width: "100%",
+                height: "40px",
+                borderRadius: "8px",
+                borderColor: hasActiveFilters() ? "#da2c46" : "#d9d9d9",
+                color: hasActiveFilters() ? "#da2c46" : "#595959",
+                fontWeight: hasActiveFilters() ? "600" : "normal",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
-              loading={isFetching}
             >
-              Search
+              <span className="filter-button-text">
+                Filter {hasActiveFilters() && `(${Object.values(appliedFilters).filter(v => 
+                  (Array.isArray(v) && v.length > 0) || 
+                  (typeof v === 'string' && v) || 
+                  (typeof v === 'number' && v !== null)
+                ).length})`}
+              </span>
             </Button>
-          }
-          size="large"
-          onSearch={handleSearch}
-          onChange={handleSearchChange}
-          style={{ borderRadius: "8px" }}
-          value={searchTerm}
-        />
+          </Col>
+        </Row>
       </div>
 
       {apiTrendingSkills.length > 0 && (
@@ -1064,21 +1121,6 @@ const JobsSection = ({ currentBranch }) => {
                 {totalJobs !== 1 ? "s" : ""}
                 {searchTerm && ` for "${searchTerm}"`}
               </Text>
-              <Button
-                type="text"
-                icon={<FilterOutlined />}
-                style={{ 
-                  color: hasActiveFilters() ? "#da2c46" : "#64748b",
-                  fontWeight: hasActiveFilters() ? "600" : "normal"
-                }}
-                onClick={() => setFilterDrawerVisible(true)}
-              >
-                Filter {hasActiveFilters() && `(${Object.values(appliedFilters).filter(v => 
-                  (Array.isArray(v) && v.length > 0) || 
-                  (typeof v === 'string' && v) || 
-                  (typeof v === 'number' && v !== null)
-                ).length})`}
-              </Button>
             </div>
 
             <Row gutter={[16, 16]} style={{ marginBottom: "32px" }}>
@@ -1138,53 +1180,57 @@ const JobsSection = ({ currentBranch }) => {
             )}
           </>
         ) : (
-          <Empty
-            description={
-              <span style={{ color: "#64748b" }}>
-                {searchTerm || hasActiveFilters()
-                  ? `No jobs found matching your ${searchTerm ? "search" : ""}${searchTerm && hasActiveFilters() ? " and " : ""}${hasActiveFilters() ? "filters" : ""}`
-                  : "No job opportunities available at this time"}
-              </span>
+          <Result
+            status="404"
+            title={
+              searchTerm || hasActiveFilters()
+                ? "No jobs found"
+                : "No job opportunities available at this time"
             }
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            style={{ paddingTop: "60px" }}
-          >
-            {(searchTerm || hasActiveFilters()) && (
-              <Space>
-                {searchTerm && (
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setCurrentPage(1);
-                    }}
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
-                      border: "none",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Clear Search
-                  </Button>
-                )}
-                {hasActiveFilters() && (
-                  <Button
-                    onClick={() => {
-                      handleClearFilters();
-                    }}
-                    style={{
-                      borderColor: "#da2c46",
-                      color: "#da2c46",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </Space>
-            )}
-          </Empty>
+            subTitle={
+              searchTerm || hasActiveFilters()
+                ? `No jobs found matching your ${searchTerm ? "search" : ""}${searchTerm && hasActiveFilters() ? " and " : ""}${hasActiveFilters() ? "filters" : ""}. Try adjusting your search criteria or filters.`
+                : "We currently don't have any job opportunities available. Please check back later or submit your resume to be notified when new positions open."
+            }
+            extra={
+              (searchTerm || hasActiveFilters()) ? (
+                <Space>
+                  {searchTerm && (
+                    <Button
+                      type="primary"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                        border: "none",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      Clear Search
+                    </Button>
+                  )}
+                  {hasActiveFilters() && (
+                    <Button
+                      onClick={() => {
+                        handleClearFilters();
+                      }}
+                      style={{
+                        borderColor: "#da2c46",
+                        color: "#da2c46",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </Space>
+              ) : null
+            }
+            style={{ paddingTop: "60px", paddingBottom: "60px" }}
+          />
         )}
       </div>
 
@@ -1526,6 +1572,21 @@ const JobsSection = ({ currentBranch }) => {
             box-shadow: 0 4px 12px rgba(218, 44, 70, 0.3);
           }
 
+          .clickable-trending-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+
+          .clickable-trending-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(218, 44, 70, 0.4);
+            z-index: 10;
+          }
+
+          .clickable-trending-item:active {
+            transform: scale(1.05);
+          }
+
           @media (max-width: 768px) {
             .skills-track {
               animation: scrollRight 40s linear infinite;
@@ -1533,6 +1594,20 @@ const JobsSection = ({ currentBranch }) => {
 
             .jobs-track {
               animation: scrollLeft 40s linear infinite;
+            }
+
+            .search-button-text {
+              display: none;
+            }
+
+            .filter-button-text {
+              font-size: 12px;
+            }
+          }
+
+          @media (max-width: 576px) {
+            .search-button-text {
+              display: none;
             }
           }
         `}

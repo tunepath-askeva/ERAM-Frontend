@@ -337,6 +337,8 @@ const RecruiterEditJob = () => {
           visacategorytype: job.visacategorytype,
           isCommon: job.isCommon || false,
           isSalaryVisible: job.isSalaryVisible || false,
+          aboutUs: job.aboutUs || "",
+          priority: job.priority || null,
         };
 
         jobForm.setFieldsValue(formData);
@@ -1011,8 +1013,11 @@ const RecruiterEditJob = () => {
         keyResponsibilities:
           values.keyResponsibilities || jobData.keyResponsibilities,
         qualification: values.qualification || jobData.qualification,
-        numberOfCandidate:
-          values.numberOfCandidate || jobData.numberOfCandidate,
+        numberOfCandidate: values.numberOfCandidate !== undefined && values.numberOfCandidate !== null
+          ? Number(values.numberOfCandidate)
+          : (jobData.numberOfCandidate !== undefined && jobData.numberOfCandidate !== null
+              ? Number(jobData.numberOfCandidate)
+              : undefined),
         benefits: values.benefits || jobData.benefits || [],
         languagesRequired:
           values.languagesRequired || jobData.languagesRequired || [],
@@ -1023,6 +1028,9 @@ const RecruiterEditJob = () => {
         isSalaryVisible: values.isSalaryVisible !== undefined 
           ? Boolean(values.isSalaryVisible) 
           : (jobData?.isSalaryVisible !== undefined ? Boolean(jobData.isSalaryVisible) : false),
+        priority: values.priority !== undefined && values.priority !== null && values.priority !== ""
+          ? Number(values.priority)
+          : (jobData?.priority !== undefined && jobData.priority !== null ? Number(jobData.priority) : null),
 
         // CRITICAL FIELDS - Properly formatted
         client: values.client || jobData.client,
@@ -1057,6 +1065,9 @@ const RecruiterEditJob = () => {
 
         isActive: "active",
       };
+
+      // Log numberOfCandidate for debugging
+      console.log("Updating job with numberOfCandidate:", updatePayload.numberOfCandidate);
 
       const result = await updateJob({
         id: id,
@@ -2830,6 +2841,20 @@ const RecruiterEditJob = () => {
                   <Input placeholder="e.g. AWINC-1-1112" disabled />
                 </Form.Item>
               </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="priority"
+                  label="Priority (1-5)"
+                  tooltip="Optional: Set priority from 1 (lowest) to 5 (highest). Higher priority jobs appear first."
+                >
+                  <InputNumber
+                    min={1}
+                    max={5}
+                    placeholder="Select priority (optional)"
+                    style={{ width: "100%" }}
+                  />
+                </Form.Item>
+              </Col>
             </Row>
 
             <Row gutter={[24, 16]}>
@@ -2998,6 +3023,22 @@ const RecruiterEditJob = () => {
                   </Select>
                 </Form.Item>
               </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="numberOfCandidate"
+                  label="Number of Required Candidates"
+                  rules={[
+                    { required: true, message: "Please enter number of required candidates" },
+                    { type: "number", min: 1, message: "Must be at least 1" },
+                  ]}
+                >
+                  <InputNumber
+                    min={1}
+                    style={{ width: "100%" }}
+                    placeholder="Enter number of candidates"
+                  />
+                </Form.Item>
+              </Col>
             </Row>
 
             {/* Salary Range */}
@@ -3077,6 +3118,17 @@ const RecruiterEditJob = () => {
               ]}
             >
               <TextArea rows={6} placeholder="Enter detailed job description" />
+            </Form.Item>
+
+            <Form.Item
+              name="aboutUs"
+              label="About Us"
+              tooltip="Branch About Us content is automatically loaded. You can edit or add additional information."
+            >
+              <TextArea
+                rows={5}
+                placeholder="About Us content will be automatically populated from your branch details. You can edit or add to it here."
+              />
             </Form.Item>
 
             <Form.Item

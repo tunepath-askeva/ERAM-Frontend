@@ -79,6 +79,8 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
     basicAssets: "",
     reportingAndDocumentation: "",
     project: "",
+    department: "",
+    reportingManager: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -257,6 +259,8 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
       basicAssets: "",
       reportingAndDocumentation: "",
       project: "",
+      department: "",
+      reportingManager: "",
     });
     onCancel();
   };
@@ -691,6 +695,44 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                     </Select.Option>
                   ))}
                 </Select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Department
+                </label>
+                <Input
+                  placeholder="Enter department"
+                  value={formData.department}
+                  onChange={(e) =>
+                    handleInputChange("department", e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Reporting Manager
+                </label>
+                <Input
+                  placeholder="Enter reporting manager name"
+                  value={formData.reportingManager}
+                  onChange={(e) =>
+                    handleInputChange("reportingManager", e.target.value)
+                  }
+                />
               </div>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>

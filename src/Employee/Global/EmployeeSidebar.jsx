@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Button, Drawer } from "antd";
+import { Layout, Button, Drawer, Tooltip } from "antd";
 import {
   SolutionOutlined,
   SettingOutlined,
@@ -46,6 +46,7 @@ const EmployeeSidebar = ({
     name: "Employee",
     email: "",
     roles: "",
+    branchLogo: null,
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -58,9 +59,14 @@ const EmployeeSidebar = ({
 
   const menuItems = [
     {
+      key: "/employee/dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    {
       key: "/employee/company-news",
       icon: <PaperClipOutlined />,
-      label: "Company News",
+      label: "Company News & Events",
     },
     {
       key: "/employee/raise-request",
@@ -118,14 +124,12 @@ const EmployeeSidebar = ({
           if (data) {
             employeeData = data;
             foundKey = key;
-            console.log(`Found employee data in localStorage key: ${key}`);
             break;
           }
         }
 
         if (employeeData) {
           const parsedData = JSON.parse(employeeData);
-          console.log(`Parsed data from ${foundKey}:`, parsedData);
 
           const name = parsedData.name || parsedData.fullName || "Employee";
 
@@ -142,25 +146,29 @@ const EmployeeSidebar = ({
             roles = parsedData.role || "";
           }
 
+          // Extract branch logo - check multiple possible paths
+          const branchLogo = 
+            parsedData.branch?.brand_logo || 
+            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo || 
+            null;
+          
+
           const extractedInfo = {
             name: name,
             email: email,
             roles: roles,
+            branchLogo: branchLogo,
           };
 
-          console.log("Extracted employee info:", extractedInfo);
           setEmployeeInfo(extractedInfo);
         } else {
           console.warn("No employee data found in localStorage");
-          console.log(
-            "Available localStorage keys:",
-            Object.keys(localStorage)
-          );
+
 
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const value = localStorage.getItem(key);
-            console.log(`localStorage[${key}]:`, value);
           }
         }
       } catch (error) {
@@ -172,7 +180,6 @@ const EmployeeSidebar = ({
 
     const handleStorageChange = (e) => {
       if (e.key && (e.key.includes("employee") || e.key.includes("user"))) {
-        console.log("localStorage changed for key:", e.key);
         fetchEmployeeInfo();
       }
     };
@@ -290,23 +297,6 @@ const EmployeeSidebar = ({
       >
         {(!collapsed || screenSize.isMobile) && (
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                background:
-                  "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-                fontWeight: "bold",
-                fontSize: "16px",
-              }}
-            >
-              {getFirstLetter()}
-            </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <h1
                 style={{
@@ -361,59 +351,77 @@ const EmployeeSidebar = ({
           gap: "8px",
         }}
       >
-        {menuItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => handleMenuClick({ key: item.key })}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              backgroundColor:
-                selectedKey === item.key
-                  ? "#fde2e4"
-                  : hoveredKey === item.key
-                  ? "#f1f5f9"
-                  : "transparent",
-              color:
-                selectedKey === item.key
-                  ? "#e11d48"
-                  : hoveredKey === item.key
-                  ? "#1e293b"
-                  : "#475569",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: screenSize.isMobile ? "16px" : "14px",
-              textAlign: "left",
-              borderRight:
-                selectedKey === item.key ? "2px solid #e11d48" : "none",
-              height: getMenuItemHeight(),
-              justifyContent:
-                collapsed && !screenSize.isMobile ? "center" : "flex-start",
-            }}
-            onMouseEnter={() => setHoveredKey(item.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            {React.cloneElement(item.icon, {
-              style: {
+        {menuItems.map((item) => {
+          const menuButton = (
+            <button
+              key={item.key}
+              onClick={() => handleMenuClick({ key: item.key })}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                transition: "all 0.2s ease",
+                backgroundColor:
+                  selectedKey === item.key
+                    ? "#fde2e4"
+                    : hoveredKey === item.key
+                    ? "#f1f5f9"
+                    : "transparent",
                 color:
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#e11d48"
-                    : "#64748b",
-                fontSize: getIconSize(),
-                minWidth: getIconSize(),
-              },
-            })}
-            {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
-          </button>
-        ))}
+                    ? "#1e293b"
+                    : "#475569",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: "500",
+                fontSize: screenSize.isMobile ? "16px" : "14px",
+                textAlign: "left",
+                borderRight:
+                  selectedKey === item.key ? "2px solid #e11d48" : "none",
+                height: getMenuItemHeight(),
+                justifyContent:
+                  collapsed && !screenSize.isMobile ? "center" : "flex-start",
+              }}
+              onMouseEnter={() => setHoveredKey(item.key)}
+              onMouseLeave={() => setHoveredKey(null)}
+            >
+              {React.cloneElement(item.icon, {
+                style: {
+                  color:
+                    selectedKey === item.key
+                      ? "#e11d48"
+                      : hoveredKey === item.key
+                      ? "#e11d48"
+                      : "#64748b",
+                  fontSize: getIconSize(),
+                  minWidth: getIconSize(),
+                },
+              })}
+              {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
+            </button>
+          );
+
+          // Show tooltip when collapsed and not on mobile
+          if (collapsed && !screenSize.isMobile) {
+            return (
+              <Tooltip
+                key={item.key}
+                title={item.label}
+                placement="right"
+                mouseEnterDelay={0.5}
+              >
+                {menuButton}
+              </Tooltip>
+            );
+          }
+
+          return menuButton;
+        })}
       </nav>
 
       <div

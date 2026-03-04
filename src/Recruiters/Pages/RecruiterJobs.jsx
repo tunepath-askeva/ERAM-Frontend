@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Button,
   Card,
@@ -39,15 +39,18 @@ import {
   DownOutlined,
   EditOutlined,
   PoweroffOutlined,
+  CopyOutlined,
   GroupOutlined,
   UsergroupAddOutlined,
   WarningOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   useGetRecruiterJobsQuery,
   useUpdateJobStatusMutation,
+  useCloneWorkOrderMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import { useSnackbar } from "notistack";
@@ -70,6 +73,9 @@ const RecruiterJobs = () => {
   const [modalType, setModalType] = useState(""); // 'activate' or 'deactivate'
   const [selectedJobForModal, setSelectedJobForModal] = useState(null);
   const [description, setDescription] = useState("");
+  const [cloneModalVisible, setCloneModalVisible] = useState(false);
+  const [jobToClone, setJobToClone] = useState(null);
+  const [clonedJobTitle, setClonedJobTitle] = useState("");
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const recruiterPermissions = useSelector(
@@ -82,6 +88,7 @@ const RecruiterJobs = () => {
     data: apiData,
     isLoading,
     error,
+    refetch,
   } = useGetRecruiterJobsQuery({
     page: currentPage,
     limit: pageSize,
@@ -91,6 +98,7 @@ const RecruiterJobs = () => {
 
   const [updateJobStatus, { isLoading: isUpdatingStatus }] =
     useUpdateJobStatusMutation();
+  const [cloneWorkOrder, { isLoading: isCloning }] = useCloneWorkOrderMutation();
 
   const primaryColor = "#da2c46";
 
@@ -187,6 +195,7 @@ const RecruiterJobs = () => {
       requisitionNo: job.requisitionNo || null,
       referenceNo: job.referenceNo || null,
       createdBy: job.createdBy || "",
+      workOrderStatus: job.workOrderStatus || null,
     }));
   };
 
@@ -270,6 +279,55 @@ const RecruiterJobs = () => {
   const handleEditJob = (job, e) => {
     e.stopPropagation();
     navigate(`/recruiter-jobs/edit/${job._id}`, { state: { jobData: job } });
+  };
+
+  const showCloneModal = (job, e) => {
+    if (e) e.stopPropagation();
+    // Store the original job object to access isActive properly
+    setJobToClone(job);
+    setClonedJobTitle(job.title || ""); // Initialize with original title
+    setCloneModalVisible(true);
+  };
+
+  const handleCloneCancel = () => {
+    setCloneModalVisible(false);
+    setJobToClone(null);
+    setClonedJobTitle("");
+  };
+
+  const handleTitleChange = useCallback((e) => {
+    setClonedJobTitle(e.target.value);
+  }, []);
+
+  const handleCloneConfirm = async () => {
+    if (!jobToClone) return;
+
+    if (!clonedJobTitle.trim()) {
+      enqueueSnackbar("Please enter a job title", { variant: "warning" });
+      return;
+    }
+
+    try {
+      const response = await cloneWorkOrder({
+        id: jobToClone._id,
+        title: clonedJobTitle.trim(),
+      }).unwrap();
+      enqueueSnackbar(
+        `Work order cloned successfully! New job code: ${response.data?.jobCode || 'N/A'}`,
+        { variant: "success" }
+      );
+      // Refetch jobs to show the new cloned work order
+      refetch();
+      setCloneModalVisible(false);
+      setJobToClone(null);
+      setClonedJobTitle("");
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data?.message || "Failed to clone work order",
+        { variant: "error" }
+      );
+      console.error("Clone error:", error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -456,7 +514,12 @@ const RecruiterJobs = () => {
                         />
                       </Tooltip>
                     ),
-
+                    <Tooltip title="Clone Work Order" key="clone">
+                      <CopyOutlined
+                        onClick={(e) => showCloneModal(job, e)}
+                        style={{ fontSize: "16px", color: "#1890ff" }}
+                      />
+                    </Tooltip>,
                     hasPermission("deactivate-job") &&
                       (job.isActive ? (
                         <Tooltip title="Deactivate Job" key="deactivate">
@@ -873,6 +936,171 @@ const RecruiterJobs = () => {
             showCount
             style={{ resize: "none" }}
           />
+        </div>
+      </Modal>
+
+      {/* Clone Confirmation Modal */}
+      <Modal
+        title={
+          <div
+            style={{ display: "flex", alignItems: "center", color: "#1890ff" }}
+          >
+            <ExclamationCircleOutlined
+              style={{ marginRight: 8, fontSize: 18, color: "#1890ff" }}
+            />
+            <span style={{ fontSize: "16px" }}>Clone Work Order</span>
+          </div>
+        }
+        open={cloneModalVisible}
+        onCancel={handleCloneCancel}
+        width="90%"
+        style={{ maxWidth: 500 }}
+        centered
+        footer={[
+          <Button key="cancel" onClick={handleCloneCancel} size="large">
+            Cancel
+          </Button>,
+          <Button
+            key="clone"
+            type="primary"
+            onClick={handleCloneConfirm}
+            size="large"
+            icon={<CopyOutlined />}
+            loading={isCloning}
+            style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
+          >
+            Clone Work Order
+          </Button>,
+        ]}
+        maskClosable={false}
+        destroyOnClose={false}
+      >
+        <div style={{ padding: "16px 0" }}>
+          <div
+            style={{
+              background: "#e6f7ff",
+              border: "1px solid #91d5ff",
+              borderRadius: "8px",
+              padding: "12px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <ExclamationCircleOutlined
+              style={{
+                color: "#1890ff",
+                fontSize: "16px",
+                marginTop: "2px",
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <Text strong style={{ color: "#1890ff", fontSize: "13px" }}>
+                A new work order will be created with a new job code!
+              </Text>
+              <br />
+              <Text style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                All work order details will be copied. The new work order will be inactive and you can edit it as needed. Requisition number and reference number will not be copied.
+              </Text>
+            </div>
+          </div>
+
+          {jobToClone && (
+            <div>
+              <Text
+                style={{
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  display: "block",
+                }}
+              >
+                Are you sure you want to clone the following work order?
+              </Text>
+
+              <div
+                style={{
+                  background: "#fafafa",
+                  border: "1px solid #e8e8e8",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ marginBottom: "12px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "12px",
+                      color: "#666",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Job Title <span style={{ color: "red" }}>*</span>
+                  </Text>
+                  <Input
+                    value={clonedJobTitle}
+                    onChange={handleTitleChange}
+                    placeholder="Enter job title"
+                    size="large"
+                    style={{ width: "100%" }}
+                    autoFocus
+                    allowClear
+                  />
+                </div>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "12px",
+                      color: "#666",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    New Job Code (Auto-generated)
+                  </Text>
+                  <Input
+                    value="Will be generated automatically"
+                    disabled
+                    size="large"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#f5f5f5",
+                      cursor: "not-allowed",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Status:</strong>{" "}
+                    {jobToClone.isActive === true || jobToClone.isActive === "active"
+                      ? "Active"
+                      : "Inactive"}
+                  </Text>
+                </div>
+
+                <div style={{ marginBottom: "6px" }}>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Project:</strong> {jobToClone.company || "N/A"}
+                  </Text>
+                </div>
+
+                <div>
+                  <Text style={{ color: "#666", fontSize: "12px" }}>
+                    <strong>Created:</strong>{" "}
+                    {jobToClone.postedDate
+                      ? new Date(jobToClone.postedDate).toLocaleDateString()
+                      : "N/A"}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 

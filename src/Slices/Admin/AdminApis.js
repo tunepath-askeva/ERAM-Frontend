@@ -22,6 +22,112 @@ export const adminApi = createApi({
         method: "GET",
       }),
     }),
+    getFilteredAdminDashboardData: builder.query({
+      query: (params) => {
+        const queryParams = new URLSearchParams();
+        
+        // Handle multi-select filters (client, project)
+        if (params?.clientId && Array.isArray(params.clientId) && params.clientId.length > 0) {
+          queryParams.append("clientId", params.clientId.join(","));
+        } else if (params?.clientId && params.clientId !== "all") {
+          queryParams.append("clientId", params.clientId);
+        }
+        
+        if (params?.projectId && Array.isArray(params.projectId) && params.projectId.length > 0) {
+          queryParams.append("projectId", params.projectId.join(","));
+        } else if (params?.projectId && params.projectId !== "all") {
+          queryParams.append("projectId", params.projectId);
+        }
+        
+        if (params?.workOrderId && params.workOrderId !== "all") {
+          queryParams.append("workOrderId", params.workOrderId);
+        }
+        
+        if (params?.referenceCode && params.referenceCode !== "all") {
+          queryParams.append("referenceCode", params.referenceCode);
+        }
+        
+        if (params?.startDate) {
+          queryParams.append("startDate", params.startDate);
+        }
+        
+        if (params?.endDate) {
+          queryParams.append("endDate", params.endDate);
+        }
+        
+        if (params?.deadlinePeriod) {
+          queryParams.append("deadlinePeriod", params.deadlinePeriod);
+        }
+        
+        if (params?.completionPercentage) {
+          queryParams.append("completionPercentage", params.completionPercentage);
+        }
+        
+        if (params?.dateRange) {
+          queryParams.append("dateRange", params.dateRange);
+        }
+        
+        const queryString = queryParams.toString();
+        return {
+          url: `/dashboard/filtered${queryString ? `?${queryString}` : ""}`,
+          method: "GET",
+        };
+      },
+    }),
+    getAdminFilterOptions: builder.query({
+      query: () => ({
+        url: "/dashboard/filter-options",
+        method: "GET",
+      }),
+    }),
+    getAdminChartData: builder.query({
+      query: (params) => {
+        const queryParams = new URLSearchParams();
+        
+        // Handle multi-select filters (client, project)
+        if (params?.clientId && Array.isArray(params.clientId) && params.clientId.length > 0) {
+          queryParams.append("clientId", params.clientId.join(","));
+        } else if (params?.clientId && params.clientId !== "all") {
+          queryParams.append("clientId", params.clientId);
+        }
+        
+        if (params?.projectId && Array.isArray(params.projectId) && params.projectId.length > 0) {
+          queryParams.append("projectId", params.projectId.join(","));
+        } else if (params?.projectId && params.projectId !== "all") {
+          queryParams.append("projectId", params.projectId);
+        }
+        
+        if (params?.workOrderId && params.workOrderId !== "all") {
+          queryParams.append("workOrderId", params.workOrderId);
+        }
+        
+        if (params?.referenceCode && params.referenceCode !== "all") {
+          queryParams.append("referenceCode", params.referenceCode);
+        }
+        
+        if (params?.startDate) {
+          queryParams.append("startDate", params.startDate);
+        }
+        
+        if (params?.endDate) {
+          queryParams.append("endDate", params.endDate);
+        }
+        
+        if (params?.deadlinePeriod) {
+          queryParams.append("deadlinePeriod", params.deadlinePeriod);
+        }
+        
+        if (params?.completionPercentage) {
+          queryParams.append("completionPercentage", params.completionPercentage);
+        }
+        
+        const queryString = queryParams.toString();
+        return {
+          url: `/dashboard/chart-data${queryString ? `?${queryString}` : ""}`,
+          method: "GET",
+        };
+      },
+    }),
     addPipeline: builder.mutation({
       query: (pipelineData) => ({
         url: "/addPipeline",
@@ -138,6 +244,16 @@ export const adminApi = createApi({
         method: "DELETE",
       }),
     }),
+    cloneWorkOrder: builder.mutation({
+      query: (data) => {
+        const { id, title } = typeof data === 'object' ? data : { id: data };
+        return {
+          url: `/workOrder/clone/${id}`,
+          method: "POST",
+          body: title ? { title } : {},
+        };
+      },
+    }),
     publishWorkOrder: builder.mutation({
       query: (id) => ({
         url: `publish/${id}`,
@@ -155,6 +271,14 @@ export const adminApi = createApi({
         url: "/branches",
         methid: "GET",
       }),
+    }),
+    updateAdminBranchAboutUs: builder.mutation({
+      query: (aboutUs) => ({
+        url: "/branches/aboutUs",
+        method: "PUT",
+        body: { aboutUs },
+      }),
+      invalidatesTags: ["AdminBranch"],
     }),
     createRecruiter: builder.mutation({
       query: (recruiterData) => ({
@@ -633,6 +757,9 @@ export const adminApi = createApi({
 export const {
   //dashboard
   useGetAdminDashboardDataQuery,
+  useGetFilteredAdminDashboardDataQuery,
+  useGetAdminFilterOptionsQuery,
+  useGetAdminChartDataQuery,
 
   //pipeline
   useAddPipelineMutation,
@@ -651,12 +778,14 @@ export const {
   useGetWorkOrdersQuery,
   useGetWorkOrderByIdQuery,
   useDeleteWorkOrderMutation,
+  useCloneWorkOrderMutation,
   usePublishWorkOrderMutation,
   useToggleWorkOrderStatusMutation,
   useEditWorkOrderMutation,
 
   //admin branch
   useGetAdminBranchQuery,
+  useUpdateAdminBranchAboutUsMutation,
 
   //recruiter
   useCreateRecruiterMutation,

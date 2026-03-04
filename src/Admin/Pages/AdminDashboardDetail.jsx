@@ -1150,6 +1150,7 @@ const AdminDashboardDetails = () => {
             style={{ borderRadius: "12px" }}
           >
             <Table
+              rowKey={(record) => record.rawData?._id || record.key || record.workOrder}
               columns={workOrderColumns}
               dataSource={workOrderData}
               scroll={{ x: 1500 }}

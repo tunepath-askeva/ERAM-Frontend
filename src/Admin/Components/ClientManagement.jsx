@@ -105,9 +105,6 @@ const ClientsManagement = () => {
     setModalMode("edit");
     setEditingClient(client);
 
-    console.log("Client data:", client);
-    console.log("Client Code:", client.clientCode);
-
     // Use stored country code if available, otherwise extract
     let contactNo = client.phone || "";
     let contactNoCountryCode = client.phoneCountryCode || "";
@@ -679,7 +676,6 @@ const ClientsManagement = () => {
               <Form.Item
                 name="sapCode"
                 label="SAP Code"
-                rules={[{ required: true, message: "Please enter SAP code" }]}
               >
                 <Input placeholder="Enter SAP code" />
               </Form.Item>

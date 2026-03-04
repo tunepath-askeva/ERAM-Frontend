@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
   Button,
@@ -43,10 +43,28 @@ const RecruiterAssignedInterviews = () => {
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [selectedAction, setSelectedAction] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [filteredData, setFilteredData] = useState([]);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [form] = Form.useForm();
 
-  const { data, isLoading, error, refetch } = useGetRecruiterInterviewsQuery();
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      setPage(1); // Reset to first page when search changes
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchText]);
+
+  const { data, isLoading, error, refetch } = useGetRecruiterInterviewsQuery({
+    page,
+    limit,
+    search: debouncedSearch,
+  });
   const [changeStatus] = useChangeInterviewStatusMutation();
 
   const transformInterviewData = (apiData) => {
@@ -64,9 +82,12 @@ const RecruiterAssignedInterviews = () => {
             candidateInterview?.customFieldResponseId || null,
           candidateId: candidateInterview?.candidate?._id || null,
           candidateEmail: candidateInterview?.candidate?.email || "N/A",
-          candidateName: candidateInterview?.candidate?.email
-            ? candidateInterview.candidate.email.split("@")[0]
-            : "Unknown",
+          candidateName: candidateInterview?.candidate?.name ||
+            (candidateInterview?.candidate?.firstName && candidateInterview?.candidate?.lastName
+              ? `${candidateInterview.candidate.firstName} ${candidateInterview.candidate.lastName}`
+              : candidateInterview?.candidate?.email
+              ? candidateInterview.candidate.email.split("@")[0]
+              : "Unknown"),
           position: candidateInterview?.workOrder?.title || "N/A",
           jobCode: candidateInterview?.workOrder?.jobCode || "N/A",
           workplace: candidateInterview?.workOrder?.workplace || "N/A",
@@ -103,62 +124,15 @@ const RecruiterAssignedInterviews = () => {
     return transformedData;
   };
 
-  // Initialize filtered data when API data changes
-  useEffect(() => {
-    if (data) {
-      const transformedData = transformInterviewData(data);
-      setFilteredData(transformedData);
-    }
+  // Transform API data
+  const transformedData = useMemo(() => {
+    if (!data) return [];
+    return transformInterviewData(data);
   }, [data]);
-
-  // Debounced search function
-  const debounceSearch = useCallback(
-    (() => {
-      let timeoutId;
-      return (searchValue) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (!data) return;
-
-          const allData = transformInterviewData(data);
-
-          if (searchValue.trim() === "") {
-            setFilteredData(allData);
-          } else {
-            const filtered = allData.filter(
-              (interview) =>
-                interview.candidateName
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                interview.candidateEmail
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                interview.position
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                interview.interviewType
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                interview.status
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase()) ||
-                interview.jobCode
-                  .toLowerCase()
-                  .includes(searchValue.toLowerCase())
-            );
-            setFilteredData(filtered);
-          }
-        }, 300); // Reduced debounce time to 300ms for better UX
-      };
-    })(),
-    [data]
-  );
 
   // Handle search input change
   const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchText(value);
-    debounceSearch(value);
+    setSearchText(e.target.value);
   };
 
   const getStatusColor = (status) => {
@@ -439,11 +413,17 @@ const RecruiterAssignedInterviews = () => {
         >
           <Table
             columns={columns}
-            dataSource={filteredData}
+            dataSource={transformedData}
             rowKey="id"
             scroll={{ x: 1100 }}
             pagination={{
-              pageSize: window.innerWidth < 768 ? 5 : 10,
+              current: page,
+              pageSize: limit,
+              total: data?.total || 0,
+              onChange: (newPage, newLimit) => {
+                setPage(newPage);
+                setLimit(newLimit);
+              },
               showSizeChanger: window.innerWidth >= 768,
               showQuickJumper: window.innerWidth >= 768,
               simple: window.innerWidth < 768,

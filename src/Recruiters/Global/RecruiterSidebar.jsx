@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Button, Drawer } from "antd";
+import { Layout, Menu, Button, Drawer, Tooltip } from "antd";
 import {
   DashboardOutlined,
   UnorderedListOutlined,
@@ -50,6 +50,7 @@ const RecruiterSidebar = ({
     name: "Recruiter",
     email: "",
     roles: "",
+    branchLogo: null,
   });
 
   const [logout] = useLogoutSuperAdminMutation();
@@ -189,10 +190,18 @@ const RecruiterSidebar = ({
           const roles =
             parsedData.roles || parsedData.role || parsedData.userRole || "";
 
+          // Extract branch logo - check multiple possible paths
+          const branchLogo = 
+            parsedData.branch?.brand_logo || 
+            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo || 
+            null;
+
           setRecruiterInfo({
             name: name,
             email: email,
             roles: roles,
+            branchLogo: branchLogo,
           });
         }
       } catch (error) {
@@ -310,33 +319,80 @@ const RecruiterSidebar = ({
         borderRight: "1px solid #e2e8f0",
       }}
     >
-      <div
-        style={{
-          height: screenSize.isMobile ? "56px" : "64px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent:
-            collapsed && !screenSize.isMobile ? "center" : "flex-start",
-          padding: collapsed && !screenSize.isMobile ? "0 12px" : "0 24px",
-          borderBottom: "1px solid #e2e8f0",
-          minHeight: screenSize.isMobile ? "56px" : "64px",
-          marginBottom: "32px",
-        }}
-      >
-        <img
-          src="/Workforce.svg"
-          alt="Company Logo"
+
+      {/* User Info Section */}
+      {(!collapsed || screenSize.isMobile) && (
+        <div
           style={{
-            ...getImageLogoSize(),
-            objectFit: "contain",
-            borderRadius: "4px",
+            padding: "0 24px",
+            marginBottom: "24px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
           }}
-          onError={(e) => {
-            e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
-          }}
-        />
-      </div>
+        >
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              background:
+                "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            {getFirstLetter()}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <h1
+              style={{
+                fontSize: "20px",
+                color: "#1e293b",
+                margin: 0,
+                lineHeight: 1,
+              }}
+            >
+              {recruiterInfo.name}
+            </h1>
+            {recruiterInfo.roles && (
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: "#64748b",
+                  marginTop: "2px",
+                }}
+              >
+                {recruiterInfo.roles}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {collapsed && !screenSize.isMobile && (
+        <div style={{ padding: "0 12px", marginBottom: "24px", display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg,  #da2c46 70%, #a51632 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            {getFirstLetter()}
+          </div>
+        </div>
+      )}
 
       <nav
         style={{
@@ -347,59 +403,77 @@ const RecruiterSidebar = ({
           gap: "8px",
         }}
       >
-        {filteredMenuItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => handleMenuClick({ key: item.key })}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              backgroundColor:
-                selectedKey === item.key
-                  ? "#fde2e4"
-                  : hoveredKey === item.key
-                  ? "#f1f5f9"
-                  : "transparent",
-              color:
-                selectedKey === item.key
-                  ? "#e11d48"
-                  : hoveredKey === item.key
-                  ? "#1e293b"
-                  : "#475569",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: screenSize.isMobile ? "16px" : "14px",
-              textAlign: "left",
-              borderRight:
-                selectedKey === item.key ? "2px solid #e11d48" : "none",
-              height: getMenuItemHeight(),
-              justifyContent:
-                collapsed && !screenSize.isMobile ? "center" : "flex-start",
-            }}
-            onMouseEnter={() => setHoveredKey(item.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            {React.cloneElement(item.icon, {
-              style: {
+        {filteredMenuItems.map((item) => {
+          const menuButton = (
+            <button
+              key={item.key}
+              onClick={() => handleMenuClick({ key: item.key })}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                transition: "all 0.2s ease",
+                backgroundColor:
+                  selectedKey === item.key
+                    ? "#fde2e4"
+                    : hoveredKey === item.key
+                    ? "#f1f5f9"
+                    : "transparent",
                 color:
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#e11d48"
-                    : "#64748b",
-                fontSize: getIconSize(),
-                minWidth: getIconSize(),
-              },
-            })}
-            {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
-          </button>
-        ))}
+                    ? "#1e293b"
+                    : "#475569",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: "500",
+                fontSize: screenSize.isMobile ? "16px" : "14px",
+                textAlign: "left",
+                borderRight:
+                  selectedKey === item.key ? "2px solid #e11d48" : "none",
+                height: getMenuItemHeight(),
+                justifyContent:
+                  collapsed && !screenSize.isMobile ? "center" : "flex-start",
+              }}
+              onMouseEnter={() => setHoveredKey(item.key)}
+              onMouseLeave={() => setHoveredKey(null)}
+            >
+              {React.cloneElement(item.icon, {
+                style: {
+                  color:
+                    selectedKey === item.key
+                      ? "#e11d48"
+                      : hoveredKey === item.key
+                      ? "#e11d48"
+                      : "#64748b",
+                  fontSize: getIconSize(),
+                  minWidth: getIconSize(),
+                },
+              })}
+              {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
+            </button>
+          );
+
+          // Show tooltip when collapsed and not on mobile
+          if (collapsed && !screenSize.isMobile) {
+            return (
+              <Tooltip
+                key={item.key}
+                title={item.label}
+                placement="right"
+                mouseEnterDelay={0.5}
+              >
+                {menuButton}
+              </Tooltip>
+            );
+          }
+
+          return menuButton;
+        })}
       </nav>
 
       <div

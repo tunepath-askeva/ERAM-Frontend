@@ -83,6 +83,8 @@ const EditEmployeeModal = ({
     basicAssets: "",
     reportingAndDocumentation: "",
     project: "",
+    department: "",
+    reportingManager: "",
   });
 
   const [changePassword, setChangePassword] = useState(false);
@@ -182,6 +184,8 @@ const EditEmployeeModal = ({
         reportingAndDocumentation:
           employee.employmentDetails?.reportingAndDocumentation || "",
         project: employee.employmentDetails?.project?._id || employee.employmentDetails?.project || "",
+        department: employee.employmentDetails?.department || "",
+        reportingManager: employee.employmentDetails?.reportingManager || "",
       });
 
       // Use stored country code if available, otherwise extract
@@ -956,6 +960,44 @@ const EditEmployeeModal = ({
                       </Select.Option>
                     ))}
                   </Select>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Department
+                  </label>
+                  <Input
+                    placeholder="Enter department"
+                    value={formData.department}
+                    onChange={(e) =>
+                      handleInputChange("department", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "6px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Reporting Manager
+                  </label>
+                  <Input
+                    placeholder="Enter reporting manager name"
+                    value={formData.reportingManager}
+                    onChange={(e) =>
+                      handleInputChange("reportingManager", e.target.value)
+                    }
+                  />
                 </div>
 
                 <div>

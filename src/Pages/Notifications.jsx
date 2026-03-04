@@ -10,7 +10,6 @@ import {
   Avatar,
   Dropdown,
   Menu,
-  Empty,
   Skeleton,
   Result,
   Popconfirm,
@@ -58,6 +57,8 @@ import SkeletonLoader from "../Global/SkeletonLoader";
 import ReactMarkdown from "react-markdown";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
+import { socket } from "../utils/socket.js";
+import { useSelector } from "react-redux";
 
 dayjs.extend(relativeTime);
 
@@ -119,10 +120,15 @@ const Notifications = () => {
       setNotifications(notificationsData);
       setFilteredNotifications(notificationsData);
       setLoading(false);
+      setError(null); // Clear any previous errors
     }
     if (apiError) {
+      console.error("Notifications API Error:", apiError);
       setError(apiError);
       setLoading(false);
+      // Set empty arrays to prevent rendering issues
+      setNotifications([]);
+      setFilteredNotifications([]);
     }
   }, [apiData, apiError]);
 
@@ -139,6 +145,55 @@ const Notifications = () => {
       );
     }
   }, [filterType, notifications]);
+
+  // Socket.io listener to auto-refresh notifications when recruiter accepts offer
+  useEffect(() => {
+    // Get user email from notifications (they all have the same email)
+    const userEmail = notifications[0]?.email || apiData?.userEmail;
+    
+    if (!userEmail) {
+      console.log("⏳ Waiting for user email to set up socket listener");
+      return;
+    }
+
+    console.log("🔌 Setting up socket listener for notifications, user email:", userEmail);
+
+    // Join socket room with user email when connected
+    const handleConnect = () => {
+      console.log("🔌 Socket connected for notifications:", socket.id);
+      socket.emit("join", userEmail.toLowerCase());
+    };
+
+    // Listen for notification events
+    const handleNotification = (data) => {
+      console.log("🔔 Real-time notification received:", data);
+      
+      // If it's an offer acceptance notification, refetch the notifications list
+      if (data.title?.includes("Offer Accepted") || data.title?.includes("offer") || data.workorderId) {
+        console.log("🔄 Refreshing notifications list due to offer-related notification");
+        // Small delay to ensure backend has updated the notifications
+        setTimeout(() => {
+          refetch();
+        }, 500);
+      }
+    };
+
+    // Set up listeners
+    socket.on("connect", handleConnect);
+    socket.on("notification", handleNotification);
+
+    // If already connected, join immediately
+    if (socket.connected) {
+      socket.emit("join", userEmail.toLowerCase());
+    }
+
+    // Cleanup on unmount
+    return () => {
+      console.log("🧹 Cleaning up socket listeners");
+      socket.off("connect", handleConnect);
+      socket.off("notification", handleNotification);
+    };
+  }, [notifications, apiData, refetch]);
 
   const handleMarkAsRead = async (id) => {
     try {
@@ -509,17 +564,27 @@ const Notifications = () => {
     );
   }
 
+  // Show 404 Result for errors instead of Empty
   if (error || apiError) {
+    const errorMessage = 
+      apiError?.data?.message || 
+      apiError?.message || 
+      "Something went wrong while fetching notifications.";
+    
     return (
-      <div style={{ padding: "24px" }}>
+      <div style={{ padding: "24px", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Result
-          status="error"
-          title="Failed to Load Notifications"
-          subTitle="Something went wrong while fetching notifications."
-          extra={
+          status="404"
+          title="404"
+          subTitle={errorMessage}
+          extra={[
             <Button
               type="primary"
-              onClick={() => refetch()}
+              key="retry"
+              onClick={() => {
+                setError(null);
+                refetch();
+              }}
               style={{
                 background:
                   "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
@@ -529,8 +594,19 @@ const Notifications = () => {
               }}
             >
               Retry
-            </Button>
-          }
+            </Button>,
+            <Button
+              key="home"
+              onClick={() => navigate("/dashboard")}
+              style={{
+                borderRadius: "8px",
+                padding: "8px 24px",
+                height: "auto",
+              }}
+            >
+              Go to Dashboard
+            </Button>,
+          ]}
         />
       </div>
     );
@@ -774,6 +850,7 @@ const Notifications = () => {
                               >
                                 View Offer
                               </Button>
+                              {/* Hide Accept and Reject buttons if offer is already accepted (by candidate or recruiter) */}
                               {item.Status !== "offer-accepted" && (
                                 <>
                                   <Button
@@ -817,6 +894,12 @@ const Notifications = () => {
                                     Request Revision
                                   </Button> */}
                                 </>
+                              )}
+                              {/* Show message if offer is already accepted (by candidate or recruiter) */}
+                              {item.Status === "offer-accepted" && (
+                                <Tag color="success" icon={<CheckCircleOutlined />}>
+                                  Offer Accepted
+                                </Tag>
                               )}
                             </Space>
                           </div>
@@ -862,20 +945,14 @@ const Notifications = () => {
             )}
           />
         ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <Text
-                style={{
-                  fontSize: "16px",
-                  color: "#7f8c8d",
-                }}
-              >
-                No notifications found
-              </Text>
-            }
-            style={{ padding: "60px 0" }}
-          />
+          // Show Result 404 instead of Empty when there are no notifications
+          <div style={{ padding: "60px 0" }}>
+            <Result
+              status="404"
+              title="No Notifications"
+              subTitle="You don't have any notifications at the moment."
+            />
+          </div>
         )}
 
         <div style={{ padding: "16px 24px", borderTop: "1px solid #f0f0f0" }}>
@@ -973,24 +1050,47 @@ const Notifications = () => {
               label="Signed Additional Documents (PDF)"
               tooltip="Please upload signed copies of all additional supporting documents"
               valuePropName="fileList"
-              getValueFromEvent={(e) => e?.fileList || []}
+              getValueFromEvent={(e) => {
+                // Handle both single file and fileList
+                if (Array.isArray(e)) {
+                  return e;
+                }
+                const fileList = e?.fileList || [];
+                console.log("📎 Upload getValueFromEvent - fileList:", fileList.length, "files");
+                return fileList;
+              }}
+              initialValue={[]}
             >
-              <Upload
-                beforeUpload={(file) => {
-                  const isPdf = file.type === "application/pdf";
-                  if (!isPdf) {
-                    message.error("You can only upload PDF files!");
-                  }
-                  return isPdf || Upload.LIST_IGNORE;
+              <Form.Item noStyle shouldUpdate={(prev, curr) => prev.signedAdditionalDocuments !== curr.signedAdditionalDocuments}>
+                {({ getFieldValue }) => {
+                  const fileList = getFieldValue("signedAdditionalDocuments") || [];
+                  return (
+                    <Upload
+                      beforeUpload={(file) => {
+                        const isPdf = file.type === "application/pdf";
+                        if (!isPdf) {
+                          message.error("You can only upload PDF files!");
+                          return Upload.LIST_IGNORE; // Don't add non-PDF files to the list
+                        }
+                        // Return false to prevent auto-upload but keep file in the list
+                        console.log("📎 File selected for upload:", file.name, file.type);
+                        return false;
+                      }}
+                      multiple
+                      accept=".pdf"
+                      fileList={fileList}
+                      onChange={(info) => {
+                        console.log("📎 Upload onChange triggered:", info.fileList.length, "files");
+                        acceptForm.setFieldsValue({ signedAdditionalDocuments: info.fileList });
+                      }}
+                    >
+                      <Button icon={<UploadOutlined />}>
+                        Upload Signed Additional Documents
+                      </Button>
+                    </Upload>
+                  );
                 }}
-                multiple
-                accept=".pdf"
-                fileList={acceptForm.getFieldValue("signedAdditionalDocuments")?.fileList || []}
-              >
-                <Button icon={<UploadOutlined />}>
-                  Upload Signed Additional Documents
-                </Button>
-              </Upload>
+              </Form.Item>
               <div style={{ marginTop: 8, fontSize: "12px", color: "#666" }}>
                 {offerDetails.additionalDocuments.map((doc, index) => (
                   <div key={index}>• {doc.documentName || doc.fileName || `Document ${index + 1}`}</div>

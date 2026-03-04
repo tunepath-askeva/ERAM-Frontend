@@ -145,15 +145,9 @@ const AttritionDetailsModal = ({
 
   // Determine which footer buttons to show
   const getFooterButtons = () => {
-    console.log("🔍 Getting footer buttons...");
-    console.log("canApprove:", canApprove);
-    console.log("isInitiator:", isInitiator);
-    console.log("canConvert:", canConvert);
-    console.log("currentUserApproval:", currentUserApproval);
 
     // If user can approve (is an approver with pending status)
     if (canApprove) {
-      console.log("✅ Showing approve/reject buttons");
       return [
         <Button
           key="reject"
@@ -177,7 +171,6 @@ const AttritionDetailsModal = ({
 
     // If user is initiator
     if (isInitiator) {
-      console.log("✅ User is initiator");
       const buttons = [
         <Button
           key="cancel"
@@ -191,7 +184,6 @@ const AttritionDetailsModal = ({
 
       // Show convert button only if all approvals are complete
       if (canConvert) {
-        console.log("✅ Adding Convert to Candidate button");
         buttons.push(
           <Button
             key="convert"
@@ -210,7 +202,6 @@ const AttritionDetailsModal = ({
       return buttons;
     }
 
-    console.log("ℹ️ Showing only close button");
     // Default: just close button
     return [
       <Button key="close" onClick={onClose}>

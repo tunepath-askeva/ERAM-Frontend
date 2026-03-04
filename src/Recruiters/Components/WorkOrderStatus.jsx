@@ -122,7 +122,7 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
       icon: <CheckCircleOutlined />,
     },
     approved: { color: "#13c2c2", text: "Approved", icon: <StarOutlined /> },
-    offer: { color: "#eb2f96", text: "Offer", icon: <GiftOutlined /> },
+    offer: { color: "#eb2f96", text: "Offer Stage", icon: <GiftOutlined /> },
     offer_pending: {
       color: "#fa541c",
       text: "Offer Pending",
@@ -754,6 +754,19 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                               >
                                                 {doc.documentName}
                                               </Text>
+                                              {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
+                                                <Text
+                                                  type="secondary"
+                                                  style={{
+                                                    fontSize: 10,
+                                                    display: "block",
+                                                    marginTop: 2,
+                                                    color: "#1890ff",
+                                                  }}
+                                                >
+                                                  By: {doc.recruiterName}
+                                                </Text>
+                                              )}
                                               <div style={{ marginTop: 4 }}>
                                                 <Button
                                                   type="link"
@@ -1041,6 +1054,19 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                               <Text strong>
                                 {offer.signedOfferDocument.documentName}
                               </Text>
+                              {offer.signedOfferDocument?.uploadedBy === "recruiter" && offer.signedOfferDocument?.recruiterName && (
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: 10,
+                                    display: "block",
+                                    marginTop: 2,
+                                    color: "#1890ff",
+                                  }}
+                                >
+                                  By: {offer.signedOfferDocument.recruiterName}
+                                </Text>
+                              )}
                               <div style={{ marginTop: 4 }}>
                                 <Button
                                   type="link"
@@ -1159,6 +1185,19 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                                     <Text strong>
                                       {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
                                     </Text>
+                                    {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
+                                      <Text
+                                        type="secondary"
+                                        style={{
+                                          fontSize: 10,
+                                          display: "block",
+                                          marginTop: 2,
+                                          color: "#1890ff",
+                                        }}
+                                      >
+                                        By: {doc.recruiterName}
+                                      </Text>
+                                    )}
                                     <div style={{ marginTop: 4 }}>
                                       <Button
                                         type="link"
@@ -1291,10 +1330,19 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                   {selectedCandidate.statusHistory.map((historyItem, idx) => (
                     <Timeline.Item
                       key={idx}
-                      color={getStatusColor(historyItem.status)}
+                      color={
+                        historyItem.action === "offer_accepted_by_recruiter" ||
+                        historyItem.action === "documents_uploaded_by_recruiter"
+                          ? "blue"
+                          : getStatusColor(historyItem.status)
+                      }
                       dot={
-                        historyItem.status === "selected" ||
-                        historyItem.status === "approved" ? (
+                        historyItem.action === "offer_accepted_by_recruiter" ? (
+                          <GiftOutlined />
+                        ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                          <FileTextOutlined />
+                        ) : historyItem.status === "selected" ||
+                          historyItem.status === "approved" ? (
                           <CheckOutlined />
                         ) : historyItem.status === "rejected" ||
                           historyItem.status === "interview_rejected" ? (
@@ -1306,15 +1354,70 @@ const WorkOrderStatus = ({ jobId, numberOfCandidate, numberOfEmployees }) => {
                     >
                       <Card size="small">
                         <Space direction="vertical" style={{ width: "100%" }}>
-                          <Space wrap>
-                            <Text strong>Status changed to:</Text>
-                            {getStatusTag(historyItem.status)}
-                          </Space>
-                          {historyItem.changedBy && (
-                            <Text>
-                              <UserOutlined /> Changed by:{" "}
-                              <Text strong>{historyItem.changedBy.name}</Text>
-                            </Text>
+                          {historyItem.action === "offer_accepted_by_recruiter" ? (
+                            <>
+                              <Space wrap>
+                                <Text strong style={{ color: "#1890ff" }}>
+                                  <GiftOutlined /> Offer Accepted by Recruiter
+                                </Text>
+                                {historyItem.status && (
+                                  <Tag color={getStatusColor(historyItem.status)}>
+                                    {statusConfig[historyItem.status]?.text || historyItem.status}
+                                  </Tag>
+                                )}
+                              </Space>
+                              {historyItem.changedBy && (
+                                <Text>
+                                  <UserOutlined /> Recruiter:{" "}
+                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                </Text>
+                              )}
+                              {historyItem.description && (
+                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                  {historyItem.description}
+                                </Text>
+                              )}
+                            </>
+                          ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                            <>
+                              <Space wrap>
+                                <Text strong style={{ color: "#1890ff" }}>
+                                  <FileTextOutlined /> Documents Uploaded by Recruiter
+                                </Text>
+                                {historyItem.stageName && (
+                                  <Tag color="blue">Stage: {historyItem.stageName}</Tag>
+                                )}
+                                {historyItem.documentCount && (
+                                  <Tag color="green">
+                                    {historyItem.documentCount} document(s)
+                                  </Tag>
+                                )}
+                              </Space>
+                              {historyItem.changedBy && (
+                                <Text>
+                                  <UserOutlined /> Recruiter:{" "}
+                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                </Text>
+                              )}
+                              {historyItem.description && (
+                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                  {historyItem.description}
+                                </Text>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Space wrap>
+                                <Text strong>Status changed to:</Text>
+                                {getStatusTag(historyItem.status)}
+                              </Space>
+                              {historyItem.changedBy && (
+                                <Text>
+                                  <UserOutlined /> Changed by:{" "}
+                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                </Text>
+                              )}
+                            </>
                           )}
                           <Text type="secondary">
                             <CalendarOutlined />{" "}

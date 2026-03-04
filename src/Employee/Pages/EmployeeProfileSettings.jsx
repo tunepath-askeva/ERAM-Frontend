@@ -6,6 +6,8 @@ import {
   CameraOutlined,
   FrownOutlined,
   ReloadOutlined,
+  ContactsOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import {
   useGetEmployeeProfileQuery,
@@ -18,6 +20,8 @@ import EmploymentDetailsCard from "../Components/EmploymentDetailsCard";
 import SecurityContent from "../Components/SecurityContent";
 import SkillsLanguagesCard from "../Components/SkillsLanguagesCard";
 import DocumentsCertificatesCard from "../Components/DocumentsCertificatesCard";
+import ContactInformationCard from "../Components/ContactInformationCard";
+import AddressInformationCard from "../Components/AddressInformationCard";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import EducationCard from "../Components/EducationCard";
 import WorkExperienceCard from "../Components/WorkExperienceCard";
@@ -118,6 +122,8 @@ const EmployeeProfileSettings = () => {
         "fullName",
         "phone",
         "phoneCountryCode",
+        "emergencyContactNo",
+        "emergencyContactNoCountryCode",
         "dob",
         "age",
         "gender",
@@ -135,8 +141,8 @@ const EmployeeProfileSettings = () => {
 
       fields.forEach((field) => {
         const value = values[field];
-        // For phoneCountryCode, always include it (default to "91" if not provided)
-        if (field === "phoneCountryCode") {
+        // For phoneCountryCode and emergencyContactNoCountryCode, always include them (default to "91" if not provided)
+        if (field === "phoneCountryCode" || field === "emergencyContactNoCountryCode") {
           formData.append(field, value || "91");
         } else if (value !== undefined && value !== null && value !== "") {
           // Handle dates
@@ -197,23 +203,32 @@ const EmployeeProfileSettings = () => {
           "iqamaExpiryDate",
           "iqamaArabicDateOfIssue",
           "iqamaArabicDateOfExpiry",
+          "department",
+          "reportingManager",
         ];
 
         employmentFields.forEach((field) => {
           const value = values.employmentDetails[field];
-          if (value !== undefined && value !== null && value !== "") {
-            // Handle dates
-            if (
-              field.includes("Date") ||
-              field.includes("Arrival") ||
-              field.includes("Day")
-            ) {
-              formData.append(
-                field,
-                value.format ? value.format("YYYY-MM-DD") : value
-              );
-            } else {
-              formData.append(field, value);
+          // For department and reportingManager, always send them (even if empty string) to allow clearing
+          const isOptionalField = field === "department" || field === "reportingManager";
+          
+          if (value !== undefined && value !== null) {
+            // For optional fields, always send (even empty string)
+            // For other fields, only send if not empty
+            if (isOptionalField || value !== "") {
+              // Handle dates
+              if (
+                field.includes("Date") ||
+                field.includes("Arrival") ||
+                field.includes("Day")
+              ) {
+                formData.append(
+                  field,
+                  value.format ? value.format("YYYY-MM-DD") : value
+                );
+              } else {
+                formData.append(field, value);
+              }
             }
           }
         });
@@ -246,6 +261,43 @@ const EmployeeProfileSettings = () => {
           "workExperience",
           JSON.stringify(values.workExperience)
         );
+      }
+
+      // Add contact information
+      if (values.contactPersonName !== undefined) {
+        // Ensure contactPersonName is a string, not an array
+        const contactPersonNameValue = Array.isArray(values.contactPersonName) 
+          ? values.contactPersonName.join(" ") 
+          : String(values.contactPersonName || "");
+        formData.append("contactPersonName", contactPersonNameValue);
+      }
+      if (values.contactPersonMobile !== undefined) {
+        // Ensure it's a string
+        const contactPersonMobileValue = Array.isArray(values.contactPersonMobile)
+          ? values.contactPersonMobile.join("")
+          : String(values.contactPersonMobile || "");
+        formData.append("contactPersonMobile", contactPersonMobileValue);
+      }
+      if (values.contactPersonMobileCountryCode !== undefined) {
+        formData.append("contactPersonMobileCountryCode", values.contactPersonMobileCountryCode || "91");
+      }
+      if (values.contactPersonHomeNo !== undefined) {
+        // Ensure it's a string
+        const contactPersonHomeNoValue = Array.isArray(values.contactPersonHomeNo)
+          ? values.contactPersonHomeNo.join("")
+          : String(values.contactPersonHomeNo || "");
+        formData.append("contactPersonHomeNo", contactPersonHomeNoValue);
+      }
+      if (values.contactPersonHomeNoCountryCode !== undefined) {
+        formData.append("contactPersonHomeNoCountryCode", values.contactPersonHomeNoCountryCode || "91");
+      }
+
+      // Add address information
+      if (values.presentAddress !== undefined) {
+        formData.append("presentAddress", JSON.stringify(values.presentAddress));
+      }
+      if (values.permanentAddress !== undefined) {
+        formData.append("permanentAddress", JSON.stringify(values.permanentAddress));
       }
 
       // Call the mutation
@@ -363,7 +415,7 @@ const EmployeeProfileSettings = () => {
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            type="card"
+            tabPosition="left"
             size="large"
           >
             <TabPane
@@ -414,6 +466,36 @@ const EmployeeProfileSettings = () => {
                   setCertificateFiles([]); // Clear after save
                   refetch(); // Refetch to get updated certificates
                 }}
+              />
+            </TabPane>
+            <TabPane
+              tab={
+                <span>
+                  <ContactsOutlined />
+                  Contact Information
+                </span>
+              }
+              key="contact"
+            >
+              <ContactInformationCard
+                employeeData={employeeData}
+                loading={isUpdating}
+                onUpdate={handleProfileUpdate}
+              />
+            </TabPane>
+            <TabPane
+              tab={
+                <span>
+                  <HomeOutlined />
+                  Address Information
+                </span>
+              }
+              key="address"
+            >
+              <AddressInformationCard
+                employeeData={employeeData}
+                loading={isUpdating}
+                onUpdate={handleProfileUpdate}
               />
             </TabPane>
             <TabPane

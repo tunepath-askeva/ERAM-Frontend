@@ -52,6 +52,7 @@ import {
   useCurrentWorkorderDetailsFilteringMutation,
   useGetWorkOrderBasedSourcedCandidatesQuery,
   useFilterAllCandidatesMutation,
+  useGetWorkOrderDetailsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import CandidateProfilePage from "./CandidateProfilePage";
@@ -148,6 +149,7 @@ const CommentModal = ({
   setSelectedPipeline,
   candidateType,
   setCandidateType,
+  loading = false,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
 
@@ -159,7 +161,12 @@ const CommentModal = ({
       onCancel={onCancel}
       okText="Confirm"
       cancelText="Cancel"
-      okButtonProps={{ style: { backgroundColor: "#da2c46" } }}
+      okButtonProps={{ 
+        style: { backgroundColor: "#da2c46" },
+        loading: loading,
+        disabled: loading
+      }}
+      cancelButtonProps={{ disabled: loading }}
     >
       <Form layout="vertical">
         <Form.Item label="Candidate Type (Optional)" name="candidateType">
@@ -285,6 +292,8 @@ const SourcedCandidates = ({ jobId }) => {
   const activePipelines = pipelineData?.pipelines || [];
   const [updateCandidateStatus, { isLoading: isUpdatingStatus }] =
     useUpdateCandidateStatusMutation();
+  const [updatingCandidateId, setUpdatingCandidateId] = useState(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [filterCandidates, { data: filterData, isLoading: filterLoading }] =
     useFilterAllCandidatesMutation();
@@ -326,6 +335,37 @@ const SourcedCandidates = ({ jobId }) => {
     limit: pagination.pageSize,
     ...queryParams, // Spread the query parameters here
   });
+
+  // Get work order details to check candidate limit
+  const {
+    data: workOrderLimitDetails,
+    refetch: refetchWorkOrderDetails,
+  } = useGetWorkOrderDetailsQuery({
+    jobId,
+    page: 1,
+    limit: 1,
+  });
+
+  // Helper function to check if candidate limit is reached
+  const checkCandidateLimit = (status) => {
+    const statusesToCheck = ["sourced", "selected", "screening", "interview"];
+    if (!statusesToCheck.includes(status)) return { canProceed: true };
+
+    const requiredCandidates = workOrderLimitDetails?.workorder?.numberOfCandidate || 0;
+    const activeCount = workOrderLimitDetails?.summary?.activeCandidateCount || 0;
+    const isLimitReached = workOrderLimitDetails?.summary?.isLimitReached || false;
+
+    if (requiredCandidates > 0 && isLimitReached) {
+      return {
+        canProceed: false,
+        message: `Cannot ${status} candidate. The required number of candidates (${requiredCandidates}) for this work order has been achieved. Current active candidates: ${activeCount}. Please update the required number of candidates in the work order if you want to proceed.`,
+        currentCount: activeCount,
+        limit: requiredCandidates,
+      };
+    }
+
+    return { canProceed: true };
+  };
 
   useEffect(() => {
     if (workOrderBasedSourced) {
@@ -616,7 +656,6 @@ const SourcedCandidates = ({ jobId }) => {
 
   const handleApplyFilters = async (appliedFilters) => {
     try {
-      console.log("Applying filters:", appliedFilters);
 
       setAdvancedFilters(appliedFilters);
       setPrimaryFiltersApplied(true);
@@ -1007,7 +1046,38 @@ const SourcedCandidates = ({ jobId }) => {
   };
 
   const handleBulkStatusUpdate = async (newStatus) => {
-    if (selectedCandidates.length === 0) return;
+    if (selectedCandidates.length === 0) {
+      enqueueSnackbar("Please select at least one candidate", {
+        variant: "warning",
+        autoHideDuration: 3000,
+      });
+      return;
+    }
+
+    // Show immediate feedback
+    enqueueSnackbar(`Moving ${selectedCandidates.length} candidate(s) to ${newStatus}...`, {
+      variant: "info",
+      autoHideDuration: 2000,
+    });
+
+    setBulkUpdating(true);
+
+    // Check candidate limit before proceeding
+    const limitCheck = checkCandidateLimit(newStatus);
+    if (!limitCheck.canProceed) {
+      enqueueSnackbar(limitCheck.message, {
+        variant: "warning",
+        autoHideDuration: 5000,
+      });
+      Modal.warning({
+        title: "Candidate Limit Reached",
+        content: limitCheck.message,
+        okText: "OK",
+        width: 600,
+      });
+      setBulkUpdating(false);
+      return;
+    }
 
     // Check for mandatory documents when moving to "selected" status
     if (newStatus === "selected") {
@@ -1084,17 +1154,36 @@ const SourcedCandidates = ({ jobId }) => {
         refetchWorkOrderBased();
       }
       jobRefetch();
+      refetchWorkOrderDetails(); // Refetch to update candidate count
     } catch (error) {
       console.error("Failed to update candidate status:", error);
       enqueueSnackbar(
         error.data?.message || "Failed to update some candidate statuses",
         { variant: "error", autoHideDuration: 3000 }
       );
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
   const handleStatusUpdate = async (newStatus) => {
     if (!selectedCandidate) return;
+
+    // Check candidate limit before proceeding
+    const limitCheck = checkCandidateLimit(newStatus);
+    if (!limitCheck.canProceed) {
+      enqueueSnackbar(limitCheck.message, {
+        variant: "warning",
+        autoHideDuration: 5000,
+      });
+      Modal.warning({
+        title: "Candidate Limit Reached",
+        content: limitCheck.message,
+        okText: "OK",
+        width: 600,
+      });
+      return;
+    }
 
     if (newStatus === "selected") {
       setCandidateToUpdate(selectedCandidate);
@@ -1102,10 +1191,32 @@ const SourcedCandidates = ({ jobId }) => {
       return;
     }
 
-    await updateStatusWithComment(selectedCandidate, newStatus, "");
+    setUpdatingCandidateId(selectedCandidate._id);
+    try {
+      await updateStatusWithComment(selectedCandidate, newStatus, "");
+    } finally {
+      setUpdatingCandidateId(null);
+    }
   };
 
   const updateStatusWithComment = async (candidate, newStatus, commentText) => {
+    // Check candidate limit before proceeding
+    const limitCheck = checkCandidateLimit(newStatus);
+    if (!limitCheck.canProceed) {
+      enqueueSnackbar(limitCheck.message, {
+        variant: "warning",
+        autoHideDuration: 5000,
+      });
+      Modal.warning({
+        title: "Candidate Limit Reached",
+        content: limitCheck.message,
+        okText: "OK",
+        width: 600,
+      });
+      return;
+    }
+
+    setUpdatingCandidateId(candidate._id);
     try {
       await updateCandidateStatus({
         applicationId: candidate.applicationId,
@@ -1126,6 +1237,7 @@ const SourcedCandidates = ({ jobId }) => {
         refetchWorkOrderBased();
       }
       jobRefetch();
+      refetchWorkOrderDetails(); // Refetch to update candidate count
 
       setIsModalVisible(false);
       setSelectedCandidate(null);
@@ -1143,10 +1255,25 @@ const SourcedCandidates = ({ jobId }) => {
         error.data?.message || "Failed to update candidate status",
         { variant: "error", autoHideDuration: 3000 }
       );
+    } finally {
+      setUpdatingCandidateId(null);
     }
   };
 
   const handleCommentConfirm = async () => {
+    // Check candidate limit before confirming
+    const limitCheck = checkCandidateLimit("selected");
+    if (!limitCheck.canProceed) {
+      enqueueSnackbar(limitCheck.message, {
+        variant: "warning",
+        autoHideDuration: 5000,
+      });
+      setIsCommentModalVisible(false);
+      setComment("");
+      setCandidateToUpdate(null);
+      return;
+    }
+
     setIsCommentModalVisible(false);
     if (candidateToUpdate) {
       await updateStatusWithComment(candidateToUpdate, "selected", comment);
@@ -1329,6 +1456,29 @@ const SourcedCandidates = ({ jobId }) => {
           Candidates Management
         </Title>
       </div>
+
+      {/* Alert when candidate limit is reached */}
+      {workOrderLimitDetails?.summary?.isLimitReached && (
+        <Alert
+          message="Candidate Limit Reached"
+          description={
+            <div>
+              <Text>
+                The required number of candidates ({workOrderLimitDetails?.workorder?.numberOfCandidate}) for this work order has been achieved. 
+                Current active candidates: {workOrderLimitDetails?.summary?.activeCandidateCount}.
+              </Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                You cannot source, select, screen, or move candidates to interview until you update the required number of candidates in the work order.
+              </Text>
+            </div>
+          }
+          type="warning"
+          showIcon
+          closable
+          style={{ marginBottom: "16px" }}
+        />
+      )}
 
       <Row
         justify="space-between"
@@ -1629,7 +1779,8 @@ const SourcedCandidates = ({ jobId }) => {
                 size="small"
                 style={{ backgroundColor: "#da2c46" }}
                 onClick={() => handleBulkStatusUpdate("selected")}
-                loading={isUpdatingStatus}
+                loading={bulkUpdating || isUpdatingStatus}
+                disabled={bulkUpdating || isUpdatingStatus}
               >
                 Move to Selected
               </Button>
@@ -2135,9 +2286,10 @@ const SourcedCandidates = ({ jobId }) => {
           <Button
             key="status"
             type="primary"
-            loading={isUpdatingStatus}
+            loading={isUpdatingStatus || updatingCandidateId === selectedCandidate?._id}
             onClick={() => handleStatusUpdate(getNextStatus())}
             style={{ backgroundColor: "#da2c46" }}
+            disabled={isUpdatingStatus || updatingCandidateId === selectedCandidate?._id}
           >
             {getModalButtonText()}
           </Button>,
@@ -2273,6 +2425,7 @@ const SourcedCandidates = ({ jobId }) => {
         onOk={handleCommentConfirm}
         comment={comment}
         setComment={setComment}
+        loading={updatingCandidateId === candidateToUpdate?._id || isUpdatingStatus}
         pipelines={activePipelines}
         selectedPipeline={selectedPipeline}
         setSelectedPipeline={setSelectedPipeline}

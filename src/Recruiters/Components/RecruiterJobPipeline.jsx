@@ -8,6 +8,7 @@ import {
   useUpdateStageRecruitersMutation,
   useAddNewStageDocumentMutation,
   useDeleteStageDocumentMutation,
+  useUploadStageDocumentsOnBehalfMutation,
   useUndoStageMutation,
   useRejectCandidateFromStageMutation,
   useSendStageNotificationMutation,
@@ -59,6 +60,9 @@ const RecruiterJobPipeline = () => {
   const [isDocumentModalVisible, setIsDocumentModalVisible] = useState(false);
   const [newDocumentName, setNewDocumentName] = useState("");
   const [uploadedDocumentFile, setUploadedDocumentFile] = useState(null);
+  const [isUploadRequiredDocsModalVisible, setIsUploadRequiredDocsModalVisible] = useState(false);
+  const [requiredDocsFiles, setRequiredDocsFiles] = useState([]);
+  const [fileDocumentMapping, setFileDocumentMapping] = useState({});
 
   const [isDeleteDocumentModalVisible, setIsDeleteDocumentModalVisible] =
     useState(false);
@@ -102,6 +106,8 @@ const RecruiterJobPipeline = () => {
     useAddNewStageDocumentMutation();
   const [deleteStageDocument, { isLoading: isDeletingDocument }] =
     useDeleteStageDocumentMutation();
+  const [uploadStageDocumentsOnBehalf, { isLoading: isUploadingDocuments }] =
+    useUploadStageDocumentsOnBehalfMutation();
   const [undoStage, { isLoading: isUndoingStage }] = useUndoStageMutation();
   const [rejectCandidateFromStage, { isLoading: isRejecting }] =
     useRejectCandidateFromStageMutation();
@@ -180,7 +186,6 @@ const RecruiterJobPipeline = () => {
       };
 
       setProcessedJobData(jobData);
-      console.log("Data refreshed at:", new Date().toISOString());
     }
   }, [apiData, id]);
 
@@ -277,8 +282,6 @@ const RecruiterJobPipeline = () => {
         stageId: stageToUndo,
       };
 
-      console.log("Sending payload:", payload);
-
       await undoStage(payload).unwrap();
 
       message.success("Stage move undone successfully");
@@ -292,6 +295,51 @@ const RecruiterJobPipeline = () => {
     } catch (error) {
       console.error("Error undoing stage move:", error);
       message.error(error?.data?.message || "Failed to undo stage move");
+    }
+  };
+
+  const handleUploadRequiredDocuments = async (files, filesMetadata) => {
+    try {
+      if (!files || files.length === 0) {
+        enqueueSnackbar("Please select at least one file to upload", {
+          variant: "error",
+        });
+        return;
+      }
+
+      const currentCandidate = processedJobData?.candidates?.[0];
+      if (!currentCandidate) {
+        enqueueSnackbar("Candidate not found", { variant: "error" });
+        return;
+      }
+
+      const payload = {
+        id: currentCandidate._id,
+        stageId: activeStage,
+        files: files.map((f) => f.originFileObj || f),
+        filesMetadata: filesMetadata,
+      };
+
+      await uploadStageDocumentsOnBehalf(payload).unwrap();
+
+      enqueueSnackbar("Documents uploaded successfully on behalf of candidate", {
+        variant: "success",
+      });
+
+      setIsUploadRequiredDocsModalVisible(false);
+      setRequiredDocsFiles([]);
+      setFileDocumentMapping({});
+
+      await refetch();
+      if (refreshData) {
+        await refreshData();
+      }
+    } catch (error) {
+      console.error("Error uploading documents:", error);
+      enqueueSnackbar(
+        error?.data?.message || "Failed to upload documents",
+        { variant: "error" }
+      );
     }
   };
 
@@ -405,10 +453,6 @@ const RecruiterJobPipeline = () => {
     const currentCandidate = processedJobData.candidates[0];
     const isTagged = !!currentCandidate?.tagPipelineId;
 
-    console.log("=== getAllNextStages DEBUG ===");
-    console.log("Current Stage ID:", currentStageId);
-    console.log("Is Tagged Pipeline:", isTagged);
-
     if (isTagged) {
       // **TAGGED PIPELINE LOGIC**
       const completedStageIds = new Set(
@@ -436,7 +480,6 @@ const RecruiterJobPipeline = () => {
           stageName: stage.name || "Unknown Stage",
         }));
 
-      console.log("Tagged Pending Stages:", pendingStages);
       return pendingStages;
     } else {
       // **WORK ORDER PIPELINE LOGIC**
@@ -471,11 +514,6 @@ const RecruiterJobPipeline = () => {
           stageOrder: stage.stageOrder,
         }));
 
-      console.log(
-        "Work Order Completed Stages:",
-        Array.from(completedStageIds)
-      );
-      console.log("Work Order Pending Stages:", pendingStages);
       return pendingStages;
     }
   };
@@ -768,6 +806,12 @@ const RecruiterJobPipeline = () => {
         setIsDocumentModalVisible={setIsDocumentModalVisible}
         refreshData={refreshData}
         setActiveStage={setActiveStage}
+        isUploadRequiredDocsModalVisible={isUploadRequiredDocsModalVisible}
+        setIsUploadRequiredDocsModalVisible={setIsUploadRequiredDocsModalVisible}
+        requiredDocsFiles={requiredDocsFiles}
+        setRequiredDocsFiles={setRequiredDocsFiles}
+        handleUploadRequiredDocuments={handleUploadRequiredDocuments}
+        isUploadingDocuments={isUploadingDocuments}
         setIsDeleteDocumentModalVisible={setIsDeleteDocumentModalVisible}
         setDocumentToDelete={setDocumentToDelete}
         handleUndoStageClick={handleUndoStageClick}
@@ -848,6 +892,14 @@ const RecruiterJobPipeline = () => {
         setRejectionReason={setRejectionReason}
         handleRejectCandidate={handleRejectCandidate}
         isRejecting={isRejecting}
+        isUploadRequiredDocsModalVisible={isUploadRequiredDocsModalVisible}
+        setIsUploadRequiredDocsModalVisible={setIsUploadRequiredDocsModalVisible}
+        requiredDocsFiles={requiredDocsFiles}
+        setRequiredDocsFiles={setRequiredDocsFiles}
+        fileDocumentMapping={fileDocumentMapping}
+        setFileDocumentMapping={setFileDocumentMapping}
+        handleUploadRequiredDocuments={handleUploadRequiredDocuments}
+        isUploadingDocuments={isUploadingDocuments}
       />
     </div>
   );

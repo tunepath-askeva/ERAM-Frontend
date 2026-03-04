@@ -17,6 +17,8 @@ import {
   Tag,
   Space,
   Popconfirm,
+  Tooltip,
+  Image,
 } from "antd";
 import {
   UserOutlined,
@@ -150,6 +152,7 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     name: "Candidate",
     email: "",
     roles: "",
+    branchLogo: null,
   });
 
   const [notificationList, setNotificationList] = useState([]);
@@ -182,14 +185,11 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       ? JSON.parse(candidateDataRaw)
       : null;
 
-    console.log("🔍 Candidate Data:", candidateData); // DEBUG
 
     if (!candidateData?.email) {
       console.warn("⚠️ No candidate email found!"); // DEBUG
       return;
     }
-
-    console.log("📧 Candidate Email:", candidateData.email.toLowerCase()); // DEBUG
 
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
@@ -370,10 +370,18 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             roles = parsedData.role || parsedData.candidateRole || "";
           }
 
+          // Extract branch logo - check multiple possible paths
+          const branchLogo = 
+            parsedData.branch?.brand_logo || 
+            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo || 
+            null;
+
           const extractedInfo = {
             name: name,
             email: email,
             roles: roles,
+            branchLogo: branchLogo,
           };
 
           setCandidateInfo(extractedInfo);
@@ -1005,16 +1013,26 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       padding={getPadding()}
       leftMargin={getNavbarLeftMargin()}
     >
-      <NavButton
-        type="text"
-        icon={getToggleIcon()}
-        onClick={toggleSidebar}
-        style={{
-          marginRight: screenSize.isMobile ? "8px" : "16px",
-          width: getButtonSize(),
-          height: getButtonSize(),
-        }}
-      />
+      <Tooltip
+        title={
+          collapsed
+            ? "Click to expand sidebar"
+            : "Click to collapse sidebar"
+        }
+        placement="bottom"
+        mouseEnterDelay={0.5}
+      >
+        <NavButton
+          type="text"
+          icon={getToggleIcon()}
+          onClick={toggleSidebar}
+          style={{
+            marginRight: screenSize.isMobile ? "8px" : "16px",
+            width: getButtonSize(),
+            height: getButtonSize(),
+          }}
+        />
+      </Tooltip>
 
       {!screenSize.isMobile && (
         <div
@@ -1026,6 +1044,33 @@ const CandidateNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           }}
         >
           {" "}
+        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {/* Branch Logo in Center */}
+      {candidateInfo.branchLogo && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            src={candidateInfo.branchLogo}
+            alt="Branch Logo"
+            preview={false}
+            style={{
+              maxHeight: screenSize.isMobile ? "32px" : screenSize.isTablet ? "36px" : "40px",
+              maxWidth: screenSize.isMobile ? "120px" : screenSize.isTablet ? "140px" : "160px",
+              objectFit: "contain",
+            }}
+          />
         </div>
       )}
 

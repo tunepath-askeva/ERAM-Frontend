@@ -165,6 +165,19 @@ const AddWorkOrder = () => {
 
   const branchId = Branch?.branch?._id;
 
+  // Auto-populate aboutUs from branch when branch data is loaded
+  useEffect(() => {
+    if (Branch?.branch?.aboutUs && !isPrefilled) {
+      const currentAboutUs = jobForm.getFieldValue("aboutUs");
+      // Only auto-populate if field is empty
+      if (!currentAboutUs) {
+        jobForm.setFieldsValue({
+          aboutUs: Branch.branch.aboutUs,
+        });
+      }
+    }
+  }, [Branch, isPrefilled]);
+
   const activeRecruiters =
     recruiters?.recruitername?.filter(
       (recruiter) => recruiter.accountStatus === "active"
@@ -326,6 +339,7 @@ const AddWorkOrder = () => {
           Education: reqData.Education,
           languagesRequired: reqData.languagesRequired || [],
           jobCode: finalJobCode, // Use generated code here
+          aboutUs: reqData.aboutUs || Branch?.branch?.aboutUs || "",
           assignedId: Array.isArray(reqData.assignedRecruiters)
             ? reqData.assignedRecruiters.map((r) =>
                 typeof r === "object" ? r._id : r
@@ -922,6 +936,7 @@ const AddWorkOrder = () => {
         requiredDocuments: allDocuments,
         client: jobForm.getFieldValue("client"),
         languagesRequired: jobForm.getFieldValue("languagesRequired") || [],
+        aboutUs: jobForm.getFieldValue("aboutUs") || "",
         isSalaryVisible: isSalaryVisible !== undefined ? Boolean(isSalaryVisible) : false,
         isRequisition: isRequisitionBased,
         ...(isRequisitionBased && {
@@ -2336,6 +2351,20 @@ const AddWorkOrder = () => {
                     />
                   </Form.Item>
                 </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="priority"
+                    label="Priority (1-5)"
+                    tooltip="Optional: Set priority from 1 (lowest) to 5 (highest). Higher priority jobs appear first."
+                  >
+                    <InputNumber
+                      min={1}
+                      max={5}
+                      placeholder="Select priority (optional)"
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
               </Row>
             </Card>
 
@@ -2584,6 +2613,17 @@ const AddWorkOrder = () => {
                 <TextArea
                   rows={4}
                   placeholder="Enter detailed job description"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="aboutUs"
+                label="About Us"
+                tooltip="Branch About Us content is automatically loaded. You can edit or add additional information."
+              >
+                <TextArea
+                  rows={5}
+                  placeholder="About Us content will be automatically populated from your branch details. You can edit or add to it here."
                 />
               </Form.Item>
 

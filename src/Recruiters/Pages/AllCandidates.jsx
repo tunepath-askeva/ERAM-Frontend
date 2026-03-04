@@ -52,6 +52,7 @@ import { phoneUtils } from "../../utils/countryMobileLimits";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import CandidateDetailsDrawer from "./CandidateDetailsDrawer";
 import AddCandidateModal from "../Components/AddCandidateModal";
+import axios from "axios";
 import BulkImportModal from "../Components/BulkImportModal";
 import AdvancedFiltersModal from "../Components/AdvancedFiltersModal";
 import { useSelector } from "react-redux";
@@ -335,13 +336,37 @@ function AllCandidates() {
     }
   };
 
-  const handleAddCandidate = async (candidateData) => {
+  const handleAddCandidate = async (formData, candidateData) => {
     try {
-      const response = await addCandidate(candidateData).unwrap();
-      setAddCandidateModalVisible(false);
-      refetch();
-
-      return { success: true, data: response };
+      // If formData is provided (with files), use axios directly
+      if (formData instanceof FormData) {
+        const baseUrl = window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/recruiter"
+          : `https://${window.location.hostname}/api/recruiter`;
+        
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+        
+        const response = await axios.post(`${baseUrl}/candidate`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        });
+        
+        setAddCandidateModalVisible(false);
+        refetch();
+        return { success: true, data: response.data };
+      } else {
+        // Fallback to original mutation for backward compatibility
+        const response = await addCandidate(candidateData).unwrap();
+        setAddCandidateModalVisible(false);
+        refetch();
+        return { success: true, data: response };
+      }
     } catch (error) {
       throw error;
     }

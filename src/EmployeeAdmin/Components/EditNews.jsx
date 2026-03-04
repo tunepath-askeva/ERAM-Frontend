@@ -13,6 +13,8 @@ import {
   message,
   Spin,
   Alert,
+  Select,
+  DatePicker,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +27,7 @@ import {
   useUpdateNewsMutation,
 } from "../../Slices/Employee/EmployeeApis";
 import { useParams, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -33,6 +36,7 @@ const EditNews = () => {
   const [form] = Form.useForm();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [newsType, setNewsType] = useState("news");
 
   const {
     data: newsResponse,
@@ -76,6 +80,9 @@ const EditNews = () => {
         title: newsData.title,
         description: newsData.description || "",
         coverImage: createFileList(newsData.coverImage, "cover-image"),
+        type: newsData.type || "news",
+        eventDate: newsData.eventDate ? dayjs(newsData.eventDate) : undefined,
+        eventLocation: newsData.eventLocation || "",
         subsections:
           newsData.subsections?.map((section, index) => ({
             title: section.subtitle,
@@ -83,6 +90,7 @@ const EditNews = () => {
             image: createFileList(section.image, `section-${index}-image`),
           })) || [],
       };
+      setNewsType(newsData.type || "news");
       form.setFieldsValue(formValues);
     }
   }, [newsData, form]);
@@ -93,6 +101,16 @@ const handleSubmit = async (values) => {
 
     formData.append("title", values.title);
     formData.append("description", values.description || "");
+    formData.append("type", values.type || "news");
+    
+    if (values.type === "event") {
+      if (values.eventDate) {
+        formData.append("eventDate", values.eventDate.format("YYYY-MM-DD"));
+      }
+      if (values.eventLocation) {
+        formData.append("eventLocation", values.eventLocation);
+      }
+    }
 
     // Handle cover image
     if (values.coverImage?.[0]) {
@@ -244,7 +262,11 @@ const handleSubmit = async (values) => {
 
       {/* Edit Form */}
       <Card
-        title={<span style={{ color: "#da2c46" }}>Edit News Article</span>}
+        title={
+          <span style={{ color: "#da2c46" }}>
+            Edit {newsType === "event" ? "Event" : "News Article"}
+          </span>
+        }
         style={customStyles.cardStyle}
       >
         <Form
@@ -254,18 +276,83 @@ const handleSubmit = async (values) => {
           requiredMark={false}
         >
           <Row gutter={16}>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
               <Form.Item
-                label="News Title"
-                name="title"
-                rules={[{ required: true, message: "Please enter news title" }]}
+                label="Type"
+                name="type"
+                rules={[{ required: true, message: "Please select type" }]}
               >
-                <Input
-                  placeholder="Enter compelling news title"
+                <Select
+                  placeholder="Select type"
                   style={{ borderRadius: "6px" }}
-                />
+                  onChange={(value) => {
+                    setNewsType(value);
+                    if (value === "news") {
+                      form.setFieldsValue({ eventDate: undefined, eventLocation: undefined });
+                    }
+                  }}
+                >
+                  <Select.Option value="news">News</Select.Option>
+                  <Select.Option value="event">Event</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
+            <Col xs={24} md={newsType === "event" ? 8 : 16}>
+              <Form.Item
+                label={newsType === "event" ? "Event Date" : "Title"}
+                name={newsType === "event" ? "eventDate" : "title"}
+                rules={
+                  newsType === "event"
+                    ? [{ required: true, message: "Please select event date" }]
+                    : [{ required: true, message: "Please enter title" }]
+                }
+              >
+                {newsType === "event" ? (
+                  <DatePicker
+                    style={{ width: "100%", borderRadius: "6px" }}
+                    format="YYYY-MM-DD"
+                    placeholder="Select event date"
+                  />
+                ) : (
+                  <Input
+                    placeholder="Enter compelling news title"
+                    style={{ borderRadius: "6px" }}
+                  />
+                )}
+              </Form.Item>
+            </Col>
+            {newsType === "event" && (
+              <Col xs={24} md={8}>
+                <Form.Item
+                  label="Event Name"
+                  name="title"
+                  rules={[{ required: true, message: "Please enter event name" }]}
+                >
+                  <Input
+                    placeholder="Enter event name"
+                    style={{ borderRadius: "6px" }}
+                  />
+                </Form.Item>
+              </Col>
+            )}
+          </Row>
+          {newsType === "event" && (
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Event Location"
+                  name="eventLocation"
+                  rules={[{ required: true, message: "Please enter event location" }]}
+                >
+                  <Input
+                    placeholder="Enter event location"
+                    style={{ borderRadius: "6px" }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
+          <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 label="Cover Image"
@@ -290,10 +377,13 @@ const handleSubmit = async (values) => {
             </Col>
           </Row>
 
-          <Form.Item label="News Description" name="description">
+          <Form.Item 
+            label={newsType === "event" ? "Event Description" : "News Description"} 
+            name="description"
+          >
             <TextArea
               rows={4}
-              placeholder="Write a comprehensive description of the news..."
+              placeholder={newsType === "event" ? "Write a comprehensive description of the event..." : "Write a comprehensive description of the news..."}
               style={{ borderRadius: "6px" }}
             />
           </Form.Item>
@@ -405,7 +495,7 @@ const handleSubmit = async (values) => {
                 style={customStyles.buttonStyle}
                 icon={<SaveOutlined />}
               >
-                Update News
+                Update {newsType === "event" ? "Event" : "News"}
               </Button>
               <Button
                 size="large"

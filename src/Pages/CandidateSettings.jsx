@@ -30,6 +30,7 @@ import {
   Slider,
   TimePicker,
   InputNumber,
+  Popconfirm,
 } from "antd";
 import {
   UserOutlined,
@@ -261,6 +262,7 @@ const CandidateSettings = () => {
   const [isCertModalVisible, setIsCertModalVisible] = useState(false);
   const [editingCertId, setEditingCertId] = useState(null);
   const [editingCertData, setEditingCertData] = useState({});
+  const [isCertificateLoading, setIsCertificateLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [editingEducationData, setEditingEducationData] = useState({
     title: "",
@@ -1075,6 +1077,7 @@ const CandidateSettings = () => {
 
   const handleCertificateSubmit = async () => {
     try {
+      setIsCertificateLoading(true);
       const values = await certForm.validateFields();
       const certificateFile =
         editingCertData.certificateFile ||
@@ -1096,6 +1099,7 @@ const CandidateSettings = () => {
           setIsCertModalVisible(false);
           setEditingCertId(null);
           setEditingCertData({});
+          setIsCertificateLoading(false);
           return;
         }
       }
@@ -1105,6 +1109,7 @@ const CandidateSettings = () => {
         enqueueSnackbar("Please select a certificate file", {
           variant: "error",
         });
+        setIsCertificateLoading(false);
         return;
       }
 
@@ -1151,6 +1156,8 @@ const CandidateSettings = () => {
       enqueueSnackbar(err?.data?.message || "Failed to upload certificate", {
         variant: "error",
       });
+    } finally {
+      setIsCertificateLoading(false);
     }
   };
 
@@ -1205,6 +1212,14 @@ const CandidateSettings = () => {
       ...userData,
       certificates: userData.certificates.filter((cert) => cert.id !== id),
     });
+  };
+
+  const handleDeleteCertificate = (id) => {
+    if (!isProfileEditable) {
+      message.warning("Please enable edit mode to remove certificate/document");
+      return;
+    }
+    removeCertificate(id);
   };
 
   const addWorkExperience = () => {
@@ -2395,12 +2410,22 @@ const CandidateSettings = () => {
                                 icon={<EditOutlined />}
                                 onClick={() => handleEditCertificate(item)}
                               />,
-                              <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={() => removeCertificate(item.id)}
-                              />,
+                              <Popconfirm
+                                title="Delete Certificate"
+                                description="Are you sure you want to delete this certificate? This action cannot be undone."
+                                onConfirm={() => handleDeleteCertificate(item.id)}
+                                okText="Yes, Delete"
+                                cancelText="Cancel"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <Button
+                                  type="text"
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                >
+                                  Delete
+                                </Button>
+                              </Popconfirm>,
                             ]
                           : null
                       }
@@ -2983,10 +3008,21 @@ const CandidateSettings = () => {
         title={`${editingCertId ? "Edit" : "Add"} Certificate`}
         visible={isCertModalVisible}
         onOk={handleCertificateSubmit}
-        onCancel={() => setIsCertModalVisible(false)}
+        onCancel={() => {
+          if (!isCertificateLoading) {
+            setIsCertModalVisible(false);
+            setEditingCertId(null);
+            setEditingCertData({});
+            certForm.resetFields();
+          }
+        }}
         okText="Save"
         cancelText="Cancel"
         width={600}
+        okButtonProps={{ loading: isCertificateLoading }}
+        cancelButtonProps={{ disabled: isCertificateLoading }}
+        maskClosable={!isCertificateLoading}
+        closable={!isCertificateLoading}
       >
         <Form form={certForm} layout="vertical">
           <Form.Item

@@ -20,6 +20,8 @@ import {
   Typography,
   Tag,
   notification,
+  Tooltip,
+  Image,
 } from "antd";
 import {
   UserOutlined,
@@ -152,6 +154,7 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     name: "Recruiter",
     email: "",
     roles: "",
+    branchLogo: null,
   });
   const [page, setPage] = useState(1);
 
@@ -339,10 +342,18 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           const roles =
             parsedData.roles || parsedData.role || parsedData.userRole || "";
 
+          // Extract branch logo - check multiple possible paths
+          const branchLogo = 
+            parsedData.branch?.brand_logo || 
+            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo || 
+            null;
+
           setRecruiterInfo({
             name: name,
             email: email,
             roles: roles,
+            branchLogo: branchLogo,
           });
         }
       } catch (error) {
@@ -976,6 +987,33 @@ const RecruiterNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           {" "}
         </div>
       )}
+      <div style={{ flex: 1 }} />
+
+      {/* Branch Logo in Center */}
+      {recruiterInfo.branchLogo && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            src={recruiterInfo.branchLogo}
+            alt="Branch Logo"
+            preview={false}
+            style={{
+              maxHeight: screenSize.isMobile ? "32px" : screenSize.isTablet ? "36px" : "40px",
+              maxWidth: screenSize.isMobile ? "120px" : screenSize.isTablet ? "140px" : "160px",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      )}
+
       <div style={{ flex: 1 }} />
 
       <div

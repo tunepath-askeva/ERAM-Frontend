@@ -25,6 +25,7 @@ import {
   Checkbox,
   message,
   Tabs,
+  Modal,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -54,6 +55,7 @@ import BranchHeader from "../Global/BranchHeader";
 import BranchFooter from "../Global/BranchFooter";
 import { useBranch } from "../utils/useBranch";
 import SkeletonLoader from "../Global/SkeletonLoader";
+import CVUploadSection from "./CVUploadSection";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -72,6 +74,7 @@ const SharedJobPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [reviewData, setReviewData] = useState(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [cvModalVisible, setCvModalVisible] = useState(false);
 
   const {
     data: jobResponse,
@@ -662,6 +665,46 @@ const SharedJobPage = () => {
         )}
       </div>
 
+
+      {job.aboutUs && (
+        <div style={{ marginBottom: "16px" }}>
+          <Title level={5} style={{ marginBottom: "12px" }}>
+            About Us
+          </Title>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            {splitIntoPoints(job.aboutUs).map((point, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                    color: "#444",
+                  }}
+                >
+                  <CheckCircleOutlined
+                    style={{
+                      color: "#52c41a",
+                      marginTop: "4px",
+                      flexShrink: 0,
+                      fontSize: "16px",
+                    }}
+                  />
+                  <span>{point}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {job.description && (
         <div style={{ marginBottom: "16px" }}>
           <Title level={5} style={{ marginBottom: "12px" }}>
@@ -700,6 +743,8 @@ const SharedJobPage = () => {
           </div>
         </div>
       )}
+
+
 
       {job.jobRequirements && (
         <div style={{ marginBottom: "16px" }}>
@@ -817,6 +862,8 @@ const SharedJobPage = () => {
           </div>
         </div>
       )}
+
+
 
       {job.requiredSkills && job.requiredSkills.length > 0 && (
         <div style={{ marginBottom: "16px" }}>
@@ -958,7 +1005,47 @@ const SharedJobPage = () => {
                 label: "Apply",
                 children: (
                   <div>
-                    {job.customFields && job.customFields.length > 0 ? (
+                    {/* Check if job is inactive */}
+                    {job.isActive === "inactive" ? (
+                      <div>
+                        <Alert
+                          message="This job posting has expired"
+                          description="This job is no longer active. However, you can still submit your CV. We recommend applying to other active job postings for better opportunities."
+                          type="warning"
+                          showIcon
+                          style={{ marginBottom: "24px" }}
+                        />
+                        <Card
+                          style={{
+                            textAlign: "center",
+                            padding: "40px 20px",
+                          }}
+                        >
+                          <Title level={4} style={{ marginBottom: "16px" }}>
+                            Apply with CV
+                          </Title>
+                          <Text
+                            type="secondary"
+                            style={{ display: "block", marginBottom: "24px" }}
+                          >
+                            Submit your CV to apply for this position. Our team will review your application.
+                          </Text>
+                          <Button
+                            type="primary"
+                            size="large"
+                            icon={<UploadOutlined />}
+                            onClick={() => setCvModalVisible(true)}
+                            style={{
+                              background: "linear-gradient(135deg, #da2c46 0%, #b91c3c 100%)",
+                              border: "none",
+                              minWidth: "200px",
+                            }}
+                          >
+                            Apply with CV
+                          </Button>
+                        </Card>
+                      </div>
+                    ) : job.customFields && job.customFields.length > 0 ? (
                       <>
                         <Steps
                           current={currentStep}
@@ -1108,6 +1195,23 @@ const SharedJobPage = () => {
           />
         </Card>
       </div>
+      
+      {/* CV Upload Modal for Inactive Jobs */}
+      <Modal
+        title="Apply with CV"
+        open={cvModalVisible}
+        onCancel={() => setCvModalVisible(false)}
+        footer={null}
+        width={600}
+        centered
+      >
+        <CVUploadSection
+          currentBranch={currentBranch}
+          jobId={job?._id}
+          closeCvModal={() => setCvModalVisible(false)}
+        />
+      </Modal>
+      
       <BranchFooter currentBranch={currentBranch} />
     </>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, Button, Row, Col, Select, Spin } from "antd";
+import { Modal, Form, Input, Button, Row, Col, Select, Spin, Upload, message } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -12,6 +12,9 @@ import {
   StarOutlined,
   ShopOutlined,
   GlobalOutlined,
+  UploadOutlined,
+  FileTextOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import {
   useAddCandidateMutation,
@@ -25,6 +28,7 @@ import {
   countryInfo,
 } from "../../utils/countryMobileLimits.js";
 import PhoneInput from "../../Global/PhoneInput.jsx";
+import axios from "axios";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -38,6 +42,11 @@ const CandidateFormModal = ({
   isLoadingCandidate = false,
 }) => {
   const [candidateTypeInput, setCandidateTypeInput] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
+  const [documentFiles, setDocumentFiles] = useState([]);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [parsedResumeData, setParsedResumeData] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [addCandidate, { isLoading: isAdding }] = useAddCandidateMutation();
   const [editCandidate, { isLoading: isEditing }] = useEditCandidateMutation();
@@ -47,6 +56,12 @@ const CandidateFormModal = ({
     limit: 100000,
   });
 
+  // Get all clients (not just suppliers) for dropdown
+  const allClients =
+    clientsData?.clients?.filter(
+      (client) => client.accountStatus === "active"
+    ) || [];
+
   const activeSuppliers =
     clientsData?.clients?.filter(
       (client) =>
@@ -54,10 +69,106 @@ const CandidateFormModal = ({
     ) || [];
 
   const isEditMode = !!editingCandidate;
-  const isLoading = isAdding || isEditing;
+  const isLoading = isAdding || isEditing || isSubmitting;
+
+  // Handle resume parsing
+  const handleResumeUpload = async (file) => {
+    setIsParsingResume(true);
+    setResumeFile(file);
+    
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+      
+      const baseUrl = window.location.hostname === "localhost"
+        ? "http://localhost:5000/api/admin"
+        : `https://${window.location.hostname}/api/admin`;
+      
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+      
+      const response = await axios.post(`${baseUrl}/parse-resume`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      
+      if (response.data?.data) {
+        const parsed = response.data.data;
+        setParsedResumeData(parsed);
+        
+        // Auto-fill form fields with parsed data
+        form.setFieldsValue({
+          firstName: parsed.firstName || form.getFieldValue("firstName"),
+          middleName: parsed.middleName || form.getFieldValue("middleName"),
+          lastName: parsed.lastName || form.getFieldValue("lastName"),
+          email: parsed.email || form.getFieldValue("email"),
+          phone: parsed.phone || form.getFieldValue("phone"),
+          phoneCountryCode: parsed.phoneCountryCode || form.getFieldValue("phoneCountryCode") || "91",
+          companyName: parsed.companyName || form.getFieldValue("companyName"),
+          specialization: parsed.specialization || form.getFieldValue("specialization"),
+          qualifications: parsed.qualifications || form.getFieldValue("qualifications"),
+          experience: parsed.experience || form.getFieldValue("experience"),
+        });
+        
+        enqueueSnackbar("Resume parsed successfully! Fields auto-filled.", {
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Resume parsing error:", error);
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to parse resume",
+        { variant: "error" }
+      );
+    } finally {
+      setIsParsingResume(false);
+    }
+    
+    return false; // Prevent auto upload
+  };
+
+  // Handle document uploads
+  const handleDocumentUpload = (file) => {
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      message.error("File must be smaller than 10MB!");
+      return false;
+    }
+    
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+      return false;
+    }
+    
+    setDocumentFiles((prev) => [...prev, file]);
+    return false; // Prevent auto upload
+  };
+
+  const handleDocumentRemove = (file) => {
+    setDocumentFiles((prev) => prev.filter((item) => item.uid !== file.uid));
+  };
 
   useEffect(() => {
     if (visible) {
+      // Reset file states when modal opens
+      setResumeFile(null);
+      setDocumentFiles([]);
+      setParsedResumeData(null);
+      
       if (isEditMode && editingCandidate && !isLoadingCandidate) {
         // Add safety check for fullName
         const fullName = editingCandidate.fullName || "";
@@ -124,6 +235,7 @@ const CandidateFormModal = ({
   }, [visible, form, isEditMode, editingCandidate, isLoadingCandidate]);
 
   const handleSubmit = async (values) => {
+    setIsSubmitting(true);
     try {
       const {
         confirmPassword,
@@ -172,6 +284,20 @@ const CandidateFormModal = ({
           variant: "success",
         });
       } else {
+        // Create FormData for file uploads
+        const formData = new FormData();
+        
+        // Add resume file if provided
+        if (resumeFile) {
+          formData.append("resume", resumeFile);
+        }
+        
+        // Add document files if provided
+        documentFiles.forEach((file) => {
+          formData.append("documents", file);
+        });
+        
+        // Add all other form data
         const createPayload = {
           ...payload,
           firstName: firstName?.trim(),
@@ -182,8 +308,31 @@ const CandidateFormModal = ({
           phoneCountryCode: phoneCountryCode || "91", // Country code sent separately
           role: "candidate",
         };
-
-        await addCandidate(createPayload).unwrap();
+        
+        // Append all payload fields to FormData
+        Object.keys(createPayload).forEach((key) => {
+          if (createPayload[key] !== undefined && createPayload[key] !== null) {
+            formData.append(key, createPayload[key]);
+          }
+        });
+        
+        const baseUrl = window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/admin"
+          : `https://${window.location.hostname}/api/admin`;
+        
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+        
+        await axios.post(`${baseUrl}/candidate`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        });
+        
         enqueueSnackbar("Candidate created successfully!", {
           variant: "success",
         });
@@ -195,18 +344,23 @@ const CandidateFormModal = ({
 
       onCancel();
       form.resetFields();
+      setResumeFile(null);
+      setDocumentFiles([]);
+      setParsedResumeData(null);
     } catch (error) {
       console.error(
         `Error ${isEditMode ? "updating" : "creating"} candidate:`,
         error
       );
       enqueueSnackbar(
-        error?.data?.message ||
+        error?.response?.data?.message || error?.data?.message ||
           `Failed to ${
             isEditMode ? "update" : "create"
           } candidate. Please try again.`,
         { variant: "error" }
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -386,7 +540,75 @@ const CandidateFormModal = ({
             </Col>
             <Col span={8}>
               <Form.Item label="Client" name="client">
-                <Input placeholder="Enter client name" />
+                <Select
+                  placeholder="Select client"
+                  showSearch
+                  allowClear
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={allClients.map((client) => ({
+                    value: client._id || client.ClientCode || client.fullName,
+                    label: `${client.fullName}${client.ClientCode ? ` (${client.ClientCode})` : ""}`,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Resume Import Section */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item label="Import Resume (PDF/DOC/DOCX)">
+                <Upload
+                  accept=".pdf,.doc,.docx"
+                  beforeUpload={handleResumeUpload}
+                  showUploadList={false}
+                  maxCount={1}
+                >
+                  <Button
+                    icon={<FileTextOutlined />}
+                    loading={isParsingResume}
+                    disabled={isParsingResume}
+                  >
+                    {isParsingResume ? "Parsing Resume..." : "Import & Parse Resume"}
+                  </Button>
+                </Upload>
+                {resumeFile && (
+                  <div style={{ marginTop: 8, color: "#52c41a" }}>
+                    ✓ {resumeFile.name}
+                    {parsedResumeData && " (Parsed)"}
+                  </div>
+                )}
+                {parsedResumeData && (
+                  <div style={{ marginTop: 4, fontSize: "12px", color: "#666" }}>
+                    Resume details extracted and auto-filled
+                  </div>
+                )}
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Documents/Certificates Upload Section */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item label="Upload Documents/Certificates">
+                <Upload
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  beforeUpload={handleDocumentUpload}
+                  onRemove={handleDocumentRemove}
+                  fileList={documentFiles}
+                  multiple
+                >
+                  <Button icon={<PaperClipOutlined />}>
+                    Upload Documents
+                  </Button>
+                </Upload>
+                <div style={{ marginTop: 8, fontSize: "12px", color: "#666" }}>
+                  You can upload multiple documents (PDF, DOC, DOCX, JPG, PNG)
+                </div>
               </Form.Item>
             </Col>
           </Row>

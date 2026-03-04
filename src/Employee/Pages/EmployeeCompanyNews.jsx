@@ -21,6 +21,7 @@ import {
   FileTextOutlined,
   CloseOutlined,
   ArrowRightOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 
@@ -63,7 +64,7 @@ const EmployeeCompanyNews = () => {
       <Result
         status="500"
         title="Something went wrong"
-        subTitle="Unable to load company news. Please try again later."
+        subTitle="Unable to load company news and events. Please try again later."
       />
     );
   }
@@ -72,18 +73,18 @@ const EmployeeCompanyNews = () => {
     <div className="news-container">
       <div className="news-header">
         <Title level={2} className="news-title">
-          Company News
+          Company News & Events
         </Title>
         <Text type="secondary" className="news-subtitle">
-          Stay updated with the latest announcements
+          Stay updated with the latest announcements and events
         </Text>
       </div>
 
       {publishedNews.length === 0 ? (
         <Result
           status="404"
-          title="No News Available"
-          subTitle="Company news and announcements will appear here when available."
+          title="No News or Events Available"
+          subTitle="Company news, events, and announcements will appear here when available."
         />
       ) : (
         <div className="news-list">
@@ -120,16 +121,38 @@ const EmployeeCompanyNews = () => {
                           <Space size="small">
                             <CalendarOutlined style={{ color: "#888" }} />
                             <Text type="secondary">
-                              {new Date(newsItem.createdAt).toLocaleDateString(
-                                "en-US",
-                                {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                }
-                              )}
+                              {newsItem.type === "event" && newsItem.eventDate
+                                ? `Event Date: ${new Date(newsItem.eventDate).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )}`
+                                : new Date(newsItem.createdAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )}
                             </Text>
                           </Space>
+                          {newsItem.type === "event" && newsItem.eventLocation && (
+                            <Space size="small">
+                              <EnvironmentOutlined style={{ color: "#52c41a" }} />
+                              <Text type="secondary" style={{ fontSize: "12px" }}>
+                                {newsItem.eventLocation}
+                              </Text>
+                            </Space>
+                          )}
+                          {newsItem.type === "event" && (
+                            <Tag color="purple" style={{ fontSize: "11px" }}>
+                              Event
+                            </Tag>
+                          )}
                         </Space>
                       </div>
 
@@ -194,7 +217,29 @@ const EmployeeCompanyNews = () => {
                   >
                     {selectedNews.status?.toUpperCase() || "DRAFT"}
                   </Tag>
-                  {selectedNews.createdAt && (
+                  {selectedNews.type === "event" && (
+                    <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
+                      EVENT
+                    </Tag>
+                  )}
+                  {selectedNews.type === "event" && selectedNews.eventDate ? (
+                    <Space direction="vertical" size="small">
+                      <Text type="secondary">
+                        <CalendarOutlined style={{ marginRight: "4px" }} />
+                        Event Date: {new Date(selectedNews.eventDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                      {selectedNews.eventLocation && (
+                        <Text type="secondary">
+                          <EnvironmentOutlined style={{ marginRight: "4px", color: "#52c41a" }} />
+                          Event Location: {selectedNews.eventLocation}
+                        </Text>
+                      )}
+                    </Space>
+                  ) : selectedNews.createdAt && (
                     <Text type="secondary">
                       <CalendarOutlined style={{ marginRight: "4px" }} />
                       {new Date(selectedNews.createdAt).toLocaleDateString()}
@@ -281,7 +326,7 @@ const EmployeeCompanyNews = () => {
                         marginBottom: "24px",
                       }}
                     >
-                      Article Sections
+                      {selectedNews.type === "event" ? "Event Sections" : "Article Sections"}
                     </Title>
 
                     <Row gutter={[24, 24]}>

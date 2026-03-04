@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Button, Drawer } from "antd";
+import { Layout, Menu, Button, Drawer, Tooltip } from "antd";
 import {
   DashboardOutlined,
   UserOutlined,
@@ -166,32 +166,6 @@ const SuperSidebar = ({
         borderRight: "1px solid #e2e8f0",
       }}
     >
-      <div
-        style={{
-          height: screenSize.isMobile ? "80px" : "100px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "16px",
-          borderBottom: "1px solid #e2e8f0",
-          minHeight: screenSize.isMobile ? "80px" : "100px",
-          marginBottom: "32px",
-        }}
-      >
-        <img
-          src="/Workforce.svg"
-          alt="Company Logo"
-          style={{
-            ...getImageLogoSize(),
-            objectFit: "contain",
-            borderRadius: "4px",
-          }}
-          onError={(e) => {
-            e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
-          }}
-        />
-      </div>
 
       <nav
         style={{
@@ -202,59 +176,77 @@ const SuperSidebar = ({
           gap: "8px",
         }}
       >
-        {menuItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => handleMenuClick({ key: item.key })}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              backgroundColor:
-                selectedKey === item.key
-                  ? "#fde2e4"
-                  : hoveredKey === item.key
-                  ? "#f1f5f9"
-                  : "transparent",
-              color:
-                selectedKey === item.key
-                  ? "#e11d48"
-                  : hoveredKey === item.key
-                  ? "#1e293b"
-                  : "#475569",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: screenSize.isMobile ? "16px" : "14px",
-              textAlign: "left",
-              borderRight:
-                selectedKey === item.key ? "2px solid #e11d48" : "none",
-              height: getMenuItemHeight(),
-              justifyContent:
-                collapsed && !screenSize.isMobile ? "center" : "flex-start",
-            }}
-            onMouseEnter={() => setHoveredKey(item.key)}
-            onMouseLeave={() => setHoveredKey(null)}
-          >
-            {React.cloneElement(item.icon, {
-              style: {
+        {menuItems.map((item) => {
+          const menuButton = (
+            <button
+              key={item.key}
+              onClick={() => handleMenuClick({ key: item.key })}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                transition: "all 0.2s ease",
+                backgroundColor:
+                  selectedKey === item.key
+                    ? "#fde2e4"
+                    : hoveredKey === item.key
+                    ? "#f1f5f9"
+                    : "transparent",
                 color:
                   selectedKey === item.key
                     ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#e11d48"
-                    : "#64748b",
-                fontSize: getIconSize(),
-                minWidth: getIconSize(),
-              },
-            })}
-            {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
-          </button>
-        ))}
+                    ? "#1e293b"
+                    : "#475569",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: "500",
+                fontSize: screenSize.isMobile ? "16px" : "14px",
+                textAlign: "left",
+                borderRight:
+                  selectedKey === item.key ? "2px solid #e11d48" : "none",
+                height: getMenuItemHeight(),
+                justifyContent:
+                  collapsed && !screenSize.isMobile ? "center" : "flex-start",
+              }}
+              onMouseEnter={() => setHoveredKey(item.key)}
+              onMouseLeave={() => setHoveredKey(null)}
+            >
+              {React.cloneElement(item.icon, {
+                style: {
+                  color:
+                    selectedKey === item.key
+                      ? "#e11d48"
+                      : hoveredKey === item.key
+                      ? "#e11d48"
+                      : "#64748b",
+                  fontSize: getIconSize(),
+                  minWidth: getIconSize(),
+                },
+              })}
+              {(!collapsed || screenSize.isMobile) && <span>{item.label}</span>}
+            </button>
+          );
+
+          // Show tooltip when collapsed and not on mobile
+          if (collapsed && !screenSize.isMobile) {
+            return (
+              <Tooltip
+                key={item.key}
+                title={item.label}
+                placement="right"
+                mouseEnterDelay={0.5}
+              >
+                {menuButton}
+              </Tooltip>
+            );
+          }
+
+          return menuButton;
+        })}
       </nav>
 
       <div

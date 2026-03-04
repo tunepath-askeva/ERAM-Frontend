@@ -307,8 +307,6 @@ const EmployeeAdminOtherRequest = () => {
   };
 
   const handleSendTicketInfo = async () => {
-    console.log("Handler called");
-    console.log("Ticket Details:", ticketDetails);
 
     try {
       const isValid = ticketDetails.every(
@@ -350,8 +348,6 @@ const EmployeeAdminOtherRequest = () => {
           formData.append(`ticketDetails[${index}][file]`, detail.file);
         }
       });
-
-      console.log("FormData before sending:", [...formData.entries()]);
 
       await sendTicketInfo({ requestId: selectedRequestId, formData }).unwrap();
 

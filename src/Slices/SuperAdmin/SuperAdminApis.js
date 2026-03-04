@@ -170,6 +170,126 @@ export const superAdminApi = createApi({
         method: "GET",
       }),
     }),
+    getFilteredDashboardData: builder.query({
+      query: (filters = {}) => {
+        const params = new URLSearchParams();
+        
+        // Handle multi-select filters (arrays)
+        if (filters.branchId) {
+          if (Array.isArray(filters.branchId) && filters.branchId.length > 0) {
+            filters.branchId.forEach(id => {
+              if (id !== "all") params.append("branchId", id);
+            });
+          } else if (filters.branchId !== "all") {
+            params.append("branchId", filters.branchId);
+          }
+        }
+        if (filters.clientId) {
+          if (Array.isArray(filters.clientId) && filters.clientId.length > 0) {
+            filters.clientId.forEach(id => {
+              if (id !== "all") params.append("clientId", id);
+            });
+          } else if (filters.clientId !== "all") {
+            params.append("clientId", filters.clientId);
+          }
+        }
+        if (filters.projectId) {
+          if (Array.isArray(filters.projectId) && filters.projectId.length > 0) {
+            filters.projectId.forEach(id => {
+              if (id !== "all") params.append("projectId", id);
+            });
+          } else if (filters.projectId !== "all") {
+            params.append("projectId", filters.projectId);
+          }
+        }
+        if (filters.workOrderId && filters.workOrderId !== "all") {
+          params.append("workOrderId", filters.workOrderId);
+        }
+        if (filters.referenceCode && filters.referenceCode !== "all") {
+          params.append("referenceCode", filters.referenceCode);
+        }
+        if (filters.startDate) {
+          params.append("startDate", filters.startDate);
+        }
+        if (filters.endDate) {
+          params.append("endDate", filters.endDate);
+        }
+        if (filters.deadlinePeriod) {
+          params.append("deadlinePeriod", filters.deadlinePeriod);
+        }
+        if (filters.completionPercentage) {
+          params.append("completionPercentage", filters.completionPercentage);
+        }
+        if (filters.dateRange) {
+          params.append("dateRange", filters.dateRange);
+        }
+
+        return {
+          url: `/dashboard/filtered?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
+    getBranchFilterOptions: builder.query({
+      query: (branchId) => {
+        const params = branchId && branchId !== "all" 
+          ? `?branchId=${branchId}` 
+          : "";
+        return {
+          url: `/dashboard/filter-options${params}`,
+          method: "GET",
+        };
+      },
+    }),
+    getSuperAdminChartData: builder.query({
+      query: (filters = {}) => {
+        const params = new URLSearchParams();
+        
+        // Handle multi-select filters (arrays)
+        if (filters.branchId) {
+          if (Array.isArray(filters.branchId) && filters.branchId.length > 0) {
+            filters.branchId.forEach(id => {
+              if (id !== "all") params.append("branchId", id);
+            });
+          } else if (filters.branchId !== "all") {
+            params.append("branchId", filters.branchId);
+          }
+        }
+        if (filters.clientId) {
+          if (Array.isArray(filters.clientId) && filters.clientId.length > 0) {
+            filters.clientId.forEach(id => {
+              if (id !== "all") params.append("clientId", id);
+            });
+          } else if (filters.clientId !== "all") {
+            params.append("clientId", filters.clientId);
+          }
+        }
+        if (filters.projectId) {
+          if (Array.isArray(filters.projectId) && filters.projectId.length > 0) {
+            filters.projectId.forEach(id => {
+              if (id !== "all") params.append("projectId", id);
+            });
+          } else if (filters.projectId !== "all") {
+            params.append("projectId", filters.projectId);
+          }
+        }
+        if (filters.workOrderId && filters.workOrderId !== "all") {
+          params.append("workOrderId", filters.workOrderId);
+        }
+        if (filters.referenceCode && filters.referenceCode !== "all") {
+          params.append("referenceCode", filters.referenceCode);
+        }
+        if (filters.startDate) params.append("startDate", filters.startDate);
+        if (filters.endDate) params.append("endDate", filters.endDate);
+        if (filters.deadlinePeriod) params.append("deadlinePeriod", filters.deadlinePeriod);
+        if (filters.completionPercentage) params.append("completionPercentage", filters.completionPercentage);
+        
+        return {
+          url: `/dashboard/chart-data?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
@@ -207,4 +327,9 @@ export const {
   //Notify
 
   useGetNotificationQuery,
+
+  //Filtered Dashboard
+  useGetFilteredDashboardDataQuery,
+  useGetBranchFilterOptionsQuery,
+  useGetSuperAdminChartDataQuery,
 } = superAdminApi;

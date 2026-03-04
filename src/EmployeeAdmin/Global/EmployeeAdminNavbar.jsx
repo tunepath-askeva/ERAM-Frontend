@@ -19,6 +19,8 @@ import {
   Typography,
   Tag,
   notification,
+  Tooltip,
+  Image,
 } from "antd";
 import {
   UserOutlined,
@@ -150,6 +152,7 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
     name: "Employee Admin",
     email: "",
     roles: "",
+    branchLogo: null,
   });
 
   const [notificationList, setNotificationList] = useState([]);
@@ -327,14 +330,12 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           if (data) {
             employeeData = data;
             foundKey = key;
-            console.log(`Found employee data in localStorage key: ${key}`);
             break;
           }
         }
 
         if (employeeData) {
           const parsedData = JSON.parse(employeeData);
-          console.log(`Parsed data from ${foundKey}:`, parsedData);
 
           const name =
             parsedData.name ||
@@ -361,25 +362,27 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
             roles = parsedData.role || parsedData.employeeRole || "";
           }
 
+          // Extract branch logo - check multiple possible paths
+          const branchLogo = 
+            parsedData.branch?.brand_logo || 
+            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo || 
+            null;
+
           const extractedInfo = {
             name: name,
             email: email,
             roles: roles,
+            branchLogo: branchLogo,
           };
 
-          console.log("Extracted employee info:", extractedInfo);
           setEmployeeInfo(extractedInfo);
         } else {
           console.warn("No employee data found in localStorage");
-          console.log(
-            "Available localStorage keys:",
-            Object.keys(localStorage)
-          );
 
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const value = localStorage.getItem(key);
-            console.log(`localStorage[${key}]:`, value);
           }
         }
       } catch (error) {
@@ -391,7 +394,6 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
 
     const handleStorageChange = (e) => {
       if (e.key && (e.key.includes("employee") || e.key.includes("user"))) {
-        console.log("localStorage changed for key:", e.key);
         fetchEmployeeInfo();
       }
     };
@@ -1003,16 +1005,26 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       padding={getPadding()}
       leftMargin={getNavbarLeftMargin()}
     >
-      <NavButton
-        type="text"
-        icon={getToggleIcon()}
-        onClick={toggleSidebar}
-        style={{
-          marginRight: screenSize.isMobile ? "8px" : "16px",
-          width: getButtonSize(),
-          height: getButtonSize(),
-        }}
-      />
+      <Tooltip
+        title={
+          collapsed
+            ? "Click to expand sidebar"
+            : "Click to collapse sidebar"
+        }
+        placement="bottom"
+        mouseEnterDelay={0.5}
+      >
+        <NavButton
+          type="text"
+          icon={getToggleIcon()}
+          onClick={toggleSidebar}
+          style={{
+            marginRight: screenSize.isMobile ? "8px" : "16px",
+            width: getButtonSize(),
+            height: getButtonSize(),
+          }}
+        />
+      </Tooltip>
 
       {!screenSize.isMobile && (
         <div
@@ -1024,6 +1036,33 @@ const EmployeeAdminNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
           }}
         >
           {" "}
+        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {/* Branch Logo in Center */}
+      {employeeInfo.branchLogo && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            src={employeeInfo.branchLogo}
+            alt="Branch Logo"
+            preview={false}
+            style={{
+              maxHeight: screenSize.isMobile ? "32px" : screenSize.isTablet ? "36px" : "40px",
+              maxWidth: screenSize.isMobile ? "120px" : screenSize.isTablet ? "140px" : "160px",
+              objectFit: "contain",
+            }}
+          />
         </div>
       )}
 

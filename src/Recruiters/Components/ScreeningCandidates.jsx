@@ -55,6 +55,7 @@ import {
   useGetAllLevelsQuery,
   useGetAllStaffsQuery,
   useMoveCandidateStatusMutation,
+  useGetWorkOrderDetailsQuery,
 } from "../../Slices/Recruiter/RecruiterApis";
 import CandidateCard from "./CandidateCard";
 import dayjs from "dayjs";
@@ -140,6 +141,38 @@ const ScreeningCandidates = ({ jobId }) => {
 
   const [statusChange, { isLoading: isStatusChange }] =
     useMoveCandidateStatusMutation();
+  const [updatingCandidateId, setUpdatingCandidateId] = useState(null);
+
+  // Get work order details to check candidate limit
+  const {
+    data: workOrderDetails,
+    refetch: refetchWorkOrderDetails,
+  } = useGetWorkOrderDetailsQuery({
+    jobId,
+    page: 1,
+    limit: 1,
+  });
+
+  // Helper function to check if candidate limit is reached
+  const checkCandidateLimit = (status) => {
+    const statusesToCheck = ["selected", "screening", "interview"];
+    if (!statusesToCheck.includes(status)) return { canProceed: true };
+
+    const requiredCandidates = workOrderDetails?.workorder?.numberOfCandidate || 0;
+    const activeCount = workOrderDetails?.summary?.activeCandidateCount || 0;
+    const isLimitReached = workOrderDetails?.summary?.isLimitReached || false;
+
+    if (requiredCandidates > 0 && isLimitReached) {
+      return {
+        canProceed: false,
+        message: `Cannot move candidate to ${status}. The required number of candidates (${requiredCandidates}) for this work order has been achieved. Current active candidates: ${activeCount}. Please update the required number of candidates in the work order if you want to proceed.`,
+        currentCount: activeCount,
+        limit: requiredCandidates,
+      };
+    }
+
+    return { canProceed: true };
+  };
 
   const {
     data: screeningData,
@@ -341,8 +374,25 @@ const ScreeningCandidates = ({ jobId }) => {
     try {
       if (!selectedCandidate) return;
 
+      // Check candidate limit before proceeding
+      const limitCheck = checkCandidateLimit(newStatus);
+      if (!limitCheck.canProceed) {
+        enqueueSnackbar(limitCheck.message, {
+          variant: "warning",
+          autoHideDuration: 5000,
+        });
+        Modal.warning({
+          title: "Candidate Limit Reached",
+          content: limitCheck.message,
+          okText: "OK",
+          width: 600,
+        });
+        return;
+      }
+
       // Show pipeline selection modal for interview status
       if (newStatus === "interview") {
+        setUpdatingCandidateId(selectedCandidate._id);
         setPendingStatusUpdate(newStatus);
         setSelectedPipelineForUpdate(
           selectedCandidate.tagPipelineId?._id ||
@@ -353,10 +403,16 @@ const ScreeningCandidates = ({ jobId }) => {
         return;
       }
 
-      await updateStatusWithPipeline(selectedCandidate, newStatus, null);
+      setUpdatingCandidateId(selectedCandidate._id);
+      try {
+        await updateStatusWithPipeline(selectedCandidate, newStatus, null);
+      } finally {
+        setUpdatingCandidateId(null);
+      }
     } catch (error) {
       console.error("Failed to change status:", error);
       message.error(error.data?.message || "Failed to change candidate status");
+      setUpdatingCandidateId(null);
     }
   };
 
@@ -364,16 +420,38 @@ const ScreeningCandidates = ({ jobId }) => {
     if (!selectedCandidate || !pendingStatusUpdate) return;
 
     setIsPipelineModalVisible(false);
-    await updateStatusWithPipeline(
-      selectedCandidate,
-      pendingStatusUpdate,
-      selectedPipelineForUpdate
-    );
+    setUpdatingCandidateId(selectedCandidate._id);
+    try {
+      await updateStatusWithPipeline(
+        selectedCandidate,
+        pendingStatusUpdate,
+        selectedPipelineForUpdate
+      );
+    } finally {
+      setUpdatingCandidateId(null);
+    }
     setPendingStatusUpdate(null);
     setSelectedPipelineForUpdate(null);
   };
 
   const updateStatusWithPipeline = async (candidate, newStatus, pipelineId) => {
+    // Check candidate limit before proceeding
+    const limitCheck = checkCandidateLimit(newStatus);
+    if (!limitCheck.canProceed) {
+      enqueueSnackbar(limitCheck.message, {
+        variant: "warning",
+        autoHideDuration: 5000,
+      });
+      Modal.warning({
+        title: "Candidate Limit Reached",
+        content: limitCheck.message,
+        okText: "OK",
+        width: 600,
+      });
+      return;
+    }
+
+    setUpdatingCandidateId(candidate._id);
     try {
       await statusChange({
         id: candidate.applicationId,
@@ -386,6 +464,7 @@ const ScreeningCandidates = ({ jobId }) => {
         autoHideDuration: 3000,
       });
       refetch();
+      refetchWorkOrderDetails(); // Refetch to update candidate count
       setIsModalVisible(false);
     } catch (error) {
       console.error("Failed to change status:", error);
@@ -393,6 +472,8 @@ const ScreeningCandidates = ({ jobId }) => {
         error.data?.message || "Failed to change candidate status",
         { variant: "error", autoHideDuration: 3000 }
       );
+    } finally {
+      setUpdatingCandidateId(null);
     }
   };
 
@@ -541,6 +622,21 @@ const ScreeningCandidates = ({ jobId }) => {
   const handleBulkPipelineUpdateConfirm = async () => {
     if (!pendingStatusUpdate || selectedCandidates.length === 0) return;
 
+    // Check candidate limit before proceeding
+    if (pendingStatusUpdate) {
+      const limitCheck = checkCandidateLimit(pendingStatusUpdate);
+      if (!limitCheck.canProceed) {
+        Modal.warning({
+          title: "Candidate Limit Reached",
+          content: limitCheck.message,
+          okText: "OK",
+          width: 600,
+        });
+        setIsPipelineModalVisible(false);
+        return;
+      }
+    }
+
     setIsPipelineModalVisible(false);
     setIsBulkMoving(true);
 
@@ -569,6 +665,7 @@ const ScreeningCandidates = ({ jobId }) => {
 
       setSelectedCandidates([]);
       refetch();
+      refetchWorkOrderDetails(); // Refetch to update candidate count
       setPendingStatusUpdate(null);
       setSelectedPipelineForUpdate(null);
     } catch (error) {
@@ -579,6 +676,7 @@ const ScreeningCandidates = ({ jobId }) => {
       );
     } finally {
       setIsBulkMoving(false);
+      setBulkUpdating(false);
     }
   };
 
@@ -1301,6 +1399,29 @@ const ScreeningCandidates = ({ jobId }) => {
 
   return (
     <div style={{ padding: "0", fontSize: "14px" }}>
+      {/* Alert when candidate limit is reached */}
+      {workOrderDetails?.summary?.isLimitReached && (
+        <Alert
+          message="Candidate Limit Reached"
+          description={
+            <div>
+              <Text>
+                The required number of candidates ({workOrderDetails?.workorder?.numberOfCandidate}) for this work order has been achieved. 
+                Current active candidates: {workOrderDetails?.summary?.activeCandidateCount}.
+              </Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                You cannot move candidates to interview until you update the required number of candidates in the work order.
+              </Text>
+            </div>
+          }
+          type="warning"
+          showIcon
+          closable
+          style={{ marginBottom: "16px" }}
+        />
+      )}
+
       <div style={{ marginBottom: "16px" }}>
         <Row justify="space-between" align="middle">
           <Col>
@@ -1754,7 +1875,8 @@ const ScreeningCandidates = ({ jobId }) => {
                 type="primary"
                 icon={<ArrowRightOutlined />}
                 onClick={() => handleChangeStatus("interview")}
-                loading={isStatusChange}
+                loading={updatingCandidateId === selectedCandidate?._id || isStatusChange}
+                disabled={updatingCandidateId === selectedCandidate?._id || isStatusChange}
                 style={{ background: "#da2c46" }}
               >
                 Move to Interview
@@ -1795,6 +1917,7 @@ const ScreeningCandidates = ({ jobId }) => {
           setPendingStatusUpdate(null);
           setSelectedPipelineForUpdate(null);
           setSelectedCandidates([]);
+          setUpdatingCandidateId(null);
         }}
         onOk={
           selectedCandidates.length > 0

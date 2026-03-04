@@ -17,6 +17,8 @@ import {
   Popconfirm,
   Spin,
   Image,
+  Select,
+  DatePicker,
 } from "antd";
 import {
   PlusOutlined,
@@ -52,6 +54,7 @@ const EmployeeAdminNews = () => {
   const [currentRecord, setCurrentRecord] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [searchText, setSearchText] = useState("");
+  const [newsType, setNewsType] = useState("news");
 
   const {
     data: companyNews,
@@ -122,6 +125,9 @@ const EmployeeAdminNews = () => {
       coverImage: item.coverImage || "",
       createdByName: item.createdBy?.fullName || "",
       createdByEmail: item.createdBy?.email || "",
+      type: item.type || "news",
+      eventDate: item.eventDate || null,
+      eventLocation: item.eventLocation || null,
     })) || [];
 
   const createFileList = (imageUrl, fileName = "image") => {
@@ -145,6 +151,16 @@ const EmployeeAdminNews = () => {
 
       formData.append("title", values.title);
       formData.append("description", values.description || "");
+      formData.append("type", values.type || "news");
+      
+      if (values.type === "event") {
+        if (values.eventDate) {
+          formData.append("eventDate", values.eventDate.format("YYYY-MM-DD"));
+        }
+        if (values.eventLocation) {
+          formData.append("eventLocation", values.eventLocation);
+        }
+      }
 
       if (values.coverImage?.fileList?.[0]) {
         const coverFile = values.coverImage.fileList[0];
@@ -239,6 +255,27 @@ const EmployeeAdminNews = () => {
         <Text strong style={{ color: "#da2c46" }}>
           {text}
         </Text>
+      ),
+    },
+    {
+      title: "Type",
+      dataIndex: "type",
+      key: "type",
+      render: (type, record) => (
+        <Space direction="vertical" size={4}>
+          <Tag color={type === "event" ? "purple" : "blue"} style={{ fontSize: "11px", margin: 0 }}>
+            {type === "event" ? "Event" : "News"}
+          </Tag>
+          {type === "event" && record.eventDate && (
+            <Text type="secondary" style={{ fontSize: "10px", display: "block" }}>
+              {new Date(record.eventDate).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </Text>
+          )}
+        </Space>
       ),
     },
     {
@@ -355,10 +392,10 @@ const EmployeeAdminNews = () => {
     <div style={{ minHeight: "100vh" }}>
       <Card style={{ marginBottom: "24px" }}>
         <Title level={2} style={{ marginBottom: "8px", color: "#da2c46" }}>
-          <FileTextOutlined /> Company News Management
+          <FileTextOutlined /> Company News/Event Management
         </Title>
         <Paragraph type="secondary">
-          Upload, create, view, edit, delete, and archive company news.
+          Upload, create, view, edit, delete, and archive company news/events.
         </Paragraph>
       </Card>
 
@@ -367,7 +404,9 @@ const EmployeeAdminNews = () => {
           <Col span={24}>
             <Card
               title={
-                <span style={{ color: "#da2c46" }}>Create News Article</span>
+                <span style={{ color: "#da2c46" }}>
+                  Create {newsType === "event" ? "Event" : "News Article"}
+                </span>
               }
               style={customStyles.cardStyle}
             >
@@ -376,22 +415,102 @@ const EmployeeAdminNews = () => {
                 layout="vertical"
                 onFinish={handleSubmit}
                 requiredMark={false}
+                initialValues={{ type: "news" }}
               >
                 <Row gutter={16}>
-                  <Col xs={24} md={12}>
+                  <Col xs={24} md={8}>
                     <Form.Item
-                      label="News Title"
-                      name="title"
+                      label="Type"
+                      name="type"
                       rules={[
-                        { required: true, message: "Please enter news title" },
+                        { required: true, message: "Please select type" },
                       ]}
                     >
-                      <Input
-                        placeholder="Enter compelling news title"
+                      <Select
+                        placeholder="Select type"
                         style={{ borderRadius: "6px" }}
-                      />
+                        onChange={(value) => {
+                          setNewsType(value);
+                          if (value === "news") {
+                            form.setFieldsValue({ eventDate: undefined, eventLocation: undefined });
+                          }
+                        }}
+                      >
+                        <Select.Option value="news">News</Select.Option>
+                        <Select.Option value="event">Event</Select.Option>
+                      </Select>
                     </Form.Item>
                   </Col>
+                  <Col xs={24} md={newsType === "event" ? 8 : 16}>
+                    <Form.Item
+                      label={newsType === "event" ? "Event Date" : "Title"}
+                      name={newsType === "event" ? "eventDate" : "title"}
+                      rules={
+                        newsType === "event"
+                          ? [
+                              {
+                                required: true,
+                                message: "Please select event date",
+                              },
+                            ]
+                          : [
+                              {
+                                required: true,
+                                message: "Please enter title",
+                              },
+                            ]
+                      }
+                    >
+                      {newsType === "event" ? (
+                        <DatePicker
+                          style={{ width: "100%", borderRadius: "6px" }}
+                          format="YYYY-MM-DD"
+                          placeholder="Select event date"
+                        />
+                      ) : (
+                        <Input
+                          placeholder="Enter compelling news title"
+                          style={{ borderRadius: "6px" }}
+                        />
+                      )}
+                    </Form.Item>
+                  </Col>
+                  {newsType === "event" && (
+                    <Col xs={24} md={8}>
+                      <Form.Item
+                        label="Event Name"
+                        name="title"
+                        rules={[
+                          { required: true, message: "Please enter event name" },
+                        ]}
+                      >
+                        <Input
+                          placeholder="Enter event name"
+                          style={{ borderRadius: "6px" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  )}
+                </Row>
+                {newsType === "event" && (
+                  <Row gutter={16}>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Event Location"
+                        name="eventLocation"
+                        rules={[
+                          { required: true, message: "Please enter event location" },
+                        ]}
+                      >
+                        <Input
+                          placeholder="Enter event location"
+                          style={{ borderRadius: "6px" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                )}
+                <Row gutter={16}>
                   <Col xs={24} md={12}>
                     <Form.Item label="Cover Image" name="coverImage">
                       <Upload {...uploadProps}>
@@ -404,10 +523,13 @@ const EmployeeAdminNews = () => {
                   </Col>
                 </Row>
 
-                <Form.Item label="News Description" name="description">
+                <Form.Item 
+                  label={newsType === "event" ? "Event Description" : "News Description"} 
+                  name="description"
+                >
                   <TextArea
                     rows={4}
-                    placeholder="Write a comprehensive description of the news..."
+                    placeholder={newsType === "event" ? "Write a comprehensive description of the event..." : "Write a comprehensive description of the news..."}
                     style={{ borderRadius: "6px" }}
                   />
                 </Form.Item>
@@ -507,7 +629,7 @@ const EmployeeAdminNews = () => {
                     style={customStyles.buttonStyle}
                     icon={<FileTextOutlined />}
                   >
-                    Create News
+                    Create {newsType === "event" ? "Event" : "News"}
                   </Button>
                 </Form.Item>
               </Form>
@@ -520,7 +642,7 @@ const EmployeeAdminNews = () => {
         <Col span={24}>
           <Card
             title={
-              <span style={{ color: "#da2c46" }}>Company News Articles</span>
+              <span style={{ color: "#da2c46" }}>Company News / Event Articles</span>
             }
             style={customStyles.cardStyle}
           >

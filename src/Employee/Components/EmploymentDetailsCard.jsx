@@ -136,6 +136,12 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
     
     // Project field
     project: employeeData?.employmentDetails?.project?._id || employeeData?.employmentDetails?.project || "",
+    
+    // Department field (editable)
+    department: employeeData?.employmentDetails?.department || "",
+    
+    // Reporting Manager field (editable)
+    reportingManager: employeeData?.employmentDetails?.reportingManager || "",
   };
 
   return (
@@ -413,6 +419,18 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             >
               Editable Employment Details
             </Text>
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <Form.Item label="Department" name="department">
+              <Input disabled={!editMode} placeholder="Enter department" />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12}>
+            <Form.Item label="Reporting Manager" name="reportingManager">
+              <Input disabled={!editMode} placeholder="Enter reporting manager name" />
+            </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Drawer, Tag, Spin, Button, Space, Divider, Image, Tabs } from "antd";
+import { Drawer, Tag, Spin, Button, Space, Divider, Image, Tabs, Typography } from "antd";
 import {
   UserOutlined,
   CalendarOutlined,
@@ -21,6 +21,8 @@ import {
   useInitiateAttritionMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import { phoneUtils } from "../../utils/countryMobileLimits";
+
+const { Text } = Typography;
 
 const EmployeeDetailsDrawer = ({
   visible,
@@ -351,6 +353,18 @@ const EmployeeDetailsDrawer = ({
                             : employee.phone || "-"
                           } 
                         />
+                        <InfoItem
+                          label="Emergency Contact Number"
+                          value={
+                            employee.emergencyContactNoCountryCode && employee.emergencyContactNo
+                            ? phoneUtils.formatWithCountryCode(employee.emergencyContactNoCountryCode, employee.emergencyContactNo)
+                            : employee.emergencyContactNo || "-"
+                          } 
+                        />
+                        <InfoItem
+                          label="Emergency Contact Person Name"
+                          value={employee.contactPersonName || "-"}
+                        />
                         <InfoItem label="Gender" value={employee.gender} />
                         <InfoItem
                           label="Date of Birth"
@@ -383,6 +397,122 @@ const EmployeeDetailsDrawer = ({
                     </InfoSection>
 
                     <Divider />
+
+                    {/* Address Information */}
+                    {(employee.presentAddress || employee.permanentAddress) && (
+                      <>
+                        <InfoSection
+                          title="Address Information"
+                          icon={<EnvironmentOutlined />}
+                        >
+                          {employee.presentAddress && (
+                            <div style={{ marginBottom: "24px" }}>
+                              <Text strong style={{ fontSize: "14px", display: "block", marginBottom: "12px" }}>
+                                Present Address
+                              </Text>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr 1fr",
+                                  gap: "12px",
+                                }}
+                              >
+                                <InfoItem
+                                  label="Country"
+                                  value={employee.presentAddress?.country || "-"}
+                                />
+                                <InfoItem
+                                  label="State/Province"
+                                  value={employee.presentAddress?.state || "-"}
+                                />
+                                <InfoItem
+                                  label="City"
+                                  value={employee.presentAddress?.city || "-"}
+                                />
+                                <InfoItem
+                                  label="Street Name"
+                                  value={employee.presentAddress?.streetName || "-"}
+                                />
+                                <InfoItem
+                                  label="Street No"
+                                  value={employee.presentAddress?.streetNo || "-"}
+                                />
+                                <InfoItem
+                                  label="Block"
+                                  value={employee.presentAddress?.block || "-"}
+                                />
+                                <InfoItem
+                                  label="Building"
+                                  value={employee.presentAddress?.building || "-"}
+                                />
+                                <InfoItem
+                                  label="Zip/Postal Code"
+                                  value={employee.presentAddress?.zipCode || "-"}
+                                />
+                                <InfoItem
+                                  label="Full Address"
+                                  value={employee.presentAddress?.region || "-"}
+                                  span={2}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {employee.permanentAddress && (
+                            <div>
+                              <Text strong style={{ fontSize: "14px", display: "block", marginBottom: "12px" }}>
+                                Permanent Address
+                              </Text>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr 1fr",
+                                  gap: "12px",
+                                }}
+                              >
+                                <InfoItem
+                                  label="Country"
+                                  value={employee.permanentAddress?.country || "-"}
+                                />
+                                <InfoItem
+                                  label="State/Province"
+                                  value={employee.permanentAddress?.state || "-"}
+                                />
+                                <InfoItem
+                                  label="City"
+                                  value={employee.permanentAddress?.city || "-"}
+                                />
+                                <InfoItem
+                                  label="Street Name"
+                                  value={employee.permanentAddress?.streetName || "-"}
+                                />
+                                <InfoItem
+                                  label="Street No"
+                                  value={employee.permanentAddress?.streetNo || "-"}
+                                />
+                                <InfoItem
+                                  label="Block"
+                                  value={employee.permanentAddress?.block || "-"}
+                                />
+                                <InfoItem
+                                  label="Building"
+                                  value={employee.permanentAddress?.building || "-"}
+                                />
+                                <InfoItem
+                                  label="Zip/Postal Code"
+                                  value={employee.permanentAddress?.zipCode || "-"}
+                                />
+                                <InfoItem
+                                  label="Full Address"
+                                  value={employee.permanentAddress?.region || "-"}
+                                  span={2}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </InfoSection>
+                        <Divider />
+                      </>
+                    )}
 
                     {/* Identity Documents */}
                     <InfoSection
@@ -535,6 +665,14 @@ const EmployeeDetailsDrawer = ({
                         <InfoItem
                           label="Work Location"
                           value={employee.employmentDetails?.workLocation}
+                        />
+                        <InfoItem
+                          label="Department"
+                          value={employee.employmentDetails?.department}
+                        />
+                        <InfoItem
+                          label="Reporting Manager"
+                          value={employee.employmentDetails?.reportingManager}
                         />
                         <InfoItem
                           label="Family Status"

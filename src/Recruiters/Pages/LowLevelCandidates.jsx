@@ -25,6 +25,7 @@ import {
   Upload,
   Progress,
   Alert,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
@@ -48,6 +49,7 @@ import {
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+import axios from "axios";
 import {
   useGetAllRecruiterCvsQuery,
   useDeleteRecruiterCvMutation,
@@ -69,9 +71,7 @@ const LowLevelCandidates = () => {
   );
 
   const [candidates, setCandidates] = useState([]);
-  const [filteredCandidates, setFilteredCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -153,7 +153,6 @@ const LowLevelCandidates = () => {
         lastName: cv.lastName || "",
       }));
       setCandidates(formatted);
-      setFilteredCandidates(formatted);
     }
   }, [data]);
 
@@ -173,11 +172,13 @@ const LowLevelCandidates = () => {
       email: record.email,
       designation: record.designation || "",
       specialization: record.designation || "", // Pre-populate specialization with designation
+      fileUrl: record.fileUrl || "", // Pass CV file URL
+      fileName: record.fileName || "", // Pass CV file name
     });
     setConvertModalVisible(true);
   };
 
-  const handleConvertSubmit = async (values) => {
+  const handleConvertSubmit = async (values, documentFiles, existingCvUrl) => {
     try {
       // Extract phone number and country code properly
       const phoneNumber = values.phoneNumber || "";
@@ -194,15 +195,52 @@ const LowLevelCandidates = () => {
 
       const { phoneNumber: _, phoneNumberCountryCode: __, ...rest } = values;
       
-      await candidateConverting({
-        id: candidateToConvert.id,
-        values: { 
-          ...rest, 
-          phone: cleanPhone, // Phone WITHOUT country code
-          phoneCountryCode: phoneCountryCode, // Country code separately
-          specialization: specialization, // Use designation for specialization
+      // Create FormData for file uploads
+      const formData = new FormData();
+      
+      // Add existing CV URL if available (the CV is already uploaded)
+      if (existingCvUrl) {
+        formData.append("existingCvUrl", existingCvUrl);
+      }
+      
+      // Add document files if provided
+      if (documentFiles && documentFiles.length > 0) {
+        documentFiles.forEach((file) => {
+          formData.append("documents", file);
+        });
+      }
+      
+      // Add all other form data
+      const payload = {
+        ...rest,
+        phone: cleanPhone, // Phone WITHOUT country code
+        phoneCountryCode: phoneCountryCode, // Country code separately
+        specialization: specialization, // Use designation for specialization
+      };
+      
+      // Append all payload fields to FormData
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] !== undefined && payload[key] !== null) {
+          formData.append(key, payload[key]);
+        }
+      });
+      
+      const baseUrl = window.location.hostname === "localhost"
+        ? "http://localhost:5000/api/recruiter"
+        : `https://${window.location.hostname}/api/recruiter`;
+      
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+      
+      await axios.post(`${baseUrl}/converts/${candidateToConvert.id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
-      }).unwrap();
+        withCredentials: true,
+      });
 
       enqueueSnackbar(
         `${values.firstName} ${values.lastName} converted to candidate successfully!`,
@@ -667,10 +705,7 @@ const LowLevelCandidates = () => {
       await deleteRecruiterCv(record.id).unwrap();
       message.success(`Deleted CV for ${record.name}`);
 
-      const updatedCandidates = candidates.filter((c) => c.id !== record.id);
       refetch();
-      setCandidates(updatedCandidates);
-      setFilteredCandidates(updatedCandidates);
       setDrawerVisible(false);
     } catch (error) {
       message.error("Failed to delete CV!");
@@ -871,16 +906,16 @@ const LowLevelCandidates = () => {
               <div style={{ textAlign: "center", padding: "40px" }}>
                 <Spin size="large" />
               </div>
-            ) : filteredCandidates.length === 0 ? (
+            ) : candidates.length === 0 ? (
               <Empty
                 description={
-                  searchTerm
-                    ? `No applications found for "${searchTerm}"`
+                  debouncedSearch
+                    ? `No applications found for "${debouncedSearch}"`
                     : "No CV applications yet"
                 }
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               >
-                {searchTerm && (
+                {debouncedSearch && (
                   <Button
                     type="primary"
                     onClick={() => handleSearch("")}
@@ -895,9 +930,26 @@ const LowLevelCandidates = () => {
                 )}
               </Empty>
             ) : (
-              filteredCandidates.map((candidate) => (
-                <MobileCard key={candidate.id} record={candidate} />
-              ))
+              <>
+                {candidates.map((candidate) => (
+                  <MobileCard key={candidate.id} record={candidate} />
+                ))}
+                <div style={{ marginTop: 16, textAlign: "right" }}>
+                  <Pagination
+                    current={page}
+                    pageSize={limit}
+                    total={data?.total || 0}
+                    onChange={(newPage, newLimit) => {
+                      setPage(newPage);
+                      setLimit(newLimit);
+                    }}
+                    showSizeChanger={false}
+                    showTotal={(total, range) =>
+                      `${range[0]}-${range[1]} of ${total} applications`
+                    }
+                  />
+                </div>
+              </>
             )}
           </div>
         ) : (
@@ -911,13 +963,14 @@ const LowLevelCandidates = () => {
           >
             <Table
               columns={columns}
-              dataSource={filteredCandidates}
-              rowKey="_id"
-              loading={loading}
+              dataSource={candidates}
+              rowKey="id"
+              loading={isLoading}
               scroll={{ x: "max-content" }}
               pagination={{
                 current: page,
                 pageSize: limit,
+                total: data?.total || 0,
                 onChange: (newPage, newLimit) => {
                   setPage(newPage);
                   setLimit(newLimit);
@@ -933,13 +986,13 @@ const LowLevelCandidates = () => {
                 emptyText: (
                   <Empty
                     description={
-                      searchTerm
-                        ? `No applications found for "${searchTerm}"`
+                      debouncedSearch
+                        ? `No applications found for "${debouncedSearch}"`
                         : "No CV applications yet"
                     }
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   >
-                    {searchTerm && (
+                    {debouncedSearch && (
                       <Button
                         type="primary"
                         onClick={() => handleSearch("")}
@@ -1164,13 +1217,6 @@ const LowLevelCandidates = () => {
                   : c
               )
             );
-            setFilteredCandidates((prev) =>
-              prev.map((c) =>
-                c.id === selectedCandidate?.id
-                  ? { ...c, remarks: remarksText }
-                  : c
-              )
-            );
 
             message.success("Remarks added successfully!");
             setAddRemarksModalVisible(false);
@@ -1377,6 +1423,8 @@ const LowLevelCandidates = () => {
           initialValues={candidateToConvert}
           handleSubmit={handleConvertSubmit}
           isSubmitting={isConverting}
+          existingCvUrl={candidateToConvert?.fileUrl}
+          existingCvFileName={candidateToConvert?.fileName}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, Button, Row, Col, Select } from "antd";
+import { Modal, Form, Input, Button, Row, Col, Select, Upload, message } from "antd";
 import {
   UserOutlined,
   MailOutlined,
@@ -9,6 +9,9 @@ import {
   LockOutlined,
   StarOutlined,
   FlagOutlined,
+  UploadOutlined,
+  FileTextOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
 import { useSnackbar } from "notistack";
 import {
@@ -16,6 +19,8 @@ import {
   phoneUtils,
   countryInfo,
 } from "../../utils/countryMobileLimits";
+import axios from "axios";
+import { useGetAllClientsForDropdownQuery } from "../../Slices/Recruiter/RecruiterApis";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -30,11 +35,119 @@ const AddCandidateModal = ({
   const { enqueueSnackbar } = useSnackbar();
   const [selectedCountryCode, setSelectedCountryCode] = useState("91");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
+  const [documentFiles, setDocumentFiles] = useState([]);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [parsedResumeData, setParsedResumeData] = useState(null);
+  const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
+  
+  // Get all clients for dropdown
+  const { data: clientsData } = useGetAllClientsForDropdownQuery({});
+  const allClients = clientsData?.clients?.filter(
+    (client) => client.accountStatus === "active"
+  ) || [];
+  
+  // Combine external and local loading states
+  const isLoading = isSubmitting || isSubmittingLocal;
+
+  // Handle resume parsing
+  const handleResumeUpload = async (file) => {
+    setIsParsingResume(true);
+    setResumeFile(file);
+    
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+      
+      const baseUrl = window.location.hostname === "localhost"
+        ? "http://localhost:5000/api/admin"
+        : `https://${window.location.hostname}/api/admin`;
+      
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+      
+      const response = await axios.post(`${baseUrl}/parse-resume`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      
+      if (response.data?.data) {
+        const parsed = response.data.data;
+        setParsedResumeData(parsed);
+        
+        // Auto-fill form fields with parsed data
+        form.setFieldsValue({
+          firstName: parsed.firstName || form.getFieldValue("firstName"),
+          middleName: parsed.middleName || form.getFieldValue("middleName"),
+          lastName: parsed.lastName || form.getFieldValue("lastName"),
+          email: parsed.email || form.getFieldValue("email"),
+          phoneNumber: parsed.phone || form.getFieldValue("phoneNumber"),
+          countryCode: parsed.phoneCountryCode || form.getFieldValue("countryCode") || "91",
+          companyName: parsed.companyName || form.getFieldValue("companyName"),
+          specialization: parsed.specialization || form.getFieldValue("specialization"),
+          qualifications: parsed.qualifications || form.getFieldValue("qualifications"),
+          experience: parsed.experience || form.getFieldValue("experience"),
+        });
+        
+        enqueueSnackbar("Resume parsed successfully! Fields auto-filled.", {
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Resume parsing error:", error);
+      enqueueSnackbar(
+        error?.response?.data?.message || "Failed to parse resume",
+        { variant: "error" }
+      );
+    } finally {
+      setIsParsingResume(false);
+    }
+    
+    return false; // Prevent auto upload
+  };
+
+  // Handle document uploads
+  const handleDocumentUpload = (file) => {
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      message.error("File must be smaller than 10MB!");
+      return false;
+    }
+    
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      message.error("Only PDF, DOC, DOCX, JPG, JPEG, PNG files are allowed!");
+      return false;
+    }
+    
+    setDocumentFiles((prev) => [...prev, file]);
+    return false; // Prevent auto upload
+  };
+
+  const handleDocumentRemove = (file) => {
+    setDocumentFiles((prev) => prev.filter((item) => item.uid !== file.uid));
+  };
 
   useEffect(() => {
     if (visible) {
       form.resetFields();
       setSelectedCountryCode("91");
+      setResumeFile(null);
+      setDocumentFiles([]);
+      setParsedResumeData(null);
       form.setFieldsValue({
         countryCode: "91",
       });
@@ -101,6 +214,7 @@ const AddCandidateModal = ({
   };
 
   const handleSubmit = async (values) => {
+    setIsSubmittingLocal(true);
     try {
       const {
         confirmPassword,
@@ -124,6 +238,20 @@ const AddCandidateModal = ({
         ? cleanPhone.slice(countryCode.length) 
         : cleanPhone;
 
+      // Create FormData for file uploads
+      const formData = new FormData();
+      
+      // Add resume file if provided
+      if (resumeFile) {
+        formData.append("resume", resumeFile);
+      }
+      
+      // Add document files if provided
+      documentFiles.forEach((file) => {
+        formData.append("documents", file);
+      });
+      
+      // Add all other form data
       const createPayload = {
         ...payload,
         firstName: firstName?.trim(),
@@ -134,12 +262,23 @@ const AddCandidateModal = ({
         phoneCountryCode: countryCode || "91", // Country code sent separately
         role: "candidate",
       };
-
-      await onSubmit(createPayload);
+      
+      // Append all payload fields to FormData
+      Object.keys(createPayload).forEach((key) => {
+        if (createPayload[key] !== undefined && createPayload[key] !== null) {
+          formData.append(key, createPayload[key]);
+        }
+      });
+      
+      // Pass formData to onSubmit (parent will handle the API call)
+      await onSubmit(formData, createPayload);
 
       form.resetFields();
       setSelectedCountryCode("91");
       setPhoneNumber("");
+      setResumeFile(null);
+      setDocumentFiles([]);
+      setParsedResumeData(null);
       enqueueSnackbar("Candidate created successfully!", {
         variant: "success",
       });
@@ -155,6 +294,8 @@ const AddCandidateModal = ({
       }
 
       enqueueSnackbar(errorMessage, { variant: "error" });
+    } finally {
+      setIsSubmittingLocal(false);
     }
   };
 
@@ -180,12 +321,19 @@ const AddCandidateModal = ({
         </div>
       }
       open={visible}
-      onCancel={onCancel}
+      onCancel={isLoading ? undefined : onCancel}
+      closable={!isLoading}
+      maskClosable={!isLoading}
       width="90%"
       style={{ maxWidth: 800 }}
       centered
       footer={[
-        <Button key="cancel" onClick={onCancel} size="large">
+        <Button 
+          key="cancel" 
+          onClick={onCancel} 
+          size="large"
+          disabled={isLoading}
+        >
           Cancel
         </Button>,
         <Button
@@ -193,13 +341,14 @@ const AddCandidateModal = ({
           type="primary"
           onClick={() => form.submit()}
           size="large"
-          loading={isSubmitting}
+          loading={isLoading}
+          disabled={isLoading}
           style={{
             background: "linear-gradient(135deg, #da2c46 70%, #a51632 100%)",
             border: "none",
           }}
         >
-          Create Candidate
+          {isLoading ? "Creating..." : "Create Candidate"}
         </Button>,
       ]}
     >
@@ -362,7 +511,75 @@ const AddCandidateModal = ({
           </Col>
           <Col span={8}>
             <Form.Item label="Client" name="client">
-              <Input placeholder="Enter client name" />
+              <Select
+                placeholder="Select client"
+                showSearch
+                allowClear
+                filterOption={(input, option) =>
+                  (option?.label ?? "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+                options={allClients.map((client) => ({
+                  value: client._id || client.ClientCode || client.fullName,
+                  label: `${client.fullName}${client.ClientCode ? ` (${client.ClientCode})` : ""}`,
+                }))}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Resume Import Section */}
+        <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item label="Import Resume (PDF/DOC/DOCX)">
+              <Upload
+                accept=".pdf,.doc,.docx"
+                beforeUpload={handleResumeUpload}
+                showUploadList={false}
+                maxCount={1}
+              >
+                <Button
+                  icon={<FileTextOutlined />}
+                  loading={isParsingResume}
+                  disabled={isParsingResume}
+                >
+                  {isParsingResume ? "Parsing Resume..." : "Import & Parse Resume"}
+                </Button>
+              </Upload>
+              {resumeFile && (
+                <div style={{ marginTop: 8, color: "#52c41a" }}>
+                  ✓ {resumeFile.name}
+                  {parsedResumeData && " (Parsed)"}
+                </div>
+              )}
+              {parsedResumeData && (
+                <div style={{ marginTop: 4, fontSize: "12px", color: "#666" }}>
+                  Resume details extracted and auto-filled
+                </div>
+              )}
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Documents/Certificates Upload Section */}
+        <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item label="Upload Documents/Certificates">
+              <Upload
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                beforeUpload={handleDocumentUpload}
+                onRemove={handleDocumentRemove}
+                fileList={documentFiles}
+                multiple
+              >
+                <Button icon={<PaperClipOutlined />}>
+                  Upload Documents
+                </Button>
+              </Upload>
+              <div style={{ marginTop: 8, fontSize: "12px", color: "#666" }}>
+                You can upload multiple documents (PDF, DOC, DOCX, JPG, PNG)
+              </div>
             </Form.Item>
           </Col>
         </Row>

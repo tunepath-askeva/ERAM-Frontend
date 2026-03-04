@@ -203,6 +203,13 @@ const OverviewTab = ({ appliedJob, workOrder }) => {
             {workOrder.keyResponsibilities || "No responsibilities listed"}
           </div>
         </Descriptions.Item>
+        {workOrder.aboutUs && (
+          <Descriptions.Item label="About Us" span={2}>
+            <div style={{ whiteSpace: "pre-line" }}>
+              {workOrder.aboutUs}
+            </div>
+          </Descriptions.Item>
+        )}
         {workOrder.benefits?.length > 0 && (
           <Descriptions.Item label="Benefits">
             <ul style={{ margin: 0, paddingLeft: "20px" }}>

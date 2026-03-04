@@ -56,6 +56,8 @@ import {
   ClusterOutlined,
   SolutionOutlined,
   AuditOutlined,
+  GiftOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import SkeletonLoader from "../../Global/SkeletonLoader";
@@ -389,285 +391,322 @@ const RecruiterViewTimeline = () => {
             }
             key="2"
           >
-            {selectedCandidate.stageProgress?.length > 0 ? (
+            {selectedCandidate?.stageProgress?.length > 0 ? (
               <Row gutter={24}>
                 <Col span={24}>
                   <Card title="Stage Progress" size="small">
                     <Timeline mode={isMobile ? "left" : "alternate"}>
-                      {/* Create a copy of the array before sorting */}
                       {[...(selectedCandidate.stageProgress || [])]
-                        .sort((a, b) => a.stageOrder - b.stageOrder)
-                        .map((stage) => (
-                          <Timeline.Item
-                            key={stage._id}
-                            color={
-                              stage.stageStatus === "approved"
-                                ? "green"
-                                : stage.stageStatus === "pending"
-                                ? "orange"
-                                : "red"
+                        .sort(
+                          (a, b) =>
+                            (a?.stageOrder || 0) - (b?.stageOrder || 0)
+                        )
+                        .map((stage, index) => {
+                          // Helper function to find reviewer details from recruiterReviews
+                          const getReviewerDetails = (reviewerName) => {
+                            if (!reviewerName || !stage?.recruiterReviews) {
+                              return null;
                             }
-                            label={
-                              stage.startDate && (
-                                <Space direction="vertical" size={0}>
-                                  <Text
-                                    type="secondary"
-                                    style={{ fontSize: 12 }}
-                                  >
-                                    Start:{" "}
-                                    {dayjs(stage.startDate).format(
-                                      "DD MMM YYYY"
-                                    )}
-                                  </Text>
-                                  {stage.endDate && (
+                            return (
+                              stage.recruiterReviews.find(
+                                (review) =>
+                                  review?.recruiterId?.fullName === reviewerName
+                              )?.recruiterId || null
+                            );
+                          };
+
+                          return (
+                            <Timeline.Item
+                              key={stage?._id || index}
+                              color={
+                                stage?.stageStatus === "approved"
+                                  ? "green"
+                                  : stage?.stageStatus === "pending"
+                                  ? "orange"
+                                  : "red"
+                              }
+                              label={
+                                stage?.startDate && (
+                                  <Space direction="vertical" size={0}>
                                     <Text
                                       type="secondary"
                                       style={{ fontSize: 12 }}
                                     >
-                                      End:{" "}
-                                      {dayjs(stage.endDate).format(
+                                      Start:{" "}
+                                      {dayjs(stage.startDate).format(
                                         "DD MMM YYYY"
                                       )}
                                     </Text>
-                                  )}
-                                </Space>
-                              )
-                            }
-                          >
-                            <Card
-                              size="small"
-                              title={
-                                <Space wrap>
-                                  <Text strong>{stage.stageName}</Text>
-                                  <Tag
-                                    color={
-                                      stage.stageStatus === "approved"
-                                        ? "green"
-                                        : stage.stageStatus === "pending"
-                                        ? "orange"
-                                        : "red"
-                                    }
-                                  >
-                                    {stage.stageStatus}
-                                  </Tag>
-                                  {stage.approval && (
-                                    <Tag color="purple">
-                                      <AuditOutlined /> Requires Approval
-                                    </Tag>
-                                  )}
-                                </Space>
-                              }
-                              style={{ marginBottom: 8 }}
-                            >
-                              {/* Rest of the stage details code remains the same */}
-                              <Descriptions
-                                column={isMobile ? 1 : 2}
-                                size="small"
-                              >
-                                <Descriptions.Item label="Pipeline">
-                                  {stage.pipelineId?.name}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Stage Order">
-                                  Stage {stage.stageOrder + 1}
-                                </Descriptions.Item>
-                                {stage.stageCompletedAt && (
-                                  <Descriptions.Item label="Completed At">
-                                    {dayjs(stage.stageCompletedAt).format(
-                                      "DD MMM YYYY, hh:mm A"
+                                    {stage?.endDate && (
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        End:{" "}
+                                        {dayjs(stage.endDate).format(
+                                          "DD MMM YYYY"
+                                        )}
+                                      </Text>
                                     )}
-                                  </Descriptions.Item>
-                                )}
-                              </Descriptions>
+                                  </Space>
+                                )
+                              }
+                            >
+                              <Card
+                                size="small"
+                                title={
+                                  <Space wrap>
+                                    <Text strong>
+                                      Flow - {index + 1}
+                                    </Text>
+                                    <Tag
+                                      color={
+                                        stage?.stageStatus === "approved"
+                                          ? "green"
+                                          : stage?.stageStatus === "pending"
+                                          ? "orange"
+                                          : "red"
+                                      }
+                                    >
+                                      {stage?.stageStatus || "pending"}
+                                    </Tag>
+                                    {(stage?.approval ||
+                                      stage?.separateApprovalId ||
+                                      stage?.approvalSummary) && (
+                                      <Tag color="purple">
+                                        <FileTextOutlined /> Requires Approval
+                                      </Tag>
+                                    )}
+                                  </Space>
+                                }
+                                style={{ marginBottom: 8 }}
+                              >
 
-                              {/* Recruiter Reviews */}
-                              {stage.recruiterReviews?.length > 0 && (
-                                <>
-                                  <Divider
-                                    style={{ margin: "8px 0" }}
-                                    orientation="left"
-                                  >
-                                    Reviews ({stage.recruiterReviews.length})
-                                  </Divider>
-                                  <List
-                                    size="small"
-                                    dataSource={stage.recruiterReviews}
-                                    renderItem={(review) => (
-                                      <List.Item>
-                                        <List.Item.Meta
-                                          avatar={
-                                            <Avatar
-                                              size="small"
-                                              icon={<UserOutlined />}
-                                            />
-                                          }
-                                          title={
-                                            <Space wrap>
-                                              <Text>
-                                                {review?.recruiterId?.fullName}
-                                              </Text>
-                                              <Tag
-                                                color={
-                                                  review.status === "approved"
-                                                    ? "green"
-                                                    : review.status ===
-                                                      "pending"
-                                                    ? "orange"
-                                                    : "red"
-                                                }
-                                                size="small"
+                                <Descriptions
+                                  column={isMobile ? 1 : 2}
+                                  size="small"
+                                >
+                                  <Descriptions.Item label="Pipeline">
+                                    {stage?.pipelineId?.name || "N/A"}
+                                  </Descriptions.Item>
+                                  <Descriptions.Item label="Stage Order">
+                                    Stage{" "}
+                                    {stage?.stageOrder !== undefined
+                                      ? stage.stageOrder + 1
+                                      : index + 1}
+                                  </Descriptions.Item>
+                                  {stage?.stageCompletedAt && (
+                                    <Descriptions.Item label="Completed At">
+                                      {dayjs(stage.stageCompletedAt).format(
+                                        "DD MMM YYYY, hh:mm A"
+                                      )}
+                                    </Descriptions.Item>
+                                  )}
+                                </Descriptions>
+
+                                {/* Approval Summary */}
+                                {stage?.approvalSummary &&
+                                  Object.keys(stage.approvalSummary).length >
+                                    0 && (
+                                    <>
+                                      <Divider
+                                        style={{ margin: "8px 0" }}
+                                        orientation="left"
+                                      >
+                                        Approval Details
+                                      </Divider>
+                                      {Object.entries(
+                                        stage.approvalSummary
+                                      ).map(([levelName, levelData]) => {
+                                        // Reviewer can be a string (name) or object
+                                        const reviewerName =
+                                          typeof levelData?.reviewer ===
+                                          "string"
+                                            ? levelData.reviewer
+                                            : levelData?.reviewer?.name ||
+                                              levelData?.reviewer?.fullName;
+                                        const reviewerDetails = reviewerName
+                                          ? getReviewerDetails(reviewerName)
+                                          : null;
+
+                                        return (
+                                          <Card
+                                            key={levelName}
+                                            size="small"
+                                            style={{ marginBottom: 8 }}
+                                          >
+                                            <Space
+                                              direction="vertical"
+                                              style={{ width: "100%" }}
+                                            >
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  justifyContent:
+                                                    "space-between",
+                                                }}
                                               >
-                                                {review.status}
-                                              </Tag>
-                                            </Space>
-                                          }
-                                          description={
-                                            <>
-                                              {review?.recruiterId?.email}
-                                              {review.reviewComments && (
-                                                <Text
-                                                  style={{
-                                                    display: "block",
-                                                    marginBottom: 4,
-                                                  }}
+                                                <Text strong>{levelName}</Text>
+                                                <Tag
+                                                  color={
+                                                    levelData?.status ===
+                                                    "approved"
+                                                      ? "green"
+                                                      : levelData?.status ===
+                                                        "rejected"
+                                                      ? "red"
+                                                      : "orange"
+                                                  }
                                                 >
-                                                  {review.reviewComments}
+                                                  {levelData?.status || "pending"}
+                                                </Tag>
+                                              </div>
+                                              {reviewerName ? (
+                                                <Space direction="vertical" size={4}>
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: 12 }}
+                                                  >
+                                                    Reviewer: {reviewerName}
+                                                  </Text>
+                                                  {reviewerDetails && (
+                                                    <>
+                                                      {reviewerDetails.email && (
+                                                        <Text
+                                                          type="secondary"
+                                                          style={{
+                                                            fontSize: 12,
+                                                          }}
+                                                        >
+                                                          {reviewerDetails.email}
+                                                        </Text>
+                                                      )}
+                                                      {reviewerDetails.phone && (
+                                                        <Text
+                                                          type="secondary"
+                                                          style={{
+                                                            fontSize: 12,
+                                                          }}
+                                                        >
+                                                          {reviewerDetails.phone}
+                                                        </Text>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                </Space>
+                                              ) : (
+                                                <Text
+                                                  type="secondary"
+                                                  style={{ fontSize: 12 }}
+                                                >
+                                                  Reviewer: Not assigned yet
                                                 </Text>
                                               )}
-                                              <Text
-                                                type="secondary"
-                                                style={{ fontSize: 12 }}
-                                              >
-                                                {review.reviewedAt
-                                                  ? dayjs(
-                                                      review.reviewedAt
-                                                    ).format(
-                                                      "DD MMM YYYY, hh:mm A"
-                                                    )
-                                                  : "Not reviewed yet"}
-                                              </Text>
-                                            </>
-                                          }
-                                        />
-                                      </List.Item>
-                                    )}
-                                  />
-                                </>
-                              )}
+                                              {levelData?.comment && (
+                                                <Text style={{ fontSize: 12 }}>
+                                                  Comment: {levelData.comment}
+                                                </Text>
+                                              )}
+                                              {levelData?.reviewedAt && (
+                                                <Text
+                                                  type="secondary"
+                                                  style={{ fontSize: 11 }}
+                                                >
+                                                  {dayjs(
+                                                    levelData.reviewedAt
+                                                  ).format(
+                                                    "DD MMM YYYY, hh:mm A"
+                                                  )}
+                                                </Text>
+                                              )}
+                                            </Space>
+                                          </Card>
+                                        );
+                                      })}
+                                    </>
+                                  )}
 
-                              {stage.approvalSummary &&
-                                Object.keys(stage.approvalSummary).length >
-                                  0 && (
+                                {/* Recruiter Reviews */}
+                                {stage?.recruiterReviews?.length > 0 && (
                                   <>
                                     <Divider
                                       style={{ margin: "8px 0" }}
                                       orientation="left"
                                     >
-                                      Approval Levels
+                                      Reviews ({stage.recruiterReviews.length})
                                     </Divider>
                                     <List
                                       size="small"
-                                      dataSource={Object.entries(
-                                        stage.approvalSummary
-                                      )}
-                                      renderItem={([levelName, levelData]) => (
+                                      dataSource={stage.recruiterReviews}
+                                      renderItem={(review) => (
                                         <List.Item>
                                           <List.Item.Meta
                                             avatar={
                                               <Avatar
                                                 size="small"
-                                                icon={<AuditOutlined />}
-                                                style={{
-                                                  backgroundColor:
-                                                    levelData.status ===
-                                                    "approved"
-                                                      ? "#52c41a"
-                                                      : levelData.status ===
-                                                        "rejected"
-                                                      ? "#ff4d4f"
-                                                      : "#faad14",
-                                                }}
+                                                icon={<UserOutlined />}
                                               />
                                             }
                                             title={
                                               <Space wrap>
-                                                <Text strong>{levelName}</Text>
+                                                <Text>
+                                                  {review?.recruiterId
+                                                    ?.fullName || "Unknown"}
+                                                </Text>
                                                 <Tag
                                                   color={
-                                                    levelData.status ===
-                                                    "approved"
+                                                    review?.status === "approved"
                                                       ? "green"
-                                                      : levelData.status ===
-                                                        "rejected"
-                                                      ? "red"
-                                                      : "orange"
+                                                      : review?.status ===
+                                                        "pending"
+                                                      ? "orange"
+                                                      : "red"
                                                   }
                                                   size="small"
                                                 >
-                                                  {levelData.status}
+                                                  {review?.status || "pending"}
                                                 </Tag>
                                               </Space>
                                             }
                                             description={
                                               <>
-                                                {levelData.reviewer && (
-                                                  <Space
-                                                    direction="vertical"
-                                                    size={0}
-                                                  >
-                                                    <Text>
-                                                      <UserOutlined />{" "}
-                                                      {levelData.reviewer.name}
-                                                    </Text>
-                                                    <Text
-                                                      type="secondary"
-                                                      style={{ fontSize: 12 }}
-                                                    >
-                                                      <MailOutlined />{" "}
-                                                      {levelData.reviewer.email}
-                                                    </Text>
-                                                    {levelData.reviewer
-                                                      .phone && (
-                                                      <Text
-                                                        type="secondary"
-                                                        style={{ fontSize: 12 }}
-                                                      >
-                                                        <PhoneOutlined />{" "}
-                                                        {
-                                                          levelData.reviewer
-                                                            .phone
-                                                        }
-                                                      </Text>
-                                                    )}
-                                                  </Space>
-                                                )}
-                                                {levelData.comment && (
-                                                  <Text
-                                                    style={{
-                                                      display: "block",
-                                                      marginTop: 4,
-                                                      fontStyle: "italic",
-                                                    }}
-                                                  >
-                                                    Comment: {levelData.comment}
-                                                  </Text>
-                                                )}
-                                                {levelData.reviewedAt && (
+                                                {review?.recruiterId?.email && (
                                                   <Text
                                                     type="secondary"
-                                                    style={{
-                                                      display: "block",
-                                                      fontSize: 12,
-                                                      marginTop: 4,
-                                                    }}
+                                                    style={{ fontSize: 12 }}
                                                   >
-                                                    <CalendarOutlined />{" "}
-                                                    {dayjs(
-                                                      levelData.reviewedAt
-                                                    ).format(
-                                                      "DD MMM YYYY, hh:mm A"
-                                                    )}
+                                                    {
+                                                      review.recruiterId.email
+                                                    }
                                                   </Text>
                                                 )}
+                                                {review?.reviewComments && (
+                                                  <Text
+                                                    style={{
+                                                      display: "block",
+                                                      marginTop: 4,
+                                                      fontSize: 12,
+                                                    }}
+                                                  >
+                                                    {review.reviewComments}
+                                                  </Text>
+                                                )}
+                                                <Text
+                                                  type="secondary"
+                                                  style={{
+                                                    display: "block",
+                                                    fontSize: 12,
+                                                    marginTop: 4,
+                                                  }}
+                                                >
+                                                  {review?.reviewedAt
+                                                    ? dayjs(
+                                                        review.reviewedAt
+                                                      ).format(
+                                                        "DD MMM YYYY, hh:mm A"
+                                                      )
+                                                    : "Not reviewed yet"}
+                                                </Text>
                                               </>
                                             }
                                           />
@@ -677,19 +716,84 @@ const RecruiterViewTimeline = () => {
                                   </>
                                 )}
 
-                              {stage?.additionalStageDocuments?.length > 0 && (
-                                <>
-                                  <Divider
-                                    style={{ margin: "8px 0" }}
-                                    orientation="left"
-                                  >
-                                    Additional Documents (
-                                    {stage?.additionalStageDocuments?.length})
-                                  </Divider>
-                                  <Row gutter={[8, 8]}>
-                                    {stage?.additionalStageDocuments.map(
-                                      (doc) => (
-                                        <Col key={doc._id} xs={24} sm={12}>
+                                {/* Additional Documents */}
+                                {stage?.additionalStageDocuments?.length >
+                                  0 && (
+                                  <>
+                                    <Divider
+                                      style={{ margin: "8px 0" }}
+                                      orientation="left"
+                                    >
+                                      Additional Documents (
+                                      {stage.additionalStageDocuments.length})
+                                    </Divider>
+                                    <Row gutter={[8, 8]}>
+                                      {stage.additionalStageDocuments.map(
+                                        (doc) => (
+                                          <Col
+                                            key={doc?._id || doc?.documentName}
+                                            xs={24}
+                                            sm={12}
+                                          >
+                                            <Card size="small" hoverable>
+                                              <Space>
+                                                <FilePdfOutlined
+                                                  style={{ color: "#ff4d4f" }}
+                                                />
+                                                <div style={{ flex: 1 }}>
+                                                  <Text
+                                                    strong
+                                                    style={{ fontSize: 12 }}
+                                                  >
+                                                    {doc?.documentName ||
+                                                      "Document"}
+                                                  </Text>
+                                                  <div style={{ marginTop: 4 }}>
+                                                    <Button
+                                                      type="link"
+                                                      size="small"
+                                                      href={doc?.fileUrl}
+                                                      target="_blank"
+                                                      icon={<EyeOutlined />}
+                                                    >
+                                                      View
+                                                    </Button>
+                                                    <Button
+                                                      type="link"
+                                                      size="small"
+                                                      href={doc?.fileUrl}
+                                                      icon={<DownloadOutlined />}
+                                                    >
+                                                      Download
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </Space>
+                                            </Card>
+                                          </Col>
+                                        )
+                                      )}
+                                    </Row>
+                                  </>
+                                )}
+
+                                {/* Uploaded Documents */}
+                                {stage?.uploadedDocuments?.length > 0 && (
+                                  <>
+                                    <Divider
+                                      style={{ margin: "8px 0" }}
+                                      orientation="left"
+                                    >
+                                      Uploaded Documents (
+                                      {stage.uploadedDocuments.length})
+                                    </Divider>
+                                    <Row gutter={[8, 8]}>
+                                      {stage.uploadedDocuments.map((doc) => (
+                                        <Col
+                                          key={doc?._id || doc?.documentName}
+                                          xs={24}
+                                          sm={12}
+                                        >
                                           <Card size="small" hoverable>
                                             <Space>
                                               <FilePdfOutlined
@@ -700,8 +804,22 @@ const RecruiterViewTimeline = () => {
                                                   strong
                                                   style={{ fontSize: 12 }}
                                                 >
-                                                  {doc?.documentName}
+                                                  {doc?.documentName ||
+                                                    "Document"}
                                                 </Text>
+                                                {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{
+                                                      fontSize: 10,
+                                                      display: "block",
+                                                      marginTop: 2,
+                                                      color: "#1890ff",
+                                                    }}
+                                                  >
+                                                    By: {doc.recruiterName}
+                                                  </Text>
+                                                )}
                                                 <div style={{ marginTop: 4 }}>
                                                   <Button
                                                     type="link"
@@ -725,67 +843,14 @@ const RecruiterViewTimeline = () => {
                                             </Space>
                                           </Card>
                                         </Col>
-                                      )
-                                    )}
-                                  </Row>
-                                </>
-                              )}
-
-                              {/* Uploaded Documents */}
-                              {stage.uploadedDocuments?.length > 0 && (
-                                <>
-                                  <Divider
-                                    style={{ margin: "8px 0" }}
-                                    orientation="left"
-                                  >
-                                    Uploaded Documents (
-                                    {stage.uploadedDocuments.length})
-                                  </Divider>
-                                  <Row gutter={[8, 8]}>
-                                    {stage.uploadedDocuments.map((doc) => (
-                                      <Col key={doc._id} xs={24} sm={12}>
-                                        <Card size="small" hoverable>
-                                          <Space>
-                                            <FilePdfOutlined
-                                              style={{ color: "#ff4d4f" }}
-                                            />
-                                            <div style={{ flex: 1 }}>
-                                              <Text
-                                                strong
-                                                style={{ fontSize: 12 }}
-                                              >
-                                                {doc.documentName}
-                                              </Text>
-                                              <div style={{ marginTop: 4 }}>
-                                                <Button
-                                                  type="link"
-                                                  size="small"
-                                                  href={doc.fileUrl}
-                                                  target="_blank"
-                                                  icon={<EyeOutlined />}
-                                                >
-                                                  View
-                                                </Button>
-                                                <Button
-                                                  type="link"
-                                                  size="small"
-                                                  href={doc.fileUrl}
-                                                  icon={<DownloadOutlined />}
-                                                >
-                                                  Download
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          </Space>
-                                        </Card>
-                                      </Col>
-                                    ))}
-                                  </Row>
-                                </>
-                              )}
-                            </Card>
-                          </Timeline.Item>
-                        ))}
+                                      ))}
+                                    </Row>
+                                  </>
+                                )}
+                              </Card>
+                            </Timeline.Item>
+                          );
+                        })}
                     </Timeline>
                   </Card>
                 </Col>
@@ -1038,6 +1103,19 @@ const RecruiterViewTimeline = () => {
                               <Text strong>
                                 {offer.signedOfferDocument.documentName}
                               </Text>
+                              {offer.signedOfferDocument?.uploadedBy === "recruiter" && offer.signedOfferDocument?.recruiterName && (
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontSize: 10,
+                                    display: "block",
+                                    marginTop: 2,
+                                    color: "#1890ff",
+                                  }}
+                                >
+                                  By: {offer.signedOfferDocument.recruiterName}
+                                </Text>
+                              )}
                               <div style={{ marginTop: 4 }}>
                                 <Button
                                   type="link"
@@ -1156,6 +1234,19 @@ const RecruiterViewTimeline = () => {
                                     <Text strong>
                                       {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
                                     </Text>
+                                    {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
+                                      <Text
+                                        type="secondary"
+                                        style={{
+                                          fontSize: 10,
+                                          display: "block",
+                                          marginTop: 2,
+                                          color: "#1890ff",
+                                        }}
+                                      >
+                                        By: {doc.recruiterName}
+                                      </Text>
+                                    )}
                                     <div style={{ marginTop: 4 }}>
                                       <Button
                                         type="link"
@@ -1282,10 +1373,19 @@ const RecruiterViewTimeline = () => {
                   {selectedCandidate.statusHistory.map((historyItem) => (
                     <Timeline.Item
                       key={historyItem._id}
-                      color={getStatusColor(historyItem.status)}
+                      color={
+                        historyItem.action === "offer_accepted_by_recruiter" ||
+                        historyItem.action === "documents_uploaded_by_recruiter"
+                          ? "blue"
+                          : getStatusColor(historyItem.status)
+                      }
                       dot={
-                        historyItem.status === "selected" ||
-                        historyItem.status === "approved" ? (
+                        historyItem.action === "offer_accepted_by_recruiter" ? (
+                          <GiftOutlined />
+                        ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                          <FileTextOutlined />
+                        ) : historyItem.status === "selected" ||
+                          historyItem.status === "approved" ? (
                           <CheckOutlined />
                         ) : historyItem.status === "rejected" ||
                           historyItem.status === "interview_rejected" ? (
@@ -1297,14 +1397,61 @@ const RecruiterViewTimeline = () => {
                     >
                       <Card size="small">
                         <Space direction="vertical" style={{ width: "100%" }}>
-                          <Space wrap>
-                            <Text strong>Status changed to:</Text>
-                            {getStatusTag(historyItem.status)}
-                          </Space>
-                          <Text>
-                            <UserOutlined /> Changed by:{" "}
-                            <Text strong>{historyItem.changedBy?.name}</Text>
-                          </Text>
+                          {historyItem.action === "offer_accepted_by_recruiter" ? (
+                            <>
+                              <Space wrap>
+                                <Text strong style={{ color: "#1890ff" }}>
+                                  <GiftOutlined /> Offer Accepted by Recruiter
+                                </Text>
+                                {historyItem.status && getStatusTag(historyItem.status)}
+                              </Space>
+                              <Text>
+                                <UserOutlined /> Recruiter:{" "}
+                                <Text strong>{historyItem.changedBy?.name}</Text>
+                              </Text>
+                              {historyItem.description && (
+                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                  {historyItem.description}
+                                </Text>
+                              )}
+                            </>
+                          ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                            <>
+                              <Space wrap>
+                                <Text strong style={{ color: "#1890ff" }}>
+                                  <FileTextOutlined /> Documents Uploaded by Recruiter
+                                </Text>
+                                {historyItem.stageName && (
+                                  <Tag color="blue">Stage: {historyItem.stageName}</Tag>
+                                )}
+                                {historyItem.documentCount && (
+                                  <Tag color="green">
+                                    {historyItem.documentCount} document(s)
+                                  </Tag>
+                                )}
+                              </Space>
+                              <Text>
+                                <UserOutlined /> Recruiter:{" "}
+                                <Text strong>{historyItem.changedBy?.name}</Text>
+                              </Text>
+                              {historyItem.description && (
+                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                  {historyItem.description}
+                                </Text>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Space wrap>
+                                <Text strong>Status changed to:</Text>
+                                {getStatusTag(historyItem.status)}
+                              </Space>
+                              <Text>
+                                <UserOutlined /> Changed by:{" "}
+                                <Text strong>{historyItem.changedBy?.name}</Text>
+                              </Text>
+                            </>
+                          )}
                           <Text type="secondary">
                             <CalendarOutlined />{" "}
                             {dayjs(historyItem.changedAt).format(

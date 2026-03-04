@@ -10,6 +10,8 @@ function App() {
         theme={{
           token: {
             colorPrimary: "#da2c46", 
+            fontFamily: '"Outfit", sans-serif',
+            fontWeightStrong: 500, // optional
           },
         }}
       >

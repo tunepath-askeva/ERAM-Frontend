@@ -74,11 +74,15 @@ import {
   useOfferInfoMutation,
   useUpdateTaggedPipelineMutation,
   useGetPipelinesQuery,
+  useAcceptOfferOnBehalfOfCandidateMutation,
 } from "../../Slices/Recruiter/RecruiterApis";
 import dayjs from "dayjs";
 import { useSnackbar } from "notistack";
 import { useSelector } from "react-redux";
 import SkeletonLoader from "../../Global/SkeletonLoader";
+import CandidateModals from "../Components/CandidateModals";
+import CandidateDetailsTabs from "../Components/CandidateDetailsTabs";
+import CandidatesTable from "../Components/CandidatesTable";
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -140,6 +144,8 @@ const RecruiterCandidates = () => {
   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [offerAction, setOfferAction] = useState("new"); // "new" or "revise"
   const [offerForm] = Form.useForm();
+  const [acceptOfferModalVisible, setAcceptOfferModalVisible] = useState(false);
+  const [acceptOfferForm] = Form.useForm();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -183,6 +189,8 @@ const RecruiterCandidates = () => {
     useUpdateTaggedPipelineMutation();
 
   const [offerInfo, { isLoading: isSubmittingOffer }] = useOfferInfoMutation();
+  const [acceptOfferOnBehalf, { isLoading: isAcceptingOffer }] =
+    useAcceptOfferOnBehalfOfCandidateMutation();
 
   const {
     data: candidateDetails,
@@ -402,22 +410,283 @@ const RecruiterCandidates = () => {
     }
   };
 
+  // Helper function to check if signed offer document exists
+  const canMoveToOffer = (candidate) => {
+    const latestOffer = candidate?.offerDetails?.[0];
+    
+    // Check if signed offer document exists OR if offer is already accepted
+    if (!latestOffer?.signedOfferDocument || !latestOffer.signedOfferDocument.fileUrl) {
+      // Also check if offer is already accepted (currentStatus)
+      if (latestOffer?.currentStatus === "offer-accepted") {
+        return { canMove: true, reason: "" };
+      }
+      return {
+        canMove: false,
+        reason: "The candidate has not uploaded the signed offer document yet.",
+      };
+    }
+
+    return { canMove: true, reason: "" };
+  };
+
+  const handleAcceptOfferOnBehalf = async (values) => {
+    try {
+      if (!selectedCandidate || !candidate) {
+        enqueueSnackbar("No candidate selected", { variant: "error" });
+        return;
+      }
+
+      console.log("📝 Form values received:", {
+        hasDescription: !!values.description,
+        hasSignedOffer: !!values.signedOffer,
+        hasSignedAdditionalDocuments: !!values.signedAdditionalDocuments,
+        signedAdditionalDocumentsType: typeof values.signedAdditionalDocuments,
+        isArray: Array.isArray(values.signedAdditionalDocuments),
+        hasFileList: !!values.signedAdditionalDocuments?.fileList,
+      });
+
+      const formData = new FormData();
+      formData.append("customFieldId", selectedCandidate._id);
+      formData.append("workorderId", candidate.workOrder?._id || selectedCandidate.workOrder?._id);
+      formData.append("description", values.description || "");
+
+      // Append the uploaded signed offer file
+      if (values.signedOffer) {
+        const signedOfferFile = values.signedOffer.originFileObj || values.signedOffer;
+        if (signedOfferFile) {
+          formData.append("signedOffer", signedOfferFile);
+          console.log("Signed offer file appended to FormData");
+        } else {
+          console.warn("Signed offer file is missing originFileObj");
+        }
+      }
+
+      // Handle signed additional documents
+      // The form uses valuePropName="fileList" so values.signedAdditionalDocuments should be the fileList array
+      // But we also handle the case where it might be stored as an object with fileList property
+      let fileList = [];
+      
+      // Try multiple ways to get the fileList
+      if (values.signedAdditionalDocuments) {
+        if (Array.isArray(values.signedAdditionalDocuments)) {
+          // Direct array (expected case with valuePropName="fileList")
+          fileList = values.signedAdditionalDocuments;
+        } else if (values.signedAdditionalDocuments.fileList && Array.isArray(values.signedAdditionalDocuments.fileList)) {
+          // Object with fileList property
+          fileList = values.signedAdditionalDocuments.fileList;
+        }
+      }
+      
+      // Fallback: Try to get from form field directly if not found in values
+      if (!fileList || fileList.length === 0) {
+        const formFieldValue = acceptOfferForm.getFieldValue("signedAdditionalDocuments");
+        if (formFieldValue) {
+          if (Array.isArray(formFieldValue)) {
+            fileList = formFieldValue;
+          } else if (formFieldValue.fileList && Array.isArray(formFieldValue.fileList)) {
+            fileList = formFieldValue.fileList;
+          }
+        }
+        console.log("🔄 Using fallback to get fileList from form field:", {
+          hasFormFieldValue: !!formFieldValue,
+          formFieldValueType: typeof formFieldValue,
+          isArray: Array.isArray(formFieldValue),
+          hasFileList: !!formFieldValue?.fileList,
+          fileListLength: fileList.length,
+        });
+      }
+      
+      console.log("📋 Final fileList extracted:", {
+        fileListLength: fileList.length,
+        fileList: fileList.map((f, i) => ({
+          index: i,
+          name: f?.name,
+          hasOriginFileObj: !!f?.originFileObj,
+          originFileObjType: f?.originFileObj?.constructor?.name,
+        })),
+      });
+      
+      if (fileList && fileList.length > 0) {
+        const latestOffer = candidate?.offerDetails?.[0];
+        console.log(`📋 Processing ${fileList.length} signed additional document(s)`);
+        console.log("📄 Latest offer additional documents:", latestOffer?.additionalDocuments);
+        console.log("📦 File list details:", fileList.map((f, i) => ({
+          index: i,
+          name: f.name,
+          hasOriginFileObj: !!f.originFileObj,
+          hasFile: !!f,
+          type: f.type,
+          uid: f.uid,
+        })));
+        
+        if (latestOffer?.additionalDocuments && latestOffer.additionalDocuments.length > 0) {
+          let appendedCount = 0;
+          fileList.forEach((file, index) => {
+            console.log(`🔍 Processing file at index ${index}:`, {
+              file: file,
+              fileType: typeof file,
+              hasOriginFileObj: !!file?.originFileObj,
+              originFileObjType: file?.originFileObj?.constructor?.name,
+              isFile: file instanceof File,
+              fileKeys: file ? Object.keys(file) : [],
+            });
+            
+            // Get the actual file object - check multiple possible locations
+            // This matches the candidate side implementation
+            let fileObj = null;
+            
+            // Primary: Check originFileObj (most common case when beforeUpload returns false)
+            if (file?.originFileObj) {
+              if (file.originFileObj instanceof File) {
+                fileObj = file.originFileObj;
+                console.log(`  ✅ Found file in originFileObj: ${fileObj.name}`);
+              } else {
+                console.warn(`  ⚠️ originFileObj exists but is not a File:`, file.originFileObj);
+              }
+            } 
+            // Fallback: Check if file itself is a File
+            else if (file instanceof File) {
+              fileObj = file;
+              console.log(`  ✅ File itself is a File: ${fileObj.name}`);
+            } 
+            // Fallback: Check nested file property
+            else if (file?.file && file.file instanceof File) {
+              fileObj = file.file;
+              console.log(`  ✅ Found file in file.file: ${fileObj.name}`);
+            }
+            // Additional fallback: Check if file has a raw property
+            else if (file?.raw && file.raw instanceof File) {
+              fileObj = file.raw;
+              console.log(`  ✅ Found file in file.raw: ${fileObj.name}`);
+            }
+            
+            // Only process if we have a valid File object and a corresponding original document
+            if (fileObj instanceof File && latestOffer.additionalDocuments[index]) {
+              const originalDoc = latestOffer.additionalDocuments[index];
+              const originalDocName = originalDoc.documentName || originalDoc.fileName || `Document${index + 1}`;
+              // Clean the document name to use as field name (replace special chars with underscore)
+              const cleanDocName = originalDocName.replace(/[^a-zA-Z0-9]/g, '_');
+              
+              // Append file to FormData with proper field name (matching candidate side)
+              formData.append(`signedAdditionalDoc_${cleanDocName}`, fileObj);
+              appendedCount++;
+              console.log(`✅ Appended signed additional document ${index + 1}:`, {
+                fieldName: `signedAdditionalDoc_${cleanDocName}`,
+                originalName: originalDocName,
+                fileName: fileObj.name,
+                fileSize: fileObj.size,
+                fileType: fileObj.type,
+              });
+            } else {
+              console.warn(`❌ Skipping file at index ${index}:`, {
+                hasFileObj: !!fileObj,
+                isFileInstance: fileObj instanceof File,
+                hasOriginalDoc: !!latestOffer.additionalDocuments[index],
+                fileDetails: {
+                  hasOriginFileObj: !!file?.originFileObj,
+                  originFileObjType: file?.originFileObj?.constructor?.name,
+                  isFile: file instanceof File,
+                  hasFile: !!file?.file,
+                  hasRaw: !!file?.raw,
+                  fileType: typeof file,
+                  fileKeys: file ? Object.keys(file) : [],
+                },
+              });
+            }
+          });
+          console.log(`📤 Successfully appended ${appendedCount} out of ${fileList.length} signed additional document(s) to FormData`);
+          
+          // Log FormData contents for debugging
+          const formDataEntries = Array.from(formData.entries());
+          console.log("📋 FormData entries:", formDataEntries.map(([key, value]) => ({
+            key,
+            valueType: value instanceof File ? `File: ${value.name} (${value.size} bytes, ${value.type})` : String(value).substring(0, 50),
+          })));
+          console.log(`📊 Total FormData entries: ${formDataEntries.length}`);
+        } else {
+          console.warn("⚠️ No additional documents found in offer details to match signed documents against");
+        }
+      } else {
+        console.log("ℹ️ No signed additional documents to process", {
+          hasValue: !!values.signedAdditionalDocuments,
+          valueType: typeof values.signedAdditionalDocuments,
+          isArray: Array.isArray(values.signedAdditionalDocuments),
+          hasFileList: !!values.signedAdditionalDocuments?.fileList,
+          fileListLength: values.signedAdditionalDocuments?.fileList?.length,
+        });
+      }
+
+      await acceptOfferOnBehalf(formData).unwrap();
+
+      // Get candidate name with fallback
+      const candidateName = candidate?.name || selectedCandidate?.name || "Candidate";
+
+      enqueueSnackbar(`Offer accepted successfully on behalf of ${candidateName}!`, {
+        variant: "success",
+        autoHideDuration: 3000,
+      });
+
+      setAcceptOfferModalVisible(false);
+      acceptOfferForm.resetFields();
+      
+      // Refetch data to get updated candidate information
+      await refetch();
+      await refetchCandidateDetails();
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data?.message || "Failed to accept offer on behalf of candidate",
+        { variant: "error" }
+      );
+      console.error("Accept offer error:", error);
+    }
+  };
+
   const handleMoveToOffer = async (candidate) => {
     try {
+      // Validate signed document before proceeding
+      const validation = canMoveToOffer(candidate);
+      
+      if (!validation.canMove) {
+        enqueueSnackbar(
+          `Cannot move to offer status. ${validation.reason} Please wait for the candidate to upload the signed offer document.`,
+          {
+            variant: "error",
+            autoHideDuration: 5000,
+          }
+        );
+        return;
+      }
+
+      // Get candidate name with fallback
+      const candidateName = candidate?.name || selectedCandidate?.name || "Candidate";
+
       const response = await moveToNextStage({
         id: candidate._id,
         status: "offer",
       }).unwrap();
 
-      enqueueSnackbar(`${candidate.name} moved to offer stage successfully!`, {
+      // Show success message
+      enqueueSnackbar(`${candidateName} moved to offer stage successfully!`, {
         variant: "success",
+        autoHideDuration: 3000,
       });
+
+      // Refetch data to get updated candidate information
       await refetch();
       await refetchCandidateDetails();
+
+      // Close the drawer to ensure fresh data is loaded when reopened
+      // This allows the user to see the updated status in the list
+      setCandidateDrawerVisible(false);
     } catch (error) {
-      enqueueSnackbar(`Failed to move ${candidate.name} to offer stage.`, {
-        variant: "error",
-      });
+      const candidateName = candidate?.name || selectedCandidate?.name || "Candidate";
+      enqueueSnackbar(
+        error?.data?.message || `Failed to move ${candidateName} to offer stage.`,
+        {
+          variant: "error",
+          autoHideDuration: 5000,
+        }
+      );
       console.error("Move to offer error:", error);
     }
   };
@@ -703,12 +972,16 @@ const RecruiterCandidates = () => {
         break;
       case "offer_pending":
         if (hasPermission("move-to-offer")) {
+          const validation = canMoveToOffer(candidate);
           actions.push({
             key: "move-to-offer",
-            label: "Move to Offer",
+            label: validation.canMove
+              ? "Move to Offer"
+              : `Move to Offer (${validation.reason})`,
             icon: <CheckOutlined style={iconTextStyle} />,
             onClick: () => handleMoveToOffer(candidate),
-            style: { color: "#52c41a" },
+            style: validation.canMove ? { color: "#52c41a" } : { color: "#8c8c8c" },
+            disabled: !validation.canMove,
           });
         }
 
@@ -727,12 +1000,16 @@ const RecruiterCandidates = () => {
         break;
       case "offer_revised":
         if (hasPermission("move-to-offer")) {
+          const validation = canMoveToOffer(candidate);
           actions.push({
             key: "move-to-offer",
-            label: "Move to Offer",
+            label: validation.canMove
+              ? "Move to Offer"
+              : `Move to Offer (${validation.reason})`,
             icon: <CheckOutlined style={iconTextStyle} />,
             onClick: () => handleMoveToOffer(candidate),
-            style: { color: "#52c41a" },
+            style: validation.canMove ? { color: "#52c41a" } : { color: "#8c8c8c" },
+            disabled: !validation.canMove,
           });
         }
 
@@ -1840,111 +2117,27 @@ const RecruiterCandidates = () => {
 
   return (
     <div style={{ padding: "12px", minHeight: "100vh" }}>
-      {/* Header */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} sm={16} md={12}>
-            <Title
-              level={2}
-              style={{ margin: 0, fontSize: "clamp(1.2rem, 4vw, 2rem)" }}
-            >
-              Interview Candidates
-            </Title>
-            <Text type="secondary">
-              Manage and track your interview candidates in pipeline
-            </Text>
-          </Col>
-        </Row>
-      </Card>
-
-      {/* Search and Filters */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} md={18}>
-            <Input
-              placeholder="Search candidates, positions, or job codes..."
-              prefix={<SearchOutlined style={iconTextStyle} />}
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              size="large"
-              allowClear
-              onPressEnter={(e) => handleSearch(e.target.value)}
-            />
-          </Col>
-        </Row>
-
-        {/* Status Filter Tabs */}
-        <div
-          style={{
-            marginTop: 16,
-            paddingTop: 16,
-            borderTop: "1px solid #f0f0f0",
-          }}
-        >
-          <Tabs
-            activeKey={selectedStatus}
-            onChange={handleStatusChange}
-            items={tabItems}
-            size="small"
-            tabBarStyle={{ margin: 0 }}
-          />
-        </div>
-      </Card>
-
-      <Card>
-        <div
-          className="desktop-view"
-          style={{ display: window.innerWidth >= 768 ? "block" : "none" }}
-        >
-          <Table
-            columns={columns}
-            dataSource={candidates}
-            rowKey="id"
-            loading={isLoading}
-            pagination={tablePagination}
-            scroll={{ x: 1400 }}
-            locale={{
-              emptyText: (
-                <div style={{ textAlign: "center", padding: "48px 0" }}>
-                  <UserOutlined
-                    style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
-                  />
-                  <Title level={4} type="secondary">
-                    No candidates found
-                  </Title>
-                  <Text type="secondary">
-                    Try adjusting your search or filters to find candidates.
-                  </Text>
-                </div>
-              ),
-            }}
-          />
-        </div>
-
-        {/* Mobile Card View */}
-        <div
-          className="mobile-view"
-          style={{ display: window.innerWidth < 768 ? "block" : "none" }}
-        >
-          {filteredCandidates.length > 0 ? (
-            filteredCandidates.map((candidate) => (
-              <CandidateCard key={candidate.id} candidate={candidate} />
-            ))
-          ) : (
-            <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <UserOutlined
-                style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
-              />
-              <Title level={4} type="secondary">
-                No candidates found
-              </Title>
-              <Text type="secondary">
-                Try adjusting your search or filters to find candidates.
-              </Text>
-            </div>
-          )}
-        </div>
-      </Card>
+      <CandidatesTable
+        candidates={candidates}
+        filteredCandidates={filteredCandidates}
+        isLoading={isLoading}
+        tablePagination={tablePagination}
+        searchTerm={searchTerm}
+        handleSearch={handleSearch}
+        selectedStatus={selectedStatus}
+        handleStatusChange={handleStatusChange}
+        filterCounts={filterCounts}
+        hasPermission={hasPermission}
+        statusConfig={statusConfig}
+        iconTextStyle={iconTextStyle}
+        columns={columns}
+        tabItems={tabItems}
+        getAvailableActions={getAvailableActions}
+        handleViewProfile={handleViewProfile}
+        handleSendMessage={handleSendMessage}
+        handleDownloadResume={handleDownloadResume}
+        CandidateCard={CandidateCard}
+      />
 
       {/* Candidate Profile Drawer */}
       <Drawer
@@ -2004,897 +2197,34 @@ const RecruiterCandidates = () => {
                   </div>
                 </div>
 
-                <Tabs defaultActiveKey="1">
-                  {hasPermission("view-interviews") && (
-                    <TabPane
-                      tab={
-                        <span>
-                          Interviews{" "}
-                          <Badge
-                            count={candidate.interviewDetails?.length || 0}
-                          />
-                        </span>
-                      }
-                      key="1"
-                    >
-                      {candidate.status === "interview" && (
-                        <div style={{ marginBottom: 16 }}>
-                          <Button
-                            type="primary"
-                            style={{ background: "#da2c46" }}
-                            onClick={() => {
-                              form.resetFields();
-                              setScheduleInterviewModalVisible(true);
-                            }}
-                            icon={<PlusOutlined />}
-                          >
-                            Schedule New Interview
-                          </Button>
-                        </div>
-                      )}
-                      {candidate.interviewDetails?.length > 0 ? (
-                        <Collapse accordion>
-                          {candidate.interviewDetails.map((interview) => (
-                            <Panel
-                              header={`${interview.title} (${interview.status})`}
-                              key={interview._id}
-                              extra={
-                                <Space>
-                                  <Tag
-                                    color={
-                                      interview.status === "scheduled"
-                                        ? "blue"
-                                        : interview.status ===
-                                          "interview_completed"
-                                        ? "green"
-                                        : interview.status === "interview_hold"
-                                        ? "orange"
-                                        : "red"
-                                    }
-                                  >
-                                    {interview.status}
-                                  </Tag>
-                                  <Button
-                                    size="small"
-                                    disabled={
-                                      interview.status !== "scheduled" &&
-                                      interview.status !== "interview_hold"
-                                    }
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRescheduleInterview(interview);
-                                    }}
-                                  >
-                                    Reschedule
-                                  </Button>
-                                </Space>
-                              }
-                            >
-                              <Descriptions bordered column={1} size="small">
-                                <Descriptions.Item label="Date & Time">
-                                  {new Date(interview.date).toLocaleString()}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Mode">
-                                  {interview.mode === "online"
-                                    ? "Online"
-                                    : "In-Person"}
-                                </Descriptions.Item>
-                                {interview.mode === "online" && (
-                                  <Descriptions.Item label="Meeting Link">
-                                    <a
-                                      href={interview.meetingLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      Join Meeting
-                                    </a>
-                                  </Descriptions.Item>
-                                )}
-                                <Descriptions.Item label="Interviewers">
-                                  {allRecruiters ? (
-                                    <List
-                                      size="small"
-                                      dataSource={interview?.interviewerIds?.map(
-                                        (id) =>
-                                          allRecruiters.otherRecruiters.find(
-                                            (r) => r._id === id
-                                          )
-                                      )}
-                                      renderItem={(recruiter) => (
-                                        <List.Item>
-                                          <List.Item.Meta
-                                            avatar={
-                                              <Avatar
-                                                src={recruiter?.image}
-                                                size="small"
-                                              />
-                                            }
-                                            title={
-                                              recruiter?.fullName || "Unknown"
-                                            }
-                                            description={
-                                              recruiter?.specialization
-                                            }
-                                          />
-                                        </List.Item>
-                                      )}
-                                    />
-                                  ) : (
-                                    <Text>Loading interviewers...</Text>
-                                  )}
-                                </Descriptions.Item>
-                                {interview.notes && (
-                                  <Descriptions.Item label="Notes">
-                                    {interview.notes}
-                                  </Descriptions.Item>
-                                )}
-                                {interview.remarks && (
-                                  <Descriptions.Item label="Remarks">
-                                    {interview.remarks}
-                                  </Descriptions.Item>
-                                )}
-                              </Descriptions>
-
-                              <div
-                                style={{
-                                  marginTop: 16,
-                                  display: "flex",
-                                  gap: 8,
-                                }}
-                              >
-                                {/* Show Cancel only before interview is taken */}
-                                {interview.status === "scheduled" && (
-                                  <Button
-                                    danger
-                                    onClick={() =>
-                                      handleChangeInterviewStatus(
-                                        "interview_cancelled",
-                                        interview._id
-                                      )
-                                    }
-                                    loading={isChangingStatus}
-                                  >
-                                    Cancel
-                                  </Button>
-                                )}
-
-                                {/* After interviewer gives result */}
-                                {interview.status === "pass" && (
-                                  <Button
-                                    type="primary"
-                                    style={{ background: "#da2c46" }}
-                                    onClick={() =>
-                                      handleChangeInterviewStatus(
-                                        "interview_completed",
-                                        interview._id
-                                      )
-                                    }
-                                    loading={isChangingStatus}
-                                  >
-                                    Mark as Completed
-                                  </Button>
-                                )}
-
-                                {interview.status === "fail" && (
-                                  <Button
-                                    danger
-                                    onClick={() =>
-                                      handleChangeInterviewStatus(
-                                        "interview_rejected",
-                                        interview._id
-                                      )
-                                    }
-                                    loading={isChangingStatus}
-                                  >
-                                    Reject
-                                  </Button>
-                                )}
-
-                                {interview.status === "interview_hold" && (
-                                  <Tag color="orange">
-                                    Waiting for interviewer’s final decision
-                                  </Tag>
-                                )}
-                              </div>
-                            </Panel>
-                          ))}
-                        </Collapse>
-                      ) : (
-                        <Empty
-                          description={
-                            selectedCandidate.status === "interview"
-                              ? "No interviews scheduled yet"
-                              : "No interviews were scheduled for this candidate"
-                          }
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        >
-                          {selectedCandidate.status === "interview" && (
-                            <Button
-                              type="primary"
-                              onClick={() =>
-                                setScheduleInterviewModalVisible(true)
-                              }
-                            >
-                              Schedule Interview
-                            </Button>
-                          )}
-                        </Empty>
-                      )}
-                    </TabPane>
-                  )}
-
-                  {hasPermission("view-offer-details") &&
-                    (candidate.status === "offer_pending" ||
-                      candidate.status === "offer_revised" ||
-                      candidate.status === "offer") && (
-                      <TabPane tab="Offer Details" key="offer">
-                        <Descriptions bordered column={1} size="small">
-                          <Descriptions.Item label="Status">
-                            <Tag
-                              color={
-                                candidate.status === "offer_pending"
-                                  ? "orange"
-                                  : candidate.status === "offer"
-                                  ? "green"
-                                  : candidate.status === "offer_revised"
-                                  ? "blue"
-                                  : "default"
-                              }
-                            >
-                              {candidate.status}
-                            </Tag>
-                          </Descriptions.Item>
-
-                          {candidate.offerDetails?.[0]?.currentStatus && (
-                            <Descriptions.Item label="Candidate Response">
-                              <Tag
-                                color={
-                                  candidate.offerDetails[0].currentStatus ===
-                                  "offer-accepted"
-                                    ? "green"
-                                    : candidate.offerDetails[0]
-                                        .currentStatus === "offer-rejected"
-                                    ? "red"
-                                    : candidate.offerDetails[0]
-                                        .currentStatus === "offer-revised"
-                                    ? "blue"
-                                    : "default"
-                                }
-                              >
-                                {candidate.offerDetails[0].currentStatus}
-                              </Tag>
-                            </Descriptions.Item>
-                          )}
-
-                          <Descriptions.Item label="Description">
-                            {candidate.offerDetails?.[0]?.description || "N/A"}
-                          </Descriptions.Item>
-
-                          <Descriptions.Item label="Offer Letter">
-                            {candidate.offerDetails?.[0]?.offerDocument
-                              ?.fileUrl ? (
-                              <a
-                                href={
-                                  candidate?.offerDetails[0]?.offerDocument
-                                    ?.fileUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {candidate?.offerDetails[0]?.offerDocument
-                                  ?.fileName || "Download Offer Letter"}
-                              </a>
-                            ) : (
-                              "No file uploaded"
-                            )}
-                          </Descriptions.Item>
-
-                          <Descriptions.Item label="Signed Offer Letter">
-                            {candidate.offerDetails?.[0]?.signedOfferDocument
-                              ?.fileUrl ? (
-                              <a
-                                href={
-                                  candidate?.offerDetails[0]
-                                    ?.signedOfferDocument?.fileUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {candidate?.offerDetails[0]?.signedOfferDocument
-                                  ?.fileName || "Download Signed Offer Letter"}
-                              </a>
-                            ) : (
-                              "No file uploaded"
-                            )}
-                          </Descriptions.Item>
-
-                          {candidate.offerDetails?.[0]?.additionalDocuments &&
-                            candidate.offerDetails[0].additionalDocuments.length > 0 && (
-                              <Descriptions.Item label="Additional Documents">
-                                <Space direction="vertical" size="small">
-                                  {candidate.offerDetails[0].additionalDocuments.map(
-                                    (doc, index) => (
-                                      <a
-                                        key={index}
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        {doc.documentName || doc.fileName || `Additional Document ${index + 1}`}
-                                      </a>
-                                    )
-                                  )}
-                                </Space>
-                              </Descriptions.Item>
-                            )}
-
-                          {candidate.offerDetails?.[0]?.signedAdditionalDocuments &&
-                            candidate.offerDetails[0].signedAdditionalDocuments.length > 0 && (
-                              <Descriptions.Item label="Signed Additional Documents">
-                                <Space direction="vertical" size="small">
-                                  {candidate.offerDetails[0].signedAdditionalDocuments.map(
-                                    (doc, index) => (
-                                      <a
-                                        key={index}
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                      >
-                                        {doc.documentName || doc.fileName || `Signed Document ${index + 1}`}
-                                      </a>
-                                    )
-                                  )}
-                                </Space>
-                              </Descriptions.Item>
-                            )}
-
-                          {candidate.offerDetails?.[0]?.statusHistory?.length >
-                            0 && (
-                            <Descriptions.Item label="Status History">
-                              <Collapse>
-                                {candidate.offerDetails[0].statusHistory.map(
-                                  (history, index) => (
-                                    <Panel
-                                      header={`${history.status} - ${new Date(
-                                        history.changedAt
-                                      ).toLocaleString()}`}
-                                      key={index}
-                                    >
-                                      <Text strong>Status: </Text>
-                                      <Tag
-                                        color={
-                                          history.status === "offer-accepted"
-                                            ? "green"
-                                            : history.status ===
-                                              "offer-rejected"
-                                            ? "red"
-                                            : history.status === "offer-revised"
-                                            ? "blue"
-                                            : "default"
-                                        }
-                                      >
-                                        {history.status}
-                                      </Tag>
-                                      <br />
-                                      <Text strong>Description: </Text>
-                                      <Text>{history.description}</Text>
-                                      <br />
-                                      <Text strong>Changed at: </Text>
-                                      <Text>
-                                        {new Date(
-                                          history.changedAt
-                                        ).toLocaleString()}
-                                      </Text>
-                                    </Panel>
-                                  )
-                                )}
-                              </Collapse>
-                            </Descriptions.Item>
-                          )}
-                        </Descriptions>
-
-                        <div style={{ marginTop: 16 }}>
-                          {(candidate.status === "offer_pending" ||
-                            candidate.status === "offer_revised") && (
-                            <>
-                              <Button
-                                onClick={() => {
-                                  setOfferAction("revise");
-                                  setOfferModalVisible(true);
-                                  offerForm.setFieldsValue({
-                                    description:
-                                      candidate.offerDetails?.[0]?.description,
-                                  });
-                                }}
-                                style={{ marginRight: 8 }}
-                              >
-                                Revise Offer
-                              </Button>
-
-                              <Button
-                                type="primary"
-                                style={{ marginRight: 8 }}
-                                onClick={() => handleMoveToOffer(candidate)}
-                              >
-                                Move to Offer
-                              </Button>
-
-                              <Button
-                                danger
-                                onClick={() => handleRejectCandidate(candidate)}
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
-
-                          {candidate.status === "offer" && <></>}
-                        </div>
-                      </TabPane>
-                    )}
-
-                  {hasPermission("view-pipeline") &&
-                    selectedCandidate.status === "offer" && (
-                      <TabPane tab="Pipeline" key="2">
-                        <div style={{ padding: 16 }}>
-                          <Title level={4}>Pipeline Information</Title>
-
-                          {pipelineAlert && (
-                            <Alert
-                              type={pipelineAlert.type}
-                              message={pipelineAlert.message}
-                              showIcon
-                              closable
-                              onClose={() => setPipelineAlert(null)}
-                              style={{ marginBottom: 16 }}
-                            />
-                          )}
-
-                          {/* Pipeline Details */}
-                          <div style={{ marginBottom: 16 }}>
-                            <Card
-                              size="small"
-                              style={{
-                                marginTop: 8,
-                                background: "#f9f9f9",
-                                border: "1px dashed #52c41a",
-                                borderRadius: 8,
-                              }}
-                              title={
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 8,
-                                  }}
-                                >
-                                  <SettingOutlined />
-                                  <Text strong>Tagged Pipeline (Separate)</Text>
-                                </div>
-                              }
-                            >
-                              {selectedCandidate?.tagPipeline ? (
-                                <Space
-                                  direction="vertical"
-                                  style={{ width: "100%" }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    <div>
-                                      <Text strong>Pipeline Name:</Text>
-                                      <br />
-                                      <Text>
-                                        {selectedCandidate.tagPipeline.name ||
-                                          "Loading..."}
-                                      </Text>
-                                    </div>
-                                    <Button
-                                      type="default"
-                                      size="small"
-                                      onClick={handleChangePipeline}
-                                    >
-                                      Change Pipeline
-                                    </Button>
-                                  </div>
-                                  <Button
-                                    type="link"
-                                    icon={<EyeOutlined />}
-                                    onClick={() =>
-                                      handleTagPipelineClick(
-                                        selectedCandidate.tagPipeline
-                                      )
-                                    }
-                                  >
-                                    Configure Pipeline Details
-                                  </Button>
-                                </Space>
-                              ) : (
-                                <Space
-                                  direction="vertical"
-                                  style={{ width: "100%" }}
-                                >
-                                  <Text type="secondary">
-                                    No separate pipeline tagged.
-                                  </Text>
-                                </Space>
-                              )}
-                            </Card>
-                          </div>
-
-                          {selectedCandidate.tagPipeline?.stages && (
-                            <div style={{ marginBottom: 16 }}>
-                              <Title level={5}>Pipeline Stages</Title>
-                              <List
-                                dataSource={
-                                  selectedCandidate.tagPipeline.stages || []
-                                }
-                                renderItem={(stage, index) => (
-                                  <List.Item>
-                                    <List.Item.Meta
-                                      title={`${index + 1}. ${stage.name}`}
-                                      description={
-                                        <>
-                                          {stage.description && (
-                                            <div>{stage.description}</div>
-                                          )}
-                                          {stage.requiredDocuments?.length >
-                                            0 && (
-                                            <div style={{ marginTop: 8 }}>
-                                              <Text strong>
-                                                Required Documents:{" "}
-                                              </Text>
-                                              {stage.requiredDocuments.map(
-                                                (doc, docIndex) => (
-                                                  <Tag
-                                                    key={docIndex}
-                                                    size="small"
-                                                  >
-                                                    {doc}
-                                                  </Tag>
-                                                )
-                                              )}
-                                            </div>
-                                          )}
-                                          <div style={{ marginTop: 4 }}>
-                                            <Text type="secondary">
-                                              Dependency: {stage.dependencyType}
-                                            </Text>
-                                          </div>
-                                        </>
-                                      }
-                                    />
-                                  </List.Item>
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          <Card
-                            size="small"
-                            style={{
-                              marginTop: 16,
-                              background: "#f0f5ff",
-                              border: "1px solid #1890ff",
-                              borderRadius: 8,
-                            }}
-                            title={
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                <FileOutlined />
-                                <Text strong>Work Order Pipeline</Text>
-                              </div>
-                            }
-                          >
-                            {(() => {
-                              // Get the first stage's pipelineId from pipelineStageTimeline
-                              const pipelineId =
-                                candidate?.workOrder?.pipelineStageTimeline?.[0]
-                                  ?.pipelineId;
-
-                              // Find the matching pipeline from activePipelines
-                              const workOrderPipeline = activePipelines?.find(
-                                (p) => p._id === pipelineId
-                              );
-
-                              console.log("Pipeline ID:", pipelineId);
-                              console.log("Found Pipeline:", workOrderPipeline);
-
-                              return workOrderPipeline?.stages?.length > 0 ? (
-                                <>
-                                  {/* Detailed Stage Timeline */}
-                                  {candidate?.workOrder?.pipelineStageTimeline
-                                    ?.length > 0 && (
-                                    <>
-                                      <Title level={5}>
-                                        Stage Timeline Details
-                                      </Title>
-                                      <List
-                                        dataSource={
-                                          candidate.workOrder
-                                            .pipelineStageTimeline
-                                        }
-                                        renderItem={(timelineStage, index) => {
-                                          // Find the full stage details from the pipeline
-                                          const fullStageDetails =
-                                            workOrderPipeline.stages.find(
-                                              (s) =>
-                                                s._id === timelineStage.stageId
-                                            );
-
-                                          return (
-                                            <List.Item key={timelineStage._id}>
-                                              <Card
-                                                size="small"
-                                                style={{
-                                                  width: "100%",
-                                                  marginBottom: 8,
-                                                }}
-                                                title={
-                                                  <Space>
-                                                    <Text strong>{`${
-                                                      index + 1
-                                                    }. ${
-                                                      timelineStage.stageName
-                                                    }`}</Text>
-                                                    <Tag color="blue">
-                                                      {
-                                                        timelineStage.dependencyType
-                                                      }
-                                                    </Tag>
-                                                  </Space>
-                                                }
-                                              >
-                                                <Descriptions
-                                                  bordered
-                                                  column={1}
-                                                  size="small"
-                                                >
-                                                  <Descriptions.Item label="Start Date">
-                                                    {timelineStage.startDate
-                                                      ? new Date(
-                                                          timelineStage.startDate
-                                                        ).toLocaleDateString()
-                                                      : "Not set"}
-                                                  </Descriptions.Item>
-                                                  <Descriptions.Item label="End Date">
-                                                    {timelineStage.endDate
-                                                      ? new Date(
-                                                          timelineStage.endDate
-                                                        ).toLocaleDateString()
-                                                      : "Not set"}
-                                                  </Descriptions.Item>
-
-                                                  {timelineStage.recruiterIds
-                                                    ?.length > 0 && (
-                                                    <Descriptions.Item label="Assigned Recruiters">
-                                                      <Space wrap>
-                                                        {timelineStage.recruiterIds.map(
-                                                          (recruiterId) => {
-                                                            const recruiter =
-                                                              allRecruiters?.otherRecruiters?.find(
-                                                                (r) =>
-                                                                  r._id ===
-                                                                  recruiterId
-                                                              );
-                                                            return recruiter ? (
-                                                              <Tag
-                                                                key={
-                                                                  recruiterId
-                                                                }
-                                                                icon={
-                                                                  <UserOutlined />
-                                                                }
-                                                              >
-                                                                {recruiter.fullName ||
-                                                                  recruiter.email}
-                                                              </Tag>
-                                                            ) : null;
-                                                          }
-                                                        )}
-                                                      </Space>
-                                                    </Descriptions.Item>
-                                                  )}
-
-                                                  {timelineStage.staffIds
-                                                    ?.length > 0 && (
-                                                    <Descriptions.Item label="Assigned Staff">
-                                                      <Space wrap>
-                                                        {timelineStage.staffIds.map(
-                                                          (staffId) => {
-                                                            const staff =
-                                                              staffs?.find(
-                                                                (s) =>
-                                                                  s._id ===
-                                                                  staffId
-                                                              );
-                                                            return staff ? (
-                                                              <Tag
-                                                                key={staffId}
-                                                                icon={
-                                                                  <UserOutlined />
-                                                                }
-                                                              >
-                                                                {staff.fullName ||
-                                                                  staff.email}
-                                                              </Tag>
-                                                            ) : null;
-                                                          }
-                                                        )}
-                                                      </Space>
-                                                    </Descriptions.Item>
-                                                  )}
-
-                                                  {timelineStage.approvalId && (
-                                                    <Descriptions.Item label="Approval Level">
-                                                      {(() => {
-                                                        const level =
-                                                          levelGroups?.find(
-                                                            (l) =>
-                                                              l._id ===
-                                                              timelineStage.approvalId
-                                                          );
-                                                        return level ? (
-                                                          <Tag color="purple">
-                                                            {level.groupName}
-                                                          </Tag>
-                                                        ) : (
-                                                          "Unknown Level"
-                                                        );
-                                                      })()}
-                                                    </Descriptions.Item>
-                                                  )}
-
-                                                  {/* Show required documents from the full pipeline stage details */}
-                                                  {fullStageDetails
-                                                    ?.requiredDocuments
-                                                    ?.length > 0 && (
-                                                    <Descriptions.Item label="Required Documents">
-                                                      <Space wrap>
-                                                        {fullStageDetails.requiredDocuments.map(
-                                                          (doc, docIndex) => (
-                                                            <Tag
-                                                              key={docIndex}
-                                                              icon={
-                                                                <FileOutlined />
-                                                              }
-                                                              color="orange"
-                                                            >
-                                                              {typeof doc ===
-                                                              "string"
-                                                                ? doc
-                                                                : doc.title ||
-                                                                  doc}
-                                                            </Tag>
-                                                          )
-                                                        )}
-                                                      </Space>
-                                                    </Descriptions.Item>
-                                                  )}
-
-                                                  {timelineStage.customFields
-                                                    ?.length > 0 && (
-                                                    <Descriptions.Item label="Custom Fields">
-                                                      <Space
-                                                        direction="vertical"
-                                                        style={{
-                                                          width: "100%",
-                                                        }}
-                                                      >
-                                                        {timelineStage.customFields.map(
-                                                          (
-                                                            field,
-                                                            fieldIndex
-                                                          ) => (
-                                                            <div
-                                                              key={fieldIndex}
-                                                            >
-                                                              <Text strong>
-                                                                {field.label}:{" "}
-                                                              </Text>
-                                                              <Text type="secondary">
-                                                                {field.type}
-                                                                {field.required && (
-                                                                  <Tag
-                                                                    color="red"
-                                                                    size="small"
-                                                                    style={{
-                                                                      marginLeft: 8,
-                                                                    }}
-                                                                  >
-                                                                    Required
-                                                                  </Tag>
-                                                                )}
-                                                              </Text>
-                                                            </div>
-                                                          )
-                                                        )}
-                                                      </Space>
-                                                    </Descriptions.Item>
-                                                  )}
-                                                </Descriptions>
-                                              </Card>
-                                            </List.Item>
-                                          );
-                                        }}
-                                      />
-                                    </>
-                                  )}
-                                </>
-                              ) : (
-                                <Empty
-                                  description="No pipeline stages configured"
-                                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                />
-                              );
-                            })()}
-                          </Card>
-
-                          <Divider />
-
-                          <Title level={5}>Move to Pipeline</Title>
-                          <Text
-                            type="secondary"
-                            style={{ marginBottom: 16, display: "block" }}
-                          >
-                            Move this candidate to the pipeline stage to
-                            complete all required stages before converting to
-                            employee.
-                          </Text>
-
-                          {/* Pipeline Action Buttons */}
-                          <Space>
-                            {selectedCandidate?.tagPipeline ? (
-                              <>
-                                <Button
-                                  type="primary"
-                                  style={{ background: "#da2c46" }}
-                                  icon={<ArrowRightOutlined />}
-                                  onClick={handleMoveToSeparatePipeline}
-                                >
-                                  Move to Tagged Pipeline
-                                </Button>
-                                <Button
-                                  type="primary"
-                                  style={{ background: "#da2c46" }}
-                                  icon={<ArrowRightOutlined />}
-                                  onClick={() =>
-                                    handleMoveCandidateToPipeline(
-                                      selectedCandidate
-                                    )
-                                  }
-                                >
-                                  Move to Work Order Pipeline
-                                </Button>
-                              </>
-                            ) : (
-                              <Button
-                                type="primary"
-                                style={{ background: "#da2c46" }}
-                                icon={<ArrowRightOutlined />}
-                                onClick={() =>
-                                  handleMoveCandidateToPipeline(
-                                    selectedCandidate
-                                  )
-                                }
-                              >
-                                Move to Work Order Pipeline
-                              </Button>
-                            )}
-                          </Space>
-                        </div>
-                      </TabPane>
-                    )}
-                </Tabs>
+                <CandidateDetailsTabs
+                  candidate={candidate}
+                  selectedCandidate={selectedCandidate}
+                  hasPermission={hasPermission}
+                  allRecruiters={allRecruiters}
+                  isChangingStatus={isChangingStatus}
+                  handleChangeInterviewStatus={handleChangeInterviewStatus}
+                  handleRescheduleInterview={handleRescheduleInterview}
+                  setScheduleInterviewModalVisible={setScheduleInterviewModalVisible}
+                  interviewForm={form}
+                  canMoveToOffer={canMoveToOffer}
+                  handleMoveToOffer={handleMoveToOffer}
+                  handleRejectCandidate={handleRejectCandidate}
+                  setOfferAction={setOfferAction}
+                  setOfferModalVisible={setOfferModalVisible}
+                  offerForm={offerForm}
+                  setAcceptOfferModalVisible={setAcceptOfferModalVisible}
+                  acceptOfferForm={acceptOfferForm}
+                  pipelineAlert={pipelineAlert}
+                  setPipelineAlert={setPipelineAlert}
+                  activePipelines={activePipelines}
+                  handleChangePipeline={handleChangePipeline}
+                  handleTagPipelineClick={handleTagPipelineClick}
+                  handleMoveToSeparatePipeline={handleMoveToSeparatePipeline}
+                  handleMoveCandidateToPipeline={handleMoveCandidateToPipeline}
+                  levelGroups={levelGroups}
+                  staffs={staffs}
+                />
               </div>
             )}
           </>
@@ -2903,1158 +2233,89 @@ const RecruiterCandidates = () => {
         )}
       </Drawer>
 
-      {/* Message Modal */}
-      <Modal
-        title={`Message ${selectedCandidate?.name}`}
-        open={messageModalVisible}
-        onCancel={() => {
-          setMessageModalVisible(false);
-          messageForm.resetFields();
-        }}
-        footer={null}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <Form
-          form={messageForm}
-          layout="vertical"
-          initialValues={{
-            subject: `Regarding your application for ${selectedCandidate?.position}`,
-          }}
-        >
-          <Form.Item
-            label="Subject"
-            name="subject"
-            rules={[{ required: true, message: "Please enter a subject" }]}
-          >
-            <Input placeholder="Enter subject" />
-          </Form.Item>
-
-          <Form.Item
-            label="Message"
-            name="message"
-            rules={[{ required: true, message: "Please enter your message" }]}
-          >
-            <Input.TextArea rows={6} placeholder="Type your message here" />
-          </Form.Item>
-
-          <Form.Item style={{ textAlign: "right" }}>
-            <Space>
-              <Button
-                onClick={() => {
-                  setMessageModalVisible(false);
-                  messageForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                style={buttonStyle}
-                onClick={() => {
-                  messageForm
-                    .validateFields()
-                    .then((values) => {
-                      // Handle message sending
-                      message.success("Message sent successfully!");
-                      setMessageModalVisible(false);
-                      messageForm.resetFields();
-                    })
-                    .catch((info) => {
-                      console.log("Validate Failed:", info);
-                    });
-                }}
-              >
-                Send Message
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Schedule Interview Modal */}
-      <Modal
-        title={`${
-          interviewToReschedule ? "Reschedule" : "Schedule New"
-        } Interview`}
-        open={scheduleInterviewModalVisible}
-        onCancel={() => {
-          setScheduleInterviewModalVisible(false);
-          form.resetFields();
-          setInterviewToReschedule(null);
-        }}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setScheduleInterviewModalVisible(false);
-              form.resetFields();
-              setInterviewToReschedule(null);
-            }}
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            style={buttonStyle}
-            onClick={() => form.submit()}
-            loading={isSchedulingInterview}
-          >
-            {interviewToReschedule ? "Reschedule" : "Schedule"} Interview
-          </Button>,
-        ]}
-        width={window.innerWidth < 768 ? "95%" : 700}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            type: "online",
-          }}
-          onFinish={async (values) => {
-            await handleScheduleInterviewSubmit(values, selectedCandidate._id);
-          }}
-        >
-          <Form.Item
-            label="Interview Title"
-            name="title"
-            rules={[
-              { required: true, message: "Please enter interview title" },
-            ]}
-          >
-            <Input placeholder="e.g. Technical Interview, HR Round, etc." />
-          </Form.Item>
-          <Form.Item
-            label="Interview Type"
-            name="type"
-            rules={[
-              { required: true, message: "Please select interview type" },
-            ]}
-          >
-            <Select placeholder="Select interview type">
-              <Option value="online">Online (Video Call)</Option>
-              <Option value="telephonic">Telephonic</Option>
-              <Option value="in-person">In Person</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            noStyle
-            shouldUpdate={(prevValues, currentValues) =>
-              prevValues.type !== currentValues.type
-            }
-          >
-            {({ getFieldValue }) =>
-              getFieldValue("type") === "online" ? (
-                <Form.Item
-                  label="Meeting Link"
-                  name="meetingLink"
-                  rules={[
-                    {
-                      type: "url",
-                      message: "Please enter a valid URL",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Enter Google Meet or Zoom link" />
-                </Form.Item>
-              ) : getFieldValue("type") === "in-person" ? (
-                <Form.Item
-                  label="Location"
-                  name="location"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter interview location",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Enter office address or location" />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-
-          <Form.Item
-            label="Interview Date & Time"
-            name="datetime"
-            rules={[{ required: true, message: "Please select date and time" }]}
-          >
-            <DatePicker showTime format="YYYY-MM-DD HH:mm" />
-          </Form.Item>
-
-          <Form.Item
-            label="Interviewers"
-            name="interviewers"
-            rules={[
-              {
-                required: true,
-                message: "Please select at least one interviewer",
-              },
-            ]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select interviewers"
-              loading={!allRecruiters}
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-            >
-              {allRecruiters?.otherRecruiters?.map((recruiter) => (
-                <Option
-                  key={recruiter._id}
-                  value={recruiter._id}
-                  label={`${recruiter.fullName || ""} (${
-                    recruiter.specialization || ""
-                  })`}
-                >
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Avatar
-                      size="small"
-                      style={{ marginRight: 8, backgroundColor: "#f56a00" }}
-                    >
-                      {recruiter.fullName?.charAt(0) || "?"}
-                    </Avatar>
-                    <div>
-                      <Text strong>{recruiter.fullName || "Unknown"}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {recruiter.specialization || "No specialization"} •{" "}
-                        {recruiter.email || "No email"}
-                      </Text>
-                    </div>
-                  </div>
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Additional Notes" name="notes">
-            <Input.TextArea
-              rows={4}
-              placeholder="Add any additional notes or instructions"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={`Pipeline Details - ${selectedPipeline?.name || ""}`}
-        open={pipelineModalVisible}
-        onCancel={() => {
-          setPipelineModalVisible(false);
-          setSelectedPipeline(null);
-          setUniversalRecruiterIds([]);
-          setApplyToAllStages(false);
-          setUniversalStartDate(null);
-          setUniversalEndDate(null);
-          setApplyDatesToAllStages(false);
-        }}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => {
-              setPipelineModalVisible(false);
-              setSelectedPipeline(null);
-            }}
-          >
-            Close
-          </Button>,
-          <Button
-            key="setStages"
-            type="primary"
-            style={{ background: "#da2c46" }}
-            onClick={() => {
-              enqueueSnackbar("Pipeline details saved successfully", {
-                variant: "success",
-              });
-              setPipelineModalVisible(false);
-              setSelectedPipeline(null);
-            }}
-          >
-            Save Changes
-          </Button>,
-        ]}
-        width={900}
-        style={{ top: 20 }}
-        bodyStyle={{
-          maxHeight: "calc(100vh - 200px)",
-          overflowY: "auto",
-          padding: "16px 24px",
-        }}
-      >
-        <Card
-          size="small"
-          style={{ marginBottom: 16, background: "#f9f9f9" }}
-          title={
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <SettingOutlined />
-              <Text strong>Universal Settings</Text>
-            </div>
-          }
-        >
-          {/* EXISTING RECRUITER SECTION */}
-          <div
-            style={{
-              marginBottom: 16,
-              paddingBottom: 16,
-              borderBottom: "1px solid #e8e8e8",
-            }}
-          >
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              Recruiter Assignment
-            </Text>
-            <Row gutter={[16, 16]} align="middle">
-              <Col xs={24} md={16}>
-                <Form.Item
-                  label="Assign Recruiters to All Stages"
-                  style={{ marginBottom: 0 }}
-                >
-                  <Select
-                    mode="multiple"
-                    value={universalRecruiterIds}
-                    onChange={handleUniversalRecruiterChange}
-                    style={{ width: "100%" }}
-                    size="small"
-                    placeholder="Select recruiters for all stages"
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option.children
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    }
-                  >
-                    {allRecruiters?.otherRecruiters?.map((recruiter) => (
-                      <Option key={recruiter._id} value={recruiter._id}>
-                        {recruiter.fullName || recruiter.email}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                {/* <Checkbox
-                  checked={applyToAllStages}
-                  onChange={handleApplyToAllStagesChange}
-                >
-                  Apply to all stages
-                </Checkbox> */}
-                {universalRecruiterIds.length > 0 && (
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={handleApplyUniversalRecruiters}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Apply Now
-                  </Button>
-                )}
-              </Col>
-            </Row>
-            {universalRecruiterIds.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Selected: {universalRecruiterIds.length} recruiter(s)
-                </Text>
-              </div>
-            )}
-          </div>
-
-          {/* ADD NEW DATE SECTION */}
-          <div>
-            <Text strong style={{ display: "block", marginBottom: 8 }}>
-              Date Assignment
-            </Text>
-            <Row gutter={[16, 16]} align="middle">
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  label="Universal Start Date"
-                  style={{ marginBottom: 0 }}
-                >
-                  <DatePicker
-                    style={{ width: "100%" }}
-                    size="small"
-                    value={universalStartDate}
-                    onChange={setUniversalStartDate}
-                    placeholder="Select start date"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item
-                  label="Universal End Date"
-                  style={{ marginBottom: 0 }}
-                >
-                  <DatePicker
-                    style={{ width: "100%" }}
-                    size="small"
-                    value={universalEndDate}
-                    onChange={setUniversalEndDate}
-                    placeholder="Select end date"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                {/* <Checkbox
-                  checked={applyDatesToAllStages}
-                  onChange={(e) => setApplyDatesToAllStages(e.target.checked)}
-                >
-                  Apply to all stages
-                </Checkbox> */}
-                {(universalStartDate || universalEndDate) && (
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={handleApplyUniversalDates}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Apply Now
-                  </Button>
-                )}
-              </Col>
-            </Row>
-            {(universalStartDate || universalEndDate) && (
-              <div style={{ marginTop: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {universalStartDate &&
-                    `Start: ${universalStartDate.format("YYYY-MM-DD")}`}
-                  {universalStartDate && universalEndDate && " | "}
-                  {universalEndDate &&
-                    `End: ${universalEndDate.format("YYYY-MM-DD")}`}
-                </Text>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {selectedPipeline && (
-          <div>
-            <div style={{ marginBottom: 20 }}>
-              <Title level={4}>{selectedPipeline.name}</Title>
-              <Tag
-                color={
-                  selectedPipeline.pipelineStatus === "active" ? "green" : "red"
-                }
-              >
-                {selectedPipeline.pipelineStatus}
-              </Tag>
-            </div>
-
-            <List
-              dataSource={[
-                ...(selectedPipeline.stages || []).map((s) => ({
-                  ...s,
-                  isCustom: false,
-                })),
-                ...(customStages[selectedPipeline._id] || []).map((s) => ({
-                  ...s,
-                  isCustom: true,
-                })),
-              ]}
-              renderItem={(stage, index) => {
-                const stageId = stage._id || stage.id;
-                const dateEntry = pipelineStageDates[
-                  selectedPipeline._id
-                ]?.find((d) => d.stageId === stageId);
-
-                return (
-                  <Card
-                    key={stageId}
-                    title={
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          justifyContent: "space-between",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <span style={{ cursor: "grab" }}>⋮⋮</span>
-                          {stage.isCustom ? (
-                            <Input
-                              value={stage.name}
-                              onChange={(e) =>
-                                updateCustomStage(
-                                  selectedPipeline._id,
-                                  stageId,
-                                  {
-                                    name: e.target.value,
-                                  }
-                                )
-                              }
-                              style={{ maxWidth: "200px" }}
-                              size="small"
-                            />
-                          ) : (
-                            <span>{stage.name}</span>
-                          )}
-                          {stage.isCustom && (
-                            <Tag color="orange" size="small">
-                              Custom
-                            </Tag>
-                          )}
-                          {dateEntry?.dependencyType && (
-                            <Tag color="green" size="small">
-                              {dateEntry.dependencyType}
-                            </Tag>
-                          )}
-                        </div>
-                        {stage.isCustom && (
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={() =>
-                              removeCustomStage(selectedPipeline._id, stageId)
-                            }
-                          />
-                        )}
-                      </div>
-                    }
-                    style={{
-                      marginBottom: 16,
-                      cursor: stage.isCustom ? "move" : "default",
-                    }}
-                    draggable={stage.isCustom}
-                    onDragStart={(e) =>
-                      stage.isCustom && handleDragStart(e, stage)
-                    }
-                    onDragOver={handleDragOver}
-                    onDrop={(e) =>
-                      stage.isCustom &&
-                      handleDrop(e, stage, selectedPipeline._id)
-                    }
-                  >
-                    <Row gutter={[16, 16]} align="bottom">
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item
-                          label="Start Date"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <DatePicker
-                            style={{ width: "100%" }}
-                            size="small"
-                            value={
-                              dateEntry?.startDate
-                                ? dayjs(dateEntry.startDate)
-                                : null
-                            }
-                            onChange={(date) =>
-                              handleStageDateChange(
-                                selectedPipeline._id,
-                                stageId,
-                                "startDate",
-                                date
-                              )
-                            }
-                          />
-                        </Form.Item>
-                      </Col>
-
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item label="End Date" style={{ marginBottom: 0 }}>
-                          <DatePicker
-                            style={{ width: "100%" }}
-                            size="small"
-                            value={
-                              dateEntry?.endDate
-                                ? dayjs(dateEntry.endDate)
-                                : null
-                            }
-                            onChange={(date) =>
-                              handleStageDateChange(
-                                selectedPipeline._id,
-                                stageId,
-                                "endDate",
-                                date
-                              )
-                            }
-                          />
-                        </Form.Item>
-                      </Col>
-
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item
-                          label="Dependency Type"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Select
-                            value={dateEntry?.dependencyType || "independent"}
-                            onChange={(value) =>
-                              handleDependencyTypeChange(
-                                selectedPipeline._id,
-                                stageId,
-                                value
-                              )
-                            }
-                            style={{ width: "100%" }}
-                            size="small"
-                          >
-                            <Option value="independent">Independent</Option>
-                            <Option value="dependent">Dependent</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item
-                          label="Assigned Recruiters"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Select
-                            mode="multiple"
-                            value={
-                              stageRecruiterAssignments[selectedPipeline._id]?.[
-                                stageId
-                              ] || []
-                            }
-                            onChange={(value) =>
-                              handleRecruiterAssignmentChange(
-                                selectedPipeline._id,
-                                stageId,
-                                value
-                              )
-                            }
-                            style={{ width: "100%" }}
-                            size="small"
-                            placeholder="Select recruiters"
-                            optionFilterProp="children"
-                            filterOption={(input, option) =>
-                              option.children
-                                .toLowerCase()
-                                .indexOf(input.toLowerCase()) >= 0
-                            }
-                          >
-                            {allRecruiters?.otherRecruiters?.map(
-                              (recruiter) => (
-                                <Option
-                                  key={recruiter._id}
-                                  value={recruiter._id}
-                                >
-                                  {recruiter.fullName || recruiter.email}
-                                </Option>
-                              )
-                            )}
-                          </Select>
-                        </Form.Item>
-                      </Col>
-
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item
-                          label="Assigned Staff"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Select
-                            mode="multiple"
-                            value={
-                              stageStaffAssignments[selectedPipeline._id]?.[
-                                stageId
-                              ] || []
-                            }
-                            onChange={(value) =>
-                              handleStaffAssignmentChange(
-                                selectedPipeline._id,
-                                stageId,
-                                value
-                              )
-                            }
-                            style={{ width: "100%" }}
-                            size="small"
-                            placeholder="Select staff"
-                            optionFilterProp="children"
-                            filterOption={(input, option) =>
-                              option.children
-                                .toLowerCase()
-                                .indexOf(input.toLowerCase()) >= 0
-                            }
-                          >
-                            {staffs.map((staff) => (
-                              <Option key={staff._id} value={staff._id}>
-                                {staff.fullName || staff.email}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                      </Col>
-
-                      <Col xs={24} sm={12} md={12} lg={8}>
-                        <Form.Item
-                          label="Approval Level"
-                          style={{ marginBottom: 0 }}
-                        >
-                          <Select
-                            style={{ width: "100%" }}
-                            size="small"
-                            allowClear
-                            placeholder="Select approval level"
-                            value={dateEntry?.approvalId || undefined}
-                            onChange={(value) =>
-                              handleLevelChange(
-                                selectedPipeline._id,
-                                stageId,
-                                value
-                              )
-                            }
-                            optionFilterProp="children"
-                            filterOption={(input, option) =>
-                              option.children
-                                .toLowerCase()
-                                .indexOf(input.toLowerCase()) >= 0
-                            }
-                          >
-                            {levelGroups.map((group) => (
-                              <Option key={group._id} value={group._id}>
-                                {group.groupName}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Divider
-                      orientation="left"
-                      plain
-                      style={{ margin: "16px 0" }}
-                    >
-                      Stage Requirements
-                    </Divider>
-
-                    <Row gutter={16} style={{ marginBottom: 16 }}>
-                      <Col span={12}>
-                        <Button
-                          type="dashed"
-                          icon={<PlusOutlined />}
-                          block
-                          onClick={() =>
-                            addStageCustomField(selectedPipeline._id, stageId)
-                          }
-                        >
-                          Add Custom Field
-                        </Button>
-                      </Col>
-                      <Col span={12}>
-                        <Button
-                          type="dashed"
-                          icon={<PlusOutlined />}
-                          block
-                          onClick={() =>
-                            addStageRequiredDocument(
-                              selectedPipeline._id,
-                              stageId
-                            )
-                          }
-                        >
-                          Add Required Document
-                        </Button>
-                      </Col>
-                    </Row>
-
-                    {stageCustomFields[selectedPipeline._id]?.[stageId]
-                      ?.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <h4>Custom Fields:</h4>
-                        {stageCustomFields[selectedPipeline._id][stageId].map(
-                          (field) => (
-                            <Card
-                              key={field.id}
-                              size="small"
-                              style={{ marginBottom: 8 }}
-                              extra={
-                                <Button
-                                  type="text"
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  size="small"
-                                  onClick={() =>
-                                    removeStageCustomField(
-                                      selectedPipeline._id,
-                                      stageId,
-                                      field.id
-                                    )
-                                  }
-                                />
-                              }
-                            >
-                              <Row gutter={16}>
-                                <Col span={12}>
-                                  <Input
-                                    value={field.label}
-                                    onChange={(e) =>
-                                      updateStageCustomField(
-                                        selectedPipeline._id,
-                                        stageId,
-                                        field.id,
-                                        {
-                                          label: e.target.value,
-                                        }
-                                      )
-                                    }
-                                    placeholder="Field Label"
-                                  />
-                                </Col>
-                                <Col span={12}>
-                                  <Select
-                                    value={field.type}
-                                    onChange={(value) =>
-                                      updateStageCustomField(
-                                        selectedPipeline._id,
-                                        stageId,
-                                        field.id,
-                                        {
-                                          type: value,
-                                          options: [
-                                            "select",
-                                            "checkbox",
-                                            "radio",
-                                          ].includes(value)
-                                            ? field.options || [""]
-                                            : [],
-                                        }
-                                      )
-                                    }
-                                    style={{ width: "100%" }}
-                                  >
-                                    {fieldTypes.map((type) => (
-                                      <Option
-                                        key={type.value}
-                                        value={type.value}
-                                      >
-                                        {type.label}
-                                      </Option>
-                                    ))}
-                                  </Select>
-                                </Col>
-                              </Row>
-
-                              <Checkbox
-                                checked={field.required}
-                                onChange={(e) =>
-                                  updateStageCustomField(
-                                    selectedPipeline._id,
-                                    stageId,
-                                    field.id,
-                                    {
-                                      required: e.target.checked,
-                                    }
-                                  )
-                                }
-                                style={{ marginTop: 8 }}
-                              >
-                                Required
-                              </Checkbox>
-
-                              {/* --- OPTIONS BLOCK FOR DROPDOWN / CHECKBOX / RADIO --- */}
-                              {["select", "checkbox", "radio"].includes(
-                                field.type
-                              ) && (
-                                <div style={{ marginTop: 12 }}>
-                                  <strong>Options:</strong>
-                                  {field.options?.map((option, index) => (
-                                    <Space
-                                      key={index}
-                                      style={{
-                                        display: "flex",
-                                        marginBottom: 8,
-                                      }}
-                                      align="start"
-                                    >
-                                      <Input
-                                        size="small"
-                                        value={option}
-                                        onChange={(e) =>
-                                          updateFieldOption(
-                                            selectedPipeline._id,
-                                            stageId,
-                                            field.id,
-                                            index,
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder={`Option ${index + 1}`}
-                                      />
-                                      <Button
-                                        danger
-                                        size="small"
-                                        icon={<DeleteOutlined />}
-                                        onClick={() =>
-                                          removeFieldOption(
-                                            selectedPipeline._id,
-                                            stageId,
-                                            field.id,
-                                            index
-                                          )
-                                        }
-                                      />
-                                    </Space>
-                                  ))}
-
-                                  <Button
-                                    size="small"
-                                    type="dashed"
-                                    icon={<PlusOutlined />}
-                                    onClick={() =>
-                                      addFieldOption(
-                                        selectedPipeline._id,
-                                        stageId,
-                                        field.id
-                                      )
-                                    }
-                                  >
-                                    Add Option
-                                  </Button>
-                                </div>
-                              )}
-                            </Card>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {stageRequiredDocuments[selectedPipeline._id]?.[stageId]
-                      ?.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <h4>Required Documents:</h4>
-                        {stageRequiredDocuments[selectedPipeline._id][
-                          stageId
-                        ].map((doc) => (
-                          <Card
-                            key={doc.id}
-                            size="small"
-                            style={{ marginBottom: 8 }}
-                            extra={
-                              <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                size="small"
-                                onClick={() =>
-                                  removeStageRequiredDocument(
-                                    selectedPipeline._id,
-                                    stageId,
-                                    doc.id
-                                  )
-                                }
-                              />
-                            }
-                          >
-                            <Input
-                              value={doc.title}
-                              onChange={(e) =>
-                                updateStageRequiredDocument(
-                                  selectedPipeline._id,
-                                  stageId,
-                                  doc.id,
-                                  { title: e.target.value }
-                                )
-                              }
-                              placeholder="Document Title"
-                            />
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                );
-              }}
-            />
-
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={() => addCustomStage(selectedPipeline._id)}
-              style={{ marginBottom: 16 }}
-            >
-              Add Custom Stage
-            </Button>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        title={`${offerAction === "revise" ? "Revise" : "Make"} Offer for ${
-          selectedCandidate?.name
-        }`}
-        open={offerModalVisible}
-        onCancel={() => {
-          setOfferModalVisible(false);
-          offerForm.resetFields();
-        }}
-        footer={[
-          <Button key="cancel" onClick={() => setOfferModalVisible(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={isSubmittingOffer}
-            onClick={() => offerForm.submit()}
-          >
-            {offerAction === "revise" ? "Revise Offer" : "Send Offer"}
-          </Button>,
-        ]}
-      >
-        <Form
-          form={offerForm}
-          layout="vertical"
-          onFinish={
-            offerAction === "revise" ? handleReviseOffer : handleOfferSubmit
-          }
-        >
-          <Form.Item
-            name="description"
-            label="Offer Description"
-            rules={[{ required: true, message: "Please enter description" }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter offer details" />
-          </Form.Item>
-          <Form.Item
-            label="Offer Letter"
-            name="file"
-            rules={
-              offerAction === "new"
-                ? [{ required: true, message: "Please upload offer letter" }]
-                : []
-            }
-          >
-            <Upload
-              beforeUpload={(file) => {
-                const isPDF = file.type === "application/pdf";
-                if (!isPDF) {
-                  message.error("You can only upload PDF files!");
-                }
-                return false;
-              }}
-              accept=".pdf"
-              maxCount={1}
-            >
-              <Button icon={<UploadOutlined />}>Click to Upload PDF</Button>
-            </Upload>
-          </Form.Item>
-          <Form.Item
-            label="Additional Supporting Documents (Optional)"
-            name="additionalDocuments"
-            tooltip="Upload any additional supporting documents related to the offer (e.g., benefits package, company policies, etc.)"
-          >
-            <Upload
-              beforeUpload={(file) => {
-                const isPDF = file.type === "application/pdf";
-                if (!isPDF) {
-                  message.error("You can only upload PDF files!");
-                }
-                return false;
-              }}
-              accept=".pdf"
-              multiple
-            >
-              <Button icon={<UploadOutlined />}>Upload Additional Documents</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Change Tagged Pipeline"
-        open={changePipelineModalVisible}
-        onCancel={() => {
-          setChangePipelineModalVisible(false);
-          setSelectedNewPipeline(null);
-        }}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setChangePipelineModalVisible(false);
-              setSelectedNewPipeline(null);
-            }}
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            style={buttonStyle}
-            loading={isUpdatingPipeline}
-            onClick={handleUpdatePipeline}
-          >
-            Update Pipeline
-          </Button>,
-        ]}
-        width={600}
-      >
-        <div style={{ marginBottom: 16 }}>
-          <Text type="secondary">
-            Select a new pipeline to tag for {selectedCandidate?.name}
-          </Text>
-        </div>
-
-        <Form layout="vertical">
-          <Form.Item label="Select Pipeline" required>
-            <Select
-              value={selectedNewPipeline}
-              onChange={setSelectedNewPipeline}
-              placeholder="Select a pipeline"
-              style={{ width: "100%" }}
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-              }
-            >
-              {activePipelines
-                .filter((pipeline) => pipeline.pipelineStatus === "active")
-                .map((pipeline) => (
-                  <Option key={pipeline._id} value={pipeline._id}>
-                    <div>
-                      <Text strong>{pipeline.name}</Text>
-                      {pipeline.description && (
-                        <>
-                          <br />
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {pipeline.description}
-                          </Text>
-                        </>
-                      )}
-                    </div>
-                  </Option>
-                ))}
-            </Select>
-          </Form.Item>
-
-          {selectedNewPipeline && (
-            <Card size="small" style={{ background: "#f9f9f9" }}>
-              <Text strong>Pipeline Stages:</Text>
-              <List
-                size="small"
-                dataSource={
-                  activePipelines.find((p) => p._id === selectedNewPipeline)
-                    ?.stages || []
-                }
-                renderItem={(stage, index) => (
-                  <List.Item>
-                    <Text>
-                      {index + 1}. {stage.name}
-                    </Text>
-                  </List.Item>
-                )}
-              />
-            </Card>
-          )}
-        </Form>
-      </Modal>
+      {/* All Modals */}
+      <CandidateModals
+        messageModalVisible={messageModalVisible}
+        setMessageModalVisible={setMessageModalVisible}
+        messageForm={messageForm}
+        buttonStyle={buttonStyle}
+        selectedCandidate={selectedCandidate}
+        scheduleInterviewModalVisible={scheduleInterviewModalVisible}
+        setScheduleInterviewModalVisible={setScheduleInterviewModalVisible}
+        interviewForm={form}
+        interviewToReschedule={interviewToReschedule}
+        setInterviewToReschedule={setInterviewToReschedule}
+        handleScheduleInterviewSubmit={handleScheduleInterviewSubmit}
+        isSchedulingInterview={isSchedulingInterview}
+        allRecruiters={allRecruiters}
+        selectedCandidateForInterview={selectedCandidate}
+        pipelineModalVisible={pipelineModalVisible}
+        setPipelineModalVisible={setPipelineModalVisible}
+        selectedPipeline={selectedPipeline}
+        setSelectedPipeline={setSelectedPipeline}
+        enqueueSnackbar={enqueueSnackbar}
+        universalRecruiterIds={universalRecruiterIds}
+        setUniversalRecruiterIds={setUniversalRecruiterIds}
+        universalStartDate={universalStartDate}
+        setUniversalStartDate={setUniversalStartDate}
+        universalEndDate={universalEndDate}
+        setUniversalEndDate={setUniversalEndDate}
+        applyDatesToAllStages={applyDatesToAllStages}
+        setApplyDatesToAllStages={setApplyDatesToAllStages}
+        handleUniversalRecruiterChange={handleUniversalRecruiterChange}
+        handleApplyUniversalRecruiters={handleApplyUniversalRecruiters}
+        handleApplyUniversalDates={handleApplyUniversalDates}
+        customStages={customStages}
+        pipelineStageDates={pipelineStageDates}
+        stageApprovers={stageApprovers}
+        stageCustomFields={stageCustomFields}
+        stageRequiredDocuments={stageRequiredDocuments}
+        stageStaffAssignments={stageStaffAssignments}
+        stageRecruiterAssignments={stageRecruiterAssignments}
+        allRecruitersForPipeline={allRecruiters}
+        levelGroups={levelGroups}
+        staffs={staffs}
+        addCustomStage={addCustomStage}
+        removeCustomStage={removeCustomStage}
+        updateCustomStage={updateCustomStage}
+        handleStageDateChange={handleStageDateChange}
+        handleDependencyTypeChange={handleDependencyTypeChange}
+        handleRecruiterAssignmentChange={handleRecruiterAssignmentChange}
+        handleStaffAssignmentChange={handleStaffAssignmentChange}
+        handleLevelChange={handleLevelChange}
+        addStageCustomField={addStageCustomField}
+        removeStageCustomField={removeStageCustomField}
+        updateStageCustomField={updateStageCustomField}
+        addStageRequiredDocument={addStageRequiredDocument}
+        removeStageRequiredDocument={removeStageRequiredDocument}
+        updateStageRequiredDocument={updateStageRequiredDocument}
+        addFieldOption={addFieldOption}
+        updateFieldOption={updateFieldOption}
+        removeFieldOption={removeFieldOption}
+        handleDragStart={handleDragStart}
+        handleDragOver={handleDragOver}
+        handleDrop={handleDrop}
+        offerModalVisible={offerModalVisible}
+        setOfferModalVisible={setOfferModalVisible}
+        offerAction={offerAction}
+        offerForm={offerForm}
+        handleOfferSubmit={handleOfferSubmit}
+        handleReviseOffer={handleReviseOffer}
+        isSubmittingOffer={isSubmittingOffer}
+        acceptOfferModalVisible={acceptOfferModalVisible}
+        setAcceptOfferModalVisible={setAcceptOfferModalVisible}
+        acceptOfferForm={acceptOfferForm}
+        handleAcceptOfferOnBehalf={handleAcceptOfferOnBehalf}
+        isAcceptingOffer={isAcceptingOffer}
+        candidate={candidate}
+        changePipelineModalVisible={changePipelineModalVisible}
+        setChangePipelineModalVisible={setChangePipelineModalVisible}
+        selectedNewPipeline={selectedNewPipeline}
+        setSelectedNewPipeline={setSelectedNewPipeline}
+        handleUpdatePipeline={handleUpdatePipeline}
+        isUpdatingPipeline={isUpdatingPipeline}
+        activePipelines={activePipelines}
+      />
 
       <style jsx>{`
         .ant-table-thead > tr > th {
@@ -4074,11 +2335,22 @@ const RecruiterCandidates = () => {
         .ant-pagination-item:hover a {
           color: #da2c46 !important;
         }
-        .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: #da2c46 !important;
+        .ant-table-tbody > tr:hover > td {
+          background-color: #fff5f5 !important;
         }
-        .ant-tabs-ink-bar {
-          background-color: #da2c46 !important;
+        .ant-card-head-title {
+          font-weight: 600 !important;
+        }
+        .ant-tag {
+          margin-right: 8px;
+        }
+        @media (max-width: 768px) {
+          .ant-table {
+            font-size: 12px;
+          }
+          .ant-card {
+            margin-bottom: 12px;
+          }
         }
       `}</style>
     </div>

@@ -27,6 +27,7 @@ import {
   Typography,
   Tag,
   notification,
+  Tooltip,
 } from "antd";
 import {
   UserOutlined,
@@ -845,16 +846,26 @@ const SuperNavbar = ({ collapsed, setCollapsed, setDrawerVisible }) => {
       padding={getPadding()}
       leftMargin={getNavbarLeftMargin()}
     >
-      <NavButton
-        type="text"
-        icon={getToggleIcon()}
-        onClick={toggleSidebar}
-        style={{
-          marginRight: screenSize.isMobile ? "8px" : "16px",
-          width: getButtonSize(),
-          height: getButtonSize(),
-        }}
-      />
+      <Tooltip
+        title={
+          collapsed
+            ? "Click to expand sidebar"
+            : "Click to collapse sidebar"
+        }
+        placement="bottom"
+        mouseEnterDelay={0.5}
+      >
+        <NavButton
+          type="text"
+          icon={getToggleIcon()}
+          onClick={toggleSidebar}
+          style={{
+            marginRight: screenSize.isMobile ? "8px" : "16px",
+            width: getButtonSize(),
+            height: getButtonSize(),
+          }}
+        />
+      </Tooltip>
 
       {!screenSize.isMobile && (
         <div
