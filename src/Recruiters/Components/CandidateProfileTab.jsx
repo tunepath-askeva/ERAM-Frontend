@@ -180,8 +180,8 @@ const CandidateProfileTab = ({ candidate }) => {
           <Col xs={24} sm={8}>
             <Text strong>Date of Birth:</Text>
             <br />
-            {candidate.dob
-              ? dayjs(candidate.dob).format("MMM DD, YYYY")
+            {candidate.dateOfBirth || candidate.dob
+              ? dayjs(candidate.dateOfBirth || candidate.dob).format("MMM DD, YYYY")
               : "Not provided"}
           </Col>
           <Col xs={24} sm={8}>

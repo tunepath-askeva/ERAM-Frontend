@@ -31,7 +31,7 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "8px" : "10px",
+        padding: screenSize.isMobile ? "8px" : screenSize.isDesktop ? "10px" : "10px",
         flex: 1,
         overflowY: "auto",
         overflowX: "hidden",
@@ -39,7 +39,7 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
         flexDirection: "column",
       }}
       headStyle={{
-        padding: screenSize.isMobile ? "8px 10px" : "10px 12px",
+        padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
         minHeight: "auto",
       }}
     >
@@ -63,7 +63,9 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
               fontWeight: 500,
             }}
           >
-            {employee?.dob ? dayjs(employee.dob).format("DD MMM YYYY") : "N/A"}
+            {employee?.dateOfBirth 
+              ? dayjs(employee.dateOfBirth).format("DD MMM YYYY") 
+              : "N/A"}
           </Text>
         </div>
         <div>
@@ -132,28 +134,7 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
             {employee?.nationality || "N/A"}
           </Text>
         </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Country of Birth
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.countryOfBirth || "N/A"}
-          </Text>
-        </div>
+
         {employee?.passportNo && (
           <div>
             <Text

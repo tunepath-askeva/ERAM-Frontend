@@ -182,7 +182,7 @@ const DocumentsCard = ({ documentStatus, compliancePercentage, documentsLoading,
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "8px" : "10px",
+        padding: screenSize.isMobile ? "8px" : screenSize.isDesktop ? "10px" : "10px",
         flex: 1,
         overflowY: "auto",
         overflowX: "hidden",
@@ -190,7 +190,7 @@ const DocumentsCard = ({ documentStatus, compliancePercentage, documentsLoading,
         flexDirection: "column",
       }}
       headStyle={{
-        padding: screenSize.isMobile ? "8px 10px" : "10px 12px",
+        padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
         minHeight: "auto",
       }}
       extra={

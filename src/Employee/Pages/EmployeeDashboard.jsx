@@ -101,7 +101,7 @@ const EmployeeDashboard = () => {
   };
 
   // ── Shared card props ──────────────────────────────────────────────────────
-  const GAP = isMobile ? 10 : isTablet ? 12 : 14; // px gap between cards
+  const GAP = isMobile ? 10 : isTablet ? 10 : isDesktop ? 10 : 8; // px gap between cards - reduced for better space usage
 
   // ── Layout constants ───────────────────────────────────────────────────────
   //   Desktop  : LEFT(profile 22%) | CENTER(flex) | RIGHT(news 21%)
@@ -115,7 +115,7 @@ const EmployeeDashboard = () => {
   ══════════════════════════════════════════════════════════════════════════ */
   if (isMobile) {
     return (
-      <div style={{ width: "100%", background: "#f5f5f5", padding: GAP, boxSizing: "border-box" }}>
+      <div style={{ width: "100%", background: "#f5f5f5", padding: isMobile ? GAP : GAP, boxSizing: "border-box" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
 
           {/* Profile card — full width, compact */}
@@ -163,10 +163,10 @@ const EmployeeDashboard = () => {
         minHeight: dashboardHeight,
         overflowY: "auto",
       }}>
-        <div style={{ display: "flex", gap: GAP, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: GAP, alignItems: "flex-start", width: "100%" }}>
 
-          {/* LEFT — Profile (fixed 240px) */}
-          <div style={{ width: 240, flexShrink: 0 }}>
+          {/* LEFT — Profile (fixed 220px) */}
+          <div style={{ width: 220, flexShrink: 0 }}>
             <ProfileCard employee={employee} profileCompletion={profileCompletion} screenSize={screenSize} />
           </div>
 
@@ -215,16 +215,16 @@ const EmployeeDashboard = () => {
       display: "flex",
       flexDirection: "row",
       gap: GAP,
-      padding: GAP,
+      padding: isDesktop ? "8px" : GAP,
       boxSizing: "border-box",
       overflow: "hidden",
     }}>
 
       {/* ── LEFT SIDEBAR — Profile ─────────────────────────────────────────── */}
       <div style={{
-        width: bp === "xl" ? "22%" : "23%",
+        width: bp === "xl" ? "20%" : "21%",
         minWidth: 200,
-        maxWidth: 280,
+        maxWidth: 260,
         height: "100%",
         flexShrink: 0,
         overflow: "hidden",
@@ -243,9 +243,9 @@ const EmployeeDashboard = () => {
         overflow: "hidden",
       }}>
 
-        {/* Top row — Personal Info | Employment | Documents (equal thirds, ~45% height) */}
+        {/* Top row — Personal Info | Employment | Documents (equal thirds, ~48% height) */}
         <div style={{
-          flex: "0 0 calc(48% - 7px)",
+          flex: "0 0 calc(48% - 5px)",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: GAP,
@@ -297,9 +297,9 @@ const EmployeeDashboard = () => {
 
       {/* ── RIGHT SIDEBAR — News / Events / Policies ──────────────────────── */}
       <div style={{
-        width: bp === "xl" ? "21%" : "22%",
+        width: bp === "xl" ? "20%" : "21%",
         minWidth: 190,
-        maxWidth: 270,
+        maxWidth: 260,
         height: "100%",
         flexShrink: 0,
         display: "flex",
@@ -308,7 +308,7 @@ const EmployeeDashboard = () => {
         overflow: "hidden",
       }}>
         {/* News — 44% */}
-        <div style={{ flex: "0 0 calc(44% - 10px)", minHeight: 0, overflow: "hidden" }}>
+        <div style={{ flex: "0 0 calc(44% - 5px)", minHeight: 0, overflow: "hidden" }}>
           <NewsCard
             publishedNews={publishedNewsOnly}
             newsLoading={newsLoading}
@@ -318,7 +318,7 @@ const EmployeeDashboard = () => {
         </div>
 
         {/* Events — 44% */}
-        <div style={{ flex: "0 0 calc(44% - 10px)", minHeight: 0, overflow: "hidden" }}>
+        <div style={{ flex: "0 0 calc(44% - 5px)", minHeight: 0, overflow: "hidden" }}>
           <EventsCard
             publishedEvents={publishedEvents}
             eventsLoading={newsLoading}

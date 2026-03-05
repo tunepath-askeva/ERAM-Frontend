@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tabs, message, Upload, Result, Button } from "antd";
+
+// Breakpoints for responsive design
+const BREAKPOINTS = {
+  mobile: 768,
+  tablet: 1024,
+  desktop: 1200,
+};
 import {
   UserOutlined,
   SafetyCertificateOutlined,
@@ -8,6 +15,12 @@ import {
   ReloadOutlined,
   ContactsOutlined,
   HomeOutlined,
+  IdcardOutlined,
+  FileImageOutlined,
+  BookOutlined,
+  FileTextOutlined,
+  TrophyOutlined,
+  CodeOutlined,
 } from "@ant-design/icons";
 import {
   useGetEmployeeProfileQuery,
@@ -31,9 +44,16 @@ const { TabPane } = Tabs;
 
 const EmployeeProfileSettings = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("overview");
   const [employeeData, setEmployeeData] = useState(null);
   const [certificateFiles, setCertificateFiles] = useState([]);
+  const [screenSize, setScreenSize] = useState({
+    width: window.innerWidth,
+    isMobile: window.innerWidth < BREAKPOINTS.mobile,
+    isTablet: window.innerWidth >= BREAKPOINTS.mobile && window.innerWidth < BREAKPOINTS.tablet,
+    isDesktop: window.innerWidth >= BREAKPOINTS.tablet && window.innerWidth < BREAKPOINTS.desktop,
+    isLargeDesktop: window.innerWidth >= BREAKPOINTS.desktop,
+  });
 
   const { data, error, isLoading, refetch } = useGetEmployeeProfileQuery();
   const [updateProfile, { isLoading: isUpdating }] =
@@ -52,6 +72,23 @@ const EmployeeProfileSettings = () => {
     }
   }, [data]);
 
+  // Handle window resize for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setScreenSize({
+        width,
+        isMobile: width < BREAKPOINTS.mobile,
+        isTablet: width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet,
+        isDesktop: width >= BREAKPOINTS.tablet && width < BREAKPOINTS.desktop,
+        isLargeDesktop: width >= BREAKPOINTS.desktop,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const calculateProfileCompletion = () => {
     if (!employeeData) return 0;
 
@@ -61,7 +98,7 @@ const EmployeeProfileSettings = () => {
       employeeData.lastName,
       employeeData.email,
       employeeData.phone,
-      employeeData.dob,
+      employeeData.dateOfBirth,
       employeeData.age,
       employeeData.gender,
       employeeData.nationality,
@@ -124,7 +161,7 @@ const EmployeeProfileSettings = () => {
         "phoneCountryCode",
         "emergencyContactNo",
         "emergencyContactNoCountryCode",
-        "dob",
+        "dateOfBirth",
         "age",
         "gender",
         "bloodGroup",
@@ -146,9 +183,9 @@ const EmployeeProfileSettings = () => {
           formData.append(field, value || "91");
         } else if (value !== undefined && value !== null && value !== "") {
           // Handle dates
-          if (field === "dob" && value) {
+          if (field === "dateOfBirth" && value) {
             formData.append(
-              field,
+              "dateOfBirth",
               value.format ? value.format("YYYY-MM-DD") : value
             );
           } else {
@@ -398,9 +435,23 @@ const EmployeeProfileSettings = () => {
     );
   }
 
+  // Determine tab position based on screen size
+  const tabPosition = screenSize.isMobile || screenSize.isTablet ? "top" : "left";
+  const tabSize = screenSize.isMobile ? "small" : "large";
+
   return (
-    <div style={{ padding: "24px", minHeight: "100vh" }}>
-      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+    <div 
+      style={{ 
+        padding: screenSize.isMobile ? "12px" : screenSize.isTablet ? "16px" : "24px", 
+        minHeight: "100vh" 
+      }}
+    >
+      <div 
+        style={{ 
+          maxWidth: screenSize.isLargeDesktop ? "1400px" : "100%", 
+          margin: "0 auto" 
+        }}
+      >
         <EmployeeProfileHeader
           onRefresh={handleRefresh}
           onSaveAll={handleSaveAll}
@@ -408,56 +459,198 @@ const EmployeeProfileSettings = () => {
 
         <Card
           style={{
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            borderRadius: screenSize.isMobile ? "8px" : "12px",
+            boxShadow: screenSize.isMobile 
+              ? "0 1px 4px rgba(0,0,0,0.08)" 
+              : "0 2px 8px rgba(0,0,0,0.1)",
+            marginTop: screenSize.isMobile ? "12px" : "16px",
           }}
         >
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            tabPosition="left"
-            size="large"
+            tabPosition={tabPosition}
+            size={tabSize}
+            style={{ 
+              minHeight: screenSize.isMobile ? "400px" : "600px",
+            }}
+            tabBarStyle={
+              tabPosition === "left"
+                ? {
+                    marginRight: screenSize.isTablet ? "16px" : "24px",
+                    borderRight: "1px solid #f0f0f0",
+                    paddingRight: screenSize.isTablet ? "12px" : "16px",
+                    minWidth: screenSize.isTablet ? "160px" : "200px",
+                  }
+                : {
+                    marginBottom: screenSize.isMobile ? "16px" : "24px",
+                    borderBottom: "1px solid #f0f0f0",
+                  }
+            }
           >
+            {/* Profile Overview Tab */}
             <TabPane
               tab={
-                <span>
-                  <UserOutlined />
-                  Profile
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <UserOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Overview" : "Profile Overview"}
                 </span>
               }
-              key="profile"
+              key="overview"
             >
-              <ProfileCompletionCard
-                completionPercentage={calculateProfileCompletion()}
-              />
+              <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                gap: screenSize.isMobile ? "12px" : screenSize.isTablet ? "16px" : "20px" 
+              }}>
+                <ProfileCompletionCard
+                  completionPercentage={calculateProfileCompletion()}
+                />
+                
+                <PersonalInformationCard
+                  employeeData={employeeData}
+                  loading={isUpdating}
+                  onUpdate={handleProfileUpdate}
+                />
+                
+                <EmploymentDetailsCard
+                  employeeData={employeeData}
+                  loading={isUpdating}
+                  onUpdate={handleProfileUpdate}
+                />
+              </div>
+            </TabPane>
 
+            {/* Personal Information Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <IdcardOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Personal" : "Personal Information"}
+                </span>
+              }
+              key="personal"
+            >
               <PersonalInformationCard
                 employeeData={employeeData}
                 loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
+            </TabPane>
+
+            {/* Employment Details Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <FileImageOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Employment" : "Employment Details"}
+                </span>
+              }
+              key="employment"
+            >
               <EmploymentDetailsCard
                 employeeData={employeeData}
                 loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
+            </TabPane>
+
+            {/* Skills & Languages Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <CodeOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Skills" : "Skills & Languages"}
+                </span>
+              }
+              key="skills"
+            >
               <SkillsLanguagesCard
                 employeeData={employeeData}
                 loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
+            </TabPane>
+
+            {/* Education Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <BookOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  Education
+                </span>
+              }
+              key="education"
+            >
               <EducationCard
                 employeeData={employeeData}
                 loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
+            </TabPane>
 
-              {/* Work Experience Card */}
+            {/* Work Experience Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <FileTextOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Experience" : "Work Experience"}
+                </span>
+              }
+              key="experience"
+            >
               <WorkExperienceCard
                 employeeData={employeeData}
                 loading={isUpdating}
                 onUpdate={handleProfileUpdate}
               />
+            </TabPane>
+
+            {/* Certificates Tab */}
+            <TabPane
+              tab={
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <TrophyOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  Certificates
+                </span>
+              }
+              key="certificates"
+            >
               <DocumentsCertificatesCard
                 employeeData={employeeData}
                 onCertificatesChange={setCertificateFiles}
@@ -468,11 +661,18 @@ const EmployeeProfileSettings = () => {
                 }}
               />
             </TabPane>
+
+            {/* Contact Information Tab */}
             <TabPane
               tab={
-                <span>
-                  <ContactsOutlined />
-                  Contact Information
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <ContactsOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Contact" : "Contact Information"}
                 </span>
               }
               key="contact"
@@ -483,11 +683,18 @@ const EmployeeProfileSettings = () => {
                 onUpdate={handleProfileUpdate}
               />
             </TabPane>
+
+            {/* Address Information Tab */}
             <TabPane
               tab={
-                <span>
-                  <HomeOutlined />
-                  Address Information
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <HomeOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
+                  {screenSize.isMobile ? "Address" : "Address Information"}
                 </span>
               }
               key="address"
@@ -498,10 +705,17 @@ const EmployeeProfileSettings = () => {
                 onUpdate={handleProfileUpdate}
               />
             </TabPane>
+
+            {/* Security Tab */}
             <TabPane
               tab={
-                <span>
-                  <SafetyCertificateOutlined />
+                <span style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: screenSize.isMobile ? "4px" : "8px",
+                  fontSize: screenSize.isMobile ? "13px" : "14px"
+                }}>
+                  <SafetyCertificateOutlined style={{ fontSize: screenSize.isMobile ? "14px" : "16px" }} />
                   Security
                 </span>
               }

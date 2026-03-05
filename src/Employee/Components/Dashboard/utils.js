@@ -11,7 +11,7 @@ export const calculateProfileCompletion = (employee) => {
     employee.lastName,
     employee.email,
     employee.phone,
-    employee.dob,
+    employee.dateOfBirth,
     employee.age,
     employee.gender,
     employee.nationality,

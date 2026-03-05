@@ -364,6 +364,19 @@ const AdminEmployees = () => {
       render: (date) => (date ? new Date(date).toLocaleDateString() : "-"),
     },
     {
+      title: "Employee Type",
+      key: "employeeType",
+      width: 140,
+      render: (_, record) => {
+        const employeeType = record.employeeType || record.employmentDetails?.employeeType || "site_employee";
+        return employeeType === "admin_employee" ? (
+          <Tag color="blue">Admin Employee</Tag>
+        ) : (
+          <Tag color="green">Site Employee</Tag>
+        );
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
       width: 250,

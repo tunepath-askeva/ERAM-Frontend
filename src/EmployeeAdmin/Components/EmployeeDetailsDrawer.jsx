@@ -279,6 +279,20 @@ const EmployeeDetailsDrawer = ({
                   >
                     {employee.candidateType}
                   </Tag>
+                  <Tag
+                    color={
+                      (employee.employeeType || employee.employmentDetails?.employeeType || "site_employee") === "admin_employee" 
+                        ? "blue" 
+                        : "green"
+                    }
+                    style={{
+                      fontWeight: 500,
+                    }}
+                  >
+                    {(employee.employeeType || employee.employmentDetails?.employeeType || "site_employee") === "admin_employee" 
+                      ? "Admin Employee" 
+                      : "Site Employee"}
+                  </Tag>
                   {getEntryTypeTag()}
                 </div>
               </div>
@@ -369,9 +383,9 @@ const EmployeeDetailsDrawer = ({
                         <InfoItem
                           label="Date of Birth"
                           value={
-                            employee.dob
-                              ? new Date(employee.dob).toLocaleDateString()
-                              : null
+                            employee.dateOfBirth
+                              ? new Date(employee.dateOfBirth).toLocaleDateString()
+                              : "N/A"
                           }
                         />
                         <InfoItem label="Age" value={employee.age} />
@@ -589,6 +603,20 @@ const EmployeeDetailsDrawer = ({
                         <InfoItem
                           label="ERAM ID"
                           value={employee.employmentDetails?.eramId}
+                        />
+                        <InfoItem
+                          label="Employee Type"
+                          value={
+                            <Tag color={
+                              (employee.employeeType || employee.employmentDetails?.employeeType || "site_employee") === "admin_employee" 
+                                ? "blue" 
+                                : "green"
+                            }>
+                              {(employee.employeeType || employee.employmentDetails?.employeeType || "site_employee") === "admin_employee" 
+                                ? "Admin Employee" 
+                                : "Site Employee"}
+                            </Tag>
+                          }
                         />
                         <InfoItem
                           label="Badge Number"

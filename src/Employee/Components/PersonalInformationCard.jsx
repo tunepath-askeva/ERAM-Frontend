@@ -214,7 +214,7 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
     phoneCountryCode: phoneData.phoneCountryCode,
     emergencyContactNo: emergencyPhoneData.phone,
     emergencyContactNoCountryCode: emergencyPhoneData.phoneCountryCode,
-    dob: formatDate(employeeData?.dob),
+    dateOfBirth: formatDate(employeeData?.dateOfBirth),
     age: employeeData?.age || "",
     gender: employeeData?.gender || "",
     bloodGroup: employeeData?.bloodGroup || "",
@@ -466,7 +466,7 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
             </Col>
             {/* Personal Details */}
             <Col xs={24} sm={8}>
-              <Form.Item label="Date of Birth" name="dob">
+              <Form.Item label="Date of Birth" name="dateOfBirth">
                 <DatePicker
                   style={{ width: "100%" }}
                   format="YYYY-MM-DD"

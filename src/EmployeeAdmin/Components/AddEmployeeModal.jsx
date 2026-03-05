@@ -27,6 +27,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
     eramId: "",
     dateOfJoining: "",
     officialEmail: "",
+    employeeType: "site_employee", // site_employee or admin_employee
 
     // OPTIONAL BASIC FIELDS
     badgeNo: "",
@@ -88,9 +89,10 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
   };
 
   const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.email) {
+    // Only these fields are mandatory: name (firstName, lastName), email, eramId, assignedJobTitle (title), dateOfJoining, password
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.eramId || !formData.assignedJobTitle || !formData.dateOfJoining) {
       enqueueSnackbar(
-        "Please fill all required fields (First Name, Last Name, Email, Phone)",
+        "Please fill all required fields (First Name, Last Name, Email, ERAM ID, Job Title, Date of Joining)",
         {
           variant: "error",
         }
@@ -98,39 +100,20 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
       return false;
     }
 
-    const phone = form.getFieldValue("phone");
-    const phoneCountryCode = form.getFieldValue("phoneCountryCode");
-
-    if (!phone || !phoneCountryCode) {
-      enqueueSnackbar("Phone number with country code is required", {
-        variant: "error",
-      });
-      return false;
-    }
+    // Phone is optional now
+    // const phone = form.getFieldValue("phone");
+    // const phoneCountryCode = form.getFieldValue("phoneCountryCode");
 
     // MANDATORY EMPLOYMENT FIELDS
-    if (!formData.assignedJobTitle) {
-      enqueueSnackbar("Assigned Job Title is required", { variant: "error" });
-      return false;
-    }
+    // Category is now optional
+    // if (!formData.category) {
+    //   enqueueSnackbar("Category is required", { variant: "error" });
+    //   return false;
+    // }
 
-    if (!formData.category) {
-      enqueueSnackbar("Category is required", { variant: "error" });
-      return false;
-    }
-
-    if (!formData.eramId) {
-      enqueueSnackbar("ERAM ID is required", { variant: "error" });
-      return false;
-    }
-
-    if (!formData.dateOfJoining) {
-      enqueueSnackbar("Date of Joining is required", { variant: "error" });
-      return false;
-    }
-
-    if (!formData.officialEmail) {
-      enqueueSnackbar("Official Email is required", { variant: "error" });
+    // Official Email is required only for admin employees
+    if (formData.employeeType === "admin_employee" && !formData.officialEmail) {
+      enqueueSnackbar("Official Email is required for Admin Employees", { variant: "error" });
       return false;
     }
 
@@ -218,6 +201,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
       eramId: "",
       dateOfJoining: "",
       officialEmail: "",
+      employeeType: "site_employee",
       badgeNo: "",
       gatePassId: "",
       aramcoId: "",
@@ -380,8 +364,8 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                 <PhoneInput
                   form={form}
                   name="phone"
-                  label="Phone *"
-                  required={true}
+                  label="Phone"
+                  required={false}
                 />
               </div>
             </div>
@@ -463,7 +447,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                     fontWeight: 500,
                   }}
                 >
-                  Job Title
+                  Job Title (Title) *
                 </label>
                 <Input
                   placeholder="Enter job title"
@@ -485,7 +469,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                   Category
                 </label>
                 <Input
-                  placeholder="Enter category"
+                  placeholder="Enter category (optional)"
                   value={formData.category}
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
@@ -501,7 +485,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                     fontWeight: 500,
                   }}
                 >
-                  Date of Joining
+                  Date of Joining *
                 </label>
                 <DatePicker
                   style={{ width: "100%" }}
@@ -529,7 +513,7 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                     fontWeight: 500,
                   }}
                 >
-                  ERAM ID
+                  ERAM ID *
                 </label>
                 <Input
                   placeholder="Enter ERAM ID"
@@ -627,24 +611,73 @@ const AddEmployeeModal = ({ visible, onCancel, onSubmit, isLoading }) => {
                 />
               </div>
 
-              <div>
+              <div style={{ gridColumn: "1 / -1" }}>
                 <label
                   style={{
                     display: "block",
-                    marginBottom: "6px",
+                    marginBottom: "8px",
                     fontWeight: 500,
                   }}
                 >
-                  Official Email
+                  Employee Type *
                 </label>
-                <Input
-                  placeholder="Enter official email"
-                  type="email"
-                  value={formData.officialEmail}
-                  onChange={(e) =>
-                    handleInputChange("officialEmail", e.target.value)
-                  }
-                />
+                <div style={{ display: "flex", gap: "16px" }}>
+                  <Checkbox
+                    checked={formData.employeeType === "site_employee"}
+                    onChange={() => handleInputChange("employeeType", "site_employee")}
+                  >
+                    Site Employee
+                  </Checkbox>
+                  <Checkbox
+                    checked={formData.employeeType === "admin_employee"}
+                    onChange={() => handleInputChange("employeeType", "admin_employee")}
+                  >
+                    Admin Employee
+                  </Checkbox>
+                </div>
+                {formData.employeeType === "admin_employee" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: 500,
+                        color: "#da2c46",
+                      }}
+                    >
+                      Official Email * (Required for Admin Employees)
+                    </label>
+                    <Input
+                      placeholder="Enter official email (for recruiter login)"
+                      type="email"
+                      value={formData.officialEmail}
+                      onChange={(e) =>
+                        handleInputChange("officialEmail", e.target.value)
+                      }
+                    />
+                  </div>
+                )}
+                {formData.employeeType === "site_employee" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Official Email (Optional)
+                    </label>
+                    <Input
+                      placeholder="Enter official email (optional)"
+                      type="email"
+                      value={formData.officialEmail}
+                      onChange={(e) =>
+                        handleInputChange("officialEmail", e.target.value)
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <div>

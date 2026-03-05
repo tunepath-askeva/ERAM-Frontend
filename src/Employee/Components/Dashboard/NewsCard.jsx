@@ -34,14 +34,14 @@ const NewsCard = ({ publishedNews, newsLoading, screenSize, isRightSidebar = fal
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "10px" : "12px",
+        padding: screenSize.isMobile ? "10px" : screenSize.isDesktop ? "10px" : "12px",
         flex: 1,
         overflowY: "auto",
         overflowX: "hidden",
         minHeight: 0,
       }}
       headStyle={{
-        padding: screenSize.isMobile ? "8px 10px" : "10px 12px",
+        padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
         minHeight: "auto",
       }}
     //   extra={

@@ -300,6 +300,20 @@ const RecruiterEmployee = () => {
       ),
     },
     {
+      title: "Employee Type",
+      dataIndex: "employeeType",
+      key: "employeeType",
+      responsive: ["md"],
+      render: (employeeType) => {
+        const type = employeeType || "site_employee";
+        return type === "admin_employee" ? (
+          <Tag color="blue">Admin Employee</Tag>
+        ) : (
+          <Tag color="green">Site Employee</Tag>
+        );
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (text, record) => (

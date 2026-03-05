@@ -34,7 +34,7 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "10px" : "12px",
+        padding: screenSize.isMobile ? "10px" : screenSize.isDesktop ? "10px" : "12px",
         flex: 1,
         overflowY: "auto",
         overflowX: "hidden",
@@ -42,7 +42,7 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
         maxHeight: screenSize.isMobile ? "300px" : undefined,
       }}
       headStyle={{
-        padding: screenSize.isMobile ? "8px 10px" : "10px 12px",
+        padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
         minHeight: "auto",
       }}
       extra={

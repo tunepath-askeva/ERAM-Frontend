@@ -241,7 +241,7 @@ const CandidateSettings = () => {
     },
     workMode: "",
     age: "",
-    dob: null,
+    dateOfBirth: null,
     industry: [],
     visaStatus: [],
   });
@@ -418,10 +418,10 @@ const CandidateSettings = () => {
         maritalStatus: candidateData.maritalStatus || "",
         gender: candidateData.gender || "Others",
         age: candidateData.age || "",
-        dob: candidateData.dob
-          ? dayjs.isDayjs(candidateData.dob)
-            ? candidateData.dob
-            : dayjs(candidateData.dob)
+        dateOfBirth: candidateData.dateOfBirth || candidateData.dob
+          ? dayjs.isDayjs(candidateData.dateOfBirth || candidateData.dob)
+            ? (candidateData.dateOfBirth || candidateData.dob)
+            : dayjs(candidateData.dateOfBirth || candidateData.dob)
           : null,
         industry: Array.isArray(candidateData.industry)
           ? candidateData.industry
@@ -665,7 +665,7 @@ const CandidateSettings = () => {
     if (date) {
       const age = dayjs().diff(date, "year");
       personalForm.setFieldsValue({ age });
-      setUserData((prev) => ({ ...prev, dob: date, age }));
+      setUserData((prev) => ({ ...prev, dateOfBirth: date, age }));
     }
   };
 
@@ -719,7 +719,7 @@ const CandidateSettings = () => {
           totalExperienceYears: "Total Experience",
           location: "Current Location",
           age: "Age",
-          dob: "Date of Birth",
+          dateOfBirth: "Date of Birth",
           nationality: "Nationality",
           countryOfBirth: "Country of Birth",
           country: "Country",
@@ -852,7 +852,7 @@ const CandidateSettings = () => {
         jobPreferences: preferencesValues,
         socialLinks: profileValues.socialLinks || userData.socialLinks,
         age: personalValues.age, // Add this
-        dob: personalValues.dob,
+        dateOfBirth: personalValues.dateOfBirth,
         updatedAt: new Date().toISOString(),
         // Ensure firstName and lastName are always included (from form or existing data)
         firstName: profileValues.firstName || personalValues.firstName || userData.firstName || "",
@@ -2202,7 +2202,7 @@ const CandidateSettings = () => {
                 <Col xs={24} sm={8}>
                   <Form.Item
                     label="Date of Birth"
-                    name="dob"
+                    name="dateOfBirth"
                     rules={[
                       {
                         required: true,

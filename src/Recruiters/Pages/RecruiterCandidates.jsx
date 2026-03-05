@@ -1116,9 +1116,15 @@ const RecruiterCandidates = () => {
       refetch();
     } catch (error) {
       console.error("Failed to move to work order pipeline:", error);
+      // RTK Query errors: error.data.message or error.data.error or error.message
+      const errorMessage = 
+        error?.data?.message || 
+        error?.data?.error || 
+        error?.message || 
+        `Failed to move ${candidate.name} to work order pipeline.`;
       enqueueSnackbar(
-        `Failed to move ${candidate.name} to work order pipeline.`,
-        { variant: "error" }
+        errorMessage,
+        { variant: "error", autoHideDuration: 6000 }
       );
     }
   };
@@ -1206,9 +1212,15 @@ const RecruiterCandidates = () => {
       setPipelineModalVisible(false);
     } catch (error) {
       console.error("Failed to move candidate to tagged pipeline:", error);
+      // RTK Query errors: error.data.message or error.data.error or error.message
+      const errorMessage = 
+        error?.data?.message || 
+        error?.data?.error || 
+        error?.message || 
+        "Failed to move candidate to tagged pipeline";
       enqueueSnackbar(
-        error.data?.message || "Failed to move candidate to tagged pipeline",
-        { variant: "error" }
+        errorMessage,
+        { variant: "error", autoHideDuration: 6000 }
       );
     }
   };

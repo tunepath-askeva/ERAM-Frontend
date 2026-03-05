@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
   Button,
@@ -11,6 +11,7 @@ import {
   Tag,
   Typography,
   Alert,
+  Tabs,
 } from "antd";
 import {
   SearchOutlined,
@@ -62,6 +63,7 @@ const EmployeeAdminAllEmployees = () => {
   const [isAttritionModalVisible, setIsAttritionModalVisible] = useState(false);
   const [selectedEmployeeForAttrition, setSelectedEmployeeForAttrition] =
     useState(null);
+  const [activeTab, setActiveTab] = useState("all"); // "all", "site_employee", "admin_employee"
 
   const recruiterPermissions = useSelector(
     (state) => state.userAuth.recruiterPermissions
@@ -96,8 +98,19 @@ const EmployeeAdminAllEmployees = () => {
   const [triggerExport, { isLoading: isExporting }] =
     useLazyExportEmployeesCSVQuery();
 
-  const employees = branchEmployeesResponse?.data || [];
+  const allEmployees = branchEmployeesResponse?.data || [];
   const total = branchEmployeesResponse?.total || 0;
+
+  // Filter employees by type based on active tab
+  const employees = useMemo(() => {
+    if (activeTab === "all") {
+      return allEmployees;
+    }
+    return allEmployees.filter((emp) => {
+      const empType = emp.employeeType || emp.employmentDetails?.employeeType || "site_employee";
+      return empType === activeTab;
+    });
+  }, [allEmployees, activeTab]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -497,6 +510,19 @@ const EmployeeAdminAllEmployees = () => {
       render: (date) => (date ? new Date(date).toLocaleDateString() : "-"),
     },
     {
+      title: "Employee Type",
+      key: "employeeType",
+      width: 140,
+      render: (_, record) => {
+        const employeeType = record.employeeType || record.employmentDetails?.employeeType || "site_employee";
+        return employeeType === "admin_employee" ? (
+          <Tag color="blue">Admin Employee</Tag>
+        ) : (
+          <Tag color="green">Site Employee</Tag>
+        );
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
       width: 200,
@@ -669,6 +695,39 @@ const EmployeeAdminAllEmployees = () => {
         </Space>
       </div>
 
+      {/* Employee Type Tabs */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        style={{ marginBottom: "16px" }}
+        items={[
+          {
+            key: "all",
+            label: `All Employees (${allEmployees.length})`,
+          },
+          {
+            key: "site_employee",
+            label: `Site Employees (${
+              allEmployees.filter(
+                (emp) =>
+                  (emp.employeeType || emp.employmentDetails?.employeeType || "site_employee") ===
+                  "site_employee"
+              ).length
+            })`,
+          },
+          {
+            key: "admin_employee",
+            label: `Admin Employees (${
+              allEmployees.filter(
+                (emp) =>
+                  (emp.employeeType || emp.employmentDetails?.employeeType || "site_employee") ===
+                  "admin_employee"
+              ).length
+            })`,
+          },
+        ]}
+      />
+
       {importResults && (
         <Alert
           message={<span style={{ fontWeight: 600 }}>Bulk Import Results</span>}
@@ -790,7 +849,7 @@ const EmployeeAdminAllEmployees = () => {
           pagination={{
             current: page,
             pageSize: pageSize,
-            total: total,
+            total: activeTab === "all" ? total : employees.length,
             showSizeChanger: true,
             showTotal: (total) =>
               `Total ${total} employee${total !== 1 ? "s" : ""}`,

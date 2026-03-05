@@ -72,8 +72,9 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
           const worksheet = workbook.Sheets[sheetName];
 
           // Convert to JSON with header row
+          // Use raw: true to get actual values (including date serial numbers)
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-            raw: false, // Keep as strings
+            raw: true, // Get raw values to handle dates properly
             defval: "", // Default value for empty cells
           });
 
@@ -83,11 +84,32 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
             return;
           }
 
-          // Normalize headers to lowercase
+          // Normalize headers to lowercase and convert Excel dates
           rows = jsonData.map((row) => {
             const normalizedRow = {};
             Object.keys(row).forEach((key) => {
-              normalizedRow[key.toLowerCase().trim()] = row[key];
+              let value = row[key];
+              
+              // Handle Excel date serial numbers - XLSX might return dates as numbers
+              // Check if the key is a date-related field
+              const lowerKey = key.toLowerCase().trim();
+              if ((lowerKey.includes('date') || lowerKey.includes('birth') || lowerKey.includes('joining')) && typeof value === 'number') {
+                // Convert Excel serial number to date string
+                try {
+                  const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+                  const date = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
+                  if (!isNaN(date.getTime())) {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    value = `${year}-${month}-${day}`;
+                  }
+                } catch (e) {
+                  // Keep original value if conversion fails
+                }
+              }
+              
+              normalizedRow[lowerKey] = value;
             });
             return normalizedRow;
           });
@@ -163,8 +185,98 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
         // Helper functions (keep existing ones)
         const getDateOrEmpty = (dateStr) => {
           if (!dateStr || dateStr.trim() === "") return "";
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())) return "";
-          return dateStr.trim();
+          
+          const dateValue = dateStr.toString().trim();
+          
+          // If already in YYYY-MM-DD format, return as is
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+            return dateValue;
+          }
+          
+          // Handle Excel date serial numbers (e.g., 44927)
+          if (/^\d+$/.test(dateValue)) {
+            try {
+              // Excel epoch starts from 1900-01-01, but Excel incorrectly treats 1900 as a leap year
+              // So we need to adjust: Excel serial 1 = 1900-01-01
+              const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+              const serialNumber = parseInt(dateValue);
+              const date = new Date(excelEpoch.getTime() + serialNumber * 24 * 60 * 60 * 1000);
+              
+              if (!isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              }
+            } catch (e) {
+              console.warn("Failed to parse Excel serial date:", dateValue);
+            }
+          }
+          
+          // Try to parse various date formats
+          try {
+            // Handle formats like "01/15/2024", "15/01/2024", "2024/01/15"
+            let parsedDate = null;
+            
+            // Try ISO format first
+            parsedDate = new Date(dateValue);
+            if (!isNaN(parsedDate.getTime())) {
+              const year = parsedDate.getFullYear();
+              const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+              const day = String(parsedDate.getDate()).padStart(2, '0');
+              
+              // Validate the date is reasonable (between 1900 and 2100)
+              if (year >= 1900 && year <= 2100) {
+                return `${year}-${month}-${day}`;
+              }
+            }
+            
+            // Try MM/DD/YYYY or DD/MM/YYYY format
+            const slashParts = dateValue.split('/');
+            if (slashParts.length === 3) {
+              const [part1, part2, part3] = slashParts.map(p => parseInt(p.trim()));
+              // Try MM/DD/YYYY first
+              if (part1 >= 1 && part1 <= 12 && part2 >= 1 && part2 <= 31 && part3 >= 1900) {
+                parsedDate = new Date(part3, part1 - 1, part2);
+                if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() === part3) {
+                  const year = parsedDate.getFullYear();
+                  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(parsedDate.getDate()).padStart(2, '0');
+                  return `${year}-${month}-${day}`;
+                }
+              }
+              // Try DD/MM/YYYY
+              if (part2 >= 1 && part2 <= 12 && part1 >= 1 && part1 <= 31 && part3 >= 1900) {
+                parsedDate = new Date(part3, part2 - 1, part1);
+                if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() === part3) {
+                  const year = parsedDate.getFullYear();
+                  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(parsedDate.getDate()).padStart(2, '0');
+                  return `${year}-${month}-${day}`;
+                }
+              }
+            }
+            
+            // Try DD-MM-YYYY format
+            const dashParts = dateValue.split('-');
+            if (dashParts.length === 3) {
+              const [part1, part2, part3] = dashParts.map(p => parseInt(p.trim()));
+              // Try DD-MM-YYYY
+              if (part2 >= 1 && part2 <= 12 && part1 >= 1 && part1 <= 31 && part3 >= 1900) {
+                parsedDate = new Date(part3, part2 - 1, part1);
+                if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() === part3) {
+                  const year = parsedDate.getFullYear();
+                  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(parsedDate.getDate()).padStart(2, '0');
+                  return `${year}-${month}-${day}`;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Failed to parse date:", dateValue, e);
+          }
+          
+          return "";
         };
 
         const getNumberOrEmpty = (numStr) => {
@@ -221,8 +333,15 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               dateOfJoining: getDateOrEmpty(
                 employee.dateofjoining || employee.dateOfJoining
               ),
+              dateOfBirth: getDateOrEmpty(
+                employee.dateofbirth || employee.dateOfBirth
+              ),
               officialEmail:
                 employee.officialemail || employee.officialEmail || "",
+              employeeType:
+                employee.employeetype === "admin_employee" || employee.employeeType === "admin_employee"
+                  ? "admin_employee"
+                  : "site_employee", // Default to site_employee
               badgeNo: employee.badgeno || employee.badgeNo || "",
               gatePassId: employee.gatepassid || employee.gatePassId || "",
               aramcoId: employee.aramcoid || employee.aramcoId || "",
@@ -368,6 +487,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "phone",
       "phonecountrycode",
       "password",
+      "dateofbirth",
       "assignedjobtitle",
       "category",
       "eramid",
@@ -378,6 +498,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "otherid",
       "plantid",
       "officialemail",
+      "employeetype",
       "basicassets",
       "reportinganddocumentation",
       "externalempno",
@@ -422,6 +543,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "501234567",
       "966",
       "password123",
+      "1990-05-15",
       "Software Engineer",
       "IT",
       "EMP001",
@@ -432,6 +554,7 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
       "OTHER001",
       "PLANT001",
       "john.doe@company.com",
+      "site_employee",
       "Laptop, Phone",
       "Weekly reports",
       "EXT001",
@@ -552,7 +675,12 @@ const ImportEmployeeCSVModal = ({ visible, onCancel, onImport, isLoading }) => {
               </p>
               <p style={{ marginBottom: "8px", fontWeight: 500 }}>
                 <strong>Recommended columns:</strong> assignedJobTitle,
-                category, eramId, dateOfJoining (YYYY-MM-DD), officialEmail
+                category, eramId, dateOfJoining (YYYY-MM-DD), officialEmail, employeeType (site_employee or admin_employee), dateOfBirth (YYYY-MM-DD - optional, will auto-calculate age)
+              </p>
+              <p style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
+                <strong>Note:</strong> For admin employees, officialEmail is required. 
+                Use "site_employee" or "admin_employee" in the employeeType column.
+                If dateOfBirth is provided, age will be automatically calculated.
               </p>
               <p style={{ marginBottom: 0, fontSize: "12px", color: "#666" }}>
                 All other fields are optional. Download the template below to

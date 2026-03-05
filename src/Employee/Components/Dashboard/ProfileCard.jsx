@@ -23,7 +23,7 @@ const ProfileCard = ({ employee, profileCompletion, screenSize }) => {
     ? 190
     : 210;
 
-  const cardPadding = screenSize.isMobile ? "14px" : screenSize.isTablet ? "18px" : "22px";
+  const cardPadding = screenSize.isMobile ? "14px" : screenSize.isTablet ? "16px" : "18px";
 
   return (
     <Card

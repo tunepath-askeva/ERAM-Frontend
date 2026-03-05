@@ -308,7 +308,7 @@ const CandidateEditPage = () => {
         maritalStatus: candidate.maritalStatus || "",
         gender: candidate.gender || "Others",
         age: candidate.age || "",
-        dob: candidate.dob ? dayjs(candidate.dob) : null,
+        dateOfBirth: candidate.dateOfBirth || candidate.dob ? dayjs(candidate.dateOfBirth || candidate.dob) : null,
         industry: candidate.industry || [],
         visaStatus: candidate.visaStatus || [],
         bloodGroup: candidate.bloodGroup || "",
@@ -469,8 +469,8 @@ const CandidateEditPage = () => {
           allValues.passportExpiryDate
         ).format("YYYY-MM-DD");
       }
-      if (allValues.dob) {
-        allValues.dob = dayjs(allValues.dob).format("YYYY-MM-DD");
+      if (allValues.dateOfBirth) {
+        allValues.dateOfBirth = dayjs(allValues.dateOfBirth).format("YYYY-MM-DD");
       }
 
       const formData = new FormData();
@@ -1473,7 +1473,7 @@ const CandidateEditPage = () => {
                 <Col xs={24} sm={8}>
                   <Form.Item
                     label="Date of Birth"
-                    name="dob"
+                    name="dateOfBirth"
                     rules={[
                       {
                         required: true,
