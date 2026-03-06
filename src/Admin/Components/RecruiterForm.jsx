@@ -84,6 +84,7 @@ export const getPermissionGroups = (recruiterType) => {
           { key: "company-policies", label: "Company Policies" },
           { key: "news", label: "News" },
           { key: "feedback-suggestion", label: "Feedback/Suggestion" },
+          { key: "config", label: "Configuration" },
           { key: "notifications", label: "Notifications" },
         ],
       },
@@ -434,14 +435,14 @@ const RecruiterForm = ({
             // Extract country code from phone number properly
             let phoneno = initialValues.phone || "";
             let phonenoCountryCode = initialValues.phoneCountryCode || "91";
-            
+
             if (phoneno && !initialValues.phoneCountryCode) {
               // Remove + prefix if present
               let phoneWithoutPlus = phoneno.trim();
               while (phoneWithoutPlus.startsWith("+")) {
                 phoneWithoutPlus = phoneWithoutPlus.substring(1).trim();
               }
-              
+
               // Use phoneUtils to extract country code
               const parsed = phoneUtils.parsePhoneNumber(phoneWithoutPlus);
               if (parsed.countryCode && parsed.phoneNumber) {
@@ -485,7 +486,9 @@ const RecruiterForm = ({
         }
       }
       // Clean phone number - remove + prefix if present
-      const cleanPhoneNumber = values.phoneno ? values.phoneno.replace(/^\+/, "").replace(/\D/g, "") : "";
+      const cleanPhoneNumber = values.phoneno
+        ? values.phoneno.replace(/^\+/, "").replace(/\D/g, "")
+        : "";
 
       const payload = {
         fullName: values.fullName,
@@ -579,7 +582,7 @@ const RecruiterForm = ({
     if (checked) {
       // Add all group permissions
       newPermissions = Array.from(
-        new Set([...currentPermissions, ...groupKeys])
+        new Set([...currentPermissions, ...groupKeys]),
       );
     } else {
       // Remove all group permissions
@@ -916,7 +919,7 @@ const RecruiterForm = ({
                         onClick={() => {
                           const allPermissions =
                             dynamicPermissionGroups.flatMap((group) =>
-                              group.permissions.map((p) => p.key)
+                              group.permissions.map((p) => p.key),
                             );
                           form.setFieldsValue({ permissions: allPermissions });
                         }}
@@ -966,17 +969,17 @@ const RecruiterForm = ({
                   if (checked) {
                     // Add all permissions + full-access-given marker
                     const allPermissions = dynamicPermissionGroups.flatMap(
-                      (group) => group.permissions.map((p) => p.key)
+                      (group) => group.permissions.map((p) => p.key),
                     );
                     setFieldsValue({
                       permissions: Array.from(
-                        new Set([...allPermissions, "full-access-given"])
+                        new Set([...allPermissions, "full-access-given"]),
                       ),
                     });
                   } else {
                     // Remove marker and clear all permissions
                     const filtered = permissions.filter(
-                      (p) => p !== "full-access-given"
+                      (p) => p !== "full-access-given",
                     );
                     setFieldsValue({ permissions: filtered });
                   }
@@ -1114,10 +1117,10 @@ const RecruiterForm = ({
                                     const currentPermissions =
                                       getFieldValue("permissions") || [];
                                     const groupKeys = group.permissions.map(
-                                      (p) => p.key
+                                      (p) => p.key,
                                     );
                                     const isFullySelected = groupKeys.every(
-                                      (key) => currentPermissions.includes(key)
+                                      (key) => currentPermissions.includes(key),
                                     );
 
                                     return (
@@ -1127,7 +1130,7 @@ const RecruiterForm = ({
                                         onClick={() =>
                                           handleGroupSelectAll(
                                             group.permissions,
-                                            !isFullySelected
+                                            !isFullySelected,
                                           )
                                         }
                                         style={{
@@ -1167,10 +1170,10 @@ const RecruiterForm = ({
                                       group.permissions.length === 1
                                         ? 24
                                         : group.permissions.length === 2
-                                        ? 12
-                                        : group.permissions.length <= 4
-                                        ? 12
-                                        : 8
+                                          ? 12
+                                          : group.permissions.length <= 4
+                                            ? 12
+                                            : 8
                                     }
                                   >
                                     <div

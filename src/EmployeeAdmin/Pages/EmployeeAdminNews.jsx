@@ -13,13 +13,13 @@ import {
   Divider,
   Row,
   Col,
-  message,
   Popconfirm,
   Spin,
   Image,
   Select,
   DatePicker,
 } from "antd";
+import { useSnackbar } from "notistack";
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -47,6 +47,7 @@ const { Title, Text, Paragraph } = Typography;
 const { confirm } = Modal;
 
 const EmployeeAdminNews = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -150,7 +151,8 @@ const EmployeeAdminNews = () => {
       const formData = new FormData();
 
       formData.append("title", values.title);
-      formData.append("description", values.description || "");
+      // Description is required - validation is handled by form rules
+      formData.append("description", values.description?.trim() || "");
       formData.append("type", values.type || "news");
       
       if (values.type === "event") {
@@ -191,12 +193,33 @@ const EmployeeAdminNews = () => {
       }
 
       const result = await createNews(formData).unwrap();
-      message.success(result.message || "News created successfully!");
+      enqueueSnackbar(result.message || "News created successfully!", {
+        variant: "success",
+        autoHideDuration: 4000,
+      });
       form.resetFields();
       refetch();
     } catch (error) {
       console.error("Error creating news:", error);
-      message.error(error?.data?.message || "Failed to create news");
+      // Extract detailed error message
+      let errorMessage = "Failed to create news";
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.error) {
+        errorMessage = error.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.errors) {
+        // Handle validation errors
+        const validationErrors = Object.values(error.errors).map(err => err.message || err).join(", ");
+        errorMessage = validationErrors || errorMessage;
+      }
+      
+      enqueueSnackbar(errorMessage, {
+        variant: "error",
+        autoHideDuration: 6000,
+      });
     }
   };
 
@@ -212,12 +235,19 @@ const EmployeeAdminNews = () => {
   const handleDeleteNews = async () => {
     try {
       const result = await deleteNews(currentRecord.id).unwrap();
-      message.success(result.message || "News deleted successfully!");
+      enqueueSnackbar(result.message || "News deleted successfully!", {
+        variant: "success",
+        autoHideDuration: 4000,
+      });
       setDeleteModalVisible(false);
       refetch();
     } catch (error) {
       console.error("Error deleting news:", error);
-      message.error(error?.data?.message || "Failed to delete news");
+      const errorMessage = error?.data?.message || error?.message || "Failed to delete news";
+      enqueueSnackbar(errorMessage, {
+        variant: "error",
+        autoHideDuration: 6000,
+      });
     }
   };
 
@@ -229,12 +259,19 @@ const EmployeeAdminNews = () => {
   const handlePublishNews = async () => {
     try {
       const result = await publishNews(currentRecord.id).unwrap();
-      message.success("News status updated successfully!");
+      enqueueSnackbar("News status updated successfully!", {
+        variant: "success",
+        autoHideDuration: 4000,
+      });
       setPublishModalVisible(false);
       refetch();
     } catch (error) {
       console.error("Error updating news status:", error);
-      message.error(error?.data?.message || "Failed to update news status");
+      const errorMessage = error?.data?.message || error?.message || "Failed to update news status";
+      enqueueSnackbar(errorMessage, {
+        variant: "error",
+        autoHideDuration: 6000,
+      });
     }
   };
 
@@ -526,6 +563,26 @@ const EmployeeAdminNews = () => {
                 <Form.Item 
                   label={newsType === "event" ? "Event Description" : "News Description"} 
                   name="description"
+                  rules={[
+                    {
+                      required: true,
+                      message: newsType === "event" 
+                        ? "Event description is required" 
+                        : "News description is required",
+                    },
+                    {
+                      whitespace: true,
+                      message: newsType === "event" 
+                        ? "Event description cannot be empty" 
+                        : "News description cannot be empty",
+                    },
+                    {
+                      min: 10,
+                      message: newsType === "event" 
+                        ? "Event description must be at least 10 characters" 
+                        : "News description must be at least 10 characters",
+                    },
+                  ]}
                 >
                   <TextArea
                     rows={4}

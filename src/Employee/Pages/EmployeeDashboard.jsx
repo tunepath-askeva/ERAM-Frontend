@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   useGetEmployeeProfileQuery,
   useGetEmployeeNotificationQuery,
   useGetRequestHistoryQuery,
+  useGetEmployeeLeaveHistoryQuery,
   useGetCompanyNewsQuery,
   useGetEmployeeDocumentsQuery,
 } from "../../Slices/Employee/EmployeeApis";
@@ -64,15 +65,60 @@ const EmployeeDashboard = () => {
     data: requestsData,
     isLoading: requestsLoading,
     error: requestsError,
-  } = useGetRequestHistoryQuery({ page: 1, pageSize: 5 }, { skip: false });
+  } = useGetRequestHistoryQuery({ page: 1, pageSize: 10 }, { skip: false });
+  const {
+    data: leaveRequestsData,
+    isLoading: leaveRequestsLoading,
+    error: leaveRequestsError,
+  } = useGetEmployeeLeaveHistoryQuery({ page: 1, limit: 10 });
   const { data: newsData, isLoading: newsLoading } = useGetCompanyNewsQuery();
   const { data: documentsData, isLoading: documentsLoading } = useGetEmployeeDocumentsQuery();
 
   const employee = profileData?.employee;
   const notifications = notificationsData?.notifications || [];
-  const requests = requestsData?.requests || [];
+  const regularRequests = requestsData?.requests || [];
+  const leaveRequests = leaveRequestsData?.leaves || [];
   const publishedNewsOnly = getPublishedNewsOnly(newsData);
   const publishedEvents = getPublishedEvents(newsData);
+
+  // ── Combine and sort requests ──────────────────────────────────────────────
+  const combinedRequests = useMemo(() => {
+    // Transform leave requests to match regular request format
+    const transformedLeaveRequests = leaveRequests.map((leave) => ({
+      _id: leave._id,
+      requestType: "Leave Request",
+      description: `${leave.leaveType?.charAt(0).toUpperCase() + leave.leaveType?.slice(1) || "Leave"} Leave${leave.isHalfDay ? " (Half Day)" : ""} - ${leave.reason || "No reason provided"}`,
+      subject: `${leave.leaveType?.charAt(0).toUpperCase() + leave.leaveType?.slice(1) || "Leave"} Leave Request`,
+      status: leave.status?.toLowerCase() || "pending",
+      createdAt: leave.appliedDate || leave.createdAt || new Date().toISOString(),
+      isLeaveRequest: true, // Flag to identify leave requests
+      leaveType: leave.leaveType,
+      startDate: leave.startDate,
+      endDate: leave.endDate,
+    }));
+
+    // Transform regular requests to ensure consistent format
+    const transformedRegularRequests = regularRequests.map((request) => ({
+      ...request,
+      isLeaveRequest: false,
+    }));
+
+    // Combine both arrays
+    const allRequests = [...transformedRegularRequests, ...transformedLeaveRequests];
+
+    // Sort by createdAt (latest first) and take top 5
+    return allRequests
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA; // Descending order (latest first)
+      })
+      .slice(0, 5);
+  }, [regularRequests, leaveRequests]);
+
+  // Combined loading and error states
+  const isRequestsLoading = requestsLoading || leaveRequestsLoading;
+  const hasRequestsError = requestsError || leaveRequestsError;
 
   const documentStatus = React.useMemo(
     () => calculateDocumentStatus(documentsData),
@@ -139,7 +185,7 @@ const EmployeeDashboard = () => {
 
           {/* Notifications + Requests — stacked */}
           <NotificationsCard notifications={notifications} notificationsLoading={notificationsLoading} screenSize={screenSize} />
-          <RequestsCard requests={requests} requestsLoading={requestsLoading} requestsError={requestsError} screenSize={screenSize} />
+          <RequestsCard requests={combinedRequests} requestsLoading={isRequestsLoading} requestsError={hasRequestsError} screenSize={screenSize} />
 
           {/* News, Events, Policies — stacked */}
           <NewsCard publishedNews={publishedNewsOnly} newsLoading={newsLoading} screenSize={screenSize} isRightSidebar={true} />
@@ -188,7 +234,7 @@ const EmployeeDashboard = () => {
             {/* Row 2 — notifications + requests side by side */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: GAP }}>
               <NotificationsCard notifications={notifications} notificationsLoading={notificationsLoading} screenSize={screenSize} />
-              <RequestsCard requests={requests} requestsLoading={requestsLoading} requestsError={requestsError} screenSize={screenSize} />
+              <RequestsCard requests={combinedRequests} requestsLoading={isRequestsLoading} requestsError={hasRequestsError} screenSize={screenSize} />
             </div>
 
             {/* Row 3 — news, events, policies (3 equal columns) */}
@@ -286,9 +332,9 @@ const EmployeeDashboard = () => {
           </div>
           <div style={{ height: "100%", overflow: "hidden" }}>
             <RequestsCard
-              requests={requests}
-              requestsLoading={requestsLoading}
-              requestsError={requestsError}
+              requests={combinedRequests}
+              requestsLoading={isRequestsLoading}
+              requestsError={hasRequestsError}
               screenSize={screenSize}
             />
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tabs, message, Upload, Result, Button } from "antd";
+import "./EmployeeProfileSettings.css";
 
 // Breakpoints for responsive design
 const BREAKPOINTS = {
@@ -39,6 +40,7 @@ import SkeletonLoader from "../../Global/SkeletonLoader";
 import EducationCard from "../Components/EducationCard";
 import WorkExperienceCard from "../Components/WorkExperienceCard";
 import { useSnackbar } from "notistack";
+import { calculateProfileCompletion } from "../Components/Dashboard/utils";
 
 const { TabPane } = Tabs;
 
@@ -89,62 +91,9 @@ const EmployeeProfileSettings = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const calculateProfileCompletion = () => {
-    if (!employeeData) return 0;
-
-    const requiredFields = [
-      // Personal Info
-      employeeData.firstName,
-      employeeData.lastName,
-      employeeData.email,
-      employeeData.phone,
-      employeeData.dateOfBirth,
-      employeeData.age,
-      employeeData.gender,
-      employeeData.nationality,
-      employeeData.countryOfBirth,
-
-      // Employment Details - FIX: Access nested properties correctly
-      employeeData.employmentDetails?.assignedJobTitle,
-      employeeData.employmentDetails?.eramId,
-      employeeData.employmentDetails?.officialEmail,
-      employeeData.employmentDetails?.dateOfJoining,
-      employeeData.employmentDetails?.category,
-      employeeData.employmentDetails?.designation,
-      employeeData.employmentDetails?.visaCategory,
-
-      // Documents
-      employeeData.passportNo,
-      employeeData.iqamaNo,
-
-      // Arrays/Objects - FIX: Check if arrays exist and have length
-      employeeData.skills && employeeData.skills.length > 0 ? "skills" : null,
-      employeeData.languages && employeeData.languages.length > 0
-        ? "languages"
-        : null,
-      employeeData.education && employeeData.education.length > 0
-        ? "education"
-        : null,
-      employeeData.workExperience && employeeData.workExperience.length > 0
-        ? "workExperience"
-        : null,
-      employeeData.certificates && employeeData.certificates.length > 0
-        ? "certificates"
-        : null,
-
-      // Profile
-      employeeData.image,
-      employeeData.profileSummary,
-    ];
-
-    const filledFields = requiredFields.filter(
-      (field) =>
-        field !== null &&
-        field !== undefined &&
-        (typeof field === "string" ? field.trim() !== "" : true)
-    ).length;
-
-    return Math.round((filledFields / requiredFields.length) * 100);
+  // Use the shared utility function for consistent profile completion calculation
+  const getProfileCompletion = () => {
+    return calculateProfileCompletion(employeeData);
   };
 
   const handleProfileUpdate = async (values) => {
@@ -470,9 +419,14 @@ const EmployeeProfileSettings = () => {
             activeKey={activeTab}
             onChange={setActiveTab}
             tabPosition={tabPosition}
+            animated={{
+              inkBar: true,
+              tabPane: true,
+            }}
             size={tabSize}
             style={{ 
               minHeight: screenSize.isMobile ? "400px" : "600px",
+              transition: "all 0.3s ease-in-out",
             }}
             tabBarStyle={
               tabPosition === "left"
@@ -503,13 +457,16 @@ const EmployeeProfileSettings = () => {
               }
               key="overview"
             >
-              <div style={{ 
-                display: "flex", 
-                flexDirection: "column", 
-                gap: screenSize.isMobile ? "12px" : screenSize.isTablet ? "16px" : "20px" 
-              }}>
+              <div 
+                className="tab-content-wrapper"
+                style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: screenSize.isMobile ? "12px" : screenSize.isTablet ? "16px" : "20px" 
+                }}
+              >
                 <ProfileCompletionCard
-                  completionPercentage={calculateProfileCompletion()}
+                  completionPercentage={getProfileCompletion()}
                 />
                 
                 <PersonalInformationCard
@@ -520,8 +477,6 @@ const EmployeeProfileSettings = () => {
                 
                 <EmploymentDetailsCard
                   employeeData={employeeData}
-                  loading={isUpdating}
-                  onUpdate={handleProfileUpdate}
                 />
               </div>
             </TabPane>

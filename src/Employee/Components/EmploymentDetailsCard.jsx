@@ -1,65 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Card,
   Form,
   Input,
   Row,
   Col,
-  Button,
-  Space,
   Typography,
   DatePicker,
   Switch,
   Select,
 } from "antd";
 import {
-  EditOutlined,
-  CalendarOutlined,
   IdcardOutlined,
   MailOutlined,
-  SafetyCertificateOutlined,
-  TeamOutlined,
-  BankOutlined,
   SafetyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useSnackbar } from "notistack";
-import { useGetProjectsQuery } from "../../Slices/Admin/AdminApis";
 
 const { Text } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
-const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
-  const { enqueueSnackbar } = useSnackbar();
+const EmploymentDetailsCard = ({ employeeData }) => {
   const [form] = Form.useForm();
-  const [editMode, setEditMode] = useState(false);
-  
-  // Fetch projects for project selection
-  const { data: projectsData } = useGetProjectsQuery({ 
-    page: 1, 
-    pageSize: 1000 
-  });
-  const projects = projectsData?.allProjects || [];
-
-  const handleSubmit = async (values) => {
-    try {
-      await onUpdate({
-        employmentDetails: values,
-      });
-      enqueueSnackbar("Employment details updated successfully!", {
-        variant: "success",
-      });
-      setEditMode(false);
-    } catch (error) {
-      console.error("Failed to update employment details", error);
-      enqueueSnackbar(
-        error?.data?.message || "Failed to update employment details",
-        {
-          variant: "error",
-        }
-      );
-    }
-  };
 
   // Format date for DatePicker
   const formatDate = (dateString) => {
@@ -147,32 +110,16 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
   return (
     <Card
       title={
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>
-            <SafetyOutlined style={{ marginRight: 8, color: "#da2c46" }} />
-            Employment Details
-          </span>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => setEditMode(!editMode)}
-          >
-            {editMode ? "Cancel" : "Edit"}
-          </Button>
-        </div>
+        <span>
+          <SafetyOutlined style={{ marginRight: 8, color: "#da2c46" }} />
+          Employment Details (Read Only)
+        </span>
       }
       style={{ marginBottom: 24, borderRadius: "12px" }}
     >
       <Form
         form={form}
         layout="vertical"
-        onFinish={handleSubmit}
         initialValues={formInitialValues}
       >
         <Row gutter={24}>
@@ -261,41 +208,20 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
 
           <Col xs={24} sm={12}>
             <Form.Item label="Assigned Project" name="project">
-              {editMode ? (
-                <Select
-                  placeholder="Select project"
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.children?.toString()?.toLowerCase() ?? "").includes(
-                      input.toLowerCase()
-                    )
-                  }
-                  allowClear
-                  style={{ width: "100%" }}
-                >
-                  {projects.map((project) => (
-                    <Select.Option key={project._id} value={project._id}>
-                      {project.name} {project.prefix && `(${project.prefix})`}
-                    </Select.Option>
-                  ))}
-                </Select>
-              ) : (
-                <Input
-                  value={
-                    employeeData?.employmentDetails?.project
-                      ? typeof employeeData.employmentDetails.project === "object"
-                        ? `${employeeData.employmentDetails.project.name} ${
-                            employeeData.employmentDetails.project.prefix
-                              ? `(${employeeData.employmentDetails.project.prefix})`
-                              : ""
-                          }`
-                        : "N/A"
+              <Input
+                value={
+                  employeeData?.employmentDetails?.project
+                    ? typeof employeeData.employmentDetails.project === "object"
+                      ? `${employeeData.employmentDetails.project.name} ${
+                          employeeData.employmentDetails.project.prefix
+                            ? `(${employeeData.employmentDetails.project.prefix})`
+                            : ""
+                        }`
                       : "N/A"
-                  }
-                  disabled
-                />
-              )}
+                    : "N/A"
+                }
+                disabled
+              />
             </Form.Item>
           </Col>
 
@@ -411,109 +337,109 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             </Form.Item>
           </Col>
 
-          {/* Editable Section */}
+          {/* Additional Employment Details Section */}
           <Col span={24} style={{ marginTop: 24 }}>
             <Text
               strong
               style={{ color: "#da2c46", marginBottom: 16, display: "block" }}
             >
-              Editable Employment Details
+              Additional Employment Details (Read Only)
             </Text>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Department" name="department">
-              <Input disabled={!editMode} placeholder="Enter department" />
+              <Input disabled placeholder="Enter department" />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Reporting Manager" name="reportingManager">
-              <Input disabled={!editMode} placeholder="Enter reporting manager name" />
+              <Input disabled placeholder="Enter reporting manager name" />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Badge Number" name="badgeNo">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Gate Pass ID" name="gatePassId">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Aramco ID" name="aramcoId">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Other ID" name="otherId">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Plant ID" name="plantId">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={8}>
             <Form.Item label="Visa Category" name="visaCategory">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Period of Contract" name="periodOfContract">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Probation Period" name="probationPeriod">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Insurance Category" name="insuranceCategory">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Medical Policy Number" name="medicalPolicyNumber">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Number of Dependents" name="noOfDependent">
-              <Input type="number" disabled={!editMode} />
+              <Input type="number" disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Work Days" name="workDays">
-              <Input type="number" disabled={!editMode} />
+              <Input type="number" disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Work Hours" name="workHours">
-              <Input type="number" disabled={!editMode} />
+              <Input type="number" disabled />
             </Form.Item>
           </Col>
 
           <Col xs={24} sm={12}>
             <Form.Item label="Air Ticket Frequency" name="airTicketFrequency">
-              <Input disabled={!editMode} />
+              <Input disabled />
             </Form.Item>
           </Col>
 
@@ -522,7 +448,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -532,7 +458,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -542,7 +468,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -552,7 +478,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -565,7 +491,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -578,7 +504,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
               <DatePicker
                 style={{ width: "100%" }}
                 format="YYYY-MM-DD"
-                disabled={!editMode}
+                disabled
               />
             </Form.Item>
           </Col>
@@ -587,7 +513,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             <Form.Item label="Basic Assets" name="basicAssets">
               <TextArea
                 rows={3}
-                disabled={!editMode}
+                disabled
                 placeholder="List of basic assets assigned"
               />
             </Form.Item>
@@ -600,7 +526,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             >
               <TextArea
                 rows={3}
-                disabled={!editMode}
+                disabled
                 placeholder="Reporting and documentation details"
               />
             </Form.Item>
@@ -611,7 +537,7 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
             <Form.Item label="Asset Allocation" name="assetAllocation">
               <Select
                 mode="tags"
-                disabled={!editMode}
+                disabled
                 placeholder="Add assets"
                 style={{ width: "100%" }}
               >
@@ -645,21 +571,6 @@ const EmploymentDetailsCard = ({ employeeData, loading, onUpdate }) => {
           </Col>
         </Row>
 
-        {editMode && (
-          <div style={{ textAlign: "right", marginTop: 16 }}>
-            <Space>
-              <Button onClick={() => setEditMode(false)}>Cancel</Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                style={{ background: "#da2c46", border: "none" }}
-              >
-                Save Employment Details
-              </Button>
-            </Space>
-          </div>
-        )}
       </Form>
     </Card>
   );

@@ -89,6 +89,7 @@ import EmployeeDocuments from "./Employee/Pages/EmployeeDocuments";
 import EmployeeAdminDocuments from "./EmployeeAdmin/Pages/EmployeeAdminDocuments";
 import EmployeeDocumentDetail from "./EmployeeAdmin/Components/EmployeeDocumentDetails";
 import EmployeeAdminExpiredDocuments from "./EmployeeAdmin/Pages/EmployeeAdminExpiredDocuments";
+import EmployeeAdminConfiguration from "./EmployeeAdmin/Pages/EmployeeAdminConfiguration";
 import AdminNotifications from "./Admin/Pages/AdminNotifications";
 import SuperAdminNotifications from "./SuperAdmin/Pages/SuperAdminNotifications";
 import EmployeeAdminNotifications from "./EmployeeAdmin/Pages/EmployeeAdminNotifications";
@@ -573,6 +574,12 @@ const AppRoutes = () => {
           path="/employee-admin/payroll"
           element={
             <ProtectedEmployeeAdmin element={<EmployeeAdminPayroll />} />
+          }
+        />
+          <Route
+          path="/employee-admin/configuration"
+          element={
+            <ProtectedEmployeeAdmin element={<EmployeeAdminConfiguration />} />
           }
         />
       </Route>

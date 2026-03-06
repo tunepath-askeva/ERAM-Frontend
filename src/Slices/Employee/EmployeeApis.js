@@ -568,6 +568,32 @@ export const employeeApi = createApi({
         body: formData,
       }),
     }),
+    // Request Configuration APIs
+    getEmployeeAdminRecruiters: builder.query({
+      query: () => ({
+        url: "/config/recruiters",
+        method: "GET",
+      }),
+    }),
+    getRequestConfiguration: builder.query({
+      query: () => ({
+        url: "/config/requests",
+        method: "GET",
+      }),
+    }),
+    saveRequestConfiguration: builder.mutation({
+      query: (data) => ({
+        url: "/config/requests",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    deleteRequestConfiguration: builder.mutation({
+      query: (requestType) => ({
+        url: `/config/requests/${encodeURIComponent(requestType)}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -625,4 +651,8 @@ export const {
   useBulkNotifyExpiredDocumentsMutation,
   useSingleNotifyExpiredDocumentMutation,
   useUpdateEmployeeProfileMutation,
+  useGetEmployeeAdminRecruitersQuery,
+  useGetRequestConfigurationQuery,
+  useSaveRequestConfigurationMutation,
+  useDeleteRequestConfigurationMutation,
 } = employeeApi;

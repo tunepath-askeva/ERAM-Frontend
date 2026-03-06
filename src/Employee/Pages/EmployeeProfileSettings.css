@@ -1,0 +1,82 @@
+/* Smooth transitions for tab content */
+.ant-tabs-content-holder {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  will-change: opacity, transform;
+}
+
+.ant-tabs-tabpane {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  will-change: opacity, transform;
+}
+
+.ant-tabs-tabpane-active {
+  animation: fadeInSlide 0.3s ease-in-out;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth tab indicator transition */
+.ant-tabs-ink-bar {
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
+}
+
+/* Smooth tab label transitions */
+.ant-tabs-tab {
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.ant-tabs-tab:hover {
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.ant-tabs-tab-active {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Smooth content transitions within tabs */
+.ant-tabs-content {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Smooth transitions for tab content wrapper */
+.ant-tabs-content-top,
+.ant-tabs-content-bottom,
+.ant-tabs-content-left,
+.ant-tabs-content-right {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Ensure smooth scrolling within tab content */
+.ant-tabs-content-holder {
+  overflow: visible;
+}
+
+/* Add smooth transition for card content within tabs */
+.ant-tabs-tabpane > div {
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Performance optimization */
+.ant-tabs-tabpane,
+.ant-tabs-content-holder {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Smooth transition for tab content wrapper */
+.tab-content-wrapper {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  will-change: opacity, transform;
+}
+

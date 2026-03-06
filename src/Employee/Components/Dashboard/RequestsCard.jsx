@@ -12,6 +12,21 @@ const { Text } = Typography;
 const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) => {
   const navigate = useNavigate();
 
+  const handleCardClick = () => {
+    // Navigate to raise request page by default
+    navigate("/employee/raise-request");
+  };
+
+  const handleRequestClick = (request, e) => {
+    e.stopPropagation();
+    // Navigate to leave request page if it's a leave request, otherwise raise request page
+    if (request.isLeaveRequest) {
+      navigate("/employee/leave-request");
+    } else {
+      navigate("/employee/raise-request");
+    }
+  };
+
   return (
     <Card
       title={
@@ -23,7 +38,7 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
         </Space>
       }
       hoverable
-      onClick={() => navigate("/employee/raise-request")}
+      onClick={handleCardClick}
       style={{
         cursor: "pointer",
         borderRadius: "12px",
@@ -91,7 +106,9 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
                   requests.indexOf(request) < requests.slice(0, 5).length - 1
                     ? "1px solid #f0f0f0"
                     : "none",
+                cursor: "pointer",
               }}
+              onClick={(e) => handleRequestClick(request, e)}
             >
               <Space style={{ width: "100%" }} align="start" size="small">
                 <div style={{ flex: 1, minWidth: 0 }}>

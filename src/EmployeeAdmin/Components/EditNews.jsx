@@ -10,12 +10,12 @@ import {
   Divider,
   Row,
   Col,
-  message,
   Spin,
   Alert,
   Select,
   DatePicker,
 } from "antd";
+import { useSnackbar } from "notistack";
 import {
   PlusOutlined,
   SaveOutlined,
@@ -33,6 +33,7 @@ const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 const EditNews = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form] = Form.useForm();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -100,7 +101,8 @@ const handleSubmit = async (values) => {
     const formData = new FormData();
 
     formData.append("title", values.title);
-    formData.append("description", values.description || "");
+    // Description is required - validation is handled by form rules
+    formData.append("description", values.description?.trim() || "");
     formData.append("type", values.type || "news");
     
     if (values.type === "event") {
@@ -144,11 +146,32 @@ const handleSubmit = async (values) => {
     }
 
     const result = await updateNews({ id, formData }).unwrap();
-    message.success(result.message || "News updated successfully!");
+    enqueueSnackbar(result.message || "News updated successfully!", {
+      variant: "success",
+      autoHideDuration: 4000,
+    });
     navigate("/employee-admin/news");
   } catch (error) {
     console.error("Error updating news:", error);
-    message.error(error?.data?.message || "Failed to update news");
+    // Extract detailed error message
+    let errorMessage = "Failed to update news";
+    
+    if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.data?.error) {
+      errorMessage = error.data.error;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (error?.errors) {
+      // Handle validation errors
+      const validationErrors = Object.values(error.errors).map(err => err.message || err).join(", ");
+      errorMessage = validationErrors || errorMessage;
+    }
+    
+    enqueueSnackbar(errorMessage, {
+      variant: "error",
+      autoHideDuration: 6000,
+    });
   }
 };
 
@@ -377,9 +400,29 @@ const handleSubmit = async (values) => {
             </Col>
           </Row>
 
-          <Form.Item 
-            label={newsType === "event" ? "Event Description" : "News Description"} 
+          <Form.Item
+            label={newsType === "event" ? "Event Description" : "News Description"}
             name="description"
+            rules={[
+              {
+                required: true,
+                message: newsType === "event" 
+                  ? "Event description is required" 
+                  : "News description is required",
+              },
+              {
+                whitespace: true,
+                message: newsType === "event" 
+                  ? "Event description cannot be empty" 
+                  : "News description cannot be empty",
+              },
+              {
+                min: 10,
+                message: newsType === "event" 
+                  ? "Event description must be at least 10 characters" 
+                  : "News description must be at least 10 characters",
+              },
+            ]}
           >
             <TextArea
               rows={4}

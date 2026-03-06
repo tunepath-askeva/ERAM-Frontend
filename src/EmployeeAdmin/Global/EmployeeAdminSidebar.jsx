@@ -18,6 +18,7 @@ import {
   UsergroupDeleteOutlined,
   ClockCircleOutlined,
   DownOutlined,
+  SafetyOutlined
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,7 +66,7 @@ const EmployeeAdminSidebar = ({
   const dispatch = useDispatch();
 
   const permissions = useSelector(
-    (state) => state.userAuth.recruiterPermissions
+    (state) => state.userAuth.recruiterPermissions,
   );
   const location = useLocation();
   const selectedKey = location.pathname;
@@ -166,6 +167,12 @@ const EmployeeAdminSidebar = ({
       permission: "feedback-suggestion",
     },
     {
+      key: "/employee-admin/configuration",
+      icon: <SafetyOutlined />,
+      label: "Configuration",
+      permission: "config",
+    },
+    {
       key: "/employee-admin/notifications",
       icon: <BellOutlined />,
       label: "Notifications",
@@ -209,10 +216,11 @@ const EmployeeAdminSidebar = ({
           }
 
           // Extract branch logo - check multiple possible paths
-          const branchLogo = 
-            parsedData.branch?.brand_logo || 
-            (typeof parsedData.branch === 'object' && parsedData.branch?.brand_logo) ||
-            parsedData.brand_logo || 
+          const branchLogo =
+            parsedData.branch?.brand_logo ||
+            (typeof parsedData.branch === "object" &&
+              parsedData.branch?.brand_logo) ||
+            parsedData.brand_logo ||
             null;
 
           const extractedInfo = {
@@ -310,7 +318,7 @@ const EmployeeAdminSidebar = ({
           .map((item) => {
             if (item.isGroup && item.children) {
               const filteredChildren = item.children.filter((child) =>
-                permissions.includes(child.permission)
+                permissions.includes(child.permission),
               );
               if (filteredChildren.length > 0) {
                 return { ...item, children: filteredChildren };
@@ -337,7 +345,7 @@ const EmployeeAdminSidebar = ({
       menuItems.forEach((item) => {
         if (item.isGroup && item.children) {
           const hasActiveChild = item.children.some(
-            (child) => child.key === selectedKey
+            (child) => child.key === selectedKey,
           );
           newOpenSubmenus[item.key] = hasActiveChild;
         }
@@ -372,7 +380,7 @@ const EmployeeAdminSidebar = ({
           variant: "error",
           anchorOrigin: { vertical: "top", horizontal: "right" },
           autoHideDuration: 3000,
-        }
+        },
       );
     }
   };
@@ -475,13 +483,13 @@ const EmployeeAdminSidebar = ({
                 backgroundColor: hasActiveChild
                   ? "#fef2f2"
                   : hoveredKey === item.key
-                  ? "#f1f5f9"
-                  : "transparent",
+                    ? "#f1f5f9"
+                    : "transparent",
                 color: hasActiveChild
                   ? "#e11d48"
                   : hoveredKey === item.key
-                  ? "#1e293b"
-                  : "#475569",
+                    ? "#1e293b"
+                    : "#475569",
                 border: "none",
                 cursor: "pointer",
                 fontWeight: hasActiveChild ? "600" : "500",
@@ -489,9 +497,7 @@ const EmployeeAdminSidebar = ({
                 textAlign: "left",
                 height: getMenuItemHeight(),
                 justifyContent:
-                  collapsed && !screenSize.isMobile
-                    ? "center"
-                    : "flex-start",
+                  collapsed && !screenSize.isMobile ? "center" : "flex-start",
               }}
               onMouseEnter={() => setHoveredKey(item.key)}
               onMouseLeave={() => setHoveredKey(null)}
@@ -501,8 +507,8 @@ const EmployeeAdminSidebar = ({
                   color: hasActiveChild
                     ? "#e11d48"
                     : hoveredKey === item.key
-                    ? "#e11d48"
-                    : "#64748b",
+                      ? "#e11d48"
+                      : "#64748b",
                   fontSize: getIconSize(),
                   minWidth: getIconSize(),
                 },
@@ -520,8 +526,8 @@ const EmployeeAdminSidebar = ({
                       color: hasActiveChild
                         ? "#e11d48"
                         : hoveredKey === item.key
-                        ? "#e11d48"
-                        : "#64748b",
+                          ? "#e11d48"
+                          : "#64748b",
                     }}
                   />
                 </>
@@ -534,7 +540,11 @@ const EmployeeAdminSidebar = ({
               {item.isGroup ? (
                 <>
                   {collapsed && !screenSize.isMobile ? (
-                    <Tooltip title={item.label} placement="right" mouseEnterDelay={0.5}>
+                    <Tooltip
+                      title={item.label}
+                      placement="right"
+                      mouseEnterDelay={0.5}
+                    >
                       {groupButton}
                     </Tooltip>
                   ) : (
@@ -559,14 +569,14 @@ const EmployeeAdminSidebar = ({
                             selectedKey === child.key
                               ? "#fde2e4"
                               : hoveredKey === child.key
-                              ? "#f1f5f9"
-                              : "transparent",
+                                ? "#f1f5f9"
+                                : "transparent",
                           color:
                             selectedKey === child.key
                               ? "#e11d48"
                               : hoveredKey === child.key
-                              ? "#1e293b"
-                              : "#475569",
+                                ? "#1e293b"
+                                : "#475569",
                           border: "none",
                           cursor: "pointer",
                           fontWeight: selectedKey === child.key ? "600" : "400",
@@ -587,8 +597,8 @@ const EmployeeAdminSidebar = ({
                               selectedKey === child.key
                                 ? "#e11d48"
                                 : hoveredKey === child.key
-                                ? "#e11d48"
-                                : "#64748b",
+                                  ? "#e11d48"
+                                  : "#64748b",
                             fontSize: getIconSize(),
                             minWidth: getIconSize(),
                           },
@@ -614,21 +624,23 @@ const EmployeeAdminSidebar = ({
                           selectedKey === item.key
                             ? "#fde2e4"
                             : hoveredKey === item.key
-                            ? "#f1f5f9"
-                            : "transparent",
+                              ? "#f1f5f9"
+                              : "transparent",
                         color:
                           selectedKey === item.key
                             ? "#e11d48"
                             : hoveredKey === item.key
-                            ? "#1e293b"
-                            : "#475569",
+                              ? "#1e293b"
+                              : "#475569",
                         border: "none",
                         cursor: "pointer",
                         fontWeight: "500",
                         fontSize: screenSize.isMobile ? "16px" : "14px",
                         textAlign: "left",
                         borderRight:
-                          selectedKey === item.key ? "2px solid #e11d48" : "none",
+                          selectedKey === item.key
+                            ? "2px solid #e11d48"
+                            : "none",
                         height: getMenuItemHeight(),
                         justifyContent:
                           collapsed && !screenSize.isMobile
@@ -644,8 +656,8 @@ const EmployeeAdminSidebar = ({
                             selectedKey === item.key
                               ? "#e11d48"
                               : hoveredKey === item.key
-                              ? "#e11d48"
-                              : "#64748b",
+                                ? "#e11d48"
+                                : "#64748b",
                           fontSize: getIconSize(),
                           minWidth: getIconSize(),
                         },
@@ -657,7 +669,11 @@ const EmployeeAdminSidebar = ({
                   );
 
                   return collapsed && !screenSize.isMobile ? (
-                    <Tooltip title={item.label} placement="right" mouseEnterDelay={0.5}>
+                    <Tooltip
+                      title={item.label}
+                      placement="right"
+                      mouseEnterDelay={0.5}
+                    >
                       {menuButton}
                     </Tooltip>
                   ) : (

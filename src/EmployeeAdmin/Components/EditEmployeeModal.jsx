@@ -42,6 +42,7 @@ const EditEmployeeModal = ({
     eramId: "",
     dateOfJoining: "",
     officialEmail: "",
+    employeeType: "site_employee", // site_employee or admin_employee
     badgeNo: "",
     gatePassId: "",
     aramcoId: "",
@@ -107,6 +108,7 @@ const EditEmployeeModal = ({
               .split("T")[0]
           : "",
         officialEmail: employee.employmentDetails?.officialEmail || "",
+        employeeType: employee.employmentDetails?.employeeType || "site_employee",
         badgeNo: employee.employmentDetails?.badgeNo || "",
         gatePassId: employee.employmentDetails?.gatePassId || "",
         aramcoId: employee.employmentDetails?.aramcoId || "",
@@ -264,6 +266,14 @@ const EditEmployeeModal = ({
 
     if (formData.officialEmail && !emailRegex.test(formData.officialEmail)) {
       enqueueSnackbar("Please enter a valid official email address", {
+        variant: "error",
+      });
+      return false;
+    }
+
+    // Validate official email for admin employees
+    if (formData.employeeType === "admin_employee" && !formData.officialEmail) {
+      enqueueSnackbar("Official Email is required for Admin Employees", {
         variant: "error",
       });
       return false;
@@ -712,24 +722,73 @@ const EditEmployeeModal = ({
                 />
               </div>
 
-              <div>
+              <div style={{ gridColumn: "1 / -1" }}>
                 <label
                   style={{
                     display: "block",
-                    marginBottom: "6px",
+                    marginBottom: "8px",
                     fontWeight: 500,
                   }}
                 >
-                  Official Email
+                  Employee Type *
                 </label>
-                <Input
-                  placeholder="Enter official email"
-                  type="email"
-                  value={formData.officialEmail}
-                  onChange={(e) =>
-                    handleInputChange("officialEmail", e.target.value)
-                  }
-                />
+                <div style={{ display: "flex", gap: "16px" }}>
+                  <Checkbox
+                    checked={formData.employeeType === "site_employee"}
+                    onChange={() => handleInputChange("employeeType", "site_employee")}
+                  >
+                    Site Employee
+                  </Checkbox>
+                  <Checkbox
+                    checked={formData.employeeType === "admin_employee"}
+                    onChange={() => handleInputChange("employeeType", "admin_employee")}
+                  >
+                    Admin Employee
+                  </Checkbox>
+                </div>
+                {formData.employeeType === "admin_employee" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: 500,
+                        color: "#da2c46",
+                      }}
+                    >
+                      Official Email * (Required for Admin Employees)
+                    </label>
+                    <Input
+                      placeholder="Enter official email (for recruiter login)"
+                      type="email"
+                      value={formData.officialEmail}
+                      onChange={(e) =>
+                        handleInputChange("officialEmail", e.target.value)
+                      }
+                    />
+                  </div>
+                )}
+                {formData.employeeType === "site_employee" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Official Email (Optional)
+                    </label>
+                    <Input
+                      placeholder="Enter official email (optional)"
+                      type="email"
+                      value={formData.officialEmail}
+                      onChange={(e) =>
+                        handleInputChange("officialEmail", e.target.value)
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
               <div>

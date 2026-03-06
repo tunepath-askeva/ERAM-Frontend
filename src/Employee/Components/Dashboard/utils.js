@@ -7,6 +7,7 @@ export const calculateProfileCompletion = (employee) => {
   if (!employee) return 0;
 
   const requiredFields = [
+    // Personal Info
     employee.firstName,
     employee.lastName,
     employee.email,
@@ -16,20 +17,32 @@ export const calculateProfileCompletion = (employee) => {
     employee.gender,
     employee.nationality,
     employee.countryOfBirth,
+    
+    // Employment Details
     employee.employmentDetails?.assignedJobTitle,
     employee.employmentDetails?.eramId,
     employee.employmentDetails?.officialEmail,
     employee.employmentDetails?.dateOfJoining,
     employee.employmentDetails?.category,
     employee.employmentDetails?.designation,
+    employee.employmentDetails?.visaCategory,
+    
+    // Documents
     employee.passportNo,
     employee.iqamaNo,
+    
+    // Arrays/Objects - Check if arrays exist and have length
     employee.skills && employee.skills.length > 0 ? "skills" : null,
     employee.languages && employee.languages.length > 0 ? "languages" : null,
     employee.education && employee.education.length > 0 ? "education" : null,
     employee.workExperience && employee.workExperience.length > 0
       ? "workExperience"
       : null,
+    employee.certificates && employee.certificates.length > 0
+      ? "certificates"
+      : null,
+    
+    // Profile
     employee.image,
     employee.profileSummary,
   ];

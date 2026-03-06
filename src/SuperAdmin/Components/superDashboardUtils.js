@@ -168,7 +168,7 @@ export const handleSuperDashboardExportExcel = (
       ["Total Clients", getSafeNumber(filteredData?.statistics?.totalClients)],
       ["Total Projects", getSafeNumber(filteredData?.statistics?.totalProjects)],
       ["Active Work Orders", getSafeNumber(filteredData?.statistics?.activeWorkOrders)],
-      ["Inactive Work Orders", getSafeNumber(filteredData?.statistics?.totalWorkOrders) - getSafeNumber(filteredData?.statistics?.activeWorkOrders)],
+      ["Inactive Work Orders", Math.max(0, getSafeNumber(filteredData?.statistics?.totalWorkOrders) - getSafeNumber(filteredData?.statistics?.activeWorkOrders))],
       ["Total Work Orders", getSafeNumber(filteredData?.statistics?.totalWorkOrders)],
       ["Active Requisitions", getSafeNumber(filteredData?.statistics?.activeRequisitions)],
       ["Total Candidates Needed", getSafeNumber(filteredData?.statistics?.totalCandidatesNeeded)],
@@ -246,7 +246,7 @@ export const handleSuperDashboardExportExcel = (
       const workOrderData = filteredData.workOrders.map((wo) => {
         const metrics = getWOCandidateMetrics(wo.id, wo.title, filteredData);
         const daysUntilDeadline = wo.deadlineDate
-          ? Math.max(0, dayjs(wo.deadlineDate).diff(dayjs(), "days"))
+          ? dayjs(wo.deadlineDate).diff(dayjs(), "days")
           : null;
         const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0;
 
