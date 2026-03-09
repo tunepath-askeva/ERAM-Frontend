@@ -151,13 +151,20 @@ const EmployeeCompanyPolicy = () => {
       defaultSortOrder: "descend",
     },
     {
-      title: "Content Preview",
-      dataIndex: "content",
-      key: "content",
-      render: (content) => (
-        <Text ellipsis={{ tooltip: true }} style={{ width: 200 }}>
-          {content.substring(0, 100)}...
-        </Text>
+      title: "File",
+      key: "file",
+      render: (_, record) => (
+        record.fileUrl ? (
+          <Tag color="green" icon={<FileTextOutlined />}>
+            File Available
+          </Tag>
+        ) : record.content ? (
+          <Tag color="blue" icon={<FileTextOutlined />}>
+            Text Content
+          </Tag>
+        ) : (
+          <Tag color="default">No Content</Tag>
+        )
       ),
     },
     {
@@ -165,6 +172,20 @@ const EmployeeCompanyPolicy = () => {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
+          {record.fileUrl && (
+            <Tooltip title="Download Policy File">
+              <Button
+                type="default"
+                icon={<DownloadOutlined />}
+                size="small"
+                onClick={() => {
+                  window.open(record.fileUrl, "_blank");
+                }}
+              >
+                Download
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip title="View Policy">
             <Button
               type="primary"
@@ -211,26 +232,9 @@ const EmployeeCompanyPolicy = () => {
   }
 
   if (viewMode === "detail" && selectedPolicy) {
-    const sections = parsePolicyContent(selectedPolicy.content);
-    <div id="printable-policy" style={{ display: "none" }}>
-      <h1>{selectedPolicy.title}</h1>
-      <p>
-        <strong>Effective Date:</strong>{" "}
-        {new Date(selectedPolicy.createdAt).toLocaleDateString()}
-      </p>
-      <p>
-        <strong>Last Updated:</strong>{" "}
-        {new Date(selectedPolicy.updatedAt).toLocaleDateString()}
-      </p>
-      <p>
-        <strong>Status:</strong> {selectedPolicy.status.toUpperCase()}
-      </p>
-      <div>
-        {selectedPolicy.content.split("\n").map((line, idx) => (
-          <p key={idx}>{line}</p>
-        ))}
-      </div>
-    </div>;
+    const sections = selectedPolicy.content 
+      ? parsePolicyContent(selectedPolicy.content) 
+      : [];
 
     return (
       <Layout style={{ minHeight: "100vh" }}>
@@ -275,32 +279,46 @@ const EmployeeCompanyPolicy = () => {
                 </Text>
               </Space>
             </Col>
+            {selectedPolicy.fileUrl && (
+              <Col>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                  style={{ backgroundColor: "#da2c46" }}
+                >
+                  Download Policy File
+                </Button>
+              </Col>
+            )}
           </Row>
         </div>
 
         <Content style={{ padding: "0 50px 50px", background: "#fff" }}>
           <Row gutter={[24, 24]}>
-            <Col xs={24} lg={6}>
-              <Affix offsetTop={20}>
-                <Card
-                  title="Navigation"
-                  size="small"
-                  style={{ marginBottom: 24 }}
-                >
-                  <Anchor
-                    affix={false}
-                    offsetTop={80}
-                    items={sections.map((section) => ({
-                      key: section.anchor,
-                      href: `#${section.anchor}`,
-                      title: section.title,
-                    }))}
-                  />
-                </Card>
-              </Affix>
-            </Col>
+            {selectedPolicy.content && sections.length > 0 && (
+              <Col xs={24} lg={6}>
+                <Affix offsetTop={20}>
+                  <Card
+                    title="Navigation"
+                    size="small"
+                    style={{ marginBottom: 24 }}
+                  >
+                    <Anchor
+                      affix={false}
+                      offsetTop={80}
+                      items={sections.map((section) => ({
+                        key: section.anchor,
+                        href: `#${section.anchor}`,
+                        title: section.title,
+                      }))}
+                    />
+                  </Card>
+                </Affix>
+              </Col>
+            )}
 
-            <Col xs={24} lg={18}>
+            <Col xs={24} lg={selectedPolicy.content && sections.length > 0 ? 18 : 24}>
               <Card>
                 <div style={{ marginBottom: 32 }}>
                   <Row gutter={16}>
@@ -373,7 +391,83 @@ const EmployeeCompanyPolicy = () => {
 
                 <Divider />
 
-                {sections.map((section, index) => {
+                {selectedPolicy.fileUrl ? (
+                  <div>
+                    <div style={{ marginBottom: 16, textAlign: "right" }}>
+                      <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                        style={{ backgroundColor: "#da2c46" }}
+                      >
+                        Download File
+                      </Button>
+                    </div>
+                    <div
+                      style={{
+                        border: "1px solid #d9d9d9",
+                        borderRadius: "8px",
+                        height: "70vh",
+                        position: "relative",
+                        overflow: "hidden",
+                        marginBottom: 32,
+                      }}
+                    >
+                      {selectedPolicy.fileUrl.endsWith(".pdf") ? (
+                        <embed
+                          src={`${selectedPolicy.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                          type="application/pdf"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            border: "none",
+                          }}
+                        />
+                      ) : selectedPolicy.fileUrl.match(/\.(doc|docx)$/i) ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                            padding: "40px",
+                            textAlign: "center",
+                          }}
+                        >
+                          <FileTextOutlined
+                            style={{ fontSize: "64px", color: "#1890ff", marginBottom: "16px" }}
+                          />
+                          <Text strong style={{ fontSize: "16px", marginBottom: "8px" }}>
+                            Word Document
+                          </Text>
+                          <Text type="secondary" style={{ marginBottom: "16px" }}>
+                            Click the download button above to view this document
+                          </Text>
+                          <Button
+                            type="primary"
+                            icon={<DownloadOutlined />}
+                            onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                            style={{ backgroundColor: "#da2c46" }}
+                          >
+                            Open in New Tab
+                          </Button>
+                        </div>
+                      ) : (
+                        <iframe
+                          src={selectedPolicy.fileUrl}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            border: "none",
+                          }}
+                          title="Policy Document"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ) : selectedPolicy.content && sections.length > 0 ? (
+                  sections.map((section, index) => {
                   const IconComponent = getPolicyIcon(section.title);
                   return (
                     <div
@@ -422,7 +516,12 @@ const EmployeeCompanyPolicy = () => {
                       {index < sections.length - 1 && <Divider />}
                     </div>
                   );
-                })}
+                })
+                ) : (
+                  <div style={{ textAlign: "center", padding: "40px" }}>
+                    <Text type="secondary">No file or content available for this policy.</Text>
+                  </div>
+                )}
               </Card>
             </Col>
           </Row>

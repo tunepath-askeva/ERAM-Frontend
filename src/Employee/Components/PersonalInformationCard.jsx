@@ -33,6 +33,7 @@ import dayjs from "dayjs";
 import { useSnackbar } from "notistack";
 import PhoneInput from "../../Global/PhoneInput";
 import { phoneUtils } from "../../utils/countryMobileLimits";
+import ViewField from "./ViewField";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -257,203 +258,361 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
         }
         style={{ marginBottom: 24, borderRadius: "12px" }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={formInitialValues}
-        >
-          <Row gutter={24}>
-            <Col span={24} style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <Avatar
-                  size={100}
-                  src={userData.image || employeeData?.image || undefined}
-                  icon={
-                    !userData.image && !employeeData?.image ? (
-                      <UserOutlined />
-                    ) : null
+        {/* Avatar and Name Section - Always Visible */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <Avatar
+              size={100}
+              src={userData.image || employeeData?.image || undefined}
+              icon={
+                !userData.image && !employeeData?.image ? (
+                  <UserOutlined />
+                ) : null
+              }
+              style={{ border: "4px solid #da2c46" }}
+            />
+            {editMode && (
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  const allowedTypes = [
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/png",
+                  ];
+                  if (!allowedTypes.includes(file.type)) {
+                    message.error(
+                      "Only JPEG, JPG, and PNG files are allowed!"
+                    );
+                    return false;
                   }
-                  style={{ border: "4px solid #da2c46" }}
-                />
-                {editMode && (
-                  <>
-                    <Upload
-                      accept="image/*"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        const allowedTypes = [
-                          "image/jpeg",
-                          "image/jpg",
-                          "image/png",
-                        ];
-                        if (!allowedTypes.includes(file.type)) {
-                          message.error(
-                            "Only JPEG, JPG, and PNG files are allowed!"
-                          );
-                          return false;
-                        }
 
-                        if (file.size > 5 * 1024 * 1024) {
-                          message.error("File size should not exceed 5MB!");
-                          return false;
-                        }
+                  if (file.size > 5 * 1024 * 1024) {
+                    message.error("File size should not exceed 5MB!");
+                    return false;
+                  }
 
-                        // Create preview
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          setUserData({
-                            ...userData,
-                            image: e.target.result,
-                            imageFile: file,
-                          });
-                        };
-                        reader.readAsDataURL(file);
+                  // Create preview
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    setUserData({
+                      ...userData,
+                      image: e.target.result,
+                      imageFile: file,
+                    });
+                  };
+                  reader.readAsDataURL(file);
 
-                        return false; // Prevent auto upload
-                      }}
-                    >
-                      <Button
-                        type="primary"
-                        shape="circle"
-                        icon={<CameraOutlined />}
-                        size="small"
-                        style={{
-                          position: "absolute",
-                          bottom: 0,
-                          right: 0,
-                          background: "#da2c46",
-                          border: "2px solid white",
-                        }}
-                      />
-                    </Upload>
-                  </>
-                )}
-              </div>
-
-              {editMode && userData.imageFile && (
-                <div style={{ marginTop: 12 }}>
-                  <Space>
-                    <Text style={{ color: "#52c41a", fontSize: 12 }}>
-                      ✓ New image selected
-                    </Text>
-                    <Button
-                      type="link"
-                      danger
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={() => {
-                        setUserData({
-                          ...userData,
-                          image: employeeData?.image || "",
-                          imageFile: null,
-                        });
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </Space>
-                </div>
-              )}
-
-              <div style={{ marginTop: 12 }}>
-                <Text
+                  return false; // Prevent auto upload
+                }}
+              >
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<CameraOutlined />}
+                  size="small"
                   style={{
-                    display: "block",
-                    fontSize: "16px",
-                    fontWeight: 600,
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    background: "#da2c46",
+                    border: "2px solid white",
+                  }}
+                />
+              </Upload>
+            )}
+          </div>
+
+          {editMode && userData.imageFile && (
+            <div style={{ marginTop: 12 }}>
+              <Space>
+                <Text style={{ color: "#52c41a", fontSize: 12 }}>
+                  ✓ New image selected
+                </Text>
+                <Button
+                  type="link"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    setUserData({
+                      ...userData,
+                      image: employeeData?.image || "",
+                      imageFile: null,
+                    });
                   }}
                 >
-                  {employeeData?.fullName ||
-                    `${employeeData?.firstName || ""} ${
-                      employeeData?.lastName || ""
-                    }`.trim()}
-                </Text>
-                <Text type="secondary">
-                  {employeeData?.employmentDetails?.assignedJobTitle}
-                </Text>
-                <br />
-                <Tag color="blue" style={{ marginTop: 4 }}>
-                  ID: {employeeData?.employmentDetails?.eramId}
-                </Tag>
-              </div>
-            </Col>
+                  Remove
+                </Button>
+              </Space>
+            </div>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <Text
+              style={{
+                display: "block",
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "rgba(0, 0, 0, 0.85)",
+              }}
+            >
+              {employeeData?.fullName ||
+                `${employeeData?.firstName || ""} ${
+                  employeeData?.lastName || ""
+                }`.trim()}
+            </Text>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: "14px",
+                color: "rgba(0, 0, 0, 0.45)",
+                display: "block",
+                marginTop: 4,
+              }}
+            >
+              {employeeData?.employmentDetails?.eramId}
+            </Text>
+            {employeeData?.employmentDetails?.assignedJobTitle && (
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: "14px",
+                  color: "rgba(0, 0, 0, 0.65)",
+                  display: "block",
+                  marginTop: 4,
+                }}
+              >
+                {employeeData?.employmentDetails?.assignedJobTitle}
+              </Text>
+            )}
+          </div>
+        </div>
+
+        {!editMode ? (
+          <Row gutter={24}>
             {/* Basic Information */}
             <Col xs={24} sm={8}>
-              <Form.Item label="First Name" name="firstName">
-                <Input prefix={<UserOutlined />} disabled={!editMode} />
-              </Form.Item>
+              <ViewField
+                label="First Name"
+                value={employeeData?.firstName}
+                prefix={<UserOutlined />}
+              />
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Middle Name" name="middleName">
-                <Input prefix={<UserOutlined />} disabled={!editMode} />
-              </Form.Item>
+              <ViewField
+                label="Middle Name"
+                value={employeeData?.middleName}
+                prefix={<UserOutlined />}
+              />
             </Col>
             <Col xs={24} sm={8}>
-              <Form.Item label="Last Name" name="lastName">
-                <Input prefix={<UserOutlined />} disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Full Name" name="fullName">
-                <Input prefix={<UserOutlined />} disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="ERAM ID" name="eramId">
-                <Input prefix={<IdcardOutlined />} disabled />
-              </Form.Item>
-            </Col>
-            {/* Contact Information */}
-            <Col xs={24} sm={12}>
-              <Form.Item label="Email" name="email">
-                <Input prefix={<MailOutlined />} disabled />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <PhoneInput
-                form={form}
-                name="phone"
-                label="Phone"
-                required={false}
-                disabled={!editMode}
+              <ViewField
+                label="Last Name"
+                value={employeeData?.lastName}
+                prefix={<UserOutlined />}
               />
             </Col>
             <Col xs={24} sm={12}>
-              {!editMode ? (
-                <Form.Item label="Emergency Contact Number">
-                  <div style={{ 
-                    padding: "4px 11px",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "6px",
-                    minHeight: "32px",
-                    display: "flex",
-                    alignItems: "center",
-                    backgroundColor: "#fafafa"
-                  }}>
-                    {employeeData?.emergencyContactNoCountryCode && employeeData?.emergencyContactNo ? (
-                      <Space>
-                        <PhoneOutlined style={{ color: "#da2c46" }} />
-                        <Text>
-                          {phoneUtils.formatWithCountryCode(
-                            employeeData.emergencyContactNoCountryCode,
-                            employeeData.emergencyContactNo
-                          )}
-                        </Text>
-                      </Space>
-                    ) : employeeData?.emergencyContactNo ? (
-                      <Space>
-                        <PhoneOutlined style={{ color: "#da2c46" }} />
-                        <Text>{employeeData.emergencyContactNo}</Text>
-                      </Space>
-                    ) : (
-                      <Text type="secondary" style={{ fontStyle: "italic" }}>
-                        Not provided
-                      </Text>
-                    )}
-                  </div>
+              <ViewField
+                label="Full Name"
+                value={employeeData?.fullName}
+                prefix={<UserOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="ERAM ID"
+                value={employeeData?.employmentDetails?.eramId}
+                prefix={<IdcardOutlined />}
+              />
+            </Col>
+            {/* Contact Information */}
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Email"
+                value={employeeData?.email}
+                prefix={<MailOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Phone"
+                value={
+                  employeeData?.phoneCountryCode && employeeData?.phone
+                    ? phoneUtils.formatWithCountryCode(
+                        employeeData.phoneCountryCode,
+                        employeeData.phone
+                      )
+                    : employeeData?.phone || null
+                }
+                prefix={<PhoneOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Emergency Contact Number"
+                value={
+                  employeeData?.emergencyContactNoCountryCode && employeeData?.emergencyContactNo
+                    ? phoneUtils.formatWithCountryCode(
+                        employeeData.emergencyContactNoCountryCode,
+                        employeeData.emergencyContactNo
+                      )
+                    : employeeData?.emergencyContactNo || null
+                }
+                prefix={<PhoneOutlined />}
+              />
+            </Col>
+            {/* Personal Details */}
+            <Col xs={24} sm={8}>
+              <ViewField
+                label="Date of Birth"
+                value={
+                  employeeData?.dateOfBirth
+                    ? dayjs(employeeData.dateOfBirth).format("YYYY-MM-DD")
+                    : null
+                }
+                prefix={<CalendarOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={8}>
+              <ViewField label="Age" value={employeeData?.age} />
+            </Col>
+            <Col xs={24} sm={8}>
+              <ViewField label="Gender" value={employeeData?.gender} />
+            </Col>
+            <Col xs={24} sm={8}>
+              <ViewField
+                label="Marital Status"
+                value={employeeData?.maritalStatus}
+              />
+            </Col>
+            <Col xs={24} sm={8}>
+              <ViewField
+                label="Blood Group"
+                value={employeeData?.bloodGroup}
+              />
+            </Col>
+            <Col xs={24} sm={8}>
+              <ViewField label="Religion" value={employeeData?.religion} />
+            </Col>
+            {/* Nationality & Documents */}
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Nationality"
+                value={employeeData?.nationality}
+                prefix={<FlagOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Country of Birth"
+                value={employeeData?.countryOfBirth}
+                prefix={<EnvironmentOutlined />}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Passport Number"
+                value={employeeData?.passportNo}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Passport Place of Issue"
+                value={employeeData?.passportPlaceOfIssue}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Iqama Number"
+                value={employeeData?.iqamaNo}
+              />
+            </Col>
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Visa Status"
+                value={
+                  Array.isArray(employeeData?.visaStatus)
+                    ? employeeData.visaStatus[0] || employeeData.visaStatus.join(", ")
+                    : employeeData?.visaStatus
+                }
+              />
+            </Col>
+            {/* Experience */}
+            <Col xs={24} sm={12}>
+              <ViewField
+                label="Total Experience"
+                value={
+                  employeeData?.totalExperienceYears
+                    ? `${employeeData.totalExperienceYears} years`
+                    : null
+                }
+              />
+            </Col>
+            {/* Profile Summary */}
+            <Col span={24}>
+              <ViewField
+                label="Profile Summary"
+                value={employeeData?.profileSummary}
+              />
+            </Col>
+          </Row>
+        ) : (
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={formInitialValues}
+          >
+            <Row gutter={24}>
+              {/* Basic Information */}
+              <Col xs={24} sm={8}>
+                <Form.Item label="First Name" name="firstName">
+                  <Input prefix={<UserOutlined />} />
                 </Form.Item>
-              ) : (
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Middle Name" name="middleName">
+                  <Input prefix={<UserOutlined />} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Last Name" name="lastName">
+                  <Input prefix={<UserOutlined />} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Full Name" name="fullName">
+                  <Input prefix={<UserOutlined />} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="ERAM ID"
+                  value={employeeData?.employmentDetails?.eramId}
+                  prefix={<IdcardOutlined />}
+                />
+              </Col>
+              {/* Contact Information */}
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Email"
+                  value={employeeData?.email}
+                  prefix={<MailOutlined />}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <PhoneInput
+                  form={form}
+                  name="phone"
+                  label="Phone"
+                  required={false}
+                  disabled={false}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
                 <PhoneInput
                   form={form}
                   name="emergencyContactNo"
@@ -462,134 +621,127 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
                   disabled={false}
                   countryCodeFieldName="emergencyContactNoCountryCode"
                 />
-              )}
-            </Col>
-            {/* Personal Details */}
-            <Col xs={24} sm={8}>
-              <Form.Item label="Date of Birth" name="dateOfBirth">
-                <DatePicker
-                  style={{ width: "100%" }}
-                  format="YYYY-MM-DD"
-                  disabled={!editMode}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Age" name="age">
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Gender" name="gender">
-                <Select disabled={!editMode} placeholder="Select gender">
-                  <Select.Option value="Male">Male</Select.Option>
-                  <Select.Option value="Female">Female</Select.Option>
-                  <Select.Option value="Prefer not to say">
-                    Prefer not to say
-                  </Select.Option>
-                  <Select.Option value="Others">Others</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Marital Status" name="maritalStatus">
-                <Select
-                  disabled={!editMode}
-                  placeholder="Select marital status"
+              </Col>
+              {/* Personal Details */}
+              <Col xs={24} sm={8}>
+                <Form.Item label="Date of Birth" name="dateOfBirth">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    format="YYYY-MM-DD"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Age" name="age">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Gender" name="gender">
+                  <Select placeholder="Select gender">
+                    <Select.Option value="Male">Male</Select.Option>
+                    <Select.Option value="Female">Female</Select.Option>
+                    <Select.Option value="Prefer not to say">
+                      Prefer not to say
+                    </Select.Option>
+                    <Select.Option value="Others">Others</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Marital Status" name="maritalStatus">
+                  <Select placeholder="Select marital status">
+                    <Select.Option value="Single">Single</Select.Option>
+                    <Select.Option value="Married">Married</Select.Option>
+                    <Select.Option value="Divorced">Divorced</Select.Option>
+                    <Select.Option value="Widowed">Widowed</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Blood Group" name="bloodGroup">
+                  <Select placeholder="Select blood group">
+                    <Select.Option value="A+">A+</Select.Option>
+                    <Select.Option value="A-">A-</Select.Option>
+                    <Select.Option value="B+">B+</Select.Option>
+                    <Select.Option value="B-">B-</Select.Option>
+                    <Select.Option value="O+">O+</Select.Option>
+                    <Select.Option value="O-">O-</Select.Option>
+                    <Select.Option value="AB+">AB+</Select.Option>
+                    <Select.Option value="AB-">AB-</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item label="Religion" name="religion">
+                  <Select placeholder="Select religion">
+                    <Select.Option value="Christianity">
+                      Christianity
+                    </Select.Option>
+                    <Select.Option value="Islam">Islam</Select.Option>
+                    <Select.Option value="Hinduism">Hinduism</Select.Option>
+                    <Select.Option value="Buddhism">Buddhism</Select.Option>
+                    <Select.Option value="Judaism">Judaism</Select.Option>
+                    <Select.Option value="Sikhism">Sikhism</Select.Option>
+                    <Select.Option value="Jainism">Jainism</Select.Option>
+                    <Select.Option value="Other">Other</Select.Option>
+                    <Select.Option value="Prefer not to say">
+                      Prefer not to say
+                    </Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              {/* Nationality & Documents */}
+              <Col xs={24} sm={12}>
+                <Form.Item label="Nationality" name="nationality">
+                  <Input prefix={<FlagOutlined />} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Country of Birth" name="countryOfBirth">
+                  <Input prefix={<EnvironmentOutlined />} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Passport Number" name="passportNo">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label="Passport Place of Issue"
+                  name="passportPlaceOfIssue"
                 >
-                  <Select.Option value="Single">Single</Select.Option>
-                  <Select.Option value="Married">Married</Select.Option>
-                  <Select.Option value="Divorced">Divorced</Select.Option>
-                  <Select.Option value="Widowed">Widowed</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Blood Group" name="bloodGroup">
-                <Select disabled={!editMode} placeholder="Select blood group">
-                  <Select.Option value="A+">A+</Select.Option>
-                  <Select.Option value="A-">A-</Select.Option>
-                  <Select.Option value="B+">B+</Select.Option>
-                  <Select.Option value="B-">B-</Select.Option>
-                  <Select.Option value="O+">O+</Select.Option>
-                  <Select.Option value="O-">O-</Select.Option>
-                  <Select.Option value="AB+">AB+</Select.Option>
-                  <Select.Option value="AB-">AB-</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item label="Religion" name="religion">
-                <Select disabled={!editMode} placeholder="Select religion">
-                  <Select.Option value="Christianity">
-                    Christianity
-                  </Select.Option>
-                  <Select.Option value="Islam">Islam</Select.Option>
-                  <Select.Option value="Hinduism">Hinduism</Select.Option>
-                  <Select.Option value="Buddhism">Buddhism</Select.Option>
-                  <Select.Option value="Judaism">Judaism</Select.Option>
-                  <Select.Option value="Sikhism">Sikhism</Select.Option>
-                  <Select.Option value="Jainism">Jainism</Select.Option>
-                  <Select.Option value="Other">Other</Select.Option>
-                  <Select.Option value="Prefer not to say">
-                    Prefer not to say
-                  </Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            {/* Nationality & Documents */}
-            <Col xs={24} sm={12}>
-              <Form.Item label="Nationality" name="nationality">
-                <Input prefix={<FlagOutlined />} disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Country of Birth" name="countryOfBirth">
-                <Input prefix={<EnvironmentOutlined />} disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Passport Number" name="passportNo">
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                label="Passport Place of Issue"
-                name="passportPlaceOfIssue"
-              >
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Iqama Number" name="iqamaNo">
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Visa Status" name="visaStatus">
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            {/* Experience */}
-            <Col xs={24} sm={12}>
-              <Form.Item label="Total Experience" name="totalExperienceYears">
-                <Input disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            {/* Profile Summary */}
-            <Col span={24}>
-              <Form.Item label="Profile Summary" name="profileSummary">
-                <TextArea
-                  rows={4}
-                  disabled={!editMode}
-                  placeholder="Brief summary about yourself"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Iqama Number" name="iqamaNo">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Visa Status" name="visaStatus">
+                  <Input />
+                </Form.Item>
+              </Col>
+              {/* Experience */}
+              <Col xs={24} sm={12}>
+                <Form.Item label="Total Experience" name="totalExperienceYears">
+                  <Input />
+                </Form.Item>
+              </Col>
+              {/* Profile Summary */}
+              <Col span={24}>
+                <Form.Item label="Profile Summary" name="profileSummary">
+                  <TextArea
+                    rows={4}
+                    placeholder="Brief summary about yourself"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          {editMode && (
             <div style={{ textAlign: "right", marginTop: 16 }}>
               <Space>
                 <Button onClick={() => setEditMode(false)}>Cancel</Button>
@@ -603,8 +755,8 @@ const PersonalInformationCard = ({ employeeData, loading, onUpdate }) => {
                 </Button>
               </Space>
             </div>
-          )}
-        </Form>
+          </Form>
+        )}
       </Card>
 
       <Modal

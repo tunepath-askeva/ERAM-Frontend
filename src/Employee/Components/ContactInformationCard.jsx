@@ -3,6 +3,7 @@ import { Card, Form, Input, Row, Col, Button, Space, Typography, message } from 
 import { ContactsOutlined, SaveOutlined, EditOutlined } from "@ant-design/icons";
 import PhoneInput from "../../Global/PhoneInput";
 import { phoneUtils } from "../../utils/countryMobileLimits";
+import ViewField from "./ViewField";
 
 const { Text } = Typography;
 
@@ -168,60 +169,110 @@ const ContactInformationCard = ({ employeeData, loading, onUpdate }) => {
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
     >
-      <Form form={form} layout="vertical">
+      {!editMode ? (
         <Row gutter={24}>
           <Col xs={24} sm={12}>
-            <Form.Item
+            <ViewField
               label="Emergency Contact Person Name"
-              name="contactPersonName"
-              rules={[
-                {
-                  required: true,
-                  message: "Please enter contact person name",
-                },
-              ]}
-            >
-              <Input
-                placeholder="Enter name"
-                disabled={!editMode}
-              />
-            </Form.Item>
+              value={employeeData?.contactPersonName}
+            />
           </Col>
 
           <Col xs={24} sm={12}>
-            <PhoneInput
-              form={form}
-              name="emergencyContactNo"
+            <ViewField
               label="Emergency Contact Number"
-              required={false}
-              disabled={!editMode}
-              countryCodeFieldName="emergencyContactNoCountryCode"
+              value={
+                employeeData?.emergencyContactNoCountryCode && employeeData?.emergencyContactNo
+                  ? phoneUtils.formatWithCountryCode(
+                      employeeData.emergencyContactNoCountryCode,
+                      employeeData.emergencyContactNo
+                    )
+                  : employeeData?.emergencyContactNo || null
+              }
             />
           </Col>
 
           <Col xs={24} sm={12}>
-            <PhoneInput
-              form={form}
-              name="contactPersonMobile"
+            <ViewField
               label="Contact Person Mobile"
-              required={false}
-              disabled={!editMode}
-              countryCodeFieldName="contactPersonMobileCountryCode"
+              value={
+                employeeData?.contactPersonMobileCountryCode && employeeData?.contactPersonMobile
+                  ? phoneUtils.formatWithCountryCode(
+                      employeeData.contactPersonMobileCountryCode,
+                      employeeData.contactPersonMobile
+                    )
+                  : employeeData?.contactPersonMobile || null
+              }
             />
           </Col>
 
           <Col xs={24} sm={12}>
-            <PhoneInput
-              form={form}
-              name="contactPersonHomeNo"
+            <ViewField
               label="Contact Person Home No"
-              required={false}
-              disabled={!editMode}
-              countryCodeFieldName="contactPersonHomeNoCountryCode"
+              value={
+                employeeData?.contactPersonHomeNoCountryCode && employeeData?.contactPersonHomeNo
+                  ? phoneUtils.formatWithCountryCode(
+                      employeeData.contactPersonHomeNoCountryCode,
+                      employeeData.contactPersonHomeNo
+                    )
+                  : employeeData?.contactPersonHomeNo || null
+              }
             />
           </Col>
         </Row>
-      </Form>
+      ) : (
+        <Form form={form} layout="vertical">
+          <Row gutter={24}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="Emergency Contact Person Name"
+                name="contactPersonName"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter contact person name",
+                  },
+                ]}
+              >
+                <Input placeholder="Enter name" />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <PhoneInput
+                form={form}
+                name="emergencyContactNo"
+                label="Emergency Contact Number"
+                required={false}
+                disabled={false}
+                countryCodeFieldName="emergencyContactNoCountryCode"
+              />
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <PhoneInput
+                form={form}
+                name="contactPersonMobile"
+                label="Contact Person Mobile"
+                required={false}
+                disabled={false}
+                countryCodeFieldName="contactPersonMobileCountryCode"
+              />
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <PhoneInput
+                form={form}
+                name="contactPersonHomeNo"
+                label="Contact Person Home No"
+                required={false}
+                disabled={false}
+                countryCodeFieldName="contactPersonHomeNoCountryCode"
+              />
+            </Col>
+          </Row>
+        </Form>
+      )}
     </Card>
   );
 };

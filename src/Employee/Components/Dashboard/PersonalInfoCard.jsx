@@ -1,5 +1,5 @@
-import { Card, Space, Typography } from "antd";
-import { UserOutlined, PhoneOutlined } from "@ant-design/icons";
+import { Card, Typography,Space  } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { phoneUtils } from "../../../utils/countryMobileLimits";
@@ -8,6 +8,87 @@ const { Text } = Typography;
 
 const PersonalInfoCard = ({ employee, screenSize }) => {
   const navigate = useNavigate();
+  const width = screenSize?.width || 0;
+  const isVeryLargeScreen = width >= 1200;
+  const isLargeScreen = width >= 1024 && width < 1200;
+  const isMediumScreen = width >= 768 && width < 1024;
+  
+  // Responsive font sizes - properly scaled for all screen sizes
+  const getLabelFontSize = () => {
+    if (screenSize.isMobile) return "10px";
+    if (isVeryLargeScreen) return "13px";
+    if (isLargeScreen) return "11px";
+    if (isMediumScreen) return "10px";
+    return "10px";
+  };
+  
+  const getValueFontSize = () => {
+    if (screenSize.isMobile) return "12px";
+    if (isVeryLargeScreen) return "15px";
+    if (isLargeScreen) return "13px";
+    if (isMediumScreen) return "12px";
+    return "12px";
+  };
+  
+  const labelFontSize = getLabelFontSize();
+  const valueFontSize = getValueFontSize();
+
+  const renderField = (label, value, key) => {
+    if (isVeryLargeScreen) {
+      // Inline layout for large screens: "Label - Value"
+      return (
+        <div key={key} style={{ textAlign: "left", marginBottom: isVeryLargeScreen ? "8px" : "4px" }}>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: labelFontSize,
+              color: "#8c8c8c",
+              marginRight: "8px",
+            }}
+          >
+            {label} -
+          </Text>
+          <Text
+            style={{
+              fontSize: valueFontSize,
+              color: "#262626",
+              fontWeight: 500,
+            }}
+          >
+            {value}
+          </Text>
+        </div>
+      );
+    } else {
+      // Stacked layout for smaller screens
+      return (
+        <div key={key} style={{ textAlign: "center", marginBottom: "4px" }}>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: labelFontSize,
+              display: "block",
+              color: "#8c8c8c",
+              textAlign: "center",
+            }}
+          >
+            {label}
+          </Text>
+          <Text
+            style={{
+              fontSize: valueFontSize,
+              display: "block",
+              color: "#262626",
+              fontWeight: 500,
+              textAlign: "center",
+            }}
+          >
+            {value}
+          </Text>
+        </div>
+      );
+    }
+  };
 
   return (
     <Card
@@ -31,10 +112,9 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "8px" : screenSize.isDesktop ? "10px" : "10px",
+        padding: screenSize.isMobile ? "8px" : isVeryLargeScreen ? "14px 12px" : isLargeScreen ? "12px 10px" : "10px",
         flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
       }}
@@ -43,178 +123,59 @@ const PersonalInfoCard = ({ employee, screenSize }) => {
         minHeight: "auto",
       }}
     >
-      <Space direction="vertical" size="small" style={{ width: "100%", flex: 1 }}>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Date of Birth
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.dateOfBirth 
-              ? dayjs(employee.dateOfBirth).format("DD MMM YYYY") 
-              : "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Age
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.age ? `${employee.age} years` : "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Gender
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.gender || "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Nationality
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.nationality || "N/A"}
-          </Text>
-        </div>
-
-        {employee?.passportNo && (
-          <div>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "9px" : "10px",
-                display: "block",
-                color: "#8c8c8c",
-              }}
-            >
-              Passport No
-            </Text>
-            <Text
-              style={{
-                fontSize: screenSize.isMobile ? "11px" : "12px",
-                display: "block",
-                color: "#262626",
-                fontWeight: 500,
-              }}
-            >
-              {employee.passportNo}
-            </Text>
-          </div>
+      <div style={{ 
+        width: "100%", 
+        flex: 1, 
+        display: "flex", 
+        flexDirection: "column", 
+        justifyContent: isVeryLargeScreen ? "space-evenly" : "center",
+        paddingTop: isVeryLargeScreen ? "4px" : "0px",
+        paddingBottom: isVeryLargeScreen ? "4px" : "0px",
+        overflow: "hidden",
+      }}>
+        {renderField(
+          "Date of Birth",
+          employee?.dateOfBirth 
+            ? dayjs(employee.dateOfBirth).format("DD MMM YYYY") 
+            : "N/A",
+          "dob"
         )}
-        {employee?.iqamaNo && (
-          <div>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "9px" : "10px",
-                display: "block",
-                color: "#8c8c8c",
-              }}
-            >
-              Iqama No
-            </Text>
-            <Text
-              style={{
-                fontSize: screenSize.isMobile ? "11px" : "12px",
-                display: "block",
-                color: "#262626",
-                fontWeight: 500,
-              }}
-            >
-              {employee.iqamaNo}
-            </Text>
-          </div>
+        {renderField(
+          "Age",
+          employee?.age ? `${employee.age} years` : "N/A",
+          "age"
         )}
-        {(employee?.emergencyContactNo || employee?.emergencyContactNoCountryCode) && (
-          <div>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "9px" : "10px",
-                display: "block",
-                color: "#8c8c8c",
-              }}
-            >
-              Emergency Contact
-            </Text>
-            <Text
-              style={{
-                fontSize: screenSize.isMobile ? "11px" : "12px",
-                display: "block",
-                color: "#262626",
-                fontWeight: 500,
-              }}
-            >
-              <Space size="small">
-                {employee?.emergencyContactNoCountryCode && employee?.emergencyContactNo
-                  ? phoneUtils.formatWithCountryCode(
-                      employee.emergencyContactNoCountryCode,
-                      employee.emergencyContactNo
-                    )
-                  : employee?.emergencyContactNo || "N/A"}
-              </Space>
-            </Text>
-          </div>
+        {renderField(
+          "Gender",
+          employee?.gender || "N/A",
+          "gender"
         )}
-      </Space>
+        {renderField(
+          "Nationality",
+          employee?.nationality || "N/A",
+          "nationality"
+        )}
+        {employee?.passportNo && renderField(
+          "Passport No",
+          employee.passportNo,
+          "passport"
+        )}
+        {employee?.iqamaNo && renderField(
+          "Iqama No",
+          employee.iqamaNo,
+          "iqama"
+        )}
+        {(employee?.emergencyContactNo || employee?.emergencyContactNoCountryCode) && renderField(
+          "Emergency Contact",
+          employee?.emergencyContactNoCountryCode && employee?.emergencyContactNo
+            ? phoneUtils.formatWithCountryCode(
+                employee.emergencyContactNoCountryCode,
+                employee.emergencyContactNo
+              )
+            : employee?.emergencyContactNo || "N/A",
+          "emergency"
+        )}
+      </div>
     </Card>
   );
 };

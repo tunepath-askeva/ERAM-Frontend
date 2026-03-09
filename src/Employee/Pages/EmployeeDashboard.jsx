@@ -147,7 +147,7 @@ const EmployeeDashboard = () => {
   };
 
   // ── Shared card props ──────────────────────────────────────────────────────
-  const GAP = isMobile ? 10 : isTablet ? 10 : isDesktop ? 10 : 8; // px gap between cards - reduced for better space usage
+  const GAP = isMobile ? 10 : isTablet ? 10 : isDesktop ? 10 : 10; // px gap between cards - reduced for better space usage
 
   // ── Layout constants ───────────────────────────────────────────────────────
   //   Desktop  : LEFT(profile 22%) | CENTER(flex) | RIGHT(news 21%)
@@ -268,9 +268,9 @@ const EmployeeDashboard = () => {
 
       {/* ── LEFT SIDEBAR — Profile ─────────────────────────────────────────── */}
       <div style={{
-        width: bp === "xl" ? "20%" : "21%",
+        width: bp === "xl" ? "17%" : "18%",
         minWidth: 200,
-        maxWidth: 260,
+        maxWidth: 230,
         height: "100%",
         flexShrink: 0,
         overflow: "hidden",
@@ -291,7 +291,7 @@ const EmployeeDashboard = () => {
 
         {/* Top row — Personal Info | Employment | Documents (equal thirds, ~48% height) */}
         <div style={{
-          flex: "0 0 calc(48% - 5px)",
+          flex: "0 0 calc(45% - 5px)",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: GAP,
@@ -343,9 +343,9 @@ const EmployeeDashboard = () => {
 
       {/* ── RIGHT SIDEBAR — News / Events / Policies ──────────────────────── */}
       <div style={{
-        width: bp === "xl" ? "20%" : "21%",
-        minWidth: 190,
-        maxWidth: 260,
+        width: bp === "xl" ? "25%" : "26%",
+        minWidth: 260,
+        maxWidth: 350,
         height: "100%",
         flexShrink: 0,
         display: "flex",

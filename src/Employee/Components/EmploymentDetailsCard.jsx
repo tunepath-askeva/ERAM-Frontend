@@ -16,6 +16,7 @@ import {
   SafetyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import ViewField from "./ViewField";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -117,33 +118,31 @@ const EmploymentDetailsCard = ({ employeeData }) => {
       }
       style={{ marginBottom: 24, borderRadius: "12px" }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={formInitialValues}
-      >
-        <Row gutter={24}>
-          {/* Read-only Section */}
-          <Col span={24}>
-            <Text
-              strong
-              style={{ color: "#da2c46", marginBottom: 16, display: "block" }}
-            >
-              Official Information (Read Only)
-            </Text>
-          </Col>
+      <Row gutter={24}>
+        {/* Read-only Section */}
+        <Col span={24}>
+          <Text
+            strong
+            style={{ color: "#da2c46", marginBottom: 16, display: "block" }}
+          >
+            Official Information (Read Only)
+          </Text>
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="ERAM ID" name="eramId">
-              <Input prefix={<IdcardOutlined />} disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="ERAM ID"
+            value={employeeData?.employmentDetails?.eramId}
+            prefix={<IdcardOutlined />}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Assigned Job Title" name="assignedJobTitle">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Assigned Job Title"
+            value={employeeData?.employmentDetails?.assignedJobTitle}
+          />
+        </Col>
 
           {/* <Col xs={24} sm={12}>
             <Form.Item label="Work Order ID" name="workorderId">
@@ -159,419 +158,464 @@ const EmploymentDetailsCard = ({ employeeData }) => {
             </Form.Item>
           </Col> */}
 
-          {employeeData?.employmentDetails?.workorderId && (
-            <Col xs={24} sm={12}>
-              <Form.Item label="Work Order Title">
-                <Input
-                  value={
-                    typeof employeeData.employmentDetails.workorderId === "object"
-                      ? employeeData.employmentDetails.workorderId.title || "N/A"
-                      : "N/A"
-                  }
-                  disabled
-                />
-              </Form.Item>
-            </Col>
-          )}
-
-          {employeeData?.employmentDetails?.workorderId && 
-           typeof employeeData.employmentDetails.workorderId === "object" &&
-           employeeData.employmentDetails.workorderId.jobCode && (
-            <Col xs={24} sm={12}>
-              <Form.Item label="Job Code">
-                <Input
-                  value={employeeData.employmentDetails.workorderId.jobCode || "N/A"}
-                  disabled
-                />
-              </Form.Item>
-            </Col>
-          )}
-
-          {employeeData?.employmentDetails?.workorderId?.project && (
-            <Col xs={24} sm={12}>
-              <Form.Item label="Work Order Project">
-                <Input
-                  value={
-                    typeof employeeData.employmentDetails.workorderId.project === "object"
-                      ? `${employeeData.employmentDetails.workorderId.project.name} ${
-                          employeeData.employmentDetails.workorderId.project.prefix
-                            ? `(${employeeData.employmentDetails.workorderId.project.prefix})`
-                            : ""
-                        }`
-                      : "N/A"
-                  }
-                  disabled
-                />
-              </Form.Item>
-            </Col>
-          )}
-
+        {employeeData?.employmentDetails?.workorderId && (
           <Col xs={24} sm={12}>
-            <Form.Item label="Assigned Project" name="project">
-              <Input
-                value={
-                  employeeData?.employmentDetails?.project
-                    ? typeof employeeData.employmentDetails.project === "object"
-                      ? `${employeeData.employmentDetails.project.name} ${
-                          employeeData.employmentDetails.project.prefix
-                            ? `(${employeeData.employmentDetails.project.prefix})`
-                            : ""
-                        }`
-                      : "N/A"
-                    : "N/A"
-                }
-                disabled
-              />
-            </Form.Item>
+            <ViewField
+              label="Work Order Title"
+              value={
+                typeof employeeData.employmentDetails.workorderId === "object"
+                  ? employeeData.employmentDetails.workorderId.title
+                  : null
+              }
+            />
           </Col>
+        )}
 
+        {employeeData?.employmentDetails?.workorderId && 
+         typeof employeeData.employmentDetails.workorderId === "object" &&
+         employeeData.employmentDetails.workorderId.jobCode && (
           <Col xs={24} sm={12}>
-            <Form.Item label="Date of Joining" name="dateOfJoining">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
+            <ViewField
+              label="Job Code"
+              value={employeeData.employmentDetails.workorderId.jobCode}
+            />
           </Col>
+        )}
 
+        {employeeData?.employmentDetails?.workorderId?.project && (
           <Col xs={24} sm={12}>
-            <Form.Item label="Category" name="category">
-              <Input disabled />
-            </Form.Item>
+            <ViewField
+              label="Work Order Project"
+              value={
+                typeof employeeData.employmentDetails.workorderId.project === "object"
+                  ? `${employeeData.employmentDetails.workorderId.project.name} ${
+                      employeeData.employmentDetails.workorderId.project.prefix
+                        ? `(${employeeData.employmentDetails.workorderId.project.prefix})`
+                        : ""
+                    }`
+                  : null
+              }
+            />
           </Col>
+        )}
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Designation" name="designation">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Assigned Project"
+            value={
+              employeeData?.employmentDetails?.project
+                ? typeof employeeData.employmentDetails.project === "object"
+                  ? `${employeeData.employmentDetails.project.name} ${
+                      employeeData.employmentDetails.project.prefix
+                        ? `(${employeeData.employmentDetails.project.prefix})`
+                        : ""
+                    }`
+                  : employeeData.employmentDetails.project
+                : null
+            }
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="External Emp No" name="externalEmpNo">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Date of Joining"
+            value={
+              employeeData?.employmentDetails?.dateOfJoining
+                ? dayjs(employeeData.employmentDetails.dateOfJoining).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Official Email" name="officialEmail">
-              <Input prefix={<MailOutlined />} disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Category"
+            value={employeeData?.employmentDetails?.category}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="GOSI" name="gosi">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Designation"
+            value={employeeData?.employmentDetails?.designation}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Payroll Group" name="payrollGroup">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="External Emp No"
+            value={employeeData?.employmentDetails?.externalEmpNo}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Employee Group" name="employeeGroup">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Official Email"
+            value={employeeData?.employmentDetails?.officialEmail}
+            prefix={<MailOutlined />}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Employment Type" name="employmentType">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="GOSI"
+            value={employeeData?.employmentDetails?.gosi}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Sponsor Name" name="sponsorName">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Payroll Group"
+            value={employeeData?.employmentDetails?.payrollGroup}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Work Location" name="workLocation">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Employee Group"
+            value={employeeData?.employmentDetails?.employeeGroup}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Family Status" name="familyStatus">
-              <Input disabled />
-            </Form.Item>
-          </Col>
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Employment Type"
+            value={employeeData?.employmentDetails?.employmentType}
+          />
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Eligible Vacation Days"
-              name="eligibleVacationDays"
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Sponsor Name"
+            value={employeeData?.employmentDetails?.sponsorName}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Work Location"
+            value={employeeData?.employmentDetails?.workLocation}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Family Status"
+            value={employeeData?.employmentDetails?.familyStatus}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Eligible Vacation Days"
+            value={employeeData?.employmentDetails?.eligibleVacationDays}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Eligible Vacation Month"
+            value={employeeData?.employmentDetails?.eligibleVacationMonth}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Iqama ID"
+            value={employeeData?.employmentDetails?.iqamaId}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Driving License"
+            value={employeeData?.employmentDetails?.drivingLicense}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Class Code"
+            value={employeeData?.employmentDetails?.classCode}
+          />
+        </Col>
+
+        {/* Additional Employment Details Section */}
+        <Col span={24} style={{ marginTop: 24 }}>
+          <Text
+            strong
+            style={{ color: "#da2c46", marginBottom: 16, display: "block" }}
+          >
+            Additional Employment Details (Read Only)
+          </Text>
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Department"
+            value={employeeData?.employmentDetails?.department}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Reporting Manager"
+            value={employeeData?.employmentDetails?.reportingManager}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Badge Number"
+            value={employeeData?.employmentDetails?.badgeNo}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Gate Pass ID"
+            value={employeeData?.employmentDetails?.gatePassId}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Aramco ID"
+            value={employeeData?.employmentDetails?.aramcoId}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Other ID"
+            value={employeeData?.employmentDetails?.otherId}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Plant ID"
+            value={employeeData?.employmentDetails?.plantId}
+          />
+        </Col>
+
+        <Col xs={24} sm={8}>
+          <ViewField
+            label="Visa Category"
+            value={employeeData?.employmentDetails?.visaCategory}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Period of Contract"
+            value={employeeData?.employmentDetails?.periodOfContract}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Probation Period"
+            value={employeeData?.employmentDetails?.probationPeriod}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Insurance Category"
+            value={employeeData?.employmentDetails?.insuranceCategory}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Medical Policy Number"
+            value={employeeData?.employmentDetails?.medicalPolicyNumber}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Number of Dependents"
+            value={employeeData?.employmentDetails?.noOfDependent}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Work Days"
+            value={employeeData?.employmentDetails?.workDays}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Work Hours"
+            value={employeeData?.employmentDetails?.workHours}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Air Ticket Frequency"
+            value={employeeData?.employmentDetails?.airTicketFrequency}
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Last Arrival"
+            value={
+              employeeData?.employmentDetails?.lastArrival
+                ? dayjs(employeeData.employmentDetails.lastArrival).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Last Working Day"
+            value={
+              employeeData?.employmentDetails?.lastWorkingDay
+                ? dayjs(employeeData.employmentDetails.lastWorkingDay).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Iqama Issue Date"
+            value={
+              employeeData?.employmentDetails?.iqamaIssueDate
+                ? dayjs(employeeData.employmentDetails.iqamaIssueDate).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Iqama Expiry Date"
+            value={
+              employeeData?.employmentDetails?.iqamaExpiryDate
+                ? dayjs(employeeData.employmentDetails.iqamaExpiryDate).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Iqama Arabic Date of Issue"
+            value={
+              employeeData?.employmentDetails?.iqamaArabicDateOfIssue
+                ? dayjs(employeeData.employmentDetails.iqamaArabicDateOfIssue).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24} sm={12}>
+          <ViewField
+            label="Iqama Arabic Date of Expiry"
+            value={
+              employeeData?.employmentDetails?.iqamaArabicDateOfExpiry
+                ? dayjs(employeeData.employmentDetails.iqamaArabicDateOfExpiry).format("YYYY-MM-DD")
+                : null
+            }
+          />
+        </Col>
+
+        <Col xs={24}>
+          <ViewField
+            label="Basic Assets"
+            value={employeeData?.employmentDetails?.basicAssets}
+          />
+        </Col>
+
+        <Col xs={24}>
+          <ViewField
+            label="Reporting and Documentation"
+            value={employeeData?.employmentDetails?.reportingAndDocumentation}
+          />
+        </Col>
+
+        {/* Asset Allocation */}
+        <Col xs={24}>
+          <ViewField
+            label="Asset Allocation"
+            value={
+              Array.isArray(employeeData?.employmentDetails?.assetAllocation) &&
+              employeeData.employmentDetails.assetAllocation.length > 0
+                ? employeeData.employmentDetails.assetAllocation.join(", ")
+                : null
+            }
+          />
+        </Col>
+
+        {/* Switch Fields */}
+        <Col xs={24} sm={12}>
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "rgba(0, 0, 0, 0.85)",
+                marginBottom: 8,
+              }}
             >
-              <Input type="number" disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Eligible Vacation Month"
-              name="eligibleVacationMonth"
+              First Time Login
+            </div>
+            <div
+              style={{
+                padding: "4px 11px",
+                border: "1px solid #d9d9d9",
+                borderRadius: "6px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#fafafa",
+              }}
             >
-              <Input type="number" disabled />
-            </Form.Item>
-          </Col>
+              <Text>
+                {employeeData?.employmentDetails?.firstTimeLogin ? "Yes" : "No"}
+              </Text>
+            </div>
+          </div>
+        </Col>
 
-          <Col xs={24} sm={12}>
-            <Form.Item label="Iqama ID" name="iqamaId">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Driving License" name="drivingLicense">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Class Code" name="classCode">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          {/* Additional Employment Details Section */}
-          <Col span={24} style={{ marginTop: 24 }}>
-            <Text
-              strong
-              style={{ color: "#da2c46", marginBottom: 16, display: "block" }}
+        <Col xs={24} sm={12}>
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "rgba(0, 0, 0, 0.85)",
+                marginBottom: 8,
+              }}
             >
-              Additional Employment Details (Read Only)
-            </Text>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Department" name="department">
-              <Input disabled placeholder="Enter department" />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Reporting Manager" name="reportingManager">
-              <Input disabled placeholder="Enter reporting manager name" />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Badge Number" name="badgeNo">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Gate Pass ID" name="gatePassId">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Aramco ID" name="aramcoId">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Other ID" name="otherId">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Plant ID" name="plantId">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={8}>
-            <Form.Item label="Visa Category" name="visaCategory">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Period of Contract" name="periodOfContract">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Probation Period" name="probationPeriod">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Insurance Category" name="insuranceCategory">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Medical Policy Number" name="medicalPolicyNumber">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Number of Dependents" name="noOfDependent">
-              <Input type="number" disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Work Days" name="workDays">
-              <Input type="number" disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Work Hours" name="workHours">
-              <Input type="number" disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Air Ticket Frequency" name="airTicketFrequency">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Last Arrival" name="lastArrival">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Last Working Day" name="lastWorkingDay">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Iqama Issue Date" name="iqamaIssueDate">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item label="Iqama Expiry Date" name="iqamaExpiryDate">
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Iqama Arabic Date of Issue"
-              name="iqamaArabicDateOfIssue"
+              Medical Policy
+            </div>
+            <div
+              style={{
+                padding: "4px 11px",
+                border: "1px solid #d9d9d9",
+                borderRadius: "6px",
+                minHeight: "32px",
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#fafafa",
+              }}
             >
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Iqama Arabic Date of Expiry"
-              name="iqamaArabicDateOfExpiry"
-            >
-              <DatePicker
-                style={{ width: "100%" }}
-                format="YYYY-MM-DD"
-                disabled
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24}>
-            <Form.Item label="Basic Assets" name="basicAssets">
-              <TextArea
-                rows={3}
-                disabled
-                placeholder="List of basic assets assigned"
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24}>
-            <Form.Item
-              label="Reporting and Documentation"
-              name="reportingAndDocumentation"
-            >
-              <TextArea
-                rows={3}
-                disabled
-                placeholder="Reporting and documentation details"
-              />
-            </Form.Item>
-          </Col>
-
-          {/* Asset Allocation - Display as Tags */}
-          <Col xs={24}>
-            <Form.Item label="Asset Allocation" name="assetAllocation">
-              <Select
-                mode="tags"
-                disabled
-                placeholder="Add assets"
-                style={{ width: "100%" }}
-              >
-                <Option value="laptop">Laptop</Option>
-                <Option value="phone">Phone</Option>
-                <Option value="tablet">Tablet</Option>
-                <Option value="vehicle">Vehicle</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          {/* Switch Fields */}
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="First Time Login"
-              name="firstTimeLogin"
-              valuePropName="checked"
-            >
-              <Switch disabled />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12}>
-            <Form.Item
-              label="Medical Policy"
-              name="medicalPolicy"
-              valuePropName="checked"
-            >
-              <Switch disabled />
-            </Form.Item>
-          </Col>
-        </Row>
-
-      </Form>
+              <Text>
+                {employeeData?.employmentDetails?.medicalPolicy ? "Yes" : "No"}
+              </Text>
+            </div>
+          </div>
+        </Col>
+      </Row>
     </Card>
   );
 };

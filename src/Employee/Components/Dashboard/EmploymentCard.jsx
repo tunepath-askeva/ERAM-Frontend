@@ -7,6 +7,89 @@ const { Text } = Typography;
 
 const EmploymentCard = ({ employee, screenSize }) => {
   const navigate = useNavigate();
+  const width = screenSize?.width || 0;
+  const isVeryLargeScreen = width >= 1200;
+  const isLargeScreen = width >= 1024 && width < 1200;
+  const isMediumScreen = width >= 768 && width < 1024;
+  
+  // Responsive font sizes - properly scaled for all screen sizes
+  const getLabelFontSize = () => {
+    if (screenSize.isMobile) return "10px";
+    if (isVeryLargeScreen) return "13px";
+    if (isLargeScreen) return "11px";
+    if (isMediumScreen) return "10px";
+    return "10px";
+  };
+  
+  const getValueFontSize = () => {
+    if (screenSize.isMobile) return "12px";
+    if (isVeryLargeScreen) return "15px";
+    if (isLargeScreen) return "13px";
+    if (isMediumScreen) return "12px";
+    return "12px";
+  };
+  
+  const labelFontSize = getLabelFontSize();
+  const valueFontSize = getValueFontSize();
+
+  const renderField = (label, value, key, tooltip) => {
+    if (isVeryLargeScreen) {
+      // Inline layout for large screens: "Label - Value"
+      return (
+        <div key={key} style={{ textAlign: "left", marginBottom: isVeryLargeScreen ? "8px" : "4px" }}>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: labelFontSize,
+              color: "#8c8c8c",
+              marginRight: "8px",
+            }}
+          >
+            {label} -
+          </Text>
+          <Text
+            style={{
+              fontSize: valueFontSize,
+              color: "#262626",
+              fontWeight: 500,
+            }}
+            ellipsis={tooltip ? { tooltip } : false}
+          >
+            {value}
+          </Text>
+        </div>
+      );
+    } else {
+      // Stacked layout for smaller screens
+      return (
+        <div key={key} style={{ textAlign: "center", marginBottom: "4px" }}>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: labelFontSize,
+              display: "block",
+              color: "#8c8c8c",
+              textAlign: "center",
+            }}
+          >
+            {label}
+          </Text>
+          <Text
+            style={{
+              fontSize: valueFontSize,
+              display: "block",
+              color: "#262626",
+              fontWeight: 500,
+              textAlign: "center",
+            }}
+            ellipsis={tooltip ? { tooltip } : false}
+          >
+            {value}
+          </Text>
+        </div>
+      );
+    }
+  };
 
   return (
     <Card
@@ -30,10 +113,9 @@ const EmploymentCard = ({ employee, screenSize }) => {
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "8px" : screenSize.isDesktop ? "10px" : "10px",
+        padding: screenSize.isMobile ? "8px" : isVeryLargeScreen ? "14px 12px" : isLargeScreen ? "12px 10px" : "10px",
         flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
       }}
@@ -42,183 +124,70 @@ const EmploymentCard = ({ employee, screenSize }) => {
         minHeight: "auto",
       }}
     >
-      <Space direction="vertical" size="small" style={{ width: "100%", flex: 1 }}>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Joining Date
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {employee?.employmentDetails?.dateOfJoining
-              ? dayjs(employee.employmentDetails.dateOfJoining).format("DD MMM YYYY")
-              : "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Designation
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-            ellipsis={{ tooltip: employee?.employmentDetails?.designation || employee?.employmentDetails?.assignedJobTitle || "N/A" }}
-          >
-            {employee?.employmentDetails?.designation ||
-              employee?.employmentDetails?.assignedJobTitle ||
-              "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Employment Type
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-          >
-            {typeof employee?.employmentDetails?.category === "object"
-              ? employee?.employmentDetails?.category?.name || "N/A"
-              : employee?.employmentDetails?.category || "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Official Email
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-            ellipsis={{ tooltip: employee?.employmentDetails?.officialEmail || "N/A" }}
-          >
-            {employee?.employmentDetails?.officialEmail || "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Project
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-            ellipsis={{ tooltip: typeof employee?.employmentDetails?.project === "object"
-              ? employee?.employmentDetails?.project?.name || "N/A"
-              : employee?.employmentDetails?.project || "N/A" }}
-          >
-            {typeof employee?.employmentDetails?.project === "object"
-              ? employee?.employmentDetails?.project?.name || "N/A"
-              : employee?.employmentDetails?.project || "N/A"}
-          </Text>
-        </div>
-        <div>
-          <Text
-            type="secondary"
-            style={{
-              fontSize: screenSize.isMobile ? "9px" : "10px",
-              display: "block",
-              color: "#8c8c8c",
-            }}
-          >
-            Reporting Manager
-          </Text>
-          <Text
-            style={{
-              fontSize: screenSize.isMobile ? "11px" : "12px",
-              display: "block",
-              color: "#262626",
-              fontWeight: 500,
-            }}
-            ellipsis={{ tooltip: typeof employee?.employmentDetails?.reportingManager === "object"
-              ? employee?.employmentDetails?.reportingManager?.name || "N/A"
-              : employee?.employmentDetails?.reportingManager || "N/A" }}
-          >
-            {typeof employee?.employmentDetails?.reportingManager === "object"
-              ? employee?.employmentDetails?.reportingManager?.name || "N/A"
-              : employee?.employmentDetails?.reportingManager || "N/A"}
-          </Text>
-        </div>
-        {employee?.employmentDetails?.visaCategory && (
-          <div>
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "9px" : "10px",
-                display: "block",
-                color: "#8c8c8c",
-              }}
-            >
-              Visa Category
-            </Text>
-            <Text
-              style={{
-                fontSize: screenSize.isMobile ? "11px" : "12px",
-                display: "block",
-                color: "#262626",
-                fontWeight: 500,
-              }}
-            >
-              {employee.employmentDetails.visaCategory}
-            </Text>
-          </div>
+      <div style={{ 
+        width: "100%", 
+        flex: 1, 
+        display: "flex", 
+        flexDirection: "column", 
+        justifyContent: isVeryLargeScreen ? "space-evenly" : "center",
+        paddingTop: isVeryLargeScreen ? "4px" : "0px",
+        paddingBottom: isVeryLargeScreen ? "4px" : "0px",
+        overflow: "hidden",
+      }}>
+        {renderField(
+          "Joining Date",
+          employee?.employmentDetails?.dateOfJoining
+            ? dayjs(employee.employmentDetails.dateOfJoining).format("DD MMM YYYY")
+            : "N/A",
+          "joining"
         )}
-
-      </Space>
+        {renderField(
+          "Designation",
+          employee?.employmentDetails?.designation ||
+            employee?.employmentDetails?.assignedJobTitle ||
+            "N/A",
+          "designation",
+          employee?.employmentDetails?.designation || employee?.employmentDetails?.assignedJobTitle || "N/A"
+        )}
+        {renderField(
+          "Employment Type",
+          typeof employee?.employmentDetails?.category === "object"
+            ? employee?.employmentDetails?.category?.name || "N/A"
+            : employee?.employmentDetails?.category || "N/A",
+          "employmentType"
+        )}
+        {renderField(
+          "Official Email",
+          employee?.employmentDetails?.officialEmail || "N/A",
+          "email",
+          employee?.employmentDetails?.officialEmail || "N/A"
+        )}
+        {renderField(
+          "Project",
+          typeof employee?.employmentDetails?.project === "object"
+            ? employee?.employmentDetails?.project?.name || "N/A"
+            : employee?.employmentDetails?.project || "N/A",
+          "project",
+          typeof employee?.employmentDetails?.project === "object"
+            ? employee?.employmentDetails?.project?.name || "N/A"
+            : employee?.employmentDetails?.project || "N/A"
+        )}
+        {renderField(
+          "Reporting Manager",
+          typeof employee?.employmentDetails?.reportingManager === "object"
+            ? employee?.employmentDetails?.reportingManager?.name || "N/A"
+            : employee?.employmentDetails?.reportingManager || "N/A",
+          "manager",
+          typeof employee?.employmentDetails?.reportingManager === "object"
+            ? employee?.employmentDetails?.reportingManager?.name || "N/A"
+            : employee?.employmentDetails?.reportingManager || "N/A"
+        )}
+        {employee?.employmentDetails?.visaCategory && renderField(
+          "Visa Category",
+          employee.employmentDetails.visaCategory,
+          "visa"
+        )}
+      </div>
     </Card>
   );
 };

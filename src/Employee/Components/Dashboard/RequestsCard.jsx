@@ -11,6 +11,43 @@ const { Text } = Typography;
 
 const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) => {
   const navigate = useNavigate();
+  const width = screenSize?.width || 0;
+  const isVeryLargeScreen = width >= 1200;
+  const isLargeScreen = width >= 1024 && width < 1200;
+  const isMediumScreen = width >= 768 && width < 1024;
+  
+  // Responsive font sizes - bigger for large screens, properly scaled
+  const getTitleFontSize = () => {
+    if (screenSize.isMobile) return "11px";
+    if (isVeryLargeScreen) return "14px";
+    if (isLargeScreen) return "13px";
+    if (isMediumScreen) return "12px";
+    return "12px";
+  };
+  
+  const getDescriptionFontSize = () => {
+    if (screenSize.isMobile) return "10px";
+    if (isVeryLargeScreen) return "13px";
+    if (isLargeScreen) return "12px";
+    if (isMediumScreen) return "11px";
+    return "11px";
+  };
+  
+  const getTimeFontSize = () => {
+    if (screenSize.isMobile) return "9px";
+    if (isVeryLargeScreen) return "11px";
+    if (isLargeScreen) return "10px";
+    if (isMediumScreen) return "9px";
+    return "9px";
+  };
+  
+  const getTagFontSize = () => {
+    if (screenSize.isMobile) return "8px";
+    if (isVeryLargeScreen) return "10px";
+    if (isLargeScreen) return "9px";
+    if (isMediumScreen) return "8px";
+    return "8px";
+  };
 
   const handleCardClick = () => {
     // Navigate to raise request page by default
@@ -32,7 +69,7 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
       title={
         <Space size="small">
           <SolutionOutlined style={{ color: "#da2c46", fontSize: "14px" }} />
-          <Text strong style={{ fontSize: screenSize.isMobile ? "12px" : "16px" }}>
+          <Text strong style={{ fontSize: screenSize.isMobile ? "12px" : isVeryLargeScreen ? "16px" : isLargeScreen ? "15px" : "14px" }}>
             Raised Requests
           </Text>
         </Space>
@@ -49,12 +86,12 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "10px" : screenSize.isDesktop ? "10px" : "12px",
+        padding: screenSize.isMobile ? "10px" : isVeryLargeScreen ? "12px" : isLargeScreen ? "10px" : "10px",
         flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
         minHeight: 0,
-        maxHeight: screenSize.isMobile ? "300px" : undefined,
       }}
       headStyle={{
         padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
@@ -77,46 +114,55 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
       }
     >
       {requestsLoading ? (
-        <Spin size="small" />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+          <Spin size="small" />
+        </div>
       ) : requestsError ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "10px" : "11px",
-              }}
-            >
-              Unable to load requests
-            </Text>
-          }
-          imageStyle={{ height: 30 }}
-        />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: screenSize.isMobile ? "10px" : "11px",
+                }}
+              >
+                Unable to load requests
+              </Text>
+            }
+            imageStyle={{ height: 30 }}
+          />
+        </div>
       ) : requests.length > 0 ? (
-        <List
-          size="small"
-          dataSource={requests.slice(0, 5)}
-          renderItem={(request) => (
-            <List.Item
-              style={{
-                padding: "4px 0",
-                border: "none",
-                borderBottom:
-                  requests.indexOf(request) < requests.slice(0, 5).length - 1
-                    ? "1px solid #f0f0f0"
-                    : "none",
-                cursor: "pointer",
-              }}
-              onClick={(e) => handleRequestClick(request, e)}
-            >
-              <Space style={{ width: "100%" }} align="start" size="small">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Space size="small" style={{ marginBottom: "2px" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <List
+            size="small"
+            dataSource={requests.slice(0, 5)}
+            style={{ flex: 1, overflow: "hidden" }}
+            renderItem={(request) => (
+              <List.Item
+                style={{
+                  padding: isVeryLargeScreen ? "6px 0" : isLargeScreen ? "5px 0" : "4px 0",
+                  border: "none",
+                  borderBottom:
+                    requests.indexOf(request) < requests.slice(0, 5).length - 1
+                      ? "1px solid #f0f0f0"
+                      : "none",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+                onClick={(e) => handleRequestClick(request, e)}
+              >
+              <Space style={{ width: "100%", alignItems: "flex-start" }} size="small">
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <Space size="small" style={{ marginBottom: isVeryLargeScreen ? "3px" : "2px", flexWrap: "wrap" }}>
                     <Text
                       strong
                       style={{
-                        fontSize: screenSize.isMobile ? "10px" : "11px",
+                        fontSize: getTitleFontSize(),
+                        lineHeight: "1.3",
+                        wordBreak: "break-word",
                       }}
                     >
                       {getRequestTypeName(request.requestType)}
@@ -124,10 +170,11 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
                     <Tag
                       color={getRequestStatusColor(request.status)}
                       style={{
-                        fontSize: screenSize.isMobile ? "8px" : "9px",
+                        fontSize: getTagFontSize(),
                         margin: 0,
-                        padding: "0 3px",
-                        lineHeight: "16px",
+                        padding: isVeryLargeScreen ? "0 6px" : isLargeScreen ? "0 5px" : "0 3px",
+                        lineHeight: isVeryLargeScreen ? "18px" : isLargeScreen ? "16px" : "14px",
+                        flexShrink: 0,
                       }}
                     >
                       {request.status}
@@ -136,12 +183,15 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
                   <Text
                     type="secondary"
                     style={{
-                      fontSize: screenSize.isMobile ? "9px" : "10px",
+                      fontSize: getDescriptionFontSize(),
                       display: "block",
                       lineHeight: "1.3",
+                      marginBottom: isVeryLargeScreen ? "3px" : "2px",
+                      wordBreak: "break-word",
                     }}
                     ellipsis={{
                       tooltip: request.description || request.subject || "No description",
+                      rows: 2,
                     }}
                   >
                     {request.description || request.subject || "No description"}
@@ -149,35 +199,38 @@ const RequestsCard = ({ requests, requestsLoading, requestsError, screenSize }) 
                   <Text
                     type="secondary"
                     style={{
-                      fontSize: screenSize.isMobile ? "8px" : "9px",
+                      fontSize: getTimeFontSize(),
                       display: "block",
-                      marginTop: "2px",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <ClockCircleOutlined style={{ marginRight: "3px", fontSize: "9px" }} />
+                    <ClockCircleOutlined style={{ marginRight: "4px", fontSize: getTimeFontSize() }} />
                     {dayjs(request.createdAt).fromNow()}
                   </Text>
                 </div>
-                <ArrowRightOutlined style={{ color: "#d9d9d9", fontSize: "10px" }} />
+                <ArrowRightOutlined style={{ color: "#d9d9d9", fontSize: "10px", flexShrink: 0, marginTop: "2px" }} />
               </Space>
             </List.Item>
           )}
-        />
+          />
+        </div>
       ) : (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "10px" : "11px",
-              }}
-            >
-              No requests
-            </Text>
-          }
-          imageStyle={{ height: 30 }}
-        />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: screenSize.isMobile ? "10px" : "11px",
+                }}
+              >
+                No requests
+              </Text>
+            }
+            imageStyle={{ height: 30 }}
+          />
+        </div>
       )}
     </Card>
   );

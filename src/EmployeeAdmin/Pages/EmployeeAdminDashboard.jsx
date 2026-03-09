@@ -9,6 +9,7 @@ import {
   Tag,
   Progress,
   Empty,
+  Button,
 } from "antd";
 import {
   UserOutlined,
@@ -160,6 +161,25 @@ const EmployeeAdminDashboard = () => {
           </div>
         </Card>
       )}
+
+      {/* Get More Report Button */}
+      <Row style={{ marginBottom: "24px" }} justify="end">
+        <Col>
+          <Button
+            type="primary"
+            size="large"
+            style={{
+              backgroundColor: "#da2c46",
+              borderColor: "#da2c46",
+              height: "40px",
+              fontSize: "16px",
+              fontWeight: "500",
+            }}
+          >
+            Get More Report
+          </Button>
+        </Col>
+      </Row>
 
       {/* Key Metrics */}
       <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>

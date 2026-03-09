@@ -3,23 +3,18 @@ import {
   Card,
   Row,
   Col,
-  Modal,
   Image,
-  Divider,
   Typography,
   Tag,
   Avatar,
   Space,
-  Spin,
   Button,
   Result,
 } from "antd";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarOutlined,
   UserOutlined,
-  FileTextOutlined,
-  CloseOutlined,
   ArrowRightOutlined,
   EnvironmentOutlined,
 } from "@ant-design/icons";
@@ -29,30 +24,14 @@ const { Title, Text, Paragraph } = Typography;
 
 const EmployeeCompanyNews = () => {
   const { data: companyNews, isLoading, isError } = useGetCompanyNewsQuery();
-  const [selectedNews, setSelectedNews] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const navigate = useNavigate();
 
   const publishedNews =
     companyNews?.news?.filter((n) => n.status === "published") || [];
 
-  // Custom styles matching NewsDetailView
-  const customStyles = {
-    primaryColor: "#da2c46",
-    cardStyle: {
-      borderRadius: "12px",
-      boxShadow: "0 4px 12px rgba(218, 44, 70, 0.1)",
-      border: `1px solid rgba(218, 44, 70, 0.2)`,
-    },
-  };
-
   const handleReadMore = (news, e) => {
     e.stopPropagation(); // Prevent card click event
-    setSelectedNews(news);
-    setIsModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalVisible(false);
+    navigate(`/employee/company-news/${news._id}`);
   };
 
   if (isLoading) {
@@ -187,246 +166,6 @@ const EmployeeCompanyNews = () => {
             ))}
         </div>
       )}
-      {/* Modal remains the same */}
-      <Modal
-        title={null}
-        open={isModalVisible}
-        onCancel={handleCloseModal}
-        footer={null}
-        width={900}
-        className="news-modal"
-        closeIcon={
-          <CloseOutlined style={{ fontSize: "20px", color: "#999" }} />
-        }
-        styles={{
-          body: { padding: 0, maxHeight: "80vh", overflowY: "auto" },
-        }}
-      >
-        {selectedNews && (
-          <div style={{ padding: "24px" }}>
-            {/* Main content card */}
-            <Card style={customStyles.cardStyle}>
-              {/* News Header */}
-              <div style={{ marginBottom: "24px" }}>
-                <Space wrap style={{ marginBottom: "16px" }}>
-                  <Tag
-                    color={
-                      selectedNews.status === "published" ? "green" : "orange"
-                    }
-                    style={{ fontSize: "12px", padding: "4px 8px" }}
-                  >
-                    {selectedNews.status?.toUpperCase() || "DRAFT"}
-                  </Tag>
-                  {selectedNews.type === "event" && (
-                    <Tag color="purple" style={{ fontSize: "12px", padding: "4px 8px" }}>
-                      EVENT
-                    </Tag>
-                  )}
-                  {selectedNews.type === "event" && selectedNews.eventDate ? (
-                    <Space direction="vertical" size="small">
-                      <Text type="secondary">
-                        <CalendarOutlined style={{ marginRight: "4px" }} />
-                        Event Date: {new Date(selectedNews.eventDate).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </Text>
-                      {selectedNews.eventLocation && (
-                        <Text type="secondary">
-                          <EnvironmentOutlined style={{ marginRight: "4px", color: "#52c41a" }} />
-                          Event Location: {selectedNews.eventLocation}
-                        </Text>
-                      )}
-                    </Space>
-                  ) : selectedNews.createdAt && (
-                    <Text type="secondary">
-                      <CalendarOutlined style={{ marginRight: "4px" }} />
-                      {new Date(selectedNews.createdAt).toLocaleDateString()}
-                    </Text>
-                  )}
-                </Space>
-
-                <Title
-                  level={1}
-                  style={{
-                    color: customStyles.primaryColor,
-                    marginBottom: "16px",
-                    fontSize: "28px",
-                  }}
-                >
-                  {selectedNews.title}
-                </Title>
-
-                {/* Cover Image */}
-                {selectedNews.coverImage && (
-                  <div style={{ marginBottom: "24px", textAlign: "center" }}>
-                    <Image
-                      src={selectedNews.coverImage}
-                      alt={selectedNews.title}
-                      style={{
-                        maxWidth: "100%",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                      }}
-                      placeholder={
-                        <div
-                          style={{
-                            padding: "40px",
-                            backgroundColor: "#f5f5f5",
-                            borderRadius: "12px",
-                          }}
-                        >
-                          <Spin />
-                        </div>
-                      }
-                    />
-                  </div>
-                )}
-
-                {/* Description */}
-                {selectedNews.description && (
-                  <>
-                    <Title
-                      level={4}
-                      style={{ color: customStyles.primaryColor }}
-                    >
-                      <FileTextOutlined style={{ marginRight: "8px" }} />
-                      Overview
-                    </Title>
-                    <Paragraph
-                      style={{
-                        fontSize: "16px",
-                        lineHeight: "1.6",
-                        marginBottom: "32px",
-                        color: "#444",
-                      }}
-                    >
-                      {selectedNews.description}
-                    </Paragraph>
-                  </>
-                )}
-              </div>
-
-              {/* Subsections */}
-              {selectedNews.subsections &&
-                selectedNews.subsections.length > 0 && (
-                  <>
-                    <Divider
-                      style={{
-                        margin: "32px 0",
-                        borderColor: customStyles.primaryColor,
-                      }}
-                    />
-
-                    <Title
-                      level={3}
-                      style={{
-                        color: customStyles.primaryColor,
-                        marginBottom: "24px",
-                      }}
-                    >
-                      {selectedNews.type === "event" ? "Event Sections" : "Article Sections"}
-                    </Title>
-
-                    <Row gutter={[24, 24]}>
-                      {selectedNews.subsections.map((section, index) => (
-                        <Col xs={24} key={section._id || index}>
-                          <Card
-                            style={{
-                              borderRadius: "8px",
-                              border: `1px solid rgba(218, 44, 70, 0.1)`,
-                              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                            }}
-                          >
-                            <Title
-                              level={4}
-                              style={{ marginBottom: "16px", color: "#333" }}
-                            >
-                              {section.subtitle}
-                            </Title>
-
-                            <Paragraph
-                              style={{
-                                fontSize: "15px",
-                                lineHeight: "1.7",
-                                marginBottom: section.image ? "20px" : "0",
-                                color: "#555",
-                              }}
-                            >
-                              {section.subdescription
-                                ?.split("\r\n")
-                                .map((paragraph, i) => (
-                                  <span key={i}>
-                                    {paragraph}
-                                    {i <
-                                      section.subdescription.split("\r\n")
-                                        .length -
-                                        1 && (
-                                      <>
-                                        <br />
-                                        <br />
-                                      </>
-                                    )}
-                                  </span>
-                                ))}
-                            </Paragraph>
-
-                            {section.image && (
-                              <div style={{ textAlign: "center" }}>
-                                <Image
-                                  src={section.image}
-                                  alt={section.subtitle}
-                                  style={{
-                                    maxWidth: "100%",
-                                    borderRadius: "8px",
-                                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-                                  }}
-                                  placeholder={
-                                    <div
-                                      style={{
-                                        padding: "40px",
-                                        backgroundColor: "#f5f5f5",
-                                        borderRadius: "8px",
-                                      }}
-                                    >
-                                      <Spin />
-                                    </div>
-                                  }
-                                />
-                              </div>
-                            )}
-                          </Card>
-                        </Col>
-                      ))}
-                    </Row>
-                  </>
-                )}
-
-              {/* Footer with timestamps */}
-              <Divider style={{ margin: "40px 0 20px 0" }} />
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Text type="secondary">
-                    <strong>Created:</strong>{" "}
-                    {selectedNews.createdAt
-                      ? new Date(selectedNews.createdAt).toLocaleString()
-                      : "N/A"}
-                  </Text>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Text type="secondary">
-                    <strong>Last Updated:</strong>{" "}
-                    {selectedNews.updatedAt
-                      ? new Date(selectedNews.updatedAt).toLocaleString()
-                      : "N/A"}
-                  </Text>
-                </Col>
-              </Row>
-            </Card>
-          </div>
-        )}
-      </Modal>
 
       <style jsx>{`
         .news-container {
@@ -554,29 +293,6 @@ const EmployeeCompanyNews = () => {
           .news-card-title {
             font-size: 18px;
           }
-        }
-
-        /* Modal Styles */
-        .news-modal .ant-modal-content {
-          border-radius: 12px;
-          overflow: hidden;
-        }
-
-        .news-modal .ant-modal-header {
-          border-bottom: none;
-          padding: 16px 24px;
-        }
-
-        .news-modal .ant-modal-close {
-          top: 16px;
-          right: 16px;
-        }
-
-        .news-modal .ant-modal-close-x {
-          width: 40px;
-          height: 40px;
-          line-height: 40px;
-          font-size: 16px;
         }
       `}</style>
     </div>

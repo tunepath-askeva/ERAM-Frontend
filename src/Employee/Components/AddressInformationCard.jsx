@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, Form, Input, Row, Col, Button, Space, Typography, Checkbox, message } from "antd";
 import { HomeOutlined, SaveOutlined, EditOutlined } from "@ant-design/icons";
+import ViewField from "./ViewField";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -138,157 +139,285 @@ const AddressInformationCard = ({ employeeData, loading, onUpdate }) => {
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
     >
-      <Form form={form} layout="vertical">
-        {/* Present Address Section */}
-        <div style={{ marginBottom: "32px" }}>
-          <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
-            Present Address
-          </Text>
-          <Row gutter={24}>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="Country"
-                name={["presentAddress", "country"]}
-                rules={[{ required: true, message: "Please enter country" }]}
-              >
-                <Input placeholder="Enter country" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="State/Province"
-                name={["presentAddress", "state"]}
-                rules={[{ required: true, message: "Please enter state" }]}
-              >
-                <Input placeholder="Enter state/province" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="City"
-                name={["presentAddress", "city"]}
-                rules={[{ required: true, message: "Please enter city" }]}
-              >
-                <Input placeholder="Enter city" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Street Name" name={["presentAddress", "streetName"]}>
-                <Input placeholder="Enter street name" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Street No" name={["presentAddress", "streetNo"]}>
-                <Input placeholder="Enter street number" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Block" name={["presentAddress", "block"]}>
-                <Input placeholder="Enter block" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Building" name={["presentAddress", "building"]}>
-                <Input placeholder="Enter building" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Zip/Postal Code" name={["presentAddress", "zipCode"]}>
-                <Input placeholder="Enter zip/postal code" disabled={!editMode} />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label="Full Address" name={["presentAddress", "region"]}>
-                <TextArea
-                  rows={3}
-                  placeholder="Enter full address"
-                  disabled={!editMode}
-                  onChange={editMode ? handlePresentAddressChange : undefined}
+      {!editMode ? (
+        <>
+          {/* Present Address Section */}
+          <div style={{ marginBottom: "32px" }}>
+            <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
+              Present Address
+            </Text>
+            <Row gutter={24}>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="Country"
+                  value={employeeData?.presentAddress?.country}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
-
-        {/* Permanent Address Section */}
-        <div>
-          <div style={{ marginBottom: "16px" }}>
-            <Checkbox
-              checked={sameAsPresent}
-              onChange={handleSameAsPresentChange}
-              disabled={!editMode}
-            >
-              <Text strong>Permanent address is same as present address</Text>
-            </Checkbox>
+              </Col>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="State/Province"
+                  value={employeeData?.presentAddress?.state}
+                />
+              </Col>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="City"
+                  value={employeeData?.presentAddress?.city}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Street Name"
+                  value={employeeData?.presentAddress?.streetName}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Street No"
+                  value={employeeData?.presentAddress?.streetNo}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Block"
+                  value={employeeData?.presentAddress?.block}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Building"
+                  value={employeeData?.presentAddress?.building}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Zip/Postal Code"
+                  value={employeeData?.presentAddress?.zipCode}
+                />
+              </Col>
+              <Col xs={24}>
+                <ViewField
+                  label="Full Address"
+                  value={employeeData?.presentAddress?.region}
+                />
+              </Col>
+            </Row>
           </div>
-          <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
-            Permanent Address
-          </Text>
-          <Row gutter={24}>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="Country"
-                name={["permanentAddress", "country"]}
-                rules={[{ required: true, message: "Please enter country" }]}
-              >
-                <Input placeholder="Enter country" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="State/Province"
-                name={["permanentAddress", "state"]}
-                rules={[{ required: true, message: "Please enter state" }]}
-              >
-                <Input placeholder="Enter state/province" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Form.Item
-                label="City"
-                name={["permanentAddress", "city"]}
-                rules={[{ required: true, message: "Please enter city" }]}
-              >
-                <Input placeholder="Enter city" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Street Name" name={["permanentAddress", "streetName"]}>
-                <Input placeholder="Enter street name" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Street No" name={["permanentAddress", "streetNo"]}>
-                <Input placeholder="Enter street number" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Block" name={["permanentAddress", "block"]}>
-                <Input placeholder="Enter block" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Building" name={["permanentAddress", "building"]}>
-                <Input placeholder="Enter building" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item label="Zip/Postal Code" name={["permanentAddress", "zipCode"]}>
-                <Input placeholder="Enter zip/postal code" disabled={!editMode || sameAsPresent} />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item label="Full Address" name={["permanentAddress", "region"]}>
-                <TextArea
-                  rows={3}
-                  placeholder="Enter full address"
-                  disabled={!editMode || sameAsPresent}
+
+          {/* Permanent Address Section */}
+          <div>
+            <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
+              Permanent Address
+            </Text>
+            <Row gutter={24}>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="Country"
+                  value={employeeData?.permanentAddress?.country}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-        </div>
-      </Form>
+              </Col>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="State/Province"
+                  value={employeeData?.permanentAddress?.state}
+                />
+              </Col>
+              <Col xs={24} sm={8}>
+                <ViewField
+                  label="City"
+                  value={employeeData?.permanentAddress?.city}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Street Name"
+                  value={employeeData?.permanentAddress?.streetName}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Street No"
+                  value={employeeData?.permanentAddress?.streetNo}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Block"
+                  value={employeeData?.permanentAddress?.block}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Building"
+                  value={employeeData?.permanentAddress?.building}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <ViewField
+                  label="Zip/Postal Code"
+                  value={employeeData?.permanentAddress?.zipCode}
+                />
+              </Col>
+              <Col xs={24}>
+                <ViewField
+                  label="Full Address"
+                  value={employeeData?.permanentAddress?.region}
+                />
+              </Col>
+            </Row>
+          </div>
+        </>
+      ) : (
+        <Form form={form} layout="vertical">
+          {/* Present Address Section */}
+          <div style={{ marginBottom: "32px" }}>
+            <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
+              Present Address
+            </Text>
+            <Row gutter={24}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="Country"
+                  name={["presentAddress", "country"]}
+                  rules={[{ required: true, message: "Please enter country" }]}
+                >
+                  <Input placeholder="Enter country" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="State/Province"
+                  name={["presentAddress", "state"]}
+                  rules={[{ required: true, message: "Please enter state" }]}
+                >
+                  <Input placeholder="Enter state/province" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="City"
+                  name={["presentAddress", "city"]}
+                  rules={[{ required: true, message: "Please enter city" }]}
+                >
+                  <Input placeholder="Enter city" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Street Name" name={["presentAddress", "streetName"]}>
+                  <Input placeholder="Enter street name" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Street No" name={["presentAddress", "streetNo"]}>
+                  <Input placeholder="Enter street number" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Block" name={["presentAddress", "block"]}>
+                  <Input placeholder="Enter block" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Building" name={["presentAddress", "building"]}>
+                  <Input placeholder="Enter building" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Zip/Postal Code" name={["presentAddress", "zipCode"]}>
+                  <Input placeholder="Enter zip/postal code" />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item label="Full Address" name={["presentAddress", "region"]}>
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter full address"
+                    onChange={handlePresentAddressChange}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* Permanent Address Section */}
+          <div>
+            <div style={{ marginBottom: "16px" }}>
+              <Checkbox
+                checked={sameAsPresent}
+                onChange={handleSameAsPresentChange}
+              >
+                <Text strong>Permanent address is same as present address</Text>
+              </Checkbox>
+            </div>
+            <Text strong style={{ fontSize: "16px", marginBottom: "16px", display: "block" }}>
+              Permanent Address
+            </Text>
+            <Row gutter={24}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="Country"
+                  name={["permanentAddress", "country"]}
+                  rules={[{ required: true, message: "Please enter country" }]}
+                >
+                  <Input placeholder="Enter country" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="State/Province"
+                  name={["permanentAddress", "state"]}
+                  rules={[{ required: true, message: "Please enter state" }]}
+                >
+                  <Input placeholder="Enter state/province" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label="City"
+                  name={["permanentAddress", "city"]}
+                  rules={[{ required: true, message: "Please enter city" }]}
+                >
+                  <Input placeholder="Enter city" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Street Name" name={["permanentAddress", "streetName"]}>
+                  <Input placeholder="Enter street name" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Street No" name={["permanentAddress", "streetNo"]}>
+                  <Input placeholder="Enter street number" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Block" name={["permanentAddress", "block"]}>
+                  <Input placeholder="Enter block" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Building" name={["permanentAddress", "building"]}>
+                  <Input placeholder="Enter building" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Zip/Postal Code" name={["permanentAddress", "zipCode"]}>
+                  <Input placeholder="Enter zip/postal code" disabled={sameAsPresent} />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item label="Full Address" name={["permanentAddress", "region"]}>
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter full address"
+                    disabled={sameAsPresent}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+        </Form>
+      )}
     </Card>
   );
 };

@@ -35,6 +35,7 @@ import {
   PlusOutlined,
   InboxOutlined,
   CloseOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import {
@@ -154,19 +155,15 @@ const EmployeeAdminCompanyPolicy = () => {
       setParsedData(data);
       setUploadStatus("success");
 
+      // Set form values with file URL and title
       form.setFieldsValue({
-        title:
-          data.title ||
-          data.documentTitle ||
-          file.name.replace(/\.[^/.]+$/, ""),
-        version: data.version || "1.0",
-        content: data.content || data.text || data.extractedText || "",
-        department: data.department || "",
+        title: data.title || file.name.replace(/\.[^/.]+$/, ""),
+        fileUrl: data.fileUrl || null,
       });
 
       notification.success({
         message: "Document Uploaded Successfully",
-        description: `The document "${file.name}" has been parsed successfully.`,
+        description: `The document "${file.name}" has been uploaded to cloud storage successfully.`,
         icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
       });
     } catch (error) {
@@ -194,12 +191,8 @@ const EmployeeAdminCompanyPolicy = () => {
         title: values.title,
         createdAt: new Date().toISOString(),
         status: "active",
-        content:
-          (parsedData?.paragraphs && parsedData.paragraphs.join("\n\n")) ||
-          parsedData?.content ||
-          parsedData?.text ||
-          parsedData?.extractedText ||
-          "",
+        fileUrl: parsedData?.fileUrl || values.fileUrl || null,
+        content: values.content || "",
       };
 
       await createPolicy(payload).unwrap();
@@ -302,7 +295,8 @@ const EmployeeAdminCompanyPolicy = () => {
     setSelectedPolicy(policy);
     editForm.setFieldsValue({
       title: policy.title,
-      content: policy.content,
+      content: policy.content || "",
+      fileUrl: policy.fileUrl || null,
     });
     setEditModalVisible(true);
   };
@@ -318,185 +312,124 @@ const EmployeeAdminCompanyPolicy = () => {
   const renderParsedDataDisplay = () => {
     if (!parsedData) return null;
 
-    const getContentText = () => {
-      if (parsedData.paragraphs && Array.isArray(parsedData.paragraphs)) {
-        return parsedData.paragraphs.join("\n\n");
-      }
-      return (
-        parsedData.content || parsedData.text || parsedData.extractedText || ""
-      );
-    };
-
-    const contentText = getContentText();
-    const totalLength = contentText.length;
-
     return (
       <Card
-        title="Document Preview"
+        title="File Upload Information"
         size="small"
         style={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
         <div style={{ flex: 1, overflow: "auto" }}>
           {parsedData.message && (
             <div style={{ marginBottom: 12 }}>
-              <Text strong>Parse Status: </Text>
+              <Text strong>Upload Status: </Text>
               <Tag color="green">{parsedData.message}</Tag>
             </div>
           )}
 
-          {parsedData.paragraphs && (
+          {parsedData.fileUrl && (
             <div style={{ marginBottom: 12 }}>
-              <Text strong>Paragraphs Found: </Text>
-              <Tag color="blue">{parsedData.paragraphs.length}</Tag>
+              {/* <Text strong>File URL: </Text>
+              <Text code style={{ fontSize: "12px", wordBreak: "break-all" }}>
+                {parsedData.fileUrl}
+              </Text> */}
             </div>
           )}
 
-          {totalLength > 0 && (
+          {parsedData.fileName && (
             <div style={{ marginBottom: 12 }}>
-              <Text strong>Total Content Length: </Text>
-              <Tag color="green">{totalLength} characters</Tag>
+              <Text strong>File Name: </Text>
+              <Tag color="blue">{parsedData.fileName}</Tag>
             </div>
           )}
 
-          {contentText && (
-            <div>
+          {parsedData.fileSize && (
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>File Size: </Text>
+              <Tag color="green">
+                {(parsedData.fileSize / 1024 / 1024).toFixed(2)} MB
+              </Tag>
+            </div>
+          )}
+
+          {parsedData.fileType && (
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>File Type: </Text>
+              <Tag color="purple">{parsedData.fileType}</Tag>
+            </div>
+          )}
+
+          {parsedData.fileUrl && (
+            <div style={{ marginTop: 16 }}>
               <div
                 style={{
-                  marginTop: 8,
-                  padding: "16px",
-                  background: "#fafafa",
                   border: "1px solid #d9d9d9",
-                  borderRadius: "6px",
-                  maxHeight: "400px",
-                  overflow: "auto",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                  borderRadius: "8px",
+                  height: "400px",
+                  position: "relative",
+                  overflow: "hidden",
+                  marginBottom: 16,
                 }}
               >
-                {contentText.split("\n").map((line, index) => {
-                  const trimmedLine = line.trim();
-
-                  if (!trimmedLine) {
-                    return <br key={index} />;
-                  }
-                  if (
-                    trimmedLine.match(
-                      /^[A-Z][A-Za-z\s]+(Document|Policy|Manual)$/
-                    )
-                  ) {
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          fontWeight: "bold",
-                          fontSize: "18px",
-                          color: "#1890ff",
-                          textAlign: "center",
-                          marginBottom: "20px",
-                          marginTop: "10px",
-                          borderBottom: "2px solid #1890ff",
-                          paddingBottom: "8px",
-                        }}
-                      >
-                        {trimmedLine}
-                      </div>
-                    );
-                  }
-
-                  if (trimmedLine.match(/^\d+\.\s+[A-Z]/)) {
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          fontWeight: "bold",
-                          fontSize: "16px",
-                          color: "#1890ff",
-                          marginTop: "20px",
-                          marginBottom: "12px",
-                          paddingLeft: "0px",
-                        }}
-                      >
-                        {trimmedLine}
-                      </div>
-                    );
-                  }
-
-                  if (trimmedLine.endsWith(":") && trimmedLine.length < 100) {
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          fontWeight: "600",
-                          fontSize: "15px",
-                          color: "#595959",
-                          marginTop: "12px",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        {trimmedLine}
-                      </div>
-                    );
-                  }
-
-                  if (trimmedLine.match(/^[-•\*]\s/)) {
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          marginLeft: "20px",
-                          marginBottom: "6px",
-                          color: "#333",
-                          position: "relative",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "#1890ff",
-                            fontWeight: "bold",
-                            marginRight: "8px",
-                          }}
-                        >
-                          •
-                        </span>
-                        {trimmedLine.substring(2)}
-                      </div>
-                    );
-                  }
-
-                  if (
-                    trimmedLine.match(/^\d+\.\s/) &&
-                    !trimmedLine.match(/^\d+\.\s+[A-Z][A-Za-z\s]+$/)
-                  ) {
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          marginLeft: "20px",
-                          marginBottom: "6px",
-                          color: "#333",
-                        }}
-                      >
-                        {trimmedLine}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        marginBottom: "10px",
-                        textAlign: "justify",
-                        color: "#333",
-                        textIndent: "0px",
-                      }}
+                {parsedData.fileUrl.endsWith(".pdf") ? (
+                  <embed
+                    src={`${parsedData.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                    type="application/pdf"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                    }}
+                  />
+                ) : parsedData.fileUrl.match(/\.(doc|docx)$/i) ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "100%",
+                      padding: "40px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <FileTextOutlined
+                      style={{ fontSize: "64px", color: "#1890ff", marginBottom: "16px" }}
+                    />
+                    <Text strong style={{ fontSize: "16px", marginBottom: "8px" }}>
+                      Word Document
+                    </Text>
+                    <Text type="secondary" style={{ marginBottom: "16px" }}>
+                      Click the button below to view this document
+                    </Text>
+                    <Button
+                      type="primary"
+                      icon={<DownloadOutlined />}
+                      onClick={() => window.open(parsedData.fileUrl, "_blank")}
+                      style={{ backgroundColor: "#da2c46" }}
                     >
-                      {trimmedLine}
-                    </div>
-                  );
-                })}
+                      Open in New Tab
+                    </Button>
+                  </div>
+                ) : (
+                  <iframe
+                    src={parsedData.fileUrl}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      border: "none",
+                    }}
+                    title="Policy Document Preview"
+                  />
+                )}
               </div>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={() => window.open(parsedData.fileUrl, "_blank")}
+                style={{ backgroundColor: "#da2c46", width: "100%" }}
+              >
+                Download File
+              </Button>
             </div>
           )}
         </div>
@@ -526,12 +459,14 @@ const EmployeeAdminCompanyPolicy = () => {
                 >
                   Create Policy
                 </Button>
-                <Button
-                  onClick={() => setPreviewMode(true)}
-                  icon={<EyeOutlined />}
-                >
-                  Preview
-                </Button>
+                {parsedData?.fileUrl && (
+                  <Button
+                    onClick={() => setPreviewMode(true)}
+                    icon={<EyeOutlined />}
+                  >
+                    Preview File
+                  </Button>
+                )}
                 <Button onClick={resetForm}>Cancel</Button>
               </Space>
             </Form.Item>
@@ -601,6 +536,15 @@ const EmployeeAdminCompanyPolicy = () => {
       key: "actions",
       render: (_, record) => (
         <Space size="small">
+          {record.fileUrl && (
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => window.open(record.fileUrl, "_blank")}
+            >
+              Download
+            </Button>
+          )}
           <Button
             size="small"
             icon={<EyeOutlined />}
@@ -665,8 +609,7 @@ const EmployeeAdminCompanyPolicy = () => {
           <FileTextOutlined /> Company Policy Management
         </Title>
         <Paragraph type="secondary">
-          Upload, create, view, edit, delete, and archive company policies with
-          automatic content parsing.
+          Upload, create, view, edit, delete, and archive company policies. Files are stored in cloud storage.
         </Paragraph>
       </Card>
 
@@ -678,7 +621,7 @@ const EmployeeAdminCompanyPolicy = () => {
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
                   <Upload.Dragger
                     {...uploadProps}
-                    accept=".pdf"
+                    accept=".pdf,.doc,.docx,.txt"
                     style={{ background: "#fafafa" }}
                   >
                     <p className="ant-upload-drag-icon">
@@ -693,7 +636,7 @@ const EmployeeAdminCompanyPolicy = () => {
                       Click or drag file to upload
                     </p>
                     <p className="ant-upload-hint" style={{ color: "#666" }}>
-                      Supports PDF only (max 5MB)
+                      Supports PDF, DOC, DOCX, TXT (max 10MB)
                     </p>
                   </Upload.Dragger>
                 </div>
@@ -709,7 +652,7 @@ const EmployeeAdminCompanyPolicy = () => {
                       fontSize: "16px",
                     }}
                   >
-                    Uploading and parsing document...
+                    Uploading document to cloud storage...
                   </p>
                 </div>
               )}
@@ -718,7 +661,7 @@ const EmployeeAdminCompanyPolicy = () => {
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
                   <Alert
                     message="Upload Failed"
-                    description="There was an error uploading or parsing your document."
+                    description="There was an error uploading your document."
                     type="error"
                     showIcon
                     style={{ marginBottom: 16 }}
@@ -730,7 +673,7 @@ const EmployeeAdminCompanyPolicy = () => {
               {uploadStatus === "success" && parsedData && (
                 <Alert
                   message="Upload Successful"
-                  description="Document has been uploaded and parsed successfully."
+                  description="Document has been uploaded to cloud storage successfully."
                   type="success"
                   showIcon
                   style={{ marginBottom: 16 }}
@@ -856,7 +799,9 @@ const EmployeeAdminCompanyPolicy = () => {
             </Button>
           ),
         ].filter(Boolean)}
-        width={800}
+        width="90%"
+        style={{ top: 20 }}
+        bodyStyle={{ height: "80vh", padding: "24px" }}
       >
         {selectedPolicy && (
           <div>
@@ -869,20 +814,101 @@ const EmployeeAdminCompanyPolicy = () => {
                 text={selectedPolicy.status}
               />
             </Space>
-            <Paragraph>{selectedPolicy.description}</Paragraph>
-            <Divider />
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                maxHeight: "400px",
-                overflow: "auto",
-                padding: "16px",
-                background: "#fafafa",
-                borderRadius: "6px",
-              }}
-            >
-              {selectedPolicy.content}
-            </div>
+            {selectedPolicy.fileUrl ? (
+              <div>
+                <div style={{ marginBottom: "16px", textAlign: "right" }}>
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                    style={{ backgroundColor: "#da2c46" }}
+                  >
+                    Download File
+                  </Button>
+                </div>
+                <div
+                  style={{
+                    border: "1px solid #d9d9d9",
+                    borderRadius: "8px",
+                    height: "calc(80vh - 200px)",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  {selectedPolicy.fileUrl.endsWith(".pdf") ? (
+                    <embed
+                      src={`${selectedPolicy.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                      type="application/pdf"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                      }}
+                    />
+                  ) : selectedPolicy.fileUrl.match(/\.(doc|docx)$/i) ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        padding: "40px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <FileTextOutlined
+                        style={{ fontSize: "64px", color: "#1890ff", marginBottom: "16px" }}
+                      />
+                      <Text strong style={{ fontSize: "16px", marginBottom: "8px" }}>
+                        Word Document
+                      </Text>
+                      <Text type="secondary" style={{ marginBottom: "16px" }}>
+                        Click the download button above to view this document
+                      </Text>
+                      <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                        style={{ backgroundColor: "#da2c46" }}
+                      >
+                        Open in New Tab
+                      </Button>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={selectedPolicy.fileUrl}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                      }}
+                      title="Policy Document"
+                    />
+                  )}
+                </div>
+              </div>
+            ) : selectedPolicy.content ? (
+              <>
+                <Divider />
+                <div
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    maxHeight: "400px",
+                    overflow: "auto",
+                    padding: "16px",
+                    background: "#fafafa",
+                    borderRadius: "6px",
+                  }}
+                >
+                  {selectedPolicy.content}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px" }}>
+                <Text type="secondary">No file or content available for this policy.</Text>
+              </div>
+            )}
           </div>
         )}
       </Modal>
@@ -906,14 +932,43 @@ const EmployeeAdminCompanyPolicy = () => {
           <Form.Item
             name="content"
             label="Policy Content"
-            rules={[{ required: true, message: "Please enter policy content" }]}
+            rules={[
+              {
+                validator: (_, value) => {
+                  const fileUrl = editForm.getFieldValue("fileUrl");
+                  if (!value && !fileUrl) {
+                    return Promise.reject(
+                      new Error("Either content or file URL must be provided")
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
           >
             <TextArea
               rows={10}
-              placeholder="Enter policy content"
+              placeholder="Enter policy content (optional if file is uploaded)"
               style={{ whiteSpace: "pre-wrap" }}
             />
           </Form.Item>
+
+          {selectedPolicy?.fileUrl && (
+            <Form.Item label="Policy File">
+              <Space>
+                <Button
+                  type="link"
+                  icon={<DownloadOutlined />}
+                  onClick={() => window.open(selectedPolicy.fileUrl, "_blank")}
+                >
+                  Download Current File
+                </Button>
+                <Text type="secondary">
+                  To replace the file, delete this policy and create a new one with a new file.
+                </Text>
+              </Space>
+            </Form.Item>
+          )}
 
           <Form.Item>
             <Space>
@@ -931,55 +986,83 @@ const EmployeeAdminCompanyPolicy = () => {
         </Form>
       </Modal>
 
-      <Modal
-        title="Policy Preview"
-        open={previewMode}
-        onCancel={() => setPreviewMode(false)}
-        footer={[
-          <Button key="close" onClick={() => setPreviewMode(false)}>
-            Close
-          </Button>,
-        ]}
-        width={800}
-      >
-        <div>
-          <Title level={3}>
-            {form.getFieldValue("title") || "Untitled Policy"}
-          </Title>
-          <Divider />
+      {previewMode && parsedData?.fileUrl && (
+        <Modal
+          title={`Preview: ${form.getFieldValue("title") || "Untitled Policy"}`}
+          open={previewMode}
+          onCancel={() => setPreviewMode(false)}
+          footer={[
+            <Button key="close" onClick={() => setPreviewMode(false)}>
+              Close
+            </Button>,
+          ]}
+          width="90%"
+          style={{ top: 20 }}
+          bodyStyle={{ height: "80vh", padding: "24px" }}
+        >
           <div
             style={{
-              whiteSpace: "pre-wrap",
-              maxHeight: "400px",
-              overflow: "auto",
-              padding: "16px",
-              background: "#fafafa",
-              borderRadius: "6px",
-              fontSize: "14px",
-              lineHeight: "1.6",
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+              border: "1px solid #d9d9d9",
+              borderRadius: "8px",
+              height: "calc(80vh - 100px)",
+              position: "relative",
+              overflow: "hidden",
             }}
           >
-            {(() => {
-              if (!parsedData) return "No content available";
-
-              if (
-                parsedData.paragraphs &&
-                Array.isArray(parsedData.paragraphs)
-              ) {
-                return parsedData.paragraphs.join("\n\n");
-              }
-
-              return (
-                parsedData.content ||
-                parsedData.text ||
-                parsedData.extractedText ||
-                "No content available"
-              );
-            })()}
+            {parsedData.fileUrl.endsWith(".pdf") ? (
+              <embed
+                src={`${parsedData.fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                type="application/pdf"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+              />
+            ) : parsedData.fileUrl.match(/\.(doc|docx)$/i) ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  padding: "40px",
+                  textAlign: "center",
+                }}
+              >
+                <FileTextOutlined
+                  style={{ fontSize: "64px", color: "#1890ff", marginBottom: "16px" }}
+                />
+                <Text strong style={{ fontSize: "16px", marginBottom: "8px" }}>
+                  Word Document
+                </Text>
+                <Text type="secondary" style={{ marginBottom: "16px" }}>
+                  Click the button below to view this document
+                </Text>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={() => window.open(parsedData.fileUrl, "_blank")}
+                  style={{ backgroundColor: "#da2c46" }}
+                >
+                  Open in New Tab
+                </Button>
+              </div>
+            ) : (
+              <iframe
+                src={parsedData.fileUrl}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                }}
+                title="Policy Document Preview"
+              />
+            )}
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
       <Modal
         title={`Confirm ${
           archiveId?.status === "active" ? "Archive" : "Unarchive"

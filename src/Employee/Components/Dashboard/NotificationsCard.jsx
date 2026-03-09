@@ -10,13 +10,42 @@ const { Text } = Typography;
 
 const NotificationsCard = ({ notifications, notificationsLoading, screenSize }) => {
   const navigate = useNavigate();
+  const width = screenSize?.width || 0;
+  const isVeryLargeScreen = width >= 1200;
+  const isLargeScreen = width >= 1024 && width < 1200;
+  const isMediumScreen = width >= 768 && width < 1024;
+  
+  // Responsive font sizes - bigger for large screens, properly scaled
+  const getTitleFontSize = () => {
+    if (screenSize.isMobile) return "12px";
+    if (isVeryLargeScreen) return "14px";
+    if (isLargeScreen) return "13px";
+    if (isMediumScreen) return "12px";
+    return "12px";
+  };
+  
+  const getMessageFontSize = () => {
+    if (screenSize.isMobile) return "10px";
+    if (isVeryLargeScreen) return "13px";
+    if (isLargeScreen) return "12px";
+    if (isMediumScreen) return "11px";
+    return "11px";
+  };
+  
+  const getTimeFontSize = () => {
+    if (screenSize.isMobile) return "9px";
+    if (isVeryLargeScreen) return "11px";
+    if (isLargeScreen) return "10px";
+    if (isMediumScreen) return "9px";
+    return "9px";
+  };
 
   return (
     <Card
       title={
         <Space size="small">
           <BellOutlined style={{ color: "#da2c46", fontSize: "14px" }} />
-          <Text strong style={{ fontSize: screenSize.isMobile ? "12px" : "16px" }}>
+          <Text strong style={{ fontSize: screenSize.isMobile ? "12px" : isVeryLargeScreen ? "16px" : isLargeScreen ? "15px" : "14px" }}>
             Notifications
           </Text>
         </Space>
@@ -33,12 +62,12 @@ const NotificationsCard = ({ notifications, notificationsLoading, screenSize }) 
         overflow: "hidden",
       }}
       bodyStyle={{
-        padding: screenSize.isMobile ? "10px" : screenSize.isDesktop ? "10px" : "12px",
+        padding: screenSize.isMobile ? "10px" : isVeryLargeScreen ? "12px" : isLargeScreen ? "10px" : "10px",
         flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
         minHeight: 0,
-        maxHeight: screenSize.isMobile ? "300px" : undefined,
       }}
       headStyle={{
         padding: screenSize.isMobile ? "8px 10px" : screenSize.isDesktop ? "8px 10px" : "10px 12px",
@@ -61,78 +90,90 @@ const NotificationsCard = ({ notifications, notificationsLoading, screenSize }) 
       }
     >
       {notificationsLoading ? (
-        <Spin size="small" />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+          <Spin size="small" />
+        </div>
       ) : notifications.length > 0 ? (
-        <List
-          size="small"
-          dataSource={notifications.slice(0, 5)}
-          renderItem={(notification) => (
-            <List.Item
-              style={{
-                padding: "4px 0",
-                border: "none",
-                borderBottom:
-                  notifications.indexOf(notification) < notifications.slice(0, 5).length - 1
-                    ? "1px solid #f0f0f0"
-                    : "none",
-              }}
-            >
-              <Space style={{ width: "100%" }} align="start" size="small">
-                <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <List
+            size="small"
+            dataSource={notifications.slice(0, 5)}
+            style={{ flex: 1, overflow: "hidden" }}
+            renderItem={(notification) => (
+              <List.Item
+                style={{
+                  padding: isVeryLargeScreen ? "6px 0" : isLargeScreen ? "5px 0" : "4px 0",
+                  border: "none",
+                  borderBottom:
+                    notifications.indexOf(notification) < notifications.slice(0, 5).length - 1
+                      ? "1px solid #f0f0f0"
+                      : "none",
+                  flexShrink: 0,
+                }}
+              >
+              <Space style={{ width: "100%", alignItems: "flex-start" }} size="small">
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                   <Text
                     strong
                     style={{
-                      fontSize: screenSize.isMobile ? "10px" : "11px",
+                      fontSize: getTitleFontSize(),
                       display: "block",
-                      marginBottom: "2px",
+                      marginBottom: isVeryLargeScreen ? "3px" : "2px",
+                      lineHeight: "1.3",
+                      wordBreak: "break-word",
                     }}
-                    ellipsis={{ tooltip: notification.title }}
+                    ellipsis={{ tooltip: notification.title, rows: 1 }}
                   >
                     {notification.title}
                   </Text>
                   <Text
                     type="secondary"
                     style={{
-                      fontSize: screenSize.isMobile ? "9px" : "10px",
+                      fontSize: getMessageFontSize(),
                       display: "block",
                       lineHeight: "1.3",
+                      marginBottom: isVeryLargeScreen ? "3px" : "2px",
+                      wordBreak: "break-word",
                     }}
-                    ellipsis={{ tooltip: notification.message }}
+                    ellipsis={{ tooltip: notification.message, rows: 2 }}
                   >
                     {notification.message}
                   </Text>
                   <Text
                     type="secondary"
                     style={{
-                      fontSize: screenSize.isMobile ? "8px" : "9px",
+                      fontSize: getTimeFontSize(),
                       display: "block",
-                      marginTop: "2px",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <ClockCircleOutlined style={{ marginRight: "3px", fontSize: "9px" }} />
+                    <ClockCircleOutlined style={{ marginRight: "4px", fontSize: getTimeFontSize() }} />
                     {dayjs(notification.createdAt).fromNow()}
                   </Text>
                 </div>
-                {!notification.isRead && <Badge dot style={{ marginTop: "2px" }} />}
+                {!notification.isRead && <Badge dot style={{ marginTop: "2px", flexShrink: 0 }} />}
               </Space>
             </List.Item>
           )}
-        />
+          />
+        </div>
       ) : (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <Text
-              type="secondary"
-              style={{
-                fontSize: screenSize.isMobile ? "10px" : "11px",
-              }}
-            >
-              No notifications
-            </Text>
-          }
-          imageStyle={{ height: 30 }}
-        />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: screenSize.isMobile ? "10px" : "11px",
+                }}
+              >
+                No notifications
+              </Text>
+            }
+            imageStyle={{ height: 30 }}
+          />
+        </div>
       )}
     </Card>
   );
