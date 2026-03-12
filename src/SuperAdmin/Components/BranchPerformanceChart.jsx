@@ -1,7 +1,9 @@
-import React, { useState, useRef } from "react";
-import { Card, Space, Spin, Empty } from "antd";
-import { Column, Area } from "@ant-design/plots";
-import { BranchesOutlined } from "@ant-design/icons";
+import React from "react";
+import { Card, Space, Spin, Empty, Row, Col, Typography, Tooltip } from "antd";
+import Chart from "react-apexcharts";
+import { BranchesOutlined, InfoCircleOutlined } from "@ant-design/icons";
+
+const { Text } = Typography;
 
 const getSafeNumber = (value) => {
   if (value === null || value === undefined || value === 'null' || value === 'undefined') {
@@ -11,64 +13,7 @@ const getSafeNumber = (value) => {
   return isNaN(num) ? 0 : num;
 };
 
-// ─── Custom Tooltip Component ──────────────────────────────────────────────────
-const CustomTooltip = ({ visible, x, y, branch, users, workOrders, candidates, hired, primaryColor = "#da2c46" }) => {
-  if (!visible) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: `${x}px`,
-        top: `${y}px`,
-        backgroundColor: "rgba(0, 0, 0, 0.85)",
-        color: "#fff",
-        padding: "12px 14px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-        zIndex: 9999,
-        pointerEvents: "none",
-        transform: "translate(-50%, -100%)",
-        marginTop: "-10px",
-        fontSize: "13px",
-        lineHeight: "1.6",
-        whiteSpace: "nowrap",
-        border: `1px solid ${primaryColor}40`,
-      }}
-    >
-      <div style={{ fontWeight: "bold", marginBottom: "8px", color: primaryColor, fontSize: "14px" }}>
-        {branch}
-      </div>
-      <div style={{ color: "#fff", margin: "4px 0" }}>
-        <span style={{ color: primaryColor }}>●</span> Users: <strong style={{ color: primaryColor }}>{users}</strong>
-      </div>
-      <div style={{ color: "#fff", margin: "4px 0" }}>
-        <span style={{ color: "#52c41a" }}>●</span> Work Orders: <strong style={{ color: "#52c41a" }}>{workOrders}</strong>
-      </div>
-      <div style={{ color: "#fff", margin: "4px 0" }}>
-        <span style={{ color: "#faad14" }}>●</span> Candidates: <strong style={{ color: "#faad14" }}>{candidates}</strong>
-      </div>
-      <div style={{ color: "#fff", margin: "4px 0" }}>
-        <span style={{ color: "#52c41a" }}>●</span> Hired: <strong style={{ color: "#52c41a" }}>{hired}</strong>
-      </div>
-    </div>
-  );
-};
-
 export const BranchPerformanceColumnChart = ({ branchPerformanceData, loading, primaryColor = "#da2c46" }) => {
-  const [tooltip, setTooltip] = useState({ 
-    visible: false, 
-    x: 0, 
-    y: 0, 
-    branch: "", 
-    users: 0, 
-    workOrders: 0, 
-    candidates: 0, 
-    hired: 0 
-  });
-  const chartRef = useRef(null);
-  const containerRef = useRef(null);
-
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "60px 0" }}>
@@ -89,81 +34,116 @@ export const BranchPerformanceColumnChart = ({ branchPerformanceData, loading, p
     hired: getSafeNumber(branch.hired),
   }));
 
-  // Handle tooltip on chart ready
-  const handleChartReady = (plot) => {
-    if (!plot) return;
-    
-    plot.on("element:mouseenter", (evt) => {
-      try {
-        // Try multiple paths to get the data
-        const data = evt.data?.data || evt.data?.datum || evt.data || {};
-        const branch = data.branch || evt.data?.branch || "Unknown";
-        const users = getSafeNumber(data.users || evt.data?.users || 0);
-        const workOrders = getSafeNumber(data.workOrders || evt.data?.workOrders || 0);
-        const candidates = getSafeNumber(data.candidates || evt.data?.candidates || 0);
-        const hired = getSafeNumber(data.hired || evt.data?.hired || 0);
-        
-        // Get mouse position - try multiple event properties
-        const clientX = evt.x || evt.clientX || evt.offsetX || 0;
-        const clientY = evt.y || evt.clientY || evt.offsetY || 0;
-        
-        const containerRect = containerRef.current?.getBoundingClientRect();
-        const x = containerRect ? containerRect.left + clientX : clientX;
-        const y = containerRect ? containerRect.top + clientY : clientY;
-        
-        setTooltip({
-          visible: true,
-          x: x,
-          y: y - 10,
-          branch: branch,
-          users: users,
-          workOrders: workOrders,
-          candidates: candidates,
-          hired: hired,
-        });
-      } catch (error) {
-        console.error("Tooltip error:", error);
-      }
-    });
+  const series = [{
+    name: 'Users',
+    data: chartData.map(item => item.users)
+  }];
 
-    plot.on("element:mouseleave", () => {
-      setTooltip({ visible: false, x: 0, y: 0, branch: "", users: 0, workOrders: 0, candidates: 0, hired: 0 });
-    });
-  };
-
-  const config = {
-    data: chartData,
-    xField: 'branch',
-    yField: 'users',
-    color: primaryColor,
-    columnStyle: { radius: [8, 8, 0, 0] },
-    label: {
-      position: 'middle',
-      style: {
-        fill: '#FFFFFF',
-        opacity: 0.9,
-        fontSize: window.innerWidth < 768 ? 10 : 12,
-        fontWeight: 'bold',
+  const options = {
+    chart: {
+      type: 'bar',
+      height: window.innerWidth < 768 ? 250 : 300,
+      toolbar: {
+        show: false
       },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800
+      }
     },
-    tooltip: false, // Disable default tooltip
-    height: window.innerWidth < 768 ? 300 : 400,
-    onReady: handleChartReady,
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        columnWidth: '60%',
+        dataLabels: {
+          position: 'top'
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      offsetY: -20,
+      style: {
+        fontSize: window.innerWidth < 768 ? '10px' : '12px',
+        fontWeight: 'bold',
+        colors: ['#FFFFFF']
+      },
+      formatter: function (val) {
+        return val;
+      }
+    },
+    xaxis: {
+      categories: chartData.map(item => item.branch),
+      labels: {
+        style: {
+          fontSize: window.innerWidth < 768 ? '10px' : '12px'
+        },
+        rotate: -45,
+        rotateAlways: false
+      }
+    },
+    yaxis: {
+      title: {
+        text: 'Number of Users',
+        style: {
+          fontSize: '12px'
+        }
+      },
+      labels: {
+        style: {
+          fontSize: window.innerWidth < 768 ? '10px' : '12px'
+        }
+      }
+    },
+    colors: [primaryColor],
+    tooltip: {
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        const branch = chartData[dataPointIndex];
+        return `
+          <div style="padding: 12px; background: rgba(0, 0, 0, 0.85); color: #fff; border-radius: 8px; border: 1px solid ${primaryColor}40;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: ${primaryColor}; font-size: 14px;">
+              ${branch.branch}
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: ${primaryColor};">●</span> Users: <strong style="color: ${primaryColor};">${branch.users}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #52c41a;">●</span> Work Orders: <strong style="color: #52c41a;">${branch.workOrders}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #faad14;">●</span> Candidates: <strong style="color: #faad14;">${branch.candidates}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #52c41a;">●</span> Hired: <strong style="color: #52c41a;">${branch.hired}</strong>
+            </div>
+          </div>
+        `;
+      }
+    },
+    grid: {
+      borderColor: '#e7e7e7',
+      strokeDashArray: 4,
+      xaxis: {
+        lines: {
+          show: false
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
+      }
+    }
   };
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
-      <Column {...config} ref={chartRef} />
-      <CustomTooltip
-        visible={tooltip.visible}
-        x={tooltip.x}
-        y={tooltip.y}
-        branch={tooltip.branch}
-        users={tooltip.users}
-        workOrders={tooltip.workOrders}
-        candidates={tooltip.candidates}
-        hired={tooltip.hired}
-        primaryColor={primaryColor}
+    <div style={{ width: '100%' }}>
+      <Chart
+        options={options}
+        series={series}
+        type="bar"
+        height={window.innerWidth < 768 ? 250 : 300}
       />
     </div>
   );
@@ -190,40 +170,114 @@ export const BranchPerformanceAreaChart = ({ branchPerformanceData, loading, pri
     hired: getSafeNumber(branch.hired),
   }));
 
-  const config = {
-    data: chartData,
-    xField: 'branch',
-    yField: 'users',
-    smooth: true,
-    areaStyle: {
-      fill: `l(270) 0:${primaryColor} 1:${primaryColor}40`,
-    },
-    color: primaryColor,
-    tooltip: {
-      customContent: (title, items) => {
-        if (!items || items.length === 0) return "";
-        const item = items[0];
-        const datum = item?.data || {};
-        const branch = datum?.branch ?? item?.name ?? title ?? "Unknown";
-        // Access value: item.value (computed) takes priority for yField (users), then item.data.users (original)
-        const users = getSafeNumber(item?.value ?? datum?.users ?? 0);
-        const workOrders = getSafeNumber(datum?.workOrders ?? 0);
-        const candidates = getSafeNumber(datum?.candidates ?? 0);
-        const hired = getSafeNumber(datum?.hired ?? 0);
-        
-        return `<div style="padding: 12px;">
-          <h4 style="margin: 0 0 8px 0; color: ${primaryColor};">${branch}</h4>
-          <p style="margin: 4px 0;"><span style="color: ${primaryColor};">●</span> Users: ${users}</p>
-          <p style="margin: 4px 0;"><span style="color: #52c41a;">●</span> Work Orders: ${workOrders}</p>
-          <p style="margin: 4px 0;"><span style="color: #faad14;">●</span> Candidates: ${candidates}</p>
-          <p style="margin: 4px 0;"><span style="color: #52c41a;">●</span> Hired: ${hired}</p>
-        </div>`;
+  const series = [{
+    name: 'Users',
+    data: chartData.map(item => item.users)
+  }];
+
+  const options = {
+    chart: {
+      type: 'area',
+      height: window.innerWidth < 768 ? 300 : 400,
+      toolbar: {
+        show: false
       },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800
+      }
     },
-    height: window.innerWidth < 768 ? 300 : 400,
+    stroke: {
+      curve: 'smooth',
+      width: 3,
+      colors: [primaryColor]
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.3,
+        stops: [0, 100],
+        colorStops: [
+          {
+            offset: 0,
+            color: primaryColor,
+            opacity: 1
+          },
+          {
+            offset: 100,
+            color: primaryColor,
+            opacity: 0.3
+          }
+        ]
+      }
+    },
+    xaxis: {
+      categories: chartData.map(item => item.branch),
+      labels: {
+        style: {
+          fontSize: window.innerWidth < 768 ? '10px' : '12px'
+        },
+        rotate: -45,
+        rotateAlways: false
+      }
+    },
+    yaxis: {
+      title: {
+        text: 'Number of Users',
+        style: {
+          fontSize: '12px'
+        }
+      },
+      labels: {
+        style: {
+          fontSize: window.innerWidth < 768 ? '10px' : '12px'
+        }
+      }
+    },
+    colors: [primaryColor],
+    tooltip: {
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        const branch = chartData[dataPointIndex];
+        return `
+          <div style="padding: 12px; background: rgba(0, 0, 0, 0.85); color: #fff; border-radius: 8px; border: 1px solid ${primaryColor}40;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: ${primaryColor}; font-size: 14px;">
+              ${branch.branch}
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: ${primaryColor};">●</span> Users: <strong style="color: ${primaryColor};">${branch.users}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #52c41a;">●</span> Work Orders: <strong style="color: #52c41a;">${branch.workOrders}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #faad14;">●</span> Candidates: <strong style="color: #faad14;">${branch.candidates}</strong>
+            </div>
+            <div style="color: #fff; margin: 4px 0;">
+              <span style="color: #52c41a;">●</span> Hired: <strong style="color: #52c41a;">${branch.hired}</strong>
+            </div>
+          </div>
+        `;
+      }
+    },
+    grid: {
+      borderColor: '#e7e7e7',
+      strokeDashArray: 4
+    }
   };
 
-  return <Area {...config} />;
+  return (
+    <div style={{ width: '100%' }}>
+      <Chart
+        options={options}
+        series={series}
+        type="area"
+        height={window.innerWidth < 768 ? 300 : 400}
+      />
+    </div>
+  );
 };
 
 export const BranchPerformanceSection = ({ 
@@ -232,6 +286,33 @@ export const BranchPerformanceSection = ({
   primaryColor = "#da2c46" 
 }) => {
   if (!branchPerformanceData || branchPerformanceData.length === 0) return null;
+
+  // Calculate totals for summary
+  const totals = branchPerformanceData.reduce((acc, branch) => {
+    acc.users += getSafeNumber(branch.users);
+    acc.workOrders += getSafeNumber(branch.workOrders);
+    acc.candidates += getSafeNumber(branch.candidates);
+    acc.hired += getSafeNumber(branch.hired);
+    return acc;
+  }, { users: 0, workOrders: 0, candidates: 0, hired: 0 });
+
+  const graphInfoTooltip = (
+    <div style={{ maxWidth: "300px" }}>
+      <div style={{ marginBottom: "8px", fontWeight: "600" }}>Branch Performance Graph</div>
+      <div style={{ fontSize: "12px", lineHeight: "1.6" }}>
+        This graph displays the <strong>number of users</strong> per branch as the primary metric. 
+        The height of each bar represents the total user count for that branch.
+        <br /><br />
+        <strong>Hover over a bar</strong> to see detailed metrics including:
+        <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+          <li>Total Users</li>
+          <li>Work Orders</li>
+          <li>Candidates</li>
+          <li>Hired Candidates</li>
+        </ul>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -247,6 +328,72 @@ export const BranchPerformanceSection = ({
           Branch Performance
         </h4>
       </div>
+      
+      {/* Summary Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              textAlign: "center",
+            }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: primaryColor, marginBottom: "4px" }}>
+              {totals.users}
+            </div>
+            <div style={{ fontSize: "14px", color: "#666" }}>Total Users</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              textAlign: "center",
+            }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#52c41a", marginBottom: "4px" }}>
+              {totals.workOrders}
+            </div>
+            <div style={{ fontSize: "14px", color: "#666" }}>Work Orders</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              textAlign: "center",
+            }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#faad14", marginBottom: "4px" }}>
+              {totals.candidates}
+            </div>
+            <div style={{ fontSize: "14px", color: "#666" }}>Candidates</div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            style={{
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              textAlign: "center",
+            }}
+            bodyStyle={{ padding: "16px" }}
+          >
+            <div style={{ fontSize: "24px", fontWeight: "700", color: "#52c41a", marginBottom: "4px" }}>
+              {totals.hired}
+            </div>
+            <div style={{ fontSize: "14px", color: "#666" }}>Hired</div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Graph Card */}
       <div style={{ marginBottom: "24px" }}>
         <Card
           title={
@@ -255,11 +402,20 @@ export const BranchPerformanceSection = ({
               <span style={{ fontSize: "clamp(14px, 2vw, 16px)", fontWeight: "600" }}>
                 Branch Performance Overview
               </span>
+              <Tooltip title={graphInfoTooltip} placement="topRight">
+                <InfoCircleOutlined 
+                  style={{ 
+                    color: primaryColor, 
+                    cursor: "help",
+                    fontSize: "16px",
+                    marginLeft: "8px"
+                  }} 
+                />
+              </Tooltip>
             </Space>
           }
           style={{
             borderRadius: "16px",
-            minHeight: window.innerWidth < 768 ? "350px" : "450px",
             boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
           }}
           headStyle={{

@@ -170,8 +170,8 @@ const AdminWorkOrderStatus = ({
           status === "selected" || status === "approved" || status === "hired"
             ? "success"
             : status === "rejected"
-            ? "error"
-            : "processing"
+              ? "error"
+              : "processing"
         }
         text={config?.text || status}
       />
@@ -192,7 +192,7 @@ const AdminWorkOrderStatus = ({
 
   const toggleCandidateExpansion = (candidateId) => {
     setExpandedCandidate(
-      expandedCandidate === candidateId ? null : candidateId
+      expandedCandidate === candidateId ? null : candidateId,
     );
   };
 
@@ -387,7 +387,7 @@ const AdminWorkOrderStatus = ({
                           <Text strong>Application Status:</Text>
                           <Tag
                             color={getStatusColor(
-                              selectedCandidate.currentStatus
+                              selectedCandidate.currentStatus,
                             )}
                             style={{ fontSize: "14px", padding: "4px 12px" }}
                           >
@@ -419,13 +419,13 @@ const AdminWorkOrderStatus = ({
                         <Text type="secondary" style={{ display: "block" }}>
                           Created:{" "}
                           {dayjs(selectedCandidate.appliedAt).format(
-                            "DD MMM YYYY, hh:mm A"
+                            "DD MMM YYYY, hh:mm A",
                           )}
                         </Text>
                         <Text type="secondary" style={{ display: "block" }}>
                           Last Updated:{" "}
                           {dayjs(selectedCandidate.lastUpdatedAt).format(
-                            "DD MMM YYYY, hh:mm A"
+                            "DD MMM YYYY, hh:mm A",
                           )}
                         </Text>
                       </Space>
@@ -452,7 +452,7 @@ const AdminWorkOrderStatus = ({
                     <Timeline mode={isMobile ? "left" : "alternate"}>
                       {[...(selectedCandidate.stageHistory || [])]
                         .sort(
-                          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+                          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0),
                         )
                         .map((stage) => (
                           <Timeline.Item
@@ -461,8 +461,8 @@ const AdminWorkOrderStatus = ({
                               stage.stageStatus === "approved"
                                 ? "green"
                                 : stage.stageStatus === "pending"
-                                ? "orange"
-                                : "red"
+                                  ? "orange"
+                                  : "red"
                             }
                             label={
                               stage.stageDefinition?.startDate && (
@@ -473,7 +473,7 @@ const AdminWorkOrderStatus = ({
                                   >
                                     Start:{" "}
                                     {dayjs(
-                                      stage.stageDefinition.startDate
+                                      stage.stageDefinition.startDate,
                                     ).format("DD MMM YYYY")}
                                   </Text>
                                   {stage.stageDefinition.endDate && (
@@ -483,7 +483,7 @@ const AdminWorkOrderStatus = ({
                                     >
                                       End:{" "}
                                       {dayjs(
-                                        stage.stageDefinition.endDate
+                                        stage.stageDefinition.endDate,
                                       ).format("DD MMM YYYY")}
                                     </Text>
                                   )}
@@ -501,8 +501,8 @@ const AdminWorkOrderStatus = ({
                                       stage.stageStatus === "approved"
                                         ? "green"
                                         : stage.stageStatus === "pending"
-                                        ? "orange"
-                                        : "red"
+                                          ? "orange"
+                                          : "red"
                                     }
                                   >
                                     {stage.stageStatus}
@@ -529,7 +529,7 @@ const AdminWorkOrderStatus = ({
                                 {stage.stageCompletedAt && (
                                   <Descriptions.Item label="Completed At">
                                     {dayjs(stage.stageCompletedAt).format(
-                                      "DD MMM YYYY, hh:mm A"
+                                      "DD MMM YYYY, hh:mm A",
                                     )}
                                   </Descriptions.Item>
                                 )}
@@ -567,8 +567,8 @@ const AdminWorkOrderStatus = ({
                                                 detail.status === "approved"
                                                   ? "green"
                                                   : detail.status === "rejected"
-                                                  ? "red"
-                                                  : "orange"
+                                                    ? "red"
+                                                    : "orange"
                                               }
                                             >
                                               {detail.status}
@@ -593,13 +593,13 @@ const AdminWorkOrderStatus = ({
                                               style={{ fontSize: 11 }}
                                             >
                                               {dayjs(detail.reviewedAt).format(
-                                                "DD MMM YYYY, hh:mm A"
+                                                "DD MMM YYYY, hh:mm A",
                                               )}
                                             </Text>
                                           )}
                                         </Space>
                                       </Card>
-                                    )
+                                    ),
                                   )}
                                 </>
                               )}
@@ -635,9 +635,9 @@ const AdminWorkOrderStatus = ({
                                                   review.status === "approved"
                                                     ? "green"
                                                     : review.status ===
-                                                      "pending"
-                                                    ? "orange"
-                                                    : "red"
+                                                        "pending"
+                                                      ? "orange"
+                                                      : "red"
                                                 }
                                                 size="small"
                                               >
@@ -664,9 +664,9 @@ const AdminWorkOrderStatus = ({
                                               >
                                                 {review.reviewedAt
                                                   ? dayjs(
-                                                      review.reviewedAt
+                                                      review.reviewedAt,
                                                     ).format(
-                                                      "DD MMM YYYY, hh:mm A"
+                                                      "DD MMM YYYY, hh:mm A",
                                                     )
                                                   : "Not reviewed yet"}
                                               </Text>
@@ -718,6 +718,7 @@ const AdminWorkOrderStatus = ({
                                                     type="link"
                                                     size="small"
                                                     href={doc?.fileUrl}
+                                                    target="_blank"
                                                     icon={<DownloadOutlined />}
                                                   >
                                                     Download
@@ -727,7 +728,7 @@ const AdminWorkOrderStatus = ({
                                             </Space>
                                           </Card>
                                         </Col>
-                                      )
+                                      ),
                                     )}
                                   </Row>
                                 </>
@@ -757,19 +758,21 @@ const AdminWorkOrderStatus = ({
                                               >
                                                 {doc.documentName}
                                               </Text>
-                                              {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
-                                                <Text
-                                                  type="secondary"
-                                                  style={{
-                                                    fontSize: 10,
-                                                    display: "block",
-                                                    marginTop: 2,
-                                                    color: "#1890ff",
-                                                  }}
-                                                >
-                                                  By: {doc.recruiterName}
-                                                </Text>
-                                              )}
+                                              {doc?.uploadedBy ===
+                                                "recruiter" &&
+                                                doc?.recruiterName && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{
+                                                      fontSize: 10,
+                                                      display: "block",
+                                                      marginTop: 2,
+                                                      color: "#1890ff",
+                                                    }}
+                                                  >
+                                                    By: {doc.recruiterName}
+                                                  </Text>
+                                                )}
                                               <div style={{ marginTop: 4 }}>
                                                 <Button
                                                   type="link"
@@ -784,6 +787,7 @@ const AdminWorkOrderStatus = ({
                                                   type="link"
                                                   size="small"
                                                   href={doc.fileUrl}
+                                                  target="_blank"
                                                   icon={<DownloadOutlined />}
                                                 >
                                                   Download
@@ -840,11 +844,11 @@ const AdminWorkOrderStatus = ({
                         interview.status === "interview_completed"
                           ? "green"
                           : interview.status === "fail" ||
-                            interview.status === "interview_rejected"
-                          ? "red"
-                          : interview.status === "scheduled"
-                          ? "orange"
-                          : "gray"
+                              interview.status === "interview_rejected"
+                            ? "red"
+                            : interview.status === "scheduled"
+                              ? "orange"
+                              : "gray"
                       }
                       label={
                         interview.date && (
@@ -869,11 +873,11 @@ const AdminWorkOrderStatus = ({
                                 interview.status === "interview_completed"
                                   ? "green"
                                   : interview.status === "fail" ||
-                                    interview.status === "interview_rejected"
-                                  ? "red"
-                                  : interview.status === "scheduled"
-                                  ? "orange"
-                                  : "gray"
+                                      interview.status === "interview_rejected"
+                                    ? "red"
+                                    : interview.status === "scheduled"
+                                      ? "orange"
+                                      : "gray"
                               }
                             >
                               {interview.status?.replace("_", " ")}
@@ -921,9 +925,15 @@ const AdminWorkOrderStatus = ({
                                     <Tag key={idx} color="purple">
                                       {interviewer.name}
                                     </Tag>
-                                  )
+                                  ),
                                 )}
                               </Space>
+                            </Descriptions.Item>
+                          )}
+
+                          {interview?.remarks && (
+                            <Descriptions.Item label="Remarks">
+                              <Text>{interview?.remarks}</Text>
                             </Descriptions.Item>
                           )}
                         </Descriptions>
@@ -972,10 +982,10 @@ const AdminWorkOrderStatus = ({
                           offer.currentStatus === "offer-accepted"
                             ? "green"
                             : offer.currentStatus === "offer-rejected"
-                            ? "red"
-                            : offer.currentStatus === "offer-revised"
-                            ? "orange"
-                            : "blue"
+                              ? "red"
+                              : offer.currentStatus === "offer-revised"
+                                ? "orange"
+                                : "blue"
                         }
                       >
                         {offer.currentStatus?.replace("-", " ")}
@@ -1024,7 +1034,8 @@ const AdminWorkOrderStatus = ({
                                 <Button
                                   type="link"
                                   size="small"
-                                  href={offer.offerDocument.fileUrl}
+                                  href={offer.offerDocument?.fileUrl}
+                                  target="_blank"
                                   icon={<DownloadOutlined />}
                                 >
                                   Download
@@ -1034,7 +1045,7 @@ const AdminWorkOrderStatus = ({
                                   style={{ marginLeft: 8, fontSize: 12 }}
                                 >
                                   {dayjs(offer.offerDocument.uploadedAt).format(
-                                    "DD MMM YYYY"
+                                    "DD MMM YYYY",
                                   )}
                                 </Text>
                               </div>
@@ -1057,19 +1068,22 @@ const AdminWorkOrderStatus = ({
                               <Text strong>
                                 {offer.signedOfferDocument.documentName}
                               </Text>
-                              {offer.signedOfferDocument?.uploadedBy === "recruiter" && offer.signedOfferDocument?.recruiterName && (
-                                <Text
-                                  type="secondary"
-                                  style={{
-                                    fontSize: 10,
-                                    display: "block",
-                                    marginTop: 2,
-                                    color: "#1890ff",
-                                  }}
-                                >
-                                  By: {offer.signedOfferDocument.recruiterName}
-                                </Text>
-                              )}
+                              {offer.signedOfferDocument?.uploadedBy ===
+                                "recruiter" &&
+                                offer.signedOfferDocument?.recruiterName && (
+                                  <Text
+                                    type="secondary"
+                                    style={{
+                                      fontSize: 10,
+                                      display: "block",
+                                      marginTop: 2,
+                                      color: "#1890ff",
+                                    }}
+                                  >
+                                    By:{" "}
+                                    {offer.signedOfferDocument.recruiterName}
+                                  </Text>
+                                )}
                               <div style={{ marginTop: 4 }}>
                                 <Button
                                   type="link"
@@ -1084,6 +1098,7 @@ const AdminWorkOrderStatus = ({
                                   type="link"
                                   size="small"
                                   href={offer.signedOfferDocument.fileUrl}
+                                  target="_blank"
                                   icon={<DownloadOutlined />}
                                 >
                                   Download
@@ -1093,7 +1108,7 @@ const AdminWorkOrderStatus = ({
                                   style={{ marginLeft: 8, fontSize: 12 }}
                                 >
                                   {dayjs(
-                                    offer.signedOfferDocument.uploadedAt
+                                    offer.signedOfferDocument.uploadedAt,
                                   ).format("DD MMM YYYY")}
                                 </Text>
                               </div>
@@ -1103,141 +1118,179 @@ const AdminWorkOrderStatus = ({
                       )}
 
                       {/* Additional Documents */}
-                      {offer.additionalDocuments && offer.additionalDocuments.length > 0 && (
-                        <Card
-                          size="small"
-                          title="Additional Supporting Documents"
-                          style={{ marginTop: 8 }}
-                        >
-                          <Space direction="vertical" style={{ width: "100%" }}>
-                            {offer.additionalDocuments.map((doc, docIndex) => (
-                              <Card
-                                key={docIndex}
-                                size="small"
-                                style={{
-                                  border: "1px solid #722ed1",
-                                  backgroundColor: "#f9f0ff",
-                                }}
-                              >
-                                <Space>
-                                  <FilePdfOutlined
-                                    style={{ color: "#722ed1", fontSize: 20 }}
-                                  />
-                                  <div style={{ flex: 1 }}>
-                                    <Text strong>
-                                      {doc.documentName || doc.fileName || `Additional Document ${docIndex + 1}`}
-                                    </Text>
-                                    <div style={{ marginTop: 4 }}>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        icon={<EyeOutlined />}
-                                      >
-                                        View
-                                      </Button>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        icon={<DownloadOutlined />}
-                                      >
-                                        Download
-                                      </Button>
-                                      {doc.uploadedAt && (
-                                        <Text
-                                          type="secondary"
-                                          style={{ marginLeft: 8, fontSize: 12 }}
-                                        >
-                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                      {offer.additionalDocuments &&
+                        offer.additionalDocuments.length > 0 && (
+                          <Card
+                            size="small"
+                            title="Additional Supporting Documents"
+                            style={{ marginTop: 8 }}
+                          >
+                            <Space
+                              direction="vertical"
+                              style={{ width: "100%" }}
+                            >
+                              {offer.additionalDocuments.map(
+                                (doc, docIndex) => (
+                                  <Card
+                                    key={docIndex}
+                                    size="small"
+                                    style={{
+                                      border: "1px solid #722ed1",
+                                      backgroundColor: "#f9f0ff",
+                                    }}
+                                  >
+                                    <Space>
+                                      <FilePdfOutlined
+                                        style={{
+                                          color: "#722ed1",
+                                          fontSize: 20,
+                                        }}
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <Text strong>
+                                          {doc.documentName ||
+                                            doc.fileName ||
+                                            `Additional Document ${docIndex + 1}`}
                                         </Text>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Tag color="purple">Supporting</Tag>
-                                </Space>
-                              </Card>
-                            ))}
-                          </Space>
-                        </Card>
-                      )}
+                                        <div style={{ marginTop: 4 }}>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<EyeOutlined />}
+                                          >
+                                            View
+                                          </Button>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<DownloadOutlined />}
+                                          >
+                                            Download
+                                          </Button>
+                                          {doc.uploadedAt && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                marginLeft: 8,
+                                                fontSize: 12,
+                                              }}
+                                            >
+                                              {dayjs(doc.uploadedAt).format(
+                                                "DD MMM YYYY",
+                                              )}
+                                            </Text>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Tag color="purple">Supporting</Tag>
+                                    </Space>
+                                  </Card>
+                                ),
+                              )}
+                            </Space>
+                          </Card>
+                        )}
 
                       {/* Signed Additional Documents */}
-                      {offer.signedAdditionalDocuments && offer.signedAdditionalDocuments.length > 0 && (
-                        <Card
-                          size="small"
-                          title="Signed Additional Documents"
-                          style={{ marginTop: 8 }}
-                        >
-                          <Space direction="vertical" style={{ width: "100%" }}>
-                            {offer.signedAdditionalDocuments.map((doc, docIndex) => (
-                              <Card
-                                key={docIndex}
-                                size="small"
-                                style={{
-                                  border: "1px solid #52c41a",
-                                  backgroundColor: "#f6ffed",
-                                }}
-                              >
-                                <Space>
-                                  <FilePdfOutlined
-                                    style={{ color: "#52c41a", fontSize: 20 }}
-                                  />
-                                  <div style={{ flex: 1 }}>
-                                    <Text strong>
-                                      {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
-                                    </Text>
-                                    {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
-                                      <Text
-                                        type="secondary"
+                      {offer.signedAdditionalDocuments &&
+                        offer.signedAdditionalDocuments.length > 0 && (
+                          <Card
+                            size="small"
+                            title="Signed Additional Documents"
+                            style={{ marginTop: 8 }}
+                          >
+                            <Space
+                              direction="vertical"
+                              style={{ width: "100%" }}
+                            >
+                              {offer.signedAdditionalDocuments.map(
+                                (doc, docIndex) => (
+                                  <Card
+                                    key={docIndex}
+                                    size="small"
+                                    style={{
+                                      border: "1px solid #52c41a",
+                                      backgroundColor: "#f6ffed",
+                                    }}
+                                  >
+                                    <Space>
+                                      <FilePdfOutlined
                                         style={{
-                                          fontSize: 10,
-                                          display: "block",
-                                          marginTop: 2,
-                                          color: "#1890ff",
+                                          color: "#52c41a",
+                                          fontSize: 20,
                                         }}
-                                      >
-                                        By: {doc.recruiterName}
-                                      </Text>
-                                    )}
-                                    <div style={{ marginTop: 4 }}>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        icon={<EyeOutlined />}
-                                      >
-                                        View
-                                      </Button>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        icon={<DownloadOutlined />}
-                                      >
-                                        Download
-                                      </Button>
-                                      {doc.uploadedAt && (
-                                        <Text
-                                          type="secondary"
-                                          style={{ marginLeft: 8, fontSize: 12 }}
-                                        >
-                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <Text strong>
+                                          {doc.documentName ||
+                                            doc.fileName ||
+                                            `Signed Document ${docIndex + 1}`}
                                         </Text>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                                    Signed
-                                  </Tag>
-                                </Space>
-                              </Card>
-                            ))}
-                          </Space>
-                        </Card>
-                      )}
+                                        {doc?.uploadedBy === "recruiter" &&
+                                          doc?.recruiterName && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                fontSize: 10,
+                                                display: "block",
+                                                marginTop: 2,
+                                                color: "#1890ff",
+                                              }}
+                                            >
+                                              By: {doc.recruiterName}
+                                            </Text>
+                                          )}
+                                        <div style={{ marginTop: 4 }}>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<EyeOutlined />}
+                                          >
+                                            View
+                                          </Button>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<DownloadOutlined />}
+                                          >
+                                            Download
+                                          </Button>
+                                          {doc.uploadedAt && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                marginLeft: 8,
+                                                fontSize: 12,
+                                              }}
+                                            >
+                                              {dayjs(doc.uploadedAt).format(
+                                                "DD MMM YYYY",
+                                              )}
+                                            </Text>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Tag
+                                        color="green"
+                                        icon={<CheckCircleOutlined />}
+                                      >
+                                        Signed
+                                      </Tag>
+                                    </Space>
+                                  </Card>
+                                ),
+                              )}
+                            </Space>
+                          </Card>
+                        )}
 
                       {/* Offer Status History */}
                       {offer.statusHistory?.length > 0 && (
@@ -1254,10 +1307,10 @@ const AdminWorkOrderStatus = ({
                                   history.status === "offer-accepted"
                                     ? "green"
                                     : history.status === "offer-rejected"
-                                    ? "red"
-                                    : history.status === "offer-revised"
-                                    ? "orange"
-                                    : "blue"
+                                      ? "red"
+                                      : history.status === "offer-revised"
+                                        ? "orange"
+                                        : "blue"
                                 }
                               >
                                 <Space direction="vertical">
@@ -1268,10 +1321,10 @@ const AdminWorkOrderStatus = ({
                                         history.status === "offer-accepted"
                                           ? "green"
                                           : history.status === "offer-rejected"
-                                          ? "red"
-                                          : history.status === "offer-revised"
-                                          ? "orange"
-                                          : "blue"
+                                            ? "red"
+                                            : history.status === "offer-revised"
+                                              ? "orange"
+                                              : "blue"
                                       }
                                     >
                                       {history.status?.replace("-", " ")}
@@ -1288,7 +1341,7 @@ const AdminWorkOrderStatus = ({
                                   >
                                     <CalendarOutlined />{" "}
                                     {dayjs(history.changedAt).format(
-                                      "DD MMM YYYY, hh:mm A"
+                                      "DD MMM YYYY, hh:mm A",
                                     )}
                                   </Text>
                                 </Space>
@@ -1342,7 +1395,8 @@ const AdminWorkOrderStatus = ({
                       dot={
                         historyItem.action === "offer_accepted_by_recruiter" ? (
                           <GiftOutlined />
-                        ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                        ) : historyItem.action ===
+                          "documents_uploaded_by_recruiter" ? (
                           <FileTextOutlined />
                         ) : historyItem.status === "selected" ||
                           historyItem.status === "approved" ? (
@@ -1357,38 +1411,55 @@ const AdminWorkOrderStatus = ({
                     >
                       <Card size="small">
                         <Space direction="vertical" style={{ width: "100%" }}>
-                          {historyItem.action === "offer_accepted_by_recruiter" ? (
+                          {historyItem.action ===
+                          "offer_accepted_by_recruiter" ? (
                             <>
                               <Space wrap>
                                 <Text strong style={{ color: "#1890ff" }}>
                                   <GiftOutlined /> Offer Accepted by Recruiter
                                 </Text>
                                 {historyItem.status && (
-                                  <Tag color={getStatusColor(historyItem.status)}>
-                                    {statusConfig[historyItem.status]?.text || historyItem.status}
+                                  <Tag
+                                    color={getStatusColor(historyItem.status)}
+                                  >
+                                    {statusConfig[historyItem.status]?.text ||
+                                      historyItem.status}
                                   </Tag>
                                 )}
                               </Space>
                               {historyItem.changedBy && (
                                 <Text>
                                   <UserOutlined /> Recruiter:{" "}
-                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                  <Text strong>
+                                    {historyItem.changedBy.name}
+                                  </Text>
                                 </Text>
                               )}
                               {historyItem.description && (
-                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontStyle: "italic",
+                                    display: "block",
+                                    marginTop: "4px",
+                                  }}
+                                >
                                   {historyItem.description}
                                 </Text>
                               )}
                             </>
-                          ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                          ) : historyItem.action ===
+                            "documents_uploaded_by_recruiter" ? (
                             <>
                               <Space wrap>
                                 <Text strong style={{ color: "#1890ff" }}>
-                                  <FileTextOutlined /> Documents Uploaded by Recruiter
+                                  <FileTextOutlined /> Documents Uploaded by
+                                  Recruiter
                                 </Text>
                                 {historyItem.stageName && (
-                                  <Tag color="blue">Stage: {historyItem.stageName}</Tag>
+                                  <Tag color="blue">
+                                    Stage: {historyItem.stageName}
+                                  </Tag>
                                 )}
                                 {historyItem.documentCount && (
                                   <Tag color="green">
@@ -1399,11 +1470,20 @@ const AdminWorkOrderStatus = ({
                               {historyItem.changedBy && (
                                 <Text>
                                   <UserOutlined /> Recruiter:{" "}
-                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                  <Text strong>
+                                    {historyItem.changedBy.name}
+                                  </Text>
                                 </Text>
                               )}
                               {historyItem.description && (
-                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontStyle: "italic",
+                                    display: "block",
+                                    marginTop: "4px",
+                                  }}
+                                >
                                   {historyItem.description}
                                 </Text>
                               )}
@@ -1417,7 +1497,9 @@ const AdminWorkOrderStatus = ({
                               {historyItem.changedBy && (
                                 <Text>
                                   <UserOutlined /> Changed by:{" "}
-                                  <Text strong>{historyItem.changedBy.name}</Text>
+                                  <Text strong>
+                                    {historyItem.changedBy.name}
+                                  </Text>
                                 </Text>
                               )}
                             </>
@@ -1425,7 +1507,7 @@ const AdminWorkOrderStatus = ({
                           <Text type="secondary">
                             <CalendarOutlined />{" "}
                             {dayjs(historyItem.changedAt).format(
-                              "DD MMM YYYY, hh:mm A"
+                              "DD MMM YYYY, hh:mm A",
                             )}
                           </Text>
                         </Space>
@@ -1746,7 +1828,7 @@ const AdminWorkOrderStatus = ({
                             </Space>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               {dayjs(history.changedAt).format(
-                                "DD MMM YYYY, hh:mm A"
+                                "DD MMM YYYY, hh:mm A",
                               )}
                             </Text>
                           </Space>

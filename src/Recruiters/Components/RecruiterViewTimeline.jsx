@@ -103,7 +103,7 @@ const RecruiterViewTimeline = () => {
 
   const toggleCandidateExpansion = (candidateId) => {
     setExpandedCandidate(
-      expandedCandidate === candidateId ? null : candidateId
+      expandedCandidate === candidateId ? null : candidateId,
     );
   };
 
@@ -365,13 +365,13 @@ const RecruiterViewTimeline = () => {
                         <Text type="secondary" style={{ display: "block" }}>
                           Created:{" "}
                           {dayjs(selectedCandidate.createdAt).format(
-                            "DD MMM YYYY, hh:mm A"
+                            "DD MMM YYYY, hh:mm A",
                           )}
                         </Text>
                         <Text type="secondary" style={{ display: "block" }}>
                           Last Updated:{" "}
                           {dayjs(selectedCandidate.updatedAt).format(
-                            "DD MMM YYYY, hh:mm A"
+                            "DD MMM YYYY, hh:mm A",
                           )}
                         </Text>
                       </Space>
@@ -398,8 +398,7 @@ const RecruiterViewTimeline = () => {
                     <Timeline mode={isMobile ? "left" : "alternate"}>
                       {[...(selectedCandidate.stageProgress || [])]
                         .sort(
-                          (a, b) =>
-                            (a?.stageOrder || 0) - (b?.stageOrder || 0)
+                          (a, b) => (a?.stageOrder || 0) - (b?.stageOrder || 0),
                         )
                         .map((stage, index) => {
                           // Helper function to find reviewer details from recruiterReviews
@@ -410,7 +409,8 @@ const RecruiterViewTimeline = () => {
                             return (
                               stage.recruiterReviews.find(
                                 (review) =>
-                                  review?.recruiterId?.fullName === reviewerName
+                                  review?.recruiterId?.fullName ===
+                                  reviewerName,
                               )?.recruiterId || null
                             );
                           };
@@ -422,8 +422,8 @@ const RecruiterViewTimeline = () => {
                                 stage?.stageStatus === "approved"
                                   ? "green"
                                   : stage?.stageStatus === "pending"
-                                  ? "orange"
-                                  : "red"
+                                    ? "orange"
+                                    : "red"
                               }
                               label={
                                 stage?.startDate && (
@@ -434,7 +434,7 @@ const RecruiterViewTimeline = () => {
                                     >
                                       Start:{" "}
                                       {dayjs(stage.startDate).format(
-                                        "DD MMM YYYY"
+                                        "DD MMM YYYY",
                                       )}
                                     </Text>
                                     {stage?.endDate && (
@@ -444,7 +444,7 @@ const RecruiterViewTimeline = () => {
                                       >
                                         End:{" "}
                                         {dayjs(stage.endDate).format(
-                                          "DD MMM YYYY"
+                                          "DD MMM YYYY",
                                         )}
                                       </Text>
                                     )}
@@ -456,16 +456,14 @@ const RecruiterViewTimeline = () => {
                                 size="small"
                                 title={
                                   <Space wrap>
-                                    <Text strong>
-                                      Flow - {index + 1}
-                                    </Text>
+                                    <Text strong>Flow - {index + 1}</Text>
                                     <Tag
                                       color={
                                         stage?.stageStatus === "approved"
                                           ? "green"
                                           : stage?.stageStatus === "pending"
-                                          ? "orange"
-                                          : "red"
+                                            ? "orange"
+                                            : "red"
                                       }
                                     >
                                       {stage?.stageStatus || "pending"}
@@ -481,7 +479,6 @@ const RecruiterViewTimeline = () => {
                                 }
                                 style={{ marginBottom: 8 }}
                               >
-
                                 <Descriptions
                                   column={isMobile ? 1 : 2}
                                   size="small"
@@ -498,7 +495,7 @@ const RecruiterViewTimeline = () => {
                                   {stage?.stageCompletedAt && (
                                     <Descriptions.Item label="Completed At">
                                       {dayjs(stage.stageCompletedAt).format(
-                                        "DD MMM YYYY, hh:mm A"
+                                        "DD MMM YYYY, hh:mm A",
                                       )}
                                     </Descriptions.Item>
                                   )}
@@ -516,7 +513,7 @@ const RecruiterViewTimeline = () => {
                                         Approval Details
                                       </Divider>
                                       {Object.entries(
-                                        stage.approvalSummary
+                                        stage.approvalSummary,
                                       ).map(([levelName, levelData]) => {
                                         // Reviewer can be a string (name) or object
                                         const reviewerName =
@@ -553,16 +550,20 @@ const RecruiterViewTimeline = () => {
                                                     "approved"
                                                       ? "green"
                                                       : levelData?.status ===
-                                                        "rejected"
-                                                      ? "red"
-                                                      : "orange"
+                                                          "rejected"
+                                                        ? "red"
+                                                        : "orange"
                                                   }
                                                 >
-                                                  {levelData?.status || "pending"}
+                                                  {levelData?.status ||
+                                                    "pending"}
                                                 </Tag>
                                               </div>
                                               {reviewerName ? (
-                                                <Space direction="vertical" size={4}>
+                                                <Space
+                                                  direction="vertical"
+                                                  size={4}
+                                                >
                                                   <Text
                                                     type="secondary"
                                                     style={{ fontSize: 12 }}
@@ -578,7 +579,9 @@ const RecruiterViewTimeline = () => {
                                                             fontSize: 12,
                                                           }}
                                                         >
-                                                          {reviewerDetails.email}
+                                                          {
+                                                            reviewerDetails.email
+                                                          }
                                                         </Text>
                                                       )}
                                                       {reviewerDetails.phone && (
@@ -588,7 +591,9 @@ const RecruiterViewTimeline = () => {
                                                             fontSize: 12,
                                                           }}
                                                         >
-                                                          {reviewerDetails.phone}
+                                                          {
+                                                            reviewerDetails.phone
+                                                          }
                                                         </Text>
                                                       )}
                                                     </>
@@ -613,9 +618,9 @@ const RecruiterViewTimeline = () => {
                                                   style={{ fontSize: 11 }}
                                                 >
                                                   {dayjs(
-                                                    levelData.reviewedAt
+                                                    levelData.reviewedAt,
                                                   ).format(
-                                                    "DD MMM YYYY, hh:mm A"
+                                                    "DD MMM YYYY, hh:mm A",
                                                   )}
                                                 </Text>
                                               )}
@@ -655,12 +660,13 @@ const RecruiterViewTimeline = () => {
                                                 </Text>
                                                 <Tag
                                                   color={
-                                                    review?.status === "approved"
+                                                    review?.status ===
+                                                    "approved"
                                                       ? "green"
                                                       : review?.status ===
-                                                        "pending"
-                                                      ? "orange"
-                                                      : "red"
+                                                          "pending"
+                                                        ? "orange"
+                                                        : "red"
                                                   }
                                                   size="small"
                                                 >
@@ -675,9 +681,7 @@ const RecruiterViewTimeline = () => {
                                                     type="secondary"
                                                     style={{ fontSize: 12 }}
                                                   >
-                                                    {
-                                                      review.recruiterId.email
-                                                    }
+                                                    {review.recruiterId.email}
                                                   </Text>
                                                 )}
                                                 {review?.reviewComments && (
@@ -701,9 +705,9 @@ const RecruiterViewTimeline = () => {
                                                 >
                                                   {review?.reviewedAt
                                                     ? dayjs(
-                                                        review.reviewedAt
+                                                        review.reviewedAt,
                                                       ).format(
-                                                        "DD MMM YYYY, hh:mm A"
+                                                        "DD MMM YYYY, hh:mm A",
                                                       )
                                                     : "Not reviewed yet"}
                                                 </Text>
@@ -762,7 +766,10 @@ const RecruiterViewTimeline = () => {
                                                       type="link"
                                                       size="small"
                                                       href={doc?.fileUrl}
-                                                      icon={<DownloadOutlined />}
+                                                      target="_blank"
+                                                      icon={
+                                                        <DownloadOutlined />
+                                                      }
                                                     >
                                                       Download
                                                     </Button>
@@ -771,7 +778,7 @@ const RecruiterViewTimeline = () => {
                                               </Space>
                                             </Card>
                                           </Col>
-                                        )
+                                        ),
                                       )}
                                     </Row>
                                   </>
@@ -807,19 +814,21 @@ const RecruiterViewTimeline = () => {
                                                   {doc?.documentName ||
                                                     "Document"}
                                                 </Text>
-                                                {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
-                                                  <Text
-                                                    type="secondary"
-                                                    style={{
-                                                      fontSize: 10,
-                                                      display: "block",
-                                                      marginTop: 2,
-                                                      color: "#1890ff",
-                                                    }}
-                                                  >
-                                                    By: {doc.recruiterName}
-                                                  </Text>
-                                                )}
+                                                {doc?.uploadedBy ===
+                                                  "recruiter" &&
+                                                  doc?.recruiterName && (
+                                                    <Text
+                                                      type="secondary"
+                                                      style={{
+                                                        fontSize: 10,
+                                                        display: "block",
+                                                        marginTop: 2,
+                                                        color: "#1890ff",
+                                                      }}
+                                                    >
+                                                      By: {doc.recruiterName}
+                                                    </Text>
+                                                  )}
                                                 <div style={{ marginTop: 4 }}>
                                                   <Button
                                                     type="link"
@@ -834,6 +843,7 @@ const RecruiterViewTimeline = () => {
                                                     type="link"
                                                     size="small"
                                                     href={doc?.fileUrl}
+                                                    target="_blank"
                                                     icon={<DownloadOutlined />}
                                                   >
                                                     Download
@@ -886,11 +896,11 @@ const RecruiterViewTimeline = () => {
                           interview.status === "interview_completed"
                             ? "green"
                             : interview.status === "fail" ||
-                              interview.status === "interview_rejected"
-                            ? "red"
-                            : interview.status === "scheduled"
-                            ? "orange"
-                            : "gray"
+                                interview.status === "interview_rejected"
+                              ? "red"
+                              : interview.status === "scheduled"
+                                ? "orange"
+                                : "gray"
                         }
                         label={
                           interview.date && (
@@ -915,11 +925,12 @@ const RecruiterViewTimeline = () => {
                                   interview.status === "interview_completed"
                                     ? "green"
                                     : interview.status === "fail" ||
-                                      interview.status === "interview_rejected"
-                                    ? "red"
-                                    : interview.status === "scheduled"
-                                    ? "orange"
-                                    : "gray"
+                                        interview.status ===
+                                          "interview_rejected"
+                                      ? "red"
+                                      : interview.status === "scheduled"
+                                        ? "orange"
+                                        : "gray"
                                 }
                               >
                                 {interview.status?.replace("_", " ")}
@@ -968,15 +979,21 @@ const RecruiterViewTimeline = () => {
                                         {interviewer.name ||
                                           interviewer.fullName}
                                       </Tag>
-                                    )
+                                    ),
                                   )}
                                 </Space>
+                              </Descriptions.Item>
+                            )}
+
+                            {interview.remarks && (
+                              <Descriptions.Item label="Remarks">
+                                <Text>{interview.remarks}</Text>
                               </Descriptions.Item>
                             )}
                           </Descriptions>
                         </Card>
                       </Timeline.Item>
-                    )
+                    ),
                   )}
                 </Timeline>
               </Card>
@@ -1014,10 +1031,10 @@ const RecruiterViewTimeline = () => {
                           offer.currentStatus === "offer-accepted"
                             ? "green"
                             : offer.currentStatus === "offer-rejected"
-                            ? "red"
-                            : offer.currentStatus === "offer-revised"
-                            ? "orange"
-                            : "blue"
+                              ? "red"
+                              : offer.currentStatus === "offer-revised"
+                                ? "orange"
+                                : "blue"
                         }
                       >
                         {offer.currentStatus?.replace("-", " ")}
@@ -1070,6 +1087,7 @@ const RecruiterViewTimeline = () => {
                                   type="link"
                                   size="small"
                                   href={offer.offerDocument.fileUrl}
+                                  target="_blank"
                                   icon={<DownloadOutlined />}
                                 >
                                   Download
@@ -1079,7 +1097,7 @@ const RecruiterViewTimeline = () => {
                                   style={{ marginLeft: 8, fontSize: 12 }}
                                 >
                                   {dayjs(offer.offerDocument.uploadedAt).format(
-                                    "DD MMM YYYY"
+                                    "DD MMM YYYY",
                                   )}
                                 </Text>
                               </div>
@@ -1103,19 +1121,22 @@ const RecruiterViewTimeline = () => {
                               <Text strong>
                                 {offer.signedOfferDocument.documentName}
                               </Text>
-                              {offer.signedOfferDocument?.uploadedBy === "recruiter" && offer.signedOfferDocument?.recruiterName && (
-                                <Text
-                                  type="secondary"
-                                  style={{
-                                    fontSize: 10,
-                                    display: "block",
-                                    marginTop: 2,
-                                    color: "#1890ff",
-                                  }}
-                                >
-                                  By: {offer.signedOfferDocument.recruiterName}
-                                </Text>
-                              )}
+                              {offer.signedOfferDocument?.uploadedBy ===
+                                "recruiter" &&
+                                offer.signedOfferDocument?.recruiterName && (
+                                  <Text
+                                    type="secondary"
+                                    style={{
+                                      fontSize: 10,
+                                      display: "block",
+                                      marginTop: 2,
+                                      color: "#1890ff",
+                                    }}
+                                  >
+                                    By:{" "}
+                                    {offer.signedOfferDocument.recruiterName}
+                                  </Text>
+                                )}
                               <div style={{ marginTop: 4 }}>
                                 <Button
                                   type="link"
@@ -1129,7 +1150,8 @@ const RecruiterViewTimeline = () => {
                                 <Button
                                   type="link"
                                   size="small"
-                                  href={offer.signedOfferDocument.fileUrl}
+                                  href={offer.signedOfferDocument?.fileUrl}
+                                  target="_blank"
                                   icon={<DownloadOutlined />}
                                 >
                                   Download
@@ -1139,7 +1161,7 @@ const RecruiterViewTimeline = () => {
                                   style={{ marginLeft: 8, fontSize: 12 }}
                                 >
                                   {dayjs(
-                                    offer.signedOfferDocument.uploadedAt
+                                    offer.signedOfferDocument.uploadedAt,
                                   ).format("DD MMM YYYY")}
                                 </Text>
                               </div>
@@ -1149,141 +1171,179 @@ const RecruiterViewTimeline = () => {
                       )}
 
                       {/* Additional Documents */}
-                      {offer.additionalDocuments && offer.additionalDocuments.length > 0 && (
-                        <Card
-                          size="small"
-                          title="Additional Supporting Documents"
-                          style={{ marginTop: 8 }}
-                        >
-                          <Space direction="vertical" style={{ width: "100%" }}>
-                            {offer.additionalDocuments.map((doc, docIndex) => (
-                              <Card
-                                key={docIndex}
-                                size="small"
-                                style={{
-                                  border: "1px solid #722ed1",
-                                  backgroundColor: "#f9f0ff",
-                                }}
-                              >
-                                <Space>
-                                  <FilePdfOutlined
-                                    style={{ color: "#722ed1", fontSize: 20 }}
-                                  />
-                                  <div style={{ flex: 1 }}>
-                                    <Text strong>
-                                      {doc.documentName || doc.fileName || `Additional Document ${docIndex + 1}`}
-                                    </Text>
-                                    <div style={{ marginTop: 4 }}>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        icon={<EyeOutlined />}
-                                      >
-                                        View
-                                      </Button>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        icon={<DownloadOutlined />}
-                                      >
-                                        Download
-                                      </Button>
-                                      {doc.uploadedAt && (
-                                        <Text
-                                          type="secondary"
-                                          style={{ marginLeft: 8, fontSize: 12 }}
-                                        >
-                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                      {offer.additionalDocuments &&
+                        offer.additionalDocuments.length > 0 && (
+                          <Card
+                            size="small"
+                            title="Additional Supporting Documents"
+                            style={{ marginTop: 8 }}
+                          >
+                            <Space
+                              direction="vertical"
+                              style={{ width: "100%" }}
+                            >
+                              {offer.additionalDocuments.map(
+                                (doc, docIndex) => (
+                                  <Card
+                                    key={docIndex}
+                                    size="small"
+                                    style={{
+                                      border: "1px solid #722ed1",
+                                      backgroundColor: "#f9f0ff",
+                                    }}
+                                  >
+                                    <Space>
+                                      <FilePdfOutlined
+                                        style={{
+                                          color: "#722ed1",
+                                          fontSize: 20,
+                                        }}
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <Text strong>
+                                          {doc.documentName ||
+                                            doc.fileName ||
+                                            `Additional Document ${docIndex + 1}`}
                                         </Text>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Tag color="purple">Supporting</Tag>
-                                </Space>
-                              </Card>
-                            ))}
-                          </Space>
-                        </Card>
-                      )}
+                                        <div style={{ marginTop: 4 }}>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<EyeOutlined />}
+                                          >
+                                            View
+                                          </Button>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<DownloadOutlined />}
+                                          >
+                                            Download
+                                          </Button>
+                                          {doc.uploadedAt && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                marginLeft: 8,
+                                                fontSize: 12,
+                                              }}
+                                            >
+                                              {dayjs(doc.uploadedAt).format(
+                                                "DD MMM YYYY",
+                                              )}
+                                            </Text>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Tag color="purple">Supporting</Tag>
+                                    </Space>
+                                  </Card>
+                                ),
+                              )}
+                            </Space>
+                          </Card>
+                        )}
 
                       {/* Signed Additional Documents */}
-                      {offer.signedAdditionalDocuments && offer.signedAdditionalDocuments.length > 0 && (
-                        <Card
-                          size="small"
-                          title="Signed Additional Documents"
-                          style={{ marginTop: 8 }}
-                        >
-                          <Space direction="vertical" style={{ width: "100%" }}>
-                            {offer.signedAdditionalDocuments.map((doc, docIndex) => (
-                              <Card
-                                key={docIndex}
-                                size="small"
-                                style={{
-                                  border: "1px solid #52c41a",
-                                  backgroundColor: "#f6ffed",
-                                }}
-                              >
-                                <Space>
-                                  <FilePdfOutlined
-                                    style={{ color: "#52c41a", fontSize: 20 }}
-                                  />
-                                  <div style={{ flex: 1 }}>
-                                    <Text strong>
-                                      {doc.documentName || doc.fileName || `Signed Document ${docIndex + 1}`}
-                                    </Text>
-                                    {doc?.uploadedBy === "recruiter" && doc?.recruiterName && (
-                                      <Text
-                                        type="secondary"
+                      {offer.signedAdditionalDocuments &&
+                        offer.signedAdditionalDocuments.length > 0 && (
+                          <Card
+                            size="small"
+                            title="Signed Additional Documents"
+                            style={{ marginTop: 8 }}
+                          >
+                            <Space
+                              direction="vertical"
+                              style={{ width: "100%" }}
+                            >
+                              {offer.signedAdditionalDocuments.map(
+                                (doc, docIndex) => (
+                                  <Card
+                                    key={docIndex}
+                                    size="small"
+                                    style={{
+                                      border: "1px solid #52c41a",
+                                      backgroundColor: "#f6ffed",
+                                    }}
+                                  >
+                                    <Space>
+                                      <FilePdfOutlined
                                         style={{
-                                          fontSize: 10,
-                                          display: "block",
-                                          marginTop: 2,
-                                          color: "#1890ff",
+                                          color: "#52c41a",
+                                          fontSize: 20,
                                         }}
-                                      >
-                                        By: {doc.recruiterName}
-                                      </Text>
-                                    )}
-                                    <div style={{ marginTop: 4 }}>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        target="_blank"
-                                        icon={<EyeOutlined />}
-                                      >
-                                        View
-                                      </Button>
-                                      <Button
-                                        type="link"
-                                        size="small"
-                                        href={doc.fileUrl}
-                                        icon={<DownloadOutlined />}
-                                      >
-                                        Download
-                                      </Button>
-                                      {doc.uploadedAt && (
-                                        <Text
-                                          type="secondary"
-                                          style={{ marginLeft: 8, fontSize: 12 }}
-                                        >
-                                          {dayjs(doc.uploadedAt).format("DD MMM YYYY")}
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <Text strong>
+                                          {doc.documentName ||
+                                            doc.fileName ||
+                                            `Signed Document ${docIndex + 1}`}
                                         </Text>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                                    Signed
-                                  </Tag>
-                                </Space>
-                              </Card>
-                            ))}
-                          </Space>
-                        </Card>
-                      )}
+                                        {doc?.uploadedBy === "recruiter" &&
+                                          doc?.recruiterName && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                fontSize: 10,
+                                                display: "block",
+                                                marginTop: 2,
+                                                color: "#1890ff",
+                                              }}
+                                            >
+                                              By: {doc.recruiterName}
+                                            </Text>
+                                          )}
+                                        <div style={{ marginTop: 4 }}>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<EyeOutlined />}
+                                          >
+                                            View
+                                          </Button>
+                                          <Button
+                                            type="link"
+                                            size="small"
+                                            href={doc.fileUrl}
+                                            target="_blank"
+                                            icon={<DownloadOutlined />}
+                                          >
+                                            Download
+                                          </Button>
+                                          {doc.uploadedAt && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                marginLeft: 8,
+                                                fontSize: 12,
+                                              }}
+                                            >
+                                              {dayjs(doc.uploadedAt).format(
+                                                "DD MMM YYYY",
+                                              )}
+                                            </Text>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Tag
+                                        color="green"
+                                        icon={<CheckCircleOutlined />}
+                                      >
+                                        Signed
+                                      </Tag>
+                                    </Space>
+                                  </Card>
+                                ),
+                              )}
+                            </Space>
+                          </Card>
+                        )}
 
                       {/* Offer Status History */}
                       {offer.statusHistory?.length > 0 && (
@@ -1300,10 +1360,10 @@ const RecruiterViewTimeline = () => {
                                   history.status === "offer-accepted"
                                     ? "green"
                                     : history.status === "offer-rejected"
-                                    ? "red"
-                                    : history.status === "offer-revised"
-                                    ? "orange"
-                                    : "blue"
+                                      ? "red"
+                                      : history.status === "offer-revised"
+                                        ? "orange"
+                                        : "blue"
                                 }
                               >
                                 <Space direction="vertical">
@@ -1314,10 +1374,10 @@ const RecruiterViewTimeline = () => {
                                         history.status === "offer-accepted"
                                           ? "green"
                                           : history.status === "offer-rejected"
-                                          ? "red"
-                                          : history.status === "offer-revised"
-                                          ? "orange"
-                                          : "blue"
+                                            ? "red"
+                                            : history.status === "offer-revised"
+                                              ? "orange"
+                                              : "blue"
                                       }
                                     >
                                       {history.status?.replace("-", " ")}
@@ -1334,7 +1394,7 @@ const RecruiterViewTimeline = () => {
                                   >
                                     <CalendarOutlined />{" "}
                                     {dayjs(history.changedAt).format(
-                                      "DD MMM YYYY, hh:mm A"
+                                      "DD MMM YYYY, hh:mm A",
                                     )}
                                   </Text>
                                 </Space>
@@ -1382,7 +1442,8 @@ const RecruiterViewTimeline = () => {
                       dot={
                         historyItem.action === "offer_accepted_by_recruiter" ? (
                           <GiftOutlined />
-                        ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                        ) : historyItem.action ===
+                          "documents_uploaded_by_recruiter" ? (
                           <FileTextOutlined />
                         ) : historyItem.status === "selected" ||
                           historyItem.status === "approved" ? (
@@ -1397,32 +1458,47 @@ const RecruiterViewTimeline = () => {
                     >
                       <Card size="small">
                         <Space direction="vertical" style={{ width: "100%" }}>
-                          {historyItem.action === "offer_accepted_by_recruiter" ? (
+                          {historyItem.action ===
+                          "offer_accepted_by_recruiter" ? (
                             <>
                               <Space wrap>
                                 <Text strong style={{ color: "#1890ff" }}>
                                   <GiftOutlined /> Offer Accepted by Recruiter
                                 </Text>
-                                {historyItem.status && getStatusTag(historyItem.status)}
+                                {historyItem.status &&
+                                  getStatusTag(historyItem.status)}
                               </Space>
                               <Text>
                                 <UserOutlined /> Recruiter:{" "}
-                                <Text strong>{historyItem.changedBy?.name}</Text>
+                                <Text strong>
+                                  {historyItem.changedBy?.name}
+                                </Text>
                               </Text>
                               {historyItem.description && (
-                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontStyle: "italic",
+                                    display: "block",
+                                    marginTop: "4px",
+                                  }}
+                                >
                                   {historyItem.description}
                                 </Text>
                               )}
                             </>
-                          ) : historyItem.action === "documents_uploaded_by_recruiter" ? (
+                          ) : historyItem.action ===
+                            "documents_uploaded_by_recruiter" ? (
                             <>
                               <Space wrap>
                                 <Text strong style={{ color: "#1890ff" }}>
-                                  <FileTextOutlined /> Documents Uploaded by Recruiter
+                                  <FileTextOutlined /> Documents Uploaded by
+                                  Recruiter
                                 </Text>
                                 {historyItem.stageName && (
-                                  <Tag color="blue">Stage: {historyItem.stageName}</Tag>
+                                  <Tag color="blue">
+                                    Stage: {historyItem.stageName}
+                                  </Tag>
                                 )}
                                 {historyItem.documentCount && (
                                   <Tag color="green">
@@ -1432,10 +1508,19 @@ const RecruiterViewTimeline = () => {
                               </Space>
                               <Text>
                                 <UserOutlined /> Recruiter:{" "}
-                                <Text strong>{historyItem.changedBy?.name}</Text>
+                                <Text strong>
+                                  {historyItem.changedBy?.name}
+                                </Text>
                               </Text>
                               {historyItem.description && (
-                                <Text type="secondary" style={{ fontStyle: "italic", display: "block", marginTop: "4px" }}>
+                                <Text
+                                  type="secondary"
+                                  style={{
+                                    fontStyle: "italic",
+                                    display: "block",
+                                    marginTop: "4px",
+                                  }}
+                                >
                                   {historyItem.description}
                                 </Text>
                               )}
@@ -1448,14 +1533,16 @@ const RecruiterViewTimeline = () => {
                               </Space>
                               <Text>
                                 <UserOutlined /> Changed by:{" "}
-                                <Text strong>{historyItem.changedBy?.name}</Text>
+                                <Text strong>
+                                  {historyItem.changedBy?.name}
+                                </Text>
                               </Text>
                             </>
                           )}
                           <Text type="secondary">
                             <CalendarOutlined />{" "}
                             {dayjs(historyItem.changedAt).format(
-                              "DD MMM YYYY, hh:mm A"
+                              "DD MMM YYYY, hh:mm A",
                             )}
                           </Text>
                         </Space>
@@ -1774,7 +1861,7 @@ const RecruiterViewTimeline = () => {
                             </Space>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               {dayjs(history.changedAt).format(
-                                "DD MMM YYYY, hh:mm A"
+                                "DD MMM YYYY, hh:mm A",
                               )}
                             </Text>
                           </Space>

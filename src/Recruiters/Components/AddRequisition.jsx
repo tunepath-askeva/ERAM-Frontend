@@ -1041,7 +1041,7 @@ const AddRequisition = ({ onNavigateBack }) => {
               <Row gutter={16}>
                 <Col span={24}>
                   <Form.Item label="Status" name="isActive">
-                    <Select placeholder="Select Status">
+                    <Select placeholder="Select Status"  defaultValue="active">
                       <Option value="active">Active</Option>
                       <Option value="inactive">Inactive</Option>
                       <Option value="draft">Draft</Option>

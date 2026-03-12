@@ -919,8 +919,12 @@ const EmployeeDocuments = () => {
                   }
                   style={{ width: "100%", marginBottom: "16px" }}
                   size="large"
-                  disabled={isReplaceMode}
                 />
+                {existingDoc && (
+                  <Text type="danger" style={{ fontSize: "12px", display: "block", marginTop: "4px" }}>
+                    A document with this name already exists. Please choose a different name.
+                  </Text>
+                )}
               </div>
 
               <div>
@@ -957,7 +961,7 @@ const EmployeeDocuments = () => {
                   <Button
                     type="primary"
                     onClick={handleNextStep}
-                    disabled={!newDocument.file || !newDocument.documentName}
+                    disabled={!newDocument.file || !newDocument.documentName || !!existingDoc}
                     style={{
                       backgroundColor: "#da2c46",
                       borderColor: "#da2c46",

@@ -144,6 +144,32 @@ export const handleExportExcel = (filteredData, filters, filterOptions, data = n
 
     // ==================== SHEET 2: DETAILED WORK ORDERS ====================
     if (filteredData?.workOrders?.length > 0) {
+      // Helper function to format status name
+      const formatStatusName = (status) => {
+        return status
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      };
+
+      // Get all unique statuses from applicationStatusData if available
+      const allStatuses = new Set();
+      if (filteredData?.applicationStatusData && Array.isArray(filteredData.applicationStatusData)) {
+        filteredData.applicationStatusData.forEach((item) => {
+          if (item.status) {
+            allStatuses.add(item.status);
+          }
+        });
+      }
+      
+      // Add common statuses even if not in data
+      const commonStatuses = [
+        "sourced", "selected", "applied", "rejected", "screening", 
+        "pipeline", "interview", "offer", "offer_pending", "offer_revised",
+        "in-pending", "approved", "hired", "completed"
+      ];
+      commonStatuses.forEach(status => allStatuses.add(status));
+
       const workOrderData = filteredData.workOrders.map((wo) => {
         const metrics = getWOCandidateMetrics(wo.id, wo.title, filteredData);
         const daysUntilDeadline = wo.deadlineDate 
@@ -151,7 +177,8 @@ export const handleExportExcel = (filteredData, filters, filterOptions, data = n
           : null;
         const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0;
         
-        return {
+        // Base row data
+        const rowData = {
           "Work Order ID": wo.id || "N/A",
           "Work Order Title": wo.title || "N/A",
           "Job Code": wo.jobCode || "N/A",
@@ -168,23 +195,41 @@ export const handleExportExcel = (filteredData, filters, filterOptions, data = n
           "Days Until Deadline": daysUntilDeadline !== null ? daysUntilDeadline : "N/A",
           "Is Overdue": isOverdue ? "Yes" : "No",
           "Candidates Required": metrics.required,
+          "Total Candidates": metrics.hired + metrics.inPipeline + metrics.pending,
           "Candidates Hired": metrics.hired,
           "Candidates In Pipeline": metrics.inPipeline,
           "Candidates Pending": metrics.pending,
           "Completion Rate (%)": metrics.completionRate,
           "Remaining Candidates": metrics.required - metrics.hired,
         };
+
+        // Add all status columns (will be 0 if not available in current data structure)
+        // This ensures consistency with AdminDashboardDetail export
+        Array.from(allStatuses).sort().forEach((status) => {
+          const statusKey = formatStatusName(status);
+          // Try to get status count from applicationStatusData if available
+          // For now, set to 0 as the detailed breakdown isn't available in main dashboard data
+          // This structure allows for future enhancement when backend provides status breakdown
+          rowData[statusKey] = 0;
+        });
+
+        return rowData;
       });
 
       const workOrderSheet = XLSX.utils.json_to_sheet(workOrderData);
       
-      // Set column widths
-      workOrderSheet["!cols"] = [
-        { wch: 15 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-        { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 },
-        { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 12 },
-        { wch: 18 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 20 }
-      ];
+      // Calculate column widths dynamically
+      const maxWidths = {};
+      workOrderData.forEach((row) => {
+        Object.keys(row).forEach((key) => {
+          const cellValue = String(row[key] || "");
+          maxWidths[key] = Math.max(maxWidths[key] || 10, cellValue.length, key.length);
+        });
+      });
+      
+      workOrderSheet["!cols"] = Object.keys(workOrderData[0] || {}).map((key) => ({
+        wch: Math.min(Math.max(maxWidths[key] || 10, 10), 30),
+      }));
       
       XLSX.utils.book_append_sheet(workbook, workOrderSheet, "Work Orders");
     }

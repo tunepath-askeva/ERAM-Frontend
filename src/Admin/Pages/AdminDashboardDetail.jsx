@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useGetAllJobStageDetailsQuery } from "../../Slices/Recruiter/RecruiterApis";
+import { useGetAdminFilterOptionsQuery } from "../../Slices/Admin/AdminApis";
 import {
   Card,
   Row,
@@ -50,10 +51,13 @@ const { TabPane } = Tabs;
 const AdminDashboardDetails = () => {
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetAllJobStageDetailsQuery();
+  const { data: filterOptions = {}, isLoading: filterOptionsLoading } = useGetAdminFilterOptionsQuery();
 
   // Filter states
   const [filters, setFilters] = useState({
     workOrder: null,
+    client: null,
+    project: null,
     status: [],
     searchTerm: "",
     showFilters: false,
@@ -243,6 +247,18 @@ const AdminDashboardDetails = () => {
       );
     }
 
+    if (filters.client) {
+      filtered = filtered.filter(
+        (wo) => wo.clientName === filters.client
+      );
+    }
+
+    if (filters.project) {
+      filtered = filtered.filter(
+        (wo) => wo.projectName === filters.project
+      );
+    }
+
     if (filters.searchTerm) {
       filtered = filtered.filter((wo) =>
         wo.workOrderTitle
@@ -252,7 +268,7 @@ const AdminDashboardDetails = () => {
     }
 
     return filtered;
-  }, [data, filters.workOrder, filters.searchTerm]);
+  }, [data, filters.workOrder, filters.client, filters.project, filters.searchTerm]);
 
   const workOrderData = processWorkOrderData(getFilteredData);
   const analytics = processAnalytics(getFilteredData);
@@ -282,9 +298,43 @@ const AdminDashboardDetails = () => {
   // Filter functions
   const getWorkOrderOptions = () => {
     if (!data?.results) return [];
-    return data.results.map((wo) => ({
-      value: wo.workOrderTitle,
-      label: wo.workOrderTitle,
+    const uniqueWorkOrders = new Map();
+    data.results.forEach((wo) => {
+      if (wo.workOrderTitle && !uniqueWorkOrders.has(wo.workOrderTitle)) {
+        uniqueWorkOrders.set(wo.workOrderTitle, wo.workOrderTitle);
+      }
+    });
+    return Array.from(uniqueWorkOrders.values()).map((title) => ({
+      value: title,
+      label: title,
+    }));
+  };
+
+  const getClientOptions = () => {
+    if (!data?.results) return [];
+    const uniqueClients = new Map();
+    data.results.forEach((wo) => {
+      if (wo.clientName && !uniqueClients.has(wo.clientName)) {
+        uniqueClients.set(wo.clientName, wo.clientName);
+      }
+    });
+    return Array.from(uniqueClients.values()).map((name) => ({
+      value: name,
+      label: name,
+    }));
+  };
+
+  const getProjectOptions = () => {
+    if (!data?.results) return [];
+    const uniqueProjects = new Map();
+    data.results.forEach((wo) => {
+      if (wo.projectName && !uniqueProjects.has(wo.projectName)) {
+        uniqueProjects.set(wo.projectName, wo.projectName);
+      }
+    });
+    return Array.from(uniqueProjects.values()).map((name) => ({
+      value: name,
+      label: name,
     }));
   };
 
@@ -300,12 +350,20 @@ const AdminDashboardDetails = () => {
     });
     return Array.from(statuses).map((status) => ({
       value: status,
-      label: status.charAt(0).toUpperCase() + status.slice(1),
+      label: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
     }));
   };
 
   const handleWorkOrderChange = (value) => {
     setFilters((prev) => ({ ...prev, workOrder: value }));
+  };
+
+  const handleClientChange = (value) => {
+    setFilters((prev) => ({ ...prev, client: value }));
+  };
+
+  const handleProjectChange = (value) => {
+    setFilters((prev) => ({ ...prev, project: value }));
   };
 
   const handleStatusChange = (value) => {
@@ -319,6 +377,8 @@ const AdminDashboardDetails = () => {
   const clearAllFilters = () => {
     setFilters({
       workOrder: null,
+      client: null,
+      project: null,
       status: [],
       searchTerm: "",
       showFilters: filters.showFilters,
@@ -332,6 +392,8 @@ const AdminDashboardDetails = () => {
   const getActiveFilterCount = () => {
     let count = 0;
     if (filters.workOrder) count++;
+    if (filters.client) count++;
+    if (filters.project) count++;
     if (filters.status.length > 0) count++;
     if (filters.searchTerm) count++;
     return count;
@@ -340,56 +402,112 @@ const AdminDashboardDetails = () => {
   const handleExportExcel = () => {
     if (!workOrderData || workOrderData.length === 0) return;
 
-    // Prepare data for Excel
-    const exportData = workOrderData.map((row) => ({
-      "Work Order": row.rawData?.workOrderTitle || "Untitled",
-      "Job Code": row.rawData?.jobCode || "N/A",
-      "Requisition No": row.rawData?.requisitionNo || "N/A",
-      "Reference No": row.rawData?.referenceNo || "N/A",
-      Client: row.rawData?.clientName || "N/A",
-      Project: row.rawData?.projectName || "N/A",
-      "Candidates Needed": row.numberOfCandidate || 0,
-      "Total Candidates": row.total,
-      Sourced: row.sourced,
-      Selected: row.selected,
-      Applied: row.applied,
-      Declined: row.declined,
-      Pending: row.pending,
-      Screening: row.screening,
-      Pipeline: row.pipeline,
-      Interview: row.interview,
-      Offer: row.offer || 0,
-      Completed: row.completed,
-    }));
+    // Get all unique statuses from the data
+    const allStatuses = new Set();
+    workOrderData.forEach((row) => {
+      if (row.rawData?.statuses && Array.isArray(row.rawData.statuses)) {
+        row.rawData.statuses.forEach((statusGroup) => {
+          if (statusGroup.status) {
+            allStatuses.add(statusGroup.status);
+          }
+        });
+      }
+    });
 
-    // Add totals row
-    exportData.push({
+    // Create a map of status counts for each work order
+    const statusCountsMap = new Map();
+    workOrderData.forEach((row) => {
+      const statusCounts = {};
+      if (row.rawData?.statuses && Array.isArray(row.rawData.statuses)) {
+        row.rawData.statuses.forEach((statusGroup) => {
+          const status = statusGroup.status?.toLowerCase() || "";
+          const count = statusGroup.totalCandidates || 0;
+          statusCounts[status] = count;
+        });
+      }
+      statusCountsMap.set(row.rawData?.workOrderTitle || "Untitled", statusCounts);
+    });
+
+    // Format status name for display
+    const formatStatusName = (status) => {
+      return status
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    };
+
+    // Prepare data for Excel with all statuses
+    const exportData = workOrderData.map((row) => {
+      const woTitle = row.rawData?.workOrderTitle || "Untitled";
+      const statusCounts = statusCountsMap.get(woTitle) || {};
+
+      const rowData = {
+        "Work Order": woTitle,
+        "Job Code": row.rawData?.jobCode || "N/A",
+        "Requisition No": row.rawData?.requisitionNo || "N/A",
+        "Reference No": row.rawData?.referenceNo || "N/A",
+        Client: row.rawData?.clientName || "N/A",
+        Project: row.rawData?.projectName || "N/A",
+        "Candidates Needed": row.numberOfCandidate || 0,
+        "Total Candidates": row.total,
+      };
+
+      // Add all statuses as columns
+      Array.from(allStatuses).sort().forEach((status) => {
+        const statusKey = status.toLowerCase();
+        rowData[formatStatusName(status)] = statusCounts[statusKey] || 0;
+      });
+
+      return rowData;
+    });
+
+    // Calculate totals for all statuses
+    const totalsRow = {
       "Work Order": "TOTAL",
       "Job Code": "",
       "Requisition No": "",
       "Reference No": "",
       Client: "",
       Project: "",
+      "Candidates Needed": workOrderData.reduce((sum, row) => sum + (row.numberOfCandidate || 0), 0),
       "Total Candidates": totals.total || 0,
-      Sourced: totals.sourced || 0,
-      Selected: totals.selected || 0,
-      Applied: totals.applied || 0,
-      Declined: totals.declined || 0,
-      Pending: totals.pending || 0,
-      Screening: totals.screening || 0,
-      Pipeline: totals.pipeline || 0,
-      Interview: totals.interview || 0,
-      Offer: totals.offer || 0,
-      Completed: totals.completed || 0,
+    };
+
+    // Add totals for each status
+    Array.from(allStatuses).sort().forEach((status) => {
+      const statusKey = status.toLowerCase();
+      const total = workOrderData.reduce((sum, row) => {
+        const woTitle = row.rawData?.workOrderTitle || "Untitled";
+        const statusCounts = statusCountsMap.get(woTitle) || {};
+        return sum + (statusCounts[statusKey] || 0);
+      }, 0);
+      totalsRow[formatStatusName(status)] = total;
     });
+
+    exportData.push(totalsRow);
 
     // Convert to worksheet
     const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // Set column widths
+    const maxWidths = {};
+    exportData.forEach((row) => {
+      Object.keys(row).forEach((key) => {
+        const cellValue = String(row[key] || "");
+        maxWidths[key] = Math.max(maxWidths[key] || 10, cellValue.length, key.length);
+      });
+    });
+    
+    worksheet["!cols"] = Object.keys(exportData[0] || {}).map((key) => ({
+      wch: Math.min(Math.max(maxWidths[key] || 10, 10), 30),
+    }));
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "WorkOrders");
 
-    // Trigger download
-    XLSX.writeFile(workbook, "WorkOrder status.xlsx");
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+    XLSX.writeFile(workbook, `WorkOrder_Status_${timestamp}.xlsx`);
   };
 
   // Chart data preparation
@@ -945,7 +1063,7 @@ const AdminDashboardDetails = () => {
           }
         >
           <Row gutter={[16, 16]}>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={12} md={6}>
               <Text strong style={{ display: "block", marginBottom: "8px" }}>
                 Work Order
               </Text>
@@ -955,6 +1073,10 @@ const AdminDashboardDetails = () => {
                 value={filters.workOrder}
                 onChange={handleWorkOrderChange}
                 allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
               >
                 {getWorkOrderOptions().map((option) => (
                   <Option key={option.value} value={option.value}>
@@ -964,7 +1086,53 @@ const AdminDashboardDetails = () => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={12} md={6}>
+              <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                Client
+              </Text>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Select client"
+                value={filters.client}
+                onChange={handleClientChange}
+                allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {getClientOptions().map((option) => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
+              <Text strong style={{ display: "block", marginBottom: "8px" }}>
+                Project
+              </Text>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Select project"
+                value={filters.project}
+                onChange={handleProjectChange}
+                allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {getProjectOptions().map((option) => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={12} md={6}>
               <Text strong style={{ display: "block", marginBottom: "8px" }}>
                 Status
               </Text>
@@ -975,6 +1143,10 @@ const AdminDashboardDetails = () => {
                 value={filters.status}
                 onChange={handleStatusChange}
                 allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
               >
                 {getStatusOptions().map((option) => (
                   <Option key={option.value} value={option.value}>
@@ -984,7 +1156,7 @@ const AdminDashboardDetails = () => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={24} md={24}>
               <Text strong style={{ display: "block", marginBottom: "8px" }}>
                 Search Work Orders
               </Text>

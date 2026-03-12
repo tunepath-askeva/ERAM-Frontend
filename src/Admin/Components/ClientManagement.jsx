@@ -40,6 +40,7 @@ import {
   useUpdateClientMutation,
   useDeleteClientMutation,
   useDisableClientMutation,
+  useGetAdminBranchQuery,
 } from "../../Slices/Admin/AdminApis";
 import SkeletonLoader from "../../Global/SkeletonLoader";
 import PhoneInput from "../../Global/PhoneInput";
@@ -70,6 +71,11 @@ const ClientsManagement = () => {
     pageSize: 12,
   });
   const [form] = Form.useForm();
+  const { data: branchData } = useGetAdminBranchQuery();
+  const branchOrder = branchData?.branch?.branchOrder || "";
+  
+  // Watch the code field to ensure it updates in the UI
+  const codeValue = Form.useWatch('code', form);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -79,6 +85,63 @@ const ClientsManagement = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Function to generate client code from name
+  const generateClientCodeFromName = (name) => {
+    if (!name || !name.trim()) return "";
+    
+    // Extract first 3-5 uppercase letters/numbers from the name
+    const cleaned = name.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    let prefix = cleaned.substring(0, 5);
+    
+    // If name is too short, pad with first letters of words
+    if (prefix.length < 3 && name.includes(" ")) {
+      const words = name.trim().split(/\s+/);
+      prefix = words
+        .map((word) => word.charAt(0).toUpperCase())
+        .join("")
+        .substring(0, 5);
+    }
+    
+    // Ensure minimum 3 characters
+    if (prefix.length < 3) {
+      prefix = (prefix + "XXX").substring(0, 3);
+    }
+    
+    return prefix;
+  };
+
+  // Handle manual code generation from name
+  const handleGenerateCode = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const name = form.getFieldValue("name");
+    if (!name || !name.trim()) {
+      enqueueSnackbar("Please enter client name first", { variant: "warning" });
+      return;
+    }
+    
+    if (!branchOrder) {
+      enqueueSnackbar("Branch information not available", { variant: "warning" });
+      return;
+    }
+
+    const generatedPrefix = generateClientCodeFromName(name);
+    if (generatedPrefix) {
+      // Format: PREFIX-BRANCHORDER-001
+      // We'll get the sequential number from backend, but show the pattern
+      const suggestedCode = `${generatedPrefix}-${branchOrder}-001`;
+      
+      // Set the field value - Form.useWatch will update the UI
+      form.setFieldsValue({ code: suggestedCode });
+      
+      // Show success message
+      enqueueSnackbar("Client code generated. You can edit it if needed.", { variant: "info" });
+    }
+  };
 
   const {
     data: clientData,
@@ -621,7 +684,9 @@ const ClientsManagement = () => {
                   { required: true, message: "Please enter client name" },
                 ]}
               >
-                <Input placeholder="Enter client name" />
+                <Input 
+                  placeholder="Enter client name" 
+                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -632,7 +697,63 @@ const ClientsManagement = () => {
                   { required: true, message: "Please enter client code" },
                 ]}
               >
-                <Input placeholder="Enter client code" />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Input 
+                    placeholder="Enter client code or generate from name" 
+                    style={{ flex: 1 }}
+                    value={codeValue || ""}
+                    onChange={(e) => {
+                      form.setFieldsValue({ code: e.target.value });
+                    }}
+                  />
+                  {branchOrder && (
+                    <div
+                      style={{
+                        padding: "0 12px",
+                        height: 32,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#f0f0f0",
+                        borderRadius: 6,
+                        minWidth: 40,
+                        fontSize: "12px",
+                        fontWeight: "500",
+                      }}
+                    >
+                      B{branchOrder}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                  <Text
+                    style={{
+                      color: "#8c8c8c",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {modalMode === "create" 
+                      ? "Enter code manually or generate from name"
+                      : "You can update the client code if needed."}
+                  </Text>
+                  {modalMode === "create" && (
+                    <a
+                      href="#"
+                      onClick={handleGenerateCode}
+                      style={{
+                        fontSize: "12px",
+                        color: "#da2c46",
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        fontWeight: "500",
+                      }}
+                      onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
+                      onMouseLeave={(e) => e.target.style.textDecoration = "none"}
+                    >
+                      Generate from name
+                    </a>
+                  )}
+                </div>
               </Form.Item>
             </Col>
           </Row>

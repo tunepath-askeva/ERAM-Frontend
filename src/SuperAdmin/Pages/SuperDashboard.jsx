@@ -1,10 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import {
-  Card,
-  Typography,
-  Spin,
-  Empty,
-} from "antd";
+import { Card, Typography, Spin, Empty } from "antd";
 import {
   useGetSuperDashboardDataQuery,
   useGetBranchesQuery,
@@ -13,7 +8,9 @@ import {
   useGetSuperAdminChartDataQuery,
 } from "../../Slices/SuperAdmin/SuperAdminApis";
 import SuperDashboardFilters from "../Components/SuperDashboardFilters";
-import StatisticsSection, { CandidateMetricsSection } from "../../Admin/Components/StatisticsSection";
+import StatisticsSection, {
+  CandidateMetricsSection,
+} from "../../Admin/Components/StatisticsSection";
 import ActionItemsSection from "../../Admin/Components/ActionItemsSection";
 import KPISection from "../../Admin/Components/KPISection";
 import AchievementsSection from "../../Admin/Components/AchievementsSection";
@@ -105,7 +102,13 @@ const SuperDashboard = () => {
 
   // Excel Export Function
   const onExportExcel = () => {
-    handleSuperDashboardExportExcel(filteredData, filters, filterOptions, branchesList, processedData);
+    handleSuperDashboardExportExcel(
+      filteredData,
+      filters,
+      filterOptions,
+      branchesList,
+      processedData,
+    );
   };
 
   // Reset filters
@@ -250,14 +253,16 @@ const SuperDashboard = () => {
         }));
     }
 
-    return processedData?.branchPerformanceData?.map(branch => ({
-      branchName: branch?.branch || branch?.branchName || "N/A",
-      users: branch?.users || 0,
-      applications: branch?.applications || 0,
-      workOrders: branch?.workOrders || 0,
-      candidates: branch?.candidates || 0,
-      hired: branch?.hired || 0,
-    })) || [];
+    return (
+      processedData?.branchPerformanceData?.map((branch) => ({
+        branchName: branch?.branch || branch?.branchName || "N/A",
+        users: branch?.users || 0,
+        applications: branch?.applications || 0,
+        workOrders: branch?.workOrders || 0,
+        candidates: branch?.candidates || 0,
+        hired: branch?.hired || 0,
+      })) || []
+    );
   }, [filteredData, processedData, filters.branchId]);
 
   if (isLoading) {
@@ -476,7 +481,7 @@ const SuperDashboard = () => {
       }));
     }
     // Fallback to computedBranchPerformanceData
-    return computedBranchPerformanceData.map(branch => ({
+    return computedBranchPerformanceData.map((branch) => ({
       branch: branch.branchName || "N/A",
       users: branch.users || 0,
       workOrders: branch.workOrders || 0,
@@ -594,13 +599,6 @@ const SuperDashboard = () => {
         primaryColor={primaryColor}
       />
 
-      {/* Branch Performance Section */}
-      <BranchPerformanceSection
-        branchPerformanceData={computedBranchPerformanceData}
-        loading={filteredDataLoading}
-        primaryColor={primaryColor}
-      />
-
       {/* Main Statistics */}
       <StatisticsSection
         statistics={filteredData?.statistics}
@@ -621,10 +619,7 @@ const SuperDashboard = () => {
       />
 
       {/* KPIs Section */}
-      <KPISection
-        kpis={filteredData?.kpis}
-        primaryColor={primaryColor}
-      />
+      <KPISection kpis={filteredData?.kpis} primaryColor={primaryColor} />
 
       {/* Achievements Section */}
       <AchievementsSection
@@ -639,6 +634,12 @@ const SuperDashboard = () => {
         chartData={chartData}
         filteredDataLoading={filteredDataLoading}
         chartDataLoading={chartDataLoading}
+        primaryColor={primaryColor}
+      />
+
+      <BranchPerformanceSection
+        branchPerformanceData={computedBranchPerformanceData}
+        loading={filteredDataLoading}
         primaryColor={primaryColor}
       />
     </div>

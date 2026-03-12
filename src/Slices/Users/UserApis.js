@@ -84,24 +84,24 @@ export const userApi = createApi({
     }),
 
     forgotPassword: builder.mutation({
-      query: (email) => ({
+      query: (data) => ({
         url: "/forgotPassword",
         method: "POST",
-        body: { email },
+        body: data, // { email } or { eramId }
       }),
     }),
     verifyForgotOtp: builder.mutation({
-      query: ({ email, otp }) => ({
+      query: ({ email, eramId, otp }) => ({
         url: "/verifyForgotOtp",
         method: "POST",
-        body: { email, otp },
+        body: { email, eramId, otp },
       }),
     }),
     resetPassword: builder.mutation({
-      query: ({ email, newPassword }) => ({
+      query: ({ email, eramId, newPassword }) => ({
         url: "/resetPassword",
         method: "POST",
-        body: { email, newPassword },
+        body: { email, eramId, newPassword },
       }),
     }),
 

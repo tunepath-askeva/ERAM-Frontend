@@ -99,7 +99,9 @@ const OtpInput = ({ value, onChange }) => {
 const ForgotPasswordModal = ({ visible, onClose }) => {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // email or ERAM ID
+  const [identifierType, setIdentifierType] = useState(null); // "email" or "eramId"
+  const [otpEmail, setOtpEmail] = useState(""); // Email where OTP was sent
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(0);
   const { enqueueSnackbar } = useSnackbar();
@@ -128,18 +130,55 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
   useEffect(() => {
     if (!visible) {
       setCurrentStep(0);
-      setEmail("");
+      setIdentifier("");
+      setIdentifierType(null);
+      setOtpEmail("");
       setOtp("");
       setTimer(0);
       form.resetFields();
     }
   }, [visible, form]);
 
+  // Helper function to detect if input is ERAM ID or email
+  const detectInputType = (input) => {
+    // ERAM ID typically starts with "ERAM" followed by numbers
+    // Or could be just alphanumeric without @ symbol
+    const eramIdPattern = /^ERAM\d+$/i;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (eramIdPattern.test(input.trim())) {
+      return "eramId";
+    } else if (emailPattern.test(input.trim())) {
+      return "email";
+    } else {
+      // If it doesn't match email pattern, assume it's ERAM ID
+      // (could be ERAM ID without "ERAM" prefix)
+      return "eramId";
+    }
+  };
+
   const handleEmailSubmit = async (values) => {
     try {
-      const response = await forgotPassword(values.email).unwrap();
+      const input = values.emailOrEramId?.trim();
+      if (!input) {
+        enqueueSnackbar("Please enter your email or ERAM ID", {
+          variant: "error",
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          autoHideDuration: 3000,
+        });
+        return;
+      }
 
-      setEmail(values.email);
+      const inputType = detectInputType(input);
+      const requestBody = inputType === "eramId" 
+        ? { eramId: input } 
+        : { email: input };
+
+      const response = await forgotPassword(requestBody).unwrap();
+
+      setIdentifier(input);
+      setIdentifierType(inputType);
+      setOtpEmail(response.email || input); // Store the email where OTP was sent
       setCurrentStep(1);
       setTimer(300); // 5 minutes timer
 
@@ -168,10 +207,18 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
 
   const handleOtpSubmit = async (values) => {
     try {
-      const response = await verifyForgotOtp({
-        email: email,
+      const requestBody = {
         otp: values.otp,
-      }).unwrap();
+      };
+      
+      // Add email or eramId based on identifier type
+      if (identifierType === "eramId") {
+        requestBody.eramId = identifier;
+      } else {
+        requestBody.email = identifier;
+      }
+
+      const response = await verifyForgotOtp(requestBody).unwrap();
 
       setOtp(values.otp);
       setCurrentStep(2);
@@ -207,10 +254,18 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
         return;
       }
 
-      const response = await resetPassword({
-        email: email,
+      const requestBody = {
         newPassword: values.newPassword,
-      }).unwrap();
+      };
+      
+      // Add email or eramId based on identifier type
+      if (identifierType === "eramId") {
+        requestBody.eramId = identifier;
+      } else {
+        requestBody.email = identifier;
+      }
+
+      const response = await resetPassword(requestBody).unwrap();
 
       enqueueSnackbar(response.message || "Password reset successfully!", {
         variant: "success",
@@ -236,7 +291,12 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
 
   const handleResendOtp = async () => {
     try {
-      await forgotPassword(email).unwrap();
+      const requestBody = identifierType === "eramId" 
+        ? { eramId: identifier } 
+        : { email: identifier };
+        
+      const response = await forgotPassword(requestBody).unwrap();
+      setOtpEmail(response.email || identifier);
       setTimer(300); // Reset timer to 5 minutes
       enqueueSnackbar("OTP sent again to your email!", {
         variant: "success",
@@ -282,26 +342,25 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
         return (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <Title level={4} style={{ color: "#2c3e50", marginBottom: "8px" }}>
-              Enter Your Email
+              Enter Your Email or ERAM ID
             </Title>
             <Text
               type="secondary"
               style={{ marginBottom: "24px", display: "block" }}
             >
-              We'll send you a verification code to reset your password
+              Enter your email address (for Recruiters/General Users) or ERAM ID (for Employees). We'll send you a verification code to reset your password.
             </Text>
 
             <Form form={form} onFinish={handleEmailSubmit} layout="vertical">
               <Form.Item
-                name="email"
+                name="emailOrEramId"
                 rules={[
-                  { required: true, message: "Please enter your email!" },
-                  { type: "email", message: "Please enter a valid email!" },
+                  { required: true, message: "Please enter your email or ERAM ID!" },
                 ]}
               >
                 <Input
                   prefix={<MailOutlined style={{ color: "#bdc3c7" }} />}
-                  placeholder="Enter your email address"
+                  placeholder="Enter your email or ERAM ID"
                   size="large"
                   style={{
                     borderRadius: "12px",
@@ -347,7 +406,7 @@ const ForgotPasswordModal = ({ visible, onClose }) => {
               type="secondary"
               style={{ marginBottom: "24px", display: "block" }}
             >
-              Enter the 6-digit code sent to {email}
+              Enter the 6-digit code sent to {otpEmail || identifier}
             </Text>
 
             {timer > 0 && (
